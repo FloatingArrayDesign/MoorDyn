@@ -84,7 +84,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	V.resize(N, 0.0);			// volume?
 	
 	zeta.resize(N+1, 0.0);					// wave elevation above each node
-	F.resize(N, 0.0); 						// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
+	F.resize(N+1, 0.0); 	// fixed 2014-12-07	// VOF scalar for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
 	U.resize(N+1, vector<double>(3, 0.));     	// wave velocities
 	Ud.resize(N+1, vector<double>(3, 0.));;     	// wave accelerations
 	
@@ -223,8 +223,8 @@ void Line::initialize( double* X )
 	// also assign the resulting internal node positions to the integrator initial state vector! (velocities leave at 0)
 	for (int i=1; i<N; i++) {
 		for (int J=0; J<3; J++) {
-			X[3*N + 3*i-3 + J] = r[i][J];  // positions
-			X[      3*i-3 + J] = 0.0;       // velocities=0
+			X[3*N-3 + 3*i-3 + J] = r[i][J];  // positions
+			X[        3*i-3 + J] = 0.0;       // velocities=0
 		}
 	}
 	// now we need to return to the integrator for the dynamic relaxation stuff
@@ -329,8 +329,8 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 	for (int i=1; i<N; i++) 
 	{	for (int J=0; J<3; J++)
 		{
-			r[i][J]  = X[3*N + 3*i-3 + J]; // get positions
-			rd[i][J] = X[      3*i-3 + J]; // get velocities
+			r[i][J]  = X[3*N-3 + 3*i-3 + J]; // get positions
+			rd[i][J] = X[        3*i-3 + J]; // get velocities
 		}
 	}
 	
@@ -513,8 +513,8 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 				RHSiI += S[i][I][J] * Fnet[i][J]; 	//  matrix multiplication [S i]{Forces i}
 			
 			// update states
-			Xd[3*N + 3*i-3 + I] = X[3*i-3 + I];    	// dxdt = V  (velocities)
-			Xd[3*i-3 + I] = RHSiI;      			// dVdt = RHS * A  (accelerations)
+			Xd[3*N-3 + 3*i-3 + I] = X[3*i-3 + I];    	// dxdt = V  (velocities)
+			Xd[        3*i-3 + I] = RHSiI;      		// dVdt = RHS * A  (accelerations)
 		}		
 	}
 	

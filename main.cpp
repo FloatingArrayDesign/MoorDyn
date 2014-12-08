@@ -57,26 +57,6 @@ double dts; // mooring line time step
 
 
 
-// nice string splitting function!
-std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) 
-{
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-		if (!item.empty())  elems.push_back(item); // skip empty ones
-    }
-    return elems;
-}
-
-std::vector<std::string> split(const std::string &s, char delim) 
-{
-    std::vector<std::string> elems;
-    split(s, delim, elems);
-    return elems;
-}
-
-
-
 // master function to handle time stepping
 void RHSmaster( const double X[],  double Xd[], const double t)
 {
@@ -94,11 +74,11 @@ void rk2 (double x0[], double t0, double dt )
 {
 	RHSmaster(x0, f0, t0);	 								//f0 = f ( t0, x0 );
 
-	for (int i=1; i<nX; i++) 
+	for (int i=0; i<nX; i++) 
 		xt[i] = x0[i] + dt*f0[i]/2.0;  						//x1 = x0 + dt*f0/2.0;
 	RHSmaster(xt, f1, t0 + dt/2.0);									//f1 = f ( t1, x1 );
 
-	for (int i=1; i<nX; i++) 
+	for (int i=0; i<nX; i++) 
 		x0[i] = x0[i] + dt*f1[i]; 
 	
 	return;
@@ -361,11 +341,11 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 	// ----------------- prepare state vector ------------------
 	
 	// go through objects to figure out starting indices
-	int n = nConnects*6; 	// start index of first line
+	int n = nConnects*6; 	// start index of first line's states (added six state variables for each connection)
 	for (int l=0; l<nLines; l++) 
 	{
-		LineStateIs.push_back(n);  // assign start index of each line
-		n += LineList[l].getN()*6;
+		LineStateIs.push_back(n);  		// assign start index of each line
+		n += (LineList[l].getN()-1)*6;	// add 6 state variables for each internal node
 	}		
 	
 	// make state vector	
@@ -665,7 +645,7 @@ int DECLDIR LinesClose(void)
 	free(f1       );
 	//free(f2       );
 	//free(f3       );
-	//free(xt       );
+	free(xt       );
 	
 	// close output files
 	outfileMain.close();

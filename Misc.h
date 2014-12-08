@@ -96,4 +96,8 @@ double dotprod( vector<double>& A, vector<double>& B);
 
 double dotprod( double A[], vector<double>& B);
 
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
+
+std::vector<std::string> split(const std::string &s, char delim);
+
 #endif

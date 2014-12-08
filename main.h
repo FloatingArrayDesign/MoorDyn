@@ -20,7 +20,7 @@
 #ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
 #define DECLDIR __declspec(dllexport)
 #else
-#define DECLDIR __declspec(dllimport)
+#define DECLDIR //__declspec(dllimport)
 #endif
 
 #ifdef __cplusplus
