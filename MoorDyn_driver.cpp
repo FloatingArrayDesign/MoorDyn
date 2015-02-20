@@ -190,10 +190,10 @@ int main()
 	
 	string outFileName = "PtfmMotions.dat";   	// name of FAST/MARIN output file to read in
 	
-	float X[6]  = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // platform positions
-	float XD[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // platform velocities
+	double X[6]  = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // platform positions
+	double XD[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // platform velocities
 	
-	float Flines[6]; 			// dummy matrix for net mooring forces on platform, which aren't used here
+	double Flines[6]; 			// dummy matrix for net mooring forces on platform, which aren't used here
 	int NumLines = 3;
 	float FairHTen[3]; 			// more dummy things (should have size of NumLines)
 	float FairVTen[3];
@@ -205,11 +205,11 @@ int main()
 	float TransMat[9];			// direction cosines matrix as used in FAST
 	SmllRotTrans(0.0, 0.0, 0.0, TransMat);
 	
-	float dt = 0.0125; // desired time step for communicating with MoorDyn and outputting results
-	float t=0;
+	double dt = 0.0125; // desired time step for communicating with MoorDyn and outputting results
+	double t=0;
 	
 	// initialize MoorDyn
-	LinesInit(X, XD, TransMat, &dt);
+	LinesInit(X, XD, &dt);
 	
 	cout << "Done initializing MoorDyn." << endl;
 	
@@ -286,7 +286,7 @@ int main()
 		{
 			cout << "Time = " << tFAST[its] << ".\r";
 				
-			float t = tFAST[its];
+			double t = tFAST[its];
 		
 			// assign platform position
 			for (int j=0; j<6; j++) {
@@ -299,7 +299,7 @@ int main()
 				for (int j=0; j<6; j++) 
 					XD[j] = (XpFAST[its+1][j] - XpFAST[its][j])/(tFAST[its+1]-tFAST[its]);			
 				
-				float dt = tFAST[its+1]-tFAST[its];
+				double dt = tFAST[its+1]-tFAST[its];
 			}
 		
 			
@@ -307,7 +307,7 @@ int main()
 			SmllRotTrans(X[3], X[4], X[5], TransMat);
 			
 			// call MoorDyn time stepping function
-			LinesCalc(X, XD, TransMat, Flines, &t, &dt, &NumLines, FairHTen, FairVTen, AnchHTen, AnchVTen);
+			LinesCalc(X, XD, Flines, &t, &dt);
 				
 			
 			// write time and platform motion outputs			
@@ -320,9 +320,9 @@ int main()
 			
 			
 			// write line tension outputs
-			for (int l=0; l < NumLines; l++)  {	
-				linesout << "\t" << 0.001*sqrt(FairHTen[l]*FairHTen[l] + FairVTen[l]*FairVTen[l]);  		// write fairlead tension magnitude
-			}		
+	//		for (int l=0; l < NumLines; l++)  {	
+	//			linesout << "\t" << 0.001*sqrt(FairHTen[l]*FairHTen[l] + FairVTen[l]*FairVTen[l]);  		// write fairlead tension magnitude
+	//		}		
 					
 			//write fairlead 3 positions and velocities for debugging
 	//		for (int i=0; i<3; i++) linesout << "\t" << rFairi[2][i]; 

@@ -44,6 +44,8 @@ void Connection::setup(ConnectProps& props)
 	conFX = props.FX;
 	conFY = props.FY;
 	conFZ = props.FZ;
+	conCd = props.Cd;
+	conCa = props.Ca;
 	
 	t=0.;		
 	//beta = 0.0;
@@ -103,7 +105,7 @@ void Connection::getFnet(double Fnet_out[])
 };
 
 
-void Connection::initialize( double* X, EnvCond env_in, float pX[], float TransMat[] )
+void Connection::initialize( double* X, EnvCond env_in, double pX[], double TransMat[] )
 {
 	env = env_in; // needed only for buoyancy calcs on connections that have a volumetric displacement
 	
@@ -184,8 +186,9 @@ void Connection::getNetForceAndMass()
 	// add constant quantities for connection if applicable from input file
 	Fnet[0] += conFX;
 	Fnet[1] += conFY;
-	Fnet[2] += conFZ + conV*env.rho_w;
+	Fnet[2] += conFZ + conV*env.rho_w*env.g - conM*env.g; 
 	for (int I=0; I<3; I++) 	M[I][I] += conM;
+
 }
 
 	
@@ -235,6 +238,12 @@ void Connection::doRHS( const double* X,  double* Xd, const double time)
 				r[J]  = X[3 + J]; // get positions
 				rd[J] = X[J]; // get velocities
 			}
+				
+			// add dynamic quantities for connection as specified in input file (feature added 2015/01/15)
+			Fnet[0] -= 0.5*env.rho_w*rd[0]*abs(rd[0])*conCd;
+			Fnet[1] -= 0.5*env.rho_w*rd[1]*abs(rd[1])*conCd;
+			Fnet[2] -= 0.5*env.rho_w*rd[2]*abs(rd[2])*conCd;
+			for (int I=0; I<3; I++) 	M[I][I] += conV*env.rho_w*conCa;
 			
 			// invert node mass matrix
 			inverse3by3(S, M);

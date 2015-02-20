@@ -63,6 +63,35 @@ void inverse3by3( vector< vector< double > > & minv, vector< vector< double > > 
 }
 
 
+// create rotation matrix
+void RotMat( double x2, double x1, double x3, double TransMat[])
+{
+	// note above swapping of x1 and x2 to deal with weird coordinate system from FAST copied algorithm
+
+	float s1 = sin(x1); 
+	float c1 = cos(x1);
+	float s2 = sin(x2); 
+	float c2 = cos(x2);
+	float s3 = sin(x3); 
+	float c3 = cos(x3);
+	
+	//rmat = transpose([ 1 0 0; 0 c1 -s1; 0 s1 c1] * [c2 0 s2; 0 1 0; -s2 0 c2] * [c3 s3 0; -s3 c3 0; 0 0 1]);
+
+	//rmat = [1 rz -ry; -rz 1 rx; ry -rx 1];   % rotation matrix
+	
+	TransMat[0] =  c1*c3 + s1*s2*s3;
+	TransMat[1] =  c3*s1*s2-c1*s3;
+	TransMat[2] =  c2*s1;
+	TransMat[3] =  c2*s3;
+	TransMat[4] =  c2*c3;
+	TransMat[5] =  -s2;
+	TransMat[6] =  c1*s2*s3 - c3*s1;
+	TransMat[7] =  s1*s3 + c1*c3*s2;
+	TransMat[8] =  c1*c2;
+	
+}
+
+
 // computes dot product
 double dotprod( vector<double>& A, vector<double>& B)
 {	

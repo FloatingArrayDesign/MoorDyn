@@ -38,6 +38,8 @@ class Connection
 	double conFX;
 	double conFY;
 	double conFZ;
+	double conCd;
+	double conCa;
 	
 	// environmental
 	EnvCond env;  // struct to hold environmental settings
@@ -77,7 +79,7 @@ public:
 		
 	void getFnet(double Fnet_out[]);
 	
-	void initialize( double* X, EnvCond env_in, float pX[], float TransMat[] );
+	void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
 	
 	void getNetForceAndMass();
 	

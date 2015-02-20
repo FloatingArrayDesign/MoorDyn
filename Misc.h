@@ -34,6 +34,11 @@
 // note: this file contains the struct definitions for environmental and line/connect properties
 
 
+// from Iñaki Zabala
+#ifdef _MSC_VER
+template<typename T> static inline T round(T val) {return floor(val + 0.5);}
+#endif
+
 using namespace std;
 
 typedef complex<double> doubleC; // make shorthand for complex double type
@@ -78,11 +83,12 @@ struct ConnectProps // matching node input stuff
 	double Y;
 	double Z;
 	double M;
-	// should add a drag coefficient too!!!
 	double V;
 	double FX;
 	double FY;
 	double FZ;
+	double Cd;  // added 2015/1/15
+	double Ca;  // added 2015/1/15
 };
 
 
@@ -91,6 +97,8 @@ double eye(int I, int J);
 void unitvector( vector< double > & u, vector< double > & r1, vector< double > & r2);
 
 void inverse3by3( vector< vector< double > > & minv, vector< vector< double > > & m);
+
+void RotMat( double x1, double x2, double x3, double TransMat[]);
 
 double dotprod( vector<double>& A, vector<double>& B);
 

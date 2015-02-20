@@ -65,14 +65,14 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	// forces 
 	T.resize(N, vector<double>(3, 0.0));	// line tensions
 	Td.resize(N, vector<double>(3, 0.0));   // line damping forces
-	Tmag.resize(N, 0.0);				// segment tension magnitudes
+	Tmag.resize(N, 0.0);				// segment tension magnitudes << hardly used
 	W.resize(N+1, vector<double>(3, 0.0));	// node weights
 
-	Dp.resize(N+1, vector<double>(3, 0.0));	// node drag (transverse)
-	Dq.resize(N+1, vector<double>(3, 0.0));	// node drag (axial)
-	Ap.resize(N+1, vector<double>(3, 0.0));	// node added mass forcing (transverse)
-	Aq.resize(N+1, vector<double>(3, 0.0));	// node added mass forcing (axial)
-	B.resize(N+1, vector<double>(3, 0.0));	// node bottom contact force
+	Dp.resize(N+1, vector<double>(3, 0.0));		// node drag (transverse)
+	Dq.resize(N+1, vector<double>(3, 0.0));		// node drag (axial)
+	Ap.resize(N+1, vector<double>(3, 0.0));		// node added mass forcing (transverse)
+	Aq.resize(N+1, vector<double>(3, 0.0));		// node added mass forcing (axial)
+	B.resize(N+1, vector<double>(3, 0.0));		// node bottom contact force
 	Fnet.resize(N+1, vector<double>(3, 0.0));	// total force on node
 		
 	S.resize(N+1, vector< vector< double > >(3, vector<double>(3, 0.0)));  // inverse mass matrices (3x3) for each node

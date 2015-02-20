@@ -19,7 +19,6 @@
 #include "Line.h" 
 #include "Connection.h"
 
-// updated Aug 28, 2014 to include tangential added mass
 
 using namespace std;
 
@@ -70,13 +69,14 @@ void RHSmaster( const double X[],  double Xd[], const double t)
 }
 
 
+// Runge-Kutta 2 integration routine
 void rk2 (double x0[], double t0, double dt )
 {
 	RHSmaster(x0, f0, t0);	 								//f0 = f ( t0, x0 );
 
 	for (int i=0; i<nX; i++) 
-		xt[i] = x0[i] + dt*f0[i]/2.0;  						//x1 = x0 + dt*f0/2.0;
-	RHSmaster(xt, f1, t0 + dt/2.0);									//f1 = f ( t1, x1 );
+		xt[i] = x0[i] + 0.5*dt*f0[i];  						//x1 = x0 + dt*f0/2.0;
+	RHSmaster(xt, f1, t0 + 0.5*dt);									//f1 = f ( t1, x1 );
 
 	for (int i=0; i<nX; i++) 
 		x0[i] = x0[i] + dt*f1[i]; 
@@ -85,12 +85,39 @@ void rk2 (double x0[], double t0, double dt )
 }
 
 
+// write all the output files for the current timestep
+void AllOutput(double t)
+{
+	// write master output file
+	if (outfileMain.is_open())
+	{
+		// output time
+		outfileMain << t << "\t "; 
+		
+		// output all LINE fairlead (top end) tensions
+		for (int l=0; l<nLines; l++) outfileMain << 0.001*(LineList[l].getNodeTen(LineList[l].getN())) << "\t ";
+			
+		outfileMain << "\n";
+	}
+	else cout << "Unable to write to main output file " << endl;
+		
+	// write individual line output files
+	for (int l=0; l < nLines; l++)  LineList[l].Output(t); 
+}
 
-int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
+
+// initialization function
+int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 {	
-	cout << "\n Running MoorDyn (v0.9.0-mth, 19-Nov-2014).\n\n";
+	cout << "\n Running MoorDyn (v0.9.01-mth, 20-Feb-2015).\n\n";
 
-	dt = (double) *dTime; // store time step from FAST	
+	dt = *dTime; // store time step from FAST	
+	
+
+	// calculate TransMat
+	double TransMat[9];
+	RotMat(X[3], X[4], X[5], TransMat);
+		
 	
 	// First, load data about the mooring lines from lines.txt for use in this DLL and also by FAST
 	
@@ -118,7 +145,7 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 	env.rho_w = 1025.;
 	env.kb = 3.0e6;
 	env.cb = 3.0e5;
-	env.WaveKin = 0;
+	env.WaveKin = 0;   // 0=none, 1=from function, 2=from file
 	
 	double ICDfac = 5; // factor by which to boost drag coefficients during dynamic relaxation IC generation
 	double ICdt = 1.0;						// convergence analysis time step for IC generation
@@ -180,7 +207,7 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 				{ 	
 					std::vector<std::string> entries = split(lines[i], ' '); // what about TABS rather than spaces???
 					
-					if (entries.size() >= 10) // if valid number of inputs
+					if (entries.size() >= 12) // if valid number of inputs
 					{					
 						ConnectProps newConnect;
 						
@@ -195,6 +222,8 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 						newConnect.FX   = atof(entries[7].c_str());
 						newConnect.FY   = atof(entries[8].c_str());
 						newConnect.FZ   = atof(entries[9].c_str());
+						newConnect.Cd   = atof(entries[10].c_str());
+						newConnect.Ca   = atof(entries[11].c_str());
 						
 						// make default water depth at least the depth of the lowest node (so water depth input is optional)
 						if (newConnect.Z < -env.WtrDpth)  env.WtrDpth = -newConnect.Z;
@@ -303,7 +332,7 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 						else if (entries[1] == "ICdt")      ICdt     = atof(entries[0].c_str());
 						else if (entries[1] == "ICTmax")    ICTmax   = atof(entries[0].c_str());
 						else if (entries[1] == "ICthresh")  ICthresh = atof(entries[0].c_str());
-						//else if (entries[1] == "WaveKin")   env.WaveKin = atoi(entries[0].c_str());						
+						else if (entries[1] == "WaveKin")   env.WaveKin = atoi(entries[0].c_str());
 					}
 					i++;
 				}
@@ -395,6 +424,9 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 		LineList[l].initialize( states + LineStateIs[l] );   // lines
 	}
 	
+	// write t=-1 output line for troubleshooting preliminary ICs
+	//AllOutput(-1.0);
+	cout << "outputting ICs for troubleshooting" << endl;
 	
 	// ------------------ do dynamic relaxation IC gen --------------------
 	
@@ -458,6 +490,13 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 	}
 	
 	
+	// set up waves if needed 
+	if (env.waveKin == 2)
+	{
+		// call SetupWavesFromFile
+	}		
+	
+	
 	// start main output file
 	outfileMain.open("Mooring/Lines.out");
 	if (outfileMain.is_open())
@@ -486,29 +525,91 @@ int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime)
 }
 
 
-
-void AllOutput(double t)
+// accept wave parameters from calling program and precalculate wave kinematics time series for each node
+int DECLDIR SetupWaves(int* WaveMod, int* WaveStMod, 
+	float* WaveHs, float* WaveTp, float* WaveDir, int* NStepWave2, float* WaveDOmega, 
+	float* WGNC_Fact, float WGNCreal[], float WGNCimag[], float* S2Sd_Fact, float WaveS2Sdd[], float* WaveDT)
 {
-	// write master output file
-	if (outfileMain.is_open())
-	{
-		// output time
-		outfileMain << t << "\t "; 
-		
-		// output all LINE fairlead (top end) tensions
-		for (int l=0; l<nLines; l++) outfileMain << 0.001*(LineList[l].getNodeTen(LineList[l].getN())) << "\t ";
-			
-		outfileMain << "\n";
-	}
-	else cout << "Unable to write to main output file " << endl;
-		
-	// write individual line output files
-	for (int l=0; l < nLines; l++)  LineList[l].Output(t); 
+
+
 }
 
 
-int DECLDIR LinesCalc(float X[], float XD[], float TransMat[], float Flines[], float* ZTime, float* dTime, 
-				int* NumLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[])
+
+// load time series of wave elevations and process to calculate wave kinematics time series for each node
+// int SetupWavesFromFile()
+/*
+{
+	// if AS YET UNDEFINED flag, load wave elevation time series and use to overwrite fast WGNC and WaveS2Sdd variables
+	
+	if (need to make flag)
+	{
+		// read data from file
+		vector<string> lines2;
+		string line2;
+		ifstream myfile2 ("Mooring/waves.txt");     // open an input stream to the wave elevation time series file
+		if (myfile2.is_open())
+		{
+			while ( myfile2.good() )
+			{
+				getline (myfile2,line2);
+				lines2.push_back(line2);
+			}
+			myfile2.close();
+		}
+		else cout << "Unable to open wave time series file" << endl; 
+	
+		// save data internally
+	
+		vector< double > wavetimes;
+		vector< double > waveelevs;
+		
+		for (int i=0; i<lines2.size(); i++)
+		{ 	
+			std::vector<std::string> entries = split(lines[i], ' ');
+			
+			//if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
+			//{
+			wavetimes.push_back(entries2[0]);
+			waveelevs.push_back(entries2[1]);
+			}
+			// now send to correctly sized fft and overwrite fast variables
+			
+
+		}
+		
+		// FFT operation
+		
+		// interpolate wave time series to match DTwave and Tend  with Nw = Tend/DTwave
+		int ts0 = 0;
+		vector<double> zeta(Nw, 0.0); // interpolated wave elevation time series
+		for (int iw=0; iw<Nw; iw++)
+		{
+			double frac;
+			for (int ts=ts0; ts<wavetimes.size()-1; ts++)
+			{	
+				if (wavetimes[ts+1] > iw*DTwave)
+				{
+					ts0 = ts;  //  ???
+					frac = ( iw*DTwave - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );
+					zeta[iw] = waveelevs[ts] + frac*(waveelevs[ts+1] - waveelevs[ts]);    // write interpolated wave time series entry
+					break;
+				}
+			}
+		}
+		
+		note: IFFT operation (to check FFT) can be done as follows:
+		ifft(x) = conj( fft( conj(x) ) )/length(x)  //  Conjugate, fft, conjugate, scale
+
+
+	}
+}
+	*/
+
+
+
+
+int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, double* dTime) 
 {
 	     // From FAST: The primary output of this routine is array Flines(:), which must
          // contain the 3 components of the total force from all mooring lines
@@ -528,8 +629,15 @@ int DECLDIR LinesCalc(float X[], float XD[], float TransMat[], float Flines[], f
          //   Array Nodesyi (:,:) - yi-coordinates in the inertial frame of each node of each line
          //   Array Nodeszi (:,:) - zi-coordinates in the inertial frame of each node of each line
 
-	double t = (double) *ZTime;		
-	double DTin = (double) *dTime;	
+	double t =  *ZTime;		
+	double DTin =  *dTime;	
+	
+	// should check if wave kinematics have been set up if expected!
+	
+	
+	// calculate TransMat     <<< check correct directions of this
+	double TransMat[9];
+	RotMat(X[3], X[4], X[5], TransMat);
 	
 	// if  (during repeat time step in initial 0.1 s) || (during a FAST predictor timestep after 0.1 s), do nothing - use the old Flines values (stored as static) so skip all the calculations
 	
@@ -607,8 +715,8 @@ int DECLDIR LinesCalc(float X[], float XD[], float TransMat[], float Flines[], f
 				tFlines[5] -= Ffair[0]*rFairRel[lf][1] + Ffair[1]*rFairRel[lf][0];	// Mz = FyRx - FxRy
 				
 				// Assign horizontal and vertical fairlead force components to return to FAST
-				FairHTen[lf] = sqrt(Ffair[0]*Ffair[0] + Ffair[1]*Ffair[1]);
-				FairVTen[lf] = -Ffair[2];
+	//			FairHTen[lf] = sqrt(Ffair[0]*Ffair[0] + Ffair[1]*Ffair[1]);
+	//			FairVTen[lf] = -Ffair[2];
 				lf++;
 			}			
 		}		
@@ -620,8 +728,8 @@ int DECLDIR LinesCalc(float X[], float XD[], float TransMat[], float Flines[], f
 			if (ConnectList[l].type == 0)  {
 				ConnectList[l].getFnet(Fanch);
 				// Assign horizontal and vertical anchor force components to return to FAST
-				AnchHTen[lf] = sqrt(Fanch[0]*Fanch[0] + Fanch[1]*Fanch[1]);
-				AnchVTen[lf] = Fanch[2];	
+	//			AnchHTen[lf] = sqrt(Fanch[0]*Fanch[0] + Fanch[1]*Fanch[1]);
+	//			AnchVTen[lf] = Fanch[2];	
 				lf++;
 			}			
 		}
@@ -655,5 +763,9 @@ int DECLDIR LinesClose(void)
 }
 
 
-
+double DECLDIR GetFairTen(int l)
+{
+	// output LINE fairlead (top end) tensions
+	return LineList[l].getNodeTen(LineList[l].getN());
+}
 

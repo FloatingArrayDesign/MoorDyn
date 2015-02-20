@@ -30,12 +30,13 @@ extern "C"
 
 #include <Windows.h>
 
-int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime);
+int DECLDIR LinesInit(double X[], double XD[], double* dTime);
 
-int DECLDIR LinesCalc(float X[], float XD[], float TransMat[], float Flines[], float* ZTime, float* dTime, 
-				int* NumLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[]);
+int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* Time, double* dTime);
 
 int DECLDIR LinesClose(void);
+
+double DECLDIR GetFairTen(int);
 
 
 void AllOutput(double);
