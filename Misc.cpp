@@ -124,3 +124,283 @@ std::vector<std::string> split(const std::string &s, char delim)
     split(s, delim, elems);
     return elems;
 }
+
+
+
+
+// calculate wave number from frequency, g, and depth (credit: FAST source)
+float WaveNumber( float Omega, float g, float h )
+{
+	// 
+	// This FUNCTION solves the finite depth dispersion relationship:
+	// 
+	//                   k*tanh(k*h)=(Omega^2)/g
+	// 
+	// for k, the wavenumber (WaveNumber) given the frequency, Omega,
+	// gravitational constant, g, and water depth, h, as inputs.  A
+	// high order initial guess is used in conjunction with a quadratic
+	// Newton's method for the solution with seven significant digits
+	// accuracy using only one iteration pass.  The method is due to
+	// Professor J.N. Newman of M.I.T. as found in routine EIGVAL of
+	// the SWIM-MOTION-LINES (SML) software package in source file
+	// Solve.f of the SWIM module.
+	// 
+	// Compute the wavenumber, unless Omega is zero, in which case, return
+	//   zero:
+	// 
+	float k, X0;
+	
+	if ( Omega == 0.0 ) 	// When .TRUE., the formulation below is ill-conditioned; thus, the known value of zero is returned.
+	{
+		k = 0.0;  
+		return k;
+	}
+	else 		// Omega > 0.0 solve for the wavenumber as usual.
+	{
+		float C  = Omega*Omega*h/g;
+		float CC = C*C;
+
+		// Find X0:
+		if ( C <= 2.0 ) 
+		{
+			X0 =sqrt(C)*( 1.0 + C*( 0.169 + (0.031*C) ) );
+		}
+		else
+		{
+			float E2 = exp(-2.0*C);
+			X0 = C*( 1.0 + ( E2*( 2.0 - (12.0*E2) ) ) );
+		}
+
+		// Find the WaveNumber:
+
+		if ( C <= 4.8 )
+		{
+			float C2 = CC - X0*X0;
+			float A  = 1.0/( C - C2 );
+			float B  = A*( ( 0.5*log( ( X0 + C )/( X0 - C ) ) ) - X0 );
+
+			k = ( X0 - ( B*C2*( 1.0 + (A*B*C*X0) ) ) )/h;
+		}
+		else
+		{
+			k = X0/h;
+		}
+	
+		return k;
+
+	}
+}
+
+
+float JONSWAP(float Omega, float Hs, float Tp, float Gamma )
+{
+
+         // This FUNCTION computes the JOint North Sea WAve Project
+         // (JONSWAP) representation of the one-sided power spectral density
+         // or wave spectrum given the frequency, Omega, peak shape
+         // parameter, Gamma, significant wave height, Hs, and peak spectral
+         // period, Tp, as inputs.  If the value of Gamma is 1.0, the
+         // Pierson-Moskowitz wave spectrum is returned.
+         //
+         // There are several different versions of the JONSWAP spectrum
+         // formula.  This version is based on the one documented in the
+         // IEC61400-3 wind turbine design standard for offshore wind
+         // turbines.
+
+         // Local Variables:
+
+	float Alpha;                          // Exponent on Gamma used in the spectral formulation (-)
+	float C;                              // Normalising factor used in the spectral formulation (-)
+	float f;                              // Wave frequency (Hz)
+	float fp;                             // Peak spectral frequency (Hz)
+	float fpOvrf4;                        // (fp/f)^4
+	float Sigma;                          // Scaling factor used in the spectral formulation (-)
+
+
+
+         // Compute the JONSWAP wave spectrum, unless Omega is zero, in which case,
+         //   return zero:
+
+      if ( Omega == 0.0 )  return 0.0;  // When .TRUE., the formulation below is ill-conditioned; thus, the known value of zero is returned.
+	 else  // Omega > 0.0; forumulate the JONSWAP spectrum.
+	 {
+
+         // Compute the wave frequency and peak spectral frequency in Hz:
+         f        = 1./2./pi*Omega;
+         fp       = 1./Tp;
+         fpOvrf4  = pow((fp/f), 4.0);
+
+         // Compute the normalising factor:
+         C        = 1.0 - ( 0.287*log(Gamma) );
+
+         // Compute Alpha:
+         if ( f <= fp )        Sigma = 0.07;
+         else           Sigma = 0.09;
+         
+         Alpha    = exp( ( -0.5*( ( (f/fp) - 1.0 )/Sigma )*( ( (f/fp) - 1.0 )/Sigma ) ) );
+
+         // Compute the wave spectrum:
+         return  1./2./pi *C*( 0.3125*Hs*Hs*fpOvrf4/f )*exp( ( -1.25*fpOvrf4 ) )*( pow(Gamma, Alpha) );
+	}
+}
+
+
+float SINHNumOvrSIHNDen(float k, float h, float z )
+{
+	//bjj: note, MLB had issues with the IVF 12 compiler inline function expansion
+	// and causing "unexpected results" (NaN) here. possible error in optimazations.
+	//MLB: I turned off in-line function expansion to eliminate the NaN issue with the COSH/SUNH
+
+	 // This FUNCTION computes the shallow water hyperbolic numerator
+	 // over denominator term in the wave kinematics expressions:
+	 //
+	 //                    SINH( k*( z + h ) )/SINH( k*h )
+	 //
+	 // given the wave number, k, water depth, h, and elevation z, as
+	 // inputs.
+
+	 // Compute the hyperbolic numerator over denominator:
+	float SINHNumOvrSIHNDen;
+	
+	if (     k   == 0.0  )  // When .TRUE., the shallow water formulation is ill-conditioned; thus, the known value of unity is returned.
+	    SINHNumOvrSIHNDen = 1.0;
+	else if ( k*h >  89.4 )  // When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
+	    SINHNumOvrSIHNDen = exp(  k*z );
+	else                          // 0 < k*h <= 89.4; use the shallow water formulation.
+	    SINHNumOvrSIHNDen = sinh( k*( z + h ) )/sinh( k*h );
+    
+	return SINHNumOvrSIHNDen;
+}
+
+float COSHNumOvrSIHNDen(float k, float h, float z )
+// This FUNCTION computes the shallow water hyperbolic numerator
+// over denominator term in the wave kinematics expressions:
+//
+//                    COSH( k*( z + h ) )/SINH( k*h )
+//
+// given the wave number, k, water depth, h, and elevation z, as
+// inputs.
+{
+	// Compute the hyperbolic numerator over denominator:
+	float COSHNumOvrSIHNDen;
+	
+	if (     k   == 0.0  )    // When .TRUE., the shallow water formulation is ill-conditioned; thus, HUGE(k) is returned to approximate the known value of infinity.
+	    COSHNumOvrSIHNDen = 99999;
+	else if ( k*h >  89.4 )    // When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
+	    COSHNumOvrSIHNDen = exp(  k*z );
+	else                          // 0 < k*h <= 89.4; use the shallow water formulation.
+	    COSHNumOvrSIHNDen = cosh( k*( z + h ) )/sinh( k*h );
+	
+	return COSHNumOvrSIHNDen;
+}
+
+/*
+// NEED TO MAKE A FUNCTION HERE TO DO PRECALCULATED WAVE STUFF
+
+	// new additions for handling waves in-object and precalculating them
+	
+	int WaveMod;
+	int WaveStMod;
+	double Hs;
+	double Tp;
+	double gamma;
+	double beta; 			// wave heading
+	
+	
+	int Nw;  				// number of wave frequency components considered    //OK AS INT???
+	vector<double> w;
+	vector<double> k;
+	double dw;			// FAST's dw (really small typically)
+	
+	vector<doubleC> zetaC;		// Fourier transform of wave elevation
+	vector<doubleC> WGNC;		// 
+	vector<double> WaveS2Sdd;	// 
+
+	vector< vector< doubleC > > UC;     // Fourier transform of wave velocities
+	vector< vector< doubleC > > UdC;     // Fourier transform of wave accelerations
+	
+	doubleC WGNC_Fact; 		// sqrt( pi/(dw*WaveDT) );   // This factor is needed by the discrete time inverse Fourier transform to ensure that the time series WGN process has unit variance
+	double S2Sd_Fact; 		// 1.0/WaveDT;                       // This factor is also needed by the discrete time inverse Fourier transform
+
+	vector< double > Ucurrent; // constant uniform current to add (three components)
+	
+	// new additions for precalculating wave quantities
+	vector< vector< double > > zetaTS;
+	vector< vector< double > > FTS;
+	vector< vector< vector< double > > > UTS;
+	vector< vector< vector< double > > > UdTS;
+	int Nt; 				// number of wave time steps
+	double WaveDT; 		// wave time step size (s)
+	vector< double > tTS; 	// time step vector
+	int ts0; 				// time step index used for interpolating wave kinematics time series data (put here so it's persistent)
+	
+
+		// instantiator that takes discrete wave data from FAST
+	void setupWaves(int WaveMod_in, int WaveStMod_in, float WaveHs_in, float WaveTp_in, float WaveDir_in, 
+		float WtrDpth_in, int NStepWave2_in, float WaveDOmega_in, 
+		float WGNC_Fact_in, float WGNCreal[], float WGNCimag[], float S2Sd_Fact_in, float WaveS2Sdd_in[], 
+		double dw2_in, vector<double> Ucurrent_in, double dt_in, EnvCond env)
+	{
+		// go about converting inputted wave stuff into a more friendly form (unnecessary now)
+		
+		WaveMod = WaveMod_in;
+		WaveStMod =WaveStMod_in;
+		Hs = WaveHs_in;
+		Tp = WaveTp_in;
+		beta = WaveDir_in;
+		
+		//WtrDpth = WtrDpth_in;
+		//g = 9.806;
+		
+		Nw = NStepWave2_in;   // number of wave frequency components
+		
+		dw = WaveDOmega_in;
+		
+		Nt = Nw*2.0; // this is a new variable containing the number of wave time steps to be calculated
+		
+		WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)
+				
+		cout << "Nt=" << Nt << ", and WaveDT=" <<  WaveDT << endl;
+		
+		WGNC_Fact = WGNC_Fact_in;
+		S2Sd_Fact = S2Sd_Fact_in;
+		
+		// resize some frequency-domain wave calc vectors
+		w.resize(Nw, 0.0);
+		zetaC.resize(Nw, 0.);
+		WGNC.resize(Nw, 0.);
+		WaveS2Sdd.resize(Nw, 0.);
+		k.resize(Nw, 0.0);
+		UC.resize(Nw, vector<doubleC>(3, 0.));     // Fourier transform of wave velocities
+		UdC.resize(Nw, vector<doubleC>(3, 0.));     // Fourier transform of wave accelerations	
+		
+		Ucurrent = Ucurrent_in;
+		
+		
+		// fill in some vectors
+		for (int I=0; I<Nw; I++)
+		{
+			w[I] = dw*double(I);
+			k[I] = WaveNumber( w[I], env.g, env.WtrDpth );
+			WGNC[I] = doubleC( (double) WGNCreal[I], (double) WGNCimag[I]);  // converting from FORTRAN-compatible struct to c complex type
+			WaveS2Sdd[I] = WaveS2Sdd_in[I];
+				
+			
+		}		
+			
+		
+	//	// resize the new time series vectors
+	//	if (Nt > 0)
+	//	{
+	//		zetaTS.resize(N, vector<double>(Nt, 0.));
+	//		FTS.resize   (N, vector<double>(Nt, 0.));
+	//		UTS.resize   (N, vector< vector< double> >(Nt, vector<double>(3, 0.)));
+	//		UdTS.resize  (N, vector< vector< double> >(Nt, vector<double>(3, 0.)));
+	//		tTS.resize(Nt, 0.);
+	//	}
+	
+		cout << "Done Waves initialization" << endl << endl;
+		
+	}
+	
+	*/

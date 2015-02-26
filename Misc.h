@@ -31,6 +31,8 @@
 
 #include <memory>
 
+#include "kiss_fft.h"  // trying this out!
+
 // note: this file contains the struct definitions for environmental and line/connect properties
 
 
@@ -41,11 +43,15 @@ template<typename T> static inline T round(T val) {return floor(val + 0.5);}
 
 using namespace std;
 
-typedef complex<double> doubleC; // make shorthand for complex double type
+typedef complex<double> doubleC; 		// make shorthand for complex double type
+typedef complex<float> floatC; 		// make shorthand for complex float type
 
 const double pi=3.14159265;
 
-const doubleC i1(0., 1.); // set imaginary number 1
+const doubleC i1(0., 1.); 			// set imaginary number 1
+const floatC i1f(0., 1.); 			// set imaginary number 1
+
+const bool wordy = true;   			// flag to enable excessive output for troubleshooting
 
 
 
@@ -57,7 +63,7 @@ struct EnvCond
 	
 	double kb;       // bottom stiffness
 	double cb;       // bottom damping
-	int WaveKin;	 // wave kinematics flag (on if 1, off if 0)
+	int WaveKin;	 // wave kinematics flag (0=off, >0=on)
 };
 
 
@@ -107,5 +113,14 @@ double dotprod( double A[], vector<double>& B);
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
 
 std::vector<std::string> split(const std::string &s, char delim);
+
+// calculate wave number from frequency, g, and depth (credit: FAST source)
+float WaveNumber( float Omega, float g, float h );
+
+float JONSWAP(float Omega, float Hs, float Tp, float Gamma );
+
+float SINHNumOvrSIHNDen(float k, float h, float z );
+
+float COSHNumOvrSIHNDen(float k, float h, float z );
 
 #endif

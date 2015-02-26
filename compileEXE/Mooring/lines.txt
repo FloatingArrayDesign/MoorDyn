@@ -1,0 +1,29 @@
+Mooring line data file for MoorDyn in Lines.dll
+---------------------- LINE DICTIONARY -----------------------------------------------------
+LineType  Diam    MassDenInAir    EA        cIntDamp     Can     Cat    Cdn     Cdt 
+(-)       (m)       (kg/m)        (N)        (Pa-s)      (-)     (-)    (-)     (-)  
+main      0.09      77.7066     384.243E6    1.0E8       1.0     0.0    1.6     0.05        
+---------------------- NODE PROPERTIES -----------------------------------------------------
+Node      Type      X        Y         Z        M        V        FX       FY      FZ  CdA   Ca
+(-)       (-)      (m)      (m)       (m)      (kg)     (m^3)    (kN)     (kN)    (kN)  (m2) ()
+1         Fix      853.87    0        -320      0        0        0        0       0     0    0
+2         Fix     -426.94   739.47    -320      0        0        0        0       0     0    0
+3         Fix     -426.94  -739.47    -320      0        0        0        0       0     0    0
+4         Vessel   5.2       0.0      -70       0        0        0        0       0     0    0
+5         Vessel  -2.6       4.5033   -70       0        0        0        0       0     0    0
+6         Vessel  -2.6      -4.5033   -70       0        0        0        0       0     0    0
+---------------------- LINE PROPERTIES -----------------------------------------------------
+Line     LineType  UnstrLen  NumSegs   NodeAnch  NodeFair  Flags/Outputs
+(-)      (-)       (m)         (-)       (-)       (-)       (-)
+1        main     902.2         20        1         4        pos_wav
+2        main     902.2         20        2         5        pos_wav
+3        main     902.2         20        3         6        pos_wav
+---------------------- SOLVER OPTIONS-----------------------------------------
+0.002    DT           - time step to use in mooring integration
+2        WaveKin      - wave kinematics flag (1=include, 0=neglect)  only 0 currently supported
+3.0e6    kb           - bottom stiffness
+3.0e5    cb           - bottom damping
+320      WtrDpth      - water depth
+20.0     ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
+0.001    ICthresh     - threshold for IC convergence
+--------------------- need this line ------------------

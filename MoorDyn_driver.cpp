@@ -209,7 +209,7 @@ int main()
 	double t=0;
 	
 	// initialize MoorDyn
-	LinesInit(X, XD, &dt);
+	LinesInit(X, XD);
 	
 	cout << "Done initializing MoorDyn." << endl;
 	

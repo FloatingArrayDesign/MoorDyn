@@ -51,8 +51,13 @@ double* f1;
 //double* f3;
 vector< int > LineStateIs;  // vector of line starting indices in "states" array
 
-double dt; // FAST time step
-double dts; // mooring line time step   
+//double dt; // FAST time step
+double dtM0; // desired mooring line model time step   
+
+
+// new temporary additions for waves
+vector< floatC > zetaCglobal;
+double dwW;
 
 
 
@@ -81,6 +86,8 @@ void rk2 (double x0[], double t0, double dt )
 	for (int i=0; i<nX; i++) 
 		x0[i] = x0[i] + dt*f1[i]; 
 	
+	t0 = t0 + dt;  // update time
+	
 	return;
 }
 
@@ -107,11 +114,11 @@ void AllOutput(double t)
 
 
 // initialization function
-int DECLDIR LinesInit(double X[], double XD[], double* dTime)
+int DECLDIR LinesInit(double X[], double XD[])
 {	
 	cout << "\n Running MoorDyn (v0.9.01-mth, 20-Feb-2015).\n\n";
 
-	dt = *dTime; // store time step from FAST	
+	//dt = *dTime; // store time step from FAST	
 	
 
 	// calculate TransMat
@@ -152,7 +159,7 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 	double ICTmax = 120;						// max time for IC generation
 	double ICthresh = 0.001;					// threshold for relative change in tensions to call it converged
 	
-	double dts_in = 0.001; // requested mooring time step
+	dtM0 = 0.001;  // default value for desired mooring model time step
 
 	// fairlead and anchor position arrays
 	vector< vector< double > > rFairt;
@@ -243,6 +250,11 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 						
 						cout << newConnect.number << " ";
 					}
+					else 
+					{
+						cout << endl << "Error - less than the 12 required input columns for node definitions.  Remember CdA and Ca" << endl;
+						return 0;
+					}
 					i++;
 				}
 				cout << "\n";
@@ -308,6 +320,11 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 						
 						cout << number << " ";
 														
+					}					
+					else 
+					{
+						cout << endl << "Error with line inputs." << endl;
+						return 0;
 					}
 					i++;
 				}		
@@ -323,7 +340,7 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 					if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
 					{
 //						if (entries[1] == "NumNodes")       nNodes = atoi(entries[0].c_str());
-						if (entries[1] == "DT")        dts_in = atof(entries[0].c_str());
+						if (entries[1] == "DT")        dtM0 = atof(entries[0].c_str());
 						//else if (entries[1] == "DWWave")    dw_in = atof(entries[0].c_str());
 						else if (entries[1] == "kb")        env.kb = atof(entries[0].c_str());
 						else if (entries[1] == "cb")        env.cb = atof(entries[0].c_str());
@@ -349,16 +366,32 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 	nLines = LineList.size();
 			
 			
-	dts = dt/round(dt/dts_in);
-	cout << "   Mooring model dt = " << dts << " s based on requested value of " << dts_in << endl;
 	
 	
-	// initialize dummy wave stuff for now
+	//  ------------------------ set up waves if needed -------------------------------
+	
 	// (in general, set up wave stuff here BEFORE adding line to vector)
 	vector<double> Ucurrent(3, 0.0);  // should make this an input to the DLL at some point.
-	for (int l=0; l<nLines; l++) 
-		LineList[l].setupWaves(env, Ucurrent, 9000.);   // sending env struct (important)
-															
+	if (env.WaveKin == 2)
+	{
+		cout << "setting up wave kinematics by reading from file" << endl;
+		SetupWavesFromFile();
+				
+		for (int l=0; l<nLines; l++) 
+			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // <<<<<<<<<<<<<<< last entry is bogus!
+	}			
+	else
+	{ 	// no waves case
+		for (int l=0; l<nLines; l++) 
+			LineList[l].setupWaves(env, Ucurrent, 9000.);   // sending env struct (important)
+	}								
+	
+	// note: each Line's WaveKin switch should be off by default, and can be switched on when the wave kinematics 
+	// are calculated AFTER the initial position has been solved for.
+
+		
+	// ------------------------------ make connections ---------------------------------------
+		
 	// now that everything is initialized, tell the Connections about the connections
 	cout <<   "   Connecting anchors:   ";
 	for (int l=0; l<nLines; l++) ConnectList[AnchInd[l]].addLineToConnect(LineList[LineInd[l]], 0);
@@ -428,6 +461,7 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 	//AllOutput(-1.0);
 	cout << "outputting ICs for troubleshooting" << endl;
 	
+	
 	// ------------------ do dynamic relaxation IC gen --------------------
 	
 	cout << "   Finalizing ICs using dynamic relaxation (" << ICDfac << "X normal drag)" << endl;
@@ -442,15 +476,20 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 	vector< double > FairTensLast(nFairs, 0.0); 	// vector to store tensions for analyzing convergence
 	vector< double > FairTensLast2(nFairs, 0.0); 	// vector to store tensions for analyzing convergence
 	int lf; 								// fairlead index
+	
+	
+	// round to get appropriate mooring model time step
+	int NdtM = ceil(ICdt/dtM0);   // number of mooring model time steps per outer time step
+	double dtM = ICdt/NdtM;		// mooring model time step size (s)
 		
 	// loop through IC generation time analysis time steps
 	for (int iic=0; iic<niic; iic++)
 	{
-		double t = iic*ICdt;			// IC gen time (s).
+		double t = iic*ICdt;			// IC gen time (s).  << is this a robust way to handle time progression?
 		
 		// loop through line integration time steps
-		for (double ts=t; ts<=t+ICdt-dts; ts+=dts)
-			rk2 (states, ts, dts ); // changed to rk2 !!!
+		for (int its = 0; its < NdtM; its++)
+			rk2 (states, t, dtM );  			// call RK2 time integrator (which calls the model)
 	
 		// store previous fairlead tensions for comparison
 		for (lf=0; lf<nFairs; lf++) {
@@ -490,14 +529,16 @@ int DECLDIR LinesInit(double X[], double XD[], double* dTime)
 	}
 	
 	
-	// set up waves if needed 
-	if (env.waveKin == 2)
+
+	// ------------------------- calculate wave time series if needed -------------------
+	if (env.WaveKin == 2)
 	{
-		// call SetupWavesFromFile
-	}		
+		for (int l=0; l<nLines; l++) 
+			LineList[l].makeWaveKinematics( 0.0 );
+	}
+
 	
-	
-	// start main output file
+	// -------------------------- start main output file --------------------------------
 	outfileMain.open("Mooring/Lines.out");
 	if (outfileMain.is_open())
 	{
@@ -531,85 +572,214 @@ int DECLDIR SetupWaves(int* WaveMod, int* WaveStMod,
 	float* WGNC_Fact, float WGNCreal[], float WGNCimag[], float* S2Sd_Fact, float WaveS2Sdd[], float* WaveDT)
 {
 
-
+	return 0.0;
 }
 
 
 
 // load time series of wave elevations and process to calculate wave kinematics time series for each node
-// int SetupWavesFromFile()
-/*
+int SetupWavesFromFile(void)
 {
-	// if AS YET UNDEFINED flag, load wave elevation time series and use to overwrite fast WGNC and WaveS2Sdd variables
+	// much of this process is taken from GenerateWaveExctnFile.py
+
+	if (wordy)  cout << "reading wave time series from waves.txt file" << endl;
 	
-	if (need to make flag)
+	// --------------------- read data from file ------------------------
+	vector<string> lines2;
+	string line2;
+	string WaveFilename = "waves.txt";  // should set as overideable default later
+	
+	ifstream myfile2 (WaveFilename);     // open an input stream to the wave elevation time series file
+	if (myfile2.is_open())
 	{
-		// read data from file
-		vector<string> lines2;
-		string line2;
-		ifstream myfile2 ("Mooring/waves.txt");     // open an input stream to the wave elevation time series file
-		if (myfile2.is_open())
+		while ( myfile2.good() )
 		{
-			while ( myfile2.good() )
-			{
-				getline (myfile2,line2);
-				lines2.push_back(line2);
-			}
-			myfile2.close();
+			getline (myfile2,line2);
+			lines2.push_back(line2);
 		}
-		else cout << "Unable to open wave time series file" << endl; 
-	
-		// save data internally
-	
-		vector< double > wavetimes;
-		vector< double > waveelevs;
+		myfile2.close();
 		
-		for (int i=0; i<lines2.size(); i++)
-		{ 	
-			std::vector<std::string> entries = split(lines[i], ' ');
-			
-			//if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
-			//{
-			wavetimes.push_back(entries2[0]);
-			waveelevs.push_back(entries2[1]);
-			}
-			// now send to correctly sized fft and overwrite fast variables
-			
-
-		}
-		
-		// FFT operation
-		
-		// interpolate wave time series to match DTwave and Tend  with Nw = Tend/DTwave
-		int ts0 = 0;
-		vector<double> zeta(Nw, 0.0); // interpolated wave elevation time series
-		for (int iw=0; iw<Nw; iw++)
-		{
-			double frac;
-			for (int ts=ts0; ts<wavetimes.size()-1; ts++)
-			{	
-				if (wavetimes[ts+1] > iw*DTwave)
-				{
-					ts0 = ts;  //  ???
-					frac = ( iw*DTwave - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );
-					zeta[iw] = waveelevs[ts] + frac*(waveelevs[ts+1] - waveelevs[ts]);    // write interpolated wave time series entry
-					break;
-				}
-			}
-		}
-		
-		note: IFFT operation (to check FFT) can be done as follows:
-		ifft(x) = conj( fft( conj(x) ) )/length(x)  //  Conjugate, fft, conjugate, scale
-
-
+		// should add error checking.  two columns of data, and time column must start at zero?
 	}
-}
+	else cout << "Unable to open wave time series file" << endl; 
+
+
+	// ----------------------- save data internally ---------------------------
+
+	vector< double > wavetimes;
+	vector< double > waveelevs;
+	
+	for (int i=0; i<lines2.size(); i++)
+	{ 	
+		std::vector<std::string> entries2 = split(lines2[i], ' ');
+		if (entries2.size() >= 2) {
+			wavetimes.push_back(atof(entries2[0].c_str()));
+			waveelevs.push_back(atof(entries2[1].c_str()));
+		}
+		else cout << "bad line read from " << WaveFilename << endl;
+	}
+	cout << "done reading file " << endl;
+	
+	// -------------------- downsample to dt = 0.25 ---------------------------
+	double dtW = 0.25;
+	int NtW = floor(wavetimes.back()/dtW);  	// number of time steps
+	
+	if (wordy)  cout << "Nt is " << NtW << endl;
+	
+	vector< double > waveTime (NtW, 0.0); 
+	vector< double > waveElev (NtW, 0.0); 
+	
+	if (wordy)  cout << "interpolated to reduce time steps from " << wavetimes.size()  << " to " << NtW << endl;
+	
+	int ts = 0; 							// index for interpolation (so it doesn't start at the beginning every time)
+	for (int i=0; i<NtW; i++)
+	{
+		
+		waveTime[i] = i*dtW;			
+					
+		// interpolate wave elevation
+		while (ts < wavetimes.size()) 		// start to search through input data
+		{	
+			if (wavetimes[ts+1] > waveTime[i])  // if using index i means the current time point waveTime[i] is spanned by input data wavetimes[ts] and wavetimes[ts+1]
+			{				
+				double frac = ( waveTime[i] - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );    // get interpolation fraction				
+				waveElev[i] = waveelevs[ts] + frac*( waveelevs[ts+1] - waveelevs[ts] ); 			// interpolate wave elevation
+				break;
+			}
+		ts++; // move to next recorded time step
+		}
+	}
+	
+	/*
+	// interpolate wave time series to match DTwave and Tend  with Nw = Tend/DTwave
+	int ts0 = 0;
+	vector<double> zeta(Nw, 0.0); // interpolated wave elevation time series
+	for (int iw=0; iw<Nw; iw++)
+	{
+		double frac;
+		for (int ts=ts0; ts<wavetimes.size()-1; ts++)
+		{	
+			if (wavetimes[ts+1] > iw*DTwave)
+			{
+				ts0 = ts;  //  ???
+				frac = ( iw*DTwave - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );
+				zeta[iw] = waveelevs[ts] + frac*(waveelevs[ts+1] - waveelevs[ts]);    // write interpolated wave time series entry
+				break;
+			}
+		}
+	}
 	*/
+	
+//		cout << 'Hs is ' << 4.0*np.std(Elev))
+
+	
+	double Fss = 1./dtW; // 4   	// sample rate (Hz)
+
+	// ensure N is even				
+	if ( NtW %2 != 0 )					// if odd, trim off last value of time series
+	{	NtW = NtW-1;
+		waveTime.pop_back();
+		waveElev.pop_back();
+		cout << "Odd number of samples in elevation time series so trimming last sample." << endl;
+	}
+
+
+	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
+	cout << "starting fft stuff " << endl;
+		int NFFT = NtW;
+		int is_inverse_fft = 0;
+	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
+	
+	// making data structures
+	//typedef struct {
+	//    double r;
+	//    double i;
+	//} kiss_fft_cpx;
+	cout << "allocatin io " << endl;
+	
+	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
+	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
+	
+	double zetaRMS = 0.0;
+	double zetaCRMS = 0.0;
+	
+	// put data into input vector
+	for (int i=0; i<NFFT; i++)  {
+		cx_in[i].r = (float)waveElev[i];  // real component  kiss_fft likes floats
+		cx_in[i].i = 0.0;          // imaginary component
+		
+		zetaRMS += waveElev[i]*waveElev[i];
+	}
+	zetaRMS = sqrt(zetaRMS/NFFT);
+	
+	cout << "processing fft" << endl;
+	  
+	// do the magic
+	kiss_fft( cfg , cx_in , cx_out );
+	cout << "done" << endl;
+	// convert
+	
+	// allocate stuff to get passed to line functions
+	zetaCglobal.resize(NFFT, 0.0);
+	
+	
+	for (int i=0; i<NFFT; i++)  {
+		zetaCglobal[i] = cx_out[i].r + i1f*(cx_out[i].i) ;
+		zetaCRMS += norm(zetaCglobal[i]);
+	}
+		
+	
+	// free things up  (getting errors here! suggests heap corruption elsewhere?)
+	free(cx_in);
+	free(cx_out);
+	free(cfg);
+
+	cout << "freed" << endl;
+/*     Note: frequency-domain data is stored from dc up to 2pi.
+	so cx_out[0] is the dc bin of the FFT
+	and cx_out[nfft/2] is the Nyquist bin (if exists)  */
+
+
+	//general note: IFFT operation (to check FFT) can be done as follows:
+	//ifft(x) = conj( fft( conj(x) ) )/length(x)  //  Conjugate, fft, conjugate, scale
+
+
+	// Ak = np.fft.fft(Elev);					# fft of wave elevation
+
+	// -------------------- set up frequency vectors corresponding to cx_out ----------------------------
+	vector< double > f(NtW, 0.0);		// # frequency (Hz)  note: if Ni is even number, f[N/2] should be the nyquist freq.  if odd, f[(n-1)/2] is largest positive freq and f[[(n+1)/2] is largest negative freq
+	for (int i=0; i<=NtW/2; i++)  f[i]     = Fss*((double)i)/NtW;			// set frequency (Hz)
+	for (int i=1; i<NtW/2; i++)  f[NtW/2+i] = -f[NtW/2-i];	// including negative frequencies
+	
+	vector< double > wk(NtW, 0.0);
+	for (int i=0; i<NtW; i++)  wk[i] = f[i]*2.0*pi;    // frequency (rad/s) - should be symmetric: # [0,dw,2dw,....w(N/2),w(-N/2+1)...-2dw,-dw]
+	
+	double dw=wk[1]-wk[0];
+			
+	dwW = dw; // global value
+	
+	//scaled this!  (check of Parseval's theorem)
+	zetaCRMS = zetaCRMS/NtW;
+	
+	if (wordy) {
+		cout << "summary of fft parameters:" << endl;
+		cout << " dt = " << dtW << endl;
+		cout << " f sampling = " << Fss << endl;
+		cout << " Nfft = " << NFFT << endl;
+		cout << " df = " << f[1]-f[0] << endl;
+		cout << " f nyquist = " << f[NtW/2] << endl;
+		cout << " dw = " << dw << endl;
+		cout << " zetaRMS = " << zetaRMS << endl;
+		cout << " zetaCRMS = " << zetaCRMS << endl;
+	}
+		
+	return 0.0;
+}
 
 
 
 
-int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, double* dTime) 
+int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, double* dt_in) 
 {
 	     // From FAST: The primary output of this routine is array Flines(:), which must
          // contain the 3 components of the total force from all mooring lines
@@ -629,8 +799,9 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, d
          //   Array Nodesyi (:,:) - yi-coordinates in the inertial frame of each node of each line
          //   Array Nodeszi (:,:) - zi-coordinates in the inertial frame of each node of each line
 
-	double t =  *ZTime;		
-	double DTin =  *dTime;	
+	double t =  *t_in;		// this is the current time
+	double dtC =  *dt_in;	// this is the coupling time step
+	
 	
 	// should check if wave kinematics have been set up if expected!
 	
@@ -639,17 +810,10 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, d
 	double TransMat[9];
 	RotMat(X[3], X[4], X[5], TransMat);
 	
-	// if  (during repeat time step in initial 0.1 s) || (during a FAST predictor timestep after 0.1 s), do nothing - use the old Flines values (stored as static) so skip all the calculations
 	
-	// otherwise (if it's a corrector time step after t=0.05 s)
-	//if ( (DTin > 0 && t < 0.1) || (DTin ==0 && t >= 0.1) )     // normal case - proceed to calculate mooring dynamics over time step
-	if (DTin > 0) // if DT > 0, do simulation, otherwise just return last calculated values.
+	if (dtC > 0) // if DT > 0, do simulation, otherwise just return last calculated values.
 	{		
-		
-		//cout << " gonna do time step stuff.   t=" << t << " and dt=" << dt << endl;
-		
-		//cout << "FYI, Line " << LineList[0].number << " address=" << &LineList[0] << " -------------2" << endl;
-		
+				
 		
 		// calculate positions and velocities for fairleads ("vessel" connections)
 		for (int ln=0; ln < rFairi.size(); ln++)
@@ -670,7 +834,6 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, d
 			rdFairi[ln][2] = -XD[4]*rFairRel[ln][0] + XD[3]*rFairRel[ln][1]	                       + XD[2];		// z
 		}
 		
-		//cout << "1 ";
 		
 		
 		
@@ -687,17 +850,20 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, d
 				continue;  // other connect types don't need anything, right?				
 		}		
 					
-			
+					
+					
+		// round to get appropriate mooring model time step
+		int NdtM = ceil(dtC/dtM0);   // number of mooring model time steps per outer time step
+		double dtM = dtC/NdtM;		// mooring model time step size (s)
+		
+		
 		// loop through line integration time steps
-		double ts; // time step time (s)
-		for (ts=t; ts<=t+DTin-dts; ts+=dts)
-			rk2 (states, ts, dts ); // changed to rk2 !!!
-		
-		
+		for (int its = 0; its < NdtM; its++)
+			rk2 (states, t, dtM );  			// call RK2 time integrator (which calls the model)
+							
 			
 		// call end routines to write output files and get forces to send to FAST
-		
-		
+				
 		// go through connections to get fairlead forces
 		double Ffair[3];
 		float tFlines[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -714,28 +880,11 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* ZTime, d
 				tFlines[4] += Ffair[0]*rFairRel[lf][2] - Ffair[2]*rFairRel[lf][0];	// My = FxRz - FzRx
 				tFlines[5] -= Ffair[0]*rFairRel[lf][1] + Ffair[1]*rFairRel[lf][0];	// Mz = FyRx - FxRy
 				
-				// Assign horizontal and vertical fairlead force components to return to FAST
-	//			FairHTen[lf] = sqrt(Ffair[0]*Ffair[0] + Ffair[1]*Ffair[1]);
-	//			FairVTen[lf] = -Ffair[2];
 				lf++;
 			}			
 		}		
 		
-		// now go through connections to get anchor forces (this won't work if there are more anchors than fairleads (or NumLines in FAST))
-		double Fanch[3];
-		lf = 0; // index of anchor
-		for (int l=0; l < nConnects; l++)  {	
-			if (ConnectList[l].type == 0)  {
-				ConnectList[l].getFnet(Fanch);
-				// Assign horizontal and vertical anchor force components to return to FAST
-	//			AnchHTen[lf] = sqrt(Fanch[0]*Fanch[0] + Fanch[1]*Fanch[1]);
-	//			AnchVTen[lf] = Fanch[2];	
-				lf++;
-			}			
-		}
-		
-		
-		AllOutput(ts);   // write outputs
+		AllOutput(t);   // write outputs
 		 
 		for (int ii=0; ii<6; ii++) FlinesS[ii] = tFlines[ii];  // assign forces to static Flines vector		
 	}
@@ -767,5 +916,17 @@ double DECLDIR GetFairTen(int l)
 {
 	// output LINE fairlead (top end) tensions
 	return LineList[l].getNodeTen(LineList[l].getN());
+}
+
+
+
+int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[] )
+{
+	// function for providing FASTv7 customary line tension quantities.  Each array is expected as length nLines
+	
+	for (int l=0; l< *numLines; l++)
+		LineList[l].getFASTtens( &FairHTen[l], &FairVTen[l], &AnchHTen[l], &AnchVTen[l] );		
+	
+	return 0;
 }
 

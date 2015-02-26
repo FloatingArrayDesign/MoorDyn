@@ -30,16 +30,19 @@ extern "C"
 
 #include <Windows.h>
 
-int DECLDIR LinesInit(double X[], double XD[], double* dTime);
+int DECLDIR LinesInit(double X[], double XD[]);
 
-int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* Time, double* dTime);
+int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* , double* );
 
 int DECLDIR LinesClose(void);
 
 double DECLDIR GetFairTen(int);
 
+int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[] );
+
 
 void AllOutput(double);
+int SetupWavesFromFile(void);
 
 #ifdef __cplusplus
 }
