@@ -50,7 +50,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	d = props.d;
 	rho = props.w/(pi/4.*d*d);
 	E = props.EA/(pi/4.*d*d);
-	c = props.c;
+	c = props.c/(pi/4.*d*d);
 	Can = props.Can;
 	Cat = props.Cat;
 	Cdn = props.Cdn;
@@ -90,8 +90,10 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	U.resize(N+1, vector<double>(3, 0.));     	// wave velocities
 	Ud.resize(N+1, vector<double>(3, 0.));;     	// wave accelerations
 	
-	for (int i=0; i<N; i++)	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
-		
+	for (int i=0; i<N; i++)	
+	{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
+		V[i] = l[i]*0.25*pi*d;
+	}
 	
 	// ==================================================================
 	// create output file for writing output (and write channel header line)
@@ -516,24 +518,55 @@ void Line::makeWaveKinematics( double t0 )
 		
 		// ---------------- calculate frequency domain velocities and accelerations ------------------
 		// note: all these values are for each node specifically, in turn.  just intermediate values for calculating time series
-		if (env.WaveKin > 0)   // if including wave kinematics
+		if (env.WaveKin > 0)   // if including wave kinematics <<<<<<<<<<<<<< not in right place...
 		{	
 			// calculated wave elevation in freq domain
 			//cout << "starting zetaC" << endl;
+	//		for (int I=0; I<Nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
+	//		{
+	//			//zetaC[I] =  WGNC_Fact*WGNC[I] *sqrt( 2.0*pi*S2Sd_Fact*WaveS2Sdd[I] )*exp( i1*(k[I]*(cos(beta)*x + sin(beta)*y))); // Fourier transform of wave elevation
+	//				
+	//			zetaC[I] = zetaC0[I]* exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
+	//		
+	//			// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
+	//			UC[I][0] =  abs(w[I])* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
+	//			UC[I][1] =  abs(w[I])* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
+	//			UC[I][2] = i1f* w[I] * zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
+     //
+	//			// Fourier transform of wave accelerations
+	//			for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
+	//		}
+			
+			// handle positive-frequency half of spectrum
 			for (int I=0; I<Nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
 			{
-				//zetaC[I] =  WGNC_Fact*WGNC[I] *sqrt( 2.0*pi*S2Sd_Fact*WaveS2Sdd[I] )*exp( i1*(k[I]*(cos(beta)*x + sin(beta)*y))); // Fourier transform of wave elevation
-					
-				zetaC[I] = zetaC0[I] * exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
+				zetaC[I] = zetaC0[I]* exp( -i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
 			
-				// Fourier transform of wave velocities
-				UC[I][0] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta);
-				UC[I][1] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-				UC[I][2] = i1f*w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
+				// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
+				UC[I][0] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
+				UC[I][1] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
+				UC[I][2] = i1f* w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
 
 				// Fourier transform of wave accelerations
-				for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];					
+				for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
 			}
+		//	// handle negative-frequency half of spectrum
+		//	for (int I=Nw/2+1; I<Nw; I++)  // Loop through the negative frequency components
+		//	{
+		//		zetaC[I] = zetaC0[I]* exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
+		//	
+		//		// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
+		//		UC[I][0] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
+		//		UC[I][1] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
+		//		UC[I][2] = i1f* w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
+          //
+		//		// Fourier transform of wave accelerations
+		//		for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
+		//	}
+			
+			
+			
+			
 		}
 		
 		
@@ -554,7 +587,7 @@ void Line::makeWaveKinematics( double t0 )
 		}
 		kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
 		
-		for (int I=0; I<NFFT; I++)  zetaTS[i][I] = cx_out[I].r /Nw;   // copy out the IFFT data to the time series
+		for (int I=0; I<NFFT; I++)  zetaTS[i][I] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
 		
 		//if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "fair zeta is " << zetaTS[i][I] << " at time " << tTS[I] << endl;
 		
@@ -567,10 +600,10 @@ void Line::makeWaveKinematics( double t0 )
 			}
 			kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
 			
-			for (int I=0; I<NFFT; I++)  UTS[i][I][J] = cx_out[I].r /Nw;   // copy out the IFFT data to the time series
+			for (int I=0; I<NFFT; I++)  UTS[i][I][J] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
 		}
 		
-		if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "   UTSx is " << UTS[i][I][0] << " at time " << tTS[I] << endl;
+		// if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "   UTSx is " << UTS[i][I][0] << " at time " << tTS[I] << endl;
 		
 		// .............................. wave accelerations ...............................
 		for (int J=0; J<3; J++)	{
@@ -581,23 +614,28 @@ void Line::makeWaveKinematics( double t0 )
 			}
 			kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
 			
-			for (int I=0; I<NFFT; I++)  UdTS[i][I][J] = cx_out[I].r /Nw;   // copy out the IFFT data to the time series
+			for (int I=0; I<NFFT; I++)  UdTS[i][I][J] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
 		}
 		
 		
 		// ----------------------------- write to text file for debugging ----------------------------
-		if (i==N)
+		if ((number == 1) && (i == N))
 		{
 			cout << "frequnecy domain starting wave data output file" << endl;
 			ofstream waveoutsC("wavesC.out");
 			waveoutsC << "wave data output file" << endl << endl;
 			
-			waveoutsC << "w \t k \t zetaC0r \t zetaC0i \t zetaCr \t zetaCi \n";
-			for (int j=0; j<NFFT; j++)  waveoutsC << w[j] << " \t" << k[j] << " \t" << real(zetaC0[j]) << " \t" << imag(zetaC0[j]) << " \t" << real(zetaC[j]) << " \t" << imag(zetaC[j]) << endl;	
+			waveoutsC << "w \t k \t zetaC0r \t zetaC0i \t zetaCr \t zetaCi \t UCxr  \t UCxi \t UCzr \t UCzi \n";
+			for (int j=0; j<NFFT; j++)  waveoutsC << w[j] << " \t" << k[j] << " \t" << real(zetaC0[j]) << " \t" << imag(zetaC0[j]) << 
+			   " \t" << real(zetaC[j]) << " \t" << imag(zetaC[j]) << " \t" << real(UC[j][0]) << " \t" << imag(UC[j][0]) << 
+			   " \t" << real(UC[j][2]) << " \t" << imag(UC[j][2]) << endl;	
 			waveoutsC.close();
-			
-			
-			ofstream waveouts("waves.out");
+		}
+		if (number==1)
+		{		
+			stringstream oname;
+			oname << "waves_i" << i << ".out";
+			ofstream waveouts(oname.str());
 			waveouts << "wave data output file" << endl << endl;
 			
 			waveouts << "t \t zeta \t Ux \t Uz \t Udx \t Udz \n";
@@ -671,7 +709,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		V[i] = pi/4. *( d*d*l[i] );		// volume attributed to segment
 	}
 		
-	// calculate unit tangent vectors (q) for each node (including ends)
+	// calculate unit tangent vectors (q) for each node (including ends)  note: I think these are pointing toward 0 rather than N!
 	for (int i=0; i<=N; i++) 
 	{
 		if (i==0) 	unitvector(q[i], r[i+1], r[i]  ); 	// compute unit vector q
@@ -722,7 +760,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		for (int i=0; i<=N; i++)
 		{
 			zeta[i] = zetaTS[i][ts0] + frac*( zetaTS[i][ts0+1] - zetaTS[i][ts0] );			
-			F[i] = FTS[i][ts0] + frac*(FTS[i][ts0+1] - FTS[i][ts0]);
+			F[i] = 1.0;   // FTS[i][ts0] + frac*(FTS[i][ts0+1] - FTS[i][ts0]);
 			
 			for (int J=0; J<3; J++)
 			{
@@ -838,27 +876,27 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 			for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env.rho_w*Cdt* pi*(F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
 				
 		
-	//	// acceleration calculations					
-	//	for (int J=0; J<3; J++)  {
-	//		aq[J] = dotprod(Ud[i], q[i]) * q[i][J]; // tangential component of fluid acceleration
-	//		ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
-	//	}
-	//	
-	//	// transverse Froude-Krylov force
-	//	if (i==0)	
-	//		for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*pi/8.*( F[i]*d*d*l[i]) * ap[J]; 
-	//	else if (i==N)
-	//		for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*pi/8.*(F[i-1]*d*d*l[i-1] ) * ap[J]; 
-	//	else
-	//		for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*pi/8.*( F[i]*d*d*l[i] + F[i-1]*d*d*l[i-1] ) * ap[J]; 
-	//	
-	//	// tangential Froude-Krylov force					
-	//	if (i==0)	
-	//		for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*pi/8.*( F[i]*d*d*l[i]) * aq[J]; 
-	//	else if (i==N)
-	//		for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*pi/8.*(F[i-1]*d*d*l[i-1] ) * aq[J]; 
-	//	else
-	//		for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*pi/8.*( F[i]*d*d*l[i] + F[i-1]*d*d*l[i-1] ) * aq[J]; 
+		// acceleration calculations					
+		for (int J=0; J<3; J++)  {
+			aq[J] = dotprod(Ud[i], q[i]) * q[i][J]; // tangential component of fluid acceleration
+			ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
+		}
+		
+		// transverse Froude-Krylov force
+		if (i==0)	
+			for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*0.5*( V[i]) * ap[J]; 
+		else if (i==N)
+			for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*0.5*(V[i-1] ) * ap[J]; 
+		else
+			for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*0.5*( V[i] + V[i-1] ) * ap[J]; 
+		
+		// tangential Froude-Krylov force					
+		if (i==0)	
+			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i]) * aq[J]; 
+		else if (i==N)
+			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i-1] ) * aq[J]; 
+		else
+			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] ) * aq[J]; 
 		
 		// bottom contact (stiffness and damping)	
 		if (r[i][2] < -env.WtrDpth)

@@ -618,7 +618,7 @@ int SetupWavesFromFile(void)
 		}
 		else cout << "bad line read from " << WaveFilename << endl;
 	}
-	cout << "done reading file " << endl;
+	if (wordy) cout << "done reading file " << endl;
 	
 	// -------------------- downsample to dt = 0.25 ---------------------------
 	double dtW = 0.25;
@@ -685,7 +685,7 @@ int SetupWavesFromFile(void)
 
 
 	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	cout << "starting fft stuff " << endl;
+	if (wordy) cout << "starting fft stuff " << endl;
 		int NFFT = NtW;
 		int is_inverse_fft = 0;
 	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
@@ -695,7 +695,7 @@ int SetupWavesFromFile(void)
 	//    double r;
 	//    double i;
 	//} kiss_fft_cpx;
-	cout << "allocatin io " << endl;
+	if (wordy) cout << "allocatin io " << endl;
 	
 	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
 	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
@@ -712,11 +712,11 @@ int SetupWavesFromFile(void)
 	}
 	zetaRMS = sqrt(zetaRMS/NFFT);
 	
-	cout << "processing fft" << endl;
+	if (wordy) cout << "processing fft" << endl;
 	  
 	// do the magic
 	kiss_fft( cfg , cx_in , cx_out );
-	cout << "done" << endl;
+	if (wordy) cout << "done" << endl;
 	// convert
 	
 	// allocate stuff to get passed to line functions
@@ -734,7 +734,7 @@ int SetupWavesFromFile(void)
 	free(cx_out);
 	free(cfg);
 
-	cout << "freed" << endl;
+	if (wordy) cout << "freed" << endl;
 /*     Note: frequency-domain data is stored from dc up to 2pi.
 	so cx_out[0] is the dc bin of the FFT
 	and cx_out[nfft/2] is the Nyquist bin (if exists)  */
@@ -915,7 +915,7 @@ int DECLDIR LinesClose(void)
 double DECLDIR GetFairTen(int l)
 {
 	// output LINE fairlead (top end) tensions
-	return LineList[l].getNodeTen(LineList[l].getN());
+	return LineList[l-1].getNodeTen(LineList[l-1].getN());  // fixed the index to adjust to 0 start on March 2!
 }
 
 

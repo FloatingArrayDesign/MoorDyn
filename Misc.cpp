@@ -186,7 +186,8 @@ float WaveNumber( float Omega, float g, float h )
 			k = X0/h;
 		}
 	
-		return k;
+		if (Omega < 0)  k = -k;  // @mth: modified to return negative k for negative Omega
+		return k; 
 
 	}
 }
@@ -262,11 +263,13 @@ float SINHNumOvrSIHNDen(float k, float h, float z )
 	 // Compute the hyperbolic numerator over denominator:
 	float SINHNumOvrSIHNDen;
 	
-	if (     k   == 0.0  )  // When .TRUE., the shallow water formulation is ill-conditioned; thus, the known value of unity is returned.
+	if (     k   == 0.0  )  					// When .TRUE., the shallow water formulation is ill-conditioned; thus, the known value of unity is returned.
 	    SINHNumOvrSIHNDen = 1.0;
-	else if ( k*h >  89.4 )  // When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
+	else if ( k*h >  89.4 )  				// When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
 	    SINHNumOvrSIHNDen = exp(  k*z );
-	else                          // 0 < k*h <= 89.4; use the shallow water formulation.
+	else if (-k*h >  89.4 )    					// @mth: added negative k case
+	    SINHNumOvrSIHNDen = -exp( -k*z );
+     else                          // 0 < k*h <= 89.4; use the shallow water formulation.
 	    SINHNumOvrSIHNDen = sinh( k*( z + h ) )/sinh( k*h );
     
 	return SINHNumOvrSIHNDen;
@@ -283,16 +286,132 @@ float COSHNumOvrSIHNDen(float k, float h, float z )
 {
 	// Compute the hyperbolic numerator over denominator:
 	float COSHNumOvrSIHNDen;
+	//k = abs(k);  //@mth: added 
 	
-	if (     k   == 0.0  )    // When .TRUE., the shallow water formulation is ill-conditioned; thus, HUGE(k) is returned to approximate the known value of infinity.
+	if (     k   == 0.0  )    					// When .TRUE., the shallow water formulation is ill-conditioned; thus, HUGE(k) is returned to approximate the known value of infinity.
 	    COSHNumOvrSIHNDen = 99999;
-	else if ( k*h >  89.4 )    // When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
+	else if ( k*h >  89.4 )    					// When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
 	    COSHNumOvrSIHNDen = exp(  k*z );
+	else if (-k*h >  89.4 )    					// @mth: added negative k case
+	    COSHNumOvrSIHNDen = -exp( -k*z );
 	else                          // 0 < k*h <= 89.4; use the shallow water formulation.
 	    COSHNumOvrSIHNDen = cosh( k*( z + h ) )/sinh( k*h );
 	
 	return COSHNumOvrSIHNDen;
 }
+
+
+
+// ==================== some filtering functions used in OC4 study =============================
+
+// flip or reverse function
+void reverse(double* data, int datasize)
+{
+	int i;
+	double temp;
+	for (i = 0; i < floor(datasize/2); i++) 
+	{
+		temp = data[i];
+		data[i] = data[datasize-1-i];
+		data[datasize-1-i] = temp;
+	}
+	return;
+}
+
+
+// IIR filter function
+void doIIR(double* in, double* out, int dataSize, double* a, double* b, int kernelSize)
+{	// kernelSize is size of vectors a and b, which contain the coefficients.  Normally a[0]=1.
+
+	int i, k;
+	
+	// filtering from out[0] to out[kernelSize-2]
+	for(i = 0; i < kernelSize - 1; ++i)
+	{
+		out[i] = in[kernelSize-1];					// maybe this hack will work...
+	
+//		out[i] = in[i]*b[0];                             // using just part of a filter kernel doesn't really work
+//		for(k = 1; k < i+1; k++)
+//			out[i] += in[i-k]*b[k] - out[i-k]*a[k];
+//		out[i] = out[i]/a[0];
+	}
+	
+	// filtering from out[kernelSize-1] to out[dataSize-1] (last)
+	for(i = kernelSize-1; i < dataSize; i++)
+	{
+		out[i] = in[i]*b[0];                             
+		for(k = 1; k < kernelSize; k++)
+			out[i] += in[i-k]*b[k] - out[i-k]*a[k];
+		out[i] = out[i]/a[0];
+	}
+	return;
+}
+
+
+// State Space filter function - a good reference is https://ccrma.stanford.edu/~jos/fp/Converting_State_Space_Form_Hand.html
+void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, double b0, int kernelSize)
+{	// kernelSize is size of vectors a and beta (exluding 0th entry!), which contain the coefficients.
+
+	int i, k;
+	double* fstates = (double*) malloc( dataSize*sizeof(double) ); // create state vector
+	
+	// filtering from out[0] to out[kernelSize-2]
+	for(i = 0; i < kernelSize; ++i)
+	{
+		out[i] = in[kernelSize];			// maybe this hack will work...
+		fstates[i] = 0.0;
+	}
+	
+	// filtering from out[kernelSize] to out[dataSize-1] (last)
+	for(i = kernelSize; i < dataSize; i++)
+	{ 
+		fstates[i] = in[i-1];
+		out[i] = b0*in[i];
+		for(k = 0; k < kernelSize; k++)
+			fstates[i] += -1.0*a[k]*fstates[i-1-k];
+			
+		for(k = 0; k < kernelSize; k++)
+			out[i] += beta[k]*fstates[i-k];
+	}
+	
+	free(fstates);
+	return;
+}
+
+
+// 2D double array creation and destruction functions
+double** make2Darray(int arraySizeX, int arraySizeY) 
+{
+	double** theArray;  
+	theArray = (double**) malloc(arraySizeX*sizeof(double*));  
+	for (int i = 0; i < arraySizeX; i++)  
+		theArray[i] = (double*) malloc(arraySizeY*sizeof(double));  
+	return theArray;  
+}   
+
+void free2Darray(double** theArray, int arraySizeX)
+{
+	for (int i = 0; i < arraySizeX; i++)
+		free(theArray[i]);
+	free(theArray);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 // NEED TO MAKE A FUNCTION HERE TO DO PRECALCULATED WAVE STUFF

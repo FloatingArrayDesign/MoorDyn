@@ -83,8 +83,8 @@ class Line
 	vector<double> ldstr; 		// rate of stretch (m/s)
 	double d;		// line diameter
 	double rho;		// line density
-	double E;		// line elasticity modulus
-	double c;		// line axial internal damping coefficient [N/(m/s)]
+	double E;		// line elasticity modulus [N]
+	double c;		// line axial internal damping coefficient [Ns]
 	double Can;
 	double Cat;
 	double Cdn;

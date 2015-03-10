@@ -51,7 +51,7 @@ const double pi=3.14159265;
 const doubleC i1(0., 1.); 			// set imaginary number 1
 const floatC i1f(0., 1.); 			// set imaginary number 1
 
-const bool wordy = true;   			// flag to enable excessive output for troubleshooting
+const bool wordy = false;   			// flag to enable excessive output for troubleshooting
 
 
 
@@ -122,5 +122,12 @@ float JONSWAP(float Omega, float Hs, float Tp, float Gamma );
 float SINHNumOvrSIHNDen(float k, float h, float z );
 
 float COSHNumOvrSIHNDen(float k, float h, float z );
+
+void reverse(double* data, int datasize);
+void doIIR(double* in, double* out, int dataSize, double* a, double* b, int kernelSize);
+void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, double b0, int kernelSize);
+double** make2Darray(int arraySizeX, int arraySizeY);
+void free2Darray(double** theArray, int arraySizeX);
+
 
 #endif
