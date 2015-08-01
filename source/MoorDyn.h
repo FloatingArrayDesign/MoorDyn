@@ -14,8 +14,8 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#ifndef __MOORDYN_H__
+#define __MOORDYN_H__
 
 #ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
 #define DECLDIR __declspec(dllexport)
@@ -40,6 +40,7 @@ double DECLDIR GetFairTen(int);
 
 int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[] );
 
+int DECLDIR DrawWithGL(void);
 
 void AllOutput(double);
 int SetupWavesFromFile(void);

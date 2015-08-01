@@ -38,7 +38,7 @@ class Connection
 	double conFX;
 	double conFY;
 	double conFZ;
-	double conCd;
+	double conCdA;
 	double conCa;
 	
 	// environmental

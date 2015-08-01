@@ -57,6 +57,13 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	Cdt = props.Cdt;
 	ReFac = props.ReFac;
 	
+	// automatic internal damping option (if negative BA provided, as damping ratio)
+	if (props.c < 0) {
+		double zeta = -props.c; // desired damping ratio
+		c = zeta * UnstrLen/N * sqrt(E*rho);   // rho = w/A
+		cout << "  Line " << number << "c set to " << c << endl;
+	}
+		
 	
 	// =============== size vectors =========================
 		
@@ -107,7 +114,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 			
 			// output positions?
 			//if (find(channels.begin(), channels.end(), "position") != channels.end())
-			if (channels.find("pos") != string::npos)
+			if (channels.find("p") != string::npos)
 			{
 				for (int i=0; i<=N; i++)	//loop through nodes
 				{
@@ -115,43 +122,43 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 				}
 			}
 			// output velocities?
-			if (channels.find("vel") != string::npos) {
+			if (channels.find("v") != string::npos) {
 				for (int i=0; i<=N; i++)  {
 					*outfile << "Node" << i << "vx \t Node" <<  i << "vy \t Node" <<  i << "vz \t ";
 				}
 			}
 			// output wave velocities?
-			if (channels.find("wav") != string::npos) {
+			if (channels.find("U") != string::npos) {
 				for (int i=0; i<=N; i++)  {
 					*outfile << "Node" << i << "Ux \t Node" <<  i << "Uy \t Node" <<  i << "Uz \t ";
 				}
 			}
 			// output hydro force
-			if (channels.find("fhy") != string::npos) {
+			if (channels.find("D") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Hx \t Node" <<  i << "Hy \t Node" <<  i << "Hz \t ";
+					*outfile << "Node" << i << "Dx \t Node" <<  i << "Dy \t Node" <<  i << "Dz \t ";
 				}
 			}
 			// output internal damping force?
-			if (channels.find("cin") != string::npos) {
+			if (channels.find("c") != string::npos) {
 				for (int i=0; i<N; i++)  {
-					*outfile << "Seg" << i << "Cx \t Node" <<  i << "Cy \t Node" <<  i << "Cz \t ";
+					*outfile << "Seg" << i << "cx \t Node" <<  i << "cy \t Node" <<  i << "cz \t ";
 				}
 			}
 			// output segment tensions?
-			if (channels.find("ten") != string::npos) {
+			if (channels.find("t") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					*outfile << "Seg" << i << "Te \t ";
 				}
 			}			
 			// output segment strains?
-			if (channels.find("str") != string::npos) {
+			if (channels.find("s") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					*outfile << "Seg" << i << "St \t ";
 				}
 			}	
 			// output segment strain rates?
-			if (channels.find("dst") != string::npos) {
+			if (channels.find("d") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					*outfile << "Seg" << i << "dSt \t ";
 				}
@@ -173,6 +180,12 @@ void Line::initialize( double* X )
 	// set end node positions and velocities from connect objects
 	AnchConnect->getConnectState(r[0],rd[0]);
 	FairConnect->getConnectState(r[N],rd[N]);
+	
+		
+	if (-env.WtrDpth > r[0][2]) {
+		cout << "Error: water depth is shallower than Line " << number << " anchor." << endl;
+		return;
+	}
 	
 	// try to calculate initial line profile using catenary routine (from FAST v.7)
 	// note: much of this function is adapted from the FAST source code
@@ -940,8 +953,8 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 void Line::Output(double time)
 {
 	// run through output flags
-	// if channel is flagged for output
-	// write to file
+	// if channel is flagged for output, write to file.
+	// Flags changed to just be one character (case sensitive) per output flag.  To match FASTv8 version.
 		
 	if (outfile) // if not a null pointer (indicating no output)
 	{
@@ -952,7 +965,7 @@ void Line::Output(double time)
 		
 			// output positions?
 			//if (find(channels.begin(), channels.end(), "position") != channels.end())
-			if (channels.find("pos") != string::npos)
+			if (channels.find("p") != string::npos)
 			{
 				for (int i=0; i<=N; i++)	//loop through nodes
 				{
@@ -960,31 +973,31 @@ void Line::Output(double time)
 				}
 			}
 			// output velocities?
-			if (channels.find("vel") != string::npos) {
+			if (channels.find("v") != string::npos) {
 				for (int i=0; i<=N; i++)  {
 					for (int J=0; J<3; J++)  *outfile << rd[i][J] << "\t ";
 				}
 			}
 			// output wave velocities?
-			if (channels.find("wav") != string::npos) {
+			if (channels.find("w") != string::npos) {
 				for (int i=0; i<=N; i++)  {
 					for (int J=0; J<3; J++)  *outfile << U[i][J] << "\t ";
 				}
 			}
 			// output hydro force?
-			if (channels.find("fhy") != string::npos) {
+			if (channels.find("h") != string::npos) {
 				for (int i=0; i<=N; i++)  {
 					for (int J=0; J<3; J++)  *outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] << "\t ";
 				}
 			}
 			// output internal damping force?
-			if (channels.find("cin") != string::npos) {
+			if (channels.find("c") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					for (int J=0; J<3; J++)  *outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
 				}
 			}
 			// output segment tensions?
-			if (channels.find("ten") != string::npos) {
+			if (channels.find("t") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					double Tmag_squared = 0.; 
 					for (int J=0; J<3; J++)  Tmag_squared += T[i][J]*T[i][J]; // doing this calculation here only, for the sake of speed
@@ -992,13 +1005,13 @@ void Line::Output(double time)
 				}
 			}
 			// output segment strains?
-			if (channels.find("str") != string::npos) {
+			if (channels.find("s") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					*outfile << lstr[i]/l[i]-1.0 << "\t ";
 				}
 			}
 			// output segment strain rates?
-			if (channels.find("dst") != string::npos) {
+			if (channels.find("d") != string::npos) {
 				for (int i=0; i<N; i++)  {
 					*outfile << ldstr[i]/l[i] << "\t ";
 				}
@@ -1011,3 +1024,10 @@ void Line::Output(double time)
 	return;
 };
 
+void Line::drawGL(void)
+{
+	glColor3f(0.5,0.5,1.0);
+	glBegin(GL_LINE_STRIP);
+	for (int i=0; i<=N; i++)	glVertex3d(r[i][0], r[i][1], r[i][2]);
+	glEnd();
+}

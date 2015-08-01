@@ -44,7 +44,7 @@ void Connection::setup(ConnectProps& props)
 	conFX = props.FX;
 	conFY = props.FY;
 	conFZ = props.FZ;
-	conCd = props.Cd;
+	conCdA= props.CdA;
 	conCa = props.Ca;
 	
 	t=0.;		
@@ -240,9 +240,9 @@ void Connection::doRHS( const double* X,  double* Xd, const double time)
 			}
 				
 			// add dynamic quantities for connection as specified in input file (feature added 2015/01/15)
-			Fnet[0] -= 0.5*env.rho_w*rd[0]*abs(rd[0])*conCd;
-			Fnet[1] -= 0.5*env.rho_w*rd[1]*abs(rd[1])*conCd;
-			Fnet[2] -= 0.5*env.rho_w*rd[2]*abs(rd[2])*conCd;
+			Fnet[0] -= 0.5*env.rho_w*rd[0]*abs(rd[0])*conCdA;
+			Fnet[1] -= 0.5*env.rho_w*rd[1]*abs(rd[1])*conCdA;
+			Fnet[2] -= 0.5*env.rho_w*rd[2]*abs(rd[2])*conCdA;
 			for (int I=0; I<3; I++) 	M[I][I] += conV*env.rho_w*conCa;
 			
 			// invert node mass matrix

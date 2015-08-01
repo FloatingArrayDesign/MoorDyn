@@ -177,6 +177,8 @@ public:
 	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
 		
 	void Output(double );
+	
+	void drawGL(void);
 };
 
 #endif

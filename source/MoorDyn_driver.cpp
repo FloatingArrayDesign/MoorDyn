@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "main.h" // include the MoorDyn header file !!!
+#include "MoorDyn.h" // include the MoorDyn header file !!!
 #include "misc.h" // for string splitting functions
 
 // this is a simple driver program for MoorDyn v0.9.0 
@@ -211,7 +211,7 @@ int main()
 	double dt;   // communicatoin and output time step size
 	
 	string outFileName = "PtfmMotions.dat";   	// name of platform motions output file to read in
-	int isMARINfile = 0;    					// for enabling special functions for reading marin files
+	int isMARINfile = 0;    					// for enabling special functions for reading marin files.  0=generic 7-col file, 1=marin, other=fast
 	
 	double CornerFreq = 0.0;					// corner frequency of low pass filter to be applied to platform motion data
 	double zShift = 0.0;					// distance (positive up) from water line to platform reference point (possible COG?) used for platform motion in read file
@@ -270,7 +270,7 @@ int main()
 					if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
 					{
 						if (entries[1] == "OutFileName")     outFileName = entries[0].c_str();   // the .out file name to read to the platform motions form
-						else if (entries[1] == "isMARINfile")   isMARINfile = atoi(entries[0].c_str()); // end time for standalone version
+						else if (entries[1] == "isMARINfile")   isMARINfile = atoi(entries[0].c_str()); 
 						else if (entries[1] == "TFinal")     tf = atof(entries[0].c_str()); // end time for standalone version
 						else if (entries[1] == "DTout")      dt = atof(entries[0].c_str());
 						else if (entries[1] == "CornerFreq") CornerFreq = atof(entries[0].c_str());  // no longer used

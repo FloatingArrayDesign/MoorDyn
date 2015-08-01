@@ -14,8 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+ // This is version 1.0.0.  April 12, 2015.
+ 
 #include "Misc.h"
-#include "main.h"
+#include "MoorDyn.h"
 #include "Line.h" 
 #include "Connection.h"
 
@@ -85,9 +87,7 @@ void rk2 (double x0[], double t0, double dt )
 
 	for (int i=0; i<nX; i++) 
 		x0[i] = x0[i] + dt*f1[i]; 
-	
-	t0 = t0 + dt;  // update time
-	
+		
 	return;
 }
 
@@ -116,7 +116,7 @@ void AllOutput(double t)
 // initialization function
 int DECLDIR LinesInit(double X[], double XD[])
 {	
-	cout << "\n Running MoorDyn (v0.9.01-mth, 20-Feb-2015).\n\n";
+	cout << "\n Running MoorDyn (v1.0.0-mth, 12-April-2015).\n\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -229,7 +229,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 						newConnect.FX   = atof(entries[7].c_str());
 						newConnect.FY   = atof(entries[8].c_str());
 						newConnect.FZ   = atof(entries[9].c_str());
-						newConnect.Cd   = atof(entries[10].c_str());
+						newConnect.CdA  = atof(entries[10].c_str());
 						newConnect.Ca   = atof(entries[11].c_str());
 						
 						// make default water depth at least the depth of the lowest node (so water depth input is optional)
@@ -504,6 +504,12 @@ int DECLDIR LinesInit(double X[], double XD[])
 			for (int j=0; j<3; j++) FairTens[lf] += Ffair[j]*Ffair[j];
 			FairTens[lf] = sqrt(FairTens[lf]);
 		}
+				
+	//	cout << "size of FairIs is " << FairIs.size() << endl;
+	//	cout << "FairIs 1,2 are " << FairIs[0] << FairIs[1] << endl;
+	//	cout << "size of ConnectList is " << ConnectList.size() << endl;
+	//	cout << " nFairs is " << nFairs << endl;
+		
 				
 		cout << "   t = " << t << " s, tension at Node" << ConnectList[FairIs[0]].number << " is " << FairTens[0] << "\r";
 
@@ -859,8 +865,11 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 		
 		// loop through line integration time steps
 		for (int its = 0; its < NdtM; its++)
+		{
 			rk2 (states, t, dtM );  			// call RK2 time integrator (which calls the model)
-							
+			t = t + dtM;                      // update time
+		}
+				
 			
 		// call end routines to write output files and get forces to send to FAST
 				
@@ -927,6 +936,15 @@ int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float
 	for (int l=0; l< *numLines; l++)
 		LineList[l].getFASTtens( &FairHTen[l], &FairVTen[l], &AnchHTen[l], &AnchVTen[l] );		
 	
+	return 0;
+}
+
+
+int DECLDIR DrawWithGL()
+{
+	// draw the mooring system with OpenGL commands (assuming a GL context has been created by the calling program)
+	for (int l=0; l< nLines; l++)
+		LineList[l].drawGL();  
 	return 0;
 }
 

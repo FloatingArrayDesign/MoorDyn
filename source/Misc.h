@@ -31,6 +31,8 @@
 
 #include <memory>
 
+#include <GL/gl.h>  // for openGL drawing option
+
 #include "kiss_fft.h"  // trying this out!
 
 // note: this file contains the struct definitions for environmental and line/connect properties
@@ -93,8 +95,8 @@ struct ConnectProps // matching node input stuff
 	double FX;
 	double FY;
 	double FZ;
-	double Cd;  // added 2015/1/15
-	double Ca;  // added 2015/1/15
+	double CdA;  // added 2015/1/15 - product of drag coefficient and frontal area
+	double Ca;  // added 2015/1/15  - added mass coefficient
 };
 
 
