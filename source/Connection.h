@@ -79,13 +79,19 @@ public:
 		
 	void getFnet(double Fnet_out[]);
 	
-	void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
+	void setEnv(EnvCond env_in);
+	
+	//void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
+	
+	void initializeFairlead( double pX[], double TransMat[] );
+	void initializeConnect( double* X );
 	
 	void getNetForceAndMass();
 	
 	void doRHS( const double* X,  double* Xd, const double time);
 	
 	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);	
+	void updateFairlead( const double time);
 };
 
 #endif

@@ -56,6 +56,10 @@ void Connection::setup(ConnectProps& props)
 	 r.resize(3, 0.0);				// node positions [i][x/y/z]
 	rd.resize(3, 0.0);				// node velocities [i][x/y/z]
 	 q.resize(3, 0.0);     			// unit tangent vectors for each node
+	 
+	r[0] = conX;  // start off position at that specified in input file 
+	r[1] = conY;  //  (will be starting point for connect connections
+	r[2] = conZ;  //   and the permanent location of anchor connections.)
 						
 	 r_ves.resize(3, 0.0);	
 	rd_ves.resize(3, 0.0);	
@@ -105,20 +109,17 @@ void Connection::getFnet(double Fnet_out[])
 };
 
 
-void Connection::initialize( double* X, EnvCond env_in, double pX[], double TransMat[] )
+
+void Connection::setEnv(EnvCond env_in)
 {
 	env = env_in; // needed only for buoyancy calcs on connections that have a volumetric displacement
-	
-	if (type==0) //fixed
-	{
-		r[0] = conX;
-		r[1] = conY;
-		r[2] = conZ;
-		for (int I=0; I<3; I++) rd[I] = 0.0;
-	}
-	else if (type==1)
-	{
-		
+}
+
+
+void Connection::initializeFairlead( double pX[], double TransMat[] )
+{
+	if (type==1)  // error check
+	{	
 		r[0] = TransMat[0]*conX + TransMat[1]*conY + TransMat[2]*conZ + pX[0];	// x
 		r[1] = TransMat[3]*conX + TransMat[4]*conY + TransMat[5]*conZ + pX[1];	// y
 		r[2] = TransMat[6]*conX + TransMat[7]*conY + TransMat[8]*conZ + pX[2];	// z
@@ -130,28 +131,33 @@ void Connection::initialize( double* X, EnvCond env_in, double pX[], double Tran
 			r_ves[J] = r[J];
 			rd_ves[J] = 0.0;
 		}
-		
 	}
-	else if (type==2)
-	{
-		// for now just cheating by keeping node at initial guess!!! <<<<
-		r[0] = conX;
-		r[1] = conY;
-		r[2] = conZ;
-		for (int I=0; I<3; I++) rd[I] = 0;
-	}
-	
-	// assign to state vector
-	for (int I=0; I<3; I++)  {
-		X[3 + I] = r[I];
-		X[    I] = rd[I];
-	}
-	
+	else  cout << "   Error: wrong connection type given to initializeFairlead().  Something's not right." << endl;
+	// TODO: should handle.
+
 	return;
 };
 
 
-// helper function to sum forces and mass from attached lines
+
+void Connection::initializeConnect( double* X )
+{
+	if (type==2)  // error check
+	{	
+		// assign initial node kinematics to state vector
+		for (int I=0; I<3; I++)  {
+			X[3 + I] = r[I];
+			X[    I] = rd[I];
+		}
+	}
+	else  cout << "   Error: wrong connection type given to initializeConnect().  Something's not right." << endl;
+	// TODO: should handle.
+
+	return;
+};
+
+
+// helper function to sum forces and mass from attached lines - used for connect dynamics and fair/anch tensions
 void Connection::getNetForceAndMass()
 {
 	// loop through each connected line, summing to get the final result
@@ -192,37 +198,38 @@ void Connection::getNetForceAndMass()
 }
 
 	
-//   this is the function that updates the states
+//   this is the function that updates the states - also includes hydrodynamic forces
 void Connection::doRHS( const double* X,  double* Xd, const double time)
 {
 	t = time;
 	
-	getNetForceAndMass(); // in all cases, call to get net force and mass of connection (especially for returning fairlead forces to FAST)
+	// below now called by master RHS function, for all connection types
+	//getNetForceAndMass(); // in all cases, call to get net force and mass of connection (especially for returning fairlead forces to FAST)
 	
 	// ------ behavior dependant on connect type -------
 	
-	if (type==0) // fixed type
-	{
-		r[0] = conX;
-		r[1] = conY;
-		r[2] = conZ;
-		for (int I=0; I<3; I++) rd[I] = 0;
-	}
-	else if (type==1) // vessel (moves with platform)		{
-	{						
-		// set fairlead position and velocity based on BCs (linear model for now)
-		for (int J=0; J<3; J++)  {
-			r[J] = r_ves[J] + rd_ves[J]*(t-t0);
-			rd[J] = rd_ves[J];
-		}		
-		
-		// assign states
-		for (int I=0; I<3; I++)  {
-			Xd[3+I] = rd[I];  // velocities - these are unused in integration
-			Xd[I] = 0.;     // accelerations - these are unused in integration
-		}
-	}			
-	else if (type==2) // "connect" type
+//	if (type==0) // fixed type
+//	{
+//		r[0] = conX;
+//		r[1] = conY;
+//		r[2] = conZ;
+//		for (int I=0; I<3; I++) rd[I] = 0;
+//	}
+//	else if (type==1) // vessel (moves with platform)		{
+//	{						
+//		// set fairlead position and velocity based on BCs (linear model for now)
+//		for (int J=0; J<3; J++)  {
+//			r[J] = r_ves[J] + rd_ves[J]*(t-t0);
+//			rd[J] = rd_ves[J];
+//		}		
+//		
+//		// assign states
+//		for (int I=0; I<3; I++)  {
+//			Xd[3+I] = rd[I];  // velocities - these are unused in integration
+//			Xd[I] = 0.;     // accelerations - these are unused in integration
+//		}
+//	}			
+	if (type==2) // "connect" type
 	{
 		if (t==0)   // with current IC gen approach, we skip the first call to the line objects, because they're set AFTER the call to the connects
 		{			
@@ -262,6 +269,10 @@ void Connection::doRHS( const double* X,  double* Xd, const double time)
 			}
 		}
 	}
+	else
+		cout << "Error: wrong connection type sent to doRHS().  " << endl;
+		//TODO: handle error
+		
 };
 
 
@@ -282,4 +293,21 @@ void Connection::initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 };
 
 
+void Connection::updateFairlead( const double time)
+{	
+	t = time;
 
+	if (type==1) // vessel (moves with platform)		
+	{						
+		// set fairlead position and velocity based on BCs (linear model for now)
+		for (int J=0; J<3; J++)  {
+			r[J] = r_ves[J] + rd_ves[J]*(time-t0);
+			rd[J] = rd_ves[J];
+		}	
+	}
+	else
+		cout << "Error: wrong type sent to updateFairlead." << endl;
+	
+	return;
+}
+	

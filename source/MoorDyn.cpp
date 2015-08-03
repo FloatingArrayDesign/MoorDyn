@@ -35,10 +35,14 @@ vector< vector< double > > rdFairi;		// fairlead velocities in inertial referenc
 vector< LineProps > LinePropList; 			// to hold line library types
 vector< Line > LineList; 				// line objects
 vector< Connection > ConnectList;			// connection objects (line joints or ends)
-int nConnects; 
-int nLines;
-int nFairs;							// number of fairlead connections
+int nLines;							// number of line objects
+int nConnects; 						// total number of Connection objects
+int nFairs  = 0;							// number of fairlead connections
+int nAnchs  = 0;							// number of anchor connections
+int nConns  = 0;							// number of "connect" connections
+
 vector< int > FairIs;  					// vector of fairlead connection indices in ConnectList vector
+vector< int > ConnIs;  					// vector of connect connection indices in ConnectList vector
 EnvCond env; 							// struct of general environmental parameters
 vector< shared_ptr< ofstream > > outfiles; 	// a vector to hold ofstreams for each line
 ofstream outfileMain;					// main output file
@@ -68,15 +72,29 @@ double dwW;
 	intptr_t lStdHandle;
 
 
-// master function to handle time stepping
+// master function to handle time stepping (updated in v1.0.1 to follow MoorDyn F)
 void RHSmaster( const double X[],  double Xd[], const double t)
 {
-	for (int l=0; l < nConnects; l++)  {	
-		ConnectList[l].doRHS((X + 6*l), (Xd + 6*l), t);
-	}		
-	for (int l=0; l < nLines; l++) 	{
+	//for (int l=0; l < nConnects; l++)  {	
+	//	ConnectList[l].doRHS((X + 6*l), (Xd + 6*l), t);
+	//}		
+
+	// extrapolate instaneous fairlead positions
+	for (int l=0; l<nFairs; l++)  
+		ConnectList[FairIs[l]].updateFairlead( t ); 
+	
+	// calculate line dynamics
+	for (int l=0; l < nLines; l++) 	
 		LineList[l].doRHS((X + LineStateIs[l]), (Xd + LineStateIs[l]), t);
-	}
+	
+	// calculate forces on all connection objects	
+	for (int l=0; l<nConnects; l++)  
+		ConnectList[l].getNetForceAndMass(); 
+	
+	// calculate connect dynamics (including contributions from latest line dynamics, above, as well as hydrodynamic forces)
+	for (int l=0; l<nConns; l++)  
+		ConnectList[ConnIs[l]].doRHS((X + 6*l), (Xd + 6*l), t);
+	
 	return;
 }
 
@@ -290,17 +308,26 @@ int DECLDIR LinesInit(double X[], double XD[])
 						// make default water depth at least the depth of the lowest node (so water depth input is optional)
 						if (newConnect.Z < -env.WtrDpth)  env.WtrDpth = -newConnect.Z;
 					
-						// now MAKE Connection object!
+						// now make Connection object!
 						Connection tempConnect = Connection();
 						tempConnect.setup(newConnect);
 						ConnectList.push_back(tempConnect);
-										
-						if (entries[1] == "Vessel")  { // if a fairlead, add to list
+						
+						// count and add to the appropriate list
+						if (tempConnect.type==0)  { // if an anchor
+							nAnchs ++;
+						}
+						else if (tempConnect.type==1)  { // if a fairlead, add to list
 							rFairt.push_back(vector<double>(3, 0.0));		// fairlead location in turbine ref frame
 							rFairt.back().at(0) = atof(entries[2].c_str()); 	// x
 							rFairt.back().at(1) = atof(entries[3].c_str()); 	// y
 							rFairt.back().at(2) = atof(entries[4].c_str()); 	// z	
 							FairIs.push_back(ConnectList.size()-1);			// index of fairlead in ConnectList vector
+							nFairs ++;
+						}
+						else if (tempConnect.type==2)  { // if a connect
+							ConnIs.push_back(ConnectList.size()-1);	
+							nConns ++;
 						}
 						
 						if (wordy>0) cout << newConnect.number << " ";
@@ -443,6 +470,10 @@ int DECLDIR LinesInit(double X[], double XD[])
 	
 	// note: each Line's WaveKin switch should be off by default, and can be switched on when the wave kinematics 
 	// are calculated AFTER the initial position has been solved for.
+	
+	// send environmental properties struct to Connections (this is pretty mundane) 
+	for (int l=0; l<nConnects; l++)  
+		ConnectList[l].setEnv( env); 
 
 		
 	// ------------------------------ make connections ---------------------------------------
@@ -455,10 +486,11 @@ int DECLDIR LinesInit(double X[], double XD[])
 	if (wordy>0) cout << "\n";
 		
 	
+	
 	// ----------------- prepare state vector ------------------
 	
-	// go through objects to figure out starting indices
-	int n = nConnects*6; 	// start index of first line's states (added six state variables for each connection)
+	// go through objects to figure out starting indices (changed in v1.0.1)
+	int n = nConns*6; 	// start index of first line's states (add six state variables for each "connect"-type Connection)
 	for (int l=0; l<nLines; l++) 
 	{
 		LineStateIs.push_back(n);  		// assign start index of each line
@@ -505,12 +537,22 @@ int DECLDIR LinesInit(double X[], double XD[])
 	// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
 	
 	cout << "   Creating mooring system." << endl;	
-	for (int l=0; l<nConnects; l++)  {
-		ConnectList[l].initialize( (states + 6*l), env, X, TransMat); // connections
-	}	
-	for (int l=0; l<nLines; l++)  {
+	//for (int l=0; l<nConnects; l++)  {
+	//	ConnectList[l].initialize( (states + 6*l), env, X, TransMat); // connections
+	//}	
+	
+	// set positions of fairleads based on inputted platform position
+	for (int l=0; l<nFairs; l++)  
+		ConnectList[FairIs[l]].initializeFairlead( X, TransMat ); // 
+	
+	// for connect types, write the coordinates to the state vector
+	for (int l=0; l<nConns; l++)  
+		ConnectList[ConnIs[l]].initializeConnect( states + 6*l ); //
+	
+	// go through lines and initialize internal node positions using quasi-static model
+	for (int l=0; l<nLines; l++)  
 		LineList[l].initialize( states + LineStateIs[l] );   // lines
-	}
+	
 	
 	// write t=-1 output line for troubleshooting preliminary ICs
 	//AllOutput(-1.0);
@@ -897,20 +939,9 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 		
 		
 		
-		
-		// initiate step of each object	
-		int lf = 0; // index of fairlead
-		for (int l=0; l < nConnects; l++)  
-		{
-			if (ConnectList[l].type == 1)  
-			{
-				ConnectList[l].initiateStep(rFairi[lf], rdFairi[lf], t);
-				lf++;
-			}
-			else
-				continue;  // other connect types don't need anything, right?				
-		}		
-					
+		// send latest fairlead kinematics to fairlead objects
+		for (int l=0; l < nFairs; l++)  
+			ConnectList[FairIs[l]].initiateStep(rFairi[l], rdFairi[l], t);					
 					
 					
 		// round to get appropriate mooring model time step
@@ -931,21 +962,17 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 		// go through connections to get fairlead forces
 		double Ffair[3];
 		float tFlines[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-		lf = 0; // index of fairlead (THIS IS THE INDEX TO USE BELOW)
-		for (int l=0; l < nConnects; l++)  {	
-			if (ConnectList[l].type == 1)  {
-				ConnectList[l].getFnet(Ffair);
+		
+		for (int l=0; l < nFairs; l++)  {
+			ConnectList[FairIs[l]].getFnet(Ffair);
 
-				// Calculate Flines! (Note direction sign conversions)  >> Recently fixed moments to use rFairRel (location relative to platform reference in inertial coord system)
-				tFlines[0] += Ffair[0];		// x force 
-				tFlines[1] += Ffair[1];		// y force
-				tFlines[2] += Ffair[2];		// z force
-				tFlines[3] -= Ffair[1]*rFairRel[lf][2] + Ffair[2]*rFairRel[lf][1];	// Mx = FzRy - FyRz
-				tFlines[4] += Ffair[0]*rFairRel[lf][2] - Ffair[2]*rFairRel[lf][0];	// My = FxRz - FzRx
-				tFlines[5] -= Ffair[0]*rFairRel[lf][1] + Ffair[1]*rFairRel[lf][0];	// Mz = FyRx - FxRy
-				
-				lf++;
-			}			
+			// Calculate Flines! (Note direction sign conversions)  >> Recently fixed moments to use rFairRel (location relative to platform reference in inertial coord system)
+			tFlines[0] += Ffair[0];		// x force 
+			tFlines[1] += Ffair[1];		// y force
+			tFlines[2] += Ffair[2];		// z force
+			tFlines[3] -= Ffair[1]*rFairRel[l][2] + Ffair[2]*rFairRel[l][1];	// Mx = FzRy - FyRz
+			tFlines[4] += Ffair[0]*rFairRel[l][2] - Ffair[2]*rFairRel[l][0];	// My = FxRz - FzRx
+			tFlines[5] -= Ffair[0]*rFairRel[l][1] + Ffair[1]*rFairRel[l][0];	// Mz = FyRx - FxRy			
 		}		
 		
 		AllOutput(t);   // write outputs
