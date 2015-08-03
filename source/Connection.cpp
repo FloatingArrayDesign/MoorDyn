@@ -73,7 +73,7 @@ void Connection::setup(ConnectProps& props)
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line& theLine, int TopOfLine)
 {
-	cout << "L" << theLine.number << "->N" << number << " ";
+	if (wordy>0) cout << "L" << theLine.number << "->N" << number << " ";
 	
 	
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.

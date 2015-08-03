@@ -62,6 +62,11 @@ vector< floatC > zetaCglobal;
 double dwW;
 
 
+// new globals for creating output console window when needed
+	int hConHandle;
+	//long lStdHandle;
+	intptr_t lStdHandle;
+
 
 // master function to handle time stepping
 void RHSmaster( const double X[],  double Xd[], const double t)
@@ -116,7 +121,53 @@ void AllOutput(double t)
 // initialization function
 int DECLDIR LinesInit(double X[], double XD[])
 {	
-	cout << "\n Running MoorDyn (v1.0.0-mth, 12-April-2015).\n\n";
+
+	// ------------ create console window for messages if none already available -----------------
+	// adapted from Andrew S. Tucker, "Adding Console I/O to a Win32 GUI App" in Windows Developer Journal, December 1997. source code at http://dslweb.nwnexus.com/~ast/dload/guicon.htm
+
+	static const WORD MAX_CONSOLE_LINES = 500;  // maximum mumber of lines the output console should have
+	CONSOLE_SCREEN_BUFFER_INFO coninfo;
+	FILE *fp;
+
+	//TODO: simplify this to just keep the output parts I need
+	
+	// allocate a console for this app
+	AllocConsole();
+
+	// set the screen buffer to be big enough to let us scroll text
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
+	coninfo.dwSize.Y = MAX_CONSOLE_LINES;
+	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
+
+	// redirect unbuffered STDOUT to the console
+	//lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+	lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
+	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+	fp = _fdopen( hConHandle, "w" );
+	*stdout = *fp;
+	setvbuf( stdout, NULL, _IONBF, 0 );
+
+//	// redirect unbuffered STDIN to the console
+//	lStdHandle = (long)GetStdHandle(STD_INPUT_HANDLE);
+//	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+//	fp = _fdopen( hConHandle, "r" );
+//	*stdin = *fp;
+//	setvbuf( stdin, NULL, _IONBF, 0 );
+
+//	// redirect unbuffered STDERR to the console
+//	lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
+//	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+//	fp = _fdopen( hConHandle, "w" );
+//	*stderr = *fp;
+//	setvbuf( stderr, NULL, _IONBF, 0 );
+
+	// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
+	// point to console as well
+	ios::sync_with_stdio();
+
+	
+	// ---------------------------- MoorDyn title message ----------------------------
+	cout << "\n Running MoorDyn (v1.0.1C, 2015-08-02)\n   Copyright (c) Matt Hall under GNU v3 license.\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -126,9 +177,9 @@ int DECLDIR LinesInit(double X[], double XD[])
 	RotMat(X[3], X[4], X[5], TransMat);
 		
 	
-	// First, load data about the mooring lines from lines.txt for use in this DLL and also by FAST
+	// ==================== load data about the mooring lines from lines.txt =====================
 	
-	// read data from file
+	// --------------------------------- read data from file -----------------------------
 	vector<string> lines;
 	string line;
 	ifstream myfile ("Mooring/lines.txt");     // open an input stream to the line data input file
@@ -141,10 +192,12 @@ int DECLDIR LinesInit(double X[], double XD[])
 		}
 		myfile.close();
 	}
-	else cout << "Unable to open file" << endl; 
+	else 
+	{	cout << "Error: unable to open lines.txt file" << endl; 
+		return -1;
+	}
 	
-	
-	// initialize data holders
+	// ----------------------- initialize data holders -------------------------
 	
 	// defaults
 	env.g = 9.8;
@@ -171,6 +224,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 	vector< int > FairInd;
 	
 	
+	// ------------------------- process file contents -----------------------------------
 	
 	int i=0; // file line number
 	
@@ -180,7 +234,8 @@ int DECLDIR LinesInit(double X[], double XD[])
 		{
 			if (lines[i].find("LINE DICTIONARY") != string::npos) // if line dictionary header
 			{	
-				cout << "   Reading line types: ";
+				if (wordy>0) cout << "   Reading line types: ";
+				
 				i += 3; // skip following two lines (label line and unit line)
 				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
 				{ 	
@@ -200,15 +255,15 @@ int DECLDIR LinesInit(double X[], double XD[])
 						(LinePropList.back()).Cdn= atof(entries[7].c_str());
 						(LinePropList.back()).Cdt= atof(entries[8].c_str());
 						//(LinePropList.back()).ReFac= atof(entries[9].c_str());
-						cout << entries[0] << " ";
+						if (wordy>0)  cout << entries[0] << " ";
 					}
 					i++;
 				}
-				cout << "\n";
+				if (wordy>0) cout << "\n";
 			}
 			else if (lines[i].find("NODE PROPERTIES") != string::npos) // if node properties header
 			{	
-				cout << "   Reading node properties: ";
+				if (wordy>0) cout << "   Reading node properties: ";
 				i += 3; // skip following two lines (label line and unit line)
 				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
 				{ 	
@@ -248,20 +303,20 @@ int DECLDIR LinesInit(double X[], double XD[])
 							FairIs.push_back(ConnectList.size()-1);			// index of fairlead in ConnectList vector
 						}
 						
-						cout << newConnect.number << " ";
+						if (wordy>0) cout << newConnect.number << " ";
 					}
 					else 
 					{
-						cout << endl << "Error - less than the 12 required input columns for node definitions.  Remember CdA and Ca" << endl;
-						return 0;
+						cout << endl << "   Error - less than the 12 required input columns for node definitions.  Remember CdA and Ca" << endl;
+						return -1;
 					}
 					i++;
 				}
-				cout << "\n";
+				if (wordy>0) cout << "\n";
 			}
 			else if (lines[i].find("LINE PROPERTIES") != string::npos) // if line properties header
 			{	
-				cout << "   Reading line properties: ";
+				if (wordy>0) cout << "   Reading line properties: ";
 				i += 3; // skip following two lines (label line and unit line)
 				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
 				{ 	
@@ -318,17 +373,17 @@ int DECLDIR LinesInit(double X[], double XD[])
 						AnchInd.push_back(NodeAnch);
 						FairInd.push_back(NodeFair);
 						
-						cout << number << " ";
+						if (wordy>0) cout << number << " ";
 														
 					}					
 					else 
 					{
-						cout << endl << "Error with line inputs." << endl;
-						return 0;
+						cout << endl << "   Error with line inputs." << endl;
+						return -1;
 					}
 					i++;
 				}		
-				cout << "\n";		
+				if (wordy>0) cout << "\n";		
 			}
 			else if (lines[i].find("SOLVER OPTIONS") != string::npos) // if solver options header
 			{	
@@ -374,11 +429,11 @@ int DECLDIR LinesInit(double X[], double XD[])
 	vector<double> Ucurrent(3, 0.0);  // should make this an input to the DLL at some point.
 	if (env.WaveKin == 2)
 	{
-		cout << "setting up wave kinematics by reading from file" << endl;
+		if (wordy>0) cout << "   Setting up wave kinematics by reading from file" << endl;
 		SetupWavesFromFile();
 				
 		for (int l=0; l<nLines; l++) 
-			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // <<<<<<<<<<<<<<< last entry is bogus!
+			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // TODO: update.  last entry is bogus!
 	}			
 	else
 	{ 	// no waves case
@@ -393,11 +448,11 @@ int DECLDIR LinesInit(double X[], double XD[])
 	// ------------------------------ make connections ---------------------------------------
 		
 	// now that everything is initialized, tell the Connections about the connections
-	cout <<   "   Connecting anchors:   ";
+	if (wordy>0) cout <<   "   Connecting anchors:   ";
 	for (int l=0; l<nLines; l++) ConnectList[AnchInd[l]].addLineToConnect(LineList[LineInd[l]], 0);
-	cout << "\n   Connecting fairleads: ";
+	if (wordy>0) cout << "\n   Connecting fairleads: ";
 	for (int l=0; l<nLines; l++) ConnectList[FairInd[l]].addLineToConnect(LineList[LineInd[l]], 1);
-	cout << "\n";
+	if (wordy>0) cout << "\n";
 		
 	
 	// ----------------- prepare state vector ------------------
@@ -449,7 +504,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 	
 	// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
 	
-	cout << "   Initializing mooring system" << endl;	
+	cout << "   Creating mooring system." << endl;	
 	for (int l=0; l<nConnects; l++)  {
 		ConnectList[l].initialize( (states + 6*l), env, X, TransMat); // connections
 	}	
@@ -459,7 +514,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 	
 	// write t=-1 output line for troubleshooting preliminary ICs
 	//AllOutput(-1.0);
-	cout << "outputting ICs for troubleshooting" << endl;
+	//cout << "outputting ICs for troubleshooting" << endl;
 	
 	
 	// ------------------ do dynamic relaxation IC gen --------------------
@@ -588,7 +643,7 @@ int SetupWavesFromFile(void)
 {
 	// much of this process is taken from GenerateWaveExctnFile.py
 
-	if (wordy)  cout << "reading wave time series from waves.txt file" << endl;
+	if (wordy)  cout << "   Reading wave time series from waves.txt file" << endl;
 	
 	// --------------------- read data from file ------------------------
 	vector<string> lines2;
@@ -607,7 +662,7 @@ int SetupWavesFromFile(void)
 		
 		// should add error checking.  two columns of data, and time column must start at zero?
 	}
-	else cout << "Unable to open wave time series file" << endl; 
+	else cout << "   Error: Unable to open wave time series file" << endl; 
 
 
 	// ----------------------- save data internally ---------------------------
@@ -622,9 +677,9 @@ int SetupWavesFromFile(void)
 			wavetimes.push_back(atof(entries2[0].c_str()));
 			waveelevs.push_back(atof(entries2[1].c_str()));
 		}
-		else cout << "bad line read from " << WaveFilename << endl;
+		else cout << "   bad line read from " << WaveFilename << endl;
 	}
-	if (wordy) cout << "done reading file " << endl;
+	if (wordy) cout << "   Done reading file. " << endl;
 	
 	// -------------------- downsample to dt = 0.25 ---------------------------
 	double dtW = 0.25;
@@ -916,6 +971,10 @@ int DECLDIR LinesClose(void)
 	// close output files
 	outfileMain.close();
 	for (int l=0; l<nLines; l++) outfiles[l]->close();
+	
+	cout << "MoorDyn closed." << endl;
+	
+	if (hConHandle)  FreeConsole();  //_close(hConHandle); // close console window.
 	
 	return 0;
 }

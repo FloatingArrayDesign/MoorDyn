@@ -35,6 +35,13 @@
 
 #include "kiss_fft.h"  // trying this out!
 
+#include <windows.h>  // these are for guicon function RedirectIOToConsole
+#include <stdio.h>
+#include <fcntl.h>
+#include <io.h>
+#include <iostream>
+#include <fstream>
+
 // note: this file contains the struct definitions for environmental and line/connect properties
 
 
@@ -53,7 +60,7 @@ const double pi=3.14159265;
 const doubleC i1(0., 1.); 			// set imaginary number 1
 const floatC i1f(0., 1.); 			// set imaginary number 1
 
-const bool wordy = false;   			// flag to enable excessive output for troubleshooting
+const int wordy = 0;   			// flag to enable excessive output for troubleshooting
 
 
 
@@ -112,9 +119,9 @@ double dotprod( vector<double>& A, vector<double>& B);
 
 double dotprod( double A[], vector<double>& B);
 
-std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
+//std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
 
-std::vector<std::string> split(const std::string &s, char delim);
+vector<string> split(const string &s, char delim);
 
 // calculate wave number from frequency, g, and depth (credit: FAST source)
 float WaveNumber( float Omega, float g, float h );

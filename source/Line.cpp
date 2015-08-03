@@ -61,7 +61,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	if (props.c < 0) {
 		double zeta = -props.c; // desired damping ratio
 		c = zeta * UnstrLen/N * sqrt(E*rho);   // rho = w/A
-		cout << "  Line " << number << "c set to " << c << endl;
+		if (wordy>0) cout << "   Line " << number << "c set to " << c << endl;
 	}
 		
 	
@@ -166,7 +166,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 			
 			*outfile << "\n";   // should also write units at some point!
 		}
-		else cout << "Unable to write file Line" << number << ".out" << endl;
+		else cout << "   Error: unable to write file Line" << number << ".out" << endl;  //TODO: handle this!
 	}
 	return;
 };
@@ -175,15 +175,13 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 // get ICs for line using quasi-static approach
 void Line::initialize( double* X )	
 {
-	//cout << "Initializing Line" << endl;
-
 	// set end node positions and velocities from connect objects
 	AnchConnect->getConnectState(r[0],rd[0]);
 	FairConnect->getConnectState(r[N],rd[N]);
 	
 		
 	if (-env.WtrDpth > r[0][2]) {
-		cout << "Error: water depth is shallower than Line " << number << " anchor." << endl;
+		cout << "   Error: water depth is shallower than Line " << number << " anchor." << endl;
 		return;
 	}
 	
@@ -228,7 +226,7 @@ void Line::initialize( double* X )
 	}
 	else
 	{	// otherwise just stretch the nodes between the endpoints linearly and hope for the best
-		cout << "  Catenary IC generation failed for Line" << number << ", so using straight-line approach instead." << endl;
+		if (wordy>0)  cout << "   Catenary IC generation failed for Line" << number << ", so using straight-line approach instead." << endl;
 		for (int i=1; i<N; i++)
 		{
 			r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
@@ -309,12 +307,12 @@ void Line::setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
 	
 	if (env.WaveKin > 0)  // if including wave kinematics
 	{
-		cout << "WARNING - Line::setupWaves dummy function called when waves are supposed to be enabled!" << endl;
+		cout << "   WARNING - Line::setupWaves dummy function called when waves are supposed to be enabled!" << endl;
 		system("pause");		
 	}
 
-	cout << "Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	cout << "Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
+	if (wordy>0) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
+	if (wordy>0) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
 	
 	WGNC_Fact = 1.0;
 	S2Sd_Fact = 1.0;	
@@ -466,8 +464,8 @@ void Line::setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmeg
 		
 
 	
-	cout << "Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	cout << "Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
+	if (wordy>0) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
+	if (wordy>0) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
 	
 //	WGNC_Fact = WGNC_Fact_in;
 //	S2Sd_Fact = S2Sd_Fact_in;		
@@ -483,7 +481,7 @@ void Line::setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmeg
 		tTS.resize(Nt, 0.);
 	}
 
-	cout << "Done Waves initialization" << endl << endl;
+	if (wordy>0) cout << "   Done Waves initialization" << endl << endl;
 	
 };
 
@@ -498,19 +496,19 @@ void Line::makeWaveKinematics( double t0 )
 {
 	// inputs are t0 - start time
 	
-	cout << "    making wave Kinematics.  N=" << N << endl;
+	if (wordy>0) cout << "    making wave Kinematics.  N=" << N << endl;
 	// function calculates wave kinematics and free surface elevation at each X
 	
 	WaveKin = 1;  // enable wave kinematics now that they're going to be calculated
 
 		
 	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	cout << "starting fft stuff " << endl;
-		int NFFT = Nt;
-		int is_inverse_fft = 1;
+	if (wordy>1) cout << "starting fft stuff " << endl;
+	int NFFT = Nt;
+	int is_inverse_fft = 1;
 	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
 	
-	cout << "allocatin io " << endl;
+	if (wordy>1) cout << "allocatin io " << endl;
 	
 	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
 	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
@@ -527,7 +525,7 @@ void Line::makeWaveKinematics( double t0 )
 		float y = (float)r[i][1];
 		float z = (float)r[i][2];
 		
-		if (wordy)  cout << "i=" << i << "  ";
+		if (wordy>1)  cout << "i=" << i << "  ";
 		
 		// ---------------- calculate frequency domain velocities and accelerations ------------------
 		// note: all these values are for each node specifically, in turn.  just intermediate values for calculating time series
@@ -590,7 +588,7 @@ void Line::makeWaveKinematics( double t0 )
 		for (int ts=0; ts<Nt; ts++)	tTS[ts] = t0 + double(ts)*0.25; // time
 	
 	
-		if (wordy)  cout << "processing fft" << endl;
+		if (wordy>1)  cout << "   processing fft" << endl;
 		
 		// .............................. wave elevation ...............................
 		for (int I=0; I<NFFT; I++)  
@@ -634,7 +632,7 @@ void Line::makeWaveKinematics( double t0 )
 		// ----------------------------- write to text file for debugging ----------------------------
 		if ((number == 1) && (i == N))
 		{
-			cout << "frequnecy domain starting wave data output file" << endl;
+			if (wordy>1)   cout << "   frequnecy domain starting wave data output file" << endl;
 			ofstream waveoutsC("wavesC.out");
 			waveoutsC << "wave data output file" << endl << endl;
 			
@@ -661,14 +659,14 @@ void Line::makeWaveKinematics( double t0 )
 	} // i done looping through nodes
 	
 	
-	cout << "about to free fft data structures." << endl;
+	//cout << "   about to free fft data structures." << endl;
 	
 	
 	free(cx_in);
 	free(cx_out);
 	free(cfg);
 	
-	cout << "    done wave Kinematics" << endl;
+	if (wordy>1) cout << "    done wave Kinematics" << endl;
 };
 
 	
@@ -1024,6 +1022,8 @@ void Line::Output(double time)
 	return;
 };
 
+
+// new function to draw instantaneous line positions in openGL context
 void Line::drawGL(void)
 {
 	glColor3f(0.5,0.5,1.0);

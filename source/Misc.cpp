@@ -108,23 +108,40 @@ double dotprod( double A[], vector<double>& B)
 }
 
 
-std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) 
-{
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-		if (!item.empty())  elems.push_back(item); // skip empty ones
-    }
-    return elems;
-}
+//std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) 
+//{
+//    std::stringstream ss(s);
+//    std::string item;
+//    while (std::getline(ss, item, delim)) {
+//		if (!item.empty())  elems.push_back(item); // skip empty ones
+//    }
+//    return elems;
+//}
+//
+//std::vector<std::string> split(const std::string &s, char delim) 
+//{
+//    std::vector<std::string> elems;
+//    split(s, delim, elems);
+//    return elems;
+//}
 
-std::vector<std::string> split(const std::string &s, char delim) 
-{
-    std::vector<std::string> elems;
-    split(s, delim, elems);
-    return elems;
-}
 
+// new better string splitting function
+vector<string> split(const string &s, char delim)  // TODO: remove delim arg, it's unused!
+{
+	vector<string> elems;  // the vector of words to return
+    
+	char str[100];  // this gives some memory for the char array
+	strncpy(str, s.c_str(), 100);  // copy input string to str
+	char * pch;
+	pch = strtok (str," \t");  // give strtok the c string of s
+	while (pch != NULL)
+	{
+		elems.push_back(pch);
+		pch = strtok (NULL, " \t");  // split by spaces or tabs
+	}
+	return elems;
+}
 
 
 
