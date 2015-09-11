@@ -109,6 +109,28 @@ void Connection::getFnet(double Fnet_out[])
 };
 
 
+double Connection::GetConnectionOutput(OutChanProps outChan)
+{
+	if      (outChan.QType == PosX)  return  r[0];
+	else if (outChan.QType == PosY)  return  r[1];
+	else if (outChan.QType == PosZ)  return  r[2];
+	else if (outChan.QType == VelX)  return  rd[0];
+	else if (outChan.QType == VelY)  return  rd[1];
+	else if (outChan.QType == VelZ)  return  rd[2];
+	else if (outChan.QType == Ten )  
+	{
+		double Fs[3];
+		getFnet(Fs);
+		return  sqrt(Fs[0]*Fs[0] + Fs[1]*Fs[1] + Fs[2]*Fs[2]);
+	}
+	else
+	{
+		return 0.0;
+		//ErrStat = ErrID_Warn
+		//ErrMsg = ' Unsupported output quantity from Connect object requested.'
+	}	
+}
+
 
 void Connection::setEnv(EnvCond env_in)
 {
@@ -164,6 +186,8 @@ void Connection::getNetForceAndMass()
 	
 	int Nl = nAttached;				// number of attached line segments
 	
+	//cout << "Connection " << number << " nAttached is " << nAttached << endl;
+	
 	// clear before re-summing	
 	for (int I=0; I<3; I++) { 
 		Fnet[I] = 0;		
@@ -176,9 +200,13 @@ void Connection::getNetForceAndMass()
 	{
 		// get quantities
 		if (Top[l] == 0) 		// if attached to bottom/anchor of a line...
-			(Attached[l])->getAnchStuff(Fnet_i, M_i);
+		{	(Attached[l])->getAnchStuff(Fnet_i, M_i);
+			//cout << "Att. to bot of line " << (Attached[l])->number << " F:" << Fnet_i[0] << " " << Fnet_i[1] << " " << Fnet_i[2] << endl;
+		}
 		else 				// attached to top/fairlead
-			(Attached[l])->getFairStuff(Fnet_i, M_i);
+		{	(Attached[l])->getFairStuff(Fnet_i, M_i);
+			//cout << "Att. to top of line " << (Attached[l])->number << " F:" << Fnet_i[0] << " " << Fnet_i[1] << " " << Fnet_i[2] << endl;
+		}
 			
 		// sum quantitites
 		for (int I=0; I<3; I++) {
@@ -232,7 +260,7 @@ void Connection::doRHS( const double* X,  double* Xd, const double time)
 	if (type==2) // "connect" type
 	{
 		if (t==0)   // with current IC gen approach, we skip the first call to the line objects, because they're set AFTER the call to the connects
-		{			
+		{		// above is no longer true!!! <<<
 			for (int I=0; I<3; I++)  {
 				Xd[3+I] = X[I];  // velocities - these are unused in integration
 				Xd[I] = 0.;     // accelerations - these are unused in integration
@@ -245,6 +273,8 @@ void Connection::doRHS( const double* X,  double* Xd, const double time)
 				r[J]  = X[3 + J]; // get positions
 				rd[J] = X[J]; // get velocities
 			}
+			
+			//cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " << Fnet[1] << " " << Fnet[2] << endl;
 				
 			// add dynamic quantities for connection as specified in input file (feature added 2015/01/15)
 			Fnet[0] -= 0.5*env.rho_w*rd[0]*abs(rd[0])*conCdA;

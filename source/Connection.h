@@ -79,6 +79,8 @@ public:
 		
 	void getFnet(double Fnet_out[]);
 	
+	double GetConnectionOutput(OutChanProps outChan);
+	
 	void setEnv(EnvCond env_in);
 	
 	//void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );

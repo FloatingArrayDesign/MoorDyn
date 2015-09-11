@@ -28,9 +28,6 @@ class Connection;
 
 class Line 
 {
-	// unique to Line
-	Connection* AnchConnect;  // pointer to anchor connection
-	Connection* FairConnect;  // pointer to fairlead connection
 	
 	// ENVIRONMENTAL STUFF
 	
@@ -145,6 +142,10 @@ public:
 	
 	int WaveKin;  // flag indicating whether wave kinematics will be considered for this line
  
+ 	// unique to Line
+	Connection* AnchConnect;  // pointer to anchor connection
+	Connection* FairConnect;  // pointer to fairlead connection
+ 
 	int getN(); // returns N (number of segments)
 	
 	void setup(int number, LineProps props_in, double UnstrLen_in, int NumNodes, 
@@ -154,6 +155,8 @@ public:
 	void initialize( double* X );
 
 	double getNodeTen(int i);
+	
+	double GetLineOutput(OutChanProps outChan);
 	
 	void getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen);
 	

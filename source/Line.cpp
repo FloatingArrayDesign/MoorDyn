@@ -61,7 +61,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	if (props.c < 0) {
 		double zeta = -props.c; // desired damping ratio
 		c = zeta * UnstrLen/N * sqrt(E*rho);   // rho = w/A
-		if (wordy>0) cout << "   Line " << number << "c set to " << c << endl;
+		if (wordy > 1) cout << "   Line " << number << "damping set to " << c << " Ns." << endl;
 	}
 		
 	
@@ -215,7 +215,7 @@ void Line::initialize( double* X )
 			
 	int success = Catenary( XF, ZF, UnstrLen, E*pi/4.*d*d, W , CB, Tol, &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
 	
-	if (success==1)
+	if (success>=0)
 	{	// assign the resulting line positions to the model
 		for (int i=1; i<N; i++)
 		{
@@ -226,7 +226,7 @@ void Line::initialize( double* X )
 	}
 	else
 	{	// otherwise just stretch the nodes between the endpoints linearly and hope for the best
-		if (wordy>0)  cout << "   Catenary IC generation failed for Line" << number << ", so using straight-line approach instead." << endl;
+		if (wordy > 0)  cout << "   Catenary IC gen failed for Line" << number << ", so using linear node spacing." << endl;
 		for (int i=1; i<N; i++)
 		{
 			r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
@@ -298,6 +298,29 @@ int Line::getN()
 };
 
 
+double Line::GetLineOutput(OutChanProps outChan)
+{	
+	if      (outChan.QType == PosX)
+	{
+		//cout << " outputting node " << outChan.NodeID << " PosX: " << r[outChan.NodeID][0] << endl;
+		return  r[outChan.NodeID][0];
+	}
+	else if (outChan.QType == PosY)  return  r[outChan.NodeID][1];
+	else if (outChan.QType == PosZ)  return  r[outChan.NodeID][2];
+	else if (outChan.QType == VelX)  return  rd[outChan.NodeID][0];
+	else if (outChan.QType == VelY)  return  rd[outChan.NodeID][1];
+	else if (outChan.QType == VelZ)  return  rd[outChan.NodeID][2];
+	else if (outChan.QType == Ten )  return  getNodeTen(outChan.NodeID);
+	else
+	{
+		//cout << "outChan.QType (value of " << outChan.QType << ") not recognized." << endl;
+		return 0.0;
+		//ErrStat = ErrID_Warn
+		//ErrMsg = ' Unsupported output quantity from Connect object requested.'
+	}	
+}
+
+
 // initialize wave parameters for no waves situation
 void Line::setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
 {	
@@ -311,8 +334,8 @@ void Line::setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
 		system("pause");		
 	}
 
-	if (wordy>0) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	if (wordy>0) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
+	if (wordy>1) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
+	if (wordy>1) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
 	
 	WGNC_Fact = 1.0;
 	S2Sd_Fact = 1.0;	
@@ -464,8 +487,8 @@ void Line::setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmeg
 		
 
 	
-	if (wordy>0) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	if (wordy>0) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
+	if (wordy>1) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
+	if (wordy>1) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
 	
 //	WGNC_Fact = WGNC_Fact_in;
 //	S2Sd_Fact = S2Sd_Fact_in;		
@@ -481,7 +504,7 @@ void Line::setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmeg
 		tTS.resize(Nt, 0.);
 	}
 
-	if (wordy>0) cout << "   Done Waves initialization" << endl << endl;
+	if (wordy>1) cout << "   Done Waves initialization" << endl << endl;
 	
 };
 
@@ -496,19 +519,19 @@ void Line::makeWaveKinematics( double t0 )
 {
 	// inputs are t0 - start time
 	
-	if (wordy>0) cout << "    making wave Kinematics.  N=" << N << endl;
+	if (wordy>2) cout << "    making wave Kinematics.  N=" << N << endl;
 	// function calculates wave kinematics and free surface elevation at each X
 	
 	WaveKin = 1;  // enable wave kinematics now that they're going to be calculated
 
 		
 	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	if (wordy>1) cout << "starting fft stuff " << endl;
+	if (wordy>2) cout << "starting fft stuff " << endl;
 	int NFFT = Nt;
 	int is_inverse_fft = 1;
 	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
 	
-	if (wordy>1) cout << "allocatin io " << endl;
+	if (wordy>2) cout << "allocatin io " << endl;
 	
 	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
 	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
@@ -525,7 +548,7 @@ void Line::makeWaveKinematics( double t0 )
 		float y = (float)r[i][1];
 		float z = (float)r[i][2];
 		
-		if (wordy>1)  cout << "i=" << i << "  ";
+		if (wordy>2)  cout << "i=" << i << "  ";
 		
 		// ---------------- calculate frequency domain velocities and accelerations ------------------
 		// note: all these values are for each node specifically, in turn.  just intermediate values for calculating time series
@@ -588,7 +611,7 @@ void Line::makeWaveKinematics( double t0 )
 		for (int ts=0; ts<Nt; ts++)	tTS[ts] = t0 + double(ts)*0.25; // time
 	
 	
-		if (wordy>1)  cout << "   processing fft" << endl;
+		if (wordy>2)  cout << "   processing fft" << endl;
 		
 		// .............................. wave elevation ...............................
 		for (int I=0; I<NFFT; I++)  
@@ -632,7 +655,7 @@ void Line::makeWaveKinematics( double t0 )
 		// ----------------------------- write to text file for debugging ----------------------------
 		if ((number == 1) && (i == N))
 		{
-			if (wordy>1)   cout << "   frequnecy domain starting wave data output file" << endl;
+			if (wordy>2)   cout << "   frequnecy domain starting wave data output file" << endl;
 			ofstream waveoutsC("wavesC.out");
 			waveoutsC << "wave data output file" << endl << endl;
 			
@@ -787,7 +810,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 //			}
 			
 		}	
-		if (wordy)
+		if (wordy > 2)
 			if (number==1)
 				  cout << " t=" << t << ", U[4][0]=" << U[4][0] << endl;
 	}
@@ -977,21 +1000,15 @@ void Line::Output(double time)
 				}
 			}
 			// output wave velocities?
-			if (channels.find("w") != string::npos) {
+			if (channels.find("u") != string::npos) {
 				for (int i=0; i<=N; i++)  {
 					for (int J=0; J<3; J++)  *outfile << U[i][J] << "\t ";
 				}
 			}
-			// output hydro force?
-			if (channels.find("h") != string::npos) {
+			// output hydro drag force?
+			if (channels.find("D") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					for (int J=0; J<3; J++)  *outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] << "\t ";
-				}
-			}
-			// output internal damping force?
-			if (channels.find("c") != string::npos) {
-				for (int i=0; i<N; i++)  {
-					for (int J=0; J<3; J++)  *outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
+					for (int J=0; J<3; J++)  *outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J] << "\t ";
 				}
 			}
 			// output segment tensions?
@@ -1000,6 +1017,12 @@ void Line::Output(double time)
 					double Tmag_squared = 0.; 
 					for (int J=0; J<3; J++)  Tmag_squared += T[i][J]*T[i][J]; // doing this calculation here only, for the sake of speed
 					*outfile << sqrt(Tmag_squared) << "\t ";
+				}
+			}
+			// output internal damping force?
+			if (channels.find("c") != string::npos) {
+				for (int i=0; i<N; i++)  {
+					for (int J=0; J<3; J++)  *outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
 				}
 			}
 			// output segment strains?

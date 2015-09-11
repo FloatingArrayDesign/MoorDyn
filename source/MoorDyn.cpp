@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 1.0.0.  April 12, 2015.
+ // This is version 1.0.1C.  September 8, 2015.
  
 #include "Misc.h"
 #include "MoorDyn.h"
@@ -46,6 +46,12 @@ vector< int > ConnIs;  					// vector of connect connection indices in ConnectLi
 EnvCond env; 							// struct of general environmental parameters
 vector< shared_ptr< ofstream > > outfiles; 	// a vector to hold ofstreams for each line
 ofstream outfileMain;					// main output file
+vector< OutChanProps > outChans;		// list of structs describing selected output channels for main out file
+const char* UnitList[] = {"(s)     ", "(m)     ", "(m)     ", "(m)     ", 
+                          "(m/s)   ", "(m/s)   ", "(m/s)   ", "(m/s2)  ",
+					 "(m/s2)  ", "(m/s2)  ", "(N)     ", "(N)     ",
+					 "(N)     ", "(N)     "};   // list of units for each of the QTypes (see misc.h)
+
 
 // state vector and stuff
 double* states; 						// pointer to array comprising global state vector
@@ -71,6 +77,8 @@ double dwW;
 	//long lStdHandle;
 	intptr_t lStdHandle;
 
+	char const* PromptPtr;  // pointer to be made to environment variable PROMPT
+	
 
 // master function to handle time stepping (updated in v1.0.1 to follow MoorDyn F)
 void RHSmaster( const double X[],  double Xd[], const double t)
@@ -83,37 +91,52 @@ void RHSmaster( const double X[],  double Xd[], const double t)
 	for (int l=0; l<nFairs; l++)  
 		ConnectList[FairIs[l]].updateFairlead( t ); 
 	
-	// calculate line dynamics
-	for (int l=0; l < nLines; l++) 	
-		LineList[l].doRHS((X + LineStateIs[l]), (Xd + LineStateIs[l]), t);
 	
 	// calculate forces on all connection objects	
 	for (int l=0; l<nConnects; l++)  
 		ConnectList[l].getNetForceAndMass(); 
-	
+
 	// calculate connect dynamics (including contributions from latest line dynamics, above, as well as hydrodynamic forces)
 	for (int l=0; l<nConns; l++)  
 		ConnectList[ConnIs[l]].doRHS((X + 6*l), (Xd + 6*l), t);
+		
+
+	
+	// calculate line dynamics
+	for (int l=0; l < nLines; l++) 	
+		LineList[l].doRHS((X + LineStateIs[l]), (Xd + LineStateIs[l]), t);
+		
 	
 	return;
 }
 
 
-// Runge-Kutta 2 integration routine
-void rk2 (double x0[], double t0, double dt )
+// Runge-Kutta 2 integration routine  (integrates states and time)
+void rk2 (double x0[], double *t0, double dt )
 {
-	RHSmaster(x0, f0, t0);	 								//f0 = f ( t0, x0 );
+	RHSmaster(x0, f0, *t0);	 								// get derivatives at t0.      f0 = f ( t0, x0 );
 
 	for (int i=0; i<nX; i++) 
-		xt[i] = x0[i] + 0.5*dt*f0[i];  						//x1 = x0 + dt*f0/2.0;
-	RHSmaster(xt, f1, t0 + 0.5*dt);									//f1 = f ( t1, x1 );
+		xt[i] = x0[i] + 0.5*dt*f0[i];  						// integrate to t0  + dt/2.        x1 = x0 + dt*f0/2.0;
+	
+	RHSmaster(xt, f1, *t0 + 0.5*dt);							// get derivatives at t0  + dt/2.	f1 = f ( t1, x1 );
 
 	for (int i=0; i<nX; i++) 
-		x0[i] = x0[i] + dt*f1[i]; 
+		x0[i] = x0[i] + dt*f1[i]; 							// integrate states to t0 + dt
+		
+	*t0 = *t0 + dt;										// update time
 		
 	return;
 }
 
+
+double GetOutput(OutChanProps outChan)
+{
+	if (outChan.OType == 1)   // line type
+		return LineList[outChan.ObjID-1].GetLineOutput(outChan);
+	else if (outChan.OType == 2)   // connection type
+		return ConnectList[outChan.ObjID-1].GetConnectionOutput(outChan);
+}
 
 // write all the output files for the current timestep
 void AllOutput(double t)
@@ -121,11 +144,18 @@ void AllOutput(double t)
 	// write master output file
 	if (outfileMain.is_open())
 	{
-		// output time
-		outfileMain << t << "\t "; 
-		
+		outfileMain << t << "\t "; 		// output time
+	
+	
 		// output all LINE fairlead (top end) tensions
-		for (int l=0; l<nLines; l++) outfileMain << 0.001*(LineList[l].getNodeTen(LineList[l].getN())) << "\t ";
+		//for (int l=0; l<nLines; l++) outfileMain << 0.001*(LineList[l].getNodeTen(LineList[l].getN())) << "\t ";
+			
+
+		for (int lf=0; lf<outChans.size(); lf++)   
+		{
+			//cout << "Getting output: OType:" << outChans[lf].OType << ", ObjID:" << outChans[lf].ObjID << ", QType:" <<outChans[lf].QType << endl;
+			outfileMain << GetOutput(outChans[lf]) << "\t ";		// output each channel's value
+		}
 			
 		outfileMain << "\n";
 	}
@@ -134,6 +164,7 @@ void AllOutput(double t)
 	// write individual line output files
 	for (int l=0; l < nLines; l++)  LineList[l].Output(t); 
 }
+
 
 
 // initialization function
@@ -147,45 +178,50 @@ int DECLDIR LinesInit(double X[], double XD[])
 	CONSOLE_SCREEN_BUFFER_INFO coninfo;
 	FILE *fp;
 
-	//TODO: simplify this to just keep the output parts I need
+	PromptPtr = getenv("PROMPT");		 // get pointer to environment variable "PROMPT" (NULL if not in console)
 	
-	// allocate a console for this app
-	AllocConsole();
+	//TODO: simplify this to just keep the output parts I need
 
-	// set the screen buffer to be big enough to let us scroll text
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
-	coninfo.dwSize.Y = MAX_CONSOLE_LINES;
-	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
+	if (PromptPtr == NULL)  // if not in console, create our own
+	{
+		// allocate a console for this app
+		AllocConsole();
 
-	// redirect unbuffered STDOUT to the console
-	//lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
-	lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
-	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-	fp = _fdopen( hConHandle, "w" );
-	*stdout = *fp;
-	setvbuf( stdout, NULL, _IONBF, 0 );
+		// set the screen buffer to be big enough to let us scroll text
+		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
+		coninfo.dwSize.Y = MAX_CONSOLE_LINES;
+		SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
 
-//	// redirect unbuffered STDIN to the console
-//	lStdHandle = (long)GetStdHandle(STD_INPUT_HANDLE);
-//	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-//	fp = _fdopen( hConHandle, "r" );
-//	*stdin = *fp;
-//	setvbuf( stdin, NULL, _IONBF, 0 );
+		// redirect unbuffered STDOUT to the console
+		//lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+		lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
+		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+		fp = _fdopen( hConHandle, "w" );
+		*stdout = *fp;
+		setvbuf( stdout, NULL, _IONBF, 0 );
 
-//	// redirect unbuffered STDERR to the console
-//	lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
-//	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-//	fp = _fdopen( hConHandle, "w" );
-//	*stderr = *fp;
-//	setvbuf( stderr, NULL, _IONBF, 0 );
+	//	// redirect unbuffered STDIN to the console
+	//	lStdHandle = (long)GetStdHandle(STD_INPUT_HANDLE);
+	//	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+	//	fp = _fdopen( hConHandle, "r" );
+	//	*stdin = *fp;
+	//	setvbuf( stdin, NULL, _IONBF, 0 );
 
-	// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
-	// point to console as well
-	ios::sync_with_stdio();
+	//	// redirect unbuffered STDERR to the console
+	//	lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
+	//	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+	//	fp = _fdopen( hConHandle, "w" );
+	//	*stderr = *fp;
+	//	setvbuf( stderr, NULL, _IONBF, 0 );
 
+		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
+		// point to console as well
+		ios::sync_with_stdio();
+	}
+	
 	
 	// ---------------------------- MoorDyn title message ----------------------------
-	cout << "\n Running MoorDyn (v1.0.1C, 2015-08-02)\n   Copyright (c) Matt Hall under GNU v3 license.\n";
+	cout << "\n Running MoorDyn (v1.0.1C, 2015-09-08)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -291,7 +327,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 					{					
 						ConnectProps newConnect;
 						
-						newConnect.number=atof(entries[0].c_str());
+						newConnect.number=atoi(entries[0].c_str());
 						newConnect.type = entries[1];
 						newConnect.X    = atof(entries[2].c_str());
 						newConnect.Y    = atof(entries[3].c_str());
@@ -329,6 +365,8 @@ int DECLDIR LinesInit(double X[], double XD[])
 							ConnIs.push_back(ConnectList.size()-1);	
 							nConns ++;
 						}
+						else
+							cout << "error with unknown connect type!" << endl;
 						
 						if (wordy>0) cout << newConnect.number << " ";
 					}
@@ -371,25 +409,32 @@ int DECLDIR LinesInit(double X[], double XD[])
 						}
 						
 						// make an output file for it
-						if (outchannels.size() > 1) 
-						{
-							stringstream oname;
+						if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
+						{	stringstream oname;
 							oname << "Mooring/Line" << number << ".out";
 							outfiles.push_back( make_shared<ofstream>(oname.str())); // used to trigger a problem
 						}
 						else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
 						
 						// find correct connection indices
+						int AnchIndex = -1;  int FairIndex = -1;
 						for (int J=0; J<ConnectList.size(); J++)  {
 							if (ConnectList[J].number == NodeAnch)
-								NodeAnch = J;
+								AnchIndex = J;
 							if (ConnectList[J].number == NodeFair)
-								NodeFair = J;							
+								FairIndex = J;							
 						}	
-						
+						if (FairIndex < 0)  {
+							cout << "   Error: Invalid fairlead index (" << NodeFair << ") given for Line " << number << endl;
+							return -1;
+						}
+						if (AnchIndex < 0)  {
+							cout << "   Error: Invalid anchor index (" << NodeFair << ") given for Line " << number << endl;
+							return -1;
+						}
 						// set up line properties
 						tempLine.setup(number, LinePropList[TypeNum], UnstrLen, NumNodes, 
-							ConnectList[NodeAnch], ConnectList[NodeFair], 
+							ConnectList[AnchIndex], ConnectList[FairIndex], 
 							outfiles.back(), outchannels);
 							
 							
@@ -397,8 +442,8 @@ int DECLDIR LinesInit(double X[], double XD[])
 							
 						// store connection info to apply later (once lines are all created)
 						LineInd.push_back(LineList.size()-1);
-						AnchInd.push_back(NodeAnch);
-						FairInd.push_back(NodeFair);
+						AnchInd.push_back(AnchIndex);
+						FairInd.push_back(FairIndex);
 						
 						if (wordy>0) cout << number << " ";
 														
@@ -422,19 +467,287 @@ int DECLDIR LinesInit(double X[], double XD[])
 					if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
 					{
 //						if (entries[1] == "NumNodes")       nNodes = atoi(entries[0].c_str());
-						if (entries[1] == "DT")        dtM0 = atof(entries[0].c_str());
+						if ((entries[1] == "dtM")           || (entries[1] == "DT"))        dtM0 = atof(entries[0].c_str());     // second is old way, should phase out
 						//else if (entries[1] == "DWWave")    dw_in = atof(entries[0].c_str());
-						else if (entries[1] == "kb")        env.kb = atof(entries[0].c_str());
-						else if (entries[1] == "cb")        env.cb = atof(entries[0].c_str());
-						else if (entries[1] == "WtrDpth")   env.WtrDpth = atof(entries[0].c_str());
-						else if (entries[1] == "ICDfac")    ICDfac   = atof(entries[0].c_str());
-						else if (entries[1] == "ICdt")      ICdt     = atof(entries[0].c_str());
-						else if (entries[1] == "ICTmax")    ICTmax   = atof(entries[0].c_str());
-						else if (entries[1] == "ICthresh")  ICthresh = atof(entries[0].c_str());
+						else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
+						else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
+						else if (entries[1] == "WtrDpth")   env.WtrDpth = atof(entries[0].c_str()); 
+						else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
+						else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
+						else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
+						else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
 						else if (entries[1] == "WaveKin")   env.WaveKin = atoi(entries[0].c_str());
 					}
 					i++;
 				}
+			}
+			else if (lines[i].find("OUTPUT") != string::npos) // if output list header
+			{	
+				//cout << "in output section" << endl;
+				i ++;
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					std::vector<std::string> entries = split(lines[i], ' ');
+					
+					for (int j=0; j<entries.size(); j++)  //loop through each word on each line
+					{
+
+						// Process each "word" - set index, name, and units for all of each output channel
+
+						char outWord[10];							// the buffer
+						snprintf(outWord, 10, entries[j].c_str());		// copy word to buffer
+						_strupr_s(outWord,10);								// convert to uppercase for string matching purposes
+						
+							//cout << "  upper word is " << outWord << endl;
+						
+						// substrings for processing each parameter                              
+						char let1  [10];  // letters  
+						char num1  [10];  // number
+						char let2  [10];  // letters
+						char num2  [10];  // number                      
+						char let3  [10];  // letters
+						char qVal  [10];  // letters from let2 or let3
+						
+						//int wordLength = strlen(outWord);  // get length of input word (based on null termination)
+							//cout << "1";	
+						//! find indicies of changes in number-vs-letter in characters
+						int in1 = strcspn( outWord, "1234567890");  // scan( OutListTmp , '1234567890' )              ! index of first number in the string
+						strncpy(let1, outWord, in1);   // copy up to first number as object type
+						let1[in1] = '\0';				// add null termination
+						
+						if (in1 < strlen(outWord))								// if there is a first number
+						{	
+							char *outWord1 = strpbrk(outWord, "1234567890");  		// get pointer to first number
+							int il1 = strcspn( outWord1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");  // in1+verify( OutListTmp(in1+1:) , '1234567890' )  ! second letter start (assuming first character is a letter, i.e. in1>1)
+							strncpy(num1, outWord1, il1);   	// copy number
+							num1[il1] = '\0';				// add null termination
+							
+							if (il1 < strlen(outWord1))							// if there is a second letter
+							{	
+								char *outWord2 = strpbrk(outWord1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+								//cout << "3 il1=" << il1 << ", " ;	
+								int in2 = strcspn( outWord2, "1234567890");  // il1+scan( OutListTmp(il1+1:) , '1234567890' )    ! second number start
+								strncpy(let2, outWord2, in2);   // copy chars
+								let2[in2] = '\0';				// add null termination
+								
+								if (in2 < strlen(outWord2))		// if there is a second number
+								{
+									char *outWord3 = strpbrk(outWord2, "1234567890");
+									//cout << "4";	
+									int il2 = strcspn( outWord3, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");  // in2+verify( OutListTmp(in2+1:) , '1234567890' )  ! third letter start
+									strncpy(num2, outWord3, il2);   // copy number
+									num2[il2] = '\0';				// add null termination
+									
+									if (il2 < strlen(outWord3))		// if there is a third letter
+									{
+										char *outWord4 = strpbrk(outWord3, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+										//cout << "5";	
+										strncpy(let3, outWord4, strlen(outWord4));   // copy remaining chars (should be letters)  ??
+										let3[strlen(outWord4)] = '\0';				// add null termination  (hopefully takes care of case where letter D.N.E.)
+									}
+									else
+										let3[0] = '\0';
+									
+								}
+								else
+								{
+									num2[0] = '\0';
+									let3[0] = '\0';
+								}
+							}
+							else
+							{
+								let2[0] = '\0';
+								num2[0] = '\0';
+								let3[0] = '\0';
+							}
+						
+							
+						}
+						else
+						{	
+							num1[0] = '\0';
+							let2[0] = '\0';
+							num2[0] = '\0';
+							let3[0] = '\0';					
+							
+							cout << "   Error: no number in channel name." << endl;
+							return - 1;  // TODO: handle error
+						}
+						
+						//cout << "  broken into " << let1 << ", " << num1 << ", " << let2 << ", " << num2 << ", " << let3 << endl;
+						
+						// error check
+						if (in1 <= 1) 
+						{ 	// CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+							//CALL WrScr('Warning: invalid output specifier.')
+							//CONTINUE
+						}
+						
+						OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later)
+		;
+						strncpy(dummy.Name, outWord, 10); //strlen(outWord));		// label channel with whatever name was inputted, for now
+
+						// figure out what type of output it is and process accordingly 
+						// TODO: add checks of first char of num1,2, let1,2,3 not being NULL to below and handle errors
+
+						const int UnitsSize = 10;
+						// fairlead tension case (updated)   NOTE - these will include contributions of ALL lines connected at these fairlead points
+						if (strcmp(let1, "FAIRTEN")==0)
+						{	
+							//cout << "found fairten" << endl;
+							dummy.OType = 2;             							// connection object type
+							dummy.QType = Ten;           							// tension quantity type
+							strncpy(dummy.Units, UnitList[Ten], UnitsSize); 							// set units according to QType
+							int LineID = atoi(num1);               							// this is the line number
+							dummy.ObjID = LineList[LineID-1].FairConnect->number;		// get the connection ID of the fairlead
+							dummy.NodeID = -1;           							// not used.    other%LineList(oID)%N  ! specify node N (fairlead)
+						}
+						// achor tension case
+						else if (strcmp(let1, "ANCHTEN")==0) 
+						{	
+							//cout << "found anchtoen" << endl;dummy.OType = 2;             							// connection object type
+							dummy.QType = Ten;           							// tension quantity type
+							strncpy(dummy.Units, UnitList[Ten], UnitsSize);						// set units according to QType
+							int LineID = atoi(num1);               							// this is the line number
+							dummy.ObjID = LineList[LineID-1].FairConnect->number;		// get the connection ID of the fairlead
+							dummy.NodeID = -1;           							// not used.    other%LineList(oID)%N  ! specify node N (fairlead)
+						}
+						// more general case
+						else
+						{
+							// get object type and node number if applicable
+							// Line case                                          ... L?N?xxxx
+							if (strcmp(let1, "L")==0)
+							{	
+								//cout << "found line" << endl;
+								dummy.OType = 1;                // Line object type
+								// for now we'll just assume the next character(s) are "n" to represent node number:
+								dummy.NodeID = atoi(num2);
+							}
+							// Connect case                                     ... C?xxx or Con?xxx
+							else if((strcmp(let1, "C")==0) || (strcmp(let1, "CON")==0))
+							{	
+								//cout << "found connect " << endl;
+								dummy.OType = 2;                // Connect object type
+								dummy.NodeID = -1;
+								strncpy(let3, let2, 10);				// copy quantity chars (let2) to let3 (unused for a connect) because let3 is what's checked below
+							}
+							// should do fairlead option also!
+							
+							else   // error
+							{	//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+								cout << "Warning: invalid output specifier: "  << let1 << ".  Type must be L or C/Con." << endl;
+								continue;  // break out of this loop iteration (don't add current output channel to list)
+							}
+
+							// object number
+							dummy.ObjID =  atoi(num1);             // line or connect ID number
+
+							// which kind of quantity?
+							if (strcmp(let3, "PX")==0) {
+								//cout << "SETTING QTYPE to " << PosX << endl;
+							  dummy.QType = PosX;
+							  strncpy(dummy.Units, UnitList[PosX], UnitsSize);
+							}
+							else if (strcmp(let3, "PY")==0)  {
+							  dummy.QType = PosY;
+							  strncpy(dummy.Units, UnitList[PosY], UnitsSize);
+							}
+							else if (strcmp(let3, "PZ")==0)  {
+							  dummy.QType = PosZ;
+							  strncpy(dummy.Units, UnitList[PosZ], UnitsSize);
+							}
+							else if (strcmp(let3, "VX")==0)  {
+							  dummy.QType = VelX;
+							  strncpy(dummy.Units, UnitList[VelX], UnitsSize);
+							}
+							else if (strcmp(let3, "VY")==0)  {
+							  dummy.QType = VelY;
+							  strncpy(dummy.Units, UnitList[VelY], UnitsSize);
+							}
+							else if (strcmp(let3, "VZ")==0)  {
+							  dummy.QType = VelZ;
+							  strncpy(dummy.Units, UnitList[VelZ], UnitsSize);
+							}
+							else if (strcmp(let3, "AX")==0)  {
+							  dummy.QType = AccX;
+							  strncpy(dummy.Units, UnitList[AccX], UnitsSize);
+							}
+							else if (strcmp(let3, "Ay")==0)  {
+							  dummy.QType = AccY;
+							  strncpy(dummy.Units, UnitList[AccY], UnitsSize);
+							}
+							else if (strcmp(let3, "AZ")==0)  {
+							  dummy.QType = AccZ;
+							  strncpy(dummy.Units, UnitList[AccZ], UnitsSize);
+							}
+							else if ((strcmp(let3, "T")==0) || (strcmp(let3, "TEN")==0)) {
+							  dummy.QType = Ten;
+							  strncpy(dummy.Units, UnitList[Ten], UnitsSize);
+							}
+							else if (strcmp(let3, "FX")==0)  {
+							  dummy.QType = FX;
+							  strncpy(dummy.Units, UnitList[FX], UnitsSize);
+							}
+							else if (strcmp(let3, "FY")==0)  {
+							  dummy.QType = FY;
+							  strncpy(dummy.Units, UnitList[FY], UnitsSize);
+							}
+							else if (strcmp(let3, "FZ")==0)  {
+							  dummy.QType = FZ;
+							  strncpy(dummy.Units, UnitList[FZ], UnitsSize);
+							}
+							else
+							{  	
+								cout << "Warning: invalid output specifier - quantity type not recognized" << endl;
+								//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+								//CALL WrScr('Warning: invalid output specifier - quantity type not recognized.')  ! need to figure out how to add numbers/strings to these warning messages...
+								//CONTINUE
+							}
+
+						}
+						
+						
+						
+
+						//  ! also check whether each object index and node index (if applicable) is in range
+						//  IF (p%OutParam(I)%OType==2) THEN
+						//    IF (p%OutParam(I)%ObjID > p%NConnects) THEN
+						//      call wrscr('warning, output Connect index excedes number of Connects')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    END IF
+						//  ELSE IF (p%OutParam(I)%OType==1) THEN
+						//    IF (p%OutParam(I)%ObjID > p%NLines) THEN
+						//      call wrscr('warning, output Line index excedes number of Line')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    END IF
+						//    IF (p%OutParam(I)%NodeID > other%LineList(p%OutParam(I)%ObjID)%N) THEN
+						//      call wrscr('warning, output node index excedes number of nodes')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    ELSE IF (p%OutParam(I)%NodeID < 0) THEN
+						//      call wrscr('warning, output node index is less than zero')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    END IF
+						//  END IF
+
+						
+						outChans.push_back(dummy);  	// if valid, add new entry to list!
+						
+						
+						
+					}  // looping through words on line
+				//     SUBROUTINE DenoteInvalidOutput( OutParm )
+				//        TYPE(MD_OutParmType), INTENT (INOUT)  :: OutParm
+				//
+				//        OutParm%OType = 0  ! flag as invalid
+				//        OutParm%Name = 'Invalid'
+				//        OutParm%Units = ' - '
+				//
+				//     END SUBROUTINE DenoteInvalidOutput					
+					i++;
+					
+				}  // looping through lines
 			}
 			else i++;
 		}
@@ -447,8 +760,6 @@ int DECLDIR LinesInit(double X[], double XD[])
 	nConnects = ConnectList.size();
 	nLines = LineList.size();
 			
-			
-	
 	
 	//  ------------------------ set up waves if needed -------------------------------
 	
@@ -499,6 +810,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 	
 	// make state vector	
 	nX = n;  // size of state vector array
+	if (wordy > 1) cout << "   Creating state vectors of size " << nX << endl;
 	states    = (double*) malloc( nX*sizeof(double) );
 
 	// make arrays for integration
@@ -533,10 +845,9 @@ int DECLDIR LinesInit(double X[], double XD[])
 		
 	}
 		
-	
 	// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
 	
-	cout << "   Creating mooring system." << endl;	
+	cout << "   Creating mooring system.  " << nFairs << " fairleads, " << nAnchs << " anchors, " << nConns << " connections." << endl;	
 	//for (int l=0; l<nConnects; l++)  {
 	//	ConnectList[l].initialize( (states + 6*l), env, X, TransMat); // connections
 	//}	
@@ -586,7 +897,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 		
 		// loop through line integration time steps
 		for (int its = 0; its < NdtM; its++)
-			rk2 (states, t, dtM );  			// call RK2 time integrator (which calls the model)
+			rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
 	
 		// store previous fairlead tensions for comparison
 		for (lf=0; lf<nFairs; lf++) {
@@ -608,7 +919,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 	//	cout << " nFairs is " << nFairs << endl;
 		
 				
-		cout << "   t = " << t << " s, tension at Node" << ConnectList[FairIs[0]].number << " is " << FairTens[0] << "\r";
+		cout << "    t = " << t << " s, tension at first fairlead is " << FairTens[0] << " N    \r";   // write status update and send cursor back to start of line
 
 		// check for convergence (compare current tension at each fairlead with previous two values)
 		if (iic > 2)
@@ -648,16 +959,16 @@ int DECLDIR LinesInit(double X[], double XD[])
 		// --- channel titles ---
 		outfileMain << "Time" << "\t "; 	
 		// output all LINE fairlead (top end) tensions
-		for (lf=0; lf<nLines; lf++) outfileMain << "Fair" << LineList[lf].number << "Ten" << "\t ";
+		for (lf=0; lf<outChans.size(); lf++) outfileMain << outChans[lf].Name << "\t ";
 		outfileMain << "\n";
 		
 		// --- units ---
 		outfileMain << "(s)" << "\t "; 	
 		// output all LINE fairlead (top end) tensions
-		for (lf=0; lf<nLines; lf++) outfileMain << "(kN)" << "\t ";
+		for (lf=0; lf<outChans.size(); lf++) outfileMain << outChans[lf].Units << "\t ";
 		outfileMain << "\n";
 	}
-	else cout << "   ERROR: Unable to write to main output file " << endl;
+	else cout << "   ERROR: Unable to write to main output file " << endl;  //TODO: handle error
 	
 	// write t=0 output line
 	AllOutput(0.0);
@@ -685,7 +996,7 @@ int SetupWavesFromFile(void)
 {
 	// much of this process is taken from GenerateWaveExctnFile.py
 
-	if (wordy)  cout << "   Reading wave time series from waves.txt file" << endl;
+	if (wordy > 2)  cout << "   Reading wave time series from waves.txt file" << endl;
 	
 	// --------------------- read data from file ------------------------
 	vector<string> lines2;
@@ -721,18 +1032,18 @@ int SetupWavesFromFile(void)
 		}
 		else cout << "   bad line read from " << WaveFilename << endl;
 	}
-	if (wordy) cout << "   Done reading file. " << endl;
+	if (wordy > 2) cout << "   Done reading file. " << endl;
 	
 	// -------------------- downsample to dt = 0.25 ---------------------------
 	double dtW = 0.25;
 	int NtW = floor(wavetimes.back()/dtW);  	// number of time steps
 	
-	if (wordy)  cout << "Nt is " << NtW << endl;
+	if (wordy > 2)  cout << "Nt is " << NtW << endl;
 	
 	vector< double > waveTime (NtW, 0.0); 
 	vector< double > waveElev (NtW, 0.0); 
 	
-	if (wordy)  cout << "interpolated to reduce time steps from " << wavetimes.size()  << " to " << NtW << endl;
+	if (wordy > 2)  cout << "interpolated to reduce time steps from " << wavetimes.size()  << " to " << NtW << endl;
 	
 	int ts = 0; 							// index for interpolation (so it doesn't start at the beginning every time)
 	for (int i=0; i<NtW; i++)
@@ -788,7 +1099,7 @@ int SetupWavesFromFile(void)
 
 
 	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	if (wordy) cout << "starting fft stuff " << endl;
+	if (wordy > 2) cout << "starting fft stuff " << endl;
 		int NFFT = NtW;
 		int is_inverse_fft = 0;
 	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
@@ -798,7 +1109,7 @@ int SetupWavesFromFile(void)
 	//    double r;
 	//    double i;
 	//} kiss_fft_cpx;
-	if (wordy) cout << "allocatin io " << endl;
+	if (wordy > 2) cout << "allocatin io " << endl;
 	
 	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
 	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
@@ -815,11 +1126,11 @@ int SetupWavesFromFile(void)
 	}
 	zetaRMS = sqrt(zetaRMS/NFFT);
 	
-	if (wordy) cout << "processing fft" << endl;
+	if (wordy > 2) cout << "processing fft" << endl;
 	  
 	// do the magic
 	kiss_fft( cfg , cx_in , cx_out );
-	if (wordy) cout << "done" << endl;
+	if (wordy > 2) cout << "done" << endl;
 	// convert
 	
 	// allocate stuff to get passed to line functions
@@ -837,7 +1148,7 @@ int SetupWavesFromFile(void)
 	free(cx_out);
 	free(cfg);
 
-	if (wordy) cout << "freed" << endl;
+	if (wordy > 2) cout << "freed" << endl;
 /*     Note: frequency-domain data is stored from dc up to 2pi.
 	so cx_out[0] is the dc bin of the FFT
 	and cx_out[nfft/2] is the Nyquist bin (if exists)  */
@@ -864,7 +1175,7 @@ int SetupWavesFromFile(void)
 	//scaled this!  (check of Parseval's theorem)
 	zetaCRMS = zetaCRMS/NtW;
 	
-	if (wordy) {
+	if (wordy > 2) {
 		cout << "summary of fft parameters:" << endl;
 		cout << " dt = " << dtW << endl;
 		cout << " f sampling = " << Fss << endl;
@@ -946,15 +1257,18 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 					
 		// round to get appropriate mooring model time step
 		int NdtM = ceil(dtC/dtM0);   // number of mooring model time steps per outer time step
+		if (NdtM < 1)  
+		{	cout << "   Error: dtC is less than dtM.  (" << dtC << " < " << dtM0 << ")" << endl;
+			return -1;
+		}
 		double dtM = dtC/NdtM;		// mooring model time step size (s)
 		
 		
-		// loop through line integration time steps
+		// loop through line integration time steps (integrate solution forward by dtC)
 		for (int its = 0; its < NdtM; its++)
-		{
-			rk2 (states, t, dtM );  			// call RK2 time integrator (which calls the model)
-			t = t + dtM;                      // update time
-		}
+			rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
+			//t = t + dtM;                      // update time XXX TIME IS UPDATED BY RK2!
+
 				
 			
 		// call end routines to write output files and get forces to send to FAST
@@ -995,13 +1309,33 @@ int DECLDIR LinesClose(void)
 	//free(f3       );
 	free(xt       );
 	
-	// close output files
-	outfileMain.close();
-	for (int l=0; l<nLines; l++) outfiles[l]->close();
+	// close any open output files
+	if (outfileMain.is_open())
+		outfileMain.close();
+	for (int l=0; l<nLines; l++) 
+		if (outfiles[l])							// if not null
+			if (outfiles[l]->is_open())
+				outfiles[l]->close();
 	
-	cout << "MoorDyn closed." << endl;
+	// clear any global vectors
+	FlinesS.clear();		
+	rFairtS.clear();		
+	rFairRel.clear();		
+	rFairi.clear();		
+	rdFairi.clear();		
+	LinePropList.clear(); 	
+	LineList.clear(); 		
+	ConnectList.clear();	
+	FairIs.clear();  		
+	ConnIs.clear();  		
+	outfiles.clear(); 		
+	outChans.clear();		
+	LineStateIs.clear();
+	zetaCglobal.clear();
 	
-	if (hConHandle)  FreeConsole();  //_close(hConHandle); // close console window.
+	cout << "   MoorDyn closed." << endl;
+	
+	if (PromptPtr == NULL)  FreeConsole();  //_close(hConHandle); // close console window if we made our own.
 	
 	return 0;
 }
