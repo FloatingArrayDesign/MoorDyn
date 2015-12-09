@@ -63,10 +63,11 @@ void inverse3by3( vector< vector< double > > & minv, vector< vector< double > > 
 }
 
 
-// create rotation matrix
+// create rotation matrix  (row major order?)
 void RotMat( double x2, double x1, double x3, double TransMat[])
 {
-	// note above swapping of x1 and x2 to deal with weird coordinate system from FAST copied algorithm
+	// note above swapping of x1 and x2 to deal with weird coordinate system from FAST convention
+	// ( x2 is roll, x1 is pitch, x3 is yaw )
 
 	float s1 = sin(x1); 
 	float c1 = cos(x1);

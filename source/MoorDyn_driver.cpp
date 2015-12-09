@@ -9,12 +9,15 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
-#include <Windows.h>
+
+#ifndef LINUX
+	#include <Windows.h>
+#endif
 
 #include <memory>
 
 #include "MoorDyn.h" // include the MoorDyn header file !!!
-#include "misc.h" // for string splitting functions
+#include "Misc.h" // for string splitting functions
 
 // this is a simple driver program for MoorDyn v0.9.0 
 // it will read from an input file called "PtfmMotions.dat"
@@ -200,7 +203,7 @@ int main()
 		}
 		myfile.close();
 	}
-	else cout << "Unable to open lines.txt file" << endl; 
+	else cout << "   Unable to open lines.txt file" << endl; 
 	
 	
 	// -------------------- initialize data holders --------------------------
@@ -298,7 +301,7 @@ int main()
 	double XD[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // platform velocities
 	
 	double Flines[6]; 			// dummy matrix for net mooring forces on platform, which aren't used in this version
-	int NumLines = 3;
+	int NumLines = 1;    // <<<<<<
 	float FairHTen[3]; 			// more dummy things (should have size of NumLines) <<<<<<<<<<
 	float FairVTen[3];
 	float AnchHTen[3];
@@ -312,10 +315,10 @@ int main()
 	//double dt = 0.0125; // desired time step for communicating with MoorDyn and outputting results
 	double t = 0;
 	
-	// initialize MoorDyn
+	// initialize MoorDyn   // NOTE: this currently doesn't account for non-zero initial position!
 	LinesInit(X, XD);
 	
-	cout << "Done initializing MoorDyn." << endl;
+	cout << "   Done initializing MoorDyn." << endl;
 	
 	
 	
@@ -331,9 +334,9 @@ int main()
 			
 	// open file
 	ifstream myfile2 (outFileName);     // open an input stream to the line data input file
-	if (myfile2.is_open()) cout << outFileName << " opened." <<endl;
+	if (myfile2.is_open()) cout << "   " << outFileName << " opened." <<endl;
 	else {	
-		cout << "ERROR: Unable to open " << outFileName << "." <<endl;
+		cout << "   ERROR: Unable to open " << outFileName << "." <<endl;
 		return 0;
 	}	
 	
@@ -342,7 +345,7 @@ int main()
 	
 	if (isMARINfile == 0)   // if a generic 7-column file with no header
 	{
-		cout << "Opening geeneric platform motion data file " << outFileName << " to get platform motions." << endl;		
+		cout << "   Opening geeneric platform motion data file " << outFileName << " to get platform motions." << endl;		
 		double scaler[6] = {1., 1., 1., 1., 1., 1.}; 		// no special scaling or direction changing
 		
 		while ( myfile2.good() )
@@ -350,10 +353,10 @@ int main()
 			getline (myfile2,line2);
 			std::vector<string> datarow = split(line2, '\t');
 			
-			if (wordy) cout << line2 << endl;
+			if (wordy > 0) cout << line2 << endl;
 			if (datarow.size() < 7) break;  // break if we're on a last empty line
 			//for (int k=0; k<datarow.size(); k++) if (wordy) 	cout << datarow[k] << " " ;
-			if (wordy) cout << endl;
+			if (wordy > 0) cout << endl;
 			
 			
 			tFAST.push_back(atof(datarow[0].c_str()));		// add time
@@ -366,7 +369,7 @@ int main()
 	}
 	else if (isMARINfile == 1)  // if MARIN file
 	{
-		cout << "Opening MARIN data file " << outFileName << " to get platform motions." << endl;		
+		cout << "   Opening MARIN data file " << outFileName << " to get platform motions." << endl;		
 		double scaler[6] = {-1., -1., 1., -pi/180., -pi/180., pi/180.}; 		// correct directions from MARIN convention to FAST convention
 		
 		while ( myfile2.good() )
@@ -406,7 +409,7 @@ int main()
 	}
 	else  // if FAST (rather than MARIN) file 
 	{
-		cout << "Opening FAST output file " << outFileName << " to get platform motions." << endl;				
+		cout << "   Opening FAST output file " << outFileName << " to get platform motions." << endl;				
 		double scaler[6] = {1., 1., 1., pi/180., pi/180., pi/180.};
 				
 		if (myfile2.is_open())
@@ -450,7 +453,7 @@ int main()
 				i++;  // count what line we're at
 			}
 		}
-		else cout << "Unable to open FAST output file" << endl; 
+		else cout << "   Unable to open FAST output file" << endl; 
 		
 	}
 
@@ -558,11 +561,11 @@ int main()
 				
 		int nts = tFAST.size(); 			// number of time steps
 				
-		cout << "Running simulation with duration of " << nts << " steps." << endl;
+		cout << "   Running simulation with duration of " << nts << " steps." << endl;
 				
 		for (int its=0; its<nts; its++)    // loop though time steps in input file
 		{
-			cout << "Time = " << tFAST[its] << ".\r";
+			cout << "   Time = " << tFAST[its] << "   \r";
 				
 			double t = tFAST[its];
 		
@@ -577,7 +580,7 @@ int main()
 				for (int j=0; j<6; j++) 
 					XD[j] = (XpFAST[its+1][j] - XpFAST[its][j])/(tFAST[its+1]-tFAST[its]);			
 				
-				double dt = tFAST[its+1]-tFAST[its];
+				dt = tFAST[its+1]-tFAST[its];  // had an error where this was declared in if scope
 			}
 		
 			
@@ -614,7 +617,7 @@ int main()
 	// freeing
 	LinesClose();
 	
-	system("pause");
+	//system("pause");
 	return 0;
 }
 	

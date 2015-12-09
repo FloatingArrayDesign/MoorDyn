@@ -932,9 +932,16 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		else
 			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] ) * aq[J]; 
 		
-		// bottom contact (stiffness and damping)	
+		// bottom contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
 		if (r[i][2] < -env.WtrDpth)
-			B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i] + d*l[i-1] ); // vertical only for now
+		{
+			if (i==0)
+				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*(          d*l[i-1] );
+			else if (i==N)
+				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i]            );
+			else
+				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i] + d*l[i-1] );
+		}
 		else 
 			B[i][2] = 0.;
 		
@@ -1047,6 +1054,7 @@ void Line::Output(double time)
 
 
 // new function to draw instantaneous line positions in openGL context
+#ifdef USEGL
 void Line::drawGL(void)
 {
 	glColor3f(0.5,0.5,1.0);
@@ -1054,3 +1062,4 @@ void Line::drawGL(void)
 	for (int i=0; i<=N; i++)	glVertex3d(r[i][0], r[i][1], r[i][2]);
 	glEnd();
 }
+#endif

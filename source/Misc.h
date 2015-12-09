@@ -31,14 +31,23 @@
 
 #include <memory>
 
-#include <GL/gl.h>  // for openGL drawing option
+#ifdef USEGL
+ #include <GL/gl.h>  // for openGL drawing option
+#endif
 
 #include "kiss_fft.h"  // trying this out!
 
-#include <windows.h>  // these are for guicon function RedirectIOToConsole
+#ifdef OSX
+ #include <sys/uio.h>
+#elif defined LINUX
+
+#else
+ #include <windows.h>  // these are for guicon function RedirectIOToConsole
+ #include <io.h>
+#endif
+
 #include <stdio.h>
 #include <fcntl.h>
-#include <io.h>
 #include <iostream>
 #include <fstream>
 

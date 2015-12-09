@@ -99,13 +99,13 @@ void Connection::getConnectState(vector<double> &r_out, vector<double> &rd_out)
 };
 
 
-// function to return net force on fairlead
+// function to return net force on fairlead (just to allow public reading of Fnet
 void Connection::getFnet(double Fnet_out[])
 {
 	for (int I=0; I<3; I++) 	Fnet_out[I] = Fnet[I];
 	
-	Fnet_out[2] += M[0][0]*(-env.g); // add weight
-// should it include inertial "force"?  i.e.	for (int J=0; J<3; J++)  Fnet_out += M[I][J]*acceleration[J] 	
+	//Fnet_out[2] += M[0][0]*(-env.g); // add weight  NO this is alread in Fnet !!! (removed Oct 20)
+	// should it include inertial "force"?  i.e.	for (int J=0; J<3; J++)  Fnet_out += M[I][J]*acceleration[J] 	
 };
 
 
@@ -117,12 +117,10 @@ double Connection::GetConnectionOutput(OutChanProps outChan)
 	else if (outChan.QType == VelX)  return  rd[0];
 	else if (outChan.QType == VelY)  return  rd[1];
 	else if (outChan.QType == VelZ)  return  rd[2];
-	else if (outChan.QType == Ten )  
-	{
-		double Fs[3];
-		getFnet(Fs);
-		return  sqrt(Fs[0]*Fs[0] + Fs[1]*Fs[1] + Fs[2]*Fs[2]);
-	}
+	else if (outChan.QType == Ten )  return  sqrt(Fnet[0]*Fnet[0] + Fnet[1]*Fnet[1] + Fnet[2]*Fnet[2]);
+	else if (outChan.QType == FX)    return  Fnet[0];  // added Oct 20
+	else if (outChan.QType == FY)    return  Fnet[1];
+	else if (outChan.QType == FZ)    return  Fnet[2];
 	else
 	{
 		return 0.0;
@@ -341,3 +339,22 @@ void Connection::updateFairlead( const double time)
 	return;
 }
 	
+Connection::~Connection()
+{
+	// destructor
+	 r.clear();				// node positions [i][x/y/z]
+	rd.clear();				// node velocities [i][x/y/z]
+	 q.clear();     			// unit tangent vectors for each node
+	 
+	 r_ves.clear();	
+	rd_ves.clear();	
+			
+	Fnet.clear();	// total force on node
+	Fnet_i.clear();
+	RHS.clear();	// RHS of state-space equation (Forces divided by mass matrix)
+	
+	S.clear();  // inverse mass matrices (3x3) for each node
+	M.clear(); // node mass + added mass matrix
+	M_i.clear();
+	
+}

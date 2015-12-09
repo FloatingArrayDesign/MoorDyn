@@ -14,12 +14,17 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 1.0.1C.  September 8, 2015.
+ // This is version 1.0.2C.  December 8, 2015.
  
 #include "Misc.h"
 #include "MoorDyn.h"
 #include "Line.h" 
 #include "Connection.h"
+
+#ifdef LINUX
+	#include <cmath> 	// already in misc.h?
+	#include <ctype.h>
+#endif
 
 
 using namespace std;
@@ -77,8 +82,12 @@ double dwW;
 	//long lStdHandle;
 	intptr_t lStdHandle;
 
-	char const* PromptPtr;  // pointer to be made to environment variable PROMPT
-	
+char const* PromptPtr;  // pointer to be made to environment variable PROMPT
+int OwnConsoleWindow = 0;	
+
+#ifdef LINUX	// any differences from built-in in mingw?  what about on OSX?
+ int isnan(double x) { return x != x; } 	// changed to lower case.  will this still work?  Apparently some compiler optimizations can ruin this method
+#endif
 
 // master function to handle time stepping (updated in v1.0.1 to follow MoorDyn F)
 void RHSmaster( const double X[],  double Xd[], const double t)
@@ -171,23 +180,43 @@ void AllOutput(double t)
 int DECLDIR LinesInit(double X[], double XD[])
 {	
 
+#ifndef LINUX
+#ifndef OSX
 	// ------------ create console window for messages if none already available -----------------
 	// adapted from Andrew S. Tucker, "Adding Console I/O to a Win32 GUI App" in Windows Developer Journal, December 1997. source code at http://dslweb.nwnexus.com/~ast/dload/guicon.htm
 
-	static const WORD MAX_CONSOLE_LINES = 500;  // maximum mumber of lines the output console should have
-	CONSOLE_SCREEN_BUFFER_INFO coninfo;
+	//static const WORD MAX_CONSOLE_LINES = 500;  // maximum mumber of lines the output console should have
+	//CONSOLE_SCREEN_BUFFER_INFO coninfo;
 	FILE *fp;
 
 	PromptPtr = getenv("PROMPT");		 // get pointer to environment variable "PROMPT" (NULL if not in console)
 	
 	//TODO: simplify this to just keep the output parts I need
 
-	if (PromptPtr == NULL)  // if not in console, create our own
+	HWND consoleWnd = GetConsoleWindow();
+//   DWORD dwProcessId;
+//   GetWindowThreadProcessId(consoleWnd, &dwProcessId);
+//   if (GetCurrentProcessId()==dwProcessId)
+//   {
+//       cout << "I have my own console, press enter to exit" << endl;
+//       cin.get();
+//	   FreeConsole();
+//   }
+//   else
+//   {
+//       cout << "This Console is not mine, good bye" << endl;   
+//   }
+		
+	if (consoleWnd == NULL)  // if not in console, create our own
 	{
+		OwnConsoleWindow = 1; // set flag
+		
 		// allocate a console for this app
 		AllocConsole();
 
 		// set the screen buffer to be big enough to let us scroll text
+	    static const WORD MAX_CONSOLE_LINES = 500;  // maximum mumber of lines the output console should have
+	    CONSOLE_SCREEN_BUFFER_INFO coninfo;
 		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
 		coninfo.dwSize.Y = MAX_CONSOLE_LINES;
 		SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
@@ -217,11 +246,14 @@ int DECLDIR LinesInit(double X[], double XD[])
 		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
 		// point to console as well
 		ios::sync_with_stdio();
+		
+		cout << "(MoorDyn-initiated console window)" << endl;
 	}
-	
+#endif
+#endif	
 	
 	// ---------------------------- MoorDyn title message ----------------------------
-	cout << "\n Running MoorDyn (v1.0.1C, 2015-09-08)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
+	cout << "\n Running MoorDyn (v1.0.2C, 2015-12-08)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -496,9 +528,17 @@ int DECLDIR LinesInit(double X[], double XD[])
 
 						char outWord[10];							// the buffer
 						snprintf(outWord, 10, entries[j].c_str());		// copy word to buffer
-						_strupr_s(outWord,10);								// convert to uppercase for string matching purposes
+
 						
-							//cout << "  upper word is " << outWord << endl;
+						// convert to uppercase for string matching purposes
+						// windows only  _strupr_s(outWord,10);								
+
+						for (int charIdx=0; charIdx<10; charIdx++) 
+						{
+							outWord[charIdx] = toupper(outWord[charIdx]);
+						}
+						//cout << "  upper word is " << outWord << endl;
+						
 						
 						// substrings for processing each parameter                              
 						char let1  [10];  // letters  
@@ -899,6 +939,16 @@ int DECLDIR LinesInit(double X[], double XD[])
 		for (int its = 0; its < NdtM; its++)
 			rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
 	
+		// check for NaNs
+		for (int i=0; i<nX; i++)
+		{
+			if (isnan(states[i]))
+			{
+				cout << "   Error: NaN value detected in MoorDyn state at dynamic relaxation time " << t << " s." << endl;
+				return -1;
+			}
+		}
+	
 		// store previous fairlead tensions for comparison
 		for (lf=0; lf<nFairs; lf++) {
 			FairTensLast2[lf] = FairTensLast[lf];
@@ -930,7 +980,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 			}
 			
 			if (lf == nFairs) {  // if we made it with all cases satisfying the threshold
-				cout << "   Fairlead tensions converged to " << 100.0*ICthresh << "\% after " << t << " seconds." << endl;
+				cout << "   Fairlead tensions converged to " << 100.0*ICthresh << "\% after " << t << " seconds.        " << endl;
 				break; // break out of the time stepping loop
 			}
 		}
@@ -1006,9 +1056,8 @@ int SetupWavesFromFile(void)
 	ifstream myfile2 (WaveFilename);     // open an input stream to the wave elevation time series file
 	if (myfile2.is_open())
 	{
-		while ( myfile2.good() )
+		while ( getline(myfile2,line2) )
 		{
-			getline (myfile2,line2);
 			lines2.push_back(line2);
 		}
 		myfile2.close();
@@ -1025,12 +1074,15 @@ int SetupWavesFromFile(void)
 	
 	for (int i=0; i<lines2.size(); i++)
 	{ 	
+
 		std::vector<std::string> entries2 = split(lines2[i], ' ');
+
 		if (entries2.size() >= 2) {
 			wavetimes.push_back(atof(entries2[0].c_str()));
 			waveelevs.push_back(atof(entries2[1].c_str()));
 		}
 		else cout << "   bad line read from " << WaveFilename << endl;
+
 	}
 	if (wordy > 2) cout << "   Done reading file. " << endl;
 	
@@ -1226,7 +1278,7 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 	
 	
 	if (dtC > 0) // if DT > 0, do simulation, otherwise just return last calculated values.
-	{		
+	{	
 				
 		
 		// calculate positions and velocities for fairleads ("vessel" connections)
@@ -1243,7 +1295,7 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 			rFairi[ln][2] = rFairRel[ln][2] + X[2];	//-X[4]*rFairtS[ln][0] + X[3]*rFairtS[ln][1] + rFairtS[ln][2] + X[2];		// z
 
 			// absolute velocities
-			rdFairi[ln][0] =                        - XD[5]*rFairRel[ln][1] + XD[4]*rFairRel[ln][2] + XD[0];		// x
+			rdFairi[ln][0] =                        - XD[5]*rFairRel[ln][1] + XD[4]*rFairRel[ln][2] + XD[0];		// x   
 			rdFairi[ln][1] =  XD[5]*rFairRel[ln][0]	                        - XD[3]*rFairRel[ln][2] + XD[1];		// y
 			rdFairi[ln][2] = -XD[4]*rFairRel[ln][0] + XD[3]*rFairRel[ln][1]	                       + XD[2];		// z
 		}
@@ -1269,7 +1321,17 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 			rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
 			//t = t + dtM;                      // update time XXX TIME IS UPDATED BY RK2!
 
-				
+		
+		// check for NaNs
+		for (int i=0; i<nX; i++)
+		{
+			if (isnan(states[i]))
+			{
+				cout << "   Error: NaN value detected in MoorDyn state at time " << t << " s."<< endl;
+				return -1;
+			}
+		}
+		
 			
 		// call end routines to write output files and get forces to send to FAST
 				
@@ -1305,9 +1367,7 @@ int DECLDIR LinesClose(void)
 	free(states);
 	free(f0       );
 	free(f1       );
-	//free(f2       );
-	//free(f3       );
-	free(xt       );
+	free(xt       );	
 	
 	// close any open output files
 	if (outfileMain.is_open())
@@ -1317,6 +1377,11 @@ int DECLDIR LinesClose(void)
 			if (outfiles[l]->is_open())
 				outfiles[l]->close();
 	
+	// reset counters to zero!
+	nFairs  = 0;
+	nAnchs  = 0;
+	nConns  = 0;
+		
 	// clear any global vectors
 	FlinesS.clear();		
 	rFairtS.clear();		
@@ -1334,9 +1399,17 @@ int DECLDIR LinesClose(void)
 	zetaCglobal.clear();
 	
 	cout << "   MoorDyn closed." << endl;
-	
-	if (PromptPtr == NULL)  FreeConsole();  //_close(hConHandle); // close console window if we made our own.
-	
+
+#ifndef OSX	
+#ifndef LINUX	
+	if (OwnConsoleWindow == 1)  {
+		cout << "press enter to close: " << endl;
+		cin.get();
+		FreeConsole();  //_close(hConHandle); // close console window if we made our own.
+	}
+#endif
+#endif
+
 	return 0;
 }
 
@@ -1344,7 +1417,10 @@ int DECLDIR LinesClose(void)
 double DECLDIR GetFairTen(int l)
 {
 	// output LINE fairlead (top end) tensions
-	return LineList[l-1].getNodeTen(LineList[l-1].getN());  // fixed the index to adjust to 0 start on March 2!
+	if ((l > 0) && (l <= nLines))
+		return LineList[l-1].getNodeTen(LineList[l-1].getN());  // fixed the index to adjust to 0 start on March 2!
+	else
+		return -1;
 }
 
 
@@ -1359,12 +1435,39 @@ int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float
 	return 0;
 }
 
+int DECLDIR GetConnectPos(int l, double pos[3])
+{
+	if ((l > 0) && (l <= nConnects))
+	{
+		vector< double > rs(3);
+		vector< double > rds(3);
+		ConnectList[l-1].getConnectState(rs, rds);
+		for (int i=0; i<3; i++)
+			pos[i] = rs[i];
+		return 0;
+	}
+	else
+		return -1;
+}
+
+int DECLDIR GetConnectForce(int l, double force[3])
+{
+	if ((l > 0) && (l <= nConnects))
+	{
+		ConnectList[l-1].getFnet(force);
+		return 0;
+	}
+	else
+		return -1;
+}
 
 int DECLDIR DrawWithGL()
 {
+#ifdef USEGL
 	// draw the mooring system with OpenGL commands (assuming a GL context has been created by the calling program)
 	for (int l=0; l< nLines; l++)
 		LineList[l].drawGL();  
 	return 0;
+#endif
 }
 

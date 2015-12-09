@@ -180,8 +180,10 @@ public:
 	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
 		
 	void Output(double );
-	
+
+#ifdef USEGL	
 	void drawGL(void);
+#endif
 };
 
 #endif

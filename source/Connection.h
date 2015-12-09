@@ -71,6 +71,8 @@ public:
 	int number;
 	int type;  // defining whether fixed 0, vessel 1, or connect 2	
 	
+	~Connection();
+	
 	void setup(ConnectProps& props);
 	
 	void addLineToConnect(Line& theLine, int TopOfLine);
