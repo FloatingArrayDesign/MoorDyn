@@ -14,13 +14,17 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#ifndef __MOORDYN_H__
+#define __MOORDYN_H__
 
 #ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
-#define DECLDIR __declspec(dllexport)
+	#ifndef LINUX
+		#define DECLDIR __declspec(dllexport)
+	#else
+		#define DECLDIR 
+	#endif
 #else
-#define DECLDIR //__declspec(dllimport)
+	#define DECLDIR //__declspec(dllimport)
 #endif
 
 #ifdef __cplusplus
@@ -28,17 +32,29 @@ extern "C"
 {
 #endif
 
-#include <Windows.h>
+#ifndef OSX
+#ifndef LINUX
+ #include <Windows.h>
+#endif
+#endif
 
-int DECLDIR LinesInit(float X[], float XD[], float TransMat[], float* dTime);
+int DECLDIR LinesInit(double X[], double XD[]);
 
-int DECLDIR LinesCalc(float X[], float XD[], float TransMat[], float Flines[], float* ZTime, float* dTime, 
-				int* NumLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[]);
+int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* , double* );
 
 int DECLDIR LinesClose(void);
 
+double DECLDIR GetFairTen(int);
+
+int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[] );
+
+int DECLDIR GetConnectPos(int l, double pos[3]);
+int DECLDIR GetConnectForce(int l, double force[3]);
+
+int DECLDIR DrawWithGL(void);
 
 void AllOutput(double);
+int SetupWavesFromFile(void);
 
 #ifdef __cplusplus
 }

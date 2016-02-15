@@ -38,6 +38,8 @@ class Connection
 	double conFX;
 	double conFY;
 	double conFZ;
+	double conCdA;
+	double conCa;
 	
 	// environmental
 	EnvCond env;  // struct to hold environmental settings
@@ -69,6 +71,8 @@ public:
 	int number;
 	int type;  // defining whether fixed 0, vessel 1, or connect 2	
 	
+	~Connection();
+	
 	void setup(ConnectProps& props);
 	
 	void addLineToConnect(Line& theLine, int TopOfLine);
@@ -77,13 +81,21 @@ public:
 		
 	void getFnet(double Fnet_out[]);
 	
-	void initialize( double* X, EnvCond env_in, float pX[], float TransMat[] );
+	double GetConnectionOutput(OutChanProps outChan);
+	
+	void setEnv(EnvCond env_in);
+	
+	//void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
+	
+	void initializeFairlead( double pX[], double TransMat[] );
+	void initializeConnect( double* X );
 	
 	void getNetForceAndMass();
 	
 	void doRHS( const double* X,  double* Xd, const double time);
 	
 	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);	
+	void updateFairlead( const double time);
 };
 
 #endif

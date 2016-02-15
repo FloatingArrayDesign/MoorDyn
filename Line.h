@@ -28,9 +28,6 @@ class Connection;
 
 class Line 
 {
-	// unique to Line
-	Connection* AnchConnect;  // pointer to anchor connection
-	Connection* FairConnect;  // pointer to fairlead connection
 	
 	// ENVIRONMENTAL STUFF
 	
@@ -83,8 +80,8 @@ class Line
 	vector<double> ldstr; 		// rate of stretch (m/s)
 	double d;		// line diameter
 	double rho;		// line density
-	double E;		// line elasticity modulus
-	double c;		// line axial internal damping coefficient [N/(m/s)]
+	double E;		// line elasticity modulus [N]
+	double c;		// line axial internal damping coefficient [Ns]
 	double Can;
 	double Cat;
 	double Cdn;
@@ -110,27 +107,27 @@ class Line
 	double Hs;
 	double Tp;
 	double gamma;
-	double beta; 			// wave heading
+	float beta; 			// wave heading
 		
 	int Nw;  				// number of wave frequency components considered    //OK AS INT???
-	vector<double> w;
-	vector<double> k;
-	double dw;			// FAST's dw (really small typically)
+	vector<float> w;
+	vector<float> k;
+	float dw;			// FAST's dw (really small typically)
 	
-	vector<doubleC> zetaC;		// Fourier transform of wave elevation
+	vector<floatC> zetaC0;		// Fourier transform of wave elevation at origin
+	vector<floatC> zetaC;		// Fourier transform of wave elevation
+	vector< vector< floatC > > UC;     // Fourier transform of wave velocities
+	vector< vector< floatC > > UdC;     // Fourier transform of wave accelerations
+	
 	vector<doubleC> WGNC;		// 
 	vector<double> WaveS2Sdd;	// 
-
-	vector< vector< doubleC > > UC;     // Fourier transform of wave velocities
-	vector< vector< doubleC > > UdC;     // Fourier transform of wave accelerations
-	
 	doubleC WGNC_Fact; 		// sqrt( pi/(dw*WaveDT) );   // This factor is needed by the discrete time inverse Fourier transform to ensure that the time series WGN process has unit variance
 	double S2Sd_Fact; 		// 1.0/WaveDT;                       // This factor is also needed by the discrete time inverse Fourier transform
 
 	vector< double > Ucurrent; // constant uniform current to add (three components)
 	
 	// new additions for precalculating wave quantities
-	vector< vector< double > > zetaTS;
+	vector< vector< double > > zetaTS;   // time series of wave elevations above each node
 	vector< vector< double > > FTS;
 	vector< vector< vector< double > > > UTS;
 	vector< vector< vector< double > > > UdTS;
@@ -142,6 +139,12 @@ class Line
 
 public:
  	int number; // line "number" id
+	
+	int WaveKin;  // flag indicating whether wave kinematics will be considered for this line
+ 
+ 	// unique to Line
+	Connection* AnchConnect;  // pointer to anchor connection
+	Connection* FairConnect;  // pointer to fairlead connection
  
 	int getN(); // returns N (number of segments)
 	
@@ -153,12 +156,20 @@ public:
 
 	double getNodeTen(int i);
 	
+	double GetLineOutput(OutChanProps outChan);
+	
+	void getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen);
+	
 	void getAnchStuff(vector<double> &Fnet_out, vector< vector<double> > &M_out);
 
 	void getFairStuff(vector<double> &Fnet_out, vector< vector<double> > &M_out);
 
 			
 	void setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in);
+	
+	void setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmega_in, double dt_in );
+	
+	void makeWaveKinematics( double t0 );
 		
 	void scaleDrag(double scaler);
 	
@@ -169,6 +180,10 @@ public:
 	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
 		
 	void Output(double );
+
+#ifdef USEGL	
+	void drawGL(void);
+#endif
 };
 
 #endif
