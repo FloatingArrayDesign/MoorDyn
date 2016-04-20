@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 1.00.04C.  Feb 15, 2016.
+ // This is version 1.01.00C.  April 20, 2016.
  
 #include "Misc.h"
 #include "MoorDyn.h"
@@ -33,8 +33,8 @@ using namespace std;
 vector<double> FlinesS;					// net line force vector (6-DOF) - retains last solution for use when inputted dt is zero (such as during FAST predictor steps) when the model does not time step
 vector< vector< double > > rFairtS;		// fairlead locations in turbine/platform coordinates
 vector< vector< double > > rFairRel;		// fairlead locations relative to platform ref point but in inertial orientation
-vector< vector< double > > rFairi;			// fairlead locations in inertial reference frame
-vector< vector< double > > rdFairi;		// fairlead velocities in inertial reference frame
+double** rFairi;			// fairlead locations in inertial reference frame
+double** rdFairi;		// fairlead velocities in inertial reference frame
 
 // static vectors to hold line and connection objects
 vector< LineProps > LinePropList; 			// to hold line library types
@@ -66,11 +66,15 @@ double* f0;
 double* f1;
 //double* f2;
 //double* f3;
+
+double** Ffair;	// pointer to 2-d array holding fairlead forces
+
 vector< int > LineStateIs;  // vector of line starting indices in "states" array
 
 //double dt; // FAST time step
 double dtM0; // desired mooring line model time step   
 
+double dtOut = 0;  // (s) desired output interval (the default zero value provides output at every call to MoorDyn)
 
 // new temporary additions for waves
 vector< floatC > zetaCglobal;
@@ -86,7 +90,8 @@ char const* PromptPtr;  // pointer to be made to environment variable PROMPT
 int OwnConsoleWindow = 0;	
 
 #ifdef LINUX	// any differences from built-in in mingw?  what about on OSX?
- int isnan(double x) { return x != x; } 	// changed to lower case.  will this still work?  Apparently some compiler optimizations can ruin this method
+// int isnan(double x) { return x != x; } 	// changed to lower case.  will this still work?  Apparently some compiler optimizations can ruin this method
+#define isnan(x) std::isnan(x)     // contributed by Yi-Hsiang Yu at NREL
 #endif
 
 // master function to handle time stepping (updated in v1.0.1 to follow MoorDyn F)
@@ -148,9 +153,18 @@ double GetOutput(OutChanProps outChan)
 }
 
 // write all the output files for the current timestep
-void AllOutput(double t)
+void AllOutput(double t, double dtC)
 {
-	// write master output file
+	// if using a certain output time step, check whether we should output
+	
+	if (dtOut > 0)
+		if (t < (floor((t-dtC)/dtOut) + 1.0)*dtOut)  // if output should occur over the course of this time step, then do it!
+			return;
+	
+	// What the above does is say if ((dtOut==0) || (t >= (floor((t-dtC)/dtOut) + 1.0)*dtOut)), do the below.
+	// This way we avoid the risk of division by zero.
+	
+	// write to master output file
 	if (outfileMain.is_open())
 	{
 		outfileMain << t << "\t "; 		// output time
@@ -172,6 +186,8 @@ void AllOutput(double t)
 		
 	// write individual line output files
 	for (int l=0; l < nLines; l++)  LineList[l].Output(t); 
+	
+	return;
 }
 
 
@@ -253,7 +269,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 #endif	
 	
 	// ---------------------------- MoorDyn title message ----------------------------
-	cout << "\n Running MoorDyn (v1.00.04C, 2016-02-15)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
+	cout << "\n Running MoorDyn (v1.01.00C, 2016-04-20)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -512,13 +528,14 @@ int DECLDIR LinesInit(double X[], double XD[])
 						//else if (entries[1] == "DWWave")    dw_in = atof(entries[0].c_str());
 						else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
 						else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
-						else if (entries[1] == "WtrDpth")   env.WtrDpth = atof(entries[0].c_str()); 
+						else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
 						else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
 						else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
 						else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
 						else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
-						else if (entries[1] == "WaveKin")   env.WaveKin = atoi(entries[0].c_str());
-						else if (entries[1] == "WriteUnits")   env.WriteUnits = atoi(entries[0].c_str());
+						else if (entries[1] == "WaveKin")                                   env.WaveKin = atoi(entries[0].c_str());
+						else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
+						else if (entries[1] == "dtOut")                                     dtOut = atof(entries[0].c_str()); // output writing period (0 for at every call)
 					}
 					i++;
 				}
@@ -870,6 +887,11 @@ int DECLDIR LinesInit(double X[], double XD[])
 	//f3 = (double*) malloc( nX*sizeof(double) );
 	xt = (double*) malloc( nX*sizeof(double) );
 	
+	// make array used for passing fairlead kinematics and forces between fairlead- and platform-centric interface functions
+	Ffair = make2Darray(nFairs, 3); 
+	
+	rFairi = make2Darray(nFairs, 3);
+	rdFairi = make2Darray(nFairs, 3);
 	
 	// --------- Allocate/size some global, persistent vectors -------------
 
@@ -878,16 +900,16 @@ int DECLDIR LinesInit(double X[], double XD[])
 	FlinesS.resize(6);  // should clean up these var names
 	rFairtS.resize (nFairs);
 	rFairRel.resize(nFairs);
-	rFairi.resize  (nFairs);  // after applying platform DOF ICs, should eventually pass this rather than rFairt to Line.setup()
-	rdFairi.resize (nFairs);	
+//	rFairi.resize  (nFairs);  // after applying platform DOF ICs, should eventually pass this rather than rFairt to Line.setup()
+//	rdFairi.resize (nFairs);	
 	
 
 	for (unsigned int ii=0; ii<nFairs; ii++)
 	{
 		rFairtS[ii].resize(3);
 		rFairRel[ii].resize(3);
-		rFairi[ii].resize(3);
-		rdFairi[ii].resize(3);
+//		rFairi[ii].resize(3);
+//		rdFairi[ii].resize(3);
 		
 		rFairtS[ii][0] = rFairt[ii][0];	// store relative fairlead locations statically for internal use
 		rFairtS[ii][1] = rFairt[ii][1];
@@ -1034,7 +1056,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 	else cout << "   ERROR: Unable to write to main output file " << endl;  //TODO: handle error
 	
 	// write t=0 output line
-	AllOutput(0.0);
+	AllOutput(0.0, 0.0);
 	
 						
 	cout <<endl;
@@ -1257,7 +1279,7 @@ int SetupWavesFromFile(void)
 
 
 
-
+// This is the original time stepping function, for platform-centric coupling.
 int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, double* dt_in) 
 {
 	     // From FAST: The primary output of this routine is array Flines(:), which must
@@ -1295,7 +1317,7 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 				
 		
 		// calculate positions and velocities for fairleads ("vessel" connections)
-		for (int ln=0; ln < rFairi.size(); ln++)
+		for (int ln=0; ln < nFairs; ln++)
 		{			
 			// locations (unrotated reference frame) about platform reference point
 	          rFairRel[ln][0] = TransMat[0]*rFairtS[ln][0] + TransMat[1]*rFairtS[ln][1] + TransMat[2]*rFairtS[ln][2];	// x
@@ -1314,10 +1336,82 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 		}
 		
 		
+		// call new fairlead-centric time stepping function (replaced part of what used to be in this function)
+		FairleadsCalc(rFairi, rdFairi, Ffair, t_in, dt_in);
 		
+		
+	//	// send latest fairlead kinematics to fairlead objects
+	//	for (int l=0; l < nFairs; l++)  
+	//		ConnectList[FairIs[l]].initiateStep(rFairi[l], rdFairi[l], t);					
+	//				
+	//				
+	//	// round to get appropriate mooring model time step
+	//	int NdtM = ceil(dtC/dtM0);   // number of mooring model time steps per outer time step
+	//	if (NdtM < 1)  
+	//	{	cout << "   Error: dtC is less than dtM.  (" << dtC << " < " << dtM0 << ")" << endl;
+	//		return -1;
+	//	}
+	//	double dtM = dtC/NdtM;		// mooring model time step size (s)
+	//	
+	//	
+	//	// loop through line integration time steps (integrate solution forward by dtC)
+	//	for (int its = 0; its < NdtM; its++)
+	//		rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
+	//		//t = t + dtM;                      // update time XXX TIME IS UPDATED BY RK2!
+     //
+	//	
+	//	// check for NaNs
+	//	for (int i=0; i<nX; i++)
+	//	{
+	//		if (isnan(states[i]))
+	//		{
+	//			cout << "   Error: NaN value detected in MoorDyn state at time " << t << " s."<< endl;
+	//			return -1;
+	//		}
+	//	}
+	//	
+	//		
+	//	// call end routines to write output files and get forces to send to FAST
+	//			
+	//	// go through connections to get fairlead forces
+	//	//double Ffair[3];
+		double tFlines[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		
+		for (int l=0; l < nFairs; l++)  {
+			ConnectList[FairIs[l]].getFnet(Ffair[l]);	// Ffair is now a global sized during setup
+
+			// Calculate Flines! (Note direction sign conversions)  >> Recently fixed moments to use rFairRel (location relative to platform reference in inertial coord system)
+			tFlines[0] = tFlines[0] + Ffair[l][0];		// x force 
+			tFlines[1] = tFlines[1] + Ffair[l][1];		// y force
+			tFlines[2] = tFlines[2] + Ffair[l][2];		// z force
+			tFlines[3] = tFlines[3] - Ffair[l][1]*rFairRel[l][2] + Ffair[l][2]*rFairRel[l][1];	// Mx = FzRy - FyRz    fixed 2016-01-10 (-= typo)
+			tFlines[4] = tFlines[4] + Ffair[l][0]*rFairRel[l][2] - Ffair[l][2]*rFairRel[l][0];	// My = FxRz - FzRx
+			tFlines[5] = tFlines[5] - Ffair[l][0]*rFairRel[l][1] + Ffair[l][1]*rFairRel[l][0];	// Mz = FyRx - FxRy    fixed 2016-01-10 (-= typo)			
+		}		
+				 
+		for (int ii=0; ii<6; ii++) FlinesS[ii] = tFlines[ii];  // assign forces to static Flines vector		
+	}
+	
+	for (int ii=0; ii<6; ii++) Flines[ii] = FlinesS[ii];  // assign static Flines vector to returned Flines vector (for FAST)
+	
+	return 0;
+}
+
+
+// This function now handles the assignment of fairlead boundary conditions, time stepping, and collection of resulting forces at fairleads
+// It is called by the old LinesCalc function.  It can also be called externally for fairlead-centric coupling.
+int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in)
+{
+	double t =  *t_in;		// this is the current time
+	double dtC =  *dt_in;	// this is the coupling time step
+	
+	
+	if (dtC > 0) // if DT > 0, do simulation, otherwise leave passed fFairs unadjusted.
+	{
+	
 		// send latest fairlead kinematics to fairlead objects
 		for (int l=0; l < nFairs; l++)  
-			ConnectList[FairIs[l]].initiateStep(rFairi[l], rdFairi[l], t);					
+			ConnectList[FairIs[l]].initiateStep(rFairIn[l], rdFairIn[l], t);					
 					
 					
 		// round to get appropriate mooring model time step
@@ -1332,7 +1426,6 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 		// loop through line integration time steps (integrate solution forward by dtC)
 		for (int its = 0; its < NdtM; its++)
 			rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
-			//t = t + dtM;                      // update time XXX TIME IS UPDATED BY RK2!
 
 		
 		// check for NaNs
@@ -1346,30 +1439,12 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 		}
 		
 			
-		// call end routines to write output files and get forces to send to FAST
-				
-		// go through connections to get fairlead forces
-		double Ffair[3];
-		float tFlines[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-		
-		for (int l=0; l < nFairs; l++)  {
-			ConnectList[FairIs[l]].getFnet(Ffair);
+		// go through connections to get fairlead forces		
+		for (int l=0; l < nFairs; l++)
+			ConnectList[FairIs[l]].getFnet(fFairIn[l]);
 
-			// Calculate Flines! (Note direction sign conversions)  >> Recently fixed moments to use rFairRel (location relative to platform reference in inertial coord system)
-			tFlines[0] = tFlines[0] + Ffair[0];		// x force 
-			tFlines[1] = tFlines[1] + Ffair[1];		// y force
-			tFlines[2] = tFlines[2] + Ffair[2];		// z force
-			tFlines[3] = tFlines[3] - Ffair[1]*rFairRel[l][2] + Ffair[2]*rFairRel[l][1];	// Mx = FzRy - FyRz    fixed 2016-01-10 (-= typo)
-			tFlines[4] = tFlines[4] + Ffair[0]*rFairRel[l][2] - Ffair[2]*rFairRel[l][0];	// My = FxRz - FzRx
-			tFlines[5] = tFlines[5] - Ffair[0]*rFairRel[l][1] + Ffair[1]*rFairRel[l][0];	// Mz = FyRx - FxRy    fixed 2016-01-10 (-= typo)			
-		}		
-		
-		AllOutput(t);   // write outputs
-		 
-		for (int ii=0; ii<6; ii++) FlinesS[ii] = tFlines[ii];  // assign forces to static Flines vector		
+		AllOutput(t, dtC);   // write outputs
 	}
-	
-	for (int ii=0; ii<6; ii++) Flines[ii] = FlinesS[ii];  // assign static Flines vector to returned Flines vector (for FAST)
 	
 	return 0;
 }
@@ -1381,6 +1456,10 @@ int DECLDIR LinesClose(void)
 	free(f0       );
 	free(f1       );
 	free(xt       );	
+	
+	free2Darray(Ffair, nFairs);
+	free2Darray(rFairi, nFairs);
+	free2Darray(rdFairi, nFairs);
 	
 	// close any open output files
 	if (outfileMain.is_open())
@@ -1399,8 +1478,8 @@ int DECLDIR LinesClose(void)
 	FlinesS.clear();		
 	rFairtS.clear();		
 	rFairRel.clear();		
-	rFairi.clear();		
-	rdFairi.clear();		
+//	rFairi.clear();		
+//	rdFairi.clear();		
 	LinePropList.clear(); 	
 	LineList.clear(); 		
 	ConnectList.clear();	
@@ -1473,6 +1552,20 @@ int DECLDIR GetConnectForce(int l, double force[3])
 	else
 		return -1;
 }
+
+
+int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])
+{
+		// output LINE fairlead (top end) tensions
+	if ((LineNum > 0) && (LineNum <= nLines))
+	{
+		int worked = LineList[LineNum].getNodePos(NodeNum, pos);	// call line member function to fill in coordinates of the node of interest 
+		if (worked >= 0)
+			return 0;  // success
+	}
+	return -1;		// otherwise indicate error (invalid node and line number comination)
+}
+
 
 int DECLDIR DrawWithGL()
 {

@@ -1,4 +1,4 @@
-# makefile for MoorDyn compiled as Lines.so (Linux)
+# makefile for MoorDyn compiled as MoorDyn.so (Linux)
 
 
 # tell to search for dependencies in parent dir
@@ -9,10 +9,10 @@ LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -DLINUX -fPI
 CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DLINUX -fPIC
 
 
-all: Lines.so
+all: MoorDyn.so
  
-Lines.so: MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
-	g++ $(LFLAGS) -o Lines.so MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
+MoorDyn.so: MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
+	g++ $(LFLAGS) -o MoorDyn.so MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
 
 MoorDyn.o: MoorDyn.cpp MoorDyn.h Line.h Line.cpp Connection.h Connection.cpp QSlines.h Misc.h Misc.cpp
 	g++ $(CFLAGS) ../source/MoorDyn.cpp

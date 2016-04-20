@@ -325,6 +325,21 @@ double Line::getNodeTen(int i)
 };
 
 
+// function to get position of any node along the line
+int Line::getNodePos(int NodeNum, double pos[3])
+{
+	if ((NodeNum >= 0 ) && (NodeNum <= N))
+	{
+		for (int i=0; i<3; i++)
+			pos[i] = r[NodeNum][i];
+		
+		return 0;
+	}
+	else
+		return -1;  // indicate an error
+}
+
+
 // FASTv7 style line tension outputs
 void Line::getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen)
 {		

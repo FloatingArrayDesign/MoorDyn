@@ -94,7 +94,7 @@ public:
 	
 	void doRHS( const double* X,  double* Xd, const double time);
 	
-	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);	
+	void initiateStep(double FairIn[3], double rdFairIn[3], double time);	
 	void updateFairlead( const double time);
 };
 

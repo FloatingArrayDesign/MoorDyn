@@ -1,4 +1,4 @@
-# makefile for MoorDyn compiled as Lines.dylib
+# makefile for MoorDyn compiled as MoorDyn.dylib
 
 
 # tell to search for dependencies in parent dir
@@ -11,9 +11,9 @@ CFLAGS = -c -Ofast -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu
 
 CC = clang++
 
-all: Lines.dylib
+all: MoorDyn.dylib
  
-Lines.dylib: MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
+MoorDyn.dylib: MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
 	$(CC) $(LFLAGS) -o $@ MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
 # added linking to openGL above
 

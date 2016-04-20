@@ -156,6 +156,8 @@ public:
 
 	double getNodeTen(int i);
 	
+	int getNodePos(int i, double pos[3]);
+	
 	double GetLineOutput(OutChanProps outChan);
 	
 	void getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen);

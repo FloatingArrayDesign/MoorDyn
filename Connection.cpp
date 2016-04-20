@@ -308,7 +308,7 @@ void Connection::doRHS( const double* X,  double* Xd, const double time)
 
 
 // called at the beginning of each coupling step to update the boundary conditions (fairlead kinematics) for the proceeding line time steps
-void Connection::initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time)
+void Connection::initiateStep(double rFairIn[3], double rdFairIn[3], double time)
 {	
 	t0 = time; // set start time for BC functions
 	

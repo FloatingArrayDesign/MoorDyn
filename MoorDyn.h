@@ -42,6 +42,9 @@ int DECLDIR LinesInit(double X[], double XD[]);
 
 int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* , double* );
 
+int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in);
+
+
 int DECLDIR LinesClose(void);
 
 double DECLDIR GetFairTen(int);
@@ -50,10 +53,11 @@ int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float
 
 int DECLDIR GetConnectPos(int l, double pos[3]);
 int DECLDIR GetConnectForce(int l, double force[3]);
+int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3]);
 
 int DECLDIR DrawWithGL(void);
 
-void AllOutput(double);
+void AllOutput(double, double);
 int SetupWavesFromFile(void);
 
 #ifdef __cplusplus
