@@ -38,9 +38,17 @@ extern "C"
 #endif
 #endif
 
-int DECLDIR LinesInit(double X[], double XD[]);
+
+
+int DECLDIR LinesInit(double X[], double XD[]);     // initialization function for platform-centric coupling
+int DECLDIR FairleadsInit(double X[], double XD[]);   // initialization function for fairlead-based coupling
+int MoorDynInit(double X[], double XD[], int FairleadCoupling); // called by one of the above
 
 int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* , double* );
+
+int DECLDIR FairleadsCalc2(double rFairIn[], double rdFairIn[], double fFairIn[], double* t_in, double *dt_in); // easier to call version
+int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in);
+
 
 int DECLDIR LinesClose(void);
 
@@ -50,11 +58,11 @@ int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float
 
 int DECLDIR GetConnectPos(int l, double pos[3]);
 int DECLDIR GetConnectForce(int l, double force[3]);
+int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3]);
 
 int DECLDIR DrawWithGL(void);
 
-void AllOutput(double);
-int SetupWavesFromFile(void);
+int AllOutput(double, double);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
+ * Copyright (c) 2019 Matt Hall <mtjhall@alumni.uvic.ca>
  * 
  * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public License as 
@@ -30,36 +30,48 @@ using namespace std;
 
 
 // set up line object
-void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNodes, 
-	Connection &AnchConnect_in, Connection &FairConnect_in,
+void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSegs, 
+//	Connection &AnchConnect_in, Connection &FairConnect_in,
 	shared_ptr<ofstream> outfile_pointer, string channels_in) 
 {
 	// ================== set up properties ===========	
 	number = number_in;	
 	UnstrLen = UnstrLen_in;
-	N = NumNodes; // assign number of nodes to line
+	N = NumSegs; // assign number of nodes to line
 	
 	WaveKin = 0;  // start off with wave kinematics disabled.  Can be enabled after initial conditions are found and wave kinematics are calculated
 	
-	AnchConnect = &AnchConnect_in;		// assign line end connections
-	FairConnect = &FairConnect_in;	
+//	AnchConnect = &AnchConnect_in;		// assign line end connections <<<<<<<<< no longer needed?? <<<<<
+//	FairConnect = &FairConnect_in;	
 		
-	outfile = outfile_pointer.get(); 		// make outfile point to the right place
-	channels = channels_in; 				// copy string of output channels to object
-			
-	d = props.d;
-	rho = props.w/(pi/4.*d*d);
-	E = props.EA/(pi/4.*d*d);
-	c = props.c/(pi/4.*d*d);
-	Can = props.Can;
-	Cat = props.Cat;
-	Cdn = props.Cdn;
-	Cdt = props.Cdt;
-	ReFac = props.ReFac;
+	// store passed line properties (and convert to numbers)
+	d   = props->d;
+	rho = props->w  /(pi/4.*d*d);
+	E   = props->EA /(pi/4.*d*d);
+	c   = props->c  /(pi/4.*d*d);
+	Can = props->Can;
+	Cat = props->Cat;
+	Cdn = props->Cdn;
+	Cdt = props->Cdt;
+	
+	nEpoints = props->nEpoints;    // copy in nonlinear stress-strain data if applicable
+	for (int I=0; I<nEpoints; I++)
+	{	stiffXs[I] = props->stiffXs[I];
+		stiffYs[I] = props->stiffYs[I];
+	}	
+	
+	nCpoints = props->nCpoints;    // copy in nonlinear stress-strainrate data if applicable
+	for (int I=0; I<nCpoints; I++)
+	{	dampXs[I] = props->dampXs[I];
+		dampYs[I] = props->dampYs[I];
+	}	
+	
+	A = pi/4.*d*d;
+	
 	
 	// automatic internal damping option (if negative BA provided, as damping ratio)
-	if (props.c < 0) {
-		double zeta = -props.c; // desired damping ratio
+	if (props->c < 0) {
+		double zeta = -props->c; // desired damping ratio
 		c = zeta * UnstrLen/N * sqrt(E*rho);   // rho = w/A
 		if (wordy > 1) cout << "   Line " << number << "damping set to " << c << " Ns." << endl;
 	}
@@ -74,7 +86,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	// forces 
 	T.resize(N, vector<double>(3, 0.0));	// line tensions
 	Td.resize(N, vector<double>(3, 0.0));   // line damping forces
-	Tmag.resize(N, 0.0);				// segment tension magnitudes << hardly used
+//	Tmag.resize(N, 0.0);				// segment tension magnitudes << hardly used
 	W.resize(N+1, vector<double>(3, 0.0));	// node weights
 
 	Dp.resize(N+1, vector<double>(3, 0.0));		// node drag (transverse)
@@ -99,16 +111,36 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	
 	for (int i=0; i<N; i++)	
 	{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
-		V[i] = l[i]*0.25*pi*d;
+		V[i] = l[i]*0.25*pi*d*d;    // previously missing second d
 	}
 	
-	// ==================================================================
-	// create output file for writing output (and write channel header line)
+	
+	outfile = outfile_pointer.get(); 		// make outfile point to the right place
+	channels = channels_in; 				// copy string of output channels to object
+	
+	
+	return;
+};
+
+
+void Line::setEnv(EnvCond env_in)
+{
+	env = env_in;
+}
+
+
+// get ICs for line using quasi-static approach
+void Line::initializeLine(double* X )	
+{
+	
+	// create output file for writing output (and write channel header and units lines) if applicable
 				
 	if (outfile) // check it's not null.  Null signals no individual line output files
 	{
 		if (outfile->is_open())
 		{	
+			// ------------- write channel names line --------------------
+		
 			// output time
 			*outfile << "Time" << "\t ";
 			
@@ -141,45 +173,109 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (int i=1; i<=N; i++)  {
 					*outfile << "Seg" << i << "cx \t Node" <<  i << "cy \t Node" <<  i << "cz \t ";
 				}
 			}
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (int i=1; i<=N; i++)  {
 					*outfile << "Seg" << i << "Te \t ";
 				}
 			}			
 			// output segment strains?
 			if (channels.find("s") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (int i=1; i<=N; i++)  {
 					*outfile << "Seg" << i << "St \t ";
 				}
 			}	
 			// output segment strain rates?
 			if (channels.find("d") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (int i=1; i<=N; i++)  {
 					*outfile << "Seg" << i << "dSt \t ";
 				}
 			}
+			// output seabed contact forces?
+			if (channels.find("b") != string::npos) {
+				for (int i=0; i<=N; i++)  {
+					*outfile << "Node" << i << "bx \t Node" <<  i << "by \t Node" <<  i << "bz \t ";
+				}
+			}
 			
-			*outfile << "\n";   // should also write units at some point!
+			*outfile << "\n";   
+			
+			
+			// ----------- write units line ---------------
+
+			if (env.WriteUnits > 0)
+			{
+				// output time
+				*outfile << "(s)" << "\t ";
+				
+				// output positions?
+				//if (find(channels.begin(), channels.end(), "position") != channels.end())
+				if (channels.find("p") != string::npos)
+				{
+					for (int i=0; i<=3*N+2; i++)	//loop through nodes
+						*outfile << "(m) \t";
+				}
+				// output velocities?
+				if (channels.find("v") != string::npos) {
+					for (int i=0; i<=3*N+2; i++)	//loop through nodes
+						*outfile << "(m/s) \t";
+					
+				}
+				// output wave velocities?
+				if (channels.find("U") != string::npos) {
+					for (int i=0; i<=3*N+2; i++)	//loop through nodes
+						*outfile << "(m/s) \t";
+				}
+				// output hydro force
+				if (channels.find("D") != string::npos) {
+					for (int i=0; i<=3*N+2; i++)	//loop through nodes
+						*outfile << "(N) \t";
+				}
+				// output internal damping force?
+				if (channels.find("c") != string::npos) {
+					for (int i=0; i<N; i++)	//loop through nodes
+						*outfile << "(N) \t";
+				}
+				// output segment tensions?
+				if (channels.find("t") != string::npos) {
+					for (int i=0; i<N; i++)	//loop through nodes
+						*outfile << "(N) \t";
+				}			
+				// output segment strains?
+				if (channels.find("s") != string::npos) {
+					for (int i=0; i<N; i++)	//loop through nodes
+						*outfile << "(-) \t";
+				}	
+				// output segment strain rates?
+				if (channels.find("d") != string::npos) {
+					for (int i=0; i<N; i++)	//loop through nodes
+						*outfile << "(-/s) \t";
+				}
+				// output seabed contact force?
+				if (channels.find("D") != string::npos) {
+					for (int i=0; i<=3*N+2; i++)	//loop through nodes
+						*outfile << "(N) \t";
+				}
+				
+				*outfile << "\n";   // should also write units at some point!
+			}
 		}
 		else cout << "   Error: unable to write file Line" << number << ".out" << endl;  //TODO: handle this!
 	}
-	return;
-};
-
-
-// get ICs for line using quasi-static approach
-void Line::initialize( double* X )	
-{
-	// set end node positions and velocities from connect objects
-	AnchConnect->getConnectState(r[0],rd[0]);
-	FairConnect->getConnectState(r[N],rd[N]);
 	
-		
+	
+//	// set end node positions and velocities from connect objects  <<<<<<<< these are now set by connect/rod
+//	AnchConnect->getConnectState(r[0],rd[0]);
+//	FairConnect->getConnectState(r[N],rd[N]);
+
+	// The end node kinematics should already have been set by the 
+	// corresponding Connection or Rod objects calling "setEndState",
+	// so now we can proceed with figuring out the positions of the nodes along the line.
+
 	if (-env.WtrDpth > r[0][2]) {
 		cout << "   Error: water depth is shallower than Line " << number << " anchor." << endl;
 		return;
@@ -258,10 +354,28 @@ double Line::getNodeTen(int i)
 	else if (i==N)                             
 		NodeTen = sqrt(Fnet[i][0]*Fnet[i][0] + Fnet[i][1]*Fnet[i][1] + (Fnet[i][2]+M[i][0][0]*(-env.g))*(Fnet[i][2]+M[i][0][0]*(-env.g)));
 	else 
-		NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
-
+	{
+		double Tmag_squared = 0.; 
+		for (int J=0; J<3; J++)  Tmag_squared += 0.25*(T[i][J] + T[i-1][J])*(T[i][J] + T[i-1][J]);  // take average of tension in adjacent segments 
+		NodeTen = sqrt(Tmag_squared);  	// 		previously used: NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
+	}
 	return NodeTen;
 };
+
+
+// function to get position of any node along the line
+int Line::getNodePos(int NodeNum, double pos[3])
+{
+	if ((NodeNum >= 0 ) && (NodeNum <= N))
+	{
+		for (int i=0; i<3; i++)
+			pos[i] = r[NodeNum][i];
+		
+		return 0;
+	}
+	else
+		return -1;  // indicate an error
+}
 
 
 // FASTv7 style line tension outputs
@@ -283,8 +397,22 @@ void Line::getAnchStuff(vector<double> &Fnet_out, vector< vector<double> > &M_ou
 		for (int J=0; J<3; J++) 	M_out[I][J] = M[0][I][J];
 	}
 };
+void Line::getAnchStuff(double Fnet_out[3], double M_out[3][3])
+{
+	for (int I=0; I<3; I++) {
+		Fnet_out[I] = Fnet[0][I];			
+		for (int J=0; J<3; J++) 	M_out[I][J] = M[0][I][J];
+	}
+};
 
 void Line::getFairStuff(vector<double> &Fnet_out, vector< vector<double> > &M_out)
+{
+	for (int I=0; I<3; I++) {
+		Fnet_out[I] = Fnet[N][I];			
+		for (int J=0; J<3; J++) 	M_out[I][J] = M[N][I][J];
+	}
+};
+void Line::getFairStuff(double Fnet_out[3], double M_out[3][3])
 {
 	for (int I=0; I<3; I++) {
 		Fnet_out[I] = Fnet[N][I];			
@@ -300,17 +428,16 @@ int Line::getN()
 
 double Line::GetLineOutput(OutChanProps outChan)
 {	
-	if      (outChan.QType == PosX)
-	{
-		//cout << " outputting node " << outChan.NodeID << " PosX: " << r[outChan.NodeID][0] << endl;
-		return  r[outChan.NodeID][0];
-	}
+	if      (outChan.QType == PosX)  return  r[outChan.NodeID][0];
 	else if (outChan.QType == PosY)  return  r[outChan.NodeID][1];
 	else if (outChan.QType == PosZ)  return  r[outChan.NodeID][2];
 	else if (outChan.QType == VelX)  return  rd[outChan.NodeID][0];
 	else if (outChan.QType == VelY)  return  rd[outChan.NodeID][1];
 	else if (outChan.QType == VelZ)  return  rd[outChan.NodeID][2];
 	else if (outChan.QType == Ten )  return  getNodeTen(outChan.NodeID);
+	else if (outChan.QType == FX)  return  Fnet[outChan.NodeID][0];
+	else if (outChan.QType == FY)  return  Fnet[outChan.NodeID][1];
+	else if (outChan.QType == FZ)  return  Fnet[outChan.NodeID][2];
 	else
 	{
 		//cout << "outChan.QType (value of " << outChan.QType << ") not recognized." << endl;
@@ -322,9 +449,9 @@ double Line::GetLineOutput(OutChanProps outChan)
 
 
 // initialize wave parameters for no waves situation
-void Line::setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
+void Line::setupWaves(vector<double> Ucurrent_in, float dt_in)
 {	
-	env = env_in;
+	//env = env_in;
 	Ucurrent = Ucurrent_in;
 	WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
 	
@@ -354,345 +481,91 @@ void Line::setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
 };
 
 
-/*
-
-// instantiator that takes discrete wave data from FAST
-void Line::setupWaves(int WaveMod_in, int WaveStMod_in, float WaveHs_in, float WaveTp_in, float WaveDir_in, 
-	float WtrDpth_in, int NStepWave2_in, float WaveDOmega_in, 
-	float WGNC_Fact_in, float WGNCreal[], float WGNCimag[], float S2Sd_Fact_in, float WaveS2Sdd_in[], 
-	EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
+double Line::getNonlinearE(double l_stretched, double l_unstretched)
 {
-	// go about converting inputted wave stuff into a more friendly form (unnecessary now)
 	
-	env = env_in;
+	double Xi = l_stretched/l_unstretched - 1.0;  // strain rate based on inputs
+	double Yi = 0.0;
 	
-	WaveMod = WaveMod_in;
-	WaveStMod =WaveStMod_in;
-	Hs = WaveHs_in;
-	Tp = WaveTp_in;
-	beta = WaveDir_in;
-	
-	//WtrDpth = WtrDpth_in;
-	//double g = 9.806;
-	
-	if (env.WaveKin == 1)  // if including wave kinematics
+	// find stress based on strain
+	if (Xi < 0.0)               // if negative strain (compression), zero stress
+		Yi = 0.0;
+	else if (Xi < stiffXs[0])  // if strain below first data point, interpolate from zero
+		Yi = Xi * stiffYs[0]/stiffXs[0];
+	else if (Xi >= stiffXs[nEpoints-1])     // if strain exceeds last data point, use last data point
+		Yi = stiffYs[nEpoints-1];
+	else                              // otherwise we're in range of the table so interpolate!
 	{
-		Nw = NStepWave2_in;   // number of wave frequency components
-			
-		// resize some frequency-domain wave calc vectors
-		w.resize(Nw, 0.0);
-		zetaC.resize(Nw, 0.);
-		WGNC.resize(Nw, 0.);
-		WaveS2Sdd.resize(Nw, 0.);
-		k.resize(Nw, 0.0);
-		UC.resize(Nw, vector<doubleC>(3, 0.));     // Fourier transform of wave velocities
-		UdC.resize(Nw, vector<doubleC>(3, 0.));     // Fourier transform of wave accelerations	
-					
-		dw = WaveDOmega_in;
-		Nt = Nw*2; // this is a new variable containing the number of wave time steps to be calculated
-		WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
-	
-		// fill in some vectors
-		for (int I=0; I<Nw; I++)
-		{
-			w[I] = dw*double(I);
-			k[I] = WaveNumber( w[I], env.g, env.WtrDpth );
-			WGNC[I] = doubleC( (double) WGNCreal[I], (double) WGNCimag[I]);  // converting from FORTRAN-compatible struct to c complex type
-			WaveS2Sdd[I] = WaveS2Sdd_in[I];
-		}		
-		
-	}
-	else
-	{
-		Nw = 0;    // use no components since not worrying about wave kinematics
-		//dw = WaveDOmega_in;
-		Nt = 2; // this is a new variable containing the number of wave time steps to be calculated
-		WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
-	}
-	
-
-	
-	cout << "Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	cout << "Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
-	
-	WGNC_Fact = WGNC_Fact_in;
-	S2Sd_Fact = S2Sd_Fact_in;
-	
-
-		
-	Ucurrent = Ucurrent_in;
-	
-	// resize the new time series vectors
-	if (Nt > 0)
-	{
-		zetaTS.resize(N+1, vector<double>(Nt, 0.));
-		FTS.resize   (N+1, vector<double>(Nt, 0.));
-		UTS.resize   (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		UdTS.resize  (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		tTS.resize(Nt, 0.);
-	}
-
-	cout << "Done Waves initialization" << endl << endl;
-	
-};
-
-
-*/
-
-
-
-// NEW - instantiator that takes discrete wave elevation fft data only
-void Line::setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmega_in, double dt_in )
-{
-	// go about converting inputted wave stuff into a more friendly form (unnecessary now)
-	
-	
-	//WaveStMod =WaveStMod_in;
-
-	beta = 0.0; //WaveDir_in;
-	
-
-	env = env_in;
-	Nw = zetaC_in.size();   // number of wave frequency components
-		
-	// resize some frequency-domain wave calc vectors
-	w.resize(Nw, 0.0);
-	k.resize(Nw, 0.0);
-	zetaC0.resize(Nw, 0.);
-	zetaC.resize(Nw, 0.);
-	UC.resize(Nw, vector<floatC>(3, 0.));     // Fourier transform of wave velocities
-	UdC.resize(Nw, vector<floatC>(3, 0.));     // Fourier transform of wave accelerations	
-				
-	dw = WaveDOmega_in;
-	Nt = Nw; // this is a new variable containing the number of wave time steps to be calculated
-	WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
-
-	for (int i=0; i<=Nw/2; i++)  w[i]     = i*dw;		
-	for (int i=1; i<Nw/2; i++)  w[Nw/2+i] = -w[Nw/2-i];	// including negative frequencies
-	// note: w is frequency (rad/s) - should be symmetric: # [0,dw,2dw,....w(N/2),w(-N/2+1)...-2dw,-dw]
-	
-	
-	// fill in some vectors
-	for (int I=0; I<Nw; I++)
-	{
-//		w[I] = dw*double(I);
-		k[I] = WaveNumber( w[I], (float)env.g, (float)env.WtrDpth );
-		zetaC0[I] = zetaC_in[I];
-//		WGNC[I] = doubleC( (double) WGNCreal[I], (double) WGNCimag[I]);  // converting from FORTRAN-compatible struct to c complex type
-//		WaveS2Sdd[I] = WaveS2Sdd_in[I];
-
-	// add cout check of w and k here!
-
-	}		
-		
-
-	
-	if (wordy>1) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	if (wordy>1) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
-	
-//	WGNC_Fact = WGNC_Fact_in;
-//	S2Sd_Fact = S2Sd_Fact_in;		
-//	Ucurrent = Ucurrent_in;
-	
-	// resize the new time series vectors
-	if (Nt > 0)
-	{
-		zetaTS.resize(N+1, vector<double>(Nt, 0.));
-		FTS.resize   (N+1, vector<double>(Nt, 0.));
-		UTS.resize   (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		UdTS.resize  (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		tTS.resize(Nt, 0.);
-	}
-
-	if (wordy>1) cout << "   Done Waves initialization" << endl << endl;
-	
-};
-
-
-
-	
-
-
-// precalculates wave kinematics for a given set of node points for a series of time steps
-// re-made on Feb 23rd 2015 to accept fft of wave elevation from any source
-void Line::makeWaveKinematics( double t0 )
-{
-	// inputs are t0 - start time
-	
-	if (wordy>2) cout << "    making wave Kinematics.  N=" << N << endl;
-	// function calculates wave kinematics and free surface elevation at each X
-	
-	WaveKin = 1;  // enable wave kinematics now that they're going to be calculated
-
-		
-	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	if (wordy>2) cout << "starting fft stuff " << endl;
-	int NFFT = Nt;
-	int is_inverse_fft = 1;
-	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
-	
-	if (wordy>2) cout << "allocatin io " << endl;
-	
-	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
-	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
-		
-		
-		
-	// calculating wave kinematics on node i located at point x, y, z
-
-	
-	// loop through nodes
-	for (int i=0; i<=N; i++)
-	{	
-		float x = (float)r[i][0]; // rename node positions for convenience 
-		float y = (float)r[i][1];
-		float z = (float)r[i][2];
-		
-		if (wordy>2)  cout << "i=" << i << "  ";
-		
-		// ---------------- calculate frequency domain velocities and accelerations ------------------
-		// note: all these values are for each node specifically, in turn.  just intermediate values for calculating time series
-		if (env.WaveKin > 0)   // if including wave kinematics <<<<<<<<<<<<<< not in right place...
-		{	
-			// calculated wave elevation in freq domain
-			//cout << "starting zetaC" << endl;
-	//		for (int I=0; I<Nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
-	//		{
-	//			//zetaC[I] =  WGNC_Fact*WGNC[I] *sqrt( 2.0*pi*S2Sd_Fact*WaveS2Sdd[I] )*exp( i1*(k[I]*(cos(beta)*x + sin(beta)*y))); // Fourier transform of wave elevation
-	//				
-	//			zetaC[I] = zetaC0[I]* exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
-	//		
-	//			// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
-	//			UC[I][0] =  abs(w[I])* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
-	//			UC[I][1] =  abs(w[I])* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-	//			UC[I][2] = i1f* w[I] * zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
-     //
-	//			// Fourier transform of wave accelerations
-	//			for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
-	//		}
-			
-			// handle positive-frequency half of spectrum
-			for (int I=0; I<Nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
+		for (int I=0; I < nEpoints-1; I++) // go through lookup table until next entry exceeds inputted strain rate
+		{   
+			if (stiffXs[I+1] > Xi)
 			{
-				zetaC[I] = zetaC0[I]* exp( -i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
-			
-				// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
-				UC[I][0] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
-				UC[I][1] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-				UC[I][2] = i1f* w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
+				Yi = stiffYs[I] + (Xi - stiffXs[I]) * (stiffYs[I+1]-stiffYs[I])
+													   /(stiffXs[I+1]-stiffXs[I]);
+				break;
+			}
+		}
+	}
+	
+	// calculate equivalent elasticity (since that's what MoorDyn works with)
+	return Yi/Xi;  // this is a young's modulus equivalent value based on stress/strain
+}
 
-				// Fourier transform of wave accelerations
-				for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
-			}
-		//	// handle negative-frequency half of spectrum
-		//	for (int I=Nw/2+1; I<Nw; I++)  // Loop through the negative frequency components
-		//	{
-		//		zetaC[I] = zetaC0[I]* exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
-		//	
-		//		// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
-		//		UC[I][0] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
-		//		UC[I][1] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-		//		UC[I][2] = i1f* w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
-          //
-		//		// Fourier transform of wave accelerations
-		//		for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
-		//	}
-			
-			
-			
-			
-		}
-		
-		
-		// ------------------------ convert into time domain using IFFT ------------------------
-		
-		
-		// scale time vector ....
-		for (int ts=0; ts<Nt; ts++)	tTS[ts] = t0 + double(ts)*0.25; // time
+
+double Line::getNonlinearC(double ld_stretched, double l_unstretched)
+{
 	
+	double Xi = ld_stretched/l_unstretched;  // strain rate based on inputs
+	double Yi = 0.0;
 	
-		if (wordy>2)  cout << "   processing fft" << endl;
-		
-		// .............................. wave elevation ...............................
-		for (int I=0; I<NFFT; I++)  
-		{			    					// put data into input vector
-			cx_in[I].r = real(zetaC[I]);    	// real component - kiss_fft likes floats
-			cx_in[I].i = imag(zetaC[I]);    	// imaginary component
-		}
-		kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
-		
-		for (int I=0; I<NFFT; I++)  zetaTS[i][I] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
-		
-		//if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "fair zeta is " << zetaTS[i][I] << " at time " << tTS[I] << endl;
-		
-		// .............................. wave velocities ...............................
-		for (int J=0; J<3; J++)	{
-			for (int I=0; I<NFFT; I++)  
-			{			    					// put data into input vector
-				cx_in[I].r = real(UC[I][J]);    	// real component - kiss_fft likes floats
-				cx_in[I].i = imag(UC[I][J]);    	// imaginary component
-			}
-			kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
-			
-			for (int I=0; I<NFFT; I++)  UTS[i][I][J] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
-		}
-		
-		// if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "   UTSx is " << UTS[i][I][0] << " at time " << tTS[I] << endl;
-		
-		// .............................. wave accelerations ...............................
-		for (int J=0; J<3; J++)	{
-			for (int I=0; I<NFFT; I++)  
-			{			    					// put data into input vector
-				cx_in[I].r = real(UdC[I][J]);    	// real component - kiss_fft likes floats
-				cx_in[I].i = imag(UdC[I][J]);    	// imaginary component
-			}
-			kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
-			
-			for (int I=0; I<NFFT; I++)  UdTS[i][I][J] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
-		}
-		
-		
-		// ----------------------------- write to text file for debugging ----------------------------
-		if ((number == 1) && (i == N))
+	// find stress based on strain rate
+	// first check if lookup table includes compressing 
+	if (dampXs[0] < 0)
+	{
+		if (Xi < dampXs[0])  // if strain below first data point, use first data point
+			Yi = dampYs[0];
+		else if (Xi >= dampXs[nCpoints-1])     // if strain exceeds last data point, use last data point
+			Yi = dampYs[nCpoints-1];
+		else                              // otherwise we're in range of the table so interpolate!
 		{
-			if (wordy>2)   cout << "   frequnecy domain starting wave data output file" << endl;
-			ofstream waveoutsC("wavesC.out");
-			waveoutsC << "wave data output file" << endl << endl;
-			
-			waveoutsC << "w \t k \t zetaC0r \t zetaC0i \t zetaCr \t zetaCi \t UCxr  \t UCxi \t UCzr \t UCzi \n";
-			for (int j=0; j<NFFT; j++)  waveoutsC << w[j] << " \t" << k[j] << " \t" << real(zetaC0[j]) << " \t" << imag(zetaC0[j]) << 
-			   " \t" << real(zetaC[j]) << " \t" << imag(zetaC[j]) << " \t" << real(UC[j][0]) << " \t" << imag(UC[j][0]) << 
-			   " \t" << real(UC[j][2]) << " \t" << imag(UC[j][2]) << endl;	
-			waveoutsC.close();
+			for (int I=0; I < nCpoints-1; I++) // go through lookup table until next entry exceeds inputted strain rate
+			{   if (dampXs[I+1] > Xi)
+				{	Yi = dampYs[I] + (Xi - dampXs[I]) * (dampYs[I+1]-dampYs[I])
+														   /(dampXs[I+1]-dampXs[I]);
+					break;
+				}
+			}
 		}
-		if (number==1)
-		{		
-			stringstream oname;
-			oname << "waves_i" << i << ".out";
-			ofstream waveouts(oname.str());
-			waveouts << "wave data output file" << endl << endl;
-			
-			waveouts << "t \t zeta \t Ux \t Uz \t Udx \t Udz \n";
-			for (int j=0; j<NFFT; j++)  waveouts << tTS[j] << " \t" << zetaTS[i][j] << " \t" << UTS[i][j][0] << " \t" << UTS[i][j][2] << " \t" << UdTS[i][j][0] << " \t" << UdTS[i][j][2] << endl;	
-			waveouts.close();
+	}
+	else   // if no compressing data given, we'll flip-mirror so stretching and compressing are same
+	{
+		double Xsign = 1.0;
+		if (Xi < 0)          // convert negative value to positive for interpolation
+		{	Xsign = -1.0;
+			Xi = -Xi;
 		}
 		
-		// wave stretching stuff would maybe go here...
+		if (Xi < dampXs[0])  // if strain rate is below first data point, interpolate from zero
+			Yi = Xi * dampYs[0]/dampXs[0];
+		else if (Xi >= dampXs[nCpoints-1])     // if strain rate exceeds last data point, use last data point
+			Yi = dampYs[nCpoints-1];
+		else                              // otherwise we're in range of the table so interpolate!
+		{
+			for (int I=0; I < nCpoints-1; I++) // go through lookup table until next entry exceeds inputted strain rate
+			{   if (dampXs[I+1] > Xi)
+				{	Yi = dampYs[I] + (Xi - dampXs[I]) * (dampYs[I+1]-dampYs[I])
+														   /(dampXs[I+1]-dampXs[I]);
+					break;
+				}
+			}
+		}
+		Yi = Yi*Xsign; // flip sine if negative strain
+	}
 		
-	} // i done looping through nodes
-	
-	
-	//cout << "   about to free fft data structures." << endl;
-	
-	
-	free(cx_in);
-	free(cx_out);
-	free(cfg);
-	
-	if (wordy>1) cout << "    done wave Kinematics" << endl;
-};
+	// calculate equivalent damping coefficient (since that's what MoorDyn works with)
+	return Yi/Xi;  // this is a coefficient value based on stress/strainrate
+}
 
-	
 	
 // function for boosting drag coefficients during IC generation	
 void Line::scaleDrag(double scaler)
@@ -711,16 +584,13 @@ void Line::setTime(double time)
 
 
 
-//  this is the big function that updates the states
-void Line::doRHS( const double* X,  double* Xd, const double time )
+// set the line positions and velocities based on latest states
+void Line::setState( const double* X, const double time)
 {
+	// store current time
 	t = time;
-
-	// set end node positions and velocities from connect objects' states
-	AnchConnect->getConnectState(r[0],rd[0]);
-	FairConnect->getConnectState(r[N],rd[N]);
-
-	// set interior node positions and velocities
+	
+	// set interior node positions and velocities based on state vector
 	for (int i=1; i<N; i++) 
 	{	for (int J=0; J<3; J++)
 		{
@@ -728,6 +598,63 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 			rd[i][J] = X[        3*i-3 + J]; // get velocities
 		}
 	}
+	return;
+}
+
+
+// set position and velocity of one of the line end nodes
+void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
+{
+	int i;
+	
+	if (topOfLine==1)
+		i = N;           // fairlead case
+	else
+		i = 0;           // anchor case
+	
+	for (int J=0; J<3; J++)
+	{
+		r[i][J] = r_in[J];
+		rd[i][J] = rd_in[J];
+	}
+	return;
+}		
+void Line::setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine)
+{
+	int i;
+	
+	if (topOfLine==1)
+		i = N;           // fairlead case
+	else
+		i = 0;           // anchor case
+	
+	for (int J=0; J<3; J++)
+	{
+		r[i][J] = r_in[J];
+		rd[i][J] = rd_in[J];
+	}
+	return;
+}	
+	
+	
+// calculate forces and get the derivative of the line's states
+void Line::getStateDeriv(double* Xd, const double dt)
+{
+	
+	// attempting error handling <<<<<<<<
+	for (int i=0; i<=N; i++)
+	{
+		if (isnan(r[i][0]+r[i][1]+r[i][2])) 
+		{
+			stringstream s;
+			s << "Line " << number << " node positions:";
+			for (int j=0; j<N; j++) s << r[i][0] << "," << r[i][1] << "," << r[i][2] << "; ";
+			s << " at time " << t;
+			throw string(s.str());
+		}
+	}
+	
+	// dt is possibly used for stability tricks...
 	
 	//calculate current (Stretched) segment lengths
 	for (int i=0; i<N; i++) 
@@ -735,20 +662,20 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		double lstr_squared = 0.0;
 		for (int J=0; J<3; J++) lstr_squared += (r[i+1][J] - r[i][J])*(r[i+1][J] - r[i][J]);
 		lstr[i] = sqrt(lstr_squared); 	// stretched segment length
-		
-		double ldstr_top = 0.0;
+				
+		double ldstr_top = 0.0;          // this is the denominator of how the stretch rate equation was formulated
 		for (int J=0; J<3; J++) ldstr_top += (r[i+1][J] - r[i][J])*(rd[i+1][J] - rd[i][J]);
 		ldstr[i] = ldstr_top/lstr[i]; 	// strain rate of segment
 						
-		V[i] = pi/4. *( d*d*l[i] );		// volume attributed to segment
+		V[i] = A*l[i];		// volume attributed to segment
 	}
 		
-	// calculate unit tangent vectors (q) for each node (including ends)  note: I think these are pointing toward 0 rather than N!
+	// calculate unit tangent vectors (q) for each node (including ends)  note: I think these are pointing toward 0 rather than N! <<<<<<< can I switch this??
 	for (int i=0; i<=N; i++) 
 	{
-		if (i==0) 	unitvector(q[i], r[i+1], r[i]  ); 	// compute unit vector q
-		else if (i==N) unitvector(q[i], r[i]  , r[i-1]); 	// compute unit vector q
-		else 		unitvector(q[i], r[i+1], r[i-1]);  // compute unit vector q ... using adjacent two nodes!
+		if (i==0)      unitvector(q[i], r[i+1], r[i]  );    // compute unit vector q
+		else if (i==N) unitvector(q[i], r[i]  , r[i-1]);    // compute unit vector q
+		else           unitvector(q[i], r[i+1], r[i-1]);    // compute unit vector q ... using adjacent two nodes!
 	}
 
 	
@@ -846,7 +773,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 			}
 		}		
 		
-		inverse3by3(S[i], M[i]);	// invert node mass matrix (written to S[i][:][:])	
+		//inverse3by3(S[i], M[i]);	// invert node mass matrix (written to S[i][:][:])	
 	}
 	
 
@@ -855,15 +782,34 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 	// loop through the segments
 	for (int i=0; i<N; i++)
 	{
+		
+		// attempting error handling <<<<<<<<
+		if (abs(lstr[i]/l[i] - 1) > 0.5) {
+			stringstream s;
+			s << "Line " << number << " segment strains:";
+			for (int j=0; j<N; j++) s << " " << (lstr[i]/l[i] - 1);
+			s << " at time " << t;
+			throw string(s.str()); //"Too great a strain in segment");
+		}
+		
 		// line tension
-		if (lstr[i]/l[i] > 1.0)   
-			for (int J=0; J<3; J++)  T[i][J] = E*pi/4.*d*d* ( 1./l[i] - 1./lstr[i] ) * (r[i+1][J]-r[i][J]); 
+		if (nEpoints > 0)
+			E = getNonlinearE(lstr[i], l[i]);
+	
+		if (lstr[i]/l[i] > 1.0)
+			for (int J=0; J<3; J++)  T[i][J] = E*A* ( 1./l[i] - 1./lstr[i] ) * (r[i+1][J]-r[i][J]); 
 		else
 			for (int J=0; J<3; J++)  T[i][J] = 0.;	// cable can't "push"
 				
 		// line internal damping force
-		for (int J=0; J<3; J++)  Td[i][J] = c*pi/4.*d*d* ( ldstr[i] / l[i] ) * (r[i+1][J]-r[i][J])/lstr[i]; 
+		if (nCpoints > 0)
+			c = getNonlinearC(ldstr[i], l[i]);
+		
+		for (int J=0; J<3; J++)  Td[i][J] = c*A* ( ldstr[i] / l[i] ) * (r[i+1][J]-r[i][J])/lstr[i]; 
 	}
+	
+	
+	// calculate force on each node due to bending stiffness!
 
 	
 	// loop through the nodes
@@ -871,11 +817,11 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 	{
 		// submerged weight (including buoyancy)
 		if (i==0)
-			W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env.rho_w) )*(-env.g);
+			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env.rho_w) )*(-env.g);
 		else if (i==N)
-			pi/8.*( d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g);
+			W[i][2] = 0.5*A*( l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g); // missing the "W[i][2] =" previously!
 		else
-			W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env.rho_w) + d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g);
+			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env.rho_w) + l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g);
 				
 		// flow velocity calculations       
 		double vq_squared = 0.;
@@ -885,7 +831,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		
 		for (int J=0; J<3; J++) 
 		{	
-			vq[J] = dotprod( vi , q[i] ) * q[i][J]; 	// tangential relative flow component
+			vq[J] = dotProd( vi , q[i] ) * q[i][J]; 	// tangential relative flow component
 			vp[J] = vi[J] - vq[J];					// transverse relative flow component
 			vq_squared += vq[J]*vq[J];
 			vp_squared += vp[J]*vp[J];
@@ -912,7 +858,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		
 		// acceleration calculations					
 		for (int J=0; J<3; J++)  {
-			aq[J] = dotprod(Ud[i], q[i]) * q[i][J]; // tangential component of fluid acceleration
+			aq[J] = dotProd(Ud[i], q[i]) * q[i][J]; // tangential component of fluid acceleration
 			ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
 		}
 		
@@ -941,10 +887,30 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i]            );
 			else
 				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i] + d*l[i-1] );
+			
+			// new rough-draft addition of seabed friction
+			double FrictionMax = abs(B[i][2])*env.FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
+			
+			// saturated damping approach to applying friction, for now
+			double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
+			double FrictionForce = BottomVel * env.FrictionCoefficient*env.FricDamp; // some arbitrary damping scaling thing at end
+			if (FrictionForce > env.StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
+			
+			if (BottomVel == 0.0) { // check for zero velocity, in which case friction force is zero
+				B[i][0] = 0.0;
+				B[i][1] = 0.0;
+			}
+			else { // otherwise, apply friction force in correct direction(opposing direction of motion)
+				B[i][0] = -FrictionForce*rd[i][0]/BottomVel;
+				B[i][1] = -FrictionForce*rd[i][1]/BottomVel;
+			}
 		}
 		else 
+		{
+			B[i][0] = 0.;
+			B[i][1] = 0.;
 			B[i][2] = 0.;
-		
+		}		
 		// total forces
 		if (i==0)
 			for (int J=0; J<3; J++) Fnet[i][J] = T[i][J]             + Td[i][J]              + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
@@ -959,16 +925,30 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 	// loop through internal nodes and update their states
 	for (int i=1; i<N; i++)	
 	{
+		double M_out[9];
+		double F_out[3];
+		for (int I=0; I<3; I++) 
+		{	F_out[I] = Fnet[i][I];
+			for (int J=0; J<3; J++) M_out[3*I + J] = M[i][I][J];
+		}
+		
+		// solve for accelerations in [M]{a}={f} using LU decomposition
+		double LU[9];                        // serialized matrix that will hold LU matrices combined
+		Crout(3, M_out, LU);                  // perform LU decomposition on mass matrix
+		double acc[3];                        // acceleration vector to solve for
+		solveCrout(3, LU, F_out, acc);     // solve for acceleration vector
+						
+			
 		// calculate RHS constant (premultiplying force vector by inverse of mass matrix  ... i.e. rhs = S*Forces)	
 		for (int I=0; I<3; I++) 
 		{
-			double RHSiI = 0.0; // temporary accumulator 
-			for (int J=0; J<3; J++) 
-				RHSiI += S[i][I][J] * Fnet[i][J]; 	//  matrix multiplication [S i]{Forces i}
+			//double RHSiI = 0.0; // temporary accumulator 
+			//for (int J=0; J<3; J++) 
+			//	RHSiI += S[i][I][J] * Fnet[i][J]; 	//  matrix multiplication [S i]{Forces i}
 			
 			// update states
-			Xd[3*N-3 + 3*i-3 + I] = X[3*i-3 + I];    	// dxdt = V  (velocities)
-			Xd[        3*i-3 + I] = RHSiI;      		// dVdt = RHS * A  (accelerations)
+			Xd[3*N-3 + 3*i-3 + I] = rd[i][I]; //X[3*i-3 + I];    	// dxdt = V  (velocities)
+			Xd[        3*i-3 + I] = acc[I]; //RHSiI;      		// dVdt = RHS * A  (accelerations)
 		}		
 	}
 	
@@ -1043,6 +1023,12 @@ void Line::Output(double time)
 				for (int i=0; i<N; i++)  {
 					*outfile << ldstr[i]/l[i] << "\t ";
 				}
+			}			
+			// output seabed contact forces?
+			if (channels.find("b") != string::npos) {
+				for (int i=0; i<=N; i++)  {
+					for (int J=0; J<3; J++)  *outfile << B[i][J] << "\t ";
+				}
 			}
 			
 			*outfile << "\n";
@@ -1053,13 +1039,108 @@ void Line::Output(double time)
 };
 
 
+Line::~Line()
+{
+	// destructor
+
+	r        .clear();
+	rd       .clear();
+	q        .clear();
+	T        .clear();
+	Td       .clear();
+	Tmag     .clear();
+	W        .clear();
+	Dp       .clear();
+	Dq       .clear();
+	Ap       .clear();
+	Aq       .clear();
+	B        .clear();
+	Fnet     .clear();
+	S        .clear();
+	M        .clear();
+	F        .clear();
+	l        .clear();
+	lstr     .clear();
+	ldstr    .clear();
+	V        .clear();
+	U        .clear();
+	Ud       .clear();
+	zeta     .clear();
+	w        .clear();
+	k        .clear();
+	zetaC0   .clear();
+	zetaC    .clear();
+	UC       .clear();
+	UdC      .clear();
+	WGNC     .clear();
+	WaveS2Sdd.clear();
+	Ucurrent .clear();
+	zetaTS   .clear();
+	FTS      .clear();
+	UTS      .clear();
+	UdTS     .clear();
+	tTS      .clear();
+}
+
+
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void Line::drawGL(void)
 {
+	double maxTen = 0.0;
+	double normTen;
+	double rgb[3];
+	for (int i=0; i<=N; i++)	
+	{
+		double newTen = getNodeTen(i);
+		if (newTen > maxTen)
+			maxTen = newTen;
+	}
+	
 	glColor3f(0.5,0.5,1.0);
 	glBegin(GL_LINE_STRIP);
-	for (int i=0; i<=N; i++)	glVertex3d(r[i][0], r[i][1], r[i][2]);
+	for (int i=0; i<=N; i++)	
+	{
+		glVertex3d(r[i][0], r[i][1], r[i][2]);
+		if (i<N)  {
+			normTen = getNodeTen(i)/maxTen;
+			ColorMap(normTen, rgb);
+			glColor3d(rgb[0],rgb[1],rgb[2]);
+		}
+	}
 	glEnd();
-}
+};
+
+
+
+void Line::drawGL2(void)
+{
+	double maxTen = 0.0;
+	double normTen;
+	double rgb[3];
+	for (int i=0; i<=N; i++)	
+	{
+		double newTen = getNodeTen(i);
+		if (newTen > maxTen)
+			maxTen = newTen;
+	}
+	
+	// line
+	for (int i=0; i<N; i++)	
+	{
+		normTen = 0.2+0.8*pow(getNodeTen(i)/maxTen, 4.0);
+		ColorMap(normTen, rgb);
+		glColor3d(rgb[0],rgb[1],rgb[2]);
+
+		Cylinder(r[i][0], r[i][1], r[i][2], r[i+1][0], r[i+1][1], r[i+1][2], 27, 0.5);
+	}
+	// velocity vectors
+	for (int i=0; i<=N; i++)	
+	{
+		glColor3d(0.0, 0.2, 0.8);
+		double vscal = 5.0;
+
+		Arrow(r[i][0], r[i][1], r[i][2], vscal*rd[i][0], vscal*rd[i][1], vscal*rd[i][2], 0.1, 0.7);
+	}
+};
 #endif

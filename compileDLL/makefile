@@ -1,21 +1,27 @@
-# makefile for MoorDyn compiled as Lines.dll
+# makefile for MoorDyn compiled as MoorDyn.dll
 # new optional compile def:  USEGL
 
 # tell to search for dependencies in parent dir
 VPATH = ../source
-
 LFLAGS = -shared -static -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS
 
-CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS -DUSEGL
+# this is the debug one
+CFLAGS = -c -O0 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS
+
+# this is the optimized one
+#CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS
 
 
-all: Lines.dll
+#CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS -DUSEGL
+
+
+all: MoorDyn.dll
  
-Lines.dll: MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o
-	g++ $(LFLAGS) -o Lines.dll MoorDyn.o Line.o Connection.o Misc.o kiss_fft.o -lopengl32
+MoorDyn.dll: MoorDyn.o Line.o Connection.o Rod.o Body.o Misc.o kiss_fft.o
+	g++ $(LFLAGS) -o MoorDyn.dll MoorDyn.o Line.o Rod.o Body.o Connection.o Misc.o kiss_fft.o -lopengl32 -lglu32
 # added linking to openGL above
 
-MoorDyn.o: MoorDyn.cpp MoorDyn.h Line.h Line.cpp Connection.h Connection.cpp QSlines.h Misc.h Misc.cpp
+MoorDyn.o: MoorDyn.cpp MoorDyn.h Line.h Line.cpp Rod.h Rod.cpp Body.h Body.cpp Connection.h Connection.cpp QSlines.h Misc.h Misc.cpp
 	g++ $(CFLAGS) ../source/MoorDyn.cpp
 	
 kiss_fft.o: kiss_fft.h kiss_fft.c
@@ -23,7 +29,13 @@ kiss_fft.o: kiss_fft.h kiss_fft.c
 	
 Line.o: Line.h Line.cpp Connection.h Connection.cpp QSlines.h Misc.h
 	g++ $(CFLAGS) ../source/Line.cpp
+	
+Rod.o: Rod.h Rod.cpp Line.h Line.cpp Connection.h Connection.cpp Misc.h
+	g++ $(CFLAGS) ../source/Rod.cpp
 
+Body.o: Line.h Line.cpp Connection.h Rod.h Body.h Body.cpp QSlines.h Misc.h Misc.cpp
+	g++ $(CFLAGS) ../source/Body.cpp	
+	
 Connection.o: Line.h Line.cpp Connection.h Connection.cpp QSlines.h Misc.h Misc.cpp
 	g++ $(CFLAGS) ../source/Connection.cpp
 	

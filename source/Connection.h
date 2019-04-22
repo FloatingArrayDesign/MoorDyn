@@ -45,24 +45,24 @@ class Connection
 	EnvCond env;  // struct to hold environmental settings
 			
 	// common properties with line internal nodes 	
-	vector< double > r; 		// node position [x/y/z] // double* to continuous state or input state or parameter/other-state
-	vector< double > rd;		// node velocity[x/y/z]  // double* to continuous state or input state or parameter/other-state
-	vector< double > q;      	// unit tangent vector for end node (unused)
+	double r[3];      // node position [x/y/z]
+	double rd[3];	     // node velocity[x/y/z] 
 	
 	double t; 					// simulation time
 	double t0; // simulation time current integration was started at (used for BC function)
-	vector< double > r_ves; 		// fairlead position for vessel node types [x/y/z]
-	vector< double > rd_ves;		// fairlead velocity for vessel node  types [x/y/z]
+	double r_ves[3]; 		// fairlead position for vessel node types [x/y/z]
+	double rd_ves[3];		// fairlead velocity for vessel node  types [x/y/z]
 	
 	double tlast;
 		
-	vector< double > Fnet;	// total force on node
-	vector< double > Fnet_i;
-	vector< double > RHS;	// RHS of state-space equation (Forces divided by mass matrix)
+	double Fnet[3];	// total force on node
+	double Fnet_i[3];
+	double RHS[3];	// RHS of state-space equation (Forces divided by mass matrix)
 	
-	vector< vector< double > > S;  // inverse mass matrices (3x3) for each node
-	vector< vector< double > > M; // node mass + added mass matrices
-	vector< vector< double > > M_i;
+	double M[3][3]; // node mass + added mass matrices
+	
+	//vector< vector< double > > S;  // inverse mass matrices (3x3) for each node
+	//vector< vector< double > > M_i;
 			
 	
 public:
@@ -70,32 +70,57 @@ public:
 	//
 	int number;
 	int type;  // defining whether fixed 0, vessel 1, or connect 2	
+		
+	void setup(int number_in, int type_in, double r0_in[3], double M_in,
+	double V_in, double F_in[3], double CdA_in, double Ca_in);
 	
-	~Connection();
+	void addLineToConnect(Line *theLine, int TopOfLine);
 	
-	void setup(ConnectProps& props);
-	
-	void addLineToConnect(Line& theLine, int TopOfLine);
+	void initializeFairlead( double pX[], double TransMat[] );
+	void initializeFairlead2( double pX[], double vX[] );
+	void initializeConnect( double* X );
+	void initializeAnchor();
 	
 	void getConnectState(vector<double> &r_out, vector<double> &rd_out);
 		
+	//void addRodEffect(vector<double> &F_rod, vector< vector<double> > &M_rod);
+		
 	void getFnet(double Fnet_out[]);
+	
+	void getM(double M_out[3][3]);
 	
 	double GetConnectionOutput(OutChanProps outChan);
 	
 	void setEnv(EnvCond env_in);
 	
+	void scaleDrag(double scaler);	
+	void setTime(double time);
+	
 	//void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
 	
-	void initializeFairlead( double pX[], double TransMat[] );
-	void initializeConnect( double* X );
+	int setState( const double* X, const double time);
 	
-	void getNetForceAndMass();
+	int getStateDeriv( double* Xd);
 	
-	void doRHS( const double* X,  double* Xd, const double time);
+	int getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], double M_out[6][6]);
 	
-	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);	
+	int doRHS();
+	
+	void initiateStep(double rFairIn[3], double rdFairIn[3], double time);
+	
+	//void sumNetForceAndMass();
+	
+	//void doRHS( const double* X,  double* Xd, const double time);
+	
 	void updateFairlead( const double time);
+	
+	~Connection();
+	
+	#ifdef USEGL
+	void drawGL(void);
+	#endif
+	
+	
 };
 
 #endif

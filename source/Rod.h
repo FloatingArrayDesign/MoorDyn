@@ -14,8 +14,8 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LINE_H
-#define LINE_H
+#ifndef ROD_H
+#define ROD_H
 
 #include "Misc.h"
 
@@ -24,44 +24,48 @@ using namespace std;
 // here is the numbering scheme (N segments per line):
 //   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] --- ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
 
-class Connection;
+class Line;
 
-class Line 
+class Rod 
 {
+	// unique to Rod (like a doubling of Connection):
+	Line* AttachedA[10]; 	// pointers to lines attached to this connection node
+	Line* AttachedB[10]; 	// pointers to lines attached to this connection node
+	int TopA[10]; 			// which end of line are we attached to? 1 = top/fairlead, 0 = bottom/anchor
+	int TopB[10]; 			// which end of line are we attached to? 1 = top/fairlead, 0 = bottom/anchor
+	int nAttachedA; 		// number of attached lines
+	int nAttachedB; 		// number of attached lines
 	
 	// ENVIRONMENTAL STUFF
 	
 	EnvCond env;  // struct to hold environmental settings
 	
 		
-	// LINE STUFF
+	// ROD STUFF
     
 	// parameters
-	LineProps props;	
+	RodProps props;	
 	int N; // number of line nodes 
-	double UnstrLen;
-	double d;		// line diameter
-	double rho;		// line linear density
-	double E;		// line elasticity modulus [N] 
-	double c;		// line axial internal damping coefficient [Ns]
+	double UnstrLen; // the constrained length of the rod
+	double d;		// rod diameter
+	double rho;		// rod linear density
 	double Can;
 	double Cat;
 	double Cdn;
 	double Cdt;
+	//double ReFac;
 	
 	double A; // line cross-sectional area to pre-compute
 	
-	int nEpoints = 0; // number of values in stress-strain lookup table (0 means using constant E)
-	double stiffXs[30]; // x array for stress-strain lookup table (up to 30)
-	double stiffYs[30]; // y array for stress-strain lookup table
-	int nCpoints;        // number of values in stress-strainrate lookup table (0 means using constant c)
-	double dampXs[30]; // x array for stress-strainrate lookup table (up to 30)
-	double dampYs[30]; // y array for stress-strainrate lookup table
-
+	// degrees of freedom (or states)
+	double  r6 [6]; 		// Rod 6dof position [x/y/z] // double* to continuous state or input state or parameter/other-state
+	double r6d [6];		// Rod 6dof velocity[x/y/z]  // double* to continuous state or input state or parameter/other-state
+	
+	
 	// kinematics
-	vector< vector< double > > r;    // node positions [i][x/y/z]
-	vector< vector< double > > rd;   // node velocities [i][x/y/z]
-	vector< vector< double > > q;    // unit tangent vectors for each segment
+	vector< vector< double > > r; 		// node positions [i][x/y/z]
+	vector< vector< double > > rd;	// node velocities [i][x/y/z]
+	vector< double > q;      	// unit tangent vector for rod
 	
 	// time
 	double t; 					// simulation time
@@ -85,16 +89,19 @@ class Line
 	vector< vector< double > > Ap;	// node added mass forcing (transverse)
 	vector< vector< double > > Aq;	// node added mass forcing (axial)
 	vector< vector< double > > B; 	// node bottom contact force	
-	vector< vector< double > > Fnet;	// total force on node
+	vector< vector< double > > Fnet;	// total force on node  <<<<<<< might remove this for Rods
 		
-	vector< vector< vector< double > > > S;  // inverse mass matrices (3x3) for each node
+	vector< double > FnetA;				// net force for end A of Rod
+	vector< double > FnetB;				// net force for end B of Rod	
+	
 	vector< vector< vector< double > > > M; // node mass + added mass matrix
+	
+	vector< vector< double > > MA;   // mass matrix for end A of Rod
+	vector< vector< double > > MB;   // mass matrix for end B of Rod
 			
 	vector<double> F; 		// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	
 	vector<double> l; 		// line unstretched segment lengths
-	vector<double> lstr; 		// stretched lengths (m)
-	vector<double> ldstr; 	// rate of stretch (m/s)
 	vector<double> V;		// line segment volume
 	
 	// set up output arrays, at each node i:
@@ -145,7 +152,8 @@ class Line
 	
 
 public:
- 	int number; // line "number" id
+ 	int number; // rod "number" id
+	int type;  // defining whether part of a body (1), or independent (2)	
 	
 	int WaveKin;  // flag indicating whether wave kinematics will be considered for this line
  
@@ -153,52 +161,36 @@ public:
 	//Connection* AnchConnect;  // pointer to anchor connection
 	//Connection* FairConnect;  // pointer to fairlead connection
  
-	void setup(int number, LineProps *props_in, double UnstrLen_in, int NumNodes, 
-	//	Connection& AnchConnect_in, Connection& FairConnect_in,
-		shared_ptr<ofstream> outfile_pointer, string channels_in);
+	int getN(); // returns N (number of segments)
 	
-	void initializeLine(double* X );
+	int setup(int type_in, int number_in, RodProps *props, double endCoords[6], int NumSegs, 
+	shared_ptr<ofstream> outfile_pointer, string channels_in);
+	
+	void addLineToRodEndA(Line *theLine, int TopOfLine);
+	void addLineToRodEndB(Line *theLine, int TopOfLine);
+	
+	void initializeRod(double* X );
 
 	void setEnv(EnvCond env_in);
 
-	double getNodeTen(int i);
-	
 	int getNodePos(int i, double pos[3]);
 	
-	double GetLineOutput(OutChanProps outChan);
+	double GetRodOutput(OutChanProps outChan);
 	
-	void getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen);
-	
-	void getAnchStuff(vector<double> &Fnet_out, vector< vector<double> > &M_out);
-	void getAnchStuff(double Fnet_out[3], double M_out[3][3]);
-
-	void getFairStuff(vector<double> &Fnet_out, vector< vector<double> > &M_out);
-	void getFairStuff(double Fnet_out[3], double M_out[3][3]);
-			
-	int getN(); // returns N (number of segments)
-	
-	void setupWaves(vector<double> Ucurrent_in, float dt_in);
-		
-	double getNonlinearE(double l_stretched, double l_unstretched);
-	double getNonlinearC(double ld_stretched, double l_unstretched);
-		
 	void scaleDrag(double scaler);	
 	void setTime(double time);
 	
-	void setState( const double* X, const double time);
+	int setState( const double* X, const double time);
 	
-	void setEndState(double r_in[3], double rd_in[3], int topOfLine);
-	void setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine);
+	int getStateDeriv(double* Xd);
 	
-	void getStateDeriv(double* Xd, const double dt);
+	void getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], double M_out[6][6]);
 	
-	void doRHS( const double* X,  double* Xd, const double time, const double dt);
+	void doRHS();
 
-	//void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
-		
 	void Output(double );
 	
-	~Line();
+	~Rod();
 
 #ifdef USEGL	
 	void drawGL(void);

@@ -31,11 +31,12 @@
 
 #include <memory>
 
-#ifdef USEGL
- #include <GL/gl.h>  // for openGL drawing option
-#endif
+//#ifdef USEGL
+// #include <GL/gl.h>  // for openGL drawing option
+// #include <GL/glu.h> // used in arrow function
+//#endif
 
-#include "kiss_fft.h"  // trying this out!
+#include "kiss_fft.h"  // used for any wave kinematics functions
 
 #ifdef OSX
  #include <sys/uio.h>
@@ -69,8 +70,7 @@ const double pi=3.14159265;
 const doubleC i1(0., 1.); 			// set imaginary number 1
 const floatC i1f(0., 1.); 			// set imaginary number 1
 
-const int wordy = 0;   			// flag to enable excessive output (if > 0) for troubleshooting
-
+const int wordy = 1;   			// flag to enable excessive output (if > 0) for troubleshooting
 
 
 typedef struct 
@@ -79,13 +79,17 @@ typedef struct
 	double WtrDpth;
 	double rho_w;
 	
-	double kb;       // bottom stiffness
-	double cb;       // bottom damping
+	double kb;       // bottom stiffness (Pa/m)
+	double cb;       // bottom damping   (Pa/m/s)
 	int WaveKin;	 // wave kinematics flag (0=off, >0=on)
+	int WriteUnits;	// a global switch for whether to show the units line in the output files (1, default), or skip it (0)
+	double FrictionCoefficient; // general bottom friction coefficient, as a start
+	double FricDamp; // a damping coefficient used to model the friction at speeds near zero
+	double StatDynFricScale; // a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
 } EnvCond;
 
 
-typedef struct  // (matching line dictionary inputs)
+typedef struct  // (matching Line Dictionary inputs)
 {
 	string type; 
 	double d;
@@ -95,9 +99,25 @@ typedef struct  // (matching line dictionary inputs)
 	double Can;
 	double Cat;
 	double Cdn;
-	double Cdt;
-	double ReFac;
+	double Cdt;	
+	int nEpoints;        // number of values in stress-strain lookup table (0 means using constant E)
+	double stiffXs[30]; // x array for stress-strain lookup table (up to 30)
+	double stiffYs[30]; // y array for stress-strain lookup table
+	int nCpoints;        // number of values in stress-strainrate lookup table (0 means using constant c)
+	double dampXs[30]; // x array for stress-strainrate lookup table (up to 30)
+	double dampYs[30]; // y array for stress-strainrate lookup table
 } LineProps;
+
+typedef struct  // (matching Rod Dictionary inputs)
+{
+	string type; 
+	double d;
+	double w;		// linear weight in air
+	double Can;
+	double Cat;
+	double Cdn;
+	double Cdt;
+} RodProps;
 
 typedef struct // matching node input stuff
 {
@@ -114,6 +134,25 @@ typedef struct // matching node input stuff
 	double CdA;  // added 2015/1/15 - product of drag coefficient and frontal area
 	double Ca;  // added 2015/1/15  - added mass coefficient
 } ConnectProps;
+
+typedef struct // matching body input stuff
+{
+	int number;
+	string type;
+	double X0; // constants set at startup from input file
+	double Y0;
+	double Z0;
+	double Xcg;
+	double Ycg;
+	double Zcg;
+	double M;
+	double V;
+	double IX;
+	double IY;
+	double IZ;
+	double CdA;
+	double Ca;	
+} BodyProps;
 
 typedef struct 
 {  // this is C version of MDOutParmType - a less literal alternative of the NWTC OutParmType for MoorDyn (to avoid huge lists of possible output channel permutations)                                                                         
@@ -190,30 +229,76 @@ typedef struct
 
 // below are function prototypes for misc functions
 
+int decomposeString(char outWord[10], char let1[10], 
+     char num1[10], char let2[10], char num2[10], char let3[10]);
+
 double eye(int I, int J);
+
+void getH(double r[3], double H[3][3]);
+void getH(double r[3], double H[9]);
 
 void unitvector( vector< double > & u, vector< double > & r1, vector< double > & r2);
 
+void directionAndLength( double r1[3], double r2[3], double u[3], double* l);
+
+void transposeM3(double A[3][3], double Atrans[3][3]);
+void transposeM3(double A[9], double Atrans[9]);
+
+void addM6(double Min1[6][6], double Min2[6][6], double Mout[6][6]);
+
+void multiplyM3(double A[3][3], double B[3][3], double C[3][3]);
+void multiplyM3(double A[9], double B[9], double C[9]);
+
+void multiplyM3AtransB(double A[3][3], double B[3][3], double C[3][3]);
+void multiplyM3AtransB(double A[9], double B[9], double C[9]);
+
+void multiplyM3ABtrans(double A[3][3], double B[3][3], double C[3][3]);
+void multiplyM3ABtrans(double A[9], double B[9], double C[9]);
+
+double distance3d( double* r1, double* r2);
+
+double dotProd( vector<double>& A, vector<double>& B);
+double dotProd( double A[], vector<double>& B);
+
+void crossProd(double u[3], double v[3], double out[3]);
+
 void inverse3by3( vector< vector< double > > & minv, vector< vector< double > > & m);
+
+void Crout(int d,double*S,double*D);
+void solveCrout(int d,double*LU,double*b,double*x);
 
 void RotMat( double x1, double x2, double x3, double TransMat[]);
 
-double dotprod( vector<double>& A, vector<double>& B);
+void QuaternionToDCM(double q[4], double outMat[3][3]);
 
-double dotprod( double A[], vector<double>& B);
+void rotateM3(double Min[3][3], double rotMat[3][3], double outMat[3][3]);
+void rotateM3(double Min[9], double rotMat[9], double outMat[9]);
 
-//std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
+void rotateM6(double Min[6][6], double rotMat[3][3], double outMat[6][6]);
+void rotateM6(double Min[36], double rotMat[9], double outMat[36]);
+
+void rotateVector3(double inVec[3], double rotMat[9], double outVec[3]);
+void rotateVector6(double inVec[6], double rotMat[9], double outVec[6]);
+
+void transformKinematics(double rRelBody[3], double r_in[3], double TransMat[9], double rd_in[6], double rOut[3], double rdOut[3]);
+
+void translateForce6DOF(double dx[3], double F[6], double Fout[6]);
+
+void translateForce3to6DOF(double dx[3], double F[3], double Fout[6]);
+
+void transformMass3to6DOF(double r[3], double TransMat[9], double Min[3][3], double Iin[3][3], double Mout[6][6]);
+
+void transformMass3to6DOF(double r[3], double TransMat[9], double Min[3][3], double Iin[3][3], double Mout[6][6]);
+
+void translateMassInertia3to6DOF(double r[3], double Min[3][3], double Iin[3][3], double Mout[6][6]);
+
+//void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
+void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
+
+void translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6]);
+void translateMass6to6DOF(double r[3], double Min[36], double Mout[36]);
 
 vector<string> split(const string &s, char delim);
-
-// calculate wave number from frequency, g, and depth (credit: FAST source)
-float WaveNumber( float Omega, float g, float h );
-
-float JONSWAP(float Omega, float Hs, float Tp, float Gamma );
-
-float SINHNumOvrSIHNDen(float k, float h, float z );
-
-float COSHNumOvrSIHNDen(float k, float h, float z );
 
 void reverse(double* data, int datasize);
 void doIIR(double* in, double* out, int dataSize, double* a, double* b, int kernelSize);
