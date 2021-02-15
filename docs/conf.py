@@ -19,17 +19,19 @@ import os
 # -- Doxygen and breathe steps -----------------------------------------------------------
 
 # Check if we're running on Read the Docs' servers
-#read_the_docs_build = True #os.environ.get('READTHEDOCS', None) == 'True'
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 breathe_projects = {}
 
-#if read_the_docs_build:
-subprocess.call('make clean', shell=True)
-subprocess.call('doxygen', shell=True)
+if read_the_docs_build:
+    subprocess.call(doxygen', shell=True)
+else:
+    subprocess.call('make clean', shell=True)
+    subprocess.call('doxygen', shell=True)
+
 breathe_projects['MoorDyn'] = "_build/xml"
 breathe_default_project = "MoorDyn"
 
-#subprocess.call('cd ../../doxygen ; doxygen', shell=True)
 #breathe_projects = { "trianglelib": "../../doxygen/build/xml/" }
 #breathe_default_project = "trianglelib"
 
