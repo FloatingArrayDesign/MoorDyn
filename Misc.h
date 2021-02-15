@@ -31,11 +31,12 @@
 
 #include <memory>
 
-#ifdef USEGL
- #include <GL/gl.h>  // for openGL drawing option
-#endif
+//#ifdef USEGL
+// #include <GL/gl.h>  // for openGL drawing option
+// #include <GL/glu.h> // used in arrow function
+//#endif
 
-#include "kiss_fft.h"  // trying this out!
+#include "kiss_fft.h"  // used for any wave kinematics functions
 
 #ifdef OSX
  #include <sys/uio.h>
@@ -78,10 +79,13 @@ typedef struct
 	double WtrDpth;
 	double rho_w;
 	
-	double kb;       // bottom stiffness
-	double cb;       // bottom damping
+	double kb;       // bottom stiffness (Pa/m)
+	double cb;       // bottom damping   (Pa/m/s)
 	int WaveKin;	 // wave kinematics flag (0=off, >0=on)
 	int WriteUnits;	// a global switch for whether to show the units line in the output files (1, default), or skip it (0)
+	double FrictionCoefficient; // general bottom friction coefficient, as a start
+	double FricDamp; // a damping coefficient used to model the friction at speeds near zero
+	double StatDynFricScale; // a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
 } EnvCond;
 
 

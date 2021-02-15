@@ -168,16 +168,12 @@ public:
 
 			
 	void setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in);
-	
-	void setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmega_in, double dt_in );
-	
-	void makeWaveKinematics( double t0 );
 		
 	void scaleDrag(double scaler);
 	
 	void setTime(double time);
 	
-	void doRHS( const double* X,  double* Xd, const double time );
+	void doRHS( const double* X,  double* Xd, const double time, const double dt);
 
 	void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
 		
@@ -185,6 +181,7 @@ public:
 
 #ifdef USEGL	
 	void drawGL(void);
+	void drawGL2(void);
 #endif
 };
 

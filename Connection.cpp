@@ -361,3 +361,12 @@ Connection::~Connection()
 	M_i.clear();
 	
 }
+
+// new function to draw instantaneous line positions in openGL context
+#ifdef USEGL
+void Connection::drawGL(void)
+{
+	double radius = pow( conV/(4/3*pi), 0.33333);  //conV
+	Sphere(r[0], r[1], r[2], radius);
+};
+#endif

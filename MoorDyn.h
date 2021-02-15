@@ -42,6 +42,7 @@ int DECLDIR LinesInit(double X[], double XD[]);
 
 int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* , double* );
 
+int DECLDIR FairleadsCalc2(double rFairIn[], double rdFairIn[], double fFairIn[], double* t_in, double *dt_in); // easier to call version
 int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in);
 
 
@@ -58,7 +59,6 @@ int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3]);
 int DECLDIR DrawWithGL(void);
 
 void AllOutput(double, double);
-int SetupWavesFromFile(void);
 
 #ifdef __cplusplus
 }

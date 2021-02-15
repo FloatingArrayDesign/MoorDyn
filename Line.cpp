@@ -74,7 +74,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	// forces 
 	T.resize(N, vector<double>(3, 0.0));	// line tensions
 	Td.resize(N, vector<double>(3, 0.0));   // line damping forces
-	Tmag.resize(N, 0.0);				// segment tension magnitudes << hardly used
+//	Tmag.resize(N, 0.0);				// segment tension magnitudes << hardly used
 	W.resize(N+1, vector<double>(3, 0.0));	// node weights
 
 	Dp.resize(N+1, vector<double>(3, 0.0));		// node drag (transverse)
@@ -174,6 +174,12 @@ void Line::initialize( double* X )
 					*outfile << "Seg" << i << "dSt \t ";
 				}
 			}
+			// output seabed contact forces?
+			if (channels.find("b") != string::npos) {
+				for (int i=0; i<=N; i++)  {
+					*outfile << "Node" << i << "bx \t Node" <<  i << "by \t Node" <<  i << "bz \t ";
+				}
+			}
 			
 			*outfile << "\n";   
 			
@@ -227,6 +233,11 @@ void Line::initialize( double* X )
 				if (channels.find("d") != string::npos) {
 					for (int i=0; i<N; i++)	//loop through nodes
 						*outfile << "(-/s) \t";
+				}
+				// output seabed contact force?
+				if (channels.find("D") != string::npos) {
+					for (int i=0; i<=3*N+2; i++)	//loop through nodes
+						*outfile << "(N) \t";
 				}
 				
 				*outfile << "\n";   // should also write units at some point!
@@ -319,8 +330,11 @@ double Line::getNodeTen(int i)
 	else if (i==N)                             
 		NodeTen = sqrt(Fnet[i][0]*Fnet[i][0] + Fnet[i][1]*Fnet[i][1] + (Fnet[i][2]+M[i][0][0]*(-env.g))*(Fnet[i][2]+M[i][0][0]*(-env.g)));
 	else 
-		NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
-
+	{
+		double Tmag_squared = 0.; 
+		for (int J=0; J<3; J++)  Tmag_squared += 0.25*(T[i][J] + T[i-1][J])*(T[i][J] + T[i-1][J]);  // take average of tension in adjacent segments 
+		NodeTen = sqrt(Tmag_squared);  	// 		previously used: NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
+	}
 	return NodeTen;
 };
 
@@ -376,17 +390,16 @@ int Line::getN()
 
 double Line::GetLineOutput(OutChanProps outChan)
 {	
-	if      (outChan.QType == PosX)
-	{
-		//cout << " outputting node " << outChan.NodeID << " PosX: " << r[outChan.NodeID][0] << endl;
-		return  r[outChan.NodeID][0];
-	}
+	if      (outChan.QType == PosX)  return  r[outChan.NodeID][0];
 	else if (outChan.QType == PosY)  return  r[outChan.NodeID][1];
 	else if (outChan.QType == PosZ)  return  r[outChan.NodeID][2];
 	else if (outChan.QType == VelX)  return  rd[outChan.NodeID][0];
 	else if (outChan.QType == VelY)  return  rd[outChan.NodeID][1];
 	else if (outChan.QType == VelZ)  return  rd[outChan.NodeID][2];
 	else if (outChan.QType == Ten )  return  getNodeTen(outChan.NodeID);
+	else if (outChan.QType == FX)  return  Fnet[outChan.NodeID][0];
+	else if (outChan.QType == FY)  return  Fnet[outChan.NodeID][1];
+	else if (outChan.QType == FZ)  return  Fnet[outChan.NodeID][2];
 	else
 	{
 		//cout << "outChan.QType (value of " << outChan.QType << ") not recognized." << endl;
@@ -430,345 +443,6 @@ void Line::setupWaves(EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
 };
 
 
-/*
-
-// instantiator that takes discrete wave data from FAST
-void Line::setupWaves(int WaveMod_in, int WaveStMod_in, float WaveHs_in, float WaveTp_in, float WaveDir_in, 
-	float WtrDpth_in, int NStepWave2_in, float WaveDOmega_in, 
-	float WGNC_Fact_in, float WGNCreal[], float WGNCimag[], float S2Sd_Fact_in, float WaveS2Sdd_in[], 
-	EnvCond env_in, vector<double> Ucurrent_in, float dt_in)
-{
-	// go about converting inputted wave stuff into a more friendly form (unnecessary now)
-	
-	env = env_in;
-	
-	WaveMod = WaveMod_in;
-	WaveStMod =WaveStMod_in;
-	Hs = WaveHs_in;
-	Tp = WaveTp_in;
-	beta = WaveDir_in;
-	
-	//WtrDpth = WtrDpth_in;
-	//double g = 9.806;
-	
-	if (env.WaveKin == 1)  // if including wave kinematics
-	{
-		Nw = NStepWave2_in;   // number of wave frequency components
-			
-		// resize some frequency-domain wave calc vectors
-		w.resize(Nw, 0.0);
-		zetaC.resize(Nw, 0.);
-		WGNC.resize(Nw, 0.);
-		WaveS2Sdd.resize(Nw, 0.);
-		k.resize(Nw, 0.0);
-		UC.resize(Nw, vector<doubleC>(3, 0.));     // Fourier transform of wave velocities
-		UdC.resize(Nw, vector<doubleC>(3, 0.));     // Fourier transform of wave accelerations	
-					
-		dw = WaveDOmega_in;
-		Nt = Nw*2; // this is a new variable containing the number of wave time steps to be calculated
-		WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
-	
-		// fill in some vectors
-		for (int I=0; I<Nw; I++)
-		{
-			w[I] = dw*double(I);
-			k[I] = WaveNumber( w[I], env.g, env.WtrDpth );
-			WGNC[I] = doubleC( (double) WGNCreal[I], (double) WGNCimag[I]);  // converting from FORTRAN-compatible struct to c complex type
-			WaveS2Sdd[I] = WaveS2Sdd_in[I];
-		}		
-		
-	}
-	else
-	{
-		Nw = 0;    // use no components since not worrying about wave kinematics
-		//dw = WaveDOmega_in;
-		Nt = 2; // this is a new variable containing the number of wave time steps to be calculated
-		WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
-	}
-	
-
-	
-	cout << "Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	cout << "Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
-	
-	WGNC_Fact = WGNC_Fact_in;
-	S2Sd_Fact = S2Sd_Fact_in;
-	
-
-		
-	Ucurrent = Ucurrent_in;
-	
-	// resize the new time series vectors
-	if (Nt > 0)
-	{
-		zetaTS.resize(N+1, vector<double>(Nt, 0.));
-		FTS.resize   (N+1, vector<double>(Nt, 0.));
-		UTS.resize   (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		UdTS.resize  (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		tTS.resize(Nt, 0.);
-	}
-
-	cout << "Done Waves initialization" << endl << endl;
-	
-};
-
-
-*/
-
-
-
-// NEW - instantiator that takes discrete wave elevation fft data only
-void Line::setupWaves(EnvCond env_in, vector<floatC> zetaC_in,  double WaveDOmega_in, double dt_in )
-{
-	// go about converting inputted wave stuff into a more friendly form (unnecessary now)
-	
-	
-	//WaveStMod =WaveStMod_in;
-
-	beta = 0.0; //WaveDir_in;
-	
-
-	env = env_in;
-	Nw = zetaC_in.size();   // number of wave frequency components
-		
-	// resize some frequency-domain wave calc vectors
-	w.resize(Nw, 0.0);
-	k.resize(Nw, 0.0);
-	zetaC0.resize(Nw, 0.);
-	zetaC.resize(Nw, 0.);
-	UC.resize(Nw, vector<floatC>(3, 0.));     // Fourier transform of wave velocities
-	UdC.resize(Nw, vector<floatC>(3, 0.));     // Fourier transform of wave accelerations	
-				
-	dw = WaveDOmega_in;
-	Nt = Nw; // this is a new variable containing the number of wave time steps to be calculated
-	WaveDT = dt_in; // new variable for wave time step (should be same as WaveDT I think...)	
-
-	for (int i=0; i<=Nw/2; i++)  w[i]     = i*dw;		
-	for (int i=1; i<Nw/2; i++)  w[Nw/2+i] = -w[Nw/2-i];	// including negative frequencies
-	// note: w is frequency (rad/s) - should be symmetric: # [0,dw,2dw,....w(N/2),w(-N/2+1)...-2dw,-dw]
-	
-	
-	// fill in some vectors
-	for (int I=0; I<Nw; I++)
-	{
-//		w[I] = dw*double(I);
-		k[I] = WaveNumber( w[I], (float)env.g, (float)env.WtrDpth );
-		zetaC0[I] = zetaC_in[I];
-//		WGNC[I] = doubleC( (double) WGNCreal[I], (double) WGNCimag[I]);  // converting from FORTRAN-compatible struct to c complex type
-//		WaveS2Sdd[I] = WaveS2Sdd_in[I];
-
-	// add cout check of w and k here!
-
-	}		
-		
-
-	
-	if (wordy>1) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	if (wordy>1) cout << "   Nt=" << Nt << ", and WaveDT=" <<  WaveDT << ", env.WtrDpth=" << env.WtrDpth << endl;
-	
-//	WGNC_Fact = WGNC_Fact_in;
-//	S2Sd_Fact = S2Sd_Fact_in;		
-//	Ucurrent = Ucurrent_in;
-	
-	// resize the new time series vectors
-	if (Nt > 0)
-	{
-		zetaTS.resize(N+1, vector<double>(Nt, 0.));
-		FTS.resize   (N+1, vector<double>(Nt, 0.));
-		UTS.resize   (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		UdTS.resize  (N+1, vector< vector< double> >(Nt, vector<double>(3, 0.)));
-		tTS.resize(Nt, 0.);
-	}
-
-	if (wordy>1) cout << "   Done Waves initialization" << endl << endl;
-	
-};
-
-
-
-	
-
-
-// precalculates wave kinematics for a given set of node points for a series of time steps
-// re-made on Feb 23rd 2015 to accept fft of wave elevation from any source
-void Line::makeWaveKinematics( double t0 )
-{
-	// inputs are t0 - start time
-	
-	if (wordy>2) cout << "    making wave Kinematics.  N=" << N << endl;
-	// function calculates wave kinematics and free surface elevation at each X
-	
-	WaveKin = 1;  // enable wave kinematics now that they're going to be calculated
-
-		
-	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	if (wordy>2) cout << "starting fft stuff " << endl;
-	int NFFT = Nt;
-	int is_inverse_fft = 1;
-	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
-	
-	if (wordy>2) cout << "allocatin io " << endl;
-	
-	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
-	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
-		
-		
-		
-	// calculating wave kinematics on node i located at point x, y, z
-
-	
-	// loop through nodes
-	for (int i=0; i<=N; i++)
-	{	
-		float x = (float)r[i][0]; // rename node positions for convenience 
-		float y = (float)r[i][1];
-		float z = (float)r[i][2];
-		
-		if (wordy>2)  cout << "i=" << i << "  ";
-		
-		// ---------------- calculate frequency domain velocities and accelerations ------------------
-		// note: all these values are for each node specifically, in turn.  just intermediate values for calculating time series
-		if (env.WaveKin > 0)   // if including wave kinematics <<<<<<<<<<<<<< not in right place...
-		{	
-			// calculated wave elevation in freq domain
-			//cout << "starting zetaC" << endl;
-	//		for (int I=0; I<Nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
-	//		{
-	//			//zetaC[I] =  WGNC_Fact*WGNC[I] *sqrt( 2.0*pi*S2Sd_Fact*WaveS2Sdd[I] )*exp( i1*(k[I]*(cos(beta)*x + sin(beta)*y))); // Fourier transform of wave elevation
-	//				
-	//			zetaC[I] = zetaC0[I]* exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
-	//		
-	//			// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
-	//			UC[I][0] =  abs(w[I])* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
-	//			UC[I][1] =  abs(w[I])* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-	//			UC[I][2] = i1f* w[I] * zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
-     //
-	//			// Fourier transform of wave accelerations
-	//			for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
-	//		}
-			
-			// handle positive-frequency half of spectrum
-			for (int I=0; I<Nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
-			{
-				zetaC[I] = zetaC0[I]* exp( -i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
-			
-				// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
-				UC[I][0] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
-				UC[I][1] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-				UC[I][2] = i1f* w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
-
-				// Fourier transform of wave accelerations
-				for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
-			}
-		//	// handle negative-frequency half of spectrum
-		//	for (int I=Nw/2+1; I<Nw; I++)  // Loop through the negative frequency components
-		//	{
-		//		zetaC[I] = zetaC0[I]* exp( i1f*(k[I]*(cos(beta)*x + sin(beta)*y)));   // shift each zetaC to account for location
-		//	
-		//		// Fourier transform of wave velocities (note: need to multiply by abs(w) to avoid inverting negative half of spectrum)
-		//		UC[I][0] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*cos(beta); //<<<<<<<<<<<<<<<<<<<<<
-		//		UC[I][1] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen ( k[I], env.WtrDpth, z )*sin(beta);
-		//		UC[I][2] = i1f* w[I]* zetaC[I]*SINHNumOvrSIHNDen ( k[I], env.WtrDpth, z );
-          //
-		//		// Fourier transform of wave accelerations
-		//		for (int J=0; J<3; J++)  UdC[I][J] = i1f*w[I]*UC[I][J];	// should confirm correct signs of +/- halves of spectrum here
-		//	}
-			
-			
-			
-			
-		}
-		
-		
-		// ------------------------ convert into time domain using IFFT ------------------------
-		
-		
-		// scale time vector ....
-		for (int ts=0; ts<Nt; ts++)	tTS[ts] = t0 + double(ts)*0.25; // time
-	
-	
-		if (wordy>2)  cout << "   processing fft" << endl;
-		
-		// .............................. wave elevation ...............................
-		for (int I=0; I<NFFT; I++)  
-		{			    					// put data into input vector
-			cx_in[I].r = real(zetaC[I]);    	// real component - kiss_fft likes floats
-			cx_in[I].i = imag(zetaC[I]);    	// imaginary component
-		}
-		kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
-		
-		for (int I=0; I<NFFT; I++)  zetaTS[i][I] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
-		
-		//if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "fair zeta is " << zetaTS[i][I] << " at time " << tTS[I] << endl;
-		
-		// .............................. wave velocities ...............................
-		for (int J=0; J<3; J++)	{
-			for (int I=0; I<NFFT; I++)  
-			{			    					// put data into input vector
-				cx_in[I].r = real(UC[I][J]);    	// real component - kiss_fft likes floats
-				cx_in[I].i = imag(UC[I][J]);    	// imaginary component
-			}
-			kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
-			
-			for (int I=0; I<NFFT; I++)  UTS[i][I][J] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
-		}
-		
-		// if (wordy) if (i==N) for (int I=0; I<NFFT; I++) cout << "   UTSx is " << UTS[i][I][0] << " at time " << tTS[I] << endl;
-		
-		// .............................. wave accelerations ...............................
-		for (int J=0; J<3; J++)	{
-			for (int I=0; I<NFFT; I++)  
-			{			    					// put data into input vector
-				cx_in[I].r = real(UdC[I][J]);    	// real component - kiss_fft likes floats
-				cx_in[I].i = imag(UdC[I][J]);    	// imaginary component
-			}
-			kiss_fft( cfg , cx_in , cx_out );     	// do the IFFT
-			
-			for (int I=0; I<NFFT; I++)  UdTS[i][I][J] = cx_out[I].r /(float)Nw;   // copy out the IFFT data to the time series
-		}
-		
-		
-		// ----------------------------- write to text file for debugging ----------------------------
-		if ((number == 1) && (i == N))
-		{
-			if (wordy>2)   cout << "   frequnecy domain starting wave data output file" << endl;
-			ofstream waveoutsC("wavesC.out");
-			waveoutsC << "wave data output file" << endl << endl;
-			
-			waveoutsC << "w \t k \t zetaC0r \t zetaC0i \t zetaCr \t zetaCi \t UCxr  \t UCxi \t UCzr \t UCzi \n";
-			for (int j=0; j<NFFT; j++)  waveoutsC << w[j] << " \t" << k[j] << " \t" << real(zetaC0[j]) << " \t" << imag(zetaC0[j]) << 
-			   " \t" << real(zetaC[j]) << " \t" << imag(zetaC[j]) << " \t" << real(UC[j][0]) << " \t" << imag(UC[j][0]) << 
-			   " \t" << real(UC[j][2]) << " \t" << imag(UC[j][2]) << endl;	
-			waveoutsC.close();
-		}
-		if (number==1)
-		{		
-			stringstream oname;
-			oname << "waves_i" << i << ".out";
-			ofstream waveouts(oname.str());
-			waveouts << "wave data output file" << endl << endl;
-			
-			waveouts << "t \t zeta \t Ux \t Uz \t Udx \t Udz \n";
-			for (int j=0; j<NFFT; j++)  waveouts << tTS[j] << " \t" << zetaTS[i][j] << " \t" << UTS[i][j][0] << " \t" << UTS[i][j][2] << " \t" << UdTS[i][j][0] << " \t" << UdTS[i][j][2] << endl;	
-			waveouts.close();
-		}
-		
-		// wave stretching stuff would maybe go here...
-		
-	} // i done looping through nodes
-	
-	
-	//cout << "   about to free fft data structures." << endl;
-	
-	
-	free(cx_in);
-	free(cx_out);
-	free(cfg);
-	
-	if (wordy>1) cout << "    done wave Kinematics" << endl;
-};
-
-	
 	
 // function for boosting drag coefficients during IC generation	
 void Line::scaleDrag(double scaler)
@@ -788,7 +462,7 @@ void Line::setTime(double time)
 
 
 //  this is the big function that updates the states
-void Line::doRHS( const double* X,  double* Xd, const double time )
+void Line::doRHS( const double* X,  double* Xd, const double time, const double dt)
 {
 	t = time;
 
@@ -949,7 +623,7 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 		if (i==0)
 			W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env.rho_w) )*(-env.g);
 		else if (i==N)
-			pi/8.*( d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g);
+			W[i][2] = pi/8.*( d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g); // missing the "W[i][2] =" previously!
 		else
 			W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env.rho_w) + d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g);
 				
@@ -1017,10 +691,25 @@ void Line::doRHS( const double* X,  double* Xd, const double time )
 				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i]            );
 			else
 				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i] + d*l[i-1] );
+			
+			// // new rough-draft addition of seabed friction
+			// //double FrictionCoefficient = 0.5;                  // just using one coefficient to start with          
+			// double FrictionMax = abs(B[i][2])*env.FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
+			// // saturated damping approach to applying friction, for now
+			// double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
+			// double FrictionForce = BottomVel * env.FrictionCoefficient*env.FricDamp; // some arbitrary damping scaling thing at end
+			// if (FrictionForce > env.StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
+			// // apply force in correct directions -- opposing direction of motion
+			//  // could add ifs in here to handle end nodes
+			// B[i][0] = -FrictionForce*rd[i][0]/BottomVel;
+			// B[i][1] = -FrictionForce*rd[i][1]/BottomVel;
 		}
 		else 
+		{
+			B[i][0] = 0.;
+			B[i][1] = 0.;
 			B[i][2] = 0.;
-		
+		}		
 		// total forces
 		if (i==0)
 			for (int J=0; J<3; J++) Fnet[i][J] = T[i][J]             + Td[i][J]              + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
@@ -1119,6 +808,12 @@ void Line::Output(double time)
 				for (int i=0; i<N; i++)  {
 					*outfile << ldstr[i]/l[i] << "\t ";
 				}
+			}			
+			// output seabed contact forces?
+			if (channels.find("b") != string::npos) {
+				for (int i=0; i<=N; i++)  {
+					for (int J=0; J<3; J++)  *outfile << B[i][J] << "\t ";
+				}
 			}
 			
 			*outfile << "\n";
@@ -1133,9 +828,60 @@ void Line::Output(double time)
 #ifdef USEGL
 void Line::drawGL(void)
 {
+	double maxTen = 0.0;
+	double normTen;
+	double rgb[3];
+	for (int i=0; i<=N; i++)	
+	{
+		double newTen = getNodeTen(i);
+		if (newTen > maxTen)
+			maxTen = newTen;
+	}
+	
 	glColor3f(0.5,0.5,1.0);
 	glBegin(GL_LINE_STRIP);
-	for (int i=0; i<=N; i++)	glVertex3d(r[i][0], r[i][1], r[i][2]);
+	for (int i=0; i<=N; i++)	
+	{
+		glVertex3d(r[i][0], r[i][1], r[i][2]);
+		if (i<N)  {
+			normTen = getNodeTen(i)/maxTen;
+			ColorMap(normTen, rgb);
+			glColor3d(rgb[0],rgb[1],rgb[2]);
+		}
+	}
 	glEnd();
-}
+};
+
+
+
+void Line::drawGL2(void)
+{
+	double maxTen = 0.0;
+	double normTen;
+	double rgb[3];
+	for (int i=0; i<=N; i++)	
+	{
+		double newTen = getNodeTen(i);
+		if (newTen > maxTen)
+			maxTen = newTen;
+	}
+	
+	// line
+	for (int i=0; i<N; i++)	
+	{
+		normTen = 0.2+0.8*pow(getNodeTen(i)/maxTen, 4.0);
+		ColorMap(normTen, rgb);
+		glColor3d(rgb[0],rgb[1],rgb[2]);
+
+		Cylinder(r[i][0], r[i][1], r[i][2], r[i+1][0], r[i+1][1], r[i+1][2], 27, 0.5);
+	}
+	// velocity vectors
+	for (int i=0; i<=N; i++)	
+	{
+		glColor3d(0.0, 0.2, 0.8);
+		double vscal = 5.0;
+
+		Arrow(r[i][0], r[i][1], r[i][2], vscal*rd[i][0], vscal*rd[i][1], vscal*rd[i][2], 0.1, 0.7);
+	}
+};
 #endif

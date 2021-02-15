@@ -96,6 +96,11 @@ public:
 	
 	void initiateStep(double FairIn[3], double rdFairIn[3], double time);	
 	void updateFairlead( const double time);
+	
+	#ifdef USEGL
+	void drawGL(void);
+	#endif
+	
 };
 
 #endif

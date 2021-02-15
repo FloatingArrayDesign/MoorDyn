@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 1.01.00C.  April 20, 2016.
+ // This is version 1.01.02.  Feb 14, 2021.
  
 #include "Misc.h"
 #include "MoorDyn.h"
@@ -95,7 +95,7 @@ int OwnConsoleWindow = 0;
 #endif
 
 // master function to handle time stepping (updated in v1.0.1 to follow MoorDyn F)
-void RHSmaster( const double X[],  double Xd[], const double t)
+void RHSmaster( const double X[],  double Xd[], const double t, const double dt)
 {
 	//for (int l=0; l < nConnects; l++)  {	
 	//	ConnectList[l].doRHS((X + 6*l), (Xd + 6*l), t);
@@ -118,7 +118,7 @@ void RHSmaster( const double X[],  double Xd[], const double t)
 	
 	// calculate line dynamics
 	for (int l=0; l < nLines; l++) 	
-		LineList[l].doRHS((X + LineStateIs[l]), (Xd + LineStateIs[l]), t);
+		LineList[l].doRHS((X + LineStateIs[l]), (Xd + LineStateIs[l]), t, dt);
 		
 	
 	return;
@@ -126,14 +126,14 @@ void RHSmaster( const double X[],  double Xd[], const double t)
 
 
 // Runge-Kutta 2 integration routine  (integrates states and time)
-void rk2 (double x0[], double *t0, double dt )
+void rk2 (double x0[], double *t0, const double dt )
 {
-	RHSmaster(x0, f0, *t0);	 								// get derivatives at t0.      f0 = f ( t0, x0 );
+	RHSmaster(x0, f0, *t0, dt);                             // get derivatives at t0.      f0 = f ( t0, x0 );
 
 	for (int i=0; i<nX; i++) 
 		xt[i] = x0[i] + 0.5*dt*f0[i];  						// integrate to t0  + dt/2.        x1 = x0 + dt*f0/2.0;
 	
-	RHSmaster(xt, f1, *t0 + 0.5*dt);							// get derivatives at t0  + dt/2.	f1 = f ( t1, x1 );
+	RHSmaster(xt, f1, *t0 + 0.5*dt, dt);                    // get derivatives at t0  + dt/2.	f1 = f ( t1, x1 );
 
 	for (int i=0; i<nX; i++) 
 		x0[i] = x0[i] + dt*f1[i]; 							// integrate states to t0 + dt
@@ -269,7 +269,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 #endif	
 	
 	// ---------------------------- MoorDyn title message ----------------------------
-	cout << "\n Running MoorDyn (v1.01.00C, 2016-04-20)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
+	cout << "\n Running MoorDyn (v1.01.02C, 2021-02-14)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -309,6 +309,9 @@ int DECLDIR LinesInit(double X[], double XD[])
 	env.cb = 3.0e5;
 	env.WaveKin = 0;   // 0=none, 1=from function, 2=from file
 	env.WriteUnits = 1;	// by default, write units line
+	env.FrictionCoefficient = 0.0;
+	env.FricDamp = 200.0;
+	env.StatDynFricScale = 1.0;
 		
 	double ICDfac = 5; // factor by which to boost drag coefficients during dynamic relaxation IC generation
 	double ICdt = 1.0;						// convergence analysis time step for IC generation
@@ -418,13 +421,17 @@ int DECLDIR LinesInit(double X[], double XD[])
 							nConns ++;
 						}
 						else
-							cout << "   Error: type of connection " << tempConnect.number << " is unknown." << endl;
+							cout << "   Error: type of connection " << tempConnect.number << " (" << newConnect.type << ") is unknown." << endl;
 						
 						if (wordy>0) cout << newConnect.number << " ";
 					}
 					else 
 					{
-						cout << endl << "   Error - less than the 12 required input columns for connection " << entries[0] << " definition.  Remember CdA and Ca" << endl;
+						cout << endl << "   Error - less than the 12 required input columns for connection " << entries[0] << " definition.  Remember CdA and Ca." << endl;
+						cout << "   The line in question was read as: ";
+						for (int ii=0; ii<entries.size(); ii++) cout << entries[ii] << " ";
+						cout << endl;
+						
 						return -1;
 					}
 					i++;
@@ -535,6 +542,9 @@ int DECLDIR LinesInit(double X[], double XD[])
 						else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
 						else if (entries[1] == "WaveKin")                                   env.WaveKin = atoi(entries[0].c_str());
 						else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
+						else if (entries[1] == "FrictionCoefficient")                       env.FrictionCoefficient = atof(entries[0].c_str());
+						else if (entries[1] == "FricDamp")                       env.FricDamp = atof(entries[0].c_str());
+						else if (entries[1] == "StatDynFricScale")             env.StatDynFricScale = atof(entries[0].c_str());
 						else if (entries[1] == "dtOut")                                     dtOut = atof(entries[0].c_str()); // output writing period (0 for at every call)
 					}
 					i++;
@@ -645,18 +655,18 @@ int DECLDIR LinesInit(double X[], double XD[])
 						//cout << "  broken into " << let1 << ", " << num1 << ", " << let2 << ", " << num2 << ", " << let3 << endl;
 						
 						// error check
-						if (in1 <= 1) 
+						if (in1 < 1) 
 						{ 	// CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
 							//CALL WrScr('Warning: invalid output specifier.')
 							//CONTINUE
+							cout << "Warning: invalid output specifier (must start with letter)." << endl;
 						}
 						
-						OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later)
-		;
+						OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later);
 						strncpy(dummy.Name, outWord, 10); //strlen(outWord));		// label channel with whatever name was inputted, for now
 
 						// figure out what type of output it is and process accordingly 
-						// TODO: add checks of first char of num1,2, let1,2,3 not being NULL to below and handle errors
+						// TODO: add checks of first char of num1,2, let1,2,3 not being NULL to below and handle errors (e.g. invalid line number)
 
 						const int UnitsSize = 10;
 						// fairlead tension case (updated)   NOTE - these will include contributions of ALL lines connected at these fairlead points
@@ -677,7 +687,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 							dummy.QType = Ten;           							// tension quantity type
 							strncpy(dummy.Units, UnitList[Ten], UnitsSize);						// set units according to QType
 							int LineID = atoi(num1);               							// this is the line number
-							dummy.ObjID = LineList[LineID-1].FairConnect->number;		// get the connection ID of the fairlead
+							dummy.ObjID = LineList[LineID-1].AnchConnect->number;		// get the connection ID of the anchor
 							dummy.NodeID = -1;           							// not used.    other%LineList(oID)%N  ! specify node N (fairlead)
 						}
 						// more general case
@@ -829,22 +839,22 @@ int DECLDIR LinesInit(double X[], double XD[])
 			
 	
 	//  ------------------------ set up waves if needed -------------------------------
-	
-	// (in general, set up wave stuff here BEFORE adding line to vector)
+// @mth: new approach to wave kinematics will be implemented - this part needs to be redone	
+//	// (in general, set up wave stuff here BEFORE adding line to vector)
 	vector<double> Ucurrent(3, 0.0);  // should make this an input to the DLL at some point.
-	if (env.WaveKin == 2)
-	{
-		if (wordy>0) cout << "   Setting up wave kinematics by reading from file" << endl;
-		SetupWavesFromFile();
-				
+//	if (env.WaveKin == 2)
+//	{
+//		if (wordy>0) cout << "   Setting up wave kinematics by reading from file" << endl;
+//		SetupWavesFromFile();
+//				
+//		for (int l=0; l<nLines; l++) 
+//			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // TODO: update.  last entry is bogus!
+//	}			
+//	else
+//	{ 	// no waves case
 		for (int l=0; l<nLines; l++) 
-			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // TODO: update.  last entry is bogus!
-	}			
-	else
-	{ 	// no waves case
-		for (int l=0; l<nLines; l++) 
-			LineList[l].setupWaves(env, Ucurrent, 9000.);   // sending env struct (important)
-	}								
+			LineList[l].setupWaves(env, Ucurrent, 0.);   // sending env struct (important)
+//	}								
 	
 	// note: each Line's WaveKin switch should be off by default, and can be switched on when the wave kinematics 
 	// are calculated AFTER the initial position has been solved for.
@@ -1025,13 +1035,13 @@ int DECLDIR LinesInit(double X[], double XD[])
 	}
 	
 	
-
-	// ------------------------- calculate wave time series if needed -------------------
-	if (env.WaveKin == 2)
-	{
-		for (int l=0; l<nLines; l++) 
-			LineList[l].makeWaveKinematics( 0.0 );
-	}
+// @mth: new approach to be implemented
+//	// ------------------------- calculate wave time series if needed -------------------
+//	if (env.WaveKin == 2)
+//	{
+//		for (int l=0; l<nLines; l++) 
+//			LineList[l].makeWaveKinematics( 0.0 );
+//	}
 
 	
 	// -------------------------- start main output file --------------------------------
@@ -1065,217 +1075,22 @@ int DECLDIR LinesInit(double X[], double XD[])
 }
 
 
-// accept wave parameters from calling program and precalculate wave kinematics time series for each node
-int DECLDIR SetupWaves(int* WaveMod, int* WaveStMod, 
-	float* WaveHs, float* WaveTp, float* WaveDir, int* NStepWave2, float* WaveDOmega, 
-	float* WGNC_Fact, float WGNCreal[], float WGNCimag[], float* S2Sd_Fact, float WaveS2Sdd[], float* WaveDT)
-{
-
-	return 0.0;
-}
-
-
-
-// load time series of wave elevations and process to calculate wave kinematics time series for each node
-int SetupWavesFromFile(void)
-{
-	// much of this process is taken from GenerateWaveExctnFile.py
-
-	if (wordy > 2)  cout << "   Reading wave time series from waves.txt file" << endl;
-	
-	// --------------------- read data from file ------------------------
-	vector<string> lines2;
-	string line2;
-	string WaveFilename = "waves.txt";  // should set as overideable default later
-	
-	ifstream myfile2 (WaveFilename);     // open an input stream to the wave elevation time series file
-	if (myfile2.is_open())
-	{
-		while ( getline(myfile2,line2) )
-		{
-			lines2.push_back(line2);
-		}
-		myfile2.close();
-		
-		// should add error checking.  two columns of data, and time column must start at zero?
-	}
-	else cout << "   Error: Unable to open wave time series file" << endl; 
+// @mth: placeholder for now 
+// 
+// // accept wave parameters from calling program and precalculate wave kinematics time series for each node
+// int DECLDIR SetupWaves(int* WaveMod, int* WaveStMod, 
+// 	float* WaveHs, float* WaveTp, float* WaveDir, int* NStepWave2, float* WaveDOmega, 
+// 	float* WGNC_Fact, float WGNCreal[], float WGNCimag[], float* S2Sd_Fact, float WaveS2Sdd[], float* WaveDT)
+// {
+// 
+// 	return 0.0;
+// }
 
 
-	// ----------------------- save data internally ---------------------------
+// @mth: moved
+// // load time series of wave elevations and process to calculate wave kinematics time series for each node
+// int SetupWavesFromFile(void)
 
-	vector< double > wavetimes;
-	vector< double > waveelevs;
-	
-	for (int i=0; i<lines2.size(); i++)
-	{ 	
-
-		std::vector<std::string> entries2 = split(lines2[i], ' ');
-
-		if (entries2.size() >= 2) {
-			wavetimes.push_back(atof(entries2[0].c_str()));
-			waveelevs.push_back(atof(entries2[1].c_str()));
-		}
-		else cout << "   bad line read from " << WaveFilename << endl;
-
-	}
-	if (wordy > 2) cout << "   Done reading file. " << endl;
-	
-	// -------------------- downsample to dt = 0.25 ---------------------------
-	double dtW = 0.25;
-	int NtW = floor(wavetimes.back()/dtW);  	// number of time steps
-	
-	if (wordy > 2)  cout << "Nt is " << NtW << endl;
-	
-	vector< double > waveTime (NtW, 0.0); 
-	vector< double > waveElev (NtW, 0.0); 
-	
-	if (wordy > 2)  cout << "interpolated to reduce time steps from " << wavetimes.size()  << " to " << NtW << endl;
-	
-	int ts = 0; 							// index for interpolation (so it doesn't start at the beginning every time)
-	for (int i=0; i<NtW; i++)
-	{
-		
-		waveTime[i] = i*dtW;			
-					
-		// interpolate wave elevation
-		while (ts < wavetimes.size()) 		// start to search through input data
-		{	
-			if (wavetimes[ts+1] > waveTime[i])  // if using index i means the current time point waveTime[i] is spanned by input data wavetimes[ts] and wavetimes[ts+1]
-			{				
-				double frac = ( waveTime[i] - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );    // get interpolation fraction				
-				waveElev[i] = waveelevs[ts] + frac*( waveelevs[ts+1] - waveelevs[ts] ); 			// interpolate wave elevation
-				break;
-			}
-		ts++; // move to next recorded time step
-		}
-	}
-	
-	/*
-	// interpolate wave time series to match DTwave and Tend  with Nw = Tend/DTwave
-	int ts0 = 0;
-	vector<double> zeta(Nw, 0.0); // interpolated wave elevation time series
-	for (int iw=0; iw<Nw; iw++)
-	{
-		double frac;
-		for (int ts=ts0; ts<wavetimes.size()-1; ts++)
-		{	
-			if (wavetimes[ts+1] > iw*DTwave)
-			{
-				ts0 = ts;  //  ???
-				frac = ( iw*DTwave - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );
-				zeta[iw] = waveelevs[ts] + frac*(waveelevs[ts+1] - waveelevs[ts]);    // write interpolated wave time series entry
-				break;
-			}
-		}
-	}
-	*/
-	
-//		cout << 'Hs is ' << 4.0*np.std(Elev))
-
-	
-	double Fss = 1./dtW; // 4   	// sample rate (Hz)
-
-	// ensure N is even				
-	if ( NtW %2 != 0 )					// if odd, trim off last value of time series
-	{	NtW = NtW-1;
-		waveTime.pop_back();
-		waveElev.pop_back();
-		cout << "Odd number of samples in elevation time series so trimming last sample." << endl;
-	}
-
-
-	// ----------------  start the FFT stuff using kiss_fft ---------------------------------------
-	if (wordy > 2) cout << "starting fft stuff " << endl;
-		int NFFT = NtW;
-		int is_inverse_fft = 0;
-	kiss_fft_cfg cfg = kiss_fft_alloc( NFFT , is_inverse_fft ,0,0 );
-	
-	// making data structures
-	//typedef struct {
-	//    double r;
-	//    double i;
-	//} kiss_fft_cpx;
-	if (wordy > 2) cout << "allocatin io " << endl;
-	
-	kiss_fft_cpx* cx_in   = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_in));
-	kiss_fft_cpx* cx_out  = (kiss_fft_cpx*)malloc(NFFT*sizeof(cx_out));
-	
-	double zetaRMS = 0.0;
-	double zetaCRMS = 0.0;
-	
-	// put data into input vector
-	for (int i=0; i<NFFT; i++)  {
-		cx_in[i].r = (float)waveElev[i];  // real component  kiss_fft likes floats
-		cx_in[i].i = 0.0;          // imaginary component
-		
-		zetaRMS += waveElev[i]*waveElev[i];
-	}
-	zetaRMS = sqrt(zetaRMS/NFFT);
-	
-	if (wordy > 2) cout << "processing fft" << endl;
-	  
-	// do the magic
-	kiss_fft( cfg , cx_in , cx_out );
-	if (wordy > 2) cout << "done" << endl;
-	// convert
-	
-	// allocate stuff to get passed to line functions
-	zetaCglobal.resize(NFFT, 0.0);
-	
-	
-	for (int i=0; i<NFFT; i++)  {
-		zetaCglobal[i] = cx_out[i].r + i1f*(cx_out[i].i) ;
-		zetaCRMS += norm(zetaCglobal[i]);
-	}
-		
-	
-	// free things up  (getting errors here! suggests heap corruption elsewhere?)
-	free(cx_in);
-	free(cx_out);
-	free(cfg);
-
-	if (wordy > 2) cout << "freed" << endl;
-/*     Note: frequency-domain data is stored from dc up to 2pi.
-	so cx_out[0] is the dc bin of the FFT
-	and cx_out[nfft/2] is the Nyquist bin (if exists)  */
-
-
-	//general note: IFFT operation (to check FFT) can be done as follows:
-	//ifft(x) = conj( fft( conj(x) ) )/length(x)  //  Conjugate, fft, conjugate, scale
-
-
-	// Ak = np.fft.fft(Elev);					# fft of wave elevation
-
-	// -------------------- set up frequency vectors corresponding to cx_out ----------------------------
-	vector< double > f(NtW, 0.0);		// # frequency (Hz)  note: if Ni is even number, f[N/2] should be the nyquist freq.  if odd, f[(n-1)/2] is largest positive freq and f[[(n+1)/2] is largest negative freq
-	for (int i=0; i<=NtW/2; i++)  f[i]     = Fss*((double)i)/NtW;			// set frequency (Hz)
-	for (int i=1; i<NtW/2; i++)  f[NtW/2+i] = -f[NtW/2-i];	// including negative frequencies
-	
-	vector< double > wk(NtW, 0.0);
-	for (int i=0; i<NtW; i++)  wk[i] = f[i]*2.0*pi;    // frequency (rad/s) - should be symmetric: # [0,dw,2dw,....w(N/2),w(-N/2+1)...-2dw,-dw]
-	
-	double dw=wk[1]-wk[0];
-			
-	dwW = dw; // global value
-	
-	//scaled this!  (check of Parseval's theorem)
-	zetaCRMS = zetaCRMS/NtW;
-	
-	if (wordy > 2) {
-		cout << "summary of fft parameters:" << endl;
-		cout << " dt = " << dtW << endl;
-		cout << " f sampling = " << Fss << endl;
-		cout << " Nfft = " << NFFT << endl;
-		cout << " df = " << f[1]-f[0] << endl;
-		cout << " f nyquist = " << f[NtW/2] << endl;
-		cout << " dw = " << dw << endl;
-		cout << " zetaRMS = " << zetaRMS << endl;
-		cout << " zetaCRMS = " << zetaCRMS << endl;
-	}
-		
-	return 0.0;
-}
 
 
 
@@ -1396,6 +1211,31 @@ int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* t_in, do
 	
 	return 0;
 }
+
+int DECLDIR FairleadsCalc2(double rFairIn[], double rdFairIn[], double fFairIn[], double* t_in, double *dt_in)
+{
+	for (int l=0; l < nFairs; l++)  
+	{
+		for (int j=0; j<3; j++)
+		{
+			rFairi [l][j] = rFairIn [l*3+j];
+			rdFairi[l][j] = rdFairIn[l*3+j];
+		}
+	}
+	
+	int resultflag = FairleadsCalc(rFairi, rdFairi, Ffair, t_in, dt_in);
+	
+	for (int l=0; l < nFairs; l++)  
+	{
+		for (int j=0; j<3; j++)
+		{
+			fFairIn[l*3+j] = Ffair[l][j];
+		}
+	}
+	
+	return resultflag;  // returns -1 if an error
+}
+
 
 
 // This function now handles the assignment of fairlead boundary conditions, time stepping, and collection of resulting forces at fairleads
@@ -1572,7 +1412,9 @@ int DECLDIR DrawWithGL()
 #ifdef USEGL
 	// draw the mooring system with OpenGL commands (assuming a GL context has been created by the calling program)
 	for (int l=0; l< nLines; l++)
-		LineList[l].drawGL();  
+		LineList[l].drawGL2();  
+	for (int l=0; l< nConnects; l++)
+		ConnectList[l].drawGL();  
 	return 0;
 #endif
 }
