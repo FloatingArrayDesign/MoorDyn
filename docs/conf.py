@@ -80,3 +80,7 @@ html_theme = 'sphinx_rtd_theme' # need to run pip install sphinx_rtd_theme to us
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 #html_static_path = ['_static']
+
+
+cpp_id_attributes = ['DECLDIR']
+
