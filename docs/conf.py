@@ -39,7 +39,7 @@ breathe_default_project = "MoorDyn"
 # -- Project information -----------------------------------------------------
 
 project = 'MoorDyn'
-copyright = '2020'
+copyright = '2021, National Renewable Energy Laboratory'
 author = 'Matt Hall'
 
 # The full version, including alpha/beta/rc tags
@@ -81,6 +81,6 @@ html_theme = 'sphinx_rtd_theme' # need to run pip install sphinx_rtd_theme to us
 # so a file named "default.css" will overwrite the builtin "default.css".
 #html_static_path = ['_static']
 
-
+# specify custom attributes to accept (see https://github.com/sphinx-doc/sphinx/issues/2682)
 cpp_id_attributes = ['DECLDIR']
 

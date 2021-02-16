@@ -1,7 +1,6 @@
 MoorDyn Usage
 =====================================================
 
-(THIS PAGE IN PROGRESS)
 
 
 The Input File
@@ -18,8 +17,8 @@ and the corresponding units. These lines are followed by any number of lines con
 table of inputs.
 
 
-Identification lines
-^^^^^^^^^^^^^^^^^^^^
+Front matter
+^^^^^^^^^^^^
 
 The first 1-n lines of the input file are reserved for free-form user input, for labeling the input file, 
 writing notes, etc. ::
@@ -138,4 +137,4 @@ needs to end with another header-style line (as shown below) for the program to 
 Advice and Frequent Problems
 ----------------------------
 
-time step...
+(THIS PAGE IN PROGRESS)

@@ -1,7 +1,6 @@
 Couplings and the API
 =====================
 
-(THIS PAGE IN PROGRESS)
 
 Established couplings
 ---------------------
@@ -49,6 +48,8 @@ be seen in WEC-Sim.
 
 Calling MoorDyn - the API
 -------------------------
+
+(THIS PAGE IN PROGRESS)
 
 C++ Functions
 ^^^^^^^^^^^^^

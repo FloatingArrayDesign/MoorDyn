@@ -7,8 +7,11 @@ Model Structure
 MoorDyn Objects
 ---------------
 
-MoorDyn uses a lumped-mass approach to discretize the cable dynamics over the length of the mooring line.  
-A cable is broken up into N evenly-sized line segments connecting N+1 node points.  The indexing starts at the anchor (or lower end), 
+Lines
+^^^^^
+
+MoorDyn uses a lumped-mass approach to discretize the dynamics over the length of the mooring line.  
+A line is broken up into N evenly-sized line segments connecting N+1 node points.  The indexing starts at the anchor (or lower end), 
 with the anchor node given a value of zero, and the cable segment between nodes 0 and 1 given an index of 1/2.
  
 The model uses a right-handed inertial reference frame with the z axis being measured positive up from the water plane, 
@@ -16,9 +19,13 @@ consistent with NREL’s FAST simulator.  Each node’s position is defined by a
 identical properties of unstretched length, diameter, density, and Young's modulus.  Different cables can have different 
 sets of properties, and cables can be connected together at the ends, enabling mooring systems with interconnected lines. 
 
-Hydrodynamic loads are calculated directly at the node points rather than at the segment centers.  This ensures damping of transverse cable vibrations having a wavelength of twice the cable segment length (which may or may not affect anything).  To approximate the cable direction at the node points, the cable tangent at each node is assumed to be the average of the tangent directions of the two adjacent cable elements.  Aside from this detail, the formulation of the mooring model is fairly standard.  Further technical details and some validation results are available in a paper in Ocean Engineering [1].  Some technical details and results related to MoorDyn’s capabilities for interconnected lines and mass/buoyancy/drag elements in the mooring system can be found in a recent EWTEC paper [3].
+Hydrodynamic loads are calculated directly at the node points rather than at the segment centers.  This ensures damping of 
+transverse cable vibrations having a wavelength of twice the cable segment length.  To approximate the cable direction at 
+the node points, the cable tangent at each node is assumed to be the average of the tangent directions of the two 
+adjacent cable elements.  Aside from this detail, the formulation of the mooring model is fairly standard.  
+Further technical details and some validation results are available in :ref:`some papers <theory>`.
 
-
+Bending stiffness is a recent capability addition in MoorDyn v2 (it is not yet implemented in MoorDyn-F). 
 In the explanations that follow, the word cable is used to refer to a Line object with nonzero bending stiffness.
 
 
@@ -30,7 +37,10 @@ Using the same terminology as MAP [2], there are three Connection node types:
 
 - 1: Fixed nodes have a certain location and never move.  They can be used as anchor points. OR attached to a platform for platform-centric coupling
 - -1: Vessel nodes can move under the control of an outside program.  They can be used as fairlead connections.
-- 0: Connect nodes are not fixed in space but rather are moved according to the forces acting on them.  They are what can be used to connect two or more mooring lines together.  The forces they experience can include the forces from the attached mooring lines (which Fixed and Vessel node types also experience) but also constant external forces, buoyancy forces, inertial and gravitational forces, and hydrodynamic drag and added mass forces.  
+- 0: Connect nodes are not fixed in space but rather are moved according to the forces acting on them.  
+They are what can be used to connect two or more mooring lines together.  The forces they experience can include the forces from the attached 
+mooring lines (which Fixed and Vessel node types also experience) but also constant external forces, buoyancy forces, inertial and 
+gravitational forces, and hydrodynamic drag and added mass forces.  
 
 
 Rods 

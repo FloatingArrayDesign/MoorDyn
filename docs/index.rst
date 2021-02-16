@@ -18,10 +18,8 @@ MoorDyn - Lumped-Mass Mooring Dynamics
    version2
 
 
-Welcome to MoorDyn's long-overdue online documentation. (STILL IN PROGRESS.)
+Welcome to MoorDyn's (UNDER CONSTRUCTION) online documentation.
 See the pages on this site for information about the operation, usage, and theory of MoorDyn. 
-The MoorDyn source code is available on GitHub. The standalone C++ code is `here <https://github.com/mattEhall/MoorDyn>`_ and 
-code of MoorDyn-F in FORTRAN is available within the `OpenFAST repository <https://github.com/openfast/openfast>`_.
 
 About MoorDyn
 -------------
@@ -40,11 +38,13 @@ follows the FAST Modularization Framework. This form is a core module in the Ope
 wind turbine simulator. Both forms of MoorDyn have the same underlying physics model, and nearly
 identical input file formats.
 
-A "version 2" of MoorDyn is currently in progress, and information about it is available :ref:`here <version-2>`.
+A "version 2" of MoorDyn is currently in progress, and information about it will be posted :ref:`here <version-2>`.
 
 This website serves as a public-facing guide for MoorDyn in both forms. It focuses on MoorDyn's
-principles of operation, setup of the input files, common problems, etc. It also has guidance
+principles of operation, setup of the input files, common problems, etc. It will also have guidance
 for coupling with MoorDyn in standalone form, as well as a guide for the API. For information
 about use of MoorDyn-F in the larger context of OpenFAST simulations, refer also to the 
 `OpenFAST documentation <https://openfast.readthedocs.io>`_.
 
+The MoorDyn source code is available on GitHub. The standalone C++ code is `here <https://github.com/mattEhall/MoorDyn>`_ and 
+code of MoorDyn-F in FORTRAN is available within the `OpenFAST repository <https://github.com/openfast/openfast>`_.
