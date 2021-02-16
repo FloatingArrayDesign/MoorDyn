@@ -4,6 +4,7 @@
 # tell to search for dependencies in parent dir
 VPATH = ../source
 
+
 #LFLAGS = -shared -static -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS
 LFLAGS = -shared -DMoorDyn_EXPORTS
 

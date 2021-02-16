@@ -146,7 +146,7 @@ class Line
 
 public:
  	int number; // line "number" id
-	
+
 	int WaveKin;  // flag indicating whether wave kinematics will be considered for this line
  
  	// unique to Line
@@ -197,9 +197,8 @@ public:
 	//void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
 		
 	void Output(double );
-	
 	~Line();
-
+	
 #ifdef USEGL	
 	void drawGL(void);
 	void drawGL2(void);

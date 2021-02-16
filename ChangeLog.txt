@@ -1,0 +1,94 @@
+                           MoorDyn C Change Log
+==========================================================================
+
+Listing changes since version v1.0.1C
+--------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------
+               MoorDyn v1.00.02C - Dec. 8, 2015 - Matt Hall
+--------------------------------------------------------------------------
+
+ - fixes in connection force output channels:
+   - removed double counting of connection self-weight in net force output
+   - added functionality for outputting individual X,Y,Z force components 
+     (previously gave 0)
+ 
+ - fixed LinesClose() so that MoorDyn can be called repeatedly without 
+   errors (when connect nodes are used)
+
+ - made bottom contact general so that fairlead and anchor ends experiencing 
+   bottom contact will not cause problems
+
+ - added NaN check for node positions during simulation and also during 
+   initialization
+
+ - integrated contributions from Yi-Hsiang Yu (NREL) and Daniel Combest 
+   (ENGYS) for compiling on Mac OSX and Linux, respectively.
+   - compiles for OSX with "OSX" defined, compiles for Linux with "LINUX" defined
+   - openGL functions are now omitted unless "USEGL" is defined
+ 
+
+--------------------------------------------------------------------------
+               MoorDyn v1.00.03C - Jan. 11, 2016 - Matt Hall
+--------------------------------------------------------------------------
+
+ - made various improvements to parsing of input file
+   - added recognition of additional keywords as used in the MoorDyn F input files
+   - added more informative error messages
+   - removed case sensivity in "vessel/fix/connect" keywords
+   
+ - FIXED ERROR IN NET FORCES!
+   - Roll and Yaw moments returned by MoorDyn (the 4th and 6th elements of Flines)
+     were completely wrong due to a misuse of the "-=" operator.
+
+
+--------------------------------------------------------------------------
+               MoorDyn v1.00.04C - Feb. 15, 2016 - Matt Hall
+--------------------------------------------------------------------------
+
+ - added units header line to line-specific output files
+ - added option "WriteUnits" that, when set to zero, will disable units lines in 
+   output files
+
+
+
+--------------------------------------------------------------------------
+               MoorDyn v1.01.00C - April 20, 2016 - Matt Hall
+--------------------------------------------------------------------------
+
+ - Restructured time stepping interface function to do 3-DOF coupling at individual 
+   fairleads rather than 6-DOF coupling at platform reference point.
+     - LinesCalc functionality is unchanged - it still provides coupling at platform.
+     - New function FairleadsCalc provides coupling at individual fairleads as 
+       alternative.  This function replaces the 6-DOF vectors of x, xd, and f (returned) 
+       with two-dimensional arrays of x, xd, and f (returned) of size nFairs by 3.
+ - Added optional paramter "dtOut" to specify the desired frequency of output file writing
+   in seconds.  A zero value (default) gives original behaviour of writing at every call.
+ - Callable output function now has a second parameter for coupling step size, dtC.  
+    (leave as 0 for original behaviour)
+ - Added function to programmatically access any node's position rather than relying on
+   output files:  GetNodePos(int LineNum, int NodeNum, double pos[3])
+ - Incorporated adjustment to avoid isnan issues on Linux compiles (from Yi-Hsiang Yu, NREL)
+
+--------------------------------------------------------------------------
+               MoorDyn v1.01.01C - November 5, 2017 - Matt Hall
+--------------------------------------------------------------------------
+
+ - Fixed calculation for outputting tensions at arbitrary nodes along line length in main 
+   output file (previously gave zero).  No effect on individual line output files.
+ - Added a basic friction model for seabed contact based on a saturated damping approach 
+   (described in EWTEC 2017 paper).
+ - Corrected fairlead force to include weight of adjacent half-segment (code typo noticed
+   by Kellen Devries).
+ - Added second fairlead-centric coupling function, FairleadsCalc2, which works with 1D 
+   rather than 2D arrays.
+ - Corrected anchor tension output (e.g. "AnchTen1") - previously outputted fairlead value.
+ - Removed some unused wave kinematics code in preparation for new implementation.
+ 
+ 
+--------------------------------------------------------------------------
+               MoorDyn v1.01.02C - February 14, 2021 - Matt Hall
+--------------------------------------------------------------------------
+
+ - Removed draft seabed friction calculations that were causing stability problems.

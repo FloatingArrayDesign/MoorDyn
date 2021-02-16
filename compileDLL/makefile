@@ -6,13 +6,14 @@ VPATH = ../source
 LFLAGS = -shared -static -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS
 
 # this is the debug one
-CFLAGS = -c -O0 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS
+#CFLAGS = -c -O0 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS
 
 # this is the optimized one
-#CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS
+CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS
 
 
 #CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DMoorDyn_EXPORTS -DUSEGL
+
 
 
 all: MoorDyn.dll
