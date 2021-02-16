@@ -15,9 +15,8 @@
  */
  
 #include "Rod.h"
-#include "Connection.h"
 #include "Line.h"
-//#include "QSlines.h" // the c++ version of quasi-static model Catenary
+#include "Waves.h"
 
 using namespace std;
 
@@ -30,16 +29,17 @@ using namespace std;
 // ================== Line member functions ===========================
 
 
-// set up line object
-int Rod::setup(int type_in, int number_in, RodProps *props, double endCoords[6], int NumSegs, 
+// set up Rod object  
+int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6], int NumSegs, 
 	shared_ptr<ofstream> outfile_pointer, string channels_in)
 {
 	// ================== set up properties ===========	
 	number = number_in;	
 	type = type_in;
+	
 	N = NumSegs;             // assign number of segments to rod
 	
-	if (wordy >0) cout << "Setting up Rod " << number << " with " << N << " segments." << endl;
+	if (wordy >0) cout << "Setting up Rod " << number << " (type "<<type<<") with " << N << " segments." << endl;
 			
 	// store passed rod properties (and convert to numbers)
 	d   = props->d;
@@ -49,84 +49,152 @@ int Rod::setup(int type_in, int number_in, RodProps *props, double endCoords[6],
 	Cdn = props->Cdn;
 	Cdt = props->Cdt;
 	
-	t=0.;		
+	t=0.;
 	
 	nAttachedA = 0;  // start off with zero connections
 	nAttachedA = 0;
 
 	
-	WaveKin = 0;  // start off with wave kinematics disabled.  Can be enabled after initial conditions are found and wave kinematics are calculated
+//	WaveKin = 0;  // start off with wave kinematics disabled.  Can be enabled after initial conditions are found and wave kinematics are calculated
 
-
-	// =============== size vectors =========================
+	// <<<<<<<<<<<<<<<<< add some special handling for zero-length rods if N=0 <<<<<<<<<<<<<<<<<
+	
+	
+	if (N==0)  // special case of zero-length rod, which is denoted by numsegs=0 in the intput file 
+	{
 		
-	r.resize( N+1, vector<double>(3, 0.0));		// node positions [i][x/y/z]
-	rd.resize(N+1, vector<double>(3, 0.0));		// node velocities [i][x/y/z]
-	q.resize( 3, 0.0);     	// unit tangent vector for the rod as a whole
-	
-	// forces 
-	T.resize(N, vector<double>(3, 0.0));	// line tensions
-	Td.resize(N, vector<double>(3, 0.0));   // line damping forces
-//	Tmag.resize(N, 0.0);				// segment tension magnitudes << hardly used
-	W.resize(N+1, vector<double>(3, 0.0));	// node weights
-
-	Dp.resize(N+1, vector<double>(3, 0.0));		// node drag (transverse)
-	Dq.resize(N+1, vector<double>(3, 0.0));		// node drag (axial)
-	Ap.resize(N+1, vector<double>(3, 0.0));		// node added mass forcing (transverse)
-	Aq.resize(N+1, vector<double>(3, 0.0));		// node added mass forcing (axial)
-	B.resize(N+1, vector<double>(3, 0.0));		// node bottom contact force
-	Fnet.resize(N+1, vector<double>(3, 0.0));	// total force on node
+		// ------------------------- size vectors -------------------------
+			
+		r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]
+		rd  = make2Darray(N+1, 3);     // node velocities [i][x/y/z]
+		l   = make1Darray(1);          // line unstretched segment lengths
 		
-//	S.resize(N+1, vector< vector< double > >(3, vector<double>(3, 0.0)));  // inverse mass matrices (3x3) for each node
-	M.resize(N+1, vector< vector< double > >(3, vector<double>(3, 0.0)));  // mass matrices (3x3) for each node
-			
-	l.resize(N, 0.0); 		// line unstretched segment lengths
-//	lstr.resize(N, 0.0); 		// stretched lengths
-//	ldstr.resize(N, 0.0); 		// rate of stretch
-	V.resize(N, 0.0);			// volume?
-	
-	zeta.resize(N+1, 0.0);					// wave elevation above each node
-	F.resize(N+1, 0.0); 	// fixed 2014-12-07	// VOF scalar for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
-	U.resize(N+1, vector<double>(3, 0.));     	// wave velocities
-	Ud.resize(N+1, vector<double>(3, 0.));;     	// wave accelerations
-	
-
-
-	// ======================== set starting kinematics ====================
-	if (type==1)
-		// do nothing - (initial position will later be set by parent)
-		type = 1;	
-	else if (type==2)                // for an independent rod, set the position right off the bat
-	{		
-		for (int J=0; J<3; J++)
-		{
-			r[0][J] = endCoords[J];     // start off position at that specified in input file 
-			r[N][J] = endCoords[3+J];   //  (will be starting point for connect connections
-		}                              //   and the permanent location of anchor connections.)
+		M   = make3Darray(N+1, 3, 3);  // mass matrices (3x3) for each node
+		V   = make1Darray(1);          // segment volume?
 		
-		// get direction vector (r[3-5]) and length
-		double dummyUnitVector[3];
-		directionAndLength(endCoords, endCoords+3, dummyUnitVector, &UnstrLen); 
-	}
-	else
-	{	cout << "Error - Rod isn't type 1 or 2." << endl;
-		return -1;
-	}
-			
-			
+		// forces 
+		W   = make2Darray(N+1, 3);     // node weights
+		Dp  = make2Darray(N+1, 3);     // node drag (transverse)
+		Dq  = make2Darray(N+1, 3);     // node drag (axial)
+		Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
+		Aq  = make2Darray(N+1, 3);     // node added mass forcing (axial)
+		B   = make2Darray(N+1, 3);     // node bottom contact force
+		Fnet= make2Darray(N+1, 3);     // total force on node
+		
+		// wave things
+		F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
+		zeta= make1Darray(N+1);        // wave elevation above each node
+		U   = make2Darray(N+1, 3);     // wave velocities
+		Ud  = make2Darray(N+1, 3);     // wave accelerations
+		
 
-	for (int i=0; i<N; i++)	
-	{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
-		V[i] = l[i]*0.25*pi*d*d;   
+		// ------------------------- set starting kinematics -------------------------
+				
+		unitvector(q, endCoords, endCoords+3);   // get Rod axis direction vector
+		UnstrLen = 0.0;                          // set Rod length to zero
+		
+		// set Rod positions if applicable
+		if (type==0)                // for an independent rod, set the position right off the bat
+		{		
+			for (int J=0; J<3; J++)
+			{
+				r6[J] = endCoords[J]; // (end A coordinates) 
+				v6[J] = 0.0;      // (end A velocity, unrotated axes) 
+
+				r6[3+J] = q[J];   // (Rod direction unit vector)
+				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
+			}
+		}
+		else if (abs(type)==1)     // for a pinned rod, just set the orientation (position will be set later by parent object)
+		{		
+			for (int J=0; J<3; J++)
+			{
+				r6[3+J] = q[J];   // (Rod direction unit vector)
+				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
+			}
+		}
+		// otherwise (for a fixed rod) the positions will be set by the parent body or via coupling
+
+		// calculate a few segment properties (for one segment, even though there aren't actually any segments)
+		l[0] = 0.0;
+		V[0] = 0.0;   
+		
+	}
+	else       // normal finite-length case
+	{
+		
+		// ------------------------- size vectors -------------------------
+			
+		r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]
+		rd  = make2Darray(N+1, 3);     // node velocities [i][x/y/z]
+		l   = make1Darray(N);          // line unstretched segment lengths
+		
+		M   = make3Darray(N+1, 3, 3);  // mass matrices (3x3) for each node
+		V   = make1Darray(N);          // segment volume?
+		
+		// forces 
+		W   = make2Darray(N+1, 3);     // node weights
+		Dp  = make2Darray(N+1, 3);     // node drag (transverse)
+		Dq  = make2Darray(N+1, 3);     // node drag (axial)
+		Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
+		Aq  = make2Darray(N+1, 3);     // node added mass forcing (axial)
+		B   = make2Darray(N+1, 3);     // node bottom contact force
+		Fnet= make2Darray(N+1, 3);     // total force on node
+		
+		// wave things
+		F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
+		zeta= make1Darray(N+1);        // wave elevation above each node
+		U   = make2Darray(N+1, 3);     // wave velocities
+		Ud  = make2Darray(N+1, 3);     // wave accelerations
+		
+
+		// ------------------------- set starting kinematics -------------------------
+		
+		UnstrLen = unitvector(q, endCoords, endCoords+3); // get Rod axis direction vector and Rod length
+		
+		// set Rod positions if applicable
+		if (type==0)                // for an independent rod, set the position right off the bat
+		{		
+			for (int J=0; J<3; J++)
+			{
+				r6[J] = endCoords[J]; // (end A coordinates) 
+				v6[J] = 0.0;      // (end A velocity, unrotated axes) 
+
+				r6[3+J] = q[J];   // (Rod direction unit vector)
+				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
+			}
+		}
+		else if (abs(type)==1)     // for a pinned rod, just set the orientation (position will be set later by parent object)
+		{		
+			for (int J=0; J<3; J++)
+			{
+				r6[3+J] = q[J];   // (Rod direction unit vector)
+				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
+			}
+		}
+		// otherwise (for a fixed rod) the positions will be set by the parent body or via coupling
+		
+
+		// calculate a few segment properties
+		for (int i=0; i<N; i++)	
+		{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
+			V[i] = l[i]*0.25*pi*d*d;   
+		}
 	}
 	
+	// set the number of preset wave kinematic time steps to zero (flagging disabled) to start with
+	ntWater = 0; 
+	
+	// record output file pointer and channel key-letter list
 	outfile = outfile_pointer.get(); 		// make outfile point to the right place
 	channels = channels_in; 				// copy string of output channels to object
-
-	outfile = NULL; // temporary <<<
+			
+			
+	if (wordy >0)  cout << "Set up Rod " << number << ", type " << type << endl;
 			
 	return 0;
 };
+
 
 // this function handles assigning a line to a Rod end
 void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
@@ -155,20 +223,120 @@ void Rod::addLineToRodEndB(Line *theLine, int TopOfLine)
 };
 
 
-void Rod::setEnv(EnvCond env_in)
+// this function handles removing a line from a Rod end
+void Rod::removeLineFromRodEndA(int lineID, int *topOfLine, double rEnd[], double rdEnd[])
 {
-	env = env_in;
+	for (int l=0; l<nAttachedA; l++)    // look through attached lines
+	{
+		if (AttachedA[l]->number == lineID)   // if this is the line's entry in the attachment list 
+		{
+			*topOfLine = TopA[l];                // record which end of the line was attached
+			
+			for (int m=l; m<nAttachedA-1; m++)
+			{	
+				AttachedA[m] = AttachedA[m+1];  // move subsequent line links forward one spot in the list to eliminate this line link
+				TopA[      m] =       TopA[m+1]; 
+			}
+			nAttachedA -= 1;                       // reduce attached line counter by 1
+		
+			// also pass back the kinematics at the end
+			for (int J=0; J<3; J++)
+			{
+				rEnd[ J] = r[ 0][J];
+				rdEnd[J] = rd[0][J];
+			}
+		
+			cout << "Detached line " << lineID << " from Rod " << number << " end A" << endl;
+			break;
+			
+		}
+		if (l==nAttachedA-1)   // detect if line not found
+			cout << "Error: failed to find line to remove during removeLineFromRodEndA call to rod " << number << ". Line " << lineID << endl;
+	}
+};
+void Rod::removeLineFromRodEndB(int lineID, int *topOfLine, double rEnd[], double rdEnd[])
+{
+	for (int l=0; l<nAttachedB; l++)    // look through attached lines
+	{
+		if (AttachedB[l]->number == lineID)   // if this is the line's entry in the attachment list
+		{
+			*topOfLine = TopB[l];                // record which end of the line was attached
+			
+			for (int m=l; m<nAttachedB-1; m++)
+			{	
+				AttachedB[m] = AttachedB[m+1];  // move subsequent line links forward one spot in the list to eliminate this line link
+				TopB[      m] =       TopB[m+1]; 
+			}
+			nAttachedB -= 1;                       // reduce attached line counter by 1
+		
+			// also pass back the kinematics at the end
+			for (int J=0; J<3; J++)
+			{
+				rEnd[ J] = r[ N][J];
+				rdEnd[J] = rd[N][J];
+			}
+			
+			cout << "Detached line " << lineID << " from Rod " << number << " end B" << endl;
+			break;
+			
+		}
+		if (l==nAttachedB-1)   // detect if line not found
+			cout << "Error: failed to find line to remove during removeLineFromRodEndA call to rod " << number << ". Line " << lineID << endl;
+	}
+};
+	
+
+
+void Rod::setEnv(EnvCond *env_in, Waves *waves_in)
+{
+	env = env_in;      // set pointer to environment settings object
+	waves = waves_in;  // set pointer to Waves  object
 }
 
-
-// get ICs for line using quasi-static approach
-void Rod::initializeRod(double* X )	
+/*
+// set rod fairlead ICs based on fairlead-centric coupling (no platform stuff)
+void_Rod_initializeCpld( double pX[], double vX[] )	
 {	
 	
-	if (wordy > 0 ) cout << "hey we're initializing a rod now! " << endl;
+	if (wordy > 0 ) cout << "Initializing Rod "<<number<<" (type "<<type<<") now." << endl;
+	
+	// set rod positions.   ...should set velocities too? <<<<<
+		
+	if (type==-1)  // if just pinned
+	{
+		for (int J=0; J<3; J++)
+			r[0][J] = pX[J];
+		
+		// setting dependent objects and possible output file stuff will be set by subsequent call to initializeFree since this rod has one free end
+	}
+	else if (type == -2) // if cantilever coupled
+	{
+		for (int J=0; J<6; J++)
+		{
+			r6[J] = pX[J];  
+			v6[J] = 0.0; // for now  // vX
+		}
+		setDependentStates();  // set end node kinematics and pass to any attached lines
+	}
+	else // otherwise report error
+		throw string("Error: wrong type of Rod called with initializeCpld");
+	
+	return;
+};
+*/
+
+
+// Make output file for Rod and set end kinematics of any attached lines.
+// For free Rods, fill in the initial states into the state vector.
+// Notes: r6 and v6 must already be set.  
+//        ground- or body-pinned rods have already had setKinematics called to set first 3 elements of r6, v6.
+void Rod::initializeRod(double* X )
+{	
+	
+	if (wordy > 0 ) cout << "Initializing Rod "<<number<<" (type "<<type<<") now." << endl;
 	
 	// create output file for writing output (and write channel header and units lines) if applicable
-/*				
+			
 	if (outfile) // check it's not null.  Null signals no individual line output files
 	{
 		if (outfile->is_open())
@@ -179,7 +347,6 @@ void Rod::initializeRod(double* X )
 			*outfile << "Time" << "\t ";
 			
 			// output positions?
-			//if (find(channels.begin(), channels.end(), "position") != channels.end())
 			if (channels.find("p") != string::npos)
 			{
 				for (int i=0; i<=N; i++)	//loop through nodes
@@ -193,61 +360,24 @@ void Rod::initializeRod(double* X )
 					*outfile << "Node" << i << "vx \t Node" <<  i << "vy \t Node" <<  i << "vz \t ";
 				}
 			}
-			// output wave velocities?
-			if (channels.find("U") != string::npos) {
+			// output net node forces?
+			if (channels.find("f") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Ux \t Node" <<  i << "Uy \t Node" <<  i << "Uz \t ";
+					*outfile << "Node" << i << "Fx \t Node" <<  i << "Fy \t Node" <<  i << "Fz \t ";
 				}
 			}
-			// output hydro force
-			if (channels.find("D") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Dx \t Node" <<  i << "Dy \t Node" <<  i << "Dz \t ";
-				}
-			}
-			// output internal damping force?
-			if (channels.find("c") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "cx \t Node" <<  i << "cy \t Node" <<  i << "cz \t ";
-				}
-			}
-			// output segment tensions?
-			if (channels.find("t") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "Te \t ";
-				}
-			}			
-			// output segment strains?
-			if (channels.find("s") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "St \t ";
-				}
-			}	
-			// output segment strain rates?
-			if (channels.find("d") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "dSt \t ";
-				}
-			}
-			// output seabed contact forces?
-			if (channels.find("b") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "bx \t Node" <<  i << "by \t Node" <<  i << "bz \t ";
-				}
-			}
-			
+					
 			*outfile << "\n";   
 			
 			
 			// ----------- write units line ---------------
 
-			if (env.WriteUnits > 0)
+			if (env->WriteUnits > 0)
 			{
 				// output time
 				*outfile << "(s)" << "\t ";
 				
 				// output positions?
-				//if (find(channels.begin(), channels.end(), "position") != channels.end())
 				if (channels.find("p") != string::npos)
 				{
 					for (int i=0; i<=3*N+2; i++)	//loop through nodes
@@ -259,81 +389,74 @@ void Rod::initializeRod(double* X )
 						*outfile << "(m/s) \t";
 					
 				}
-				// output wave velocities?
-				if (channels.find("U") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(m/s) \t";
-				}
-				// output hydro force
-				if (channels.find("D") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}
-				// output internal damping force?
-				if (channels.find("c") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}
-				// output segment tensions?
-				if (channels.find("t") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}			
-				// output segment strains?
-				if (channels.find("s") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(-) \t";
-				}	
-				// output segment strain rates?
-				if (channels.find("d") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(-/s) \t";
-				}
-				// output seabed contact force?
-				if (channels.find("D") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}
 				
-				*outfile << "\n";   // should also write units at some point!
+				*outfile << "\n";  
 			}
 		}
 		else cout << "   Error: unable to write file Line" << number << ".out" << endl;  //TODO: handle this!
 	}
-*/	
+
 		
-	//if (-env.WtrDpth > r[0][2]) {
+	//if (-env->WtrDpth > r[0][2]) {
 	//	cout << "   Error: water depth is shallower than Line " << number << " anchor." << endl;
 	//	return;
 	//}
 	
 	
-//	vector<double> snodes(N+1, 0.0);   					// locations of line nodes along line length - evenly distributed here 
-//	for (int i=1; i<=N; i++) snodes[i] = snodes[i-1] + l[i-1]; 
-//	snodes[N] = UnstrLen; 								// double check to ensure the last node does not surpass the line length
-		
-	// stretch the nodes between the endpoints linearly
-	for (int i=1; i<N; i++)
-		for (int J=0; J<3; J++)
-			r[i][J]  = r[0][J] + (r[N][J] - r[0][J]) * (float(i)/float(N));
+	// set water kinematics flag based on global wave and current settings (for now)
+	if((env->WaveKin==2) || (env->WaveKin==3) || (env->WaveKin==6) || (env->Current==1) || (env->Current==2))
+		WaterKin = 2;   // water kinematics to be considered through precalculated global grid stored in Waves object
+	else if((env->WaveKin==4) || (env->WaveKin==5) || (env->Current==3) || (env->Current==4))
+		WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
+	else
+	{	
+		WaterKin = 0;   // no water kinematics to be considered (or to be set externally on each node)
+	
+		for (int i=0; i<=N; i++)   // in this case make sure kinematics for each node start at zeroed
+		{
+			for (int J=0; J<3; J++)		
+			{	U[ i][J] = 0.0;
+				Ud[i][J] = 0.0;
+			}					
+			F[i] = 1.0;   // set VOF variable to 1 for now (everything is submerged) <<<<<<<<
+		}
+	}
+	
+	
+	// the r6 and v6 vectors should have already been set
+	// r and rd of ends have already been set by setup function or by parent object   <<<<< right? <<<<<
+	
 	
 	// Pass kinematics to any attached lines (this is just like what a Connection does, except for both ends)
 	// so that they have the correct initial positions at this initialization stage.
-	for (int l=0; l < nAttachedA; l++)  AttachedA[l]->setEndState(r[0], rd[0], TopA[l]);
-	for (int l=0; l < nAttachedB; l++)  AttachedB[l]->setEndState(r[N], rd[N], TopB[l]);
-		
-	
+	if (type>-2)
+		setDependentStates();  // don't call this for type -2 coupled Rods as it's already been called
+
+
 	// assign the resulting kinematics to its part of the state vector (only matters if it's an independent Rod)
 	
-	unitvector(q, r[0], r[N]  ); 	// compute unit vector q
-	
-	for (int J=0; J<3; J++) 
-	{
-		X[  J] = 0.0;       // zero velocities for initialization
-		X[3+J] = 0.0;
-		X[6+J] = r[0][J];   // end A position
-		X[9+J] = q[J];      // rod direction unit vector
+	// copy over state values for potential use during derivative calculations
+	if (type==0)               // free Rod type
+	{	
+		for (int J=0; J<3; J++)
+		{
+			X[  J] = 0.0;       // zero velocities for initialization
+			X[3+J] = 0.0;
+			X[6+J] = r[0][J];   // end A position
+			X[9+J] = q[J];      // rod direction unit vector
+		}
 	}
+	else if (abs(type)==1)           // pinned rod type (coupled or attached to something previously via setPinKin)
+	{	
+		for (int J=0; J<3; J++)
+		{
+			X[  J] = 0.0;       // zero rotational velocities for initialization
+			X[3+J] = q[J];      // rod direction unit vector
+		}
+	}	
+	// otherwise this was only called to make the rod an output file and set its dependent line end kinematics...
+
+	if (wordy>0) cout << "Initialized Rod " << number << endl;
 
 	return;
 };
@@ -367,7 +490,13 @@ double Rod::GetRodOutput(OutChanProps outChan)
 	else if (outChan.QType == VelX)  return  rd[outChan.NodeID][0];
 	else if (outChan.QType == VelY)  return  rd[outChan.NodeID][1];
 	else if (outChan.QType == VelZ)  return  rd[outChan.NodeID][2];
-//	else if (outChan.QType == Ten )  return  getNodeTen(outChan.NodeID);
+	else if (outChan.QType == Ten )    // for Rods, this option provides the net force applied by attached lines at end A (if 0) or end B (if >0)
+	{	
+		if (outChan.NodeID > 0)
+			return  sqrt(FextB[0]*FextB[0] + FextB[1]*FextB[1] + FextB[2]*FextB[2]);
+		else
+			return  sqrt(FextA[0]*FextA[0] + FextA[1]*FextA[1] + FextA[2]*FextA[2]);
+	}
 	else if (outChan.QType == FX)  return  Fnet[outChan.NodeID][0];
 	else if (outChan.QType == FY)  return  Fnet[outChan.NodeID][1];
 	else if (outChan.QType == FZ)  return  Fnet[outChan.NodeID][2];
@@ -378,6 +507,13 @@ double Rod::GetRodOutput(OutChanProps outChan)
 		//ErrStat = ErrID_Warn
 		//ErrMsg = ' Unsupported output quantity from Connect object requested.'
 	}	
+}
+
+
+// function to store wave/current kinematics time series for this line, if applicable <<<<<<<<<<<< work in progress!!!
+void Rod::storeWaterKin(int nt, double dt, double **zeta_in, double **f_in, double ***u_in, double ***ud_in)
+{
+	return;
 }
 
 
@@ -396,49 +532,249 @@ void Rod::setTime(double time)
 	return;
 }
 
+
+// called at the beginning of each coupling step to update the boundary conditions (fairlead kinematics) for the proceeding line time steps
+void Rod::initiateStep(double rFairIn[6], double rdFairIn[6], double time)
+{	
+	t0 = time; // set start time for BC functions
 	
-// pass the latest states to the rod (and calculate second end node position)
-int Rod::setState( const double* X, const double time)
+	if (type==-2)  // rod rigidly coupled to outside program
+	{						
+		// set Rod kinematics based on BCs (linear model for now) 
+		for (int J=0; J<6; J++)  
+		{
+			r_ves[J] = rFairIn[J];
+			rd_ves[J] = rdFairIn[J];
+		}	
+		
+		// since this rod has no states and all DOFs have been set, pass its kinematics to dependent Lines
+		setDependentStates();
+	}
+	else if (type==-1)  // rod end A pinned and coupled to outside program
+	{	
+		// set Rod *end A only* kinematics based on BCs (linear model for now) 
+		for (int J=0; J<3; J++)  // note only setting first three entries
+		{
+			r_ves[J] = rFairIn[J];
+			rd_ves[J] = rdFairIn[J];
+		}	
+	}
+	else
+		throw string("Error: updateFairlead called for wrong Rod type.");
+	
+	return;
+};
+
+
+// updates kinematics for Rods ONLY if they are driven externally (otherwise shouldn't be called)
+void Rod::updateFairlead(const double time)
+{	
+	t = time;
+
+	if (type==-2)  // rod rigidly coupled to outside program
+	{						
+		// set Rod kinematics based on BCs (linear model for now) 
+		for (int J=0; J<6; J++)  
+		{
+			r6[J] = r_ves[J] + rd_ves[J]*(time-t0);
+			v6[J] = rd_ves[J];
+		}	
+		
+		scalevector(r6+3, 1.0, r6+3); // enforce direction vector to be a unit vector
+		
+		// since this rod has no states and all DOFs have been set, pass its kinematics to dependent Lines
+		setDependentStates();
+	}
+	else if (type==-1)  // rod end A pinned and coupled to outside program
+	{	
+		// set Rod *end A only* kinematics based on BCs (linear model for now) 
+		for (int J=0; J<3; J++)  // note only setting first three entries
+		{
+			r6[J] = r_ves[J] + rd_ves[J]*(time-t0);
+			v6[J] = rd_ves[J];
+		}	
+		
+		// Rod is pinned so only end A is specified, rotations are left alone and will be 
+		// handled, along with passing kinematics to dependent lines, by separate call to setState
+	}
+	else
+		throw string("Error: updateFairlead called for wrong Rod type.");
+	
+	return;
+}
+
+
+// set kinematics for Rods ONLY if they are attached to a body (including a coupled body) (otherwise shouldn't be called)
+void Rod::setKinematics(double *r_in, double *rd_in)
+{	
+	if (type==2)  // rod rigidly coupled to body
+	{		
+		for (int J=0; J<6; J++)  
+		{
+			r6[J] = r_in[ J];
+			v6[J] = rd_in[J];
+		}	
+		
+		scalevector(r6+3, 1.0, r6+3); // enforce direction vector to be a unit vector
+		
+		// since this rod has no states and all DOFs have been set, pass its kinematics to dependent Lines
+		setDependentStates();
+	}
+	else if (type==1)  // rod end A pinned to a body
+	{	
+		// set Rod *end A only* kinematics based on BCs (linear model for now) 
+		for (int J=0; J<3; J++)  // note only setting first three entries
+		{
+			r6[J] = r_in[ J];
+			v6[J] = rd_in[J];
+		}
+		
+		// Rod is pinned so only end A is specified, rotations are left alone and will be 
+		// handled, along with passing kinematics to dependent lines, by separate call to setState
+	}
+	else
+		throw string("Error: setKinematics called for wrong Rod type.");
+	
+	
+	// update Rod direction unit vector (simply equal to last three entries of r6, presumably these were set elsewhere for pinned Rods)
+	for (int J=0; J<3; J++)
+		q[J] = r6[3+J];	
+	
+	return;
+}
+
+	
+// pass the latest states to the rod if it has any DOFs/states (then update rod end kinematics including attached lines)
+int Rod::setState( double* X, const double time)
 {
-	// for a Rod, the states are:
+	// for a free Rod, there are 12 states:
 	// [ x, y, z velocity of end A, then rate of change of u/v/w coordinates of unit vector pointing toward end B,
 	// then x, y, z coordinate of end A, u/v/w coordinates of unit vector pointing toward end B]
 	
-	// this function is applicable for type 1 and 2 rods. 
-	// (for type 1, X is not actual states, just kinematics from the parent Body)
-	
+	// for a pinned Rod, there are 6 states (rotational only):
+	// [ rate of change of u/v/w coordinates of unit vector pointing toward end B,
+	// then u/v/w coordinates of unit vector pointing toward end B]
+		
 	// store current time
 	t = time;
 	
 	// copy over state values for potential use during derivative calculations
-	for (int J=0; J<6; J++)
+	if (type==0)               // free Rod type
+	{	
+		scalevector(X+9, 1.0, X+9); // enforce direction vector to be a unit vector
+	
+		for (int J=0; J<3; J++)
+		{
+			r6[J  ] = X[6+J];   // (end A coordinates)
+			v6[J  ] = X[  J];   // (end A velocity, unrotated axes) 
+			r6[3+J] = X[9+J];   // (Rod direction unit vector)
+			v6[3+J] = X[3+J];   // (rotational velocities about unrotated axes) 
+		}
+		setDependentStates();
+	}
+	else if (abs(type)==1)           // pinned rod type (coupled or attached to something)t previously via setPinKin)
+	{	
+		scalevector(X+3, 1.0, X+3); // enforce direction vector to be a unit vector
+		
+		for (int J=0; J<3; J++)
+		{
+			r6[3+J] = X[3+J];   // (Rod direction unit vector)
+			v6[3+J] = X[  J];   // (rotational velocities about unrotated axes) 
+		}
+		setDependentStates();
+	}	
+	else
+	{	
+		throw string("Error: Rod::setState called for a non-free rod type");
+	}	
+	
+	if (N==0) // for zero-length Rod case, set orientation stuff to zero (maybe not necessary...)
 	{
-		r6[J] = X[6+J];
-		r6d[J]= X[  J];
+		for (int J=0; J<3; J++)
+		{
+			r6[3+J] = 0.0;   // (Rod direction unit vector)
+			v6[3+J] = 0.0;   // (rotational velocities about unrotated axes) 
+		}
 	}
 	
+	// update Rod direction unit vector (simply equal to last three entries of r6)
+	for (int J=0; J<3; J++)
+		q[J] = r6[3+J];	
+	
+	return 0;  // <<<< unused return value!
+}
+
+
+// Set the end kinematics then set the states (positions and velocities) of any line ends attached to this rod.
+// This also determines the orientation of zero-length rods.
+void Rod::setDependentStates()
+{
 	// from state values, set positions of end nodes 
-	for (int J=0; J<3; J++) 	
-	{	// end A
-		r[0][J]  = X[6 + J];      // get positions
-		rd[0][J] = X[J];          // get velocities
-		// end B
-		r[N][J]  = X[6 + J] + UnstrLen*X[9 + J]; // get positions  xB = xA + L*dx_AB/dL
-		rd[0][J] = X[J]   ; // + <<<<<<<<<<<<<<<<<<<<<<< this one's complicated!!
+	for (int J=0; J<3; J++) 	                                          // end A
+	{	r[0][J]  = r6[J];  // get positions
+		rd[0][J] = v6[J];  // get velocities
 	}
-	return 0;
 	
-	// pass kinematics to any attached lines (this is just like what a Connection does, except for both ends)
+	if (N > 0)   // set end B nodes only if the rod isn't zero length
+		transformKinematicsAtoB(r6, r6+3, UnstrLen, v6, r[N], rd[N]);   // end B    
+	
+	// pass end node kinematics to any attached lines (this is just like what a Connection does, except for both ends)
 	for (int l=0; l < nAttachedA; l++)  AttachedA[l]->setEndState(r[0], rd[0], TopA[l]);
 	for (int l=0; l < nAttachedB; l++)  AttachedB[l]->setEndState(r[N], rd[N], TopB[l]);
 	
+	// if this is a zero-length Rod, get bending moment-related information from attached lines and compute Rod's equilibrium orientation
+	if (N==0)
+	{
+//		double qEnd[3];       // unit vector of attached line end segment, following same direction convention as Rod's q vector
+//		double EIend;         // bending stiffness of attached line end segment
+//		double dlEnd;         // stretched length of attached line end segment
+		double q_EI_dl[3];    // sign-corrected unit vector times EI divided by dl of attached line end segment
+		double qMomentSum[3]; // summation of qEnd*EI/dl_stretched (with correct sign) for each attached line
+		
+		for (int J=0; J<3; J++)
+			qMomentSum[J] = 0.0;
+		
+		for (int l=0; l < nAttachedA; l++)  
+		{	
+//			AttachedA[l]->getEndSegmentInfo(qEnd, &EIend, &dlEnd, TopA[l]);
+			AttachedA[l]->getEndSegmentInfo(q_EI_dl, TopA[l], 0);
+			
+			for (int J=0; J<3; J++)
+				qMomentSum[J] += q_EI_dl[J];  // add each component to the summation vector
+				//qMomentSum[J] += qEnd[J]*EIend/dlEnd;  // add each component to the summation vector
+				
+		}
+
+		for (int l=0; l < nAttachedB; l++)  
+		{	
+//			AttachedB[l]->getEndSegmentInfo(qEnd, &EIend, &dlEnd, TopB[l]);
+			AttachedB[l]->getEndSegmentInfo(q_EI_dl, TopB[l], 1);
+
+			for (int J=0; J<3; J++)
+				qMomentSum[J] += q_EI_dl[J];  // add each component to the summation vector
+				//qMomentSum[J] += qEnd[J]*EIend/dlEnd;  // add each component to the summation vector
+		}
+		
+		// solve for line unit vector that balances all moments (unit vector of summation of qEnd*EI/dl_stretched over each line)
+		scalevector(qMomentSum, 1.0, q);
+		
+		for (int J=0; J<3; J++) 	                           
+			r6[3+J] = q[J];  // set orientation angles (maybe not used)
+	
+	}
+	
+	// pass Rod orientation to any attached lines
+	for (int l=0; l < nAttachedA; l++)  AttachedA[l]->setEndOrientation(q, TopA[l], 0);
+	for (int l=0; l < nAttachedB; l++)  AttachedB[l]->setEndOrientation(q, TopB[l], 1);
+	
+	return;
 }
-	
-	
+
+
 // calculate the forces and state derivatives of the rod	(only for type 2 rods)
 int Rod::getStateDeriv(double* Xd)
 {
-	
+		
 	// attempting error handling <<<<<<<<
 	for (int i=0; i<=N; i++)
 	{
@@ -453,86 +789,143 @@ int Rod::getStateDeriv(double* Xd)
 	}
 	
 	// calculate forces and added mass for each node (including those from lines attached to ends)
-	doRHS();
-	
 	double Fnet_out[6] = {0.0};    // total force vector
-	double M_out[36] = {0.0};  // total mass matrix (serialized for easy processing)
+	double M_out6[6][6] = {0.0};  // total mass matrix
 	
-	// now go through each node's contributions, put them in end A ref frame, and sum them
-	for (int i=1; i<N; i++)
+	getNetForceAndMass(NULL, Fnet_out, M_out6);  // call doRHS and sum each node's contributions about end A
+	
+	
+	// >>>>>>>>> should the below only be done locally for free/pinned Rods? >>>>>>>>>>>>>>>
+
+	// supplement mass matrix with rotational inertia terms for axial rotation of rod
+	// (this is based on assigning Jaxial * cos^2(theta) to each axis...
+	M_out6[3][3] += rho * d*d*d*d/64 * r6[3]*r6[3];    // <<<< check the math on this!!!
+	M_out6[4][4] += rho * d*d*d*d/64 * r6[4]*r6[4];
+	M_out6[5][5] += rho * d*d*d*d/64 * r6[5]*r6[5];
+		
+	
+	
+	// solve for accelerations in [M]{a}={f} using LU decomposition, then fill in state derivatives
+	
+	
+	if (type == 0)                  // free rod, 12 states  
+	{
+		if (N==0)   // special zero-length Rod case, orientation is not an actual state
+		{
+			
+			double acc[3];      // acceleration vector to solve for (translational accelerations of end A in global orientation)
+			double M_out3[3][3];
+			for (int i=0; i<3; i++)
+				for (int j=0; j<3; j++)
+					M_out3[i][j] = M_out6[i][j];
+		
+			LUsolve3(M_out3, acc, Fnet_out);		
+			
+			for (int I=0; I<3; I++) 
+			{
+				Xd[6 + I] = v6[ I];       // dxdt = V   (velocities)
+				Xd[9 + I] = 0.0;      
+				Xd[    I] = acc[I];      // dVdt = a   (accelerations) 
+				Xd[3 + I] = 0.0;        // rotational accelerations -- setting to zero, won't be used
+			}
+			
+		}
+		else       // regular free Rod case
+		{
+			double acc[6];                        // acceleration vector to solve for (translational and rotational accelerations of end A in global orientation)
+			LUsolve6(M_out6, acc, Fnet_out);
+		
+			for (int I=0; I<3; I++) 
+			{	
+				Xd[6 + I] = v6[  I];       // dxdt = V   (velocities)
+				Xd[    I] = acc[  I];      // dVdt = a   (accelerations) 
+				Xd[3 + I] = acc[3+I];        // rotational accelerations	
+			}            
+			
+			// rate of change of unit vector components!!  CHECK!   <<<<<
+			Xd[9 + 0] =                - v6[5]*r6[4] + v6[4]*r6[5]; // i.e.  u_dot_x = -omega_z*u_y + omega_y*u_z
+			Xd[9 + 1] =  v6[5]*r6[3]                 - v6[3]*r6[5]; // i.e.  u_dot_y =  omega_z*u_x - omega_x*u_z
+			Xd[9 + 2] = -v6[4]*r6[3] + v6[3]*r6[4]                ; // i.e.  u_dot_z = -omega_y*u_x - omega_x*u_y
+		}
+	}
+	else                             // pinned rod, 6 states (rotational only)
+	{
+		
+		double acc[6];      
+		LUsolve6(M_out6, acc, Fnet_out);		// <<< am I approach this right, or could this be reduce to 3X3, and is it neglecting inertial couplings?
+		
+		for (int I=0; I<3; I++) 
+			Xd[    I] = acc[3+I];          // rotational accelerations
+		
+
+		// rate of change of unit vector components!!  CHECK!   <<<<<
+		Xd[3 + 0] =                - v6[5]*r6[4] + v6[4]*r6[5]; // i.e.  u_dot_x = -omega_z*u_y + omega_y*u_z
+		Xd[3 + 1] =  v6[5]*r6[3]                 - v6[3]*r6[5]; // i.e.  u_dot_y =  omega_z*u_x - omega_x*u_z
+		Xd[3 + 2] = -v6[4]*r6[3] + v6[3]*r6[4]                ; // i.e.  u_dot_z = -omega_y*u_x - omega_x*u_y
+	}	
+	
+	return 0;
+}
+
+
+
+// function to return net force on rod (and possibly moment at end A if it's not pinned)
+// >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global to save comp time and code?  >>>>>>>> this function likely not used >>>>>>>>>>>
+void Rod::getFnet(double Fnet_out[])
+{	
+	// Fnet_out is assumed to point to a size-3 array if the rod is pinned and size-6 array if the rod is fixed
+
+	int nDOF = 0;
+	
+	if (type == -1)  // if coupled pinned
+		nDOF = 3;
+	else if (type == -2) // if coupled rigidly
+		nDOF = 6;
+	else
+		throw string("Error: getFnet called for a Rod that isn't of a coupled type.");
+	
+
+	// this assumes doRHS() has already been called
+	
+	// make sure Fnet_out is zeroed first
+	for (int J=0; J<nDOF; J++) 
+		Fnet_out[J] = 0.0;
+	
+	// now go through each node's contributions, put them in body ref frame, and sum them
+	for (int i=0; i<=N; i++)
 	{		
 		double rRel[3];     // position of a given node relative to the body reference point (global orientation frame)
 		double Fnet_dub[3];
-		double M_dub[3][3];
 		double F6_i[6];     // 6dof force-moment from rod about body ref point (but global orientation frame of course)
-		double M6_i[6][6];  // mass matrix of each rod to be added		
 		
 		for (int J=0; J<3; J++) 
 		{	rRel[J] = r[i][J] - r[0][J];   // vector from end A to node
 			Fnet_dub[J] = Fnet[i][J];      // convert to array for passing
-			for (int K=0; K<3; K++) M_dub[J][K] = M[i][J][K];
 		}	
 		
 		// convert segment net force into 6dof force about body ref point
 		translateForce3to6DOF(rRel, Fnet_dub, F6_i);			
 		
-		// convert segment mass matrix to 6by6 mass matrix about body ref point
-		translateMass3to6DOF(rRel, M_dub, M6_i);
-		
-		for (int J=0; J<6; J++)
-		{
+				
+		for (int J=0; J<nDOF; J++)
 			Fnet_out[J] += F6_i[J]; // add force to total force vector
-			
-			for (int K=0; K<6; K++)
-				M_out[6*J + K] += M6_i[J][K];  // add element mass matrix to body mass matrix
-		}		
+	
 	}	
 	
-	// supplement mass matrix with rotational inertia terms for axial rotation of rod
-	// (this is based on assigning Jaxial * cos^2(theta) to each axis...
-	M_out[21] += rho * d*d*d*d/64 * r6[3]*r6[3];    // <<<< check the math on this!!!
-	M_out[28] += rho * d*d*d*d/64 * r6[4]*r6[4];
-	M_out[35] += rho * d*d*d*d/64 * r6[5]*r6[5];
+	// add any moments applied from lines at either end (might be zero)
+	for (int J=0; J<3; J++)
+		Fnet_out[J+3] = Fnet_out[J+3] + MextA[J] + MextB[J];
 	
-	// solve for accelerations in [M]{a}={f} using LU decomposition
-	double LU[36];                        // serialized matrix that will hold LU matrices combined
-	Crout(6, M_out, LU);                  // perform LU decomposition on mass matrix
-	double acc[6];                        // acceleration vector to solve for
-	solveCrout(6, LU, Fnet_out, acc);     // solve for acceleration vector
-			
-	// invert body total mass matrix
-	//inverse6by6(S, M_out);  
+	//  this is where we'd add inertial loads for coupled rods! <<<<<<<<<<<<
 	
-	
-	// calculate unit tangent vector (q) for rod  (though this is redundant with passed values)
-	unitvector(q, r[0], r[N]  ); 	// compute unit vector q
-	
-	
-	
-	
-	// RHS constant - (premultiplying force vector by inverse of mass matrix  ... i.e. rhs = S*Forces
-	for (int I=0; I<3; I++) 
-	{
-		//double RHSI = 0.0; // temporary accumulator 
-		//for (int J=0; J<6; J++) {
-		//	RHSI += S[I][J] * Fnet[J]; //  matrix multiplication [S i]{Forces i}
-		//}
-		
-		// update states
-		Xd[6 + I] = r6d[  I];    // dxdt = V        (velocities)
-		Xd[9 + I] = r6d[3+I];    
-		Xd[    I] = acc[  I];   // dVdt = RHS * A  (accelerations)
-		Xd[3 + I] = acc[3+I];   
-	}
-					
-	return 0;
+	return;
 }
 
 
-// calculate the force and mass contributions of the rod on the parent body (only for type 1 Rods?)
-void Rod::getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], double M_out[6][6])
+// calculate the aggregate 6DOF rigid-body force and mass data of the rod 
+void Rod::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6])
 {
-	// rBody is the location of the body reference point
+	// rBody is the location of the body reference point. A NULL pointer value means the end A coordinates should be used instead.
 	
 	// question: do I really want to neglect the rotational inertia/drag/etc across the length of each segment?
 
@@ -545,8 +938,18 @@ void Rod::getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], do
 			M_out[J][K] = 0.0;
 	}
 	
+	double rRef[3];  // global x/y/z coordinate to sum forces, moments, masses about
+	
+	// set reference coordinate to return things about
+	if (rBody == NULL)            // if this function is called by the Rod itself, the reference point is just end A
+		for (int J=0; J<3; J++)
+			rRef[J] = r[0][J];
+	else
+		for (int J=0; J<3; J++)
+			rRef[J] = rBody[J];
+	
 	// now go through each node's contributions, put them in body ref frame, and sum them
-	for (int i=1; i<N; i++)
+	for (int i=0; i<=N; i++)
 	{		
 		double rRel[3];     // position of a given node relative to the body reference point (global orientation frame)
 		double Fnet_dub[3];
@@ -555,9 +958,9 @@ void Rod::getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], do
 		double M6_i[6][6];  // mass matrix of each rod to be added		
 		
 		for (int J=0; J<3; J++) 
-		{	rRel[J] = r[i][J] - r[0][J];   // vector from end A to node
-			Fnet_dub[J] = Fnet[i][J];      // convert to array for passing
-			for (int K=0; K<3; K++) M_dub[J][K] = M[i][J][K];
+		{	rRel[J] = r[i][J] - rRef[J];   // vector from reference point to node
+			Fnet_dub[J] = Fnet[i][J];      // convert to array for passing <<<<<<<<< this intermediate array can be skipped
+			for (int K=0; K<3; K++) M_dub[J][K] = M[i][J][K];  // <<<<<<<<< this intermediate array can be skipped
 		}	
 		
 		// convert segment net force into 6dof force about body ref point
@@ -574,11 +977,16 @@ void Rod::getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], do
 				M_out[J][K] += M6_i[J][K];  // add element mass matrix to body mass matrix
 		}		
 	}	
+	
+	// add any moments applied from lines at either end (might be zero)
+	for (int J=0; J<3; J++)
+		Fnet_out[J+3] = Fnet_out[J+3] + MextA[J] + MextB[J];
+	
 	return;
-};
+}
 
 
-//  this is the big function that calculates the forces on the rod
+//  this is the big function that calculates the forces on the rod, including from attached lines
 void Rod::doRHS()
 {
 	
@@ -593,7 +1001,7 @@ void Rod::doRHS()
 //	AnchConnect->getM(MconnA);
 //	FairConnect->getM(MconnB);
 
-	// set interior node positions and velocities (stretch the nodes between the endpoints linearly)
+	// set interior node positions and velocities (stretch the nodes between the endpoints linearly) (skipped for zero-length Rods)
 	for (int i=1; i<N; i++)
 	{	for (int J=0; J<3; J++)
 		{	 r[i][J]  =  r[0][J] + ( r[N][J] - r[0][J]) * (float(i)/float(N));
@@ -613,73 +1021,53 @@ void Rod::doRHS()
 //	ldstr = ldstr_top/lstr; 	// rate of rod stretch (m/s)
 
 			
-	// calculate unit tangent vector (q) for rod  (though this is redundant with passed values)
-	unitvector(q, r[0], r[N]  ); 	// compute unit vector q
-	
+	// note: Rod's q unit tangent vector is already set by setState-type functions (and is same as last three entries of r6)
 	
 	
 	//============================================================================================
 	// --------------------------------- apply wave kinematics ------------------------------------
-	
-	if (WaveKin == 0)   // if Wave Kinematics haven't been calculated.   ...this is a local Line switch (so wave kinematics can be enabled/disabled for individual lines)
-	{
-		for (int i=0; i<=N; i++)
-		{
-			zeta[i] = 0.0;			
-			F[i] = 1.0;
-			
-			for (int J=0; J<3; J++)
-			{
-				U[i][J] = 0.0;				
-				Ud[i][J] = 0.0;
-			}
-		}
-		
-		//if (wordy)
-		//	if (number==1)
-		//		cout << " t=" << t << ", U[4][0]=" << U[4][0] << endl;
-		
-	}
-	else  // if wave kinematics time series have been precalculated.
+
+	if (WaterKin == 1) // wave kinematics time series set internally for each node
 	{
 		// =========== obtain (precalculated) wave kinematics at current time instant ============
 		// get precalculated wave kinematics at previously-defined node positions for time instant t
 		
 		// get interpolation constant and wave time step index
-		double frac;
-		for (int ts=0; ts<Nt-1; ts++)			// loop through precalculated wave time series time steps  (start ts at ts0 to save time)
-		{	if (tTS[ts+1] > t) 				// moving precalculated time bracked "up".  Stop once upper end of bracket is greater than current time t.
-			{
-				ts0 = ts;
-				frac = ( t - tTS[ts] )/( tTS[ts+1] - tTS[ts] );
-				break;
-			}
-		}
+		int it = floor(t/dtWater);
+		double frac = remainder(t,dtWater)/dtWater;
 				
 		// loop through nodes 
 		for (int i=0; i<=N; i++)
 		{
-			zeta[i] = zetaTS[i][ts0] + frac*( zetaTS[i][ts0+1] - zetaTS[i][ts0] );			
-			F[i] = 1.0;   // FTS[i][ts0] + frac*(FTS[i][ts0+1] - FTS[i][ts0]);
+			zeta[i] = zetaTS[i][it] + frac*( zetaTS[i][it+1] - zetaTS[i][it] );			
+			F[i] = 1.0;   // FTS[i][it] + frac*(FTS[i][it+1] - FTS[i][it]);
 			
 			for (int J=0; J<3; J++)
 			{
-				U[i][J] = UTS[i][ts0][J] + frac*( UTS[i][ts0+1][J] - UTS[i][ts0][J] );				
-				Ud[i][J] = UdTS[i][ts0][J] + frac*( UdTS[i][ts0+1][J] - UdTS[i][ts0][J] );
+				U[i][J] = UTS[i][it][J] + frac*( UTS[i][it+1][J] - UTS[i][it][J] );				
+				Ud[i][J] = UdTS[i][it][J] + frac*( UdTS[i][it+1][J] - UdTS[i][it][J] );
 			}
-			
-//			if (wordy) {
-//				if (i==N) {
-//					cout << "ts0: " << ts0 << ", frac: " << frac << ", getting " << U[i][0] << " from " << UTS[i][ts0+1][0] << " - " << UTS[i][ts0][0] << endl;
-//					system("pause");
-//				}
-//			}
-			
 		}	
-		if (wordy > 2)
-			if (number==1)
-				  cout << " t=" << t << ", U[4][0]=" << U[4][0] << endl;
 	}
+	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
+	{		
+		for (int i=0; i<=N; i++)
+		{
+			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i]); // call generic function to get water velocities
+			
+			// >>> add Pd variable for dynamic pressure, which will be applied on Rod surface
+			
+			F[i] = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
+		}
+	}
+	else if (WaterKin != 0) // Hopefully WaterKin is set to zero, meaning no waves or set externally, otherwise it's an error
+		cout << "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
+
+	
+	// ========================= calculate buoyancy of submerged portion only ===================
+	
+	
+	
 	//============================================================================================
 	
 	
@@ -691,7 +1079,7 @@ void Rod::doRHS()
 		
 		if (i==0) 
 		{
-			m_i = pi/8.*d*d*l[0]*rho;
+			m_i = pi/8.*d*d*l[0]*rho;   //  (will be zero for zero-length Rods)
 			v_i = 1./2. *F[i]*V[i];
 		}
 		else if (i==N) 
@@ -705,10 +1093,10 @@ void Rod::doRHS()
 			v_i = 1./2. *(F[i-1]*V[i-1] + F[i]*V[i]);
 		}
 		
-		// make node mass matrix
+		// make node mass matrix  (will be zero for zero-length Rods)
 		for (int I=0; I<3; I++) {
 			for (int J=0; J<3; J++) { 
-				M[i][I][J] = m_i*eye(I,J) + env.rho_w*v_i *( Can*(eye(I,J) - q[I]*q[J]) + Cat*q[I]*q[J] );					
+				M[i][I][J] = m_i*eye(I,J) + env->rho_w*v_i *( Can*(eye(I,J) - q[I]*q[J]) + Cat*q[I]*q[J] );					
 			}
 		}		
 		
@@ -718,126 +1106,144 @@ void Rod::doRHS()
 
 	// ============  CALCULATE FORCES ON EACH NODE ===============================
 	
-	// no nodal axial structural loads calculated since it's assumed rigid
-	
-	// but can I at least calculate tension/compression due to other loads?
-	
-	// loop through the nodes
-	for (int i=0; i<=N; i++)
-	{
-		// submerged weight (including buoyancy)
-		if (i==0)
-			W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env.rho_w) )*(-env.g);
-		else if (i==N)
-			W[i][2] = pi/8.*( d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g); // missing the "W[i][2] =" previously!
-		else
-			W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env.rho_w) + d*d*l[i-1]*(rho-F[i-1]*env.rho_w) )*(-env.g);
-				
-		// flow velocity calculations       
-		double vq_squared = 0.;
-		double vp_squared = 0.;
-		
-		for (int J=0; J<3; J++)  vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
-		
-		for (int J=0; J<3; J++) 
-		{	
-			vq[J] = dotProd( vi , q ) * q[J]; 	// tangential relative flow component
-			vp[J] = vi[J] - vq[J];					// transverse relative flow component
-			vq_squared += vq[J]*vq[J];
-			vp_squared += vp[J]*vp[J];
-		}
-		double vp_mag = sqrt(vp_squared);
-		double vq_mag = sqrt(vp_squared);
-		
-		// transverse drag		
-		if (i==0) 		
-			for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env.rho_w*Cdn* (F[i]*d*l[i])/2. * vp_mag * vp[J]; 
-		else if (i==N) 
-			for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env.rho_w*Cdn* (F[i-1]*d*l[i-1])/2. * vp_mag * vp[J]; 
-		else 
-			for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env.rho_w*Cdn* (F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vp_mag * vp[J]; 
-		
-		// tangential drag		
-		if (i==0)
-			for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env.rho_w*Cdt* pi*(F[i]*d*l[i])/2. * vq_mag * vq[J]; 
-		else if (i==N)
-			for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env.rho_w*Cdt* pi*(F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
-		else
-			for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env.rho_w*Cdt* pi*(F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
-				
-		
-		// acceleration calculations					
-		for (int J=0; J<3; J++)  {
-			aq[J] = dotProd(Ud[i], q) * q[J]; // tangential component of fluid acceleration
-			ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
-		}
-		
-		// transverse Froude-Krylov force
-		if (i==0)	
-			for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*0.5*( V[i]) * ap[J]; 
-		else if (i==N)
-			for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*0.5*(V[i-1] ) * ap[J]; 
-		else
-			for (int J=0; J<3; J++)  Ap[i][J] = env.rho_w*(1.+Can)*0.5*( V[i] + V[i-1] ) * ap[J]; 
-		
-		// tangential Froude-Krylov force					
-		if (i==0)	
-			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i]) * aq[J]; 
-		else if (i==N)
-			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i-1] ) * aq[J]; 
-		else
-			for (int J=0; J<3; J++)  Aq[i][J] = env.rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] ) * aq[J]; 
-		
-		// bottom contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
-		if (r[i][2] < -env.WtrDpth)
+	if (N > 0)   // this is only nonzero for finite-length rods (skipped for zero-length Rods)
+	{  //<<< should put this if statement inside one larger i=0:N for loop, and use v_i etc. for efficiency! <<<
+
+		// loop through the nodes
+		for (int i=0; i<=N; i++)
 		{
+			// note: no nodal axial structural loads calculated since it's assumed rigid, but should I calculate tension/compression due to other loads?
+
+			// submerged weight (including buoyancy)
 			if (i==0)
-				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*(          d*l[i-1] );
+				W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env->rho_w) )*(-env->g);     // (will be zero for zero-length Rods)
 			else if (i==N)
-				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i]            );
+				W[i][2] = pi/8.*( d*d*l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
 			else
-				B[i][2] = ( (-env.WtrDpth-r[i][2])*env.kb - rd[i][2]*env.cb) * 0.5*( d*l[i] + d*l[i-1] );
+				W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env->rho_w) + d*d*l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
+					
+					
+			// buoyancy and dynamic pressure term
+					
+					
+			// flow velocity calculations       
+			double vq_squared = 0.;
+			double vp_squared = 0.;
 			
-			// new rough-draft addition of seabed friction
-			//double FrictionCoefficient = 0.5;                  // just using one coefficient to start with          
-			double FrictionMax = abs(B[i][2])*env.FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
-			// saturated damping approach to applying friction, for now
-			double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
-			double FrictionForce = BottomVel * env.FrictionCoefficient*env.FricDamp; // some arbitrary damping scaling thing at end
-			if (FrictionForce > env.StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
-			// apply force in correct directions -- opposing direction of motion
-			 // could add ifs in here to handle end nodes
-			B[i][0] = -FrictionForce*rd[i][0]/BottomVel;
-			B[i][1] = -FrictionForce*rd[i][1]/BottomVel;
+			for (int J=0; J<3; J++)  vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
+			
+			for (int J=0; J<3; J++) 
+			{	
+				vq[J] = dotProd( vi , q ) * q[J]; 	// tangential relative flow component
+				vp[J] = vi[J] - vq[J];					// transverse relative flow component
+				vq_squared += vq[J]*vq[J];
+				vp_squared += vp[J]*vp[J];
+			}
+			double vp_mag = sqrt(vp_squared);
+			double vq_mag = sqrt(vp_squared);
+			
+			// transverse drag		
+			if (i==0) 		
+				for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env->rho_w*Cdn* (F[i]*d*l[i])/2. * vp_mag * vp[J]; 
+			else if (i==N) 
+				for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env->rho_w*Cdn* (F[i-1]*d*l[i-1])/2. * vp_mag * vp[J]; 
+			else 
+				for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env->rho_w*Cdn* (F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vp_mag * vp[J]; 
+			
+			// tangential drag		
+			if (i==0)
+				for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env->rho_w*Cdt* pi*(F[i]*d*l[i])/2. * vq_mag * vq[J]; 
+			else if (i==N)
+				for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env->rho_w*Cdt* pi*(F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
+			else
+				for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env->rho_w*Cdt* pi*(F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
+					
+			
+			// fluid acceleration components for current node				
+			for (int J=0; J<3; J++)  {
+				aq[J] = dotProd(Ud[i], q) * q[J]; // tangential component of fluid acceleration
+				ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
+			}
+			
+			// transverse Froude-Krylov force
+			if (i==0)	
+				for (int J=0; J<3; J++)  Ap[i][J] = env->rho_w*(1.+Can)*0.5*( V[i]) * ap[J]; 
+			else if (i==N)
+				for (int J=0; J<3; J++)  Ap[i][J] = env->rho_w*(1.+Can)*0.5*(V[i-1] ) * ap[J]; 
+			else
+				for (int J=0; J<3; J++)  Ap[i][J] = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] ) * ap[J]; 
+			
+			// tangential Froude-Krylov force					
+			if (i==0)	
+				for (int J=0; J<3; J++)  Aq[i][J] = env->rho_w*(1.+Cat)*0.5*( V[i]) * aq[J]; 
+			else if (i==N)
+				for (int J=0; J<3; J++)  Aq[i][J] = env->rho_w*(1.+Cat)*0.5*( V[i-1] ) * aq[J]; 
+			else
+				for (int J=0; J<3; J++)  Aq[i][J] = env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] ) * aq[J]; 
+			
+			// bottom contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
+			if (r[i][2] < -env->WtrDpth)
+			{
+				if (i==0)
+					B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*(          d*l[i-1] );
+				else if (i==N)
+					B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( d*l[i]            );
+				else
+					B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( d*l[i] + d*l[i-1] );
+				
+				// new rough-draft addition of seabed friction
+				//double FrictionCoefficient = 0.5;                  // just using one coefficient to start with          
+				double FrictionMax = abs(B[i][2])*env->FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
+				// saturated damping approach to applying friction, for now
+				double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
+				double FrictionForce = BottomVel * env->FrictionCoefficient*env->FricDamp; // some arbitrary damping scaling thing at end
+				if (FrictionForce > env->StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
+				// apply force in correct directions -- opposing direction of motion
+				 // could add ifs in here to handle end nodes
+				B[i][0] = -FrictionForce*rd[i][0]/BottomVel;
+				B[i][1] = -FrictionForce*rd[i][1]/BottomVel;
+			}
+			else 
+			{
+				B[i][0] = 0.;
+				B[i][1] = 0.;
+				B[i][2] = 0.;
+			}	
+			
+			// total forces summation
+			if (i==0)
+				for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
+			else if (i==N)                          
+				for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
+			else                                   
+				for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
+			
 		}
-		else 
-		{
-			B[i][0] = 0.;
-			B[i][1] = 0.;
-			B[i][2] = 0.;
-		}		
-		// total forces
-		if (i==0)
-			for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
-		else if (i==N)                          
-			for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
-		else                                   
-			for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
-		
 	}
+	else
+	{	// for zero-length rods, just ensure the net force from the Rod itself is set to zero
+		for (int J=0; J<3; J++) Fnet[0][J] = 0.0;
+	}	
+	
 	
 	// ============ now add in forces on end nodes from attached lines =============
+	
+	// zero the external force/moment sums (important!)
+	for (int I=0; I<3; I++) 
+	{	
+		FextA[I] = 0.0;
+		FextB[I] = 0.0;  
+		MextA[I] = 0.0;
+		MextB[I] = 0.0;
+	}
 	
 	// loop through lines attached to end A
 	for (int l=0; l < nAttachedA; l++)
 	{
-		double Fnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
+		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
 		
 		// get quantities
-		if (TopA[l] == 0) 	
-			(AttachedA[l])->getAnchStuff(Fnet_i, M_i); 	// if attached to bottom/anchor of the line
-		else 				
-			(AttachedA[l])->getFairStuff(Fnet_i, M_i);  // if attached to top/fairlead of the line
+      AttachedA[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopA[l]);
 			
 		// Process outline for line failure, similar to as done for connections (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if failure time has elapsed for line
@@ -846,36 +1252,41 @@ void Rod::doRHS()
 		// The above may require rearrangement of connection indices, expansion of state vector, etc.
 			
 		// sum quantitites
-		for (int I=0; I<3; I++) {
-			Fnet[0][I] += Fnet_i[I];
-		
-			for (int J=0; J<3; J++) 
-				M[0][I][J] += M_i[I][J];					
+		for (int I=0; I<3; I++) 
+      {
+			Fnet[0][I] += Fnet_i[I];    // forces
+			FextA[I]   += Fnet_i[I];
+			MextA[I]   += Mnet_i[I];    // moments
+         
+         for (int J=0; J<3; J++) 
+            M[0][I][J] += M_i[I][J]; // mass matrix
+         
 		}
+		
 	}
 	
 	// loop through lines attached to end B
 	for (int l=0; l < nAttachedB; l++)
 	{
-		double Fnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
+		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0}; double M_i[3][3] = {{0.0}};
 		
 		// get quantities
-		if (TopB[l] == 0) 	
-			(AttachedB[l])->getAnchStuff(Fnet_i, M_i); 	// if attached to bottom/anchor of the line
-		else 				
-			(AttachedB[l])->getFairStuff(Fnet_i, M_i);  // if attached to top/fairlead of the line
-			
-		// sum quantitites
-		for (int I=0; I<3; I++) {
-			Fnet[N][I] += Fnet_i[I];
-		
-			for (int J=0; J<3; J++) 
-				M[N][I][J] += M_i[I][J];					
+      AttachedB[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopB[l]);
+	
+      // sum quantitites
+		for (int I=0; I<3; I++) 
+      {
+         Fnet[N][I] += Fnet_i[I];    // forces
+			FextB[I]   += Fnet_i[I];
+			MextB[I]   += Mnet_i[I];    // moments
+         
+         for (int J=0; J<3; J++) 
+            M[N][I][J] += M_i[I][J]; // mass matrix
 		}
 	}
 	
 	return;
-};
+}
 
 
 
@@ -894,7 +1305,6 @@ void Rod::Output(double time)
 			*outfile << time << "\t "; 
 		
 			// output positions?
-			//if (find(channels.begin(), channels.end(), "position") != channels.end())
 			if (channels.find("p") != string::npos)
 			{
 				for (int i=0; i<=N; i++)	//loop through nodes
@@ -908,23 +1318,10 @@ void Rod::Output(double time)
 					for (int J=0; J<3; J++)  *outfile << rd[i][J] << "\t ";
 				}
 			}
-			// output wave velocities?
-			if (channels.find("u") != string::npos) {
+			// output net node forces?
+			if (channels.find("f") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					for (int J=0; J<3; J++)  *outfile << U[i][J] << "\t ";
-				}
-			}
-			// output hydro drag force?
-			if (channels.find("D") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					for (int J=0; J<3; J++)  *outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J] << "\t ";
-				}
-			}
-					
-			// output seabed contact forces?
-			if (channels.find("b") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					for (int J=0; J<3; J++)  *outfile << B[i][J] << "\t ";
+					for (int J=0; J<3; J++)  *outfile << Fnet[i][J] << "\t ";
 				}
 			}
 			
@@ -933,51 +1330,44 @@ void Rod::Output(double time)
 		else cout << "Unable to write to output file " << endl;
 	}
 	return;
-};
+}
 
 
 Rod::~Rod()
 {
-	// destructor
+	// free memory
 
-	r        .clear();
-	rd       .clear();
-	q        .clear();
-	T        .clear();
-	Td       .clear();
-	Tmag     .clear();
-	W        .clear();
-	Dp       .clear();
-	Dq       .clear();
-	Ap       .clear();
-	Aq       .clear();
-	B        .clear();
-	Fnet     .clear();
-//	S        .clear();
-	M        .clear();
-	F        .clear();
-	l        .clear();
-//	lstr     .clear();
-//	ldstr    .clear();
-	V        .clear();
-	U        .clear();
-	Ud       .clear();
-	zeta     .clear();
-	w        .clear();
-	k        .clear();
-	zetaC0   .clear();
-	zetaC    .clear();
-	UC       .clear();
-	UdC      .clear();
-	WGNC     .clear();
-	WaveS2Sdd.clear();
-	Ucurrent .clear();
-	zetaTS   .clear();
-	FTS      .clear();
-	UTS      .clear();
-	UdTS     .clear();
-	tTS      .clear();
+	free2Darray(r   , N+1);    
+	free2Darray(rd  , N+1);    
+	free(l);
+	
+	free3Darray(M   , N+1, 3); 
+	free(V);         
+	
+	// forces        
+	free2Darray(W   , N+1);    
+	free2Darray(Dp  , N+1);    
+	free2Darray(Dq  , N+1);    
+	free2Darray(Ap  , N+1);    
+	free2Darray(Aq  , N+1);    
+	free2Darray(B   , N+1);    
+	free2Darray(Fnet, N+1);    
+	
+	// wave things   
+	free(F   );       
+	free(zeta);       
+	free2Darray(U   , N+1);    
+	free2Darray(Ud  , N+1);    
+	
+	// wave time series vectors (may never have been used)
+	if (ntWater > 0)
+	{	free2Darray(zetaTS, N+1);
+		free2Darray(FTS   , N+1);
+		free3Darray(UTS   , N+1, ntWater);
+		free3Darray(UdTS  , N+1, ntWater);
+	}
 }
+
 
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL

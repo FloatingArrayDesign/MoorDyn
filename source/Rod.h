@@ -25,9 +25,23 @@ using namespace std;
 //   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] --- ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
 
 class Line;
+class Waves;
 
 class Rod 
 {
+//
+//Rod Types:
+//	0: free to move
+//	1: pinned to a fixed point (or a body/ptfm, in which case added to list?)
+//	2: attached rigidly to a fixed point (or a body/ptfm, in which case added to list?)
+//	-1: pinned to a coupling point (3dof)
+//	-2: attached rigidly to a coupling point (6dof)
+
+	// ENVIRONMENTAL STUFF	
+	EnvCond *env;  // pointer to global struct that holds environmental settings
+	Waves *waves;  // pointer to global Waves object
+	
+
 	// unique to Rod (like a doubling of Connection):
 	Line* AttachedA[10]; 	// pointers to lines attached to this connection node
 	Line* AttachedB[10]; 	// pointers to lines attached to this connection node
@@ -36,155 +50,134 @@ class Rod
 	int nAttachedA; 		// number of attached lines
 	int nAttachedB; 		// number of attached lines
 	
-	// ENVIRONMENTAL STUFF
-	
-	EnvCond env;  // struct to hold environmental settings
-	
+
 		
 	// ROD STUFF
     
 	// parameters
 	RodProps props;	
-	int N; // number of line nodes 
-	double UnstrLen; // the constrained length of the rod
-	double d;		// rod diameter
-	double rho;		// rod linear density
+	int N;                  // number of line nodes 
+	double UnstrLen;        // the constrained length of the rod
+	double d;		        // rod diameter
+	double rho;		        // rod linear density
 	double Can;
 	double Cat;
 	double Cdn;
 	double Cdt;
 	//double ReFac;
 	
-	double A; // line cross-sectional area to pre-compute
+	
+	double A;               // line cross-sectional area to pre-compute
 	
 	// degrees of freedom (or states)
-	double  r6 [6]; 		// Rod 6dof position [x/y/z] // double* to continuous state or input state or parameter/other-state
-	double r6d [6];		// Rod 6dof velocity[x/y/z]  // double* to continuous state or input state or parameter/other-state
+	double r6 [6];          // Rod 6dof position [x/y/z/u1/u2/u3] (end A coordinates and direction unit vector)
+	double v6 [6];	        // Rod 6dof velocity[vx/vy/vz/wx/wy/wz] (end A velocity and rotational velocities about unrotated axes)
 	
 	
 	// kinematics
-	vector< vector< double > > r; 		// node positions [i][x/y/z]
-	vector< vector< double > > rd;	// node velocities [i][x/y/z]
-	vector< double > q;      	// unit tangent vector for rod
+	double **r;             // node positions [i][x/y/z]
+	double **rd;            // node velocities [i][x/y/z]
+	double q[3];      	    // unit tangent vector for rod
+	double *l; 		        // line unstretched segment lengths
+	
+	double ***M;            // node mass + added mass matrix
+	//double Mext[3];         // net moment from attached lines at either end <<< should rename to be clearly moment not mass
+	double *V;              // line segment volume	
+	double FextA[3];              // external forces from attached lines on/about end A 
+	double FextB[3];              // external forces from attached lines on/about end A 
+	double MextA[3];              // external moments from attached lines on/about end A 
+	double MextB[3];              // external moments from attached lines on/about end B
+				
+	// forces 
+	double **W;             // node weight 	
+	double **Dp;            // node drag (transverse)
+	double **Dq;            // node drag (axial)
+	double **Ap;            // node added mass forcing (transverse)
+	double **Aq;            // node added mass forcing (axial)
+	double **B;             // node bottom contact force	
+	double **Fnet;          // total force on node  <<<<<<< might remove this for Rods
+		
+	// wave things
+	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
+	double *zeta;           // free surface elevation
+	double **U;             // wave velocities	
+	double **Ud;            // wave accelerations
+
 	
 	// time
-	double t; 					// simulation time
-	double t0; // simulation time current integration was started at (used for BC function)
+	double t;               // simulation time
+	double t0;              // simulation time current integration was started at (used for BC function)
+	double r_ves[6]; 		// fairlead position for coupled rods [x/y/z]
+	double rd_ves[6];		// fairlead velocity for coupled rods [x/y/z]
 	double tlast;
 		
 	// motion component vectors (declaring these here as they caused problems if declared in the loop)
-	double vi[3]; // relative velocity
-	double vp[3]; // transverse component of relative velocity
-	double vq[3]; // axial component of relative velocity
-	double ap[3]; // transverse component of absolute acceleration - HAD TO MOVE THIS UP FROM LOWER DOWN (USED TO CRASH AFTER I=3)
-	double aq[3]; // axial component of absolute acceleration
-				
-	// forces 
-	vector< vector< double > > T; //
-	vector< vector< double > > Td;//
-	vector< double > Tmag;				// segment tension magnitude 
-	vector< vector< double > > W;		// node weight 	
-	vector< vector< double > > Dp;	// node drag (transverse)
-	vector< vector< double > > Dq;	// node drag (axial)
-	vector< vector< double > > Ap;	// node added mass forcing (transverse)
-	vector< vector< double > > Aq;	// node added mass forcing (axial)
-	vector< vector< double > > B; 	// node bottom contact force	
-	vector< vector< double > > Fnet;	// total force on node  <<<<<<< might remove this for Rods
+	double vi[3];           // relative velocity
+	double vp[3];           // transverse component of relative velocity
+	double vq[3];           // axial component of relative velocity
+	double ap[3];           // transverse component of absolute acceleration - HAD TO MOVE THIS UP FROM LOWER DOWN (USED TO CRASH AFTER I=3)
+	double aq[3];           // axial component of absolute acceleration
 		
-	vector< double > FnetA;				// net force for end A of Rod
-	vector< double > FnetB;				// net force for end B of Rod	
-	
-	vector< vector< vector< double > > > M; // node mass + added mass matrix
-	
-	vector< vector< double > > MA;   // mass matrix for end A of Rod
-	vector< vector< double > > MB;   // mass matrix for end B of Rod
-			
-	vector<double> F; 		// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	
-	vector<double> l; 		// line unstretched segment lengths
-	vector<double> V;		// line segment volume
-	
-	// set up output arrays, at each node i:
-	vector< vector< double > >  U;     // wave velocities	
-	vector< vector< double > >  Ud;     // wave accelerations
-	
-	vector<double> zeta;    // free surface elevation
-
 	// file stuff
-	
-	ofstream * outfile; // if not a pointer, caused odeint system initialization error during compilation
+	ofstream * outfile;     // if not a pointer, caused odeint system initialization error during compilation
 	string channels;
 	
-	// new additions for handling waves in-object and precalculating them	(not necessarily used right now)
-	int WaveMod;
-	int WaveStMod;
-	double Hs;
-	double Tp;
-	double gamma;
-	float beta; 			// wave heading
-		
-	int Nw;  				// number of wave frequency components considered    //OK AS INT???
-	vector<float> w;
-	vector<float> k;
-	float dw;			// FAST's dw (really small typically)
-	
-	vector<floatC> zetaC0;		// Fourier transform of wave elevation at origin
-	vector<floatC> zetaC;		// Fourier transform of wave elevation
-	vector< vector< floatC > > UC;     // Fourier transform of wave velocities
-	vector< vector< floatC > > UdC;     // Fourier transform of wave accelerations
-	
-	vector<doubleC> WGNC;		// 
-	vector<double> WaveS2Sdd;	// 
-	doubleC WGNC_Fact; 		// sqrt( pi/(dw*WaveDT) );   // This factor is needed by the discrete time inverse Fourier transform to ensure that the time series WGN process has unit variance
-	double S2Sd_Fact; 		// 1.0/WaveDT;                       // This factor is also needed by the discrete time inverse Fourier transform
+	// data structures for precalculated nodal water kinematics if applicable
+	double **zetaTS;        // time series of wave elevations above each node
+	double **FTS;
+	double ***UTS;
+	double ***UdTS;
+	int ntWater;            // number of water kinematics time steps
+	double dtWater;         // water kinematics time step size (s)
 
-	vector< double > Ucurrent; // constant uniform current to add (three components)
-	
-	// new additions for precalculating wave quantities
-	vector< vector< double > > zetaTS;   // time series of wave elevations above each node
-	vector< vector< double > > FTS;
-	vector< vector< vector< double > > > UTS;
-	vector< vector< vector< double > > > UdTS;
-	int Nt; 				// number of wave time steps
-	double WaveDT; 		// wave time step size (s)
-	vector< double > tTS; 	// time step vector
-	int ts0; 				// time step index used for interpolating wave kinematics time series data (put here so it's persistent)
-	
 
 public:
  	int number; // rod "number" id
-	int type;  // defining whether part of a body (1), or independent (2)	
+	int type;  // 	0: free to move; 1: pinned; 2: attached rigidly (positive if to something, negative if coupled)
+//	int pinned;      // flag indicating of Rod end A is pinned (1) or free (0/default). Triggered by setting BodyToAddTO to -1.
 	
-	int WaveKin;  // flag indicating whether wave kinematics will be considered for this line
- 
+	int WaterKin;  // flag indicating whether wave/current kinematics will be considered for this linec
+	// 0: none, or use value set externally for each node of the object; 1: interpolate from stored; 2: call interpolation function from global Waves grid
+
+
  	// unique to Line
 	//Connection* AnchConnect;  // pointer to anchor connection
 	//Connection* FairConnect;  // pointer to fairlead connection
  
 	int getN(); // returns N (number of segments)
 	
-	int setup(int type_in, int number_in, RodProps *props, double endCoords[6], int NumSegs, 
+	int setup(int number_in, int type_in, RodProps *props, double endCoords[6], int NumSegs, 
 	shared_ptr<ofstream> outfile_pointer, string channels_in);
 	
 	void addLineToRodEndA(Line *theLine, int TopOfLine);
 	void addLineToRodEndB(Line *theLine, int TopOfLine);
+	void removeLineFromRodEndA(int lineID, int *topOfLine, double rEnd[], double rdEnd[]);
+	void removeLineFromRodEndB(int lineID, int *topOfLine, double rEnd[], double rdEnd[]);
 	
-	void initializeRod(double* X );
+	void initializeRod(double *X );
 
-	void setEnv(EnvCond env_in);
+	void setEnv(EnvCond *env_in, Waves* waves_in);
 
 	int getNodePos(int i, double pos[3]);
 	
 	double GetRodOutput(OutChanProps outChan);
 	
+	void storeWaterKin(int nt, double dt, double **zeta_in, double **f_in, double ***u_in, double ***ud_in);
+	
 	void scaleDrag(double scaler);	
 	void setTime(double time);
 	
-	int setState( const double* X, const double time);
+	void initiateStep(double rFairIn[6], double rdFairIn[6], double time);
 	
+	void updateFairlead(const double time);
+	void setKinematics(double *r_in, double *rd_in);
+	int setState( double* X, const double time);
+	
+	void setDependentStates();
 	int getStateDeriv(double* Xd);
 	
-	void getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], double M_out[6][6]);
+	void getFnet(double Fnet_out[]);
+	void getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6]);
 	
 	void doRHS();
 

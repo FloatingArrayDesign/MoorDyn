@@ -22,11 +22,18 @@
 using namespace std;
 
 class Connection;
-
 class Rod;
+class Waves;
 
 class Body
 {
+	
+	
+	// ENVIRONMENTAL STUFF	
+	EnvCond *env;  // pointer to global struct that holds environmental settings
+	Waves *waves;  // pointer to global Waves object
+	
+	
 	// unique to Body:
 	Connection* attachedC[30]; 	// pointers to connections attached to this body
 	int nAttachedC; 		// quantity of attached connections
@@ -49,15 +56,14 @@ class Body
 	
 	// input file has	Name/ID      X0   Y0   Z0   Xcg   Ycg   Zcg      M      V        IX       IY       IZ     CdA-x,y,z Ca-x,y,z
 	
-	// environmental
-	EnvCond env;  // struct to hold environmental settings
-			
 	// degrees of freedom (or states)
-	double  r6 [6]; 		// body 6dof position [x/y/z] // double* to continuous state or input state or parameter/other-state
-	double r6d [6];		// body 6dof velocity[x/y/z]  // double* to continuous state or input state or parameter/other-state
+	double r6 [6]; 		// body 6dof position [x/y/z] // double* to continuous state or input state or parameter/other-state
+	double v6 [6];		// body 6dof velocity[x/y/z]  // double* to continuous state or input state or parameter/other-state
 	
 	double t; 					// simulation time
 	double t0; 					// simulation time current integration was started at (used for BC function)
+	double r_ves[6]; 		    // fairlead position for coupled bodies [x/y/z]
+	double rd_ves[6];		    // fairlead velocity for coupled bodies [x/y/z]
 	double tlast;
 		
 	double F6net  [6];	// total force and moment vector on node
@@ -70,6 +76,12 @@ class Body
 	
 	double OrMat[9]; // orientation matrix of body (rotation matrix that gets it to its current orientation)
 			
+	double  U[3];     // wave velocities at body reference point
+	double  Ud[3];     // wave accelerations
+	
+	
+	ofstream * outfile;
+	
 	
 public:
 	
@@ -77,16 +89,18 @@ public:
 	int number;
 	int type;  // <<< N/A ??
 		
-	void setup(int number_in, double r6_in[6], double rCG_in[3], double M_in,
-	double V_in, double I_in[3], double CdA_in[3], double Ca_in[3]);
+	void setup(int number_in, int type_in, double r6_in[6], double rCG_in[3], double M_in,
+	double V_in, double I_in[3], double CdA_in[3], double Ca_in[3], shared_ptr<ofstream> outfile_pointer);
 	
 	void addConnectionToBody(Connection *theConnection, double coords[3]);
 	
 	void addRodToBody(Rod *theRod, double endCoords[6]);
 	
+	void initializeUnfreeBody(double r_in[6], double rd_in[6], double time);
+	
 	void initializeBody( double* X );
 
-	void setEnv(EnvCond env_in);
+	void setEnv(EnvCond *env_in, Waves *waves_in);
 
 	void setDependentStates();
 	
@@ -101,9 +115,16 @@ public:
 	void scaleDrag(double scaler);	
 	void setTime(double time);
 	
+	void initiateStep(double r_in[6], double rd_in[6], double time);
+	void updateFairlead( const double time);
+	
 	void setState( const double* X, const double time);
 	
 	int getStateDeriv( double* Xd);
+	
+	void doRHS();
+	
+	void Output(double );
 	
 	~Body();
 	

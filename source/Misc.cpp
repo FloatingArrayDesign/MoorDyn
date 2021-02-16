@@ -19,6 +19,305 @@
 using namespace std;
 
 
+// interpolate an array of data, x values must be increasing
+void interpArray(int ndata, int n, double *xdata, double *ydata, double *xin, double *yout)
+{
+	int id = 0; // counter for where we're at in the x and y data arrays
+	
+	for (int i=0; i<n; i++)
+	{
+		while (xin[i] > xdata[id])
+			id++;
+		
+		if (id > ndata)
+			yout[i] = ydata[ndata-1]; // quick fix: for now if we go past the data just use the last value
+		else
+			yout[i] = ydata[id-1] + ( xin[i] - xdata[id-1] )/( xdata[id] - xdata[id-1] )*( ydata[id] - ydata[id-1] );
+		
+		// should also check for things like non-ordered data! <<<<<<<<<
+	}
+	return;
+}
+void interpArray(int ndata, int n, vector<double> xdata, vector<double> ydata, vector<double> xin, vector<double> &yout)
+{
+	int id = 0; // counter for where we're at in the x and y data arrays
+	
+	for (int i=0; i<n; i++)
+	{
+		while (xin[i] > xdata[id])
+			id++;
+		
+		if (id > ndata)
+			yout[i] = ydata[ndata-1]; // quick fix: for now if we go past the data just use the last value
+		else
+			yout[i] = ydata[id-1] + ( xin[i] - xdata[id-1] )/( xdata[id] - xdata[id-1] )*( ydata[id] - ydata[id-1] );
+		
+		// should also check for things like non-ordered data! <<<<<<<<<
+	}
+	return;
+}
+
+
+
+
+
+
+
+double calculate4Dinterpolation(double**** f, int ix0, int iy0, int iz0, int it0, double fx, double fy, double fz, double ft)
+{		
+	int ix1, iy1, iz1, it1;
+	
+	// handle end case conditions
+	if (fx == 0) ix1 = ix0;
+	else         ix1 = ix0+1;
+	if (fy == 0) iy1 = iy0;
+	else         iy1 = iy0+1;
+	if (fz == 0) iz1 = iz0;
+	else         iz1 = iz0+1;
+	if (ft == 0) it1 = it0;
+	else         it1 = it0+1;
+	
+	
+	double c000 = f[ix0][iy0][iz0][it0]*(1-ft) + f[ix0][iy0][iz0][it1]*ft;
+	double c001 = f[ix0][iy0][iz1][it0]*(1-ft) + f[ix0][iy0][iz1][it1]*ft;
+	double c010 = f[ix0][iy1][iz0][it0]*(1-ft) + f[ix0][iy1][iz0][it1]*ft;
+	double c011 = f[ix0][iy1][iz1][it0]*(1-ft) + f[ix0][iy1][iz1][it1]*ft;
+	double c100 = f[ix1][iy0][iz0][it0]*(1-ft) + f[ix1][iy0][iz0][it1]*ft;
+	double c101 = f[ix1][iy0][iz1][it0]*(1-ft) + f[ix1][iy0][iz1][it1]*ft;
+	double c110 = f[ix1][iy1][iz0][it0]*(1-ft) + f[ix1][iy1][iz0][it1]*ft;
+	double c111 = f[ix1][iy1][iz1][it0]*(1-ft) + f[ix1][iy1][iz1][it1]*ft;
+	
+	double c00 = c000*(1-fx) + c100*fx; 
+	double c01 = c001*(1-fx) + c101*fx; 
+	double c10 = c010*(1-fx) + c110*fx; 
+	double c11 = c011*(1-fx) + c111*fx; 
+
+	double c0  = c00 *(1-fy) + c10 *fy;
+	double c1  = c01 *(1-fy) + c11 *fy;
+
+	double c   = c0  *(1-fz) + c1  *fz;
+	
+	return c;
+}	
+
+
+double calculate3Dinterpolation(double*** f, int ix0, int iy0, int iz0, double fx, double fy, double fz)
+{		
+	// note that "z" could also be "t" - dimension names are arbitrary
+
+	int ix1, iy1, iz1;
+	
+	if (fx == 0) ix1 = ix0;
+	else         ix1 = ix0+1;
+	if (fy == 0) iy1 = iy0;
+	else         iy1 = iy0+1;
+	if (fz == 0) iz1 = iz0;
+	else         iz1 = iz0+1;
+		
+
+	double c000 = f[ix0][iy0][iz0];
+	double c001 = f[ix0][iy0][iz1];
+	double c010 = f[ix0][iy1][iz0];
+	double c011 = f[ix0][iy1][iz1];
+	double c100 = f[ix1][iy0][iz0];
+	double c101 = f[ix1][iy0][iz1];
+	double c110 = f[ix1][iy1][iz0];
+	double c111 = f[ix1][iy1][iz1];
+	
+	double c00 = c000*(1-fx) + c100*fx; 
+	double c01 = c001*(1-fx) + c101*fx; 
+	double c10 = c010*(1-fx) + c110*fx; 
+	double c11 = c011*(1-fx) + c111*fx; 
+
+	double c0  = c00 *(1-fy) + c10 *fy;
+	double c1  = c01 *(1-fy) + c11 *fy;
+
+	double c   = c0  *(1-fz) + c1  *fz;
+	
+	return c;
+}	
+
+
+double calculate2Dinterpolation(double** f, int ix0, int iy0, double fx, double fy)
+{	
+	int ix1, iy1;
+	
+	if (fx == 0) ix1 = ix0;
+	else         ix1 = ix0+1;
+	if (fy == 0) iy1 = iy0;
+	else         iy1 = iy0+1;
+	
+	
+	double c00 = f[ix0][iy0]; 
+	double c01 = f[ix0][iy1]; 
+	double c10 = f[ix1][iy0]; 
+	double c11 = f[ix1][iy1]; 
+
+	double c0  = c00 *(1-fx) + c10 *fx;
+	double c1  = c01 *(1-fx) + c11 *fx;
+
+	double c   = c0  *(1-fy) + c1  *fy;
+	
+	return c;
+}	
+
+
+/*
+interpLayer(double frac_in, int n_in, double* xs_in, double* ys_out, int dim_in, int dim_max      )
+{
+	
+	for (int ts=0; ts<Nt-1; ts++)			// loop through precalculated wave time series time steps  (start ts at ts0 to save time)
+	{	if (tTS[ts+1] > t) 				// moving precalculated time bracked "up".  Stop once upper end of bracket is greater than current time t.
+		{
+			ts0 = ts;
+			frac = ( t - tTS[ts] )/( tTS[ts+1] - tTS[ts] );
+			break;
+		}
+	}
+	
+	for (int i=0; i<n_in; i++)  // loop through passed coordinate values, get functions values for each
+	{
+		
+	}
+}
+
+template <typename ptr>
+interpLayer( ptr ys1[], ptr ys2[], int nin, int n, double *xs, double **pxs
+{
+	// inputs:  nin    number of dimensions in (ys1/2 arrays size is 2^nin)
+	//          n      total number of dimensions
+	//          ys1  n-d array slice(s) of y data to be passed to next lower level
+	//          ys2  n-d array slice(s) of y data to be passed to next lower level  <<< eventually this should be a list of pointers to ALL data needing interpolation
+	//          *xs  x values of remaining dimensions
+	//          *pxs array of pointers to x data arrays (px, py, pz etc)
+	
+	// from x_, find i_, f_
+	
+	i1 = 
+	f  =
+	
+	if f==0,	i2=i1
+	
+	// call next layer   with n-1, x+1
+	interpLayer( ys1[i1 nin+1, xs+1, 
+	
+	// compute y_
+
+}
+	
+	
+	
+	
+	
+template <typename ptr>
+interpLayer(  int n, int *is, double *fs, 
+{
+	// inputs:  n    dimension we're at
+	//          *is  interpolation indices of dimensions
+	//          *fs  interpolation fractions of dimensions
+	//          d
+	//
+	// outputs: f
+	//          d
+	//          d
+	//          d
+	
+	
+	// from x_, find i_, f_
+	
+	// call next layer 
+	interpLayer( n1, is+1, fs+1 
+	
+	// compute y_
+
+}
+*/	
+
+
+// calculate the lower index and the fraction to use for interpolating
+int getInterpNums(double *xlist, int nx, double xin, double *fout)
+{
+	// Parameters: list of x values, number of x values, x value to be interpolated, fraction to return
+	// Returns the lower index to interpolate from.  such that  y* = y[i] + fout*(y[i+1]-y[i])
+	int i;
+	
+	if (xin <= xlist[0])            // below lowest data point
+	{	i = 0;
+		*fout = 0.0;
+	}
+	else if (xin >= xlist[nx-1])    // above higher data point
+	{	i = nx-1;
+		*fout = 0.0;
+	}
+	else                            // within the data range
+	{	for (i=0; i<nx-1; i++)
+		{	if (xlist[i+1] > xin)
+			{
+				*fout = (xin - xlist[i] )/( xlist[i+1] - xlist[i] );
+				break;
+			}
+		}		
+	}		
+	
+	return i;
+}
+void getInterpNums(double *xlist, int nx, double xin, double fout[2], int iout[2])
+{
+	// This more general/versatile version writes two indices (i, i+1) and two scalers (1-f, f), thereby handling bounds in one step
+	
+	// Parameters: list of x values, number of x values, x value to be interpolated, fractions to return, indices to return
+	// Such that  y* = y[iout[0]]*fout[0] + y[iout[1]]*fout[1]
+	
+	if (xin <= xlist[0])
+	{	iout[0] = 0;     iout[1] = 0;
+		fout[0] = 1.0;   fout[1] = 0.0;
+	}
+	else if (xin >= xlist[nx-1])
+	{	iout[0] = nx-1;  iout[1] = nx-1;
+		fout[0] = 1.0;   fout[1] = 0.0;
+	}
+	else
+	{	for (int i=0; i<nx-1; i++)
+		{	if (xlist[i+1] > xin)
+			{
+				iout[0] = i;  iout[1] = i+1;
+				
+				fout[1] = (xin - xlist[i] )/( xlist[i+1] - xlist[i] );
+				fout[0] = 1.0 - fout[1];
+				break;
+			}
+		}		
+	}		
+	
+	return;
+}
+
+
+
+
+
+
+// convenience function to calculate curvature based on adjacent segments' direction vectors and their combined length
+double GetCurvature(double length, double q1[3], double q2[3])
+{
+	// note "length" here is combined from both segments
+	
+	double q1_dot_q2 = dotProd( q1, q2 );
+	
+	if (q1_dot_q2 > 1.0)    // this is just a small numerical error, so set q1_dot_q2 to 1
+		return 0.0;          // this occurs when there's no curvature, so return zero curvature
+
+	//else if (q1_dot_q2 < 0)   // this is a bend of more than 90 degrees, too much, call an error!
+	//{	 //<<< maybe throwing an error is overkill, could be fine?? <<<<
+	//	throw string("Error: the angle between two adjacent segments is greater than 90 degrees! (this could indicate instability)");
+	//	return 0.0;
+	//}
+	else                        // normal case
+		return 4.0/length * sqrt(0.5*(1.0 - q1_dot_q2));   // this is the normal curvature calculation
+}
+
+
+// split a string into separate letter strings and integers
 int decomposeString(char outWord[10], char let1[10], 
      char num1[10], char let2[10], char num2[10], char let3[10])
 {
@@ -130,29 +429,70 @@ void getH(double r[3], double H[9])
 	return;
 }
 
-// return unit vector (u) in direction from r1 to r2
-void unitvector( vector< double > & u, vector< double > & r1, vector< double > & r2)
+// calculate unit vector (u) in direction from r1 to r2. Also returns distance between points. 
+double unitvector( vector< double > & u, vector< double > & r1, vector< double > & r2)
 {
-	double length_squared = 0.0;
-	
+	double length_squared = 0.0;	
 	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
 
-	double length = sqrt(length_squared);
-	
+	double length = sqrt(length_squared);	
 	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / length; // write to unit vector
+	
+	return length;
+}
+double unitvector( double u[3], vector< double > & r1, vector< double > & r2)
+{
+	double length_squared = 0.0;	
+	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
+
+	double length = sqrt(length_squared);	
+	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / length; // write to unit vector
+	
+	return length;
+}
+double unitvector( double u[3], double r1[3], double r2[3])
+{
+	double length_squared = 0.0;	
+	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
+
+	double length = sqrt(length_squared);	
+	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / length; // write to unit vector
+	
+	return length;
+}
+
+// scale vector to length
+void scalevector( vector< double > & u, double newlength, vector< double > & y)
+{
+	double length_squared = 0.0;	
+	for (int J=0; J<3; J++) length_squared += u[J]*u[J];				
+
+	double scaler;
+	if (length_squared > 0)
+		scaler = newlength/sqrt(length_squared);	
+	else                   // if original vector is zero, return zero
+		scaler = 0.0;
+	
+	for (int J=0; J<3; J++) y[J] = u[J] * scaler;
 	
 	return;
 }
-void directionAndLength( double r1[3], double r2[3], double u[3], double* l)
+void scalevector( double u[3], double newlength, double y[3])
 {
-	double length_squared = 0.0;
-	
-	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
+	double length_squared = 0.0;	
+	for (int J=0; J<3; J++) length_squared += u[J]*u[J];				
 
-	*l = sqrt(length_squared);
+	double scaler;
+	if (length_squared > 0)
+		scaler = newlength/sqrt(length_squared);	
+	else                   // if original vector is zero, return zero
+		scaler = 0.0;
 	
-	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / (*l); // write to unit vector
-	
+	for (int J=0; J<3; J++) 
+	{
+		double temp = u[J] * scaler;   // not sure this temp switching is necessary (was just if u and y were the same)
+		y[J] = temp;
+	}
 	return;
 }
 
@@ -287,9 +627,29 @@ double dotProd( double A[], vector<double>& B)
 	for (int i=0; i<B.size(); i++) ans += A[i]*B[i];	
 	return ans;
 }
+double dotProd( double A[3], double B[3])
+{	
+	double ans = 0.;
+	for (int i=0; i<3; i++) ans += A[i]*B[i];	
+	return ans;
+}
 
 
 void crossProd(double u[3], double v[3], double out[3])
+{
+	out[0] = u[1]*v[2] - u[2]*v[1];
+	out[1] = u[2]*v[0] - u[0]*v[2];
+	out[2] = u[0]*v[1] - u[1]*v[0];
+	return;
+}
+void crossProd(vector<double>& u, vector<double>& v, double out[3])
+{
+	out[0] = u[1]*v[2] - u[2]*v[1];
+	out[1] = u[2]*v[0] - u[0]*v[2];
+	out[2] = u[0]*v[1] - u[1]*v[0];
+	return;
+}
+void crossProd(vector<double>& u, double v[3], double out[3])
 {
 	out[0] = u[1]*v[2] - u[2]*v[1];
 	out[1] = u[2]*v[0] - u[0]*v[2];
@@ -349,6 +709,153 @@ void solveCrout(int d,double*LU,double*b,double*x){
       x[i]=(y[i]-sum); // not dividing by diagonals
    }
 }
+
+// One-function implementation of Crout LU Decomposition with 2D array inputs
+// adapted from http://www.sci.utah.edu/~wallstedt/LU.htm .
+/*
+void LUsolve(int n, double **A,double **LU, double*b, double *y, double*x)
+{
+	// Solves Ax=b for x
+	// LU contains LU matrices, y is a temporary vector
+	// all dimensions are n
+	
+   for(int k=0; k<n; ++k)
+	{
+      for(int i=k; i<n; ++i)
+		{
+         double sum=0.;
+			
+         for(int p=0; p<k; ++p)
+				sum += LU[i][p]*LU[p][k];
+			
+         LU[i][k] = A[i][k]-sum; // not dividing by diagonals
+      }
+      for(int j=k+1;j<n;++j)
+		{
+         double sum=0.;
+         for(int p=0;p<k;++p)
+				sum += LU[k][p]*LU[p][j];
+         
+			LU[k][j] = (A[k][j]-sum)/LU[k][k];
+      }
+   }
+	
+   for(int i=0; i<n; ++i)
+	{
+      double sum=0.;
+      for(int k=0; k<i; ++k)
+			sum += LU[i][k]*y[k];
+      
+		y[i] = (b[i]-sum)/LU[i][i];
+   }
+   for(int i=n-1; i>=0; --i)
+	{
+      double sum=0.;
+      for(int k=i+1; k<n; ++k)
+			sum += LU[i][k]*x[k];
+      
+		x[i] = (y[i]-sum); // not dividing by diagonals
+   }
+}
+*/
+void LUsolve3(double A[3][3], double x[3], double b[3])
+{
+	// Solves Ax=b for x, with size 3
+		
+	double LU[3][3];
+	double y[3];
+		
+   for(int k=0; k<3; ++k)
+	{
+      for(int i=k; i<3; ++i)
+		{
+         double sum=0.;
+			
+         for(int p=0; p<k; ++p)
+				sum += LU[i][p]*LU[p][k];
+			
+         LU[i][k] = A[i][k]-sum; // not dividing by diagonals
+      }
+		
+      for(int j=k+1;j<3;++j)
+		{
+         double sum=0.;
+         for(int p=0;p<k;++p)
+				sum += LU[k][p]*LU[p][j];
+         
+			LU[k][j] = (A[k][j]-sum)/LU[k][k];
+      }
+   }
+	
+   for(int i=0; i<3; ++i)
+	{
+      double sum=0.;
+      for(int k=0; k<i; ++k)
+			sum += LU[i][k]*y[k];
+      
+		y[i] = (b[i]-sum)/LU[i][i];
+   }
+	
+   for(int i=3-1; i>=0; --i)
+	{
+      double sum=0.;
+      for(int k=i+1; k<3; ++k)
+			sum += LU[i][k]*x[k];
+      
+		x[i] = (y[i]-sum); // not dividing by diagonals
+   }
+}
+void LUsolve6(double A[6][6], double x[6], double b[6])
+{
+	// Solves Ax=b for x, with size 6
+	
+	double LU[6][6];
+	double y[6];
+		
+   for(int k=0; k<6; ++k)
+	{
+      for(int i=k; i<6; ++i)
+		{
+         double sum=0.;
+			
+         for(int p=0; p<k; ++p)
+				sum += LU[i][p]*LU[p][k];
+			
+         LU[i][k] = A[i][k]-sum; // not dividing by diagonals
+      }
+		
+      for(int j=k+1;j<6;++j)
+		{
+         double sum=0.;
+         for(int p=0;p<k;++p)
+				sum += LU[k][p]*LU[p][j];
+         
+			LU[k][j] = (A[k][j]-sum)/LU[k][k];
+      }
+   }
+	
+   for(int i=0; i<6; ++i)
+	{
+      double sum=0.;
+      for(int k=0; k<i; ++k)
+			sum += LU[i][k]*y[k];
+      
+		y[i] = (b[i]-sum)/LU[i][i];
+   }
+	
+   for(int i=6-1; i>=0; --i)
+	{
+      double sum=0.;
+      for(int k=i+1; k<6; ++k)
+			sum += LU[i][k]*x[k];
+      
+		x[i] = (y[i]-sum); // not dividing by diagonals
+   }
+}
+
+
+
+
 
 
 // create rotation matrix  (row major order?)
@@ -503,20 +1010,35 @@ void rotateM6(double Min[36], double rotMat[9], double outMat[36])
 
 void rotateVector3(double inVec[3], double rotMat[9], double outVec[3])
 {
-	
-	// <<<<<<<<<<<<<<
+	for (int I=0; I<3; I++)  
+	{
+		outVec[I] = 0.0;
+		
+		for (int J=0; J<3; J++)  
+			outVec[I] += rotMat[3*I+J]*inVec[J];  // <<< check index order
+	}
 	return;
 }
+
 void rotateVector6(double inVec[6], double rotMat[9], double outVec[6])
 {
-	
-	// <<<<<<<<<<<<<<
+	for (int I=0; I<3; I++)  
+	{
+		outVec[  I] = 0.0;
+		outVec[3+I] = 0.0;
+		
+		for (int J=0; J<3; J++)  
+		{	outVec[   I] += rotMat[3*I+J]*inVec[  J];  // <<< check index order
+			outVec[3+I] += rotMat[3*I+J]*inVec[3+J];
+		}
+	}
 	return;
 }
 
 // calculate position and velocity of point based on its position relative to moving 6DOF body
 void transformKinematics(double rRelBody[3], double r_in[3], double TransMat[9], double rd_in[6], double rOut[3], double rdOut[3])
 {
+	// rd_in should be in global orientation frame
 	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be written, and 4-6 will
 	//       already be correct or can be assigned seperately from r_in and rd_in (assuming orientation frames are identical)
 	
@@ -531,6 +1053,53 @@ void transformKinematics(double rRelBody[3], double r_in[3], double TransMat[9],
 	rOut[0] = rRel[0] + r_in[0];	// x
 	rOut[1] = rRel[1] + r_in[1];	// y
 	rOut[2] = rRel[2] + r_in[2];	// z
+
+	// absolute velocities
+	rdOut[0] =                        - rd_in[5]*rRel[1] + rd_in[4]*rRel[2] + rd_in[0];		// x   
+	rdOut[1] =  rd_in[5]*rRel[0]	                        - rd_in[3]*rRel[2] + rd_in[1];		// y
+	rdOut[2] = -rd_in[4]*rRel[0] + rd_in[3]*rRel[1]	                       + rd_in[2];		// z
+		
+	return;
+}
+
+
+// calculate position and velocity of point based on its position relative to moving 6DOF body
+void transformKinematicsAtoB(double rA[3], double u[3], double L, double rd_in[6], vector< double > &rOut, vector< double > &rdOut)
+{
+	// rA is coordinate of end A, u is unit vector and L is length along it to end B (which is where outputs are calculated)
+	// rd_in should be in global orientation frame
+	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be written, and 4-6 will
+	//       already be correct or can be assigned seperately from r_in and rd_in (assuming orientation frames are identical)
+		
+	// locations (unrotated reference frame)
+	double rRel[3];
+	for (int j=0; j<3; j++)
+	{
+		rRel[j] = L*u[j];             // relative location of point B from point A
+		rOut[j] = rRel[j] + rA[j];	// absolute location of point B
+	}
+
+	// absolute velocities
+	rdOut[0] =                        - rd_in[5]*rRel[1] + rd_in[4]*rRel[2] + rd_in[0];		// x   
+	rdOut[1] =  rd_in[5]*rRel[0]	                        - rd_in[3]*rRel[2] + rd_in[1];		// y
+	rdOut[2] = -rd_in[4]*rRel[0] + rd_in[3]*rRel[1]	                       + rd_in[2];		// z
+		
+	return;
+}
+void transformKinematicsAtoB(double rA[3], double u[3], double L, double rd_in[6], double rOut[3], double rdOut[3])
+{
+	// rA is coordinate of end A, u is unit vector and L is length along it to end B (which is where outputs are calculated)
+	// rd_in should be in global orientation frame
+	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be written, and 4-6 will
+	//       already be correct or can be assigned seperately from r_in and rd_in (assuming orientation frames are identical)
+		
+	// locations (unrotated reference frame)
+	double rRel[3];
+	for (int j=0; j<3; j++)
+	{
+		rRel[j] = L*u[j];             // relative location of point B from point A
+		rOut[j] = rRel[j] + rA[j];	// absolute location of point B
+	}
 
 	// absolute velocities
 	rdOut[0] =                        - rd_in[5]*rRel[1] + rd_in[4]*rRel[2] + rd_in[0];		// x   
@@ -728,9 +1297,9 @@ void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6])
 	}
 	
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T [H] + [H]^T [J] + [I]
-	multiplyM3(H, Min, tempM);
-	transposeM3(H,Htrans);
-	multiplyM3(tempM, Htrans, tempM2);
+	multiplyM3(H, Min, tempM);    // could just do a transpose of old tempM here intead.. <<<
+	transposeM3(H,Htrans);           // is this also bypassable? <<<
+	multiplyM3(tempM, Htrans, tempM2);    
 	for (int I=0; I<3; I++) 
 		for (int J=0; J<3; J++) 
 			Mout[3+I][3+J] = tempM2[I][J];
@@ -782,10 +1351,11 @@ void translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6])
 	multiplyM3AtransB(H, mJ, tempM4);   //  [H]^T[J]	
 	
 	for (int I=0; I<3; I++) 
-		for (int J=0; J<3; J++) 
-			// [I']        = [H][m][H]^T  + [J]^T[H]    + [H]^T[J]    + [I] 
+	{	for (int J=0; J<3; J++) 
+		{	// [I']        = [H][m][H]^T  + [J]^T[H]    + [H]^T[J]    + [I] 
 			Mout[3+I][3+J] = tempM2[I][J] +tempM3[I][J] +tempM4[I][J] + Min[3+I][3+J];
-		
+		}
+	}
 	return;
 		
 }
@@ -855,9 +1425,9 @@ vector<string> split(const string &s, char delim)  // TODO: remove delim arg, it
 	vector<string> elems;  // the vector of words to return
     
 	char str[200];  // this gives some memory for the char array
-	strncpy(str, s.c_str(), 200);  // copy input string to str
+	strncpy(str, s.c_str(), 200);  // copy input string to str (to avoid strtok modifying the input string)
 	char * pch;
-	pch = strtok (str," \t");  // give strtok the c string of s
+	pch = strtok (str, " \t");  // give strtok the c string of s
 	while (pch != NULL)
 	{
 		elems.push_back(pch);
@@ -865,6 +1435,23 @@ vector<string> split(const string &s, char delim)  // TODO: remove delim arg, it
 	}
 	return elems;
 }
+vector<string> splitComma(const string &s)  // this one splits at commas
+{
+	vector<string> elems;  // the vector of words to return
+    
+	char str[200];  // this gives some memory for the char array
+	strncpy(str, s.c_str(), 200);  // copy input string to str (to avoid strtok modifying the input string)
+	char * pch;
+	pch = strtok (str, ",");  // give strtok the c string of s
+	while (pch != NULL)
+	{
+		elems.push_back(pch);
+		pch = strtok (NULL, ",");  // split by spaces or tabs
+	}
+	return elems;
+}
+
+
 
 
 
@@ -945,20 +1532,75 @@ void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, 
 }
 
 
-// 2D double array creation and destruction functions
-double** make2Darray(int arraySizeX, int arraySizeY) 
+// 2D,3D,4D double array creation and destruction functions (these could easily be nested) <<< should  inittialize all with zeros!
+double** make2Darray(int n1, int n2) 
 {
 	double** theArray;  
-	theArray = (double**) malloc(arraySizeX*sizeof(double*));  
-	for (int i = 0; i < arraySizeX; i++)  
-		theArray[i] = (double*) malloc(arraySizeY*sizeof(double));  
+	theArray = (double**) malloc(n1*sizeof(double*));  
+	for (int i1 = 0; i1 < n1; i1++)  
+		theArray[i1] = (double*) malloc(n2*sizeof(double));  
 	return theArray;  
-}   
-
-void free2Darray(double** theArray, int arraySizeX)
+}
+double*** make3Darray(int n1, int n2, int n3) 
 {
-	for (int i = 0; i < arraySizeX; i++)
-		free(theArray[i]);
+	double*** theArray;  
+	theArray = (double***) malloc(n1*sizeof(double**));  
+	for (int i1 = 0; i1 < n1; i1++)  
+	{	theArray[i1] = (double**) malloc(n2*sizeof(double*));
+		for (int i2 = 0; i2 < n2; i2++)  
+			theArray[i1][i2] = (double*) malloc(n3*sizeof(double));	
+	}	
+	return theArray;  
+}
+double**** make4Darray(int n1, int n2, int n3, int n4) 
+{
+	double**** theArray;  
+	theArray = (double****) malloc(n1*sizeof(double***));  
+	for (int i1 = 0; i1 < n1; i1++)  
+	{	theArray[i1] = (double***) malloc(n2*sizeof(double**));
+		for (int i2 = 0; i2 < n2; i2++)  
+		{	theArray[i1][i2] = (double**) malloc(n3*sizeof(double*));	
+			for (int i3 = 0; i3 < n3; i3++)  
+				theArray[i1][i2][i3] = (double*) malloc(n4*sizeof(double));	
+		}
+	}
+	return theArray;  
+}  
+double* make1Darray(int n1)  // because I'm forgetful and this is easier than remembering malloc 
+{
+	double* theArray = (double*) malloc(n1*sizeof(double));  
+	return theArray;  
+} 
+
+void free2Darray(double** theArray, int n1)
+{
+	for (int i1 = 0; i1 < n1; i1++)
+		free(theArray[i1]);
+	free(theArray);
+}
+void free3Darray(double*** theArray, int n1, int n2)
+{
+	for (int i1 = 0; i1 < n1; i1++)		
+	{	for (int i2 = 0; i2 < n2; i2++)
+		{
+			free(theArray[i1][i2]);
+		}
+		free(theArray[i1]);
+	}
+	free(theArray);
+}
+void free4Darray(double**** theArray, int n1, int n2, int n3)
+{
+	for (int i1 = 0; i1 < n1; i1++)		
+	{	for (int i2 = 0; i2 < n2; i2++)
+		{	for (int i3 = 0; i3 < n3; i3++)
+			{	
+				free(theArray[i1][i2][i3]);
+			}
+			free(theArray[i1][i2]);
+		}
+		free(theArray[i1]);
+	}
 	free(theArray);
 }
 

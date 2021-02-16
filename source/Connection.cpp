@@ -16,6 +16,7 @@
 
 #include "Connection.h"
 #include "Line.h"
+#include "Waves.h"
 
 // connection member functions
 
@@ -54,24 +55,61 @@ void Connection::setup(int number_in, int type_in, double r0_in[3], double M_in,
 	//S.resize(3, vector< double >(3, 0.0));  // inverse mass matrices (3x3) for each node
 	//M.resize(3, vector< double >(3, 0.0)); // node mass + added mass matrix
 	//M_i.resize(3, vector< double >(3, 0.0));
-};
+	
+	if (wordy >0)  cout << "Set up Connection " << number << ", type " << type << endl;
+}
 
 
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->N" << number << " ";
+	if (wordy>0) cout << "L" << theLine->number << "->P" << number << " ";
 	
 	
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
 		Attached[nAttached] = theLine;
-		Top[nAttached] = TopOfLine;
+		Top[nAttached] = TopOfLine;   // attached to line ... 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
 		nAttached += 1;
 	}
 };
 
 
+
+// this function handles removing a line from a connection node
+void Connection::removeLineFromConnect(int lineID, int *TopOfLine, double rEnd[], double rdEnd[])
+{
+	for (int l=0; l<nAttached; l++)    // look through attached lines
+	{
+		if (Attached[l]->number == lineID)   // if this is the line's entry in the attachment list
+		{
+			*TopOfLine = Top[l];                // record which end of the line was attached
+			
+			for (int m=l; m<nAttached-1; m++)
+			{	
+				Attached[m] = Attached[m+1];  // move subsequent line links forward one spot in the list to eliminate this line link
+				Top[      m] =       Top[m+1]; 
+			}
+			nAttached -= 1;                      // reduce attached line counter by 1
+		
+			// also pass back the kinematics at the end
+			for (int J=0; J<3; J++)
+			{
+				rEnd[ J] =  r[J];
+				rdEnd[J] = rd[J];
+			}
+			
+			cout << "Detached line " << lineID << " from Connection " << number << endl;
+			
+			break;
+		}
+		if (l==nAttached-1)   // detect if line not found
+			cout << "Error: failed to find line to remove during removeLineFromConnect call to connection " << number << ". Line " << lineID << endl;
+	}
+};
+
+
+/*
 // set fairlead ICs based on platform position IC
 void Connection::initializeFairlead( double pX[], double TransMat[] )
 {
@@ -97,11 +135,15 @@ void Connection::initializeFairlead( double pX[], double TransMat[] )
 	
 	return;
 };
+*/
 
+/*
 // set fairlead ICs based on fairlead-centric coupling (no platform stuff)
-void Connection::initializeFairlead2( double pX[], double vX[] )
+void Connection::initializeCpld( double pX[], double vX[] )
 {
-	if (type==1)  // error check
+	// <<<<<<< all of this except r_ves and rd_ves setting can be done bycall to setKinematics <<<<
+	
+	if (type==-1)  // error check <<<<<<<<<
 	{	
 		for (int I=0; I<3; I++)
 		{
@@ -114,7 +156,7 @@ void Connection::initializeFairlead2( double pX[], double vX[] )
 			rd_ves[J] = rd[J];
 		}
 	}
-	else  cout << "   Error: wrong connection type given to initializeFairlead2().  Something's not right." << endl;
+	else  cout << "   Error: wrong connection type given to initializeCpld().  Something's not right." << endl;
 	// TODO: should handle.
 	
 	// pass kinematics to any attached lines
@@ -122,28 +164,6 @@ void Connection::initializeFairlead2( double pX[], double vX[] )
 
 	return;
 };
-
-
-
-void Connection::initializeConnect( double* X )
-{
-	if (type==2)  // error check
-	{	
-		// assign initial node kinematics to state vector
-		for (int I=0; I<3; I++)  {
-			X[3 + I] = r[I];
-			X[    I] = rd[I];
-		}
-	}
-	else  cout << "   Error: wrong connection type given to initializeConnect().  Something's not right." << endl;
-	// TODO: should handle.
-
-	// pass kinematics to any attached lines so they have initial positions at this initialization stage
-	for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
-	
-	return;
-};
-
 
 void Connection::initializeAnchor()
 {
@@ -155,6 +175,53 @@ void Connection::initializeAnchor()
 	}
 	else  cout << "   Error: wrong connection type given to initializeConnect().  Something's not right." << endl;
 	// TODO: should handle.
+
+	return;
+};
+*/
+
+void Connection::initializeConnect( double* X )
+{
+	if (type==0)  // error check
+	{	
+		// pass kinematics to any attached lines so they have initial positions at this initialization stage
+		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
+	
+	
+		// assign initial node kinematics to state vector
+		for (int I=0; I<3; I++)  {
+			X[3 + I] = r[I];
+			X[    I] = rd[I];
+		}
+		
+		
+		if (-env->WtrDpth > r[2]) {
+			cout << "   Error: water depth is shallower than Point " << number << "." << endl;
+			return;
+		}
+		
+		// set water kinematics flag based on global wave and current settings (for now)
+		if((env->WaveKin==2) || (env->WaveKin==3) || (env->WaveKin==6) || (env->Current==1) || (env->Current==2))
+			WaterKin = 2;   // water kinematics to be considered through precalculated global grid stored in Waves object
+		else if((env->WaveKin==4) || (env->WaveKin==5) || (env->Current==3) || (env->Current==4))
+			WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
+		else
+		{	
+			WaterKin = 0;   // no water kinematics to be considered (or to be set externally on each node)
+		
+			// in this case make sure kinematics for each node start at zeroed
+			for (int J=0; J<3; J++)		
+			{	U[ J] = 0.0;
+				Ud[J] = 0.0;
+			}
+		}
+		
+		
+		
+		if (wordy>0) cout << "Initialized Connection " << number << endl;
+	}
+	else  cout << "   Error: wrong connection type given to initializeFree().  Something's not right." << endl;
+		// TODO: should handle.
 
 	return;
 };
@@ -176,6 +243,7 @@ void Connection::getFnet(double Fnet_out[])
 {
 	for (int I=0; I<3; I++) 	Fnet_out[I] = Fnet[I];
 };
+
 
 // function to return mass matrix of connection
 void Connection::getM(double M_out[3][3])
@@ -207,9 +275,10 @@ double Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 
-void Connection::setEnv(EnvCond env_in)
+void Connection::setEnv(EnvCond *env_in, Waves *waves_in)
 {
-	env = env_in; // needed only for buoyancy calcs on connections that have a volumetric displacement
+	env = env_in;      // set pointer to environment settings object
+	waves = waves_in;  // set pointer to Waves  object
 }
 
 
@@ -256,7 +325,7 @@ void Connection::sumNetForceAndMass()
 	// add constant quantities for connection if applicable from input file
 	Fnet[0] += conFX;
 	Fnet[1] += conFY;
-	Fnet[2] += conFZ + conV*env.rho_w*env.g - conM*env.g; 
+	Fnet[2] += conFZ + conV*env->rho_w*env->g - conM*env->g; 
 	for (int I=0; I<3; I++) 	M[I][I] += conM;
 
 }
@@ -277,14 +346,86 @@ void Connection::setTime(double time)
 	return;
 }
 
+
+// called at the beginning of each coupling step to update the boundary conditions (fairlead kinematics) for the proceeding line time steps
+void Connection::initiateStep(double rFairIn[3], double rdFairIn[3], double time)
+{	
+	t0 = time; // set start time for BC functions
+	
+	if (type==-1)  {  // if vessel type 
+		// update values to fairlead position and velocity functions (fn of time)
+		for (int J=0; J<3; J++)  {
+			r_ves[J] = rFairIn[J];
+			rd_ves[J] = rdFairIn[J];
+		}
+	}
+	
+	// do I want to get precalculated values here at each FAST time step or at each line time step?
+};
+
+
+// sets Connection states and ends of attached lines ONLY if this Connection is driven externally (otherwise shouldn't be called)
+void Connection::updateFairlead(const double time)
+{	
+	t = time;
+
+	if (type==-1) // vessel (moves with platform)		CHANGED
+	{						
+		// set fairlead position and velocity based on BCs (linear model for now)
+		for (int J=0; J<3; J++)  
+		{
+			r[J] = r_ves[J] + rd_ves[J]*(time-t0);
+			rd[J] = rd_ves[J];
+		}	
+		
+		// pass latest kinematics to any attached lines
+		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
+	}
+//	else if (type==1) // anchor type (not necessary?) <<<<<<<<<<<<<< CHANGED <<<<< this could be an anchor or a connection attached to a body or platform
+//	{	
+//		// kinematics should have already been set by the parent body
+//	
+//		// pass latest kinematics to any attached lines
+//		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
+//	}
+	else
+		cout << "Error: updateFairlead called for wrong Connection type." << endl;
+	
+	return;
+}
+
+
+// sets Connection states and ends of attached lines ONLY if this Connection is attached to a body (otherwise shouldn't be called)
+void Connection::setKinematics(double *r_in, double *rd_in)
+{	
+	if (type==1) // attached to something (body or fixed) CHANGED
+	{						
+		// set position and velocity
+		for (int J=0; J<3; J++)  {
+			r[ J] = r_in[J];
+			rd[J] = rd_in[J];
+		}	
+		
+		// pass latest kinematics to any attached lines
+		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
+	}
+	else
+	{
+		stringstream s; 
+		s << "Error: setKinematics called for wrong Connection type. Connection " << number << " type " << type;
+		throw string(s.str());
+	}	
+	return;
+}
+
 	
 // pass the latest states to the connection ()
 int Connection::setState( const double* X, const double time)
 {
 	t = time;
 	
-	// the kinematics should only be set with this function of it's an independent or body-attached connection
-	if ((type==2) || (type==3)) // "connect" type
+	// the kinematics should only be set with this function of it's an independent/free connection
+	if (type==0) // "connect" type
 	{
 		// from state values, get r and rdot values 
 		for (int J=0; J<3; J++) 	
@@ -299,7 +440,7 @@ int Connection::setState( const double* X, const double time)
 		return 0;
 	}
 	else
-	{	cout << "Error: setState called for wrong type of Connection" << endl;
+	{	cout << "Error: setState called for wrong type of Connection. Connection " << number << " type " << type << endl;
 		return -1; 
 	}
 }
@@ -309,7 +450,7 @@ int Connection::setState( const double* X, const double time)
 int Connection::getStateDeriv(double* Xd)
 {	
 	// the RHS is only relevant (there are only states to worry about) if it is a Connect type of Connection
-	if (type==2) // "connect" type
+	if (type==0) // free (previously "connect") type
 	{
 		if (t==0)   // with current IC gen approach, we skip the first call to the line objects, because they're set AFTER the call to the connects
 		{		// above is no longer true!!! <<<
@@ -326,17 +467,22 @@ int Connection::getStateDeriv(double* Xd)
 				
 						
 			// solve for accelerations in [M]{a}={f} using LU decomposition
-			double M_tot[9];                     // serialize total mass matrix for easy processing
-			for (int I=0; I<3; I++) for (int J=0; J<3; J++) M_tot[3*I+J]=M[I][J];
-			double LU[9];                        // serialized matrix that will hold LU matrices combined
-			Crout(3, M_tot, LU);                  // perform LU decomposition on mass matrix
+	//		double M_tot[9];                     // serialize total mass matrix for easy processing
+	//		for (int I=0; I<3; I++) for (int J=0; J<3; J++) M_tot[3*I+J]=M[I][J];
+	//		double LU[9];                        // serialized matrix that will hold LU matrices combined
+	//		Crout(3, M_tot, LU);                  // perform LU decomposition on mass matrix
 			double acc[3];                        // acceleration vector to solve for
-			solveCrout(3, LU, Fnet, acc);     // solve for acceleration vector
+	//		solveCrout(3, LU, Fnet, acc);     // solve for acceleration vector
 				
+				
+			double LU[3][3];
+			double ytemp[3];
+			LUsolve(3, M, LU, Fnet, ytemp, acc);
+			
 			// invert node mass matrix
 			//inverse3by3(S, M);
 			
-			// RHS constant - (premultiplying force vector by inverse of mass matrix  ... i.e. rhs = S*Forces
+			// fill in state derivatives
 			for (int I=0; I<3; I++) 
 			{
 				//double RHSI = 0.0; // temporary accumulator 
@@ -361,7 +507,7 @@ int Connection::getStateDeriv(double* Xd)
 
 
 // calculate the force and mass contributions of the connect on the parent body (only for type 3 connects?)
-int Connection::getNetForceAndMassContribution(double rBody[3], double Fnet_out[6], double M_out[6][6])
+int Connection::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6])
 {
 	doRHS();
 		
@@ -374,7 +520,11 @@ int Connection::getNetForceAndMassContribution(double rBody[3], double Fnet_out[
 	
 			
 	double rRel[3];    // position of connection relative to the body reference point (global orientation frame)
-	for (int J=0; J<3; J++) rRel[J] = r[J] - rBody[J]; // vector from body reference point to node
+	
+	if (rBody == NULL)
+		for (int J=0; J<3; J++) rRel[J] = r[J];
+	else
+		for (int J=0; J<3; J++) rRel[J] = r[J] - rBody[J]; // vector from body reference point to node
 			
 	// convert segment net force into 6dof force about body ref point
 	translateForce3to6DOF(rRel, Fnet, Fnet_out); 		
@@ -388,30 +538,37 @@ int Connection::getNetForceAndMassContribution(double rBody[3], double Fnet_out[
 // this function calculates the forces and mass on the connection, including from attached lines
 int Connection::doRHS()
 {
+		   
+	// start with the Connection's own forces including buoyancy and weight, and its own mass
+	Fnet[0] = conFX;
+	Fnet[1] = conFY;
+	Fnet[2] = conFZ + conV*env->rho_w*env->g - conM*env->g; 
 	
-	// loop through each connected line, summing to get the final result
+	// clear before re-summing
+	for (int I=0; I<3; I++) 	
+		for (int j=0; j<3; j++)
+			M[I][j] = 0.0;	
+		
+	// start with physical mass
+   for (int I=0; I<3; I++) 	
+      M[I][I] = conM;
+   
 	
-	// clear before re-summing	
-	for (int I=0; I<3; I++) { 
-		Fnet[I] = 0;		
-		for (int J=0; J<3; J++)
-			M[I][J] = 0.0; 		
-	}
-	
-	// loop through attached lines
+	// loop through attached lines, adding force and mass contributions
 	for (int l=0; l < nAttached; l++)
 	{
-		double Fnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
+		double Fnet_i[3] = {0.0}; double Moment_dummy[3]; double M_i[3][3] = {{0.0}};
 		
 		// get quantities
-		if (Top[l] == 0) 		// if attached to bottom/anchor of a line...
-		{	(Attached[l])->getAnchStuff(Fnet_i, M_i);
-			//cout << "Att. to bot of line " << (Attached[l])->number << " F:" << Fnet_i[0] << " " << Fnet_i[1] << " " << Fnet_i[2] << endl;
-		}
-		else 				// attached to top/fairlead
-		{	(Attached[l])->getFairStuff(Fnet_i, M_i);
-			//cout << "Att. to top of line " << (Attached[l])->number << " F:" << Fnet_i[0] << " " << Fnet_i[1] << " " << Fnet_i[2] << endl;
-		}
+      Attached[l]->getEndStuff(Fnet_i, Moment_dummy, M_i, Top[l]);
+   //	if (Top[l] == 0) 		// if attached to bottom/anchor of a line...
+	//	{	(Attached[l])->getAnchStuff(Fnet_i, M_i);
+	//		//cout << "Att. to bot of line " << (Attached[l])->number << " F:" << Fnet_i[0] << " " << Fnet_i[1] << " " << Fnet_i[2] << endl;
+	//	}
+	//	else 				// attached to top/fairlead
+	//	{	(Attached[l])->getFairStuff(Fnet_i, M_i);
+	//		//cout << "Att. to top of line " << (Attached[l])->number << " F:" << Fnet_i[0] << " " << Fnet_i[1] << " " << Fnet_i[2] << endl;
+	//	}
 		
 		// Process outline for line failure (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if failure time has elapsed for line
@@ -428,60 +585,67 @@ int Connection::doRHS()
 				M[I][J] += M_i[I][J];					
 		}
 	}
-		
-	// add constant quantities for connection if applicable from input file
-	Fnet[0] += conFX;
-	Fnet[1] += conFY;
-	Fnet[2] += conFZ + conV*env.rho_w*env.g - conM*env.g; 
-	for (int I=0; I<3; I++) 	M[I][I] += conM;
 			
-	// add dynamic quantities for connection as specified in input file (feature added 2015/01/15)
-	Fnet[0] -= 0.5*env.rho_w*rd[0]*abs(rd[0])*conCdA;
-	Fnet[1] -= 0.5*env.rho_w*rd[1]*abs(rd[1])*conCdA;
-	Fnet[2] -= 0.5*env.rho_w*rd[2]*abs(rd[2])*conCdA;
-	for (int I=0; I<3; I++) 	M[I][I] += conV*env.rho_w*conCa;
+	
+	// --------------------------------- apply wave kinematics ------------------------------------
+	
+	// env->waves->getU(r, t, U); // call generic function to get water velocities  <<<<<<<<<<<<<<<< all needs updating
+	
+	for (int J=0; J<3; J++)		
+		Ud[J] = 0.0;                 // set water accelerations as zero for now
+	
+	
+	if (WaterKin == 1) // wave kinematics time series set internally for each node
+	{
+		// =========== obtain (precalculated) wave kinematics at current time instant ============
+		cout << "unsupported connection kinematics option " << endl;
+		// TBD
+	}
+	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
+	{	
+		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, &zeta); // call generic function to get water velocities
+		
+		//F = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
+	
+	}
+	else if (WaterKin != 0) // Hopefully WaterKin is set to zero, meaning no waves or set externally, otherwise it's an error
+		cout << "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
+
+	
+	
+	// --------------------------------- hydrodynamic loads ----------------------------------		
+			
+	// viscous drag calculation
+	double vi[3]; // relative water velocity
+	
+	for (int J=0; J<3; J++) 
+	{
+		vi[J] = U[J] - rd[J]; // relative flow velocity over node
+	
+		Fnet[J] += 0.5*env->rho_w*vi[J]*abs(vi[J])*conCdA;
+	}
+	
+	
+	// TODO <<<<<<<<< add Ud to inertia force calcuation!!
+	
+	
+	//if (abs(r[0]) > 40)
+	//{
+	//	cout <<"Connection going crazy at t=" << t << endl;
+	//	cout << r << endl;
+	//	cout << Fnet << endl;
+	//	
+	//	double r2 = r[0]+1;
+	//	cout << r2 << endl;
+	//}
+	
+	
+	// added mass calculation
+	for (int I=0; I<3; I++) 	M[I][I] += conV*env->rho_w*conCa;
 		
 	return 0;
 }
 
-
-// called at the beginning of each coupling step to update the boundary conditions (fairlead kinematics) for the proceeding line time steps
-void Connection::initiateStep(double rFairIn[3], double rdFairIn[3], double time)
-{	
-	t0 = time; // set start time for BC functions
-	
-	if (type==1)  {  // if vessel type 
-		// update values to fairlead position and velocity functions (fn of time)
-		for (int J=0; J<3; J++)  {
-			r_ves[J] = rFairIn[J];
-			rd_ves[J] = rdFairIn[J];
-		}
-	}
-	
-	// do I want to get precalculated values here at each FAST time step or at each line time step?
-};
-
-
-void Connection::updateFairlead( const double time)
-{	
-	t = time;
-
-	if (type==1) // vessel (moves with platform)		
-	{						
-		// set fairlead position and velocity based on BCs (linear model for now)
-		for (int J=0; J<3; J++)  {
-			r[J] = r_ves[J] + rd_ves[J]*(time-t0);
-			rd[J] = rd_ves[J];
-		}	
-		
-		// pass latest kinematics to any attached lines
-		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
-	}
-	else
-		cout << "Error: wrong type sent to updateFairlead." << endl;
-	
-	return;
-}
 	
 Connection::~Connection()
 {

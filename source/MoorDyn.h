@@ -40,17 +40,18 @@ extern "C"
 
 
 
-int DECLDIR LinesInit(double X[], double XD[]);     // initialization function for platform-centric coupling
-int DECLDIR FairleadsInit(double X[], double XD[]);   // initialization function for fairlead-based coupling
-int MoorDynInit(double X[], double XD[], int FairleadCoupling); // called by one of the above
+//int DECLDIR LinesInit(double X[], double XD[]);     // initialization function for platform-centric coupling
+//int DECLDIR FairleadsInit(double X[], double XD[]);   // initialization function for fairlead-based coupling
+//int DECLDIR MoorDynInit(double x[], double xd[]); // called by one of the above
+int DECLDIR MoorDynInit(double x[], double xd[], const char *infilename); // called by one of the above
 
-int DECLDIR LinesCalc(double X[], double XD[], double Flines[], double* , double* );
+int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* , double* );
 
-int DECLDIR FairleadsCalc2(double rFairIn[], double rdFairIn[], double fFairIn[], double* t_in, double *dt_in); // easier to call version
-int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in);
+//int DECLDIR FairleadsCalc2(double rFairIn[], double rdFairIn[], double fFairIn[], double* t_in, double *dt_in); // easier to call version
+//int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in);
 
 
-int DECLDIR LinesClose(void);
+int DECLDIR MoorDynClose(void);
 
 double DECLDIR GetFairTen(int);
 
