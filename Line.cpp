@@ -99,7 +99,7 @@ void Line::setup(int number_in, LineProps props, double UnstrLen_in, int NumNode
 	
 	for (int i=0; i<N; i++)	
 	{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
-		V[i] = l[i]*0.25*pi*d;
+		V[i] = l[i]*0.25*pi*d*d;
 	}
 	
 	// moved output file creation to Line::Initialize

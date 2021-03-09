@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 1.01.02.  Feb 14, 2021.
+ // This is version 1.01.03.  March 9, 2021.
  
 #include "Misc.h"
 #include "MoorDyn.h"
@@ -269,7 +269,7 @@ int DECLDIR LinesInit(double X[], double XD[])
 #endif	
 	
 	// ---------------------------- MoorDyn title message ----------------------------
-	cout << "\n Running MoorDyn (v1.01.02C, 2021-02-14)\n   Copyright (c) Matt Hall, licensed under GPL v3.\n";
+	cout << "\n Running MoorDyn (v1.01.03C, 2021-03-09)\n   Copyright (c) Matt Hall and NREL, licensed under GPL v3.\n";
 
 	//dt = *dTime; // store time step from FAST	
 	
@@ -1399,7 +1399,7 @@ int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])
 		// output LINE fairlead (top end) tensions
 	if ((LineNum > 0) && (LineNum <= nLines))
 	{
-		int worked = LineList[LineNum].getNodePos(NodeNum, pos);	// call line member function to fill in coordinates of the node of interest 
+		int worked = LineList[LineNum-1].getNodePos(NodeNum, pos);	// call line member function to fill in coordinates of the node of interest 
 		if (worked >= 0)
 			return 0;  // success
 	}
