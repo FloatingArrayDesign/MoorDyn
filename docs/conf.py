@@ -55,7 +55,7 @@ master_doc = 'index'
 # ones.
 #extensions = ['recommonmark']
 #extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
-extensions = [ "breathe", 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = [ "breathe", 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.mathjax']
 
 napoleon_include_init_with_doc = True
 

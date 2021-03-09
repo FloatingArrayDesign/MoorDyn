@@ -31,6 +31,7 @@ In the explanations that follow, the word cable is used to refer to a Line objec
 
 Points
 ^^^^^^
+.. _points:
 
 The ends of each mooring line are defined by Connection objects, which can be considered a special type of node.  
 Using the same terminology as MAP [2], there are three Connection node types:
@@ -38,6 +39,7 @@ Using the same terminology as MAP [2], there are three Connection node types:
 - 1: Fixed nodes have a certain location and never move.  They can be used as anchor points. OR attached to a platform for platform-centric coupling
 - -1: Vessel nodes can move under the control of an outside program.  They can be used as fairlead connections.
 - 0: Connect nodes are not fixed in space but rather are moved according to the forces acting on them.  
+
 They are what can be used to connect two or more mooring lines together.  The forces they experience can include the forces from the attached 
 mooring lines (which Fixed and Vessel node types also experience) but also constant external forces, buoyancy forces, inertial and 
 gravitational forces, and hydrodynamic drag and added mass forces.  
