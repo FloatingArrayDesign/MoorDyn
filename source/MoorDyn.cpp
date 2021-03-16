@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 2.a0 (version 2, alpha 0).  Mar. 8, 2018.
+ // This is version 2.a5, 2021-03-16
  
 #include "Misc.h"
 #include "Waves.h"
@@ -226,7 +226,8 @@ void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
 			BodyList[CpldBodyIs[l]]->doRHS(); 	
 		
 		// call ground body to update all the fixed things
-		GroundBody->doRHS(); 
+		//GroundBody->doRHS(); 
+		GroundBody->setDependentStates();  // (not likely needed) <<<
 		
 	//--}
 	//--catch(string e) 
@@ -436,6 +437,7 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 		}
 		else 
 		{	cout << "Error: unable to open " << iname.str() << endl; 
+			cout << "                    - " << basepath << " - "<< entry << " - "<< iname.str() << endl; 
 			return -1;  // <<<<<<<<<<<< need to make this a failure!!
 		}
 		
@@ -567,7 +569,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 //--	{
 		
 		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a4, 2021-02-15)" << endl;
+		cout << "\n Running MoorDyn (v2.a5, 2021-03-16)" << endl;
 		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
 		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
 		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
@@ -660,8 +662,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		cout << "Based on the provided infilename of " << infilename << endl;
 		cout << "The filename is " << filename << " or " << sfilename << "  " << lastSlash << " " << lastDot << endl;
 		
-		string basename = sfilename.substr(lastSlash+1, lastDot-lastSlash-1);
-		string basepath = sfilename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
+		basename = sfilename.substr(lastSlash+1, lastDot-lastSlash-1);
+		basepath = sfilename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
 
 		
 		cout << "The basename is " << basename << endl;
@@ -2564,6 +2566,19 @@ int DECLDIR MoorDynClose(void)
 	// delete created mooring system objects
 
 	delete waves;
+
+
+	for (int l = 0; l<nLineTypes; l++)
+		delete LinePropList[l];
+	delete[]   LinePropList;
+	
+	for (int l = 0; l<nRodTypes; l++)
+		delete RodPropList[l];
+	delete[]   RodPropList;
+	
+	for (int l = 0; l<nFails; l++)
+		delete FailList[l];
+	delete[]   FailList;
 
 	delete GroundBody;
 
