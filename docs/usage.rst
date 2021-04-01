@@ -354,18 +354,101 @@ needs to end with another header-style line (as shown below) for the program to 
  ------------------------- need this line -------------------------------------
 
 
+
+
+
+MoorDyn with FAST.Farm
+----------------------
+
+In FAST.Farm, a new ability to use MoorDyn at the array level to simulate shared mooring systems has been develop.
+Until the main branch of OpenFAST, the FAST.Farm capability, and the MoorDyn v2 capability are merged, 
+the shared moorings capability in FAST.Farm uses the MoorDyn-F v1 input file format, with a 
+small adjustment to reference attachments to multiple turbines.
+
+https://github.com/mattEhall/openfast/tree/f/fast-farm
+
+General Organization
+^^^^^^^^^^^^^^^^^^^^
+
+The regular ability for each OpenFAST instance to have its own MoorDyn simulation is unchanged in FAST.Farm. This 
+ability can be used for any non-shared mooring lines in all cases. To enable simulation of shared mooring lines, 
+which are coupled with multiple turbines, an additional farm-level MoorDyn instance has been added. This MoorDyn
+instance is not associated with any turbine but instead is called at a higher level by FAST.Farm. Attachments
+to different turbines within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the type
+for any connections that are attached to a turbine, where "N" is the specific turbine number as listed in the 
+FAST.Farm input file.
+
+
+MoorDyn Input File
+^^^^^^^^^^^^^^^^^^
+
+The following input file excerpt shows how connections can be specified as attached to specific turbines (turbines 
+3 and 4 in this example). When a connection has "TurbineN" as its type, it acts similarly to a "Vessel" type, where
+the X/Y/Z inputs specify the relative location of the fairlead on the platform. In the farm-level MoorDyn input 
+file, "Vessel" connection types cannot be used because it is ambiguous which turbine they attach to.
+
+.. code-block:: none
+ :emphasize-lines: 5,6,12
+ 
+ ----------------------- CONNECTION PROPERTIES ----------------------------------------------
+ 3     NConnections - the number of connections
+ Node      Type        X       Y         Z        M        V        FX       FY      FZ     CdA   CA
+ (-)       (-)        (m)     (m)       (m)      (kg)     (m^3)    (kN)     (kN)    (kN)   (m^2)  (-)
+ 1         Turbine3   10.0     0      -10.00      0        0        0        0       0       0     0
+ 3         Turbine4  -10.0     0      -10.00      0        0        0        0       0       0     0
+ 2         Fixed     267.0    80      -70.00      0        0        0        0       0       0     0
+ -------------------------- LINE PROPERTIES -------------------------------------------------
+ 2     NLines - the number of lines
+ Line     LineType  UnstrLen   NumSegs    NodeA     NodeB  Flags/Outputs
+ (-)      (-)        (m)        (-)       (-)       (-)      (-)
+ 1     sharedchain  300.0        20        1         2        p
+ 2     anchorchain  300.0        20        1         3        p
+ 
+In this example, Line 1 is a shared mooring line and Line 2 is an anchored mooring line that has a fairlead connection
+in common with the shared line. Individual mooring systems can be modeled in the farm-level MoorDyn instance as well.
+
+
+
+FAST.Farm Input File
+^^^^^^^^^^^^^^^^^^^^
+
+In the branch of FAST.Farm the supports shared mooring capabilities, several additional lines have been added to the
+FAST.Farm primary input file. These are highlighted in the example input file excerpt below
+
+
+.. code-block:: none
+ :emphasize-lines: 9,10,13,14,15
+ 
+ FAST.Farm v1.10.* INPUT FILE
+ Sample FAST.Farm input file
+ --- SIMULATION CONTROL ---
+ False              Echo               Echo input data to <RootName>.ech? (flag)
+ FATAL              AbortLevel         Error level when simulation should abort (string) {"WARNING", "SEVERE", "FATAL"}
+ 2000.0             TMax               Total run time (s) [>=0.0]
+ False              UseSC              Use a super controller? (flag)
+ 1                  Mod_AmbWind        Ambient wind model (-) (switch) {1: high-fidelity precursor in VTK format, 2: one InflowWind module, 3: multiple instances of InflowWind module}
+ 2                  Mod_WaveField      Wave field handling (-) (switch) {1: use individual HydroDyn inputs without adjustment, 2: adjust wave phases based on turbine offsets from farm origin}
+ 3                  Mod_SharedMooring  Shared mooring system model (-) (switch) {0: None, 3: MoorDyn}
+ --- SUPER CONTROLLER --- [used only for UseSC=True]
+ "SC_DLL.dll"       SC_FileName        Name/location of the dynamic library {.dll [Windows] or .so [Linux]} containing the Super Controller algorithms (quoated string)
+ --- SHARED MOORING SYSTEM --- [used only for Mod_SharedMooring > 0]
+ "FarmMoorDyn.dat"  FarmMoorDynFile    Name of file containing shared mooring system input parameters (quoted string) [used only when Mod_SharedMooring > 0]
+ 0.01               DT_Mooring         Time step for farm-level mooring coupling with each turbine (s) [used only when Mod_SharedMooring > 0]
+ --- AMBIENT WIND: PRECURSOR IN VTK FORMAT --- [used only for Mod_AmbWind=1]
+ 2.0                DT_Low-VTK         Time step for low -resolution wind data input files  ; will be used as the global FAST.Farm time step (s) [>0.0]
+ 0.3333333          DT_High-VTK        Time step for high-resolution wind data input files   (s) [>0.0]
+ "Y:\Wind\Public\Projects\Projects F\FAST.Farm\AmbWind\steady"          WindFilePath       Path name to VTK wind data files from precursor (string)
+ False              ChkWndFiles        Check all the ambient wind files for data consistency? (flag)
+ --- AMBIENT WIND: INFLOWWIND MODULE --- [used only for Mod_AmbWind=2 or 3]
+ 2.0                DT_Low             Time step for low -resolution wind data interpolation; will be used as the global FAST.Farm time step (s) [>0.0]
+
+
+
+
+
+
 Advice and Frequent Problems
 ----------------------------
-
-
-Trying math
-
-.. math::
-
-   (a + b)^2 = a^2 + 2ab + b^2
-
-   (a - b)^2 = a^2 - 2ab + b^2
-   
    
    
 Model Stability and Segment Damping
