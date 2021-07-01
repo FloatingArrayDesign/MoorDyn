@@ -720,7 +720,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						i++;
 					}	
 				}
-				else if ((lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
+				else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
 				{	
 					i += 3; // skip following two lines (label line and unit line)
 					
@@ -731,7 +731,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						i++;
 					}		
 				}
-				else if ((lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
+				else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
 				{	
 					i += 3; // skip following two lines (label line and unit line)
 					
@@ -742,7 +742,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						i++;
 					}	
 				}
-				else if ((lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
+				else if ((lines[i].find("POINTS") != string::npos) || (lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
 				{	
 					if (nLineTypes < 1)
 						cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
@@ -756,7 +756,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						i++;
 					}
 				}
-				else if ((lines[i].find("LINE LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
+				else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINE LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
 				{	
 					i += 3; // skip following two lines (label line and unit line)
 					
@@ -953,7 +953,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					}
 					if (wordy>0) cout << "\n";
 				}	
-				else if ((lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
+				else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
 				{	
 					if (wordy>0) cout << "   Reading Body properties: ";
 					i += 3; // skip following two lines (label line and unit line)
@@ -1075,7 +1075,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					}		
 					if (wordy>0) cout << "\n";		
 				}
-				else if ((lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
+				else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
 				{	
 					if (wordy>0) cout << "   Reading rod properties: ";
 					i += 3; // skip following two lines (label line and unit line)
@@ -1244,7 +1244,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				}
 				
 				
-				else if ((lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
+				else if ((lines[i].find("POINTS") != string::npos) || (lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
 				{	
 					if (nLineTypes < 1)
 						cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
@@ -1399,7 +1399,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					}
 					if (wordy>0) cout << "\n";
 				}
-				else if ((lines[i].find("LINE LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
+				else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINES LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
 				{	
 					if (wordy>0) cout << "   Reading line list: ";
 					i += 3; // skip following two lines (label line and unit line)
@@ -1652,7 +1652,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					}
 					if (wordy>0) cout << "\n";
 				}
-				else if (lines[i].find("SOLVER OPTIONS") != string::npos) // if solver options header
+				else if (lines[i].find("OPTIONS") != string::npos) // if solver options header
 				{	
 					i ++;
 					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
@@ -1661,17 +1661,15 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						
 						if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
 						{
-	//						if (entries[1] == "NumNodes")       nNodes = atoi(entries[0].c_str());
 							if ((entries[1] == "dtM")           || (entries[1] == "DT"))        dtM0 = atof(entries[0].c_str());     // second is old way, should phase out
-							//else if (entries[1] == "DWWave")    dw_in = atof(entries[0].c_str());
+							else if ((entries[1] == "g") || (entries[1] == "gravity"))          env.g  = atof(entries[0].c_str()); 
+							else if ((entries[1] =="Rho")||(entries[1]=="rho")||(entries[1]=="WtrDnsty"))   env.rho_w = atof(entries[0].c_str()); 
+							else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
 							else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
 							else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
-							else if ((entries[1] == "g") || (entries[1] == "gravity"))          env.g  = atof(entries[0].c_str()); 
-							else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
-							else if ((entries[1]=="Rho")||(entries[1]=="rho")||(entries[1]=="WtrDnsty"))   env.rho_w = atof(entries[0].c_str()); 
-							else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
 							else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
 							else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
+							else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
 							else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
 							else if (entries[1] == "WaveKin")                                   env.WaveKin = atoi(entries[0].c_str());
 							else if (entries[1] == "Currents")                                  env.Current = atoi(entries[0].c_str());
@@ -1902,6 +1900,23 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 	// TODO: make sure things are consistent for only ONE coupling type (body centric or fairlead centric) <<<<<<<<<<<<<<<< also do checks when time step function is called...
 
 
+	   if (wordy > 1) 
+	   {
+		   cout << "  nLineTypes     = " << nLineTypes        << endl;
+		   cout << "  nRodTypes      = " << nRodTypes         << endl;
+		   cout << "  nPoints        = " << nConnections      << endl;
+		   cout << "  nBodies        = " << nBodys            << endl;
+		   cout << "  nRods          = " << nRods             << endl;
+		   cout << "  nLines         = " << nLines            << endl;
+		   cout << "  nFails         = " << nFails            << endl;
+		   cout << "  nFreeBodies    = " << FreeBodyIs.size() << endl;  
+		   cout << "  nFreeRods      = " << FreeRodIs.size()  << endl;  
+		   cout << "  nFreePonts     = " << FreeConIs.size()  << endl;  
+		   cout << "  nCpldBodies    = " << CpldBodyIs.size() << endl;
+		   cout << "  nCpldRods      = " << CpldRodIs.size()  << endl; 
+		   cout << "  nCpldPoints    = " << CpldConIs.size()  << endl;
+	   }
+
 		// make sure non-NULL kinematics are being passed if anything is coupled
 		int nCpldDOF = 6*CpldBodyIs.size() +  3*CpldConIs.size();  // number of coupled degrees of freedom
 		for (int l=0; l<CpldRodIs.size(); l++)  
@@ -1910,13 +1925,20 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			else
 				nCpldDOF += 3;                                     // for pinned rods 3 entries will be taken
 		}			
+		
+		cout << "Based on the input file, MoorDyn is expecting " << nCpldDOF << " coupled degrees of freedom." << endl;
+			
 		if (nCpldDOF > 0)
 		{
-			cout << "Based on the input file, MoorDyn is expecting " << nCpldDOF << " coupled degrees of freedom." << endl;
 			if (x==NULL)
 				cout << "ERROR: MoorDynInit received a Null position vector, but expects size " << nCpldDOF << endl;
 		}
 
+
+		if (nX == 0)
+		{
+			cout << "ERROR: MoorDyn has no state variables. (Is there a mooring sytem?) " << nCpldDOF << endl;
+		}
 		//nConnections = ConnectionList.size();
 		//nLines = LineList.size();
 		//nRods = RodList.size();
