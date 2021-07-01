@@ -155,6 +155,8 @@ public:
 	double getNodeTen(int i);
 	
 	int getNodePos(int i, double pos[3]);
+	void getNodeCoordinates(double r_out[]);
+	void setNodeWaveKin(double U_in[], double Ud_in[]);
 	
 	double GetLineOutput(OutChanProps outChan);
 	

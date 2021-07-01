@@ -440,6 +440,28 @@ int Line::getNodePos(int NodeNum, double pos[3])
 		return -1;  // indicate an error
 }
 
+// function to return array of coordinates of all nodes along the line (size 3n+3)
+void Line::getNodeCoordinates(double r_out[])
+{
+	for (int i=0; i<=N; i++)
+		for (int j=0; j<3; j++)
+			r_out[3*i + j] = r[i][j];
+	
+	return;
+}
+
+// function to set U and Ud of each node along the line (used when these are provided externally)
+void Line::setNodeWaveKin(double U_in[], double Ud_in[])
+{
+	for (int i=0; i<=N; i++)
+	{	for (int j=0; j<3; j++)
+		{	U[ i][j] = U_in[ 3*i + j];
+		 	Ud[i][j] = Ud_in[3*i + j];
+		}
+	}
+	return;
+}
+
 
 // FASTv7 style line tension outputs
 void Line::getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen)

@@ -90,6 +90,15 @@ int nFails           ; // number of failure conditions read in
 EnvCond env; 							// struct of general environmental parameters
 Waves *waves;                           // pointer to a Waves object that will be created to hold water kinematics info
 
+int npW;  // number of points that wave kinematics are input at if using WaveKin=1
+double* U_1;   // array of wave velocity and acceleration at each of the npW points (u1, v1, w1, u2, v2, w2, etc.)
+double* Ud_1;
+double tW_1;  // time corresponding to the wave kinematics data
+double* U_2;
+double* Ud_2;
+double tW_2;
+double* U_extrap;  // for extrapolated wave velocities
+
 string basepath;                             // directory of files 
 string basename;                            // name of input file (without extension)
 
@@ -165,7 +174,35 @@ void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
 //		for (int l=0; l<nAnchs; l++)  
 //			ConnectionList[AnchIs[l]]->updateFairlead( t ); 
 		
+		// update wave kinematics if applicable<<<<
+		if (env.WaveKin==1)
+		{
+			// extrapolate velocities from accelerations (in future could extrapolote from most recent two points, U_1 and U_2)
+
+			double t_delta = t - tW_1;
+
+			for (int i=0; i<npW*3; i++)
+				U_extrap[i] = U_1[i] + Ud_1[i]*t_delta;
+				
+			
+			// distribute to the appropriate objects
+			int i = 0;
 		
+			//for (int l=0; l<FreeBodyIs.size(); l++)  
+			//	i += 3;
+			//
+			//for (int l=0; l<FreeRodIs.size(); l++)  
+			//	i += 3*RodList[FreeRodIs[l]]->getN() + 3;
+			//		
+			//for (int l=0; l<FreeConIs.size(); l++)  
+			//	i += 3
+			//
+			for (int l=0; l < nLines; l++) 	
+			{	LineList[l]->setNodeWaveKin(U_extrap + 3*i, Ud_1 + 3*i);
+				i += 3*LineList[l]->getN() + 3;
+			}	
+			
+		}
 		
 		// independent or semi-independent things with their own states...
 		
@@ -489,8 +526,8 @@ int DECLDIR FairleadsInit(double X[], double XD[])
 
 Passed parameters are positions, velocities (assumed 0), and root filename (used for input and output too).
 */
+
 int MoorDynInit(double x[], double xd[], const char *infilename)
-//int MoorDynInit(double x[], double xd[])
 {	
 
 #ifndef LINUX
@@ -569,7 +606,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 //--	{
 		
 		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a5, 2021-03-16)" << endl;
+		cout << "\n Running MoorDyn (v2.a6, 2021-07-01)" << endl;
 		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
 		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
 		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
@@ -604,6 +641,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		double ICdt = 1.0;						// convergence analysis time step for IC generation
 		double ICTmax = 120;						// max time for IC generation
 		double ICthresh = 0.001;					// threshold for relative change in tensions to call it converged
+		
+		npW = 0;   // assume no wave kinematics points are passed in externally, unless ExernalWaveKinInit is called later
 		
 		dtM0 = 0.001;  // default value for desired mooring model time step
 
@@ -2661,6 +2700,84 @@ int DECLDIR MoorDynClose(void)
 #endif
 
 	return 0;
+}
+
+
+// Initializes internal arrays for holding wave kinematics passed in externally each time step, returns number of points required
+int DECLDIR externalWaveKinInit()
+{
+	
+	// count required number of wave kinematics input points
+	npW = 0;
+	
+	//npW += 3*FreeBodyIs.size();
+	//
+	//for (int l=0; l<FreeRodIs.size(); l++)  
+	//	npW += 3*RodList[FreeRodIs[l]]->getN() + 3;
+	//		
+	//for (int l=0; l<FreeConIs.size(); l++)  
+	//	npW += 3
+	
+	for (int l=0; l < nLines; l++) 	
+		npW += 3*LineList[l]->getN() + 3;
+	
+	// allocate arrays to hold data that could be passed in
+	U_1      = make1Darray(3*npW);
+	Ud_1     = make1Darray(3*npW);
+	U_2      = make1Darray(3*npW);
+	Ud_2     = make1Darray(3*npW);
+	U_extrap = make1Darray(3*npW);
+	
+	// initialize with zeros for safety
+	tW_2 = 0.0;
+	tW_1 = 0.0;		
+	for (int i=0; i<3*npW; i++)
+	{   U_2[ i] = 0.0;
+		Ud_2[i] = 0.0;
+		U_1[ i] = 0.0;
+		Ud_1[i] = 0.0;
+	}
+	
+	// return nwP so the calling program knows what size of arrays to send
+	return npW;
+}
+
+// returns array providing coordinates of all points that will be receiving wave kinematics
+void DECLDIR getWakeKinCoordinates(double r_out[])
+{
+	int i = 0;
+		
+	//i += 3*FreeBodyIs.size();
+	//
+	//for (int l=0; l<FreeRodIs.size(); l++)  
+	//	i += 3*RodList[FreeRodIs[l]]->getN() + 3;
+	//		
+	//for (int l=0; l<FreeConIs.size(); l++)  
+	//	i += 3
+	
+	for (int l=0; l < nLines; l++) 	
+	{	LineList[l]->getNodeCoordinates(r_out + 3*i);
+		i += 3*LineList[l]->getN() + 3;
+	}
+	
+	return;
+}
+
+// receives arrays containing U and Ud for each point at which wave kinematics will be applied (and the time they are calculated at)
+void DECLDIR setWaveKin(double U_in[], double Ud_in[], double t_in)
+{
+	// set time stamp
+	tW_2 = tW_1;  // first save the old one
+	tW_1 = t_in;  // then store the new one
+		
+	for (int i=0; i<3*npW; i++)
+	{	U_2[ i] =  U_1[ i];  // first save the old ones
+		Ud_2[i] =  Ud_1[i];
+		U_1[ i] = U_in[ i];  // then store the new ones
+		Ud_1[i] = Ud_in[i];
+	}
+	
+	return;
 }
 
 

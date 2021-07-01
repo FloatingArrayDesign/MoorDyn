@@ -53,6 +53,11 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* , double* )
 
 int DECLDIR MoorDynClose(void);
 
+// new functions for wave kinematics coupling
+int DECLDIR externalWaveKinInit();
+void DECLDIR getWakeKinCoordinates(double r_out[]);
+void DECLDIR setWakeKin(double U_in[], double Ud_in[], double t_in);
+
 double DECLDIR GetFairTen(int);
 
 int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[] );
