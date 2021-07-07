@@ -81,7 +81,6 @@ int nRodTypes        ; // number of Rod types
 int nLines           ; // number of Line objects
 int nRods            ; // number of Rod objects
 int nBodys           ; // number of Body objects
-int nCpldBod         ; // number of Body objects that are coupled
 int nConnections     ; // total number of Connection objects
 int nConnectionsExtra; // maximum number of Connection objects (allows addition of connections during simulation for line detachments)
 int nFails           ; // number of failure conditions read in
@@ -105,6 +104,7 @@ string basename;                            // name of input file (without exten
 //vector< shared_ptr< ifstream > > infiles; 	//
 vector< shared_ptr< ofstream > > outfiles; 	// a vector to hold ofstreams for each line
 ofstream outfileMain;					// main output file
+ofstream outfileLog;					// log output file
 vector< OutChanProps > outChans;		// list of structs describing selected output channels for main out file
 const char* UnitList[] = {"(s)     ", "(m)     ", "(m)     ", "(m)     ", 
                           "(m/s)   ", "(m/s)   ", "(m/s)   ", "(m/s2)  ",
@@ -280,10 +280,15 @@ void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
 // Runge-Kutta 2 integration routine  (integrates states and time)
 void rk2 (double x0[], double *t0, const double dt )
 {
+	if (env.writeLog > 2)  outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time " << *t0 << " s -----\n";
+	
 	CalcStateDeriv(x0, f0, *t0, dt);                             // get derivatives at t0.      f0 = f ( t0, x0 );
 
 	for (int i=0; i<nX; i++) 
 		xt[i] = x0[i] + 0.5*dt*f0[i];  						// integrate to t0  + dt/2.        x1 = x0 + dt*f0/2.0;
+	
+	
+	if (env.writeLog > 2)  outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time " << *t0 + 0.5*dt << " s -----\n";
 	
 	CalcStateDeriv(xt, f1, *t0 + 0.5*dt, dt);                    // get derivatives at t0  + dt/2.	f1 = f ( t1, x1 );
 
@@ -506,22 +511,6 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 }
 
 
-/*
-// initialization function for platform-centric coupling
-int DECLDIR LinesInit(double X[], double XD[])
-{	
-	int value = MoorDynInit(X, XD, 0);	
-	return value;
-}
-
-// initialization function for fairlead-based coupling
-int DECLDIR FairleadsInit(double X[], double XD[])
-{
-	int value = MoorDynInit(X, XD, 1);	
-	return value;
-}
-*/
-
 /** initialization function, changed to work for any type of coupling
 
 Passed parameters are positions, velocities (assumed 0), and root filename (used for input and output too).
@@ -606,7 +595,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 //--	{
 		
 		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a6, 2021-07-01)" << endl;
+		cout << "\n Running MoorDyn (v2.a7, 2021-07-07)" << endl;
 		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
 		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
 		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
@@ -633,6 +622,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		env.Current = 0;   // 0=none
 		env.dtWave = 0.25;
 		env.WriteUnits = 1;	// by default, write units line
+		env.writeLog = 0;   // by default, don't write out a log file
 		env.FrictionCoefficient = 0.0;
 		env.FricDamp = 200.0;
 		env.StatDynFricScale = 1.0;
@@ -672,7 +662,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		nLines            = 0; // number of Line objects
 		nRods             = 0; // number of Rod objects
 		nBodys            = 0; // number of Body objects
-		nCpldBod          = 0; // number of Body objects that are coupled
 		nConnections      = 0; // total number of Connection objects
 		nConnectionsExtra = 0; // maximum number of Connection objects (allows addition of connections during simulation for line detachments)
 		nFails            = 0; // number of failure conditions read in
@@ -848,7 +837,63 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		{
 			if (lines[i].find("---") != string::npos) // look for header line
 			{
-				if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
+				if (lines[i].find("OPTIONS") != string::npos) // if solver options header (look for this first to catch writeLog option)
+				{	
+					i ++;
+					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+					{ 	
+						vector<string> entries = split(lines[i], ' \t');
+						
+						if (entries.size() >= 2) // if a valid "[value] [identifier] [optional comment]" format
+						{
+							if (entries[1] == "writeLog") 
+							{	env.writeLog = atoi(entries[0].c_str());
+								if (env.writeLog > 0)
+								{	// open log file for writing if needed
+									stringstream oname;
+									oname << basepath << basename << ".log";
+									
+									outfileLog.open(oname.str());
+									if (outfileLog.is_open())
+									{
+										outfileLog << "MoorDyn v2 log file with output level " << env.writeLog << "\n";
+										outfileLog << "Note: options above the writeLog line in the input file will not be recorded\n";
+										
+										env.outfileLogPtr = & outfileLog; // get pointer to outfile for MD objects to use
+										
+										*env.outfileLogPtr << "will this work!\n";
+									}
+									else 
+									{	cout << "   ERROR: Unable to write to log file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
+										return -1;
+									}
+								}
+							}
+							else if ((entries[1] == "dtM")           || (entries[1] == "DT"))        dtM0 = atof(entries[0].c_str());     // second is old way, should phase out
+							else if ((entries[1] == "g") || (entries[1] == "gravity"))          env.g  = atof(entries[0].c_str()); 
+							else if ((entries[1] =="Rho")||(entries[1]=="rho")||(entries[1]=="WtrDnsty"))   env.rho_w = atof(entries[0].c_str()); 
+							else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
+							else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
+							else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
+							else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
+							else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
+							else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
+							else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
+							else if (entries[1] == "WaveKin")                                   env.WaveKin = atoi(entries[0].c_str());
+							else if (entries[1] == "Currents")                                  env.Current = atoi(entries[0].c_str());
+							else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
+							else if (entries[1] == "FrictionCoefficient")                       env.FrictionCoefficient = atof(entries[0].c_str());
+							else if (entries[1] == "FricDamp")                       env.FricDamp = atof(entries[0].c_str());
+							else if (entries[1] == "StatDynFricScale")             env.StatDynFricScale = atof(entries[0].c_str());
+							else if (entries[1] == "dtOut")                                     dtOut = atof(entries[0].c_str()); // output writing period (0 for at every call)
+							// >>>>>>>>>> add dtWave...
+							else cout << "Warning: solver option keyword \"" << entries[1] << "\" not recognized." << endl;
+						}
+						i++;
+					
+					}
+				}
+				else if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
 				{	
 					if (wordy>0) cout << "   Reading line types: ";
 					
@@ -886,63 +931,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							// read in bending stiffness value (and load nonlinear file if needed)
 							getCoefficientOrCurve(entries[5].c_str(), &(LinePropList[iLineType]->EI), 
 								&(LinePropList[iLineType]->nEIpoints), LinePropList[iLineType]->bstiffXs, LinePropList[iLineType]->bstiffYs);
-			// SHOULD REMOVE BELOW FROM INPUT FILE <<<<					
-			//				// read in bending damping value (and load nonlinear file if needed)
-			//				getCoefficientOrCurve(entries[6].c_str(), &(LinePropList[iLineType]->cI), 
-			//					&(LinePropList[iLineType]->nbCpoints), LinePropList[iLineType]->bdampXs, LinePropList[iLineType]->bdampYs);
-								
-							/*
-							if (strpbrk(entries[4].c_str(), "abcdfghijklmnopqrstuvwxyzABCDFGHIJKLMNOPQRSTUVWXYZ") == NULL) // "eE" are exluded as they're used for scientific notation!
-							{
-								if (wordy > 0) cout << "found NO letter in the line cInt value so treating it as a number." << endl;
-								LinePropList[iLineType]->c = atof(entries[4].c_str());
-								LinePropList[iLineType]->nCpoints = 0;
-							}	
-							else // otherwise interpet the input as a file name to load stress-strain lookup data from
-							{
-								if (wordy > 0) cout << "found A letter in the line cInt value so will try to load the filename." << endl;
-								LinePropList[iLineType]->c = 0.0;
-								
-								// load lookup table data from file
-								vector<string> Clines;
-								string Cline;
-								char Cfilename[256];
-								snprintf(Cfilename, sizeof Cfilename, "%s%s", "Mooring/", entries[4].c_str());
-	  
-								ifstream myfile (Cfilename);
-								if (myfile.is_open())
-								{
-									while ( myfile.good() )
-									{
-										getline (myfile,Cline);
-										Clines.push_back(Cline);
-									}
-									myfile.close();
-								}
-								else 
-								{	cout << "Error: unable to open " << Cfilename << endl; 
-									return -1;
-								}
-								
-								// now process data	
-								int nC = 0; // counter for number of data points in lookup table
-								for (int I=2; I<Clines.size(); I++)   // skip first three lines (title, names, and units) then parse
-								{
-									vector<string> Centries = split(Clines[I], ' '); // what about TABS rather than spaces???
-									if (Centries.size() >= 2) // if valid number of inputs
-									{
-										LinePropList[iLineType]->dampXs[nC]  = atof(Centries[0].c_str());
-										LinePropList[iLineType]->dampYs[nC]  = atof(Centries[0].c_str());
-										nC++;
-									}
-									else
-									{	cout << "Error: failed to find two columns somewhere within " << Cfilename << endl; 
-										return -1;
-									}
-								}		
-								LinePropList[iLineType]->nCpoints = nC;
-							}
-							*/	
+
 							
 							if (wordy>0)  cout << entries[0] << " ";
 						}
@@ -1040,7 +1029,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								type = -1;   // body is coupled - controlled from outside
 								
 								CpldBodyIs.push_back(iBody);	
-								nCpldBod++;
 								
 								// no further data needs to be read in
 							}
@@ -1691,38 +1679,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					}
 					if (wordy>0) cout << "\n";
 				}
-				else if (lines[i].find("OPTIONS") != string::npos) // if solver options header
-				{	
-					i ++;
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						vector<string> entries = split(lines[i], ' \t');
-						
-						if (entries.size() >= 2) // if a valid "[i] [j] C[i][j] [optional comment]" format
-						{
-							if ((entries[1] == "dtM")           || (entries[1] == "DT"))        dtM0 = atof(entries[0].c_str());     // second is old way, should phase out
-							else if ((entries[1] == "g") || (entries[1] == "gravity"))          env.g  = atof(entries[0].c_str()); 
-							else if ((entries[1] =="Rho")||(entries[1]=="rho")||(entries[1]=="WtrDnsty"))   env.rho_w = atof(entries[0].c_str()); 
-							else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
-							else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
-							else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
-							else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
-							else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
-							else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
-							else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
-							else if (entries[1] == "WaveKin")                                   env.WaveKin = atoi(entries[0].c_str());
-							else if (entries[1] == "Currents")                                  env.Current = atoi(entries[0].c_str());
-							else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
-							else if (entries[1] == "FrictionCoefficient")                       env.FrictionCoefficient = atof(entries[0].c_str());
-							else if (entries[1] == "FricDamp")                       env.FricDamp = atof(entries[0].c_str());
-							else if (entries[1] == "StatDynFricScale")             env.StatDynFricScale = atof(entries[0].c_str());
-							else if (entries[1] == "dtOut")                                     dtOut = atof(entries[0].c_str()); // output writing period (0 for at every call)
-	// >>>>>>>>>> add dtWave...
-							else cout << "Warning: solver option keyword \"" << entries[1] << "\" not recognized." << endl;
-						}
-						i++;
-					}
-				}
 				else if (lines[i].find("OUTPUT") != string::npos) // if output list header
 				{	
 					//cout << "in output section" << endl;
@@ -1955,6 +1911,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		   cout << "  nCpldRods      = " << CpldRodIs.size()  << endl; 
 		   cout << "  nCpldPoints    = " << CpldConIs.size()  << endl;
 	   }
+	   
+		// write system description to log file
+		if (env.writeLog > 0)
+		{
+			char outline[100];
+		
+			snprintf(outline, sizeof(outline), "%s", "----- MoorDyn Model Summary (to be written) -----");
+		
+			outfileLog << outline << "\n";
+		}
 
 		// make sure non-NULL kinematics are being passed if anything is coupled
 		int nCpldDOF = 6*CpldBodyIs.size() +  3*CpldConIs.size();  // number of coupled degrees of freedom
@@ -2054,30 +2020,11 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		
 		// --------- Allocate/size some global, persistent vectors -------------
 
-	//	nFairs = rFairCon.size();
-		
-	//	FlinesS.resize(6*nCpldBod);  // should clean up these var names
-	//	rFairtS.resize (nFairs);
-	//	rFairRel.resize(nFairs);
-	//	rFairi.resize  (nFairs);  // after applying platform DOF ICs, should eventually pass this rather than rFairCon to Line.setup()
-	//	rdFairi.resize (nFairs);	
 
 		FairTensLast = make2Darray(nLines, 10); // allocate past line fairlead tension array, which is used for convergence test during IC gen
 		
 		for (int i=0; i < nLines; i++) for (int j=0; j < 10; j++) FairTensLast[i][j] = 1.0*j;
 		
-	//	for (unsigned int ii=0; ii<nFairs; ii++)
-	//	{
-	//		rFairtS[ii].resize(3);
-	//		rFairRel[ii].resize(3);
-	//		rFairi[ii].resize(3);
-	//		rdFairi[ii].resize(3);
-			
-	//		rFairtS[ii][0] = rFairCon[ii][0];	// store relative fairlead locations statically for internal use
-	//		rFairtS[ii][1] = rFairCon[ii][1];
-	//		rFairtS[ii][2] = rFairCon[ii][2]; <<<<<< can remove!
-			
-	//	}
 			
 		// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
 		
@@ -2613,6 +2560,8 @@ int DECLDIR MoorDynClose(void)
 	// close any open output files
 	if (outfileMain.is_open())
 		outfileMain.close();
+	if (outfileLog.is_open())
+		outfileLog.close();
 	for (int l=0; l<nLines; l++) 
 		if (outfiles[l])							// if not null
 			if (outfiles[l]->is_open())

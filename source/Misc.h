@@ -87,6 +87,8 @@ typedef struct
 	int Current;      // current flag (0=off, >0=on...)<<<
 	double dtWave;   // time step used to downsample wave elevation data with
 	int WriteUnits;	// a global switch for whether to show the units line in the output files (1, default), or skip it (0)
+	int writeLog;   // whether to write a log file. (0=no, 1=basic, 2=full description, 3=ongoing output
+	ofstream *outfileLogPtr;
 	double FrictionCoefficient; // general bottom friction coefficient, as a start
 	double FricDamp; // a damping coefficient used to model the friction at speeds near zero
 	double StatDynFricScale; // a ratio of static to dynamic friction ( = mu_static/mu_dynamic)

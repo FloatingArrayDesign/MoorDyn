@@ -818,6 +818,12 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		}
 	}
 	
+	if (env->writeLog > 2)
+	{
+		*(env->outfileLogPtr) << "Line " << number << " node positions at time " << t << ":\n";
+		for (int j=0; j<=N; j++) *(env->outfileLogPtr) << r[j][0] << "\t" << r[j][1] << "\t" << r[j][2] << "\n";
+	}
+	
 	// dt is possibly used for stability tricks...
 	
 	// -------------------- calculate various kinematic quantities ---------------------------
