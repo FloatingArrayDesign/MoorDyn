@@ -98,8 +98,8 @@ double* Ud_2;
 double tW_2;
 double* U_extrap;  // for extrapolated wave velocities
 
-string basepath;                             // directory of files 
-string basename;                            // name of input file (without extension)
+string MDbasepath;                             // directory of files 
+string MDbasename;                            // name of input file (without extension)
 
 //vector< shared_ptr< ifstream > > infiles; 	//
 vector< shared_ptr< ofstream > > outfiles; 	// a vector to hold ofstreams for each line
@@ -465,7 +465,7 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 		string Cline;
 		
 		stringstream iname;
-		iname << basepath << entry;
+		iname << MDbasepath << entry;
 		
 		ifstream myfile (iname.str());
 		if (myfile.is_open())
@@ -479,7 +479,7 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 		}
 		else 
 		{	cout << "Error: unable to open " << iname.str() << endl; 
-			cout << "                    - " << basepath << " - "<< entry << " - "<< iname.str() << endl; 
+			cout << "                    - " << MDbasepath << " - "<< entry << " - "<< iname.str() << endl; 
 			return -1;  // <<<<<<<<<<<< need to make this a failure!!
 		}
 		
@@ -595,7 +595,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 //--	{
 		
 		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a7, 2021-07-07)" << endl;
+		cout << "\n Running MoorDyn (v2.a7, 2021-07-08)" << endl;
 		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
 		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
 		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
@@ -680,8 +680,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		
 		
 			
-		//basename = filesystem::path(filename).stem().string();   // get just the file name without extension
-		//basepath = filesystem::path(filename).parent_path().string();   // get the directory of the files
+		//MDbasename = filesystem::path(filename).stem().string();   // get just the file name without extension
+		//MDbasepath = filesystem::path(filename).parent_path().string();   // get the directory of the files
 		
 		int lastSlash = sfilename.find_last_of("/\\");
 		int lastDot = sfilename.find_last_of('.');
@@ -690,12 +690,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		cout << "Based on the provided infilename of " << infilename << endl;
 		cout << "The filename is " << filename << " or " << sfilename << "  " << lastSlash << " " << lastDot << endl;
 		
-		basename = sfilename.substr(lastSlash+1, lastDot-lastSlash-1);
-		basepath = sfilename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
+		MDbasename = sfilename.substr(lastSlash+1, lastDot-lastSlash-1);
+		MDbasepath = sfilename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
 
 		
-		cout << "The basename is " << basename << endl;
-		cout << "The basepath is " << basepath << endl;
+		cout << "The MDbasename is " << MDbasename << endl;
+		cout << "The MDbasepath is " << MDbasepath << endl;
 		
 		
 		// --------------------------------- read data from file -----------------------------
@@ -851,7 +851,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								if (env.writeLog > 0)
 								{	// open log file for writing if needed
 									stringstream oname;
-									oname << basepath << basename << ".log";
+									oname << MDbasepath << MDbasename << ".log";
 									
 									outfileLog.open(oname.str());
 									if (outfileLog.is_open())
@@ -1068,7 +1068,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							//if (...)
 							//{	
 								stringstream oname;
-								oname << basepath << basename << "_Body" << number << ".out";
+								oname << MDbasepath << MDbasename << "_Body" << number << ".out";
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							//}
 							//else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
@@ -1232,7 +1232,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							// make an output file for it
 							if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
 							{	stringstream oname;
-								oname << basepath << basename << "_Rod" << number << ".out";
+								oname << MDbasepath << MDbasename << "_Rod" << number << ".out";
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							}
 							else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
@@ -1466,7 +1466,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							// make an output file for it
 							if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
 							{	stringstream oname;
-								oname << basepath << basename << "_Line" << number << ".out";
+								oname << MDbasepath << MDbasename << "_Line" << number << ".out";
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							}
 							else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
@@ -2247,7 +2247,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		// -------------------------- start main output file --------------------------------
 		
 		stringstream oname;
-		oname << basepath << basename << ".out";
+		oname << MDbasepath << MDbasename << ".out";
 		
 		outfileMain.open(oname.str());
 		if (outfileMain.is_open())
