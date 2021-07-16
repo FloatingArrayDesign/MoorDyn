@@ -55,8 +55,8 @@ int DECLDIR MoorDynClose(void);
 
 // new functions for wave kinematics coupling
 int DECLDIR externalWaveKinInit();
-void DECLDIR getWakeKinCoordinates(double r_out[]);
-void DECLDIR setWakeKin(double U_in[], double Ud_in[], double t_in);
+void DECLDIR getWaveKinCoordinates(double r_out[]);
+void DECLDIR setWaveKin(double U_in[], double Ud_in[], double t_in);
 
 double DECLDIR GetFairTen(int);
 

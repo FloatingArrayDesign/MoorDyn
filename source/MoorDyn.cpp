@@ -713,7 +713,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			myfile.close();
 		}
 		else 
-		{	cout << "Error: unable to open lines.txt file" << endl; 
+		{	cout << "Error: unable to open file " << filename << endl; 
 			return -1;
 		}
 		
@@ -2668,7 +2668,7 @@ int DECLDIR externalWaveKinInit()
 	//	npW += 3
 	
 	for (int l=0; l < nLines; l++) 	
-		npW += 3*LineList[l]->getN() + 3;
+		npW += LineList[l]->getN() + 1;
 	
 	// allocate arrays to hold data that could be passed in
 	U_1      = make1Darray(3*npW);
@@ -2692,7 +2692,7 @@ int DECLDIR externalWaveKinInit()
 }
 
 // returns array providing coordinates of all points that will be receiving wave kinematics
-void DECLDIR getWakeKinCoordinates(double r_out[])
+void DECLDIR getWaveKinCoordinates(double r_out[])
 {
 	int i = 0;
 		
@@ -2706,7 +2706,7 @@ void DECLDIR getWakeKinCoordinates(double r_out[])
 	
 	for (int l=0; l < nLines; l++) 	
 	{	LineList[l]->getNodeCoordinates(r_out + 3*i);
-		i += 3*LineList[l]->getN() + 3;
+		i += LineList[l]->getN() + 1;
 	}
 	
 	return;
