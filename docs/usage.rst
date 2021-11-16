@@ -253,9 +253,9 @@ This section (required if there are any mooring lines) describes the list of moo
 that will be used in the simulation ::
 
  ---------------------- LINE TYPES -----------------------------------
- TypeName      Diam          Mass/m        EA            BA/-zeta      EI            Cd            Ca            CdAx          CaAx          
- (-)           (m)           (kg/m)        (N)           (N-s/-)       (N-m^2)       (-)           (-)           (-)           (-)           
- Chain         0.1            150.0        1e8           -1            0             2.3            1            1.0           0.5           
+ TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx          
+ (-)        (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
+ Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5           
 
 
 Rod Types
@@ -265,9 +265,9 @@ This section (required if there are any rod objects) describes the list of rod p
 that will be used in the simulation ::
 
  ---------------------- ROD TYPES ------------------------------------
- TypeName      Diam          Mass/m        Cd            Ca            CdEnd         CaEnd       
- (-)           (m)           (kg/m)        (-)           (-)           (-)           (-)         
- Buoy          10            1.0e3         0.6           1.0           1.2           1.0        
+ TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd       
+ (-)           (m)      (kg/m)    (-)    (-)     (-)      (-)         
+ Buoy          10       1.0e3     0.6    1.0     1.2      1.0        
 
 
 Bodies list
@@ -276,9 +276,9 @@ Bodies list
 This section (optional) describes the 6DOF body objects to be simulated. ::
 
  ---------------------- BODIES ---------------------------------------
- BodyID        X0            Y0            Z0            r0            p0            y0            Xcg           Ycg           Zcg           Mass          Volume       Ix,y,z        CdA-x,y,z     Ca-x,y,z
- (-)           (m)           (m)           (m)           (deg)         (deg)         (deg)         (m)           (m)           (m)           (kg)          (m^3)        (kg-m^2)      (m^2)         (-)
- 1coupled       0            0              0            0             0             0             0             0             0             0             0            0             0             0
+ BodyID    X0     Y0    Z0     r0      p0     y0      Xcg   Ycg   Zcg    Mass  Volume  Ix,y,z    CdA-x,y,z  Ca-x,y,z
+ (-)       (m)    (m)   (m)    (deg)   (deg)  (deg)   (m)   (m)   (m)    (kg)  (m^3)   (kg-m^2)  (m^2)      (-)
+ 1coupled   0     0      0     0       0      0       0     0     0      0     0       0         0          0
  
 
 Rods list
@@ -287,10 +287,10 @@ Rods list
 This section (optional) describes the rigid Rod objects ::
 
  ---------------------- RODS ----------------------------------------
- RodID         Type/BodyID   RodType       Xa            Ya            Za            Xb            Yb            Zb            NumSegs       RodOutputs
- (-)           (-)           (-)           (m)           (m)           (m)           (m)           (m)           (m)           (-)           (-)
- 1             Body1fixed    Can           0             0             2             0             0             15            8             p
- 2             Body1fixed    Can           2             0             2             5             0             15            8             p
+ RodID   Type/BodyID   RodType  Xa    Ya      Za     Xb     Yb     Zb   NumSegs   RodOutputs
+ (-)     (-)           (-)      (m)   (m)     (m)    (m)    (m)    (m)  (-)       (-)
+ 1       Body1fixed    Can      0     0       2      0      0      15   8         p
+ 2       Body1fixed    Can      2     0       2      5      0      15   8         p
  
  
 Points list
@@ -300,11 +300,11 @@ This section (optional) describes the Point objects ::
 
  
  ---------------------- POINTS ---------------------------------------
- PointID       Type          X             Y             Z             Mass          Volume        CdA           Ca
- (-)           (-)           (m)           (m)           (m)           (kg)          (mˆ3)         (m^2)         (-)
- 1             Fixed         -500          0             -150          0             0             0             0
- 4             Coupled       0             0             -9            0             0             0             0
- 11            Body2         0             0             1.0           0             0             0             0
+ PointID    Type      X       Y     Z       Mass   Volume  CdA    Ca
+ (-)        (-)       (m)     (m)   (m)     (kg)   (mˆ3)   (m^2)  (-)
+ 1          Fixed     -500    0     -150    0      0       0      0
+ 4          Coupled   0       0     -9      0      0       0      0
+ 11         Body2     0       0     1.0     0      0       0      0
  
  
 Lines list
@@ -313,10 +313,10 @@ Lines list
 This section (optional) describes the Line objects, typically used for mooring lines or dynamic power cables ::
 
  ---------------------- LINES ----------------------------------------
- LineID        LineType      UnstrLen      NumSegs       AttachA       AttachB       LineOutputs
- (-)           (-)           (m)           (-)           (point#)      (point#)      (-)
- 1             Chain         300           20            1             2             p
-
+ LineID   LineType  UnstrLen  NumSegs  AttachA    AttachB   LineOutputs
+ (-)      (-)       (m)       (-)      (point#)   (point#)  (-)
+ 1        Chain     300       20       1          2         p
+									  
 
 Options
 ^^^^^^^

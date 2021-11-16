@@ -595,7 +595,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 //--	{
 		
 		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a7, 2021-07-08)" << endl;
+		cout << "\n Running MoorDyn (v2.a8, 2021-11-15)" << endl;
 		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
 		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
 		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
@@ -914,10 +914,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							LinePropList[iLineType]->d  = atof(entries[1].c_str());
 							LinePropList[iLineType]->w  = atof(entries[2].c_str());
 							
-							LinePropList[iLineType]->Can= atof(entries[6].c_str());
-							LinePropList[iLineType]->Cat= atof(entries[7].c_str());
-							LinePropList[iLineType]->Cdn= atof(entries[8].c_str());
-							LinePropList[iLineType]->Cdt= atof(entries[9].c_str());
+							LinePropList[iLineType]->Cdn= atof(entries[6].c_str());
+							LinePropList[iLineType]->Can= atof(entries[7].c_str());
+							LinePropList[iLineType]->Cdt= atof(entries[8].c_str());
+							LinePropList[iLineType]->Cat= atof(entries[9].c_str());
 							
 							// read in stiffness value (and load nonlinear file if needed)
 							getCoefficientOrCurve(entries[3].c_str(), &(LinePropList[iLineType]->EA), 
@@ -1764,6 +1764,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								else   // error
 								{	//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
 									cout << "Warning: invalid output specifier: "  << let1 << ".  Type must be L or C/Con." << endl;
+									dummy.OType = -1;  // flag as invalid
 									continue;  // break out of this loop iteration (don't add current output channel to list)
 								}
 
@@ -1827,9 +1828,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								else
 								{  	
 									cout << "Warning: invalid output specifier - quantity type not recognized" << endl;
-									//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
-									//CALL WrScr('Warning: invalid output specifier - quantity type not recognized.')  ! need to figure out how to add numbers/strings to these warning messages...
-									//CONTINUE
+									dummy.QType = -1;  // flag as invalid
+									continue;  // break out of this loop iteration (don't add current output channel to list)
+									
 								}
 
 							}
@@ -1865,7 +1866,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							//  END IF
 
 							
-							outChans.push_back(dummy);  	// if valid, add new entry to list!
+							if ((dummy.OType > 0) && (dummy.QType > 0))
+								outChans.push_back(dummy);  	// if valid, add new entry to list!
 							
 							
 							
