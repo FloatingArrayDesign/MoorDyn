@@ -487,7 +487,7 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 		int nC = 0; // counter for number of data points in lookup table
 		for (int I=2; I<Clines.size(); I++)   // skip first three lines (title, names, and units) then parse
 		{
-			vector<string> Centries = split(Clines[I], ' \t');
+			vector<string> Centries = split(Clines[I]);
 			if (Centries.size() >= 2) // if valid number of inputs
 			{
 				LineProp_Xs[nC]  = atof(Centries[0].c_str());
@@ -631,7 +631,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		double ICdt = 1.0;						// convergence analysis time step for IC generation
 		double ICTmax = 120;						// max time for IC generation
 		double ICthresh = 0.001;					// threshold for relative change in tensions to call it converged
-		
+		int WaveKinTemp = 0;				// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
 		npW = 0;   // assume no wave kinematics points are passed in externally, unless ExernalWaveKinInit is called later
 		
 		dtM0 = 0.001;  // default value for desired mooring model time step
@@ -842,7 +842,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					i ++;
 					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
 					{ 	
-						vector<string> entries = split(lines[i], ' \t');
+						vector<string> entries = split(lines[i]);
 						
 						if (entries.size() >= 2) // if a valid "[value] [identifier] [optional comment]" format
 						{
@@ -879,7 +879,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
 							else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
 							else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
-							else if (entries[1] == "WaveKin")                                   env.WaveKin = atoi(entries[0].c_str());
+							else if (entries[1] == "WaveKin")                                   WaveKinTemp = atoi(entries[0].c_str());
 							else if (entries[1] == "Currents")                                  env.Current = atoi(entries[0].c_str());
 							else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
 							else if (entries[1] == "FrictionCoefficient")                       env.FrictionCoefficient = atof(entries[0].c_str());
@@ -903,8 +903,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					// set up each entry
 					for (int iLineType=0; iLineType<nLineTypes; iLineType++)
 					{
-						//vector<string> entries = split(lines[i-nLineTypes+iLineType], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iLineType], ' \t'); // split by spaces
+						// parse out entries: Name  Diam MassDenInAir EA cIntDamp EI    Cd  Ca  CdAx  CaAx 
+						vector<string> entries = split(lines[i+iLineType]); // split by spaces
 						
 						if (entries.size() >= 10) // if valid number of inputs
 						{
@@ -959,11 +959,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					// set up each entry
 					for (int iRodType=0; iRodType<nRodTypes; iRodType++)
 					{
-						//vector<string> entries = split(lines[i-nRodTypes+iRodType], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iRodType], ' \t'); // split by spaces
-						
-						//if (wordy>0)  cout << " hlo ";
-						
+						// parse out entries: Name  Diam MassDen Cd  Ca  CdEnd  CaEnd
+						vector<string> entries = split(lines[i+iRodType]); // split by spaces
+												
 						if (entries.size() >= 7) // if valid number of inputs
 						{	
 							RodPropList[iRodType] = new RodProps();
@@ -971,10 +969,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							RodPropList[iRodType]->type =    entries[0]; //.c_str());
 							RodPropList[iRodType]->d  = atof(entries[1].c_str());
 							RodPropList[iRodType]->w  = atof(entries[2].c_str());
-							RodPropList[iRodType]->Can= atof(entries[3].c_str());
-							RodPropList[iRodType]->Cat= atof(entries[4].c_str());
-							RodPropList[iRodType]->Cdn= atof(entries[5].c_str());
-							RodPropList[iRodType]->Cdt= atof(entries[6].c_str());
+							RodPropList[iRodType]->Cdn= atof(entries[3].c_str());
+							RodPropList[iRodType]->Can= atof(entries[4].c_str());
+							RodPropList[iRodType]->Cdt= atof(entries[5].c_str());
+							RodPropList[iRodType]->Cat= atof(entries[6].c_str());
 							if (wordy>0)  cout << entries[0] << " ";
 						}
 						//i++;
@@ -990,80 +988,119 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					// set up each entry
 					for (int iBody=0; iBody<nBodys; iBody++)
 					{ 	
-						//vector<string> entries = split(lines[i-nBodys+iBody], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iBody], ' \t'); // split by spaces
+						// parse out entries: ID   Attachment  X0  Y0  Z0  r0  p0  y0    M  CG*  I*    V  CdA*  Ca*
+						vector<string> entries = split(lines[i+iBody]); // split by spaces
 						
-						if (entries.size() >= 1) // if at least one input provided
-						{
-							// Name/ID X0 Y0 Z0 r0 p0 y0 Xcg Ycg Zcg M  V  IX IY IZ CdA-x,y,z Ca-x,y,z
+						if (entries.size() >= 14) // if valid number of inputs
+						{	
 							
-							int number;
-							int type;			
-							double M = atof(entries[10].c_str());						
+							int number          = atoi(entries[0].c_str());
+							int type;							
+							double r6[6];
+							
+							for (int I=0; I<6; I++) 
+								r6[  I] = atof(entries[2+I].c_str());					
+							
+							double M = atof(entries[ 8].c_str());						
 							double V = atof(entries[11].c_str());
 							
-							double r6[6];
 							double rCG[3];
 							double Inert[3];
 							double CdA[3];
-							double Ca[3];					
+							double Ca[3];								
+							
+							// process CG
+							vector<string> strings_rCG = splitBar(entries[ 9].c_str()); // split by braces, if any
+							if (strings_rCG.size() == 1) {                                // if only one entry, it is the z coordinate
+								rCG[0] = 0.0;
+								rCG[1] = 0.0;
+								rCG[2] = atof(strings_rCG[0].c_str());
+							}
+							else if (strings_rCG.size() == 3) {                           // all three coordinates provided
+								rCG[0] = atof(strings_rCG[0].c_str());
+								rCG[1] = atof(strings_rCG[1].c_str());
+								rCG[2] = atof(strings_rCG[2].c_str());
+							}
+							else {
+								cout << 'Body ' << number << ' CG entry (col 10) must have 1 or 3 numbers.' << endl;
+								return -1;
+							}
+							// process mements of inertia
+							vector<string> strings_I   = splitBar(entries[10].c_str());
+							if (strings_I.size() == 1) {                                // if only one entry, use it for all directions
+								Inert[0] = atof(strings_I[0].c_str());
+								Inert[1] = Inert[0];
+								Inert[2] = Inert[0];
+							}
+							else if (strings_I.size() == 3) {                           // all three coordinates provided
+								Inert[0] = atof(strings_I[0].c_str());
+								Inert[1] = atof(strings_I[1].c_str());
+								Inert[2] = atof(strings_I[2].c_str());
+							}
+							else {
+								cout << 'Body ' << number << ' inertia entry (col 11) must have 1 or 3 numbers.' << endl;
+								return -1;
+							}
+							// process drag ceofficient by area product
+							vector<string> strings_CdA = splitBar(entries[12].c_str());
+							if (strings_CdA.size() == 1) {                                // if only one entry, use it for all directions
+								CdA[0] = atof(strings_CdA[0].c_str());
+								CdA[1] = CdA[0];
+								CdA[2] = CdA[0];
+							}
+							else if (strings_CdA.size() == 3) {                           // all three coordinates provided
+								CdA[0] = atof(strings_CdA[0].c_str());
+								CdA[1] = atof(strings_CdA[1].c_str());
+								CdA[2] = atof(strings_CdA[2].c_str());
+							}
+							else {
+								cout << 'Body ' << number << ' CdA entry (col 13) must have 1 or 3 numbers.' << endl;
+								return -1;
+							}
+							// process added mass coefficient
+							vector<string> strings_Ca  = splitBar(entries[13].c_str());							
+							if (strings_Ca.size() == 1) {                                // if only one entry, use it for all directions
+								Ca[0] = atof(strings_Ca[0].c_str());
+								Ca[1] = Ca[0];
+								Ca[2] = Ca[0];
+							}
+							else if (strings_Ca.size() == 3) {                           // all three coordinates provided
+								Ca[0] = atof(strings_Ca[0].c_str());
+								Ca[1] = atof(strings_Ca[1].c_str());
+								Ca[2] = atof(strings_Ca[2].c_str());
+							}
+							else {
+								cout << 'Body ' << number << ' Ca entry (col 14) must have 1 or 3 numbers.' << endl;
+								return -1;
+							}
+							
+							
 							
 							// ----------- process body type -----------------
 
-
-							
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
 							char typeWord[10];							// the buffer
 							
-							snprintf(typeWord, 10, entries[0].c_str());		// copy rod type word to buffer
+							snprintf(typeWord, 10, entries[1].c_str());		// copy body type word to buffer
 							
 							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
 							
 							
-							number = atoi(num1);                     // extract body number	
-							
-							
-							if ((strcmp(let2, "COUPLED") ==0) || (strcmp(let2, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "CPLD") ==0))
+							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
+							{
+								type = 1;  // body is fixed  (this would just be used if someone wanted to temporarly fix a body that things were attached to)
+							}
+							if ((strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "CPLD") ==0))
 							{
 								type = -1;   // body is coupled - controlled from outside
-								
-								CpldBodyIs.push_back(iBody);	
-								
-								// no further data needs to be read in
+								CpldBodyIs.push_back(iBody);									
 							}
 							else 
 							{
-								type = 0;      // body is free
-								
+								type = 0;      // body is free								
 								FreeBodyIs.push_back(iBody);
-								
-								if (entries.size() >= 21) // check for valid number of inputs
-								{
-
-									M = atof(entries[10].c_str());						
-									V = atof(entries[11].c_str());
-									
-									for (int I=0; I<3; I++) 
-									{
-										r6[  I] = atof(entries[1+I].c_str());
-										r6[3+I] = atof(entries[4+I].c_str());							
-										rCG[ I] = atof(entries[7+I].c_str());
-										Inert[I]= atof(entries[12+I].c_str());
-										CdA[ I] = atof(entries[15+I].c_str());
-										Ca[  I] = atof(entries[18+I].c_str());							
-									}	
-								}
-								else
-								{	
-									cout << endl << "   Error with Body " << entries[0] << " inputs (" << entries.size() << "<21 is not enough)." << endl;
-									return -1;
-								}
-							}
-							// the other case (type=1) is if the body is stationary and used as the GroundBody.
-							// There is only one and it isn't specified by the input file so not handled here.
-							
-							
+							}							
 							// make an output file for it
 							//if (...)
 							//{	
@@ -1072,7 +1109,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							//}
 							//else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-							
 							
 							
 							// set up Body 
@@ -1086,7 +1122,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								BodyStateIs.push_back(nX);   // assign start index of this body's states
 								nX += 12;                        // add 12 state variables for the body
 							}
-
 							
 								
 							//if (BodyList.size() != number)  // check that ID numbers are in order
@@ -1095,10 +1130,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						}
 						else 
 						{
-							cout << endl << "   Error with Body " << entries[0] << " inputs. None provided!" << endl;
+							cout << endl << "   Error with Body " << entries[0] << " inputs (14 expected but only " << entries.size() << " provided)." << endl;
 							return -1;
 						}
-						//i++;
 					}		
 					if (wordy>0) cout << "\n";		
 				}
@@ -1112,7 +1146,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					for (int iRod=0; iRod<nRods; iRod++)
 					{ 	
 						//vector<string> entries = split(lines[i-nRods+iRod], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iRod], ' \t'); // split by spaces
+						vector<string> entries = split(lines[i+iRod]); // split by spaces
 						
 						if (entries.size() >= 8) // if valid number of inputs
 						{
@@ -1284,7 +1318,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					for (int iConnection=0; iConnection<nConnections; iConnection++)
 					{ 	
 						//vector<string> entries = split(lines[i-nConnections+iConnection], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iConnection], ' \t'); // split by spaces
+						vector<string> entries = split(lines[i+iConnection]); // split by spaces
 						
 						// Node  Type/attachID    X  Y   Z  M  V  [optional:FX FY FZ] CdA Ca
 						
@@ -1436,7 +1470,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					for (int iLine=0; iLine<nLines; iLine++)
 					{ 	
 						//vector<string> entries = split(lines[i-nLines+iLine], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iLine], ' \t'); // split by spaces
+						vector<string> entries = split(lines[i+iLine]); // split by spaces
 							
 						if (entries.size() >= 7) // if valid number of inputs
 						{
@@ -1607,7 +1641,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					{
 						cout << "failure case " << iFail+1 ;
 						
-						vector<string> entries = split(lines[i+iFail], ' \t'); // split by spaces
+						vector<string> entries = split(lines[i+iFail]); // split by spaces
 												
 						if (entries.size() >= 4) // if valid number of inputs
 						{	
@@ -1685,7 +1719,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					i ++;
 					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
 					{ 	
-						vector<string> entries = split(lines[i], ' \t');
+						vector<string> entries = split(lines[i]);
 						
 						for (int j=0; j<entries.size(); j++)  //loop through each word on each line
 						{
@@ -2236,6 +2270,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			BodyList[l]->setTime(0.0);		// reset time to zero so first output line doesn't start at > 0 s
 		}
 		
+
+		// store passed WaveKin value to enable waves in simulation if applicable (they're not enabled during IC gen)
+		env.WaveKin = WaveKinTemp;
 
 	// @mth: new approach to be implemented
 	//	// ------------------------- calculate wave time series if needed -------------------

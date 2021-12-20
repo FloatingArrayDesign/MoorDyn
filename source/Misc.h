@@ -394,7 +394,8 @@ void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
 void translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6]);
 void translateMass6to6DOF(double r[3], double Min[36], double Mout[36]);
 
-vector<string> split(const string &s, char delim);
+vector<string> split(const string &s);
+vector<string> splitBar(const string &s);
 vector<string> splitComma(const string &s);
 
 void reverse(double* data, int datasize);

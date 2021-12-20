@@ -1420,7 +1420,7 @@ void translateMass6to6DOF(double r[3], double Min[36], double Mout[36])
 
 
 // new better string splitting function
-vector<string> split(const string &s, char delim)  // TODO: remove delim arg, it's unused!
+vector<string> split(const string &s)
 {
 	vector<string> elems;  // the vector of words to return
     
@@ -1435,6 +1435,22 @@ vector<string> split(const string &s, char delim)  // TODO: remove delim arg, it
 	}
 	return elems;
 }
+vector<string> splitBar(const string &s)
+{
+	vector<string> elems;  // the vector of words to return
+    
+	char str[200];  // this gives some memory for the char array
+	strncpy(str, s.c_str(), 200);  // copy input string to str (to avoid strtok modifying the input string)
+	char * pch;
+	pch = strtok (str, "|");  // give strtok the c string of s
+	while (pch != NULL)
+	{
+		elems.push_back(pch);
+		pch = strtok (NULL, "|");  // split by spaces or tabs
+	}
+	return elems;
+}
+
 vector<string> splitComma(const string &s)  // this one splits at commas
 {
 	vector<string> elems;  // the vector of words to return

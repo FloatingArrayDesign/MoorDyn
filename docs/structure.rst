@@ -28,21 +28,32 @@ Further technical details and some validation results are available in :ref:`som
 Bending stiffness is a recent capability addition in MoorDyn v2 (it is not yet implemented in MoorDyn-F). 
 In the explanations that follow, the word cable is used to refer to a Line object with nonzero bending stiffness.
 
+MoorDyn keeps a dictionary of line types to describe the cross-sectional 
+(or per-meter) properties of the mooring lines. Each line type has an alphanumeric name
+to identify it, and contains all the properties aside from length and discretization that
+are needed to describe a mooring line in MoorDyn.
+
 
 Points
 ^^^^^^
 .. _points:
 
-The ends of each mooring line are defined by Connection objects, which can be considered a special type of node.  
-Using the same terminology as MAP [2], there are three Connection node types:
+Point objects attach to the ends of Lines and can be used to connect Lines to other things
+or to each other. (In MAP and older versions of MoorDyn, these objects were called Connections).
+A Point has three degrees of freedom and can have any number of Lines attached to it. 
+There are three types of Points:
 
-- 1: Fixed nodes have a certain location and never move.  They can be used as anchor points. OR attached to a platform for platform-centric coupling
-- -1: Vessel nodes can move under the control of an outside program.  They can be used as fairlead connections.
-- 0: Connect nodes are not fixed in space but rather are moved according to the forces acting on them.  
+- **Fixed**: their location is fixed to ground (stationary) or a Body object. 
+  They can be used as anchor points or as a way to attach mooring Lines to a Body.
+- **Coupled**: they move under the control of the calling program/script.  
+  They can be used as fairlead connections when the platform is modeled externally.
+- **Free**: they are free to move according to the forces acting on them, which includes
+  the tensions of attached lines as well as their own self weight and buoyancy, if applicable.  
 
-They are what can be used to connect two or more mooring lines together.  The forces they experience can include the forces from the attached 
-mooring lines (which Fixed and Vessel node types also experience) but also constant external forces, buoyancy forces, inertial and 
-gravitational forces, and hydrodynamic drag and added mass forces.  
+Free Points facilitate more advanced mooring systems. They can be used to connect two 
+or more mooring lines together, to create multi-segmented lines or junctions such as in a 
+bridle mooring configuration. If a free Point is given nonzero volume or mass properties,
+it can also represent a clump weight or float.  
 
 
 Rods 

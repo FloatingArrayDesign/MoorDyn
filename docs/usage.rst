@@ -222,11 +222,12 @@ and @ is the number of the node along that line.  For example,
 
 
 
-The v2 Input File (in progress)
+The v2 Input File (next release)
 -------------------------------
 
-MoorDyn v2 uses a plain-text input file for its description of the mooring system and simulation settings that is 
-expanded from that of v1.
+MoorDyn v2 uses a standardized plain-text input file for its description of the mooring system and simulation settings 
+that has some important additions and changes from v1. Most helpfully, this new format is identical between C++ and
+FORTRAN versions of MoorDyn, and it is designed to be support future capability enhancements without requiring changes.
 This file is divided into sections, some of which are optional. Each section is identified (and detected) by
 a header line consisting of a key phrase (e.g. Line Types) surrounded by dashes. While a couple sections are optional,
 the order of the sections should never be changed.
@@ -244,17 +245,18 @@ The first 1-n lines of the input file are reserved for free-form user input, for
 writing notes, etc. ::
 
  MoorDyn-F v2 sample input file
- True          Echo          echo the input file data (flag)
 
 Line Types
 ^^^^^^^^^^
 
 This section (required if there are any mooring lines) describes the list of mooring line property sets
-that will be used in the simulation ::
+that will be used in the simulation 
+
+.. code-block:: none
 
  ---------------------- LINE TYPES -----------------------------------
  TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx          
- (-)        (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
+ (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
  Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5           
 
 
@@ -262,66 +264,77 @@ Rod Types
 ^^^^^^^^^
 
 This section (required if there are any rod objects) describes the list of rod property sets
-that will be used in the simulation ::
+that will be used in the simulation 
+
+.. code-block:: none
 
  ---------------------- ROD TYPES ------------------------------------
  TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd       
- (-)           (m)      (kg/m)    (-)    (-)     (-)      (-)         
+ (name)        (m)      (kg/m)    (-)    (-)     (-)      (-)         
  Buoy          10       1.0e3     0.6    1.0     1.2      1.0        
 
 
 Bodies list
 ^^^^^^^^^^^
 
-This section (optional) describes the 6DOF body objects to be simulated. ::
+This section (optional) describes the 6DOF body objects to be simulated. 
+
+.. code-block:: none
 
  ---------------------- BODIES ---------------------------------------
- BodyID    X0     Y0    Z0     r0      p0     y0      Xcg   Ycg   Zcg    Mass  Volume  Ix,y,z    CdA-x,y,z  Ca-x,y,z
- (-)       (m)    (m)   (m)    (deg)   (deg)  (deg)   (m)   (m)   (m)    (kg)  (m^3)   (kg-m^2)  (m^2)      (-)
- 1coupled   0     0      0     0       0      0       0     0     0      0     0       0         0          0
+ ID   Attachment  X0     Y0    Z0     r0      p0     y0     Mass  CG*   I*      Volume   CdA*   Ca
+ (#)     (-)      (m)    (m)   (m)   (deg)   (deg)  (deg)   (kg)  (m)  (kg-m^2)  (m^3)   (m^2)  (-)
+ 1    coupled      0     0      0     0       0      0       0     0     0        0       0      0
  
 
 Rods list
 ^^^^^^^^^
 
-This section (optional) describes the rigid Rod objects ::
+This section (optional) describes the rigid Rod objects 
+
+.. code-block:: none
 
  ---------------------- RODS ----------------------------------------
- RodID   Type/BodyID   RodType  Xa    Ya      Za     Xb     Yb     Zb   NumSegs   RodOutputs
- (-)     (-)           (-)      (m)   (m)     (m)    (m)    (m)    (m)  (-)       (-)
- 1       Body1fixed    Can      0     0       2      0      0      15   8         p
- 2       Body1fixed    Can      2     0       2      5      0      15   8         p
+ ID   RodType  Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs  RodOutputs
+ (#)  (name)    (#/key)    (m)   (m)   (m)   (m)   (m)   (m)  (-)       (-)
+ 1      Can      Body1      0     0     2     0     0     15   8         p
+ 2      Can   Body1Pinned   2     0     2     5     0     15   8         p
  
  
 Points list
 ^^^^^^^^^^^
 
-This section (optional) describes the Point objects ::
-
+This section (optional) describes the Point objects 
  
+.. code-block:: none
+
  ---------------------- POINTS ---------------------------------------
- PointID    Type      X       Y     Z       Mass   Volume  CdA    Ca
- (-)        (-)       (m)     (m)   (m)     (kg)   (mˆ3)   (m^2)  (-)
- 1          Fixed     -500    0     -150    0      0       0      0
- 4          Coupled   0       0     -9      0      0       0      0
- 11         Body2     0       0     1.0     0      0       0      0
+ ID    Type      X       Y     Z       Mass   Volume  CdA    Ca
+ (#)   (-)       (m)     (m)   (m)     (kg)   (mˆ3)   (m^2)  (-)
+ 1     Fixed     -500    0     -150    0      0       0      0
+ 4     Coupled   0       0     -9      0      0       0      0
+ 11    Body2     0       0     1.0     0      0       0      0
  
  
 Lines list
 ^^^^^^^^^^
 
-This section (optional) describes the Line objects, typically used for mooring lines or dynamic power cables ::
+This section (optional) describes the Line objects, typically used for mooring lines or dynamic power cables
+
+.. code-block:: none
 
  ---------------------- LINES ----------------------------------------
- LineID   LineType  UnstrLen  NumSegs  AttachA    AttachB   LineOutputs
- (-)      (-)       (m)       (-)      (point#)   (point#)  (-)
- 1        Chain     300       20       1          2         p
+ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+ (#)   (name)     (#)      (#)       (m)       (-)     (-)
+ 1     Chain       1        2        300       20       p
 									  
 
 Options
 ^^^^^^^
 
-This section (required) describes the simulation options. ::
+This section (required) describes the simulation options. Most entries are optional, with default values. 
+
+.. code-block:: none
 
  ---------------------- OPTIONS -----------------------------------------
  0.002         dtM           time step to use in mooring integration (s)
@@ -390,13 +403,12 @@ file, "Vessel" connection types cannot be used because it is ambiguous which tur
 .. code-block:: none
  :emphasize-lines: 5,6,12
  
- ----------------------- CONNECTION PROPERTIES ----------------------------------------------
- 3     NConnections - the number of connections
- Node      Type        X       Y         Z        M        V        FX       FY      FZ     CdA   CA
- (-)       (-)        (m)     (m)       (m)      (kg)     (m^3)    (kN)     (kN)    (kN)   (m^2)  (-)
- 1         Turbine3   10.0     0      -10.00      0        0        0        0       0       0     0
- 3         Turbine4  -10.0     0      -10.00      0        0        0        0       0       0     0
- 2         Fixed     267.0    80      -70.00      0        0        0        0       0       0     0
+ ----------------------- POINTS ----------------------------------------------
+ Node      Type        X       Y         Z        M        V       CdA   CA
+ (-)       (-)        (m)     (m)       (m)      (kg)     (m^3)   (m^2)  (-)
+ 1         Turbine3   10.0     0      -10.00      0        0        0     0
+ 3         Turbine4  -10.0     0      -10.00      0        0        0     0
+ 2         Fixed     267.0    80      -70.00      0        0        0     0
  -------------------------- LINE PROPERTIES -------------------------------------------------
  2     NLines - the number of lines
  Line     LineType  UnstrLen   NumSegs    NodeA     NodeB  Flags/Outputs

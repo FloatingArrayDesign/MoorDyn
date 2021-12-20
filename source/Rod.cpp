@@ -62,7 +62,7 @@ int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6],
 	
 	if (N==0)  // special case of zero-length rod, which is denoted by numsegs=0 in the intput file 
 	{
-		
+		// >>> reduce major redundancy in these if statements
 		// ------------------------- size vectors -------------------------
 			
 		r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]

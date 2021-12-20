@@ -101,19 +101,19 @@ void Waves::makeGrid()
 		vector< string > entries2;
 		int coordtype;
 
-		entries2 = split(lines2[3], ' ');                  // get the entry type		
+		entries2 = split(lines2[3]);                  // get the entry type		
 		coordtype = atoi(entries2[0].c_str());
-		entries2 = split(lines2[4], ' ');                  // get entries
+		entries2 = split(lines2[4]);                  // get entries
 		nx = gridAxisCoords(coordtype, entries2, px);
 		
-		entries2 = split(lines2[5], ' ');                  // get the entry type	
+		entries2 = split(lines2[5]);                  // get the entry type	
 		coordtype = atoi(entries2[0].c_str());		
-		entries2 = split(lines2[6], ' ');                  // get entries
+		entries2 = split(lines2[6]);                  // get entries
 		ny = gridAxisCoords(coordtype, entries2, py);
 		
-		entries2 = split(lines2[7], ' ');                  // get the entry type		
+		entries2 = split(lines2[7]);                  // get the entry type		
 		coordtype = atoi(entries2[0].c_str());	
-		entries2 = split(lines2[8], ' ');                  // get entries
+		entries2 = split(lines2[8]);                  // get entries
 		nz = gridAxisCoords(coordtype, entries2, pz);
 
 
@@ -261,7 +261,7 @@ void Waves::setup(EnvCond *env)
 		for (int i=0; i<lines2.size(); i++)
 		{ 	
 
-			vector< string > entries2 = split(lines2[i], ' ');
+			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 2) {
 				wavefreqs.push_back(atof(entries2[0].c_str()));
@@ -340,7 +340,7 @@ void Waves::setup(EnvCond *env)
 		for (int i=0; i<lines2.size(); i++)
 		{ 	
 
-			vector< string > entries2 = split(lines2[i], ' ');
+			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 2) {
 				wavetimes.push_back(atof(entries2[0].c_str()));
@@ -539,7 +539,7 @@ void Waves::setup(EnvCond *env)
 			if (i<3)
 				continue; // skip first three lines
 	
-			vector< string > entries2 = split(lines2[i], ' ');
+			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 2) {
 				UProfileZ.push_back( atof(entries2[0].c_str()));
@@ -678,7 +678,7 @@ void Waves::setup(EnvCond *env)
 
 		// determine sizes and make input data arrays
 		
-		entries2 = split(lines2[4], ' ');              // this is the depths row
+		entries2 = split(lines2[4]);              // this is the depths row
 		
 		int nzin = entries2.size();                    // number of water depths
 		
@@ -705,7 +705,7 @@ void Waves::setup(EnvCond *env)
 		{ 	
 			int it = i-6;  // just a lazy substitution
 	
-			vector< string > entries2 = split(lines2[i], ' ');
+			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 1 + nzin) 
 			{	
