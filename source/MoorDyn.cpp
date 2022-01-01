@@ -595,7 +595,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 //--	{
 		
 		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a8, 2021-11-15)" << endl;
+		cout << "\n Running MoorDyn (v2.a10, 2022-01-01)" << endl;
 		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
 		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
 		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
@@ -808,36 +808,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						i++;
 					}
 				}
-				else
-					i++;
-			}
-			else i++;
-		}	
-		
-		nConnectionsExtra = nConnections + 2*nLines;    // set maximum number of connections, accounting for possible detachment of each line end and a connection for that
-		
-		
-		// ------------------------- allocate necessary object arrays -------------------------------
-		
-		// allocate space for array of pointers to entries
-		RodPropList    = new RodProps*[nRodTypes];			
-		LinePropList   = new LineProps*[nLineTypes];		
-		BodyList       = new Body*[nBodys];
-		RodList        = new Rod*[nRods];		
-		ConnectionList = new Connection*[nConnectionsExtra]; // using nConnectionsExtra to leave room for additional connections for line detachments
-		LineList       = new Line*[nLines];
-		FailList       = new FailProps*[nFails];
-		
-		
-		// ---------------------- now go through again and process file contents --------------------
-		
-		i=0; // reset file line number
-		
-		while (i < lines.size())  
-		{
-			if (lines[i].find("---") != string::npos) // look for header line
-			{
-				if (lines[i].find("OPTIONS") != string::npos) // if solver options header (look for this first to catch writeLog option)
+				else if (lines[i].find("OPTIONS") != string::npos) // if options header
 				{	
 					i ++;
 					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
@@ -893,12 +864,43 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					
 					}
 				}
-				else if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
+				else
+					i++;
+			}
+			else i++;
+		}	
+		
+		nConnectionsExtra = nConnections + 2*nLines;    // set maximum number of connections, accounting for possible detachment of each line end and a connection for that
+		
+		
+		// ------------------------- allocate necessary object arrays -------------------------------
+		
+		// allocate space for array of pointers to entries
+		RodPropList    = new RodProps*[nRodTypes];			
+		LinePropList   = new LineProps*[nLineTypes];		
+		BodyList       = new Body*[nBodys];
+		RodList        = new Rod*[nRods];		
+		ConnectionList = new Connection*[nConnectionsExtra]; // using nConnectionsExtra to leave room for additional connections for line detachments
+		LineList       = new Line*[nLines];
+		FailList       = new FailProps*[nFails];
+		
+		
+		// ---------------------- now go through again and process file contents --------------------
+		
+		i=0; // reset file line number
+		
+		while (i < lines.size())  
+		{
+			if (lines[i].find("---") != string::npos) // look for header line
+			{
+				
+				// might want to convert to uppercase to support lowercase headings too <<<
+				
+				if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
 				{	
 					if (wordy>0) cout << "   Reading line types: ";
 					
 					i += 3; // skip following two lines (label line and unit line)
-					
 					
 					// set up each entry
 					for (int iLineType=0; iLineType<nLineTypes; iLineType++)
@@ -934,6 +936,21 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 							
 							if (wordy>0)  cout << entries[0] << " ";
+							
+							
+							// write lineType information to log file
+							if (env.writeLog > 1)
+							{
+								outfileLog << "  - LineType" << iLineType+1 << ":" << endl;
+								outfileLog << "    name: " << LinePropList[iLineType]->type << endl;
+								outfileLog << "    d   : " << LinePropList[iLineType]->d    << endl;
+								outfileLog << "    w   : " << LinePropList[iLineType]->w    << endl;
+								outfileLog << "    Cdn : " << LinePropList[iLineType]->Cdn  << endl;
+								outfileLog << "    Can : " << LinePropList[iLineType]->Can  << endl;
+								outfileLog << "    Cdt : " << LinePropList[iLineType]->Cdt  << endl;
+								outfileLog << "    Cat : " << LinePropList[iLineType]->Cat  << endl;
+							}
+							
 						}
 						else
 						{
@@ -1156,7 +1173,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							// read in these properties first because they're needed for setting up various rod types
 								
 							int number          = atoi(entries[0].c_str());
-							string RodType         = entries[2];
+							string RodType         = entries[1];
 							double endCoords[6]; 
 							for (int J=0; J<6; J++) endCoords[J]=atof(entries[3+J].c_str());
 							int NumSegs         = atoi(entries[9].c_str());
@@ -1169,7 +1186,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
 							char typeWord[10];							// the buffer
 							
-							snprintf(typeWord, 10, entries[1].c_str());		// copy rod type word to buffer
+							snprintf(typeWord, 10, entries[2].c_str());		// copy rod type word to buffer
 							
 							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
 								
@@ -1479,10 +1496,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 																			
 							int number= atoi(entries[0].c_str());
 							string type     = entries[1];
-							double UnstrLen = atof(entries[2].c_str());
-							int NumSegs    = atoi(entries[3].c_str()); // addition vs. MAP
-							//string anchID    = entries[4];
-							//string fairID    = entries[5];
+							double UnstrLen = atof(entries[4].c_str());
+							int NumSegs    = atoi(entries[5].c_str()); // addition vs. MAP
+							//string anchID    = entries[2];
+							//string fairID    = entries[3];
 							string outchannels  = entries[6];
 							
 							// find line properties index
@@ -1527,7 +1544,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							
 							// first for anchor...
 							
-							snprintf(outWord, 10, entries[4].c_str());		// copy anchor connection word to buffer
+							snprintf(outWord, 10, entries[2].c_str());		// copy anchor connection word to buffer
 							
 							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
 												
@@ -1574,7 +1591,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							
 							// then again for fairlead
 							
-							snprintf(outWord, 10, entries[5].c_str());		// copy fairlead connection word to buffer
+							snprintf(outWord, 10, entries[3].c_str());		// copy fairlead connection word to buffer
 							
 							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
 												

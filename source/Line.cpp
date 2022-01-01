@@ -119,7 +119,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	
 	
 	if (wordy >0)  cout << "Set up Line " << number << "." << endl;
-	
+		
 	return;
 };
 
@@ -134,6 +134,25 @@ void Line::setEnv(EnvCond *env_in, Waves *waves_in)
 // get ICs for line using quasi-static approach
 void Line::initializeLine(double* X )	
 {
+		// write line information to log file
+	if (env->writeLog > 1)
+	{
+		*(env->outfileLogPtr) << "  - Line" << number << ":" << endl;
+		*(env->outfileLogPtr) << "    ID: " << number << endl;
+		*(env->outfileLogPtr) << "    UnstrLen: " << UnstrLen << endl;
+		*(env->outfileLogPtr) << "    N: " << N << endl;		
+		*(env->outfileLogPtr) << "    d   : " << d    << endl;		
+		*(env->outfileLogPtr) << "    rho : " << rho  << endl;		
+		*(env->outfileLogPtr) << "    E   : " << E    << endl;		
+		*(env->outfileLogPtr) << "    EI  : " << EI   << endl;		
+		*(env->outfileLogPtr) << "    BAin: " << BAin << endl;		
+		*(env->outfileLogPtr) << "    Can : " << Can  << endl;		
+		*(env->outfileLogPtr) << "    Cat : " << Cat  << endl;		
+		*(env->outfileLogPtr) << "    Cdn : " << Cdn  << endl;		
+		*(env->outfileLogPtr) << "    Cdt : " << Cdt  << endl;		
+		*(env->outfileLogPtr) << "    ww_l: " << ( (rho - env->rho_w)*(pi/4.*d*d) )*9.81 << endl;		
+	}
+	
 	
 	// create output file for writing output (and write channel header and units lines) if applicable
 				
