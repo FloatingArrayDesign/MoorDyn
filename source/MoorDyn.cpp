@@ -714,7 +714,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		}
 		else 
 		{	cout << "Error: unable to open file " << filename << endl; 
-			return -1;
+			return MOORDYN_INVALID_INPUT_FILE;
 		}
 		
 		
@@ -836,7 +836,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									}
 									else 
 									{	cout << "   ERROR: Unable to write to log file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
-										return -1;
+										return MOORDYN_INVALID_OUTPUT_FILE;
 									}
 								}
 							}
@@ -1040,7 +1040,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							}
 							else {
 								cout << 'Body ' << number << ' CG entry (col 10) must have 1 or 3 numbers.' << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							// process mements of inertia
 							vector<string> strings_I   = splitBar(entries[10].c_str());
@@ -1056,7 +1056,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							}
 							else {
 								cout << 'Body ' << number << ' inertia entry (col 11) must have 1 or 3 numbers.' << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							// process drag ceofficient by area product
 							vector<string> strings_CdA = splitBar(entries[12].c_str());
@@ -1072,7 +1072,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							}
 							else {
 								cout << 'Body ' << number << ' CdA entry (col 13) must have 1 or 3 numbers.' << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							// process added mass coefficient
 							vector<string> strings_Ca  = splitBar(entries[13].c_str());							
@@ -1088,7 +1088,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							}
 							else {
 								cout << 'Body ' << number << ' Ca entry (col 14) must have 1 or 3 numbers.' << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							
 							
@@ -1148,7 +1148,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						else 
 						{
 							cout << endl << "   Error with Body " << entries[0] << " inputs (14 expected but only " << entries.size() << " provided)." << endl;
-							return -1;
+							return MOORDYN_INVALID_INPUT;
 						}
 					}		
 					if (wordy>0) cout << "\n";		
@@ -1227,12 +1227,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									else
 									{	cout << "Error: Body ID out of bounds for Rod " << number << "." << endl;
 										// cout << "   Error: Invalid body ID (" << bodyID << ") given for Rod " << number << endl;
-										return -1;								
+										return MOORDYN_INVALID_INPUT;								
 									}
 								}
 								else
 								{	cout << "Error: no number provided for Rod " << number << " Body attachment." << endl;
-									return -1;
+									return MOORDYN_INVALID_INPUT;
 								}
 							}
 							else if ((strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
@@ -1314,7 +1314,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						else 
 						{
 							cout << endl << "   Error with rod " << entries[0] << " inputs (not enough)." << endl;
-							return -1;
+							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
 					}		
@@ -1406,12 +1406,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									}
 									else
 									{	cout << "Error: Body ID out of bounds for Connection " << number << "." << endl;
-										return -1;								
+										return MOORDYN_INVALID_INPUT;								
 									}
 								}
 								else
 								{	cout << "Error: no number provided for Connection " << number << " Body attachment." << endl;
-									return -1;
+									return MOORDYN_INVALID_INPUT;
 								}
 							}
 							else if ((strcmp(let1, "FAIRLEAD") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
@@ -1471,7 +1471,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							for (int ii=0; ii<entries.size(); ii++) cout << entries[ii] << " ";
 							cout << endl;
 							
-							return -1;
+							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
 					}
@@ -1550,7 +1550,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 												
 							if (strlen(num1)<1)
 							{	cout << "Error: no number provided for line " << number << " anchor attachment." << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							
 							int id = atoi(num1);
@@ -1566,12 +1566,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 										RodList[id-1]->addLineToRodEndB(LineList[iLine], 0);
 									else
 									{	cout << "Error: rod end (A or B) must be specified for line " << number << " anchor attachment." << endl;
-										return -1;										
+										return MOORDYN_INVALID_INPUT;										
 									}
 								}
 								else
 								{	cout << "Error: rod connection ID out of bounds for line " << number << " anchor attachment." << endl;
-									return -1;								
+									return MOORDYN_INVALID_INPUT;								
 								}
 									
 							}
@@ -1584,7 +1584,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								}
 								else
 								{	cout << "Error: connection ID out of bounds for line " << number << " anchor attachment." << endl;
-									return -1;								
+									return MOORDYN_INVALID_INPUT;								
 								}
 									
 							}
@@ -1597,7 +1597,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 												
 							if (strlen(num1)<1)
 							{	cout << "Error: no number provided for line " << number << " fairlead attachment." << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							
 							id = atoi(num1);
@@ -1613,12 +1613,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 										RodList[id-1]->addLineToRodEndB(LineList[iLine], 1);
 									else
 									{	cout << "Error: rod end (A or B) must be specified for line " << number << " fairlead attachment." << endl;
-										return -1;										
+										return MOORDYN_INVALID_INPUT;										
 									}
 								}
 								else
 								{	cout << "Error: rod connection ID out of bounds for line " << number << " fairlead attachment." << endl;
-									return -1;								
+									return MOORDYN_INVALID_INPUT;								
 								}
 									
 							}
@@ -1631,7 +1631,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								}
 								else
 								{	cout << "Error: connection ID out of bounds for line " << number << " fairlead attachment." << endl;
-									return -1;								
+									return MOORDYN_INVALID_INPUT;								
 								}
 									
 							}
@@ -1640,7 +1640,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						else 
 						{
 							cout << endl << "   Error with line " << entries[0] << " inputs." << endl;
-							return -1;
+							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
 					}		
@@ -1674,7 +1674,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							
 							if (strlen(num1)<1)
 							{	cout << "Error: no Node provided for Failure " << iFail+1 << endl;
-								return -1;
+								return MOORDYN_INVALID_INPUT;
 							}
 							
 							FailList[iFail]->attachID = atoi(num1);   // ID of connection or Rod the lines are attached to (index is -1 this value)
@@ -1690,12 +1690,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 										FailList[iFail]->isRod = 2;
 									else
 									{	cout << "Error: at line 1589ish" << endl;
-										return -1;										
+										return MOORDYN_UNHANDLED_ERROR;										
 									}
 								}
 								else
 								{	cout << "Error at line 1594ish" << endl;
-									return -1;								
+									return MOORDYN_UNHANDLED_ERROR;								
 								}
 									
 							}
@@ -1708,7 +1708,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								}
 								else
 								{	cout << "Error: at line 1607ish" << endl;
-									return -1;								
+									return MOORDYN_UNHANDLED_ERROR;								
 								}
 									
 							}
@@ -2184,7 +2184,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				if (isnan(states[i]))
 				{
 					cout << "   Error: NaN value detected in MoorDyn state at dynamic relaxation time " << t << " s." << endl;
-					return -1;
+					return MOORDYN_NAN_ERROR;
 				}
 			}
 		
@@ -2326,16 +2326,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		}
 		else 
 		{	cout << "   ERROR: Unable to write to main output file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
-			return -1;
+			return MOORDYN_INVALID_OUTPUT_FILE;
 		}
 		
 		// write t=0 output line
 		if (AllOutput(0.0, 0.0) < 0)
-			return -1;
+			return MOORDYN_INVALID_OUTPUT_FILE;
 		
 							
 		cout <<endl;
-		return 0;
+		return MOORDYN_SUCCESS;
 //--	}
 //--	catch(string e) 
 //--	{
