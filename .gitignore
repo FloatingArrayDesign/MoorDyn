@@ -3,6 +3,7 @@
 *.com
 *.class
 *.o
+*.so
 
 # Packages #
 ############

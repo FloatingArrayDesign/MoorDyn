@@ -669,31 +669,22 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		
 		// ==================== load data about the mooring lines from lines.txt =====================
 		
-		char filename[50];
+		string filename("Mooring/lines.txt");
 		
-		if (strlen(infilename)==0)
-			snprintf(filename, sizeof(filename), "%s", "Mooring/lines.txt");
-		else		
-			strncpy(filename, infilename, sizeof(filename));
+		if (infilename && (strlen(infilename) > 0))
+			filename = infilename;
 
-		string sfilename = string(filename, strlen(filename));
-		
-		
-			
 		//MDbasename = filesystem::path(filename).stem().string();   // get just the file name without extension
 		//MDbasepath = filesystem::path(filename).parent_path().string();   // get the directory of the files
-		
-		int lastSlash = sfilename.find_last_of("/\\");
-		int lastDot = sfilename.find_last_of('.');
-		
-		
-		cout << "Based on the provided infilename of " << infilename << endl;
-		cout << "The filename is " << filename << " or " << sfilename << "  " << lastSlash << " " << lastDot << endl;
-		
-		MDbasename = sfilename.substr(lastSlash+1, lastDot-lastSlash-1);
-		MDbasepath = sfilename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
 
-		
+		cout << "Based on the provided infilename of " << infilename << endl;
+		cout << "The filename is " << filename << endl;
+
+		int lastSlash = filename.find_last_of("/\\");
+		int lastDot = filename.find_last_of('.');
+		MDbasename = filename.substr(lastSlash+1, lastDot-lastSlash-1);
+		MDbasepath = filename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
+
 		cout << "The MDbasename is " << MDbasename << endl;
 		cout << "The MDbasepath is " << MDbasepath << endl;
 		
@@ -712,8 +703,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			}
 			myfile.close();
 		}
-		else 
-		{	cout << "Error: unable to open file " << filename << endl; 
+		else
+		{
+			cout << "Error: unable to open file " << filename << endl; 
 			return MOORDYN_INVALID_INPUT_FILE;
 		}
 		
