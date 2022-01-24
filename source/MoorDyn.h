@@ -43,6 +43,19 @@ extern "C"
 //int DECLDIR LinesInit(double X[], double XD[]);     // initialization function for platform-centric coupling
 //int DECLDIR FairleadsInit(double X[], double XD[]);   // initialization function for fairlead-based coupling
 //int DECLDIR MoorDynInit(double x[], double xd[]); // called by one of the above
+
+/** @brief initializes MoorDyn
+ * 
+ * Including reading the input file, creating the mooring system data
+ * structures, and calculating the initial conditions
+ * 
+ * @param x Position vector (6 components)
+ * @param xd Velocity vector (6 components)
+ * @param infilename The input file, if either NULL or "", then
+ * "Mooring/lines.txt" will be considered
+ * @return 0 If the mooring system is correctly initialized, an error code
+ * otherwise (see @ref moordyn_errors)
+ */
 int DECLDIR MoorDynInit(double x[], double xd[], const char *infilename); // called by one of the above
 
 int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* , double* );

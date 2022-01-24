@@ -62,6 +62,10 @@ template<typename T> static inline T round(T val) {return floor(val + 0.5);}
 
 using namespace std;
 
+/** \addtogroup moordyn_errors
+ *  @{
+ */
+
 /// Successfully dispatched task
 #define MOORDYN_SUCCESS 0
 /// Invalid input file path
@@ -74,6 +78,8 @@ using namespace std;
 #define MOORDYN_NAN_ERROR -4
 /// Unhandled error
 #define MOORDYN_UNHANDLED_ERROR -4
+
+/** @}*/
 
 typedef complex<double> doubleC; 		// make shorthand for complex double type
 typedef complex<float> floatC; 		// make shorthand for complex float type
