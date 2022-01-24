@@ -717,6 +717,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			return -1;
 		}
 		
+        return -1;
 		
 		// ----------------- go through file contents a first time, counting each entry -----------------------
 		
@@ -2839,7 +2840,7 @@ int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])
 	// output LINE fairlead (top end) tensions
 	if ((LineNum > 0) && (LineNum <= nLines))
 	{
-		int worked = LineList[LineNum]->getNodePos(NodeNum, pos);	// call line member function to fill in coordinates of the node of interest 
+		int worked = LineList[LineNum-1]->getNodePos(NodeNum, pos);	// call line member function to fill in coordinates of the node of interest 
 		if (worked >= 0)
 			return 0;  // success
 	}
