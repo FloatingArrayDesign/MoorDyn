@@ -717,7 +717,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			return -1;
 		}
 		
-        return -1;
 		
 		// ----------------- go through file contents a first time, counting each entry -----------------------
 		
