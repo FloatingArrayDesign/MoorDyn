@@ -952,7 +952,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							stringstream s;
 							s << " Error when reading LineType input: " << lines[i+iLineType] <<"\n";
 							s << " Make sure the Line Types entries have 10 columns (including bending stiffness)\n";
-							throw string(s.str());
+							cout << s.str() << endl;
+							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
 					}
@@ -1256,7 +1257,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							{	// throw error if not identified
 								stringstream s;
 								s << "Error: unidentified Type/BodyID for rod " << number << ": " << typeWord;
-								throw string(s.str());
+								cout << s.str() << endl;
+								return MOORDYN_INVALID_INPUT;
 							}
 							
 							
