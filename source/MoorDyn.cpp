@@ -638,7 +638,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 		// fairlead position arrays
 		vector< vector< double > > rFairRod;
-		vector< vector< double > > rFairCon;
 		vector< string > outchannels;  // string containing which channels to write to output
 		
 		// line connection info (temporary, until LineList addresses are done moving) <<????
@@ -1411,10 +1410,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							else if ((strcmp(let1, "FAIRLEAD") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
 							{	// if a fairlead, add to list and add 
 								type = -1;
-								rFairCon.push_back(vector<double>(3, 0.0));		// fairlead location in turbine ref frame
-								rFairCon.back().at(0) = atof(entries[2].c_str()); 	// x
-								rFairCon.back().at(1) = atof(entries[3].c_str()); 	// y
-								rFairCon.back().at(2) = atof(entries[4].c_str()); 	// z	
 								CpldConIs.push_back(iConnection);			// index of fairlead in ConnectionList vector
 								//nFairs ++;
 							}						
