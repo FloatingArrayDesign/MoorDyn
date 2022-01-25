@@ -21,8 +21,9 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 3     main       3        6         902.2     20      -
 ---------------------- OPTIONS -----------------------------------------
 0.002         dtM           time step to use in mooring integration (s)
-3.0e6         kbot          bottom stiffness (Pa/m)
-3.0e5         cbot          bottom damping (Pa-s/m)
+3.0e6         kBot          bottom stiffness (Pa/m)
+3.0e5         cBot          bottom damping (Pa-s/m)
+1025.0        WtrDnsty      water density (kg/m^3)
 320           WtrDpth       water depth (m)
 1.0           dtIC          time interval for analyzing convergence during IC gen (s)
 60.0          TmaxIC        max time for ic gen (s)
