@@ -132,7 +132,7 @@ void Line::setEnv(EnvCond *env_in, Waves *waves_in)
 
 
 // get ICs for line using quasi-static approach
-void Line::initializeLine(double* X )	
+void Line::initializeLine(double* X)
 {
 		// write line information to log file
 	if (env->writeLog > 1)
@@ -155,7 +155,7 @@ void Line::initializeLine(double* X )
 	
 	
 	// create output file for writing output (and write channel header and units lines) if applicable
-				
+
 	if (outfile) // check it's not null.  Null signals no individual line output files
 	{
 		if (outfile->is_open())
@@ -374,7 +374,8 @@ void Line::initializeLine(double* X )
 	double Tol = 0.00001;	
 	
 	vector<double> snodes(N+1, 0.0);   					// locations of line nodes along line length - evenly distributed here 
-	for (int i=1; i<=N; i++) snodes[i] = snodes[i-1] + l[i-1]; 
+	for (int i=1; i<=N; i++)
+		snodes[i] = snodes[i-1] + l[i-1]; 
 	snodes[N] = UnstrLen; 								// double check to ensure the last node does not surpass the line length
 	
 	
@@ -384,27 +385,42 @@ void Line::initializeLine(double* X )
 	vector<double> Zl(N+1, 0.0);
 	vector<double> Te(N+1, 0.0);
 			
-	if( XF == 0.0 ) // if the current mooring line is exactly vertical; thus, the solution below is ill-conditioned because the orientation is undefined; so set it such that the tensions and nodal positions are only vertical
-	{   COSPhi = 0.0;   SINPhi = 0.0; }
-	else 	// The current mooring line must not be vertical; use simple trigonometry
-	{   	COSPhi = ( r[N][0] - r[0][0] )/XF;
-		SINPhi = ( r[N][1] - r[0][1] )/XF; 
+	if( XF == 0.0 ) 
+	{
+		// if the current mooring line is exactly vertical; thus, the solution
+		// below is ill-conditioned because the orientation is undefined; so set
+		// it such that the tensions and nodal positions are only vertical
+		COSPhi = 0.0;
+		SINPhi = 0.0;
+		
 	}
-			
-	int success = Catenary( XF, ZF, UnstrLen, E*pi/4.*d*d, W , CB, Tol, &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
-	
+	else
+	{
+		// The current mooring line must not be vertical; use simple
+		// trigonometry
+		COSPhi = (r[N][0] - r[0][0]) / XF;
+		SINPhi = (r[N][1] - r[0][1]) / XF; 
+	}
+
+	int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, W , CB, Tol,
+	                       &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
+
 	if (success>=0)
-	{	// assign the resulting line positions to the model
+	{
+		// assign the resulting line positions to the model
 		for (int i=1; i<N; i++)
 		{
-			r[i][0]  = r[0][0] + Xl[i]*COSPhi;
-			r[i][1]  = r[0][1] + Xl[i]*SINPhi;
+			r[i][0]  = r[0][0] + Xl[i] * COSPhi;
+			r[i][1]  = r[0][1] + Xl[i] * SINPhi;
 			r[i][2]  = r[0][2] + Zl[i];
 		}
 	}
 	else
-	{	// otherwise just stretch the nodes between the endpoints linearly and hope for the best
-		if (wordy > 0)  cout << "   Catenary IC gen failed for Line" << number << ", so using linear node spacing." << endl;
+	{
+		// otherwise just stretch the nodes between the endpoints linearly and hope for the best
+		if (wordy > 0)
+			cout << "   Catenary IC gen failed for Line" << number
+			     << ", so using linear node spacing." << endl;
 		for (int i=1; i<N; i++)
 		{
 			r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
@@ -417,14 +433,11 @@ void Line::initializeLine(double* X )
 	for (int i=1; i<N; i++) {
 		for (int J=0; J<3; J++) {
 			X[3*N-3 + 3*i-3 + J] = r[i][J];  // positions
-			X[        3*i-3 + J] = 0.0;       // velocities=0
+			X[        3*i-3 + J] = 0.0;      // velocities=0
 		}
 	}
 	// now we need to return to the integrator for the dynamic relaxation stuff
-		
 	cout << "Initialized Line " << number << endl;
-		
-	return;
 };
 
 
@@ -803,9 +816,9 @@ void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int t
 	}
 	
 	return;
-}	
-	
-	
+}
+
+
 // calculate forces and get the derivative of the line's states
 void Line::getStateDeriv(double* Xd, const double dt)
 {
@@ -815,7 +828,7 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	// attempting error handling <<<<<<<<
 	for (int i=0; i<=N; i++)
 	{
-		if (isnan(r[i][0]+r[i][1]+r[i][2])) 
+		if (isnan(r[i][0] + r[i][1] + r[i][2])) 
 		{
 			stringstream s;
 			s << "Line " << number << " node positions:";
@@ -840,7 +853,8 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		lstr[i] = unitvector(qs[i], r[i], r[i+1]);
 				
 		double ldstr_top = 0.0;          // this is the denominator of how the stretch rate equation was formulated
-		for (int J=0; J<3; J++) ldstr_top += (r[i+1][J] - r[i][J])*(rd[i+1][J] - rd[i][J]);
+		for (int J=0; J<3; J++)
+			ldstr_top += (r[i+1][J] - r[i][J]) * (rd[i+1][J] - rd[i][J]);
 		ldstr[i] = ldstr_top/lstr[i]; 	// strain rate of segment
 						
 		V[i] = A*l[i];		// volume attributed to segment
@@ -1041,20 +1055,21 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			}
 			else   // internal node
 			{
-				Kurvi = GetCurvature(lstr[i-1]+lstr[i], qs[i-1], qs[i]);  // curvature <<< remember to check sign, or just take abs
-				
+				Kurvi = GetCurvature(lstr[i-1] + lstr[i], qs[i-1], qs[i]);  // curvature <<< remember to check sign, or just take abs
+
 				crossProd(qs[i-1], qs[i], pvec);         // get direction of bending radius axis
-				
+
 				crossProd(qs[i-1], pvec, Mforce_im1);    // get direction of resulting force from bending to apply on node i-1
 				crossProd(qs[i  ], pvec, Mforce_ip1);    // get direction of resulting force from bending to apply on node i+1
-				
+
 				// scale force direction vectors by desired moment force magnitudes to get resulting forces on adjacent nodes
-				scalevector(Mforce_im1, Kurvi*EI/lstr[i-1], Mforce_im1);
-				scalevector(Mforce_ip1, Kurvi*EI/lstr[i  ], Mforce_ip1 );
-			
+				scalevector(Mforce_im1, Kurvi * EI / lstr[i-1], Mforce_im1);
+				scalevector(Mforce_ip1, Kurvi * EI / lstr[i  ], Mforce_ip1 );
+
 				// set force on node i to cancel out forces on adjacent nodes
-				for (int J=0; J<3; J++) Mforce_i[J] = - Mforce_im1[J] - Mforce_ip1[J];
-				
+				for (int J=0; J<3; J++)
+					Mforce_i[J] = - Mforce_im1[J] - Mforce_ip1[J];
+
 				// apply these forces to the node forces
 				for (int J=0; J<3; J++) 
 				{
@@ -1123,9 +1138,9 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			*/
 		}   // for i=0,N (looping through nodes)
 	}  // if EI > 0
-	
-	
-	
+
+
+
 	// loop through the nodes
 	for (int i=0; i<=N; i++)
 	{
@@ -1140,18 +1155,23 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		// flow velocity calculations       
 		double vq_squared = 0.;
 		double vp_squared = 0.;
-		
-		for (int J=0; J<3; J++)  vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
-		
-		for (int J=0; J<3; J++) 
-		{	
-			vq[J] = dotProd( vi , q[i] ) * q[i][J]; 	// tangential relative flow component  <<<<<<< check sign since I've reversed q
-			vp[J] = vi[J] - vq[J];					// transverse relative flow component
-			vq_squared += vq[J]*vq[J];
-			vp_squared += vp[J]*vp[J];
+
+		for (int J=0; J<3; J++)
+		{
+			cout << U[i][J] << endl;
+			cout << rd[i][J] << endl;
+			vi[J] = U[i][J] - rd[i][J];            // relative flow velocity over node
 		}
+
+		for (int J=0; J<3; J++) 
+		{
+			vq[J] = dotProd(vi , q[i]) * q[i][J];  // tangential relative flow component  <<<<<<< check sign since I've reversed q
+			vp[J] = vi[J] - vq[J];                 // transverse relative flow component
+			vq_squared += vq[J] * vq[J];
+			vp_squared += vp[J] * vp[J];
+		}
+		double vq_mag = sqrt(vq_squared);
 		double vp_mag = sqrt(vp_squared);
-		double vq_mag = sqrt(vp_squared);
 		
 		// transverse drag		
 		if (i==0) 		
@@ -1268,9 +1288,9 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		// fill in state derivatives
 		for (int I=0; I<3; I++) 
 		{
-			Xd[3*N-3 + 3*i-3 + I] = rd[i][I]; //X[3*i-3 + I];    	// dxdt = V  (velocities)
-			Xd[        3*i-3 + I] = acc[I]; //RHSiI;      		// dVdt = RHS * A  (accelerations)
-		}		
+			Xd[            3 * i - 3 + I] = acc[I];    //RHSiI;         dVdt = RHS * A  (accelerations)
+			Xd[3 * N - 3 + 3 * i - 3 + I] = rd[i][I];  //X[3*i-3 + I];  dxdt = V  (velocities)
+		}
 	}
 	
 	return;

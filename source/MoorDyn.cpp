@@ -224,11 +224,11 @@ void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
       
 
 		// calculate dynamics of free objects (will also calculate forces (doRHS()) from any child/dependent objects)...
-		      
-      // calculate line dynamics (and calculate line forces and masses attributed to connections)
-		for (int l=0; l < nLines; l++) 	
+
+		// calculate line dynamics (and calculate line forces and masses attributed to connections)
+		for (int l=0; l < nLines; l++)
 			LineList[l]->getStateDeriv((Xd + LineStateIs[l]), dt);
-		
+
 		// calculate connect dynamics (including contributions from attached lines
 		// as well as hydrodynamic forces etc. on connect object itself if applicable)
 		for (int l=0; l<FreeConIs.size(); l++)  
@@ -280,26 +280,28 @@ void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
 // Runge-Kutta 2 integration routine  (integrates states and time)
 void rk2 (double x0[], double *t0, const double dt )
 {
-	if (env.writeLog > 2)  outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time " << *t0 << " s -----\n";
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
+		           << *t0 << " s -----\n";
 	
-	CalcStateDeriv(x0, f0, *t0, dt);                             // get derivatives at t0.      f0 = f ( t0, x0 );
+	CalcStateDeriv(x0, f0, *t0, dt);   // get derivatives at t0. f0 = f(t0, x0);
 
 	for (int i=0; i<nX; i++) 
-		xt[i] = x0[i] + 0.5*dt*f0[i];  						// integrate to t0  + dt/2.        x1 = x0 + dt*f0/2.0;
+		xt[i] = x0[i] + 0.5 * dt * f0[i];  // integrate to t0  + dt/2. x1 = x0 + dt*f0/2.0;
 	
 	
-	if (env.writeLog > 2)  outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time " << *t0 + 0.5*dt << " s -----\n";
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
+		           << *t0 + 0.5 * dt << " s -----\n";
 	
-	CalcStateDeriv(xt, f1, *t0 + 0.5*dt, dt);                    // get derivatives at t0  + dt/2.	f1 = f ( t1, x1 );
+	CalcStateDeriv(xt, f1, *t0 + 0.5 * dt, dt);  // get derivatives at t0  + dt/2. f1 = f(t1, x1);
 
 	for (int i=0; i<nX; i++) 
-		x0[i] = x0[i] + dt*f1[i]; 							// integrate states to t0 + dt
-		
-	*t0 = *t0 + dt;										// update time
-		
+		x0[i] = x0[i] + dt * f1[i];  // integrate states to t0 + dt
+
+	*t0 = *t0 + dt;                  // update time
+
 	// <<<<<<<<< maybe should check/force all rod unit vectors to be unit vectors here? <<<
-		
-	return;
 }
 
 
@@ -2080,19 +2082,19 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		
 		// call ground body to update all the fixed things...
 		GroundBody->initializeUnfreeBody(NULL, NULL, 0.0);
-		
-		
+
+
 		// initialize coupled objects based on passed kinematics
-		
+
 		int ix = 0;
-		
+
 		for (int l=0; l<CpldBodyIs.size(); l++)
 		{
 			if (wordy>0) cout << "Initializing coupled Body " << CpldBodyIs[l] << endl;
 			BodyList[CpldBodyIs[l]]->initializeUnfreeBody(x + ix, xd + ix, 0.0);   // this calls initiateStep and updateFairlead, then initializes dependent Rods
 			ix += 6;
 		}
-		
+
 		for (int l=0; l<CpldRodIs.size(); l++)  
 		{
 			if (wordy>0) cout << "Initializing coupled Rod " << CpldRodIs[l] << endl;
@@ -2104,7 +2106,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				ix += 6;                                     // for cantilevered rods 6 entries will be taken
 			else
 				ix += 3;                                     // for pinned rods 3 entries will be taken
-		}	
+		}
 
 		for (int l=0; l<CpldConIs.size(); l++)  
 		{
@@ -2116,48 +2118,48 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			ConnectionList[CpldConIs[l]]->updateFairlead(0.0);
 			ix += 3;
 		}
-		
-		
+
+
 		// initialize objects with states, writing their initial states to the master state vector (states)
-		
+
 		// Go through Bodys and write the coordinates to the state vector
 		for (int l=0; l<FreeBodyIs.size(); l++)  
 			BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
-		
+
 		// Go through independent (including pinned) Rods and write the coordinates to the state vector
 		for (int l=0; l<FreeRodIs.size(); l++)  
 			RodList[FreeRodIs[l]]->initializeRod(states + RodStateIs[l]);
-		
+
 		// Go through independent connections (Connects) and write the coordinates to 
 		// the state vector and set positions of attached line ends
 		for (int l=0; l<FreeConIs.size(); l++)  
 			ConnectionList[FreeConIs[l]]->initializeConnect(states + ConnectStateIs[l]);
-			
-			
+
+
 		// Lastly, go through lines and initialize internal node positions using quasi-static model
 		for (int l=0; l<nLines; l++)  
-			LineList[l]->initializeLine( states + LineStateIs[l] ); 
-		
-		
-		
+			LineList[l]->initializeLine(states + LineStateIs[l]); 
+
+
+
 		// write t=-1 output line for troubleshooting preliminary ICs
 		//AllOutput(-1.0);
 		//cout << "outputting ICs for troubleshooting" << endl;
-		
-		
+
+
 		// ------------------ do dynamic relaxation IC gen --------------------
 		
 		cout << "   Finalizing ICs using dynamic relaxation (" << ICDfac << "X normal drag)" << endl;
 		
 		// boost drag coefficients to speed static equilibrium convergence
-		for (int l=0; l < nLines; l++)               LineList[l]->scaleDrag(ICDfac); 	
-		for (int l=0; l < nConnections; l++) ConnectionList[l]->scaleDrag(ICDfac);
+		for (int l=0; l < nLines; l++)               LineList[l]->scaleDrag(ICDfac); 
+		for (int l=0; l < nConnections; l++)   ConnectionList[l]->scaleDrag(ICDfac);
 		for (int l=0; l < nRods; l++)                 RodList[l]->scaleDrag(ICDfac);
 		for (int l=0; l < nBodys; l++)               BodyList[l]->scaleDrag(ICDfac);
 		
 		int niic = round(ICTmax/ICdt);			// max number of IC gen time steps
 		
-	//	vector< double > Tensions(nLines*3*niic, 0.0); // vector to store tensions for analyzing convergence
+		//vector< double > Tensions(nLines*3*niic, 0.0); // vector to store tensions for analyzing convergence
 		vector< double > FairTens(nLines, 0.0); 		// vector to store tensions for analyzing convergence
 		//vector< double > FairTensLast(nFairs, 0.0); 	// vector to store tensions for analyzing convergence
 		//vector< double > FairTensLast2(nFairs, 0.0); 	// vector to store tensions for analyzing convergence
