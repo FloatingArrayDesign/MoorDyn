@@ -337,14 +337,16 @@ void Line::initializeLine(double* X )
 	
 	// process unstretched line length input
 	if (UnstrLen < 0)  // if a negative input, interpret as scaler relative to distance between initial line end points (which have now been set by the relevant Connection objects)
-	{	UnstrLen = -UnstrLen*sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) + pow(( r[N][2] - r[0][2]), 2.0) );
+	{
+		UnstrLen = -UnstrLen*sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) + pow(( r[N][2] - r[0][2]), 2.0) );
 		cout << "   Line " << number << " unstretched length set to " << UnstrLen << " m." << endl;
 	}
 	// otherwise just use the value provided (in m)
 	
 	// now that line length is known, assign length and volume properties
 	for (int i=0; i<N; i++)	
-	{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
+	{
+		l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
 		V[i] = l[i]*0.25*pi*d*d;    // previously missing second d
 	}
 		
@@ -707,43 +709,29 @@ void Line::setState( const double* X, const double time)
 void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 {
 	int i;
-	
+
 	if (topOfLine==1)
-	{	i = N;           // fairlead case
+	{
+		i = N;        // fairlead case
 		endTypeB = 0; // indicate pinned
 	}
 	else
-	{	i = 0;           // anchor case
+	{
+		i = 0;        // anchor case
 		endTypeA = 0; // indicate pinned
 	}
-	
+
 	for (int J=0; J<3; J++)
 	{
-		r[i][J] = r_in[J];
-		rd[i][J] = rd_in[J];
+		memcpy(r[i], r_in, 3 * sizeof(double));
+		memcpy(rd[i], rd_in, 3 * sizeof(double));
 	}
-	return;
-}		
+}
+
 void Line::setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine)
 {
-	int i;
-	
-	if (topOfLine==1)
-	{	i = N;           // fairlead case
-		endTypeB = 0; // indicate pinned
-	}
-	else
-	{	i = 0;           // anchor case
-		endTypeA = 0; // indicate pinned
-	}
-	
-	for (int J=0; J<3; J++)
-	{
-		r[i][J] = r_in[J];
-		rd[i][J] = rd_in[J];
-	}
-	return;
-}		
+	setEndState(r_in.data(), rd_in.data(), topOfLine);
+}
 
 // set end node unit vector of a line (this is called by an attached to a Rod, only applicable for bending stiffness)
 void Line::setEndOrientation(double *qin, int topOfLine, int rodEndB)
