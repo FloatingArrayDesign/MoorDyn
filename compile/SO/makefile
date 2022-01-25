@@ -1,4 +1,15 @@
-# makefile for MoorDyn compiled as Lines.dll
+# makefile for MoorDyn compiled as Lines.so, and creating a convenient symbolic
+# link as libmoordyn.so (so it can be linked with -lmoordyn)
+#
+# The following targets are provided:
+#
+# all: Builds the library Lines.so, and the symbolic link
+#      libmoordyn.so -> Lines.so
+#
+# test: Build libmoordyn.so, if not yet built, and then the tests:
+#        - test_minimal
+#
+# debug: Build both targets, all and test, with debug information
 
 
 # tell to search for dependencies in parent dir
@@ -6,8 +17,8 @@ VPATH = ../source
 
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -DLINUX -fPIC
 
-CFLAGS = -c -O3 -g -w -Wall -static -static-libgcc -static-libstdc++ -std=gnu++0x -DLINUX -fPIC
-
+CFLAGS = -c -O3 -w -Wall -std=gnu++0x -DLINUX -fPIC
+EXEFLAGS = -DLINUX
 
 all: libmoordyn.so
 
@@ -16,7 +27,7 @@ libmoordyn.so: Lines.so
 	ln -s Lines.so libmoordyn.so
 
 Lines.so: MoorDyn.o Line.o Connection.o Body.o Rod.o Waves.o Misc.o kiss_fft.o kiss_fftr.o
-	g++ $(LFLAGS) -o Lines.so MoorDyn.o Line.o Connection.o Body.o Rod.o Waves.o Misc.o kiss_fft.o kiss_fftr.o
+	gcc $(LFLAGS) -o Lines.so MoorDyn.o Line.o Connection.o Body.o Rod.o Waves.o Misc.o kiss_fft.o kiss_fftr.o
 
 MoorDyn.o: ../../source/MoorDyn.cpp ../../source/MoorDyn.h ../../source/Line.h ../../source/Connection.h ../../source/QSlines.h ../../source/Misc.h
 	g++ $(CFLAGS) ../../source/MoorDyn.cpp
@@ -47,8 +58,14 @@ Misc.o: ../../source/Misc.cpp ../../source/Misc.h
 
 clean:
 	rm -f *.o *.so
-	rm -f minimal 
+	rm -f test_minimal 
 
-test: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h ../../source/Misc.h
-	g++ -L./ -lmoordyn -I../../source/ -DLINUX -o minimal ../../test/minimal.cpp
-	./minimal
+test_minimal: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h ../../source/Misc.h
+	g++ $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../test/minimal.cpp
+
+test: test_minimal
+
+debug: CFLAGS += -g -DDEBUG=1
+debug: EXEFLAGS += -g -DDEBUG=1
+
+debug: all test
