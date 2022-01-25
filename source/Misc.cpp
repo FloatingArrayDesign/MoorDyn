@@ -322,8 +322,12 @@ int decomposeString(char outWord[10], char let1[10],
      char num1[10], char let2[10], char num2[10], char let3[10])
 {
 	// convert to uppercase for string matching purposes
-	for (int charIdx=0; charIdx<10; charIdx++) 
+	for (int charIdx=0; charIdx<10; charIdx++)
+	{
+		if (outWord[charIdx] == '\0')
+			break;
 		outWord[charIdx] = toupper(outWord[charIdx]);
+	}
 
 	//int wordLength = strlen(outWord);  // get length of input word (based on null termination)
 		//cout << "1";	
