@@ -38,6 +38,8 @@ Thumbs.db
 #duplicate files
 *~
 
-#program output files
+#binary tests
+compile/SO/test*
 
+#program output files
 *.out
