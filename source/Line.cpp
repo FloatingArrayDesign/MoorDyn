@@ -118,9 +118,8 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	channels = channels_in; 				// copy string of output channels to object
 	
 	
-	if (wordy >0)  cout << "Set up Line " << number << "." << endl;
-		
-	return;
+	if (wordy >0)
+		cout << "Set up Line " << number << "." << endl;
 };
 
 
@@ -369,7 +368,7 @@ void Line::initializeLine(double* X)
 	// input variables for the Catenary function
 	double XF = sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) ); // quasi-static mooring line coordinate system (vertical plane with corners at anchor and fairlead) 
 	double ZF = r[N][2] - r[0][2];	
-	double W = ( (rho - env->rho_w)*(pi/4.*d*d) )*9.81; 
+	double LW = ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81;
 	double CB = 0.;
 	double Tol = 0.00001;	
 	
@@ -402,7 +401,7 @@ void Line::initializeLine(double* X)
 		SINPhi = (r[N][1] - r[0][1]) / XF; 
 	}
 
-	int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, W , CB, Tol,
+	int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, LW, CB, Tol,
 	                       &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
 
 	if (success>=0)
@@ -701,20 +700,20 @@ void Line::setTime(double time)
 
 
 // set the line positions and velocities based on latest states
-void Line::setState( const double* X, const double time)
+void Line::setState(const double* X, const double time)
 {
 	// store current time
 	t = time;
 	
 	// set interior node positions and velocities based on state vector
 	for (int i=1; i<N; i++) 
-	{	for (int J=0; J<3; J++)
+	{
+		for (int J=0; J<3; J++)
 		{
-			r[i][J]  = X[3*N-3 + 3*i-3 + J]; // get positions
-			rd[i][J] = X[        3*i-3 + J]; // get velocities
+			r[i][J]  = X[3 * N - 3 + 3 * i - 3 + J]; // get positions
+			rd[i][J] = X[            3 * i - 3 + J]; // get velocities
 		}
 	}
-	return;
 }
 
 
@@ -976,15 +975,14 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	}
 	
 	
-	// Bending loads	
+	// Bending loads
+	// first zero out the forces from last run
+	for (int i=0; i<=N; i++)
+		for (int J=0; J<3; J++)
+			Bs[i][J] = 0.0;
+	// and now compute them (if possible)
 	if (EI > 0)
 	{
-		// first zero out the forces from last run
-		for (int i=0; i<=N; i++)
-			for (int J=0; J<3; J++) 
-				Bs[i][J] = 0.0;
-			
-		
 		// loop through all nodes to calculate bending forces
 		for (int i=0; i<=N; i++)
 		{
@@ -1144,6 +1142,7 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	// loop through the nodes
 	for (int i=0; i<=N; i++)
 	{
+		W[i][0] = W[i][1] = 0.0;
 		// submerged weight (including buoyancy)
 		if (i==0)
 			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env->rho_w) )*(-env->g);
@@ -1157,11 +1156,7 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		double vp_squared = 0.;
 
 		for (int J=0; J<3; J++)
-		{
-			cout << U[i][J] << endl;
-			cout << rd[i][J] << endl;
 			vi[J] = U[i][J] - rd[i][J];            // relative flow velocity over node
-		}
 
 		for (int J=0; J<3; J++) 
 		{
@@ -1246,23 +1241,26 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			B[i][2] = 0.;
 		}		
 		// total forces
-		if (i==0)
-			for (int J=0; J<3; J++) Fnet[i][J] = T[i][J]             + Td[i][J]              + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J]     + Bs[i][J];
-		else if (i==N)                                               
-			for (int J=0; J<3; J++) Fnet[i][J] =          -T[i-1][J]            - Td[i-1][J] + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J]     + Bs[i][J];
-		else                                                           
-			for (int J=0; J<3; J++) Fnet[i][J] = T[i][J] - T[i-1][J] + Td[i][J] - Td[i-1][J] + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J]  + Bs[i][J];
-		
+		for (int J=0; J<3; J++)
+		{
+			if (i==0)
+				Fnet[i][J] = T[i][J]             + Td[i][J];
+			else if (i==N)
+				Fnet[i][J] =          -T[i-1][J]            - Td[i-1][J];
+			else
+				Fnet[i][J] = T[i][J] - T[i-1][J] + Td[i][J] - Td[i-1][J];
+			Fnet[i][J] += W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J] + Bs[i][J];
+		}
 	}
-		
+
 //	if (t > 5)
 //	{
 //		cout << " in getStateDeriv of line " << number << endl;
 //		
 //		B[0][0] = 0.001; // meaningless
 //	}
-		
-		
+
+
 	// loop through internal nodes and update their states
 	for (int i=1; i<N; i++)	
 	{
@@ -1292,8 +1290,6 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			Xd[3 * N - 3 + 3 * i - 3 + I] = rd[i][I];  //X[3*i-3 + I];  dxdt = V  (velocities)
 		}
 	}
-	
-	return;
 };
 
 

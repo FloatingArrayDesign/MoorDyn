@@ -150,7 +150,7 @@ int OwnConsoleWindow = 0;
 #endif
 
 // master function for advancing the model and calculating state derivatives (akin to MD_CalcContStateDeriv in MoorDyn F)
-void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
+void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 {
 	//--try
 	//--{
@@ -219,7 +219,7 @@ void CalcStateDeriv( double X[],  double Xd[], const double t, const double dt)
 			ConnectionList[FreeConIs[l]]->setState((X + ConnectStateIs[l]), t);
 		
 		// give Lines latest state variable values for internal nodes
-		for (int l=0; l < nLines; l++) 	
+		for (int l=0; l < nLines; l++)
 			LineList[l]->setState((X + LineStateIs[l]), t);
       
 
@@ -286,7 +286,7 @@ void rk2 (double x0[], double *t0, const double dt )
 	
 	CalcStateDeriv(x0, f0, *t0, dt);   // get derivatives at t0. f0 = f(t0, x0);
 
-	for (int i=0; i<nX; i++) 
+	for (int i=0; i<nX; i++)
 		xt[i] = x0[i] + 0.5 * dt * f0[i];  // integrate to t0  + dt/2. x1 = x0 + dt*f0/2.0;
 	
 	
@@ -352,7 +352,8 @@ int AllOutput(double t, double dtC)
 		outfileMain << "\n";
 	}
 	else 
-	{	cout << "Unable to write to main output file " << endl;
+	{
+		cout << "Unable to write to main output file " << endl;
 		return -1;
 	}
 		
@@ -480,7 +481,8 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 			myfile.close();
 		}
 		else 
-		{	cout << "Error: unable to open " << iname.str() << endl; 
+		{
+			cout << "Error: unable to open " << iname.str() << endl;
 			cout << "                    - " << MDbasepath << " - "<< entry << " - "<< iname.str() << endl; 
 			return -1;  // <<<<<<<<<<<< need to make this a failure!!
 		}
@@ -503,7 +505,8 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 				}
 			}
 			else
-			{	cout << "Error: failed to find two columns somewhere within " << iname.str() << endl; 
+			{
+				cout << "Error: failed to find two columns somewhere within " << iname.str() << endl;
 				return -1;
 			}
 		}		

@@ -34,15 +34,24 @@ using namespace std;
  */
 bool bad_input_file()
 {
+    int err;
     double x[6], dx[6];
     std::fill(x, x + 6, 0.0);
     std::fill(dx, dx + 6, 0.0);
-    const int err = MoorDynInit(x, dx, "badfile.txt");
+    err = MoorDynInit(x, dx, "badfile.txt");
     if (err != MOORDYN_INVALID_INPUT_FILE) {
         cerr << "The error code " << MOORDYN_INVALID_INPUT_FILE
              << " was expected, but " << err << " was received" << endl;
+        return false;
     }
-    return err == MOORDYN_INVALID_INPUT_FILE;
+
+    err = MoorDynClose();
+    if (err != MOORDYN_SUCCESS) {
+        cerr << "Failure closing Moordyn: " << err << endl;
+        return false;
+    }
+
+    return true;
 }
 
 /** @brief Check that a mooring system can be initialized, that a step can be

@@ -336,43 +336,39 @@ void LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, double *y, double*x)
 	// Solves Ax=b for x
 	// LU contains LU matrices, y is a temporary vector
 	// all dimensions are n
-	
-   for(int k=0; k<n; ++k)
+
+	for(int k=0; k<n; ++k)
 	{
-      for(int i=k; i<n; ++i)
+		for(int i=k; i<n; ++i)
 		{
-         double sum=0.;
-			
-         for(int p=0; p<k; ++p)
-				sum += LU[i][p]*LU[p][k];
-			
-         LU[i][k] = A[i][k]-sum; // not dividing by diagonals
-      }
-      for(int j=k+1;j<n;++j)
+			double sum=0.;
+
+			for(int p=0; p<k; ++p)
+				sum += LU[i][p] * LU[p][k];
+			LU[i][k] = A[i][k] - sum; // not dividing by diagonals
+		}
+		for(int j=k+1;j<n;++j)
 		{
-         double sum=0.;
-         for(int p=0;p<k;++p)
-				sum += LU[k][p]*LU[p][j];
-         
-			LU[k][j] = (A[k][j]-sum)/LU[k][k];
-      }
-   }
-	
-   for(int i=0; i<n; ++i)
+			double sum=0.;
+			for(int p=0;p<k;++p)
+				sum += LU[k][p] * LU[p][j];
+			LU[k][j] = (A[k][j] - sum) / LU[k][k];
+		}
+	}
+
+	for(int i=0; i<n; ++i)
 	{
-      double sum=0.;
-      for(int k=0; k<i; ++k)
-			sum += LU[i][k]*y[k];
-      
-		y[i] = (b[i]-sum)/LU[i][i];
-   }
-   for(int i=n-1; i>=0; --i)
+		double sum=0.;
+		for(int k=0; k<i; ++k)
+			sum += LU[i][k] * y[k];
+		y[i] = (b[i] - sum) / LU[i][i];
+	}
+	for(int i=n-1; i>=0; --i)
 	{
-      double sum=0.;
-      for(int k=i+1; k<n; ++k)
-			sum += LU[i][k]*x[k];
-      
-		x[i] = (y[i]-sum); // not dividing by diagonals
+		double sum=0.;
+		for(int k=i+1; k<n; ++k)
+			sum += LU[i][k] * x[k];
+		x[i] = (y[i] - sum);  // not dividing by diagonals
    }
 }
 
