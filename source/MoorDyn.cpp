@@ -2070,7 +2070,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 		FairTensLast = make2Darray(nLines, 10); // allocate past line fairlead tension array, which is used for convergence test during IC gen
 		
-		for (int i=0; i < nLines; i++) for (int j=0; j < 10; j++) FairTensLast[i][j] = 1.0*j;
+		for (int i=0; i < nLines; i++)
+			for (int j=0; j < 10; j++)
+				FairTensLast[i][j] = 1.0*j;
 		
 			
 		// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
@@ -2090,13 +2092,15 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		int ix = 0;
 		
 		for (int l=0; l<CpldBodyIs.size(); l++)
-		{	if (wordy>0) cout << "Initializing coupled Body " << CpldBodyIs[l] << endl;
+		{
+			if (wordy>0) cout << "Initializing coupled Body " << CpldBodyIs[l] << endl;
 			BodyList[CpldBodyIs[l]]->initializeUnfreeBody(x + ix, xd + ix, 0.0);   // this calls initiateStep and updateFairlead, then initializes dependent Rods
 			ix += 6;
 		}
 		
 		for (int l=0; l<CpldRodIs.size(); l++)  
-		{	if (wordy>0) cout << "Initializing coupled Rod " << CpldRodIs[l] << endl;
+		{
+			if (wordy>0) cout << "Initializing coupled Rod " << CpldRodIs[l] << endl;
 			RodList[CpldRodIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
 			RodList[CpldRodIs[l]]->updateFairlead(0.0);
 			RodList[CpldRodIs[l]]->initializeRod(NULL);  // call this just to set up the output file header
@@ -2108,7 +2112,11 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		}	
 
 		for (int l=0; l<CpldConIs.size(); l++)  
-		{	if (wordy>0) cout << "Initializing coupled Connection " << CpldConIs[l] << endl;
+		{
+			if (wordy>0)
+				cout << "Initializing coupled Connection " << CpldConIs[l]
+				     << " in " << x[ix] << ", " << x[ix + 1] << ", "
+					 << x[ix + 2] << endl;
 			ConnectionList[CpldConIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
 			ConnectionList[CpldConIs[l]]->updateFairlead(0.0);
 			ix += 3;

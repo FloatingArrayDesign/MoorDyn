@@ -49,8 +49,10 @@ extern "C"
  * Including reading the input file, creating the mooring system data
  * structures, and calculating the initial conditions
  * 
- * @param x Position vector (6 components)
- * @param xd Velocity vector (6 components)
+ * @param x Position vector (6 components per coupled body or cantilevered rod
+ * and 3 components per pinned rod or coupled connection)
+ * @param xd Velocity vector (6 components per coupled body or cantilevered rod
+ * and 3 components per pinned rod or coupled connection)
  * @param infilename The input file, if either NULL or "", then
  * "Mooring/lines.txt" will be considered
  * @return 0 If the mooring system is correctly initialized, an error code

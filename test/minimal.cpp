@@ -52,9 +52,12 @@ bool bad_input_file()
 bool minimal()
 {
     int err;
-    double x[6], dx[6];
-    std::fill(x, x + 6, 0.0);
-    std::fill(dx, dx + 6, 0.0);
+    double x[9], dx[9];
+    // Set the fairlead connections, as they are in the config file
+    x[0] = 5.2;  x[1] = 0.0;  x[2] = -70.0;
+    x[3] = -2.6; x[4] = 4.5;  x[5] = -70.0;
+    x[6] = -2.6; x[7] = -4.5; x[8] = -70.0;
+    std::fill(dx, dx + 9, 0.0);
     err = MoorDynInit(x, dx, "../../test/Mooring/lines.txt");
     if (err != MOORDYN_SUCCESS) {
         cerr << "Failure during the mooring initialization: " << err << endl;
