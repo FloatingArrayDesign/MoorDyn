@@ -57,6 +57,8 @@ extern "C"
  * "Mooring/lines.txt" will be considered
  * @return 0 If the mooring system is correctly initialized, an error code
  * otherwise (see @ref moordyn_errors)
+ * @warning Just one instance of MoorDyn per process is allowed. Thus, if
+ * several mooring systems shall be handled, please spawn additional processes
  */
 int DECLDIR MoorDynInit(double x[], double xd[], const char *infilename); // called by one of the above
 
@@ -66,6 +68,11 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* , double* )
 //int DECLDIR FairleadsCalc(double **rFairIn, double **rdFairIn, double ** fFairIn, double* t_in, double *dt_in);
 
 
+/** @brief Releases MoorDyn allocated resources
+ * @return 0 If the mooring system is correctly destroyed, an error code
+ * otherwise (see @ref moordyn_errors)
+ * @note Call this function even if the initialization failed
+ */
 int DECLDIR MoorDynClose(void);
 
 // new functions for wave kinematics coupling

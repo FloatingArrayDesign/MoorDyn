@@ -25,129 +25,311 @@
 #include "Body.h"
 
 #ifdef LINUX
-	#include <cmath> 	// already in misc.h?
+	#include <cmath>
 	#include <ctype.h>
-#endif
 
+	// contributed by Yi-Hsiang Yu at NREL
+	#define isnan(x) std::isnan(x)
+#endif
 
 using namespace std;
 
-// static vectors for fairleads
-//vector<double> FlinesS;					// net line force vector (6-DOF) - retains last solution for use when inputted dt is zero (such as during FAST predictor steps) when the model does not time step
-//vector< vector< double > > rFairtS;		// fairlead locations in turbine/platform coordinates
-//vector< vector< double > > rFairRel;		// fairlead locations relative to platform ref point but in inertial orientation
-double** rFairi;			// fairlead locations in inertial reference frame
-double** rdFairi;		// fairlead velocities in inertial reference frame
 
-double** FairTensLast; // previous fairlead tensions over last n time steps, used for IC gen (nFair x 10 )
+/** @defgroup objects Mooring system objects
+ *  @{
+ */
+/// array of pointers to hold line library types
+LineProps** LinePropList = NULL;
+/// array of pointers to hold rod library types
+RodProps** RodPropList = NULL;
+/// array of pointers to hold failure condition structs
+FailProps** FailList = NULL;
 
-// static vectors to hold line and connection objects
-LineProps** LinePropList;         // array of pointers to hold line library types
-RodProps** RodPropList;           // array of pointers to hold rod library types
-FailProps** FailList;           // array of pointers to hold failure condition structs
+/// The ground body, which is unique
+Body* GroundBody = NULL;
 
-Body* GroundBody;
-Body** BodyList;			       // array of pointers to connection objects (line joints or ends)
-Rod** RodList;                   // array of pointers to Rod objects
-Connection** ConnectionList;  // array of pointers to connection objects (line joints or ends)
-Line** LineList;                // array of pointers to line objects
+/// pointer to a Waves object that will be created to hold water kinematics info
+Waves *waves = NULL;
 
-//vector< Line > LineList;                 // line objects
-//vector< Rod > RodList;                   // Rod objects
-//vector< Body > BodyList;			        // connection objects (line joints or ends)
-//vector< Connection > ConnectionList;      // connection objects (line joints or ends)
+/// array of pointers to connection objects (line joints or ends)
+Body** BodyList;
+/// array of pointers to Rod objects
+Rod** RodList;
+/// array of pointers to connection objects (line joints or ends)
+Connection** ConnectionList;
+/// array of pointers to line objects
+Line** LineList;
 
-//vector< int > RodType2Is;     // array of indices of which of RodList are actually independent Rods
-vector< int > LineStateIs;    // array of starting indices for Lines in "states" array
-vector< int > ConnectStateIs; // array of starting indices for indendent Connections in "states" array
-vector< int > RodStateIs;     // array of starting indices for independent Rods in "states" array
-vector< int > BodyStateIs;    // array of starting indices for Bodies in "states" array
+/// array of starting indices for Lines in "states" array
+vector< int > LineStateIs;
+/// array of starting indices for indendent Connections in "states" array
+vector< int > ConnectStateIs;
+/// array of starting indices for independent Rods in "states" array
+vector< int > RodStateIs;
+/// array of starting indices for Bodies in "states" array
+vector< int > BodyStateIs;
 
-vector< int > FreeBodyIs;  					// vector of free body indices in BodyList vector
-vector< int > CpldBodyIs;  					// vector of coupled/fairlead body indices in BodyList vector
+/// vector of free body indices in BodyList vector
+vector< int > FreeBodyIs;
+/// vector of coupled/fairlead body indices in BodyList vector
+vector< int > CpldBodyIs;
 
-vector< int > FreeRodIs;  					// vector of free rod indices in RodList vector (this includes pinned rods because they are partially free and have states)
-vector< int > CpldRodIs;  					// vector of coupled/fairlead rod indices in RodList vector
+/// vector of free rod indices in RodList vector (this includes pinned rods because they are partially free and have states)
+vector< int > FreeRodIs;
+/// vector of coupled/fairlead rod indices in RodList vector
+vector< int > CpldRodIs;
 
-vector< int > FreeConIs;  					// vector of free connection indices in ConnectionList vector
-vector< int > CpldConIs;  					// vector of coupled/fairlead connection indices in ConnectionList vector
+/// vector of free connection indices in ConnectionList vector
+vector< int > FreeConIs;
+/// vector of coupled/fairlead connection indices in ConnectionList vector
+vector< int > CpldConIs;
 
-//vector< int > FairIs;  					// vector of fairlead connection indices in ConnectionList vector
-//vector< int > ConnIs;  					// vector of connect connection indices in ConnectionList vector
-//vector< int > AnchIs;  					// vector of anchor connection indices in ConnectionList vector
+/// number of line types
+int nLineTypes = 0;
+/// number of Rod types
+int nRodTypes = 0;
+/// number of Line objects
+int nLines = 0;
+/// number of Rod objects
+int nRods = 0;
+/// number of Body objects
+int nBodys = 0;
+/// total number of Connection objects
+int nConnections = 0;
+/// maximum number of Connection objects (allows addition of connections during simulation for line detachments)
+int nConnectionsExtra = 0;
+/// number of failure conditions read in
+int nFails = 0;
 
-int nLineTypes       ; // number of line types
-int nRodTypes        ; // number of Rod types
-int nLines           ; // number of Line objects
-int nRods            ; // number of Rod objects
-int nBodys           ; // number of Body objects
-int nConnections     ; // total number of Connection objects
-int nConnectionsExtra; // maximum number of Connection objects (allows addition of connections during simulation for line detachments)
-int nFails           ; // number of failure conditions read in
+/**
+ * @}
+ */
 
+/// Struct of general environmental parameters
+EnvCond env;
 
-EnvCond env; 							// struct of general environmental parameters
-Waves *waves;                           // pointer to a Waves object that will be created to hold water kinematics info
+/** @defgroup waves Waves data
+ *  @{
+ */
 
-int npW;  // number of points that wave kinematics are input at if using WaveKin=1
-double* U_1;   // array of wave velocity and acceleration at each of the npW points (u1, v1, w1, u2, v2, w2, etc.)
-double* Ud_1;
-double tW_1;  // time corresponding to the wave kinematics data
-double* U_2;
-double* Ud_2;
-double tW_2;
-double* U_extrap;  // for extrapolated wave velocities
+/// number of points that wave kinematics are input at (if using env.WaveKin=1)
+int npW = 0;
+/// time corresponding to the wave kinematics data
+double tW_1 = 0.0;
+/// array of wave velocity at each of the npW points at time tW_1
+double* U_1 = NULL;
+/// array of wave acceleration at each of the npW points
+double* Ud_1 = NULL;
+/// time corresponding to the wave kinematics data
+double tW_2 = 0.0;
+/// array of wave velocity at each of the npW points at time tW_2
+double* U_2 = NULL;
+/// array of wave acceleration at each of the npW points
+double* Ud_2 = NULL;
+/// for extrapolated wave velocities
+double* U_extrap = NULL;
 
-string MDbasepath;                             // directory of files 
-string MDbasename;                            // name of input file (without extension)
+/**
+ * @}
+ */
 
-//vector< shared_ptr< ifstream > > infiles; 	//
-vector< shared_ptr< ofstream > > outfiles; 	// a vector to hold ofstreams for each line
-ofstream outfileMain;					// main output file
-ofstream outfileLog;					// log output file
-vector< OutChanProps > outChans;		// list of structs describing selected output channels for main out file
+/** @defgroup output Output related data
+ *  @{
+ */
+
+/// directory of files
+string MDbasepath;
+/// name of input file (without extension)
+string MDbasename;
+
+/// a vector to hold ofstreams for each line
+vector< shared_ptr< ofstream > > outfiles;
+/// main output file
+ofstream outfileMain;
+/// log output file
+ofstream outfileLog;
+/// list of structs describing selected output channels for main out file
+vector< OutChanProps > outChans;
+/// list of units for each of the QTypes (see Misc.h)
 const char* UnitList[] = {"(s)     ", "(m)     ", "(m)     ", "(m)     ", 
                           "(m/s)   ", "(m/s)   ", "(m/s)   ", "(m/s2)  ",
-					 "(m/s2)  ", "(m/s2)  ", "(N)     ", "(N)     ",
-					 "(N)     ", "(N)     "};   // list of units for each of the QTypes (see misc.h)
+                          "(m/s2)  ", "(m/s2)  ", "(N)     ", "(N)     ",
+                          "(N)     ", "(N)     "};
 
+/**
+ * @}
+ */
+
+/** @defgroup state State variables
+ *  @{
+ */
 
 // state vector and stuff
 // state vector is organized in order of input file:
 //    [ bodies, rods, connects, lines [future dynamic additions?]].
 //    Remember that we need to be able to add extra connects on the end for line failures.
-double* states;                      // pointer to array comprising global state vector
-int nX;                                // used size of state vector array
-int nXtra;                            // full size of state vector array including extra space for detaching up to all line ends, each which could get its own 6-state connect (nXtra = nX + 6*2*nLines)
-double* xt;                           // more state vector things for rk2/rk4 integration 
-double* f0;
-double* f1;
-//double* f2;
-//double* f3;
 
-//double** Ffair;	// pointer to 2-d array holding fairlead forces
+/// previous fairlead tensions over last n time steps, used for IC gen
+/// (nFair x 10 )
+double** FairTensLast = NULL;
 
-//double dt; // FAST time step
-double dtM0; // desired mooring line model time step   
+/// pointer to array comprising global state vector
+double* states = NULL;
+/// used size of state vector array
+int nX = 0;
+/// full size of state vector array including extra space for detaching up to
+/// all line ends, each which could get its own 6-state connect
+/// (nXtra = nX + 6*2*nLines)
+int nXtra = 0;
+/// State vector at midpoint in the RK-2 integration scheme 
+double* xt = NULL;
+/// Drivatives computed in the first step of the RK-2 integration scheme 
+double* f0 = NULL;
+/// Drivatives computed in the second step of the RK-2 integration scheme 
+double* f1 = NULL;
 
-double dtOut = 0;  // (s) desired output interval (the default zero value provides output at every call to MoorDyn)
+/// (s) desired mooring line model time step
+double dtM0 = 0.0;
 
-// new temporary additions for waves
-//vector< floatC > zetaCglobal;
-//double dwW;
+/// (s) desired output interval (the default zero value provides output at every
+/// call to MoorDyn)
+double dtOut = 0.0;
 
+/**
+ * @}
+ */
 
-// new globals for creating output console window when needed
+/** @defgroup cmd Output console handling
+ *  @{
+ */
+
+/// Console handle
 int hConHandle;
-intptr_t lStdHandle;   //long lStdHandle;
+/// Std output handle
+intptr_t lStdHandle;
 
-char const* PromptPtr;  // pointer to be made to environment variable PROMPT
-int OwnConsoleWindow = 0;	
+/// pointer to be made to environment variable PROMPT
+char const* PromptPtr;
+/// 0 if the system console is used, 1 if the console has been created by us
+int OwnConsoleWindow = 0;
 
-#ifdef LINUX	// any differences from built-in in mingw?  what about on OSX?
-// int isnan(double x) { return x != x; } 	// changed to lower case.  will this still work?  Apparently some compiler optimizations can ruin this method
-#define isnan(x) std::isnan(x)     // contributed by Yi-Hsiang Yu at NREL
-#endif
+/**
+ * @}
+ */
+
+/** @brief Release all the allocated resources
+ *
+ * This function sets everything to the same state it had when the library was
+ * loaded, in such a way previous calls to MoorDynInit() might not polute this
+ * execution
+ */
+void release()
+{
+	// Remove the Mooring system objects
+	free2Dmem((void**)LinePropList, nLineTypes);
+	LinePropList = NULL;
+	free2Dmem((void**)RodPropList, nRodTypes);
+	RodPropList = NULL;
+	free2Dmem((void**)FailList, nFails);
+	FailList = NULL;
+
+	delete GroundBody;
+	GroundBody = NULL;
+	delete waves;
+	waves = NULL;
+
+	free2Dmem((void**)BodyList, nBodys);
+	BodyList = NULL;
+	free2Dmem((void**)RodList, nRods);
+	RodList = NULL;
+	free2Dmem((void**)ConnectionList, nConnections);
+	ConnectionList = NULL;
+	free2Dmem((void**)LineList, nLines);
+	LineList = NULL;
+
+	LineStateIs.clear();
+	ConnectStateIs.clear(); 
+	RodStateIs.clear(); 
+	BodyStateIs.clear();  
+	FreeBodyIs.clear();  
+	CpldBodyIs.clear();  
+	FreeRodIs.clear();  
+	CpldRodIs.clear();  
+	FreeConIs.clear();  
+	CpldConIs.clear();
+
+	nLineTypes = 0;
+	nRodTypes = 0;
+	nLines = 0;
+	nRods = 0;
+	nBodys = 0;
+	nConnections = 0;
+	nConnectionsExtra = 0;
+	nFails = 0;
+
+	// Reset the global parameters
+	env.g = 9.8;
+	env.WtrDpth = 0.;
+	env.rho_w = 1025.;
+	env.kb = 3.0e6;
+	env.cb = 3.0e5;
+	env.WaveKin = 0;
+	env.Current = 0;
+	env.dtWave = 0.25;
+	env.WriteUnits = 1;
+	env.writeLog = 0;
+	env.outfileLogPtr = NULL;
+	env.FrictionCoefficient = 0.0;
+	env.FricDamp = 200.0;
+	env.StatDynFricScale = 1.0;
+
+	// Delete the waves
+	delete U_1;
+	U_1 = NULL;
+	delete Ud_1;
+	Ud_1 = NULL;
+	delete U_2;
+	U_2 = NULL;
+	delete Ud_2;
+	Ud_2 = NULL;
+	delete U_extrap;
+	U_extrap = NULL;
+	npW = 0;
+	tW_1 = 0.0;
+	tW_2 = 0.0;
+
+	// close any open output files
+	if (outfileMain.is_open())
+		outfileMain.close();
+	if (outfileLog.is_open())
+		outfileLog.close();
+	for (auto outfile : outfiles)  // int l=0; l<nLines; l++) 
+		if (outfile && outfile->is_open())
+			outfile->close();
+	outfiles.clear();
+	outChans.clear();
+	MDbasepath = "";
+	MDbasename = "";
+
+	// Release the state vectors
+	free2Darray(FairTensLast, nLines);
+	FairTensLast = NULL;
+
+	free(states);
+	states = NULL;
+	free(f0);
+	f0 = NULL;
+	free(f1);
+	f1 = NULL;
+	free(xt);
+	xt = NULL;
+
+	nX = 0;
+	nXtra = 0;
+	dtM0 = 0.0;
+	dtOut = 0.0;
+}
+
 
 // master function for advancing the model and calculating state derivatives (akin to MD_CalcContStateDeriv in MoorDyn F)
 void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
@@ -516,13 +698,11 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 }
 
 
-/** initialization function, changed to work for any type of coupling
-
-Passed parameters are positions, velocities (assumed 0), and root filename (used for input and output too).
-*/
-
 int MoorDynInit(double x[], double xd[], const char *infilename)
-{	
+{
+	// Avoid that previous calls to MoorDynInit might mess up with this new
+	// execution
+	release();
 
 #ifndef LINUX
 #ifndef OSX
@@ -2578,95 +2758,7 @@ catch(...) {
 
 int DECLDIR MoorDynClose(void)
 {
-	free(states);
-	free(f0       );
-	free(f1       );
-	free(xt       );	
-	
-//	free2Darray(Ffair, nFairs);
-//	free2Darray(rFairi, nFairs);
-//	free2Darray(rdFairi, nFairs);
-	free2Darray(FairTensLast, nLines);
-	
-	// close any open output files
-	if (outfileMain.is_open())
-		outfileMain.close();
-	if (outfileLog.is_open())
-		outfileLog.close();
-	for (int l=0; l<nLines; l++) 
-		if (outfiles[l])							// if not null
-			if (outfiles[l]->is_open())
-				outfiles[l]->close();
-	
-	// reset counters to zero!
-//	nFairs  = 0;
-//	nAnchs  = 0;
-//	nConns  = 0;
-		
-		
-	// delete created mooring system objects
-
-	delete waves;
-
-
-	for (int l = 0; l<nLineTypes; l++)
-		delete LinePropList[l];
-	delete[]   LinePropList;
-	
-	for (int l = 0; l<nRodTypes; l++)
-		delete RodPropList[l];
-	delete[]   RodPropList;
-	
-	for (int l = 0; l<nFails; l++)
-		delete FailList[l];
-	delete[]   FailList;
-
-	delete GroundBody;
-
-	for (int l = 0; l<nBodys; l++)
-		delete BodyList[l];
-	delete[]   BodyList;
-
-	for (int l = 0; l<nRods; l++)
-		delete RodList[l];
-	delete[]   RodList;
-
-	for (int l = 0; l<nConnections; l++)  // only delete the connections that have been created (excludes empty spots for extras)
-		delete ConnectionList[l];
-	delete[]   ConnectionList;
-
-	for (int l = 0; l<nLines; l++)
-		delete LineList[l];
-	delete[]   LineList;
-
-	// clear any global vectors
-	//	FlinesS.clear();		
-	//	rFairtS.clear();		
-	//	rFairRel.clear();		
-	//	rFairi.clear();		
-	//	rdFairi.clear();		
-		//    LinePropList.clear(); 	
-	//	LineList.clear(); 		
-	//	ConnectionList.clear();	
-	//	FairIs.clear();  		
-	//	ConnIs.clear();  
-	LineStateIs.clear()   ; 
-	ConnectStateIs.clear(); 
-	RodStateIs.clear()    ; 
-	BodyStateIs.clear()   ;  
-	FreeBodyIs.clear()    ;  
-	CpldBodyIs.clear()    ;  
-	FreeRodIs.clear()     ;  
-	CpldRodIs.clear()     ;  
-	FreeConIs.clear()     ;  
-	CpldConIs.clear()     ;  
-
-
-	
-	outfiles.clear(); 		
-	outChans.clear();		
-	LineStateIs.clear();
-	
+	release();
 	cout << "   MoorDyn closed." << endl;
 
 #ifndef OSX	

@@ -1551,6 +1551,14 @@ void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, 
 	return;
 }
 
+void free2Dmem(void** ptr, int n1)
+{
+	if (!ptr)
+		return;
+	for (int i1 = 0; i1 < n1; i1++)
+		free(ptr[i1]);
+	free(ptr);
+}
 
 // 2D,3D,4D double array creation and destruction functions (these could easily be nested) <<< should  inittialize all with zeros!
 double** make2Darray(int n1, int n2) 
@@ -1594,9 +1602,7 @@ double* make1Darray(int n1)  // because I'm forgetful and this is easier than re
 
 void free2Darray(double** theArray, int n1)
 {
-	for (int i1 = 0; i1 < n1; i1++)
-		free(theArray[i1]);
-	free(theArray);
+	free2Dmem((void**)theArray, n1);
 }
 void free3Darray(double*** theArray, int n1, int n2)
 {

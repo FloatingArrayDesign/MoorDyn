@@ -96,22 +96,37 @@ const int nCoef = 30;   // maximum number of entries to allow in nonlinear coeff
 
 typedef struct 
 {
+	/// Gavity acceleration (m/s^2)
 	double g;
+	/// Water depth (m)
 	double WtrDpth;
+	/// Water density (kg/m^3)
 	double rho_w;
-	
-	double kb;       // bottom stiffness (Pa/m)
-	double cb;       // bottom damping   (Pa/m/s)
-	int WaveKin;      // wave kinematics flag (0=off, >0=on...)<<<
-	int Current;      // current flag (0=off, >0=on...)<<<
-	double dtWave;   // time step used to downsample wave elevation data with
-	int WriteUnits;	// a global switch for whether to show the units line in the output files (1, default), or skip it (0)
-	int writeLog;   // whether to write a log file. (0=no, 1=basic, 2=full description, 3=ongoing output
+
+	/// bottom stiffness (Pa/m)
+	double kb;
+	/// bottom damping   (Pa/m/s)
+	double cb;
+	/// wave kinematics flag (0=off, >0=on...)<<<
+	int WaveKin;
+	/// current flag (0=off, >0=on...)<<<
+	int Current;
+	/// time step used to downsample wave elevation data with
+	double dtWave;
+	/// a global switch for whether to show the units line in the output files
+	/// (1, default), or skip it (0)
+	int WriteUnits;
+	/// whether to write a log file. (0=no, 1=basic, 2=full description,
+	/// 3=ongoing output
+	int writeLog;
+	/// The log file stream
 	ofstream *outfileLogPtr;
-	double FrictionCoefficient; // general bottom friction coefficient, as a start
-	double FricDamp; // a damping coefficient used to model the friction at speeds near zero
-	double StatDynFricScale; // a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
-	
+	/// general bottom friction coefficient, as a start
+	double FrictionCoefficient;
+	/// a damping coefficient used to model the friction at speeds near zero
+	double FricDamp;
+	/// a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
+	double StatDynFricScale;
 } EnvCond;
 
 
@@ -416,6 +431,8 @@ vector<string> splitComma(const string &s);
 void reverse(double* data, int datasize);
 void doIIR(double* in, double* out, int dataSize, double* a, double* b, int kernelSize);
 void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, double b0, int kernelSize);
+
+void free2Dmem(void** theArray, int n1);
 
 double*    make1Darray(int n1);
 double**   make2Darray(int n1, int n2);
