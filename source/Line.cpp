@@ -66,7 +66,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	for (int I=0; I<nCpoints; I++)
 	{	dampXs[I] = props->dampXs[I];
 		dampYs[I] = props->dampYs[I];  // should these divide by area too?
-	}	
+	}
 	
 	A = pi/4.*d*d;
 	
@@ -592,7 +592,21 @@ void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in,
 	FTS    = make2Darray(N+1, ntWater);
 	UTS    = make3Darray(N+1, ntWater, 3);
 	UdTS   = make3Darray(N+1, ntWater, 3);
-	
+
+	for (int i=0; i<N+1; i++)
+	{
+		for (int j=0; j<ntWater; j++)
+		{
+			zetaTS[i][j] = zeta_in[i][j];
+			FTS[i][j] = f_in[i][j];
+			for (int k=0; k<3; k++)
+			{
+				UTS[i][j][k] = u_in[i][j][k];
+				UdTS[i][j][k] = ud_in[i][j][k];
+			}
+		}
+	}
+
 	return;
 };
 
@@ -819,7 +833,7 @@ void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int t
 
 
 // calculate forces and get the derivative of the line's states
-void Line::getStateDeriv(double* Xd, const double dt)
+void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 {
 	
 	//for (int i=0; i<=N; i++) cout << " " << r[i][0] << " " << r[i][1] << " " << r[i][2] << endl;
@@ -986,10 +1000,9 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		// loop through all nodes to calculate bending forces
 		for (int i=0; i<=N; i++)
 		{
-			double Kurvi;
+			double Kurvi = 0.0;
 			double pvec[3];
 			double Mforce_im1[3];
-			double Mforce_ip1_temp[3];
 			double Mforce_ip1[3];
 			double Mforce_i[  3];
 			

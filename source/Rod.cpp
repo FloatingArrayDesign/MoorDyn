@@ -511,7 +511,11 @@ double Rod::GetRodOutput(OutChanProps outChan)
 
 
 // function to store wave/current kinematics time series for this line, if applicable <<<<<<<<<<<< work in progress!!!
-void Rod::storeWaterKin(int nt, double dt, double **zeta_in, double **f_in, double ***u_in, double ***ud_in)
+void Rod::storeWaterKin(int PARAM_UNUSED nt, double PARAM_UNUSED dt,
+                        double PARAM_UNUSED **zeta_in,
+                        double PARAM_UNUSED **f_in,
+                        double PARAM_UNUSED ***u_in,
+                        double PARAM_UNUSED ***ud_in)
 {
 	return;
 }

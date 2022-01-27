@@ -52,6 +52,12 @@
 #include <iostream>
 #include <fstream>
 
+#if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
+#define PARAM_UNUSED __attribute__((__unused__))
+#else
+#define PARAM_UNUSED
+#endif
+
 // note: this file contains the struct definitions for environmental and line/connect properties
 
 
