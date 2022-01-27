@@ -27,7 +27,7 @@ int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray
 {
 	
 	// set number of coordinates
-	int n;
+	int n = 0;
 	
 	if (     coordtype==0)    // 0: not used - make one grid point at zero
 		n = 1;
@@ -36,24 +36,26 @@ int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray
 	else if (coordtype==2)    // 2: uniform specified by -xlim, xlim, num
 		n = atoi(entries[2].c_str());
 	else
+	{
 		cout << "Error: invalid coordinate type specified to gridAxisCoords" << endl;
-	
-	
+		return 0;
+	}
+
 	// allocate coordinate array
 	//coordarray = (double*) malloc(n*sizeof(double)); 
 	coordarray = make1Darray(n);
-	
-	
+
 	// fill in coordinates
 	if (     coordtype==0)   
 		coordarray[0] = 0.0;
-	
+
 	else if (coordtype==1)   
 		for (int i=0; i<n; i++)
 			coordarray[i] = atof(entries[i].c_str());
-	
+
 	else if (coordtype==2)   
-	{	coordarray[0  ] = atof(entries[0].c_str());
+	{
+		coordarray[0  ] = atof(entries[0].c_str());
 		coordarray[n-1] = atof(entries[1].c_str());
 		double dx = (coordarray[n-1]-coordarray[0])/((double)(n-1));
 		for (int i=1; i<n-1; i++)
@@ -61,12 +63,12 @@ int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray
 	}
 	else
 		cout << "Error: invalid coordinate type specified to gridAxisCoords" << endl;
-	
+
 	cout << "Set water grid coordinates to :";
 	for (int i=0; i<n; i++)
 		cout << " " << coordarray[i];
 	cout << endl;
-	
+
 	return n;
 }
 
@@ -258,9 +260,8 @@ void Waves::setup(EnvCond *env)
 		vector< double > wavefreqs;
 		vector< double > waveelevs;
 		
-		for (int i=0; i<lines2.size(); i++)
-		{ 	
-
+		for (unsigned int i=0; i<lines2.size(); i++)
+		{
 			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 2) {
@@ -337,9 +338,8 @@ void Waves::setup(EnvCond *env)
 		vector< double > wavetimes;
 		vector< double > waveelevs;
 		
-		for (int i=0; i<lines2.size(); i++)
-		{ 	
-
+		for (unsigned int i=0; i<lines2.size(); i++)
+		{
 			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 2) {
@@ -367,7 +367,7 @@ void Waves::setup(EnvCond *env)
 		
 		if (wordy > 1)  cout << "interpolated to reduce time steps from " << wavetimes.size()  << " to " << nt << endl;
 		
-		int ts = 0; 							// index for interpolation (so it doesn't start at the beginning every time)
+		unsigned int ts = 0; 							// index for interpolation (so it doesn't start at the beginning every time)
 		for (int i=0; i<nt; i++)
 		{
 			
@@ -382,7 +382,7 @@ void Waves::setup(EnvCond *env)
 					waveElev[i] = waveelevs[ts] + frac*( waveelevs[ts+1] - waveelevs[ts] ); 			// interpolate wave elevation
 					break;
 				}
-			ts++; // move to next recorded time step
+				ts++; // move to next recorded time step
 			}
 		}    	// alternatively could use interpArray(Time0.size(), nt, Time0, Elev0, Time, Elev);
 		
@@ -403,8 +403,6 @@ void Waves::setup(EnvCond *env)
 		// 		}
 		// 	}
 		// }
-		
-		double Fss = 1./dtWave; // 4   	// sample rate (Hz)
 
 		// ensure N is even				
 		if ( nt %2 != 0 )					// if odd, trim off last value of time series
@@ -534,11 +532,11 @@ void Waves::setup(EnvCond *env)
 		if (lines2.size() < 4)
 			cout << "ERROR: not enough lines in current_profile.txt" << endl;
 		
-		for (int i=0; i<lines2.size(); i++)
+		for (unsigned int i=0; i<lines2.size(); i++)
 		{ 	
 			if (i<3)
 				continue; // skip first three lines
-	
+
 			vector< string > entries2 = split(lines2[i]);
 
 			if (entries2.size() >= 2) {
@@ -680,7 +678,7 @@ void Waves::setup(EnvCond *env)
 		
 		entries2 = split(lines2[4]);              // this is the depths row
 		
-		int nzin = entries2.size();                    // number of water depths
+		unsigned int nzin = entries2.size();                    // number of water depths
 		
 		int ntin = lines2.size()-6;                    // number of time steps expected, based on number of lines in file
 		
@@ -694,14 +692,14 @@ void Waves::setup(EnvCond *env)
 		
 		
 		// read in the depths  (Depth list (m), lowest to highest)
-		for (int i=0; i<nzin; i++)
+		for (unsigned int i=0; i<nzin; i++)
 			pzin[i] = atof(entries2[i].c_str());
 		
 		
 		// now read in the time steps
 		// Time-varying values (First column time in s, then x velocities at each depth (m/s) then optionally y and z velocities at each depth
 		// t(s)    u1    u2    u3    u4     [v1 v2 v3 v4]    [w1 w2 w3 w4]
-		for (int i=6; i<lines2.size(); i++)
+		for (unsigned int i=6; i<lines2.size(); i++)
 		{ 	
 			int it = i-6;  // just a lazy substitution
 	
@@ -711,7 +709,7 @@ void Waves::setup(EnvCond *env)
 			{	
 				tin[it] = atof(entries2[0].c_str());
 				
-				for (int k=0; k<nzin; k++)
+				for (unsigned int k=0; k<nzin; k++)
 					Uxin[it][k] = atof(entries2[1+k].c_str());	
 			}
 			else // it's a bad line... throw an error or just stop here and use lines up to this point?? <<<<
@@ -725,20 +723,20 @@ void Waves::setup(EnvCond *env)
 			
 			if (entries2.size() >= 1 + 2*nzin)                      // if there are enough columns to contain y current data
 			{	
-				for (int k=0; k<nzin; k++)
+				for (unsigned int k=0; k<nzin; k++)
 					Uyin[it][k] = atof(entries2[1+nzin+k].c_str());	    // read it in
 			}
 			else
-				for (int k=0; k<nzin; k++)                          // otherwise fill the y current array with zeros
+				for (unsigned int k=0; k<nzin; k++)                          // otherwise fill the y current array with zeros
 					Uyin[it][k] = 0.0;	
 			
 			if (entries2.size() >= 1 + 3*nzin)                      // same for z current data
 			{	
-				for (int k=0; k<nzin; k++)
+				for (unsigned int k=0; k<nzin; k++)
 					Uzin[it][k] = atof(entries2[1+2*nzin+k].c_str());	
 			}
 			else
-				for (int k=0; k<nzin; k++)
+				for (unsigned int k=0; k<nzin; k++)
 					Uzin[it][k] = 0.0;	
 				
 		}
@@ -844,7 +842,8 @@ void Waves::setup(EnvCond *env)
 
 
 // master function to get wave/water kinematics at a given point -- called by each object fro grid-based data
-void Waves::getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta_out)
+void Waves::getWaveKin(double x, double y, double z, double PARAM_UNUSED t,
+                       double U[3], double Ud[3], double* zeta_out)
 {
 	
 	double fx, fy, fz, ft;          // interpolation fractions

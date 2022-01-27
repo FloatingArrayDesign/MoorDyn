@@ -116,25 +116,24 @@ void Body::addConnectionToBody(Connection *theConnection, double coords[3])
 void Body::addRodToBody(Rod *theRod, double endCoords[6])
 {
 	if (wordy>0) cout << "R" << theRod->number << "->B" << number << " ";	
-	
+
 	if (nAttachedR <30) // this is currently just a maximum imposed by a fixed array size. 
 	{
 		// store Rod address
 		attachedR[nAttachedR] = theRod;
-		
+
 		// store Rod end A relative position and unit vector from end A to B
 		double tempUnitVec[3];
-		double dummyLength;
-		
+
 		unitvector(tempUnitVec, endCoords, endCoords+3);
-		
+
 		for (int I=0; I<3; I++)
-		{	r6RodRel[nAttachedR][  I] =   endCoords[I];
+		{
+            r6RodRel[nAttachedR][  I] =   endCoords[I];
 			r6RodRel[nAttachedR][3+I] = tempUnitVec[I];
 		}
-		
+
 		nAttachedR += 1;
-		
 	}
 	// <<<<<<<< add error catch <<<<<<<<
 };
