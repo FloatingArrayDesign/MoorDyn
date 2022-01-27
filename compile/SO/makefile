@@ -64,6 +64,7 @@ test_minimal: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h ../../
 	g++ $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../test/minimal.cpp
 
 test: test_minimal
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
 
 debug: CFLAGS += -g -DDEBUG=1
 debug: EXEFLAGS += -g -DDEBUG=1
