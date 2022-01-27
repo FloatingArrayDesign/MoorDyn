@@ -892,7 +892,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				// might want to convert to uppercase to support lowercase headings too <<<
 				if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
 				{
-					if (wordy>0) cout << "   Reading line types: " << endl;
+					if (wordy>0)
+						cout << "   Reading line types: " << endl;
 					
 					i += 3; // skip following two lines (label line and unit line)
 					
@@ -928,10 +929,9 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							getCoefficientOrCurve(entries[5].c_str(), &(LinePropList[iLineType]->EI), 
 								&(LinePropList[iLineType]->nEIpoints), LinePropList[iLineType]->bstiffXs, LinePropList[iLineType]->bstiffYs);
 
-							
-							if (wordy>0)  cout << entries[0] << " ";
-							
-							
+							if (wordy>0)
+								cout << entries[0] << " ";
+
 							// write lineType information to log file
 							if (env.writeLog > 1)
 							{
@@ -944,13 +944,12 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								outfileLog << "    Cdt : " << LinePropList[iLineType]->Cdt  << endl;
 								outfileLog << "    Cat : " << LinePropList[iLineType]->Cat  << endl;
 							}
-							
 						}
 						else
 						{
 							//cout << "Error: make sure the Line Types entries have 10 columns (including bending stiffness)..." << endl;  // <<<< make this proper
 							//cout << "Occured when reading line: " << lines[i+iLineType] << endl;
-							
+
 							stringstream s;
 							s << " Error when reading LineType input: " << lines[i+iLineType] <<"\n";
 							s << " Make sure the Line Types entries have 10 columns (including bending stiffness)\n";
@@ -959,10 +958,13 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						}
 						//i++;
 					}
+					if (wordy>0)
+						cout << endl;
 				}
 				else if ( (lines[i].find("ROD DICTIONARY") != string::npos) || (lines[i].find("ROD TYPES") != string::npos) ) // if rod dictionary header
 				{	
-					if (wordy>0) cout << "   Reading rod types: " << endl;
+					if (wordy>0)
+						cout << "   Reading rod types: " << endl;
 
 					i += 3; // skip following two lines (label line and unit line)
 
@@ -983,14 +985,18 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							RodPropList[iRodType]->Can= atof(entries[4].c_str());
 							RodPropList[iRodType]->Cdt= atof(entries[5].c_str());
 							RodPropList[iRodType]->Cat= atof(entries[6].c_str());
-							if (wordy>0)  cout << entries[0] << " ";
+							if (wordy>0)
+								cout << entries[0] << " ";
 						}
 						//i++;
 					}
+					if (wordy>0)
+						cout << endl;
 				}
 				else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
 				{	
-					if (wordy>0) cout << "   Reading Body properties: " << endl;
+					if (wordy>0)
+						cout << "   Reading Body properties: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
 
 					// set up each entry
@@ -1137,7 +1143,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				}
 				else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
 				{	
-					if (wordy>0) cout << "   Reading rod properties: " << endl;
+					if (wordy>0)
+						cout << "   Reading rod properties: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
 
 					// set up each entry
@@ -1293,7 +1300,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						}
 						else 
 						{
-							cout << endl << "   Error with rod " << entries[0] << " inputs (not enough)." << endl;
+							cout << "   Error with rod " << entries[0] << " inputs (not enough)." << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
@@ -1306,7 +1313,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					if (nLineTypes < 1)
 						cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
 				
-					if (wordy>0) cout << "   Reading point list: " << endl;
+					if (wordy>0)
+						cout << "   Reading point list: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
 
 					// set up each entry
@@ -1433,8 +1441,6 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 							//if (ConnectionList.size() != number)  // check that ID numbers are in order
 							//	cout << "Warning: connect ID numbers should be in order (1,2,3...)." << endl;
-
-							if (wordy>0) cout << number << " ";
 						}
 						else 
 						{
@@ -1447,11 +1453,11 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						}
 						//i++;
 					}
-					if (wordy>0) cout << "\n";
 				}
 				else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINES LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
 				{
-					if (wordy>0) cout << "   Reading line list: " << endl;
+					if (wordy>0)
+						cout << "   Reading line list: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
 
 					// set up each entry
