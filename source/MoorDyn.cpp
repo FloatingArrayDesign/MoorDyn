@@ -872,10 +872,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		// ------------------------- allocate necessary object arrays -------------------------------
 		
 		// allocate space for array of pointers to entries
-		RodPropList    = new RodProps*[nRodTypes];			
-		LinePropList   = new LineProps*[nLineTypes];		
+		RodPropList    = new RodProps*[nRodTypes];
+		LinePropList   = new LineProps*[nLineTypes];
 		BodyList       = new Body*[nBodys];
-		RodList        = new Rod*[nRods];		
+		RodList        = new Rod*[nRods];
 		ConnectionList = new Connection*[nConnectionsExtra]; // using nConnectionsExtra to leave room for additional connections for line detachments
 		LineList       = new Line*[nLines];
 		FailList       = new FailProps*[nFails];
@@ -889,12 +889,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		{
 			if (lines[i].find("---") != string::npos) // look for header line
 			{
-				
 				// might want to convert to uppercase to support lowercase headings too <<<
-				
 				if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
-				{	
-					if (wordy>0) cout << "   Reading line types: ";
+				{
+					if (wordy>0) cout << "   Reading line types: " << endl;
 					
 					i += 3; // skip following two lines (label line and unit line)
 					
@@ -961,15 +959,13 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						}
 						//i++;
 					}
-					if (wordy>0) cout << "\n";
 				}
 				else if ( (lines[i].find("ROD DICTIONARY") != string::npos) || (lines[i].find("ROD TYPES") != string::npos) ) // if rod dictionary header
 				{	
-					if (wordy>0) cout << "   Reading rod types: ";
-					
+					if (wordy>0) cout << "   Reading rod types: " << endl;
+
 					i += 3; // skip following two lines (label line and unit line)
-					
-					
+
 					// set up each entry
 					for (int iRodType=0; iRodType<nRodTypes; iRodType++)
 					{
@@ -991,23 +987,20 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						}
 						//i++;
 					}
-					if (wordy>0) cout << "\n";
-				}	
+				}
 				else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
 				{	
-					if (wordy>0) cout << "   Reading Body properties: ";
+					if (wordy>0) cout << "   Reading Body properties: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
-					
-					
+
 					// set up each entry
 					for (int iBody=0; iBody<nBodys; iBody++)
 					{ 	
 						// parse out entries: ID   Attachment  X0  Y0  Z0  r0  p0  y0    M  CG*  I*    V  CdA*  Ca*
 						vector<string> entries = split(lines[i+iBody]); // split by spaces
-						
+
 						if (entries.size() >= 14) // if valid number of inputs
-						{	
-							
+						{
 							int number          = atoi(entries[0].c_str());
 							int type;							
 							double r6[6];
@@ -1036,7 +1029,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								rCG[2] = atof(strings_rCG[2].c_str());
 							}
 							else {
-								cout << 'Body ' << number << ' CG entry (col 10) must have 1 or 3 numbers.' << endl;
+								cout << "Body " << number << " CG entry (col 10) must have 1 or 3 numbers." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
 							// process mements of inertia
@@ -1052,7 +1045,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								Inert[2] = atof(strings_I[2].c_str());
 							}
 							else {
-								cout << 'Body ' << number << ' inertia entry (col 11) must have 1 or 3 numbers.' << endl;
+								cout << "Body " << number << " inertia entry (col 11) must have 1 or 3 numbers." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
 							// process drag ceofficient by area product
@@ -1068,7 +1061,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								CdA[2] = atof(strings_CdA[2].c_str());
 							}
 							else {
-								cout << 'Body ' << number << ' CdA entry (col 13) must have 1 or 3 numbers.' << endl;
+								cout << "Body " << number << " CdA entry (col 13) must have 1 or 3 numbers." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
 							// process added mass coefficient
@@ -1084,23 +1077,20 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								Ca[2] = atof(strings_Ca[2].c_str());
 							}
 							else {
-								cout << 'Body ' << number << ' Ca entry (col 14) must have 1 or 3 numbers.' << endl;
+								cout << "Body " << number << " Ca entry (col 14) must have 1 or 3 numbers." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
-							
-							
-							
+
 							// ----------- process body type -----------------
 
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
 							char typeWord[10];							// the buffer
-							
+
 							snprintf(typeWord, 10, entries[1].c_str());		// copy body type word to buffer
-							
+
 							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-							
-							
+
 							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
 							{
 								type = 1;  // body is fixed  (this would just be used if someone wanted to temporarly fix a body that things were attached to)
@@ -1108,85 +1098,77 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							if ((strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "CPLD") ==0))
 							{
 								type = -1;   // body is coupled - controlled from outside
-								CpldBodyIs.push_back(iBody);									
+								CpldBodyIs.push_back(iBody);
 							}
 							else 
 							{
-								type = 0;      // body is free								
+								type = 0;      // body is free
 								FreeBodyIs.push_back(iBody);
-							}							
+							}
 							// make an output file for it
 							//if (...)
-							//{	
+							//{
 								stringstream oname;
 								oname << MDbasepath << MDbasename << "_Body" << number << ".out";
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							//}
 							//else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-							
-							
+
 							// set up Body 
 							BodyList[iBody] = new Body(); 
-							BodyList[iBody]->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, outfiles.back());		
-								
-							
+							BodyList[iBody]->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, outfiles.back());
+
 							// set up the body state info if applicable
 							if (type == 0)
 							{
 								BodyStateIs.push_back(nX);   // assign start index of this body's states
 								nX += 12;                        // add 12 state variables for the body
 							}
-							
-								
+
 							//if (BodyList.size() != number)  // check that ID numbers are in order
 							//	cout << "Warning: body ID numbers should be in order (1,2,3...)." << endl;
-							
 						}
 						else 
 						{
 							cout << endl << "   Error with Body " << entries[0] << " inputs (14 expected but only " << entries.size() << " provided)." << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
-					}		
-					if (wordy>0) cout << "\n";		
+					}
 				}
 				else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
 				{	
-					if (wordy>0) cout << "   Reading rod properties: ";
+					if (wordy>0) cout << "   Reading rod properties: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
-										
-					
+
 					// set up each entry
 					for (int iRod=0; iRod<nRods; iRod++)
-					{ 	
+					{
 						//vector<string> entries = split(lines[i-nRods+iRod], ' '); // split by spaces
 						vector<string> entries = split(lines[i+iRod]); // split by spaces
-						
+
 						if (entries.size() >= 8) // if valid number of inputs
 						{
 							// RodID  Type/BodyID  RodType  Xa   Ya   Za   Xb   Yb   Zb  NumSegs  Flags/Outputs
 							
-							
+
 							// read in these properties first because they're needed for setting up various rod types
-								
 							int number          = atoi(entries[0].c_str());
 							string RodType         = entries[1];
 							double endCoords[6]; 
 							for (int J=0; J<6; J++) endCoords[J]=atof(entries[3+J].c_str());
 							int NumSegs         = atoi(entries[9].c_str());
 							string outchannels  = entries[10];
-							
-							
+
 							// ----------- process rod type -----------------
 							int type;						
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
 							char typeWord[10];							// the buffer
-							
+
 							snprintf(typeWord, 10, entries[2].c_str());		// copy rod type word to buffer
-							
+
 							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-								
+
 							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
 							{
 								type = 2;
@@ -1201,14 +1183,14 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								nX += 6;                        // add 6 state variables for each pinned rod							
 							}
 							else if (strcmp(let1, "BODY") ==0)
-							{	// attached to a body (either rididly or pinned)
+							{
+								// attached to a body (either rididly or pinned)
 								if (strlen(num1)>0)
 								{
 									int bodyID = atoi(num1);
 									if ((bodyID <= nBodys) && (bodyID > 0))
 									{
 										//BodyList[bodyID-1]->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass
-										
 										if ((strcmp(let2, "PINNED") ==0) || (strcmp(let2, "PIN") ==0))
 										{
 											type = 1;
@@ -1222,34 +1204,37 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 										}
 									}
 									else
-									{	cout << "Error: Body ID out of bounds for Rod " << number << "." << endl;
+									{
+										cout << "Error: Body ID out of bounds for Rod " << number << "." << endl;
 										// cout << "   Error: Invalid body ID (" << bodyID << ") given for Rod " << number << endl;
 										return MOORDYN_INVALID_INPUT;								
 									}
 								}
 								else
-								{	cout << "Error: no number provided for Rod " << number << " Body attachment." << endl;
+								{
+									cout << "Error: no number provided for Rod " << number << " Body attachment." << endl;
 									return MOORDYN_INVALID_INPUT;
 								}
 							}
 							else if ((strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
-							{	// if a rigid fairlead, add to list and add 
+							{
+								// if a rigid fairlead, add to list and add 
 								type = -2;
-							//	rFairRod.push_back(vector<double>(6, 0.0));		                    // fairlead location in turbine ref frame
-							//	for (int J=0; J<6; J++)  rFairRod.back().at(J) = endCoords[J]; 	// 6DOF coordinates of rigid connection
+								// rFairRod.push_back(vector<double>(6, 0.0));		                    // fairlead location in turbine ref frame
+								// for (int J=0; J<6; J++)  rFairRod.back().at(J) = endCoords[J]; 	// 6DOF coordinates of rigid connection
 								CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
-							}		
+							}
 							else if ((strcmp(let1, "VESSELPINNED") ==0) || (strcmp(let1, "VESPIN") ==0) || (strcmp(let1, "COUPLEDPINNED") ==0) || (strcmp(let1, "CPLDPIN") ==0))
-							{	// if a pinned fairlead, add to list and add 
+							{
+								// if a pinned fairlead, add to list and add 
 								type = -1;
-							//	rFairRod.push_back(vector<double>(3, 0.0));		                    // fairlead location in turbine ref frame
-							//	for (int J=0; J<3; J++)  rFairRod.back().at(J) = endCoords[J]; 	// x,y,z coordinates of pinned connection
-								
+								// rFairRod.push_back(vector<double>(3, 0.0));		                    // fairlead location in turbine ref frame
+								// for (int J=0; J<3; J++)  rFairRod.back().at(J) = endCoords[J]; 	// x,y,z coordinates of pinned connection
 								CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
 								FreeRodIs.push_back(iRod);	          // also add this pinned rod to the free list because it is half free
 								RodStateIs.push_back(nX);            // assign start index of this rod's states
 								nX += 6;                                 // add 6 state variables for each pinned rod	
-							}						
+							}
 							else if ((strcmp(let1, "CONNECT") ==0) || (strcmp(let1, "CON") ==0) || (strcmp(let1, "FREE") ==0))
 							{
 								type = 0;
@@ -1264,59 +1249,55 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								cout << s.str() << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
-							
-							
+
 							// find Rod properties index (look in the Rod dictionary)
 							int TypeNum = -1;
 							for (int J=0; J<nRodTypes; J++)  {
 								if (RodPropList[J]->type.find(RodType) != string::npos)
 									TypeNum = J;
-							}						
+							}
 							
 							if (TypeNum == -1)
 								cout << "   Error: unable to identify type of Rod " << number << " (" << RodType << ") from those provided." << endl;
-							
-							if (wordy>1) cout << "rod " << number << " type " << RodType << " typenum " << TypeNum << endl;
-							
+
+							if (wordy>1)
+								cout << "rod " << number << " type " << RodType << " typenum " << TypeNum << endl;
+
 							// make an output file for it
 							if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
-							{	stringstream oname;
+							{
+								stringstream oname;
 								oname << MDbasepath << MDbasename << "_Rod" << number << ".out";
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							}
 							else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-						
-						
-							// set up Rod 						
+
+							// set up Rod
 							RodList[iRod] = new Rod(); 
 							RodList[iRod]->setup(number, type, RodPropList[TypeNum], endCoords,  
-								NumSegs, outfiles.back(), outchannels);							
-								
-							
+								NumSegs, outfiles.back(), outchannels);
+
 							// depending on type, assign the Rod to its respective parent body
-							
 							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0)) // type = 2;
 								GroundBody->addRodToBody(RodList[iRod], endCoords);  
 							else if ((strcmp(let1, "PINNED") ==0) || (strcmp(let1, "PIN") ==0)) //	type = 1;       
 								GroundBody->addRodToBody(RodList[iRod], endCoords);  
 							else if (strcmp(let1, "BODY") ==0)  // attached to a body (either rigidly or pinned)
-							{	
+							{
 								int bodyID = atoi(num1);
 								BodyList[bodyID-1]->addRodToBody(RodList[iRod], endCoords); 
 							}
-							
-							
-							if (wordy>0)  cout << "Rod "<< number << " is type "<<type<<"."<< endl;
-							
-						}					
+
+							if (wordy>0)
+								cout << "Rod "<< number << " is type "<<type<<"."<< endl;
+						}
 						else 
 						{
 							cout << endl << "   Error with rod " << entries[0] << " inputs (not enough)." << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
-					}		
-					if (wordy>0) cout << "\n";
+					}
 				}
 				
 				
@@ -1325,35 +1306,32 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					if (nLineTypes < 1)
 						cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
 				
-					if (wordy>0) cout << "   Reading point list: ";
+					if (wordy>0) cout << "   Reading point list: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
-										
-					
+
 					// set up each entry
 					for (int iConnection=0; iConnection<nConnections; iConnection++)
-					{ 	
+					{
 						//vector<string> entries = split(lines[i-nConnections+iConnection], ' '); // split by spaces
 						vector<string> entries = split(lines[i+iConnection]); // split by spaces
-						
+
 						// Node  Type/attachID    X  Y   Z  M  V  [optional:FX FY FZ] CdA Ca
-						
+
 						if (entries.size() >= 9) // if valid number of inputs
-						{					
+						{
 							int number=atoi(entries[0].c_str());
-							
+
 							// <<<<<<<<<< should check whether numbering is correct
-							
-							
+
 							// read these properties first, because they'll be used when processing various connection types
-							
 							double M = atof(entries[5].c_str());
 							double V = atof(entries[6].c_str());
 							double CdA;
 							double Ca;
-							
+
 							double r0[3];
 							double F[3] = {0.0};
-							
+
 							if (entries.size() >= 12) // case with optional force inputs (12 total entries)
 							{
 								for (int I=0; I<3; I++)
@@ -1371,22 +1349,21 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								CdA  = atof(entries[7].c_str());
 								Ca   = atof(entries[8].c_str());
 							}
-							
-							
+
 							// ----------- process connection type -----------------
-							int type;						
+							int type;
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
 							char typeWord[10];							// the buffer
-													
+
 							snprintf(typeWord, 10, entries[1].c_str());		// copy connection type word to buffer
-							
+
 							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-								
+
 							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
 							{
 								type = 1;                                   // if an anchor
-								
+
 								// add to GroundBody
 								//GroundBody->addConnectionToBody(ConnectionList[iConnection], r0);  // note: object not made yet, but only need pointer to pass
 								//AnchIs.push_back(iConnection);
@@ -1403,21 +1380,24 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 										//BodyList[bodyID-1]->addConnectionToBody(ConnectionList[iConnection], r0);  // note: object not made yet, but only need pointer to pass
 									}
 									else
-									{	cout << "Error: Body ID out of bounds for Connection " << number << "." << endl;
+									{
+										cout << "Error: Body ID out of bounds for Connection " << number << "." << endl;
 										return MOORDYN_INVALID_INPUT;								
 									}
 								}
 								else
-								{	cout << "Error: no number provided for Connection " << number << " Body attachment." << endl;
+								{
+									cout << "Error: no number provided for Connection " << number << " Body attachment." << endl;
 									return MOORDYN_INVALID_INPUT;
 								}
 							}
 							else if ((strcmp(let1, "FAIRLEAD") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
-							{	// if a fairlead, add to list and add 
+							{
+								// if a fairlead, add to list and add 
 								type = -1;
 								CpldConIs.push_back(iConnection);			// index of fairlead in ConnectionList vector
 								//nFairs ++;
-							}						
+							}
 							else if ((strcmp(let1, "CONNECT") ==0) || (strcmp(let1, "CON") ==0) || (strcmp(let1, "FREE") ==0))
 							{
 								type = 0;                                // if a connect, add to list and add states for it
@@ -1428,21 +1408,20 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								nX += 6;                       // add 6 state variables for each connect
 							}
 							else 
-							{	// throw error if not identified
+							{
+								// throw error if not identified
 								stringstream s;
 								s << "Error: unidentified Type/BodyID for connection " << number << ": " << typeWord;
 								throw string(s.str());
 							}
-							
-							
+
 							// make default water depth at least the depth of the lowest node (so water depth input is optional)
 							if (r0[2] < -env.WtrDpth)  env.WtrDpth = -r0[2];
-						
+
 							// now make Connection object!
 							ConnectionList[iConnection] = new Connection();
 							ConnectionList[iConnection]->setup(number, type, r0, M, V, F, CdA, Ca);
-							
-							
+
 							// depending on type, assign the Connection to its respective parent body
 							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))// type = 1;                          
 								GroundBody->addConnectionToBody(ConnectionList[iConnection], r0); 
@@ -1451,11 +1430,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								int bodyID = atoi(num1);
 								BodyList[bodyID-1]->addConnectionToBody(ConnectionList[iConnection], r0);
 							}
-							
+
 							//if (ConnectionList.size() != number)  // check that ID numbers are in order
 							//	cout << "Warning: connect ID numbers should be in order (1,2,3...)." << endl;
-													
-							
+
 							if (wordy>0) cout << number << " ";
 						}
 						else 
@@ -1464,7 +1442,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							cout << "   The line in question was read as: ";
 							for (int ii=0; ii<entries.size(); ii++) cout << entries[ii] << " ";
 							cout << endl;
-							
+
 							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
@@ -1472,22 +1450,19 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					if (wordy>0) cout << "\n";
 				}
 				else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINES LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
-				{	
-					if (wordy>0) cout << "   Reading line list: ";
+				{
+					if (wordy>0) cout << "   Reading line list: " << endl;
 					i += 3; // skip following two lines (label line and unit line)
-					
-					
+
 					// set up each entry
 					for (int iLine=0; iLine<nLines; iLine++)
-					{ 	
+					{
 						//vector<string> entries = split(lines[i-nLines+iLine], ' '); // split by spaces
 						vector<string> entries = split(lines[i+iLine]); // split by spaces
-							
+
 						if (entries.size() >= 7) // if valid number of inputs
 						{
 							// Line     LineType  UnstrLen   NodeAnch  NodeFair  Flags/Outputs
-							
-																			
 							int number= atoi(entries[0].c_str());
 							string type     = entries[1];
 							double UnstrLen = atof(entries[4].c_str());
@@ -1495,60 +1470,61 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							//string anchID    = entries[2];
 							//string fairID    = entries[3];
 							string outchannels  = entries[6];
-							
+
 							// find line properties index
 							int TypeNum = -1;
 							for (int J=0; J<nLineTypes; J++)  {
 								if (LinePropList[J]->type.find(type) != string::npos)
 									TypeNum = J;
 							}
-							
+
 							if (TypeNum == -1)
 								cout << "   Error: unable to identify type of line " << number << " (" << type << ") from those provided." << endl;
-							
-							if (wordy>1) cout << "line " << number << " type " << type << " typenum " << TypeNum << endl;
-							
+
+							if (wordy>1)
+								cout << "line " << number << " type " << type << " typenum " << TypeNum << endl;
+
 							// make an output file for it
 							if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
-							{	stringstream oname;
+							{
+								stringstream oname;
 								oname << MDbasepath << MDbasename << "_Line" << number << ".out";
 								outfiles.push_back( make_shared<ofstream>(oname.str()));
 							}
 							else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-							
+
 							// set up line properties
 							LineList[iLine] = new Line();
 							LineList[iLine]->setup(number, LinePropList[TypeNum], UnstrLen, NumSegs, 
 								//ConnectionList[AnchIndex], ConnectionList[FairIndex], 
 								outfiles.back(), outchannels);
-									
+
 							LineStateIs.push_back(nX);  // assign start index of this Line's states
 							nX += 6*(NumSegs - 1);                   // add 6 state variables for each internal node of this line
-									
+
 							//if (LineList.size() != number)  // check that ID numbers are in order
 							//	cout << "Warning: line ID numbers should be in order (1,2,3...)." << endl;
-							
-							
+
 							// ================ Process attachment identfiers and attach line ends ===============
-																		
+
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-							
+
 							char outWord[10];							// the buffer
-							
+
 							// first for anchor...
-							
 							snprintf(outWord, 10, entries[2].c_str());		// copy anchor connection word to buffer
-							
+
 							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-												
+
 							if (strlen(num1)<1)
-							{	cout << "Error: no number provided for line " << number << " anchor attachment." << endl;
+							{
+								cout << "Error: no number provided for line " << number << " anchor attachment." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
-							
+
 							int id = atoi(num1);
-								
+
 							// if id starts with an "R" or "Rod"
 							if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
 							{
@@ -1559,15 +1535,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									else if (strcmp(let2, "B") == 0) 
 										RodList[id-1]->addLineToRodEndB(LineList[iLine], 0);
 									else
-									{	cout << "Error: rod end (A or B) must be specified for line " << number << " anchor attachment." << endl;
+									{
+										cout << "Error: rod end (A or B) must be specified for line " << number << " anchor attachment." << endl;
 										return MOORDYN_INVALID_INPUT;										
 									}
 								}
 								else
-								{	cout << "Error: rod connection ID out of bounds for line " << number << " anchor attachment." << endl;
+								{
+									cout << "Error: rod connection ID out of bounds for line " << number << " anchor attachment." << endl;
 									return MOORDYN_INVALID_INPUT;								
 								}
-									
 							}
 							// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
 							if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
@@ -1577,25 +1554,25 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									ConnectionList[id-1]->addLineToConnect(LineList[iLine], 0);
 								}
 								else
-								{	cout << "Error: connection ID out of bounds for line " << number << " anchor attachment." << endl;
+								{
+									cout << "Error: connection ID out of bounds for line " << number << " anchor attachment." << endl;
 									return MOORDYN_INVALID_INPUT;								
 								}
-									
 							}
-							
+
 							// then again for fairlead
-							
 							snprintf(outWord, 10, entries[3].c_str());		// copy fairlead connection word to buffer
-							
+
 							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-												
+
 							if (strlen(num1)<1)
-							{	cout << "Error: no number provided for line " << number << " fairlead attachment." << endl;
+							{
+								cout << "Error: no number provided for line " << number << " fairlead attachment." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
-							
+
 							id = atoi(num1);
-								
+
 							// if id starts with an "R" or "Rod"
 							if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
 							{
@@ -1606,15 +1583,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									else if (strcmp(let2, "B") == 0) 
 										RodList[id-1]->addLineToRodEndB(LineList[iLine], 1);
 									else
-									{	cout << "Error: rod end (A or B) must be specified for line " << number << " fairlead attachment." << endl;
+									{
+										cout << "Error: rod end (A or B) must be specified for line " << number << " fairlead attachment." << endl;
 										return MOORDYN_INVALID_INPUT;										
 									}
 								}
 								else
-								{	cout << "Error: rod connection ID out of bounds for line " << number << " fairlead attachment." << endl;
+								{
+									cout << "Error: rod connection ID out of bounds for line " << number << " fairlead attachment." << endl;
 									return MOORDYN_INVALID_INPUT;								
 								}
-									
 							}
 							// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
 							if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
@@ -1624,55 +1602,54 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									ConnectionList[id-1]->addLineToConnect(LineList[iLine], 1);
 								}
 								else
-								{	cout << "Error: connection ID out of bounds for line " << number << " fairlead attachment." << endl;
+								{
+									cout << "Error: connection ID out of bounds for line " << number << " fairlead attachment." << endl;
 									return MOORDYN_INVALID_INPUT;								
 								}
-									
 							}
-							
-						}					
+						}
 						else 
 						{
 							cout << endl << "   Error with line " << entries[0] << " inputs." << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
 						//i++;
-					}		
-					if (wordy>0) cout << "\n";		
+					}
 				}
 				else if (lines[i].find("FAILURE") != string::npos) // if failure conditions header
 				{	
-					if (wordy>0) cout << "   Reading failure conditions: ";
-					
+					if (wordy>0)
+						cout << "   Reading failure conditions: " << endl;
+
 					i += 3; // skip following two lines (label line and unit line)
-					
-					
+
 					// set up each entry
 					for (int iFail=0; iFail<nFails; iFail++)
 					{
 						cout << "failure case " << iFail+1 ;
-						
+
 						vector<string> entries = split(lines[i+iFail]); // split by spaces
-												
+
 						if (entries.size() >= 4) // if valid number of inputs
-						{	
+						{
 							FailList[iFail] = new FailProps();
-							
+
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
 							char outWord[10];							// the buffer
-														
+
 							snprintf(outWord, 10, entries[0].c_str());		// copy connection word to buffer
-							
+
 							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-							
+
 							if (strlen(num1)<1)
-							{	cout << "Error: no Node provided for Failure " << iFail+1 << endl;
+							{
+								cout << "Error: no Node provided for Failure " << iFail+1 << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
-							
+
 							FailList[iFail]->attachID = atoi(num1);   // ID of connection or Rod the lines are attached to (index is -1 this value)
-								
+
 							// if id starts with an "R" or "Rod"
 							if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
 							{
@@ -1683,15 +1660,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									else if (strcmp(let2, "B") == 0) 
 										FailList[iFail]->isRod = 2;
 									else
-									{	cout << "Error: at line 1589ish" << endl;
-										return MOORDYN_UNHANDLED_ERROR;										
+									{
+										cout << "Error: at line 1589ish" << endl;
+										return MOORDYN_UNHANDLED_ERROR;
 									}
 								}
 								else
-								{	cout << "Error at line 1594ish" << endl;
-									return MOORDYN_UNHANDLED_ERROR;								
+								{
+									cout << "Error at line 1594ish" << endl;
+									return MOORDYN_UNHANDLED_ERROR;
 								}
-									
 							}
 							// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
 							if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
@@ -1701,10 +1679,10 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 									FailList[iFail]->isRod = 0;
 								}
 								else
-								{	cout << "Error: at line 1607ish" << endl;
+								{
+									cout << "Error: at line 1607ish" << endl;
 									return MOORDYN_UNHANDLED_ERROR;								
 								}
-									
 							}
 							
 							// get lines
@@ -1715,23 +1693,22 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 							FailList[iFail]->failTime = atof(entries[2].c_str());
 							FailList[iFail]->failTen  = atof(entries[3].c_str());
-							
+
 							cout << " failTime is "<< FailList[iFail]->failTime << endl;
-							
+
 							FailList[iFail]->failStatus  = 0; // initialize as unfailed, of course
 						}
 						//i++;
 					}
-					if (wordy>0) cout << "\n";
 				}
 				else if (lines[i].find("OUTPUT") != string::npos) // if output list header
 				{	
 					//cout << "in output section" << endl;
 					i ++;
 					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
+					{
 						vector<string> entries = split(lines[i]);
-						
+
 						for (int j=0; j<entries.size(); j++)  //loop through each word on each line
 						{
 
@@ -1740,17 +1717,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 							char outWord[10];							// the buffer
 							snprintf(outWord, 10, entries[j].c_str());		// copy word to buffer
-																		
+
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-							
+
 							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-							
+
 							// <<<<<<<<<<<<< check for errors! <<<<<<<<<<<<<<<						
 							//	cout << "   Error: no number in channel name ("  << outWord << ")." << endl;
 							//	cout << "Warning: invalid output specifier (must start with letter)." << endl;
-							
-							
+
 							OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later);
 							strncpy(dummy.Name, outWord, 10); //strlen(outWord));		// label channel with whatever name was inputted, for now
 
@@ -1760,7 +1736,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							const int UnitsSize = 10;
 							// fairlead tension case (changed to just be for single line, not all connected lines)
 							if (strcmp(let1, "FAIRTEN")==0)
-							{	
+							{
 								dummy.OType = 1;             							// line object type
 								dummy.QType = Ten;           							// tension quantity type
 								strncpy(dummy.Units, UnitList[Ten], UnitsSize);     // set units according to QType
@@ -1769,7 +1745,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							}
 							// achor tension case (changed to just be for single line, not all connected lines)
 							else if (strcmp(let1, "ANCHTEN")==0) 
-							{	
+							{
 								dummy.OType = 1;             							// line object type
 								dummy.QType = Ten;           							// tension quantity type
 								strncpy(dummy.Units, UnitList[Ten], UnitsSize);     // set units according to QType
@@ -1807,7 +1783,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								// should do fairlead option also!
 								
 								else   // error
-								{	//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+								{
+									//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
 									cout << "Warning: invalid output specifier: "  << let1 << ".  Type must be L or C/Con." << endl;
 									dummy.OType = -1;  // flag as invalid
 									continue;  // break out of this loop iteration (don't add current output channel to list)
@@ -1819,76 +1796,72 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								// which kind of quantity?
 								if (strcmp(let3, "PX")==0) {
 									//cout << "SETTING QTYPE to " << PosX << endl;
-								  dummy.QType = PosX;
-								  strncpy(dummy.Units, UnitList[PosX], UnitsSize);
+									dummy.QType = PosX;
+									strncpy(dummy.Units, UnitList[PosX], UnitsSize);
 								}
 								else if (strcmp(let3, "PY")==0)  {
-								  dummy.QType = PosY;
-								  strncpy(dummy.Units, UnitList[PosY], UnitsSize);
+									dummy.QType = PosY;
+									strncpy(dummy.Units, UnitList[PosY], UnitsSize);
 								}
 								else if (strcmp(let3, "PZ")==0)  {
-								  dummy.QType = PosZ;
-								  strncpy(dummy.Units, UnitList[PosZ], UnitsSize);
+									dummy.QType = PosZ;
+									strncpy(dummy.Units, UnitList[PosZ], UnitsSize);
 								}
 								else if (strcmp(let3, "VX")==0)  {
-								  dummy.QType = VelX;
-								  strncpy(dummy.Units, UnitList[VelX], UnitsSize);
+									dummy.QType = VelX;
+									strncpy(dummy.Units, UnitList[VelX], UnitsSize);
 								}
 								else if (strcmp(let3, "VY")==0)  {
-								  dummy.QType = VelY;
-								  strncpy(dummy.Units, UnitList[VelY], UnitsSize);
+									dummy.QType = VelY;
+									strncpy(dummy.Units, UnitList[VelY], UnitsSize);
 								}
 								else if (strcmp(let3, "VZ")==0)  {
-								  dummy.QType = VelZ;
-								  strncpy(dummy.Units, UnitList[VelZ], UnitsSize);
+									dummy.QType = VelZ;
+									strncpy(dummy.Units, UnitList[VelZ], UnitsSize);
 								}
 								else if (strcmp(let3, "AX")==0)  {
-								  dummy.QType = AccX;
-								  strncpy(dummy.Units, UnitList[AccX], UnitsSize);
+									dummy.QType = AccX;
+									strncpy(dummy.Units, UnitList[AccX], UnitsSize);
 								}
 								else if (strcmp(let3, "Ay")==0)  {
-								  dummy.QType = AccY;
-								  strncpy(dummy.Units, UnitList[AccY], UnitsSize);
+									dummy.QType = AccY;
+									strncpy(dummy.Units, UnitList[AccY], UnitsSize);
 								}
 								else if (strcmp(let3, "AZ")==0)  {
-								  dummy.QType = AccZ;
-								  strncpy(dummy.Units, UnitList[AccZ], UnitsSize);
+									dummy.QType = AccZ;
+									strncpy(dummy.Units, UnitList[AccZ], UnitsSize);
 								}
 								else if ((strcmp(let3, "T")==0) || (strcmp(let3, "TEN")==0)) {
-								  dummy.QType = Ten;
-								  strncpy(dummy.Units, UnitList[Ten], UnitsSize);
+									dummy.QType = Ten;
+									strncpy(dummy.Units, UnitList[Ten], UnitsSize);
 								}
 								else if (strcmp(let3, "FX")==0)  {
-								  dummy.QType = FX;
-								  strncpy(dummy.Units, UnitList[FX], UnitsSize);
+									dummy.QType = FX;
+									strncpy(dummy.Units, UnitList[FX], UnitsSize);
 								}
 								else if (strcmp(let3, "FY")==0)  {
-								  dummy.QType = FY;
-								  strncpy(dummy.Units, UnitList[FY], UnitsSize);
+									dummy.QType = FY;
+									strncpy(dummy.Units, UnitList[FY], UnitsSize);
 								}
 								else if (strcmp(let3, "FZ")==0)  {
-								  dummy.QType = FZ;
-								  strncpy(dummy.Units, UnitList[FZ], UnitsSize);
+									dummy.QType = FZ;
+									strncpy(dummy.Units, UnitList[FZ], UnitsSize);
 								}
 								else
-								{  	
+								{
 									cout << "Warning: invalid output specifier - quantity type not recognized" << endl;
 									dummy.QType = -1;  // flag as invalid
 									continue;  // break out of this loop iteration (don't add current output channel to list)
-									
 								}
 
 							}
-							
-							
+
 							// some name adjusting for special cases (maybe should handle this elsewhere...)
 							if ((dummy.OType==3) && (dummy.QType==Ten))
 							{
 								if (dummy.NodeID > 0) strncpy(dummy.Name,"TenEndB", 10);
 								else                  strncpy(dummy.Name,"TenEndA", 10);
 							}
-							
-							
 
 							//  ! also check whether each object index and node index (if applicable) is in range
 							//  IF (p%OutParam(I)%OType==2) THEN
@@ -1910,12 +1883,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							//    END IF
 							//  END IF
 
-							
 							if ((dummy.OType > 0) && (dummy.QType > 0))
 								outChans.push_back(dummy);  	// if valid, add new entry to list!
-							
-							
-							
 						}  // looping through words on line
 					//     SUBROUTINE DenoteInvalidOutput( OutParm )
 					//        TYPE(MD_OutParmType), INTENT (INOUT)  :: OutParm
@@ -1926,15 +1895,13 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					//
 					//     END SUBROUTINE DenoteInvalidOutput					
 						i++;
-						
 					}  // looping through lines
 				}
 				else i++;
 			}
 			else i++;
 		}
-		
-		
+
 		// ==============================================================================
 
 	// do some input validity checking?
