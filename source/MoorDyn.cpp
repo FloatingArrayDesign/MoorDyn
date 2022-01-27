@@ -342,15 +342,15 @@ void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 		// coupled things...
 		
 		// extrapolate instantaneous positions of any coupled bodies (type -1)
-		for (int l=0; l<CpldBodyIs.size(); l++)  
+		for (unsigned int l=0; l<CpldBodyIs.size(); l++)  
 			BodyList[CpldBodyIs[l]]->updateFairlead( t ); 	
 		
 		// extrapolate instantaneous positions of any coupled or fixed rods (type -1 or -2)
-		for (int l=0; l<CpldRodIs.size(); l++)  
+		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
 			RodList[CpldRodIs[l]]->updateFairlead( t ); 		
 
 		// extrapolate instantaneous positions of any coupled or fixed connections (type -1)
-		for (int l=0; l<CpldConIs.size(); l++)  
+		for (unsigned int l=0; l<CpldConIs.size(); l++)  
 			ConnectionList[CpldConIs[l]]->updateFairlead( t ); 
 //		// set (reduntantly?) instantaneous anchor positions
 //		for (int l=0; l<nAnchs; l++)  
@@ -389,15 +389,15 @@ void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 		// independent or semi-independent things with their own states...
 		
 		// give Bodies latest state variables (kinematics will also be assigned to dependent connections and rods, and thus line ends)
-		for (int l=0; l<FreeBodyIs.size(); l++)  
+		for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
 			BodyList[FreeBodyIs[l]]->setState((X + BodyStateIs[l]), t);
 		
 		// give independent or pinned rods' latest state variables (kinematics will also be assigned to attached line ends)
-		for (int l=0; l<FreeRodIs.size(); l++)  
+		for (unsigned int l=0; l<FreeRodIs.size(); l++)  
 			RodList[FreeRodIs[l]]->setState((X + RodStateIs[l]), t);
 		
 		// give Connects (independent connections) latest state variable values (kinematics will also be assigned to attached line ends)
-		for (int l=0; l<FreeConIs.size(); l++)  
+		for (unsigned int l=0; l<FreeConIs.size(); l++)  
 			ConnectionList[FreeConIs[l]]->setState((X + ConnectStateIs[l]), t);
 		
 		// give Lines latest state variable values for internal nodes
@@ -413,15 +413,15 @@ void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 
 		// calculate connect dynamics (including contributions from attached lines
 		// as well as hydrodynamic forces etc. on connect object itself if applicable)
-		for (int l=0; l<FreeConIs.size(); l++)  
+		for (unsigned int l=0; l<FreeConIs.size(); l++)  
 			ConnectionList[FreeConIs[l]]->getStateDeriv((Xd + ConnectStateIs[l]));
 			
 		// calculate dynamics of independent Rods 
-		for (int l=0; l<FreeRodIs.size(); l++)  
+		for (unsigned int l=0; l<FreeRodIs.size(); l++)  
 			RodList[FreeRodIs[l]]->getStateDeriv((Xd + RodStateIs[l]));
 		
 		// calculate dynamics of Bodies
-		for (int l=0; l<FreeBodyIs.size(); l++)  
+		for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
 			BodyList[FreeBodyIs[l]]->getStateDeriv((Xd + BodyStateIs[l]));
 		
 		//// calculate forces on fairleads
@@ -435,13 +435,13 @@ void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 		
 		// get dynamics/forces (doRHS()) of coupled objects, which weren't addressed in above calls
 		
-		for (int l=0; l<CpldConIs.size(); l++)  
+		for (unsigned int l=0; l<CpldConIs.size(); l++)  
 			ConnectionList[CpldConIs[l]]->doRHS();
 		
-		for (int l=0; l<CpldRodIs.size(); l++)  
+		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
 			RodList[CpldRodIs[l]]->doRHS(); 		
  
-		for (int l=0; l<CpldBodyIs.size(); l++)  
+		for (unsigned int l=0; l<CpldBodyIs.size(); l++)  
 			BodyList[CpldBodyIs[l]]->doRHS(); 	
 		
 		// call ground body to update all the fixed things
@@ -525,7 +525,7 @@ int AllOutput(double t, double dtC)
 		//for (int l=0; l<nLines; l++) outfileMain << 0.001*(LineList[l]->getNodeTen(LineList[l]->getN())) << "\t ";
 			
 
-		for (int lf=0; lf<outChans.size(); lf++)   
+		for (unsigned int lf=0; lf<outChans.size(); lf++)   
 		{
 			//cout << "Getting output: OType:" << outChans[lf].OType << ", ObjID:" << outChans[lf].ObjID << ", QType:" <<outChans[lf].QType << endl;
 			outfileMain << GetOutput(outChans[lf]) << "\t ";		// output each channel's value
@@ -540,14 +540,17 @@ int AllOutput(double t, double dtC)
 	}
 		
 	// write individual line output files
-	for (int l=0; l < nLines; l++)  LineList[l]->Output(t); 
-	
+	for (int l=0; l < nLines; l++)
+		LineList[l]->Output(t); 
+
 	// write individual rod output files
-	for (int l=0; l < nRods; l++)  RodList[l]->Output(t); 
-	
+	for (int l=0; l < nRods; l++)
+		RodList[l]->Output(t); 
+
 	// write individual body output files
-	for (int l=0; l < nBodys; l++)  BodyList[l]->Output(t); 
-	
+	for (int l=0; l < nBodys; l++)
+		BodyList[l]->Output(t); 
+
 	return 0;
 }
 
@@ -565,7 +568,6 @@ int detachLines( int attachID, int isRod, int lineIDs[], int lineTops[], int nLi
 		
 	
 	// create new massless connection for detached end(s) of line(s)
-				
 	double M = 0.0;
 	double V = 0.0;
 	double CdA;
@@ -671,7 +673,7 @@ int getCoefficientOrCurve(const char entry[50], double *LineProp_c, int *LinePro
 		
 		// now process data	
 		int nC = 0; // counter for number of data points in lookup table
-		for (int I=2; I<Clines.size(); I++)   // skip first three lines (title, names, and units) then parse
+		for (unsigned int I=2; I<Clines.size(); I++)   // skip first three lines (title, names, and units) then parse
 		{
 			vector<string> Centries = split(Clines[I]);
 			if (Centries.size() >= 2) // if valid number of inputs
@@ -833,7 +835,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 		// make a "ground body" that will be the parent of all fixed objects (connections and rods)
 		GroundBody = new Body(); 
-		GroundBody->setup(0, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);  
+		GroundBody->setup(0, 1, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);  
 
 		
 		nX = 0; // Make sure the state vector counter starts at zero.
@@ -896,7 +898,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		
 		// ----------------- go through file contents a first time, counting each entry -----------------------
 		
-		int i=0; // file line number
+		unsigned int i=0; // file line number
 		
 		while (i < lines.size())  
 		{
@@ -1626,7 +1628,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 						{
 							cout << endl << "   Error - less than the 9 required input columns for connection " << entries[0] << " definition.  Remember CdA and Ca." << endl;
 							cout << "   The line in question was read as: ";
-							for (int ii=0; ii<entries.size(); ii++) cout << entries[ii] << " ";
+							for (unsigned int ii=0; ii<entries.size(); ii++)
+								cout << entries[ii] << " ";
 							cout << endl;
 
 							return MOORDYN_INVALID_INPUT;
@@ -1874,7 +1877,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							// get lines
 							vector<string> lineNums = splitComma(entries[1]); // split by commas
 							FailList[iFail]->nLinesToDetach = lineNums.size();  // how many lines to dettach
-							for (int il=0; il<lineNums.size(); il++)
+							for (unsigned int il=0; il<lineNums.size(); il++)
 								FailList[iFail]->lineIDs[il] = atoi(lineNums[il].c_str());  
 
 							FailList[iFail]->failTime = atof(entries[2].c_str());
@@ -1895,14 +1898,15 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 					{
 						vector<string> entries = split(lines[i]);
 
-						for (int j=0; j<entries.size(); j++)  //loop through each word on each line
+						for (unsigned int j=0; j<entries.size(); j++)  //loop through each word on each line
 						{
 
 							// ----------------- Process each "word" -----------------------
 							// (set index, name, and units for all of each output channel)
 
 							char outWord[10];							// the buffer
-							snprintf(outWord, 10, entries[j].c_str());		// copy word to buffer
+							outWord[9] = '\0';
+							strncpy(outWord, entries[j].c_str(), 9);
 
 							// substrings of grouped letters or numbers for processing each parameter                          
 							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
@@ -1914,12 +1918,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 							//	cout << "Warning: invalid output specifier (must start with letter)." << endl;
 
 							OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later);
-							strncpy(dummy.Name, outWord, 10); //strlen(outWord));		// label channel with whatever name was inputted, for now
+							strncpy(dummy.Name, outWord, 10);
 
 							// figure out what type of output it is and process accordingly 
 							// TODO: add checks of first char of num1,2, let1,2,3 not being NULL to below and handle errors (e.g. invalid line number)
 
-							const int UnitsSize = 10;
+							// The length of dummy.Units is hardcoded to 10 in
+							// Misc.h
+							const int UnitsSize = 9;
+							dummy.Units[UnitsSize] = '\0';
+
 							// fairlead tension case (changed to just be for single line, not all connected lines)
 							if (strcmp(let1, "FAIRTEN")==0)
 							{
@@ -2124,7 +2132,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 		// make sure non-NULL kinematics are being passed if anything is coupled
 		int nCpldDOF = 6*CpldBodyIs.size() +  3*CpldConIs.size();  // number of coupled degrees of freedom
-		for (int l=0; l<CpldRodIs.size(); l++)  
+		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
 		{	if (RodList[CpldRodIs[l]]->type == -2)
 				nCpldDOF += 6;                                     // for cantilevered rods 6 entries will be taken
 			else
@@ -2244,14 +2252,14 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 
 		int ix = 0;
 
-		for (int l=0; l<CpldBodyIs.size(); l++)
+		for (unsigned int l=0; l<CpldBodyIs.size(); l++)
 		{
 			if (wordy>0) cout << "Initializing coupled Body " << CpldBodyIs[l] << endl;
 			BodyList[CpldBodyIs[l]]->initializeUnfreeBody(x + ix, xd + ix, 0.0);   // this calls initiateStep and updateFairlead, then initializes dependent Rods
 			ix += 6;
 		}
 
-		for (int l=0; l<CpldRodIs.size(); l++)  
+		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
 		{
 			if (wordy>0) cout << "Initializing coupled Rod " << CpldRodIs[l] << endl;
 			RodList[CpldRodIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
@@ -2264,7 +2272,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				ix += 3;                                     // for pinned rods 3 entries will be taken
 		}
 
-		for (int l=0; l<CpldConIs.size(); l++)  
+		for (unsigned int l=0; l<CpldConIs.size(); l++)  
 		{
 			if (wordy>0)
 				cout << "Initializing coupled Connection " << CpldConIs[l]
@@ -2279,16 +2287,16 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 		// initialize objects with states, writing their initial states to the master state vector (states)
 
 		// Go through Bodys and write the coordinates to the state vector
-		for (int l=0; l<FreeBodyIs.size(); l++)  
+		for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
 			BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
 
 		// Go through independent (including pinned) Rods and write the coordinates to the state vector
-		for (int l=0; l<FreeRodIs.size(); l++)  
+		for (unsigned int l=0; l<FreeRodIs.size(); l++)  
 			RodList[FreeRodIs[l]]->initializeRod(states + RodStateIs[l]);
 
 		// Go through independent connections (Connects) and write the coordinates to 
 		// the state vector and set positions of attached line ends
-		for (int l=0; l<FreeConIs.size(); l++)  
+		for (unsigned int l=0; l<FreeConIs.size(); l++)  
 			ConnectionList[FreeConIs[l]]->initializeConnect(states + ConnectStateIs[l]);
 
 
@@ -2466,7 +2474,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 			// --- channel titles ---
 			outfileMain << "Time" << "\t "; 	
 			// output all LINE fairlead (top end) tensions
-			for (int lf=0; lf<outChans.size(); lf++) outfileMain << outChans[lf].Name << "\t ";
+			for (unsigned int lf=0; lf<outChans.size(); lf++)
+				outfileMain << outChans[lf].Name << "\t ";
 			
 			outfileMain << "\n";
 			
@@ -2475,7 +2484,8 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 				// --- units ---
 				outfileMain << "(s)" << "\t "; 	
 				// output all LINE fairlead (top end) tensions
-				for (int lf=0; lf<outChans.size(); lf++) outfileMain << outChans[lf].Units << "\t ";
+				for (unsigned int lf=0; lf<outChans.size(); lf++)
+					outfileMain << outChans[lf].Units << "\t ";
 				outfileMain << "\n";
 			}
 		}
@@ -2544,13 +2554,13 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* t_in, doubl
 	
 		ix = 0;
 		
-		for (int l=0; l<CpldBodyIs.size(); l++)
+		for (unsigned int l=0; l<CpldBodyIs.size(); l++)
 		{
 			BodyList[CpldBodyIs[l]]->initiateStep(x + ix, xd + ix, t);
 			ix += 6;
 		}
 		
-		for (int l=0; l<CpldRodIs.size(); l++)  
+		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
 		{
 			RodList[CpldRodIs[l]]->initiateStep(x + ix, xd + ix, t); 	
 			
@@ -2560,7 +2570,7 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* t_in, doubl
 				ix += 3;                                     // for pinned rods 3 entries will be taken
 		}	
 
-		for (int l=0; l<CpldConIs.size(); l++)  
+		for (unsigned int l=0; l<CpldConIs.size(); l++)  
 		{
 			ConnectionList[CpldConIs[l]]->initiateStep(x + ix, xd + ix, t);
 			ix += 3;
@@ -2635,13 +2645,13 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* t_in, doubl
 	//double dummyMat3[3][3];
 	//double dummyMat6[6][6];
 	
-	for (int l=0; l<CpldBodyIs.size(); l++)
+	for (unsigned int l=0; l<CpldBodyIs.size(); l++)
 	{
 		BodyList[CpldBodyIs[l]]->getFnet(f + ix);
 		ix += 6;
 	}
 	
-	for (int l=0; l<CpldRodIs.size(); l++)  
+	for (unsigned int l=0; l<CpldRodIs.size(); l++)  
 	{
 		RodList[CpldRodIs[l]]->getFnet(f + ix);
 		
@@ -2651,7 +2661,7 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* t_in, doubl
 			ix += 3;                                     // for pinned rods 3 entries will be taken
 	}	
 
-	for (int l=0; l<CpldConIs.size(); l++)  
+	for (unsigned int l=0; l<CpldConIs.size(); l++)  
 	{
 		ConnectionList[CpldConIs[l]]->getFnet(f + ix);
 		ix += 3;
@@ -2922,7 +2932,6 @@ int DECLDIR DrawWithGL()
 		LineList[l]->drawGL2();  
 	for (int l=0; l< nConnections; l++)
 		ConnectionList[l]->drawGL();  
-	return 0;
 #endif
+	return 0;
 }
-
