@@ -1413,7 +1413,7 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 								// for (int J=0; J<6; J++)  rFairRod.back().at(J) = endCoords[J]; 	// 6DOF coordinates of rigid connection
 								CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
 							}
-							else if ((strcmp(let1, "VESSELPINNED") ==0) || (strcmp(let1, "VESPIN") ==0) || (strcmp(let1, "COUPLEDPINNED") ==0) || (strcmp(let1, "CPLDPIN") ==0))
+							else if ((strcmp(let1, "VESPIN") ==0) || (strcmp(let1, "CPLDPIN") ==0))
 							{
 								// if a pinned fairlead, add to list and add 
 								type = -1;
