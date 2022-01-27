@@ -85,7 +85,15 @@ using namespace std;
 /// Unhandled error
 #define MOORDYN_UNHANDLED_ERROR -4
 
-/** @}*/
+class nan_error : public std::runtime_error
+{
+public:
+	nan_error(const char* msg) : std::runtime_error(msg) {}
+};
+
+/**
+ * @}
+ */
 
 typedef complex<double> doubleC; 		// make shorthand for complex double type
 typedef complex<float> floatC; 		// make shorthand for complex float type

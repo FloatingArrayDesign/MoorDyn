@@ -332,158 +332,166 @@ void release()
 
 
 // master function for advancing the model and calculating state derivatives (akin to MD_CalcContStateDeriv in MoorDyn F)
-void CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
+int CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 {
-	//--try
-	//--{
-		// call ground body to update all the fixed things...
-		GroundBody->updateFairlead( t ); 
-		
-		// coupled things...
-		
-		// extrapolate instantaneous positions of any coupled bodies (type -1)
-		for (unsigned int l=0; l<CpldBodyIs.size(); l++)  
-			BodyList[CpldBodyIs[l]]->updateFairlead( t ); 	
-		
-		// extrapolate instantaneous positions of any coupled or fixed rods (type -1 or -2)
-		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
-			RodList[CpldRodIs[l]]->updateFairlead( t ); 		
+	// call ground body to update all the fixed things...
+	GroundBody->updateFairlead( t ); 
 
-		// extrapolate instantaneous positions of any coupled or fixed connections (type -1)
-		for (unsigned int l=0; l<CpldConIs.size(); l++)  
-			ConnectionList[CpldConIs[l]]->updateFairlead( t ); 
-//		// set (reduntantly?) instantaneous anchor positions
-//		for (int l=0; l<nAnchs; l++)  
-//			ConnectionList[AnchIs[l]]->updateFairlead( t ); 
-		
-		// update wave kinematics if applicable<<<<
-		if (env.WaveKin==1)
-		{
-			// extrapolate velocities from accelerations (in future could extrapolote from most recent two points, U_1 and U_2)
+	// coupled things...
 
-			double t_delta = t - tW_1;
+	// extrapolate instantaneous positions of any coupled bodies (type -1)
+	for (unsigned int l=0; l<CpldBodyIs.size(); l++)  
+		BodyList[CpldBodyIs[l]]->updateFairlead( t ); 	
 
-			for (int i=0; i<npW*3; i++)
-				U_extrap[i] = U_1[i] + Ud_1[i]*t_delta;
-				
+	// extrapolate instantaneous positions of any coupled or fixed rods (type -1 or -2)
+	for (unsigned int l=0; l<CpldRodIs.size(); l++)  
+		RodList[CpldRodIs[l]]->updateFairlead( t ); 		
+
+	// extrapolate instantaneous positions of any coupled or fixed connections (type -1)
+	for (unsigned int l=0; l<CpldConIs.size(); l++)  
+		ConnectionList[CpldConIs[l]]->updateFairlead( t ); 
+	// set (reduntantly?) instantaneous anchor positions
+	// for (int l=0; l<nAnchs; l++)  
+	//	ConnectionList[AnchIs[l]]->updateFairlead( t ); 
+
+	// update wave kinematics if applicable<<<<
+	if (env.WaveKin==1)
+	{
+		// extrapolate velocities from accelerations (in future could extrapolote from most recent two points, U_1 and U_2)
+
+		double t_delta = t - tW_1;
+
+		for (int i=0; i<npW*3; i++)
+			U_extrap[i] = U_1[i] + Ud_1[i]*t_delta;
 			
-			// distribute to the appropriate objects
-			int i = 0;
 		
-			//for (int l=0; l<FreeBodyIs.size(); l++)  
-			//	i += 3;
-			//
-			//for (int l=0; l<FreeRodIs.size(); l++)  
-			//	i += 3*RodList[FreeRodIs[l]]->getN() + 3;
-			//		
-			//for (int l=0; l<FreeConIs.size(); l++)  
-			//	i += 3
-			//
-			for (int l=0; l < nLines; l++) 	
-			{	LineList[l]->setNodeWaveKin(U_extrap + 3*i, Ud_1 + 3*i);
-				i += 3*LineList[l]->getN() + 3;
-			}	
-			
-		}
-		
-		// independent or semi-independent things with their own states...
-		
-		// give Bodies latest state variables (kinematics will also be assigned to dependent connections and rods, and thus line ends)
-		for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
-			BodyList[FreeBodyIs[l]]->setState((X + BodyStateIs[l]), t);
-		
-		// give independent or pinned rods' latest state variables (kinematics will also be assigned to attached line ends)
-		for (unsigned int l=0; l<FreeRodIs.size(); l++)  
-			RodList[FreeRodIs[l]]->setState((X + RodStateIs[l]), t);
-		
-		// give Connects (independent connections) latest state variable values (kinematics will also be assigned to attached line ends)
-		for (unsigned int l=0; l<FreeConIs.size(); l++)  
-			ConnectionList[FreeConIs[l]]->setState((X + ConnectStateIs[l]), t);
-		
-		// give Lines latest state variable values for internal nodes
-		for (int l=0; l < nLines; l++)
-			LineList[l]->setState((X + LineStateIs[l]), t);
-      
-
-		// calculate dynamics of free objects (will also calculate forces (doRHS()) from any child/dependent objects)...
-
-		// calculate line dynamics (and calculate line forces and masses attributed to connections)
-		for (int l=0; l < nLines; l++)
-			LineList[l]->getStateDeriv((Xd + LineStateIs[l]), dt);
-
-		// calculate connect dynamics (including contributions from attached lines
-		// as well as hydrodynamic forces etc. on connect object itself if applicable)
-		for (unsigned int l=0; l<FreeConIs.size(); l++)  
-			ConnectionList[FreeConIs[l]]->getStateDeriv((Xd + ConnectStateIs[l]));
-			
-		// calculate dynamics of independent Rods 
-		for (unsigned int l=0; l<FreeRodIs.size(); l++)  
-			RodList[FreeRodIs[l]]->getStateDeriv((Xd + RodStateIs[l]));
-		
-		// calculate dynamics of Bodies
-		for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
-			BodyList[FreeBodyIs[l]]->getStateDeriv((Xd + BodyStateIs[l]));
-		
-		//// calculate forces on fairleads
-		//for (int l=0; l<nFairs; l++)  
-		//	ConnectionList[FairIs[l]]->doRHS();
+		// distribute to the appropriate objects
+		int i = 0;
+	
+		//for (int l=0; l<FreeBodyIs.size(); l++)  
+		//	i += 3;
 		//
-		//// calculate forces on anchors
-		//for (int l=0; l<nAnchs; l++)  
-		//	ConnectionList[AnchIs[l]]->doRHS();
+		//for (int l=0; l<FreeRodIs.size(); l++)  
+		//	i += 3*RodList[FreeRodIs[l]]->getN() + 3;
+		//		
+		//for (int l=0; l<FreeConIs.size(); l++)  
+		//	i += 3
+		//
+		for (int l=0; l < nLines; l++) 	
+		{	LineList[l]->setNodeWaveKin(U_extrap + 3*i, Ud_1 + 3*i);
+			i += 3*LineList[l]->getN() + 3;
+		}	
+		
+	}
 	
-		
-		// get dynamics/forces (doRHS()) of coupled objects, which weren't addressed in above calls
-		
-		for (unsigned int l=0; l<CpldConIs.size(); l++)  
-			ConnectionList[CpldConIs[l]]->doRHS();
-		
-		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
-			RodList[CpldRodIs[l]]->doRHS(); 		
- 
-		for (unsigned int l=0; l<CpldBodyIs.size(); l++)  
-			BodyList[CpldBodyIs[l]]->doRHS(); 	
-		
-		// call ground body to update all the fixed things
-		//GroundBody->doRHS(); 
-		GroundBody->setDependentStates();  // (not likely needed) <<<
-		
-	//--}
-	//--catch(string e) 
-	//--{
-	//--	cout << "Error found! " << e << endl;
-	//--	throw string("problem!");
-	//--}
+	// independent or semi-independent things with their own states...
 	
-	return;
+	// give Bodies latest state variables (kinematics will also be assigned to dependent connections and rods, and thus line ends)
+	for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
+		BodyList[FreeBodyIs[l]]->setState((X + BodyStateIs[l]), t);
+	
+	// give independent or pinned rods' latest state variables (kinematics will also be assigned to attached line ends)
+	for (unsigned int l=0; l<FreeRodIs.size(); l++)  
+		RodList[FreeRodIs[l]]->setState((X + RodStateIs[l]), t);
+	
+	// give Connects (independent connections) latest state variable values (kinematics will also be assigned to attached line ends)
+	for (unsigned int l=0; l<FreeConIs.size(); l++)  
+		ConnectionList[FreeConIs[l]]->setState((X + ConnectStateIs[l]), t);
+	
+	// give Lines latest state variable values for internal nodes
+	for (int l=0; l < nLines; l++)
+		LineList[l]->setState((X + LineStateIs[l]), t);
+
+	// calculate dynamics of free objects (will also calculate forces (doRHS()) from any child/dependent objects)...
+
+	// calculate line dynamics (and calculate line forces and masses attributed to connections)
+	for (int l=0; l < nLines; l++)
+	{
+		try
+		{
+			LineList[l]->getStateDeriv((Xd + LineStateIs[l]), dt);
+		}
+		catch(nan_error const& e)
+		{
+			cout << "NaN detected: " << e.what() << endl;
+			return MOORDYN_NAN_ERROR;
+		}
+	}
+
+	// calculate connect dynamics (including contributions from attached lines
+	// as well as hydrodynamic forces etc. on connect object itself if applicable)
+	for (unsigned int l=0; l<FreeConIs.size(); l++)  
+		ConnectionList[FreeConIs[l]]->getStateDeriv((Xd + ConnectStateIs[l]));
+		
+	// calculate dynamics of independent Rods 
+	for (unsigned int l=0; l<FreeRodIs.size(); l++)  
+		RodList[FreeRodIs[l]]->getStateDeriv((Xd + RodStateIs[l]));
+	
+	// calculate dynamics of Bodies
+	for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
+		BodyList[FreeBodyIs[l]]->getStateDeriv((Xd + BodyStateIs[l]));
+	
+	//// calculate forces on fairleads
+	//for (int l=0; l<nFairs; l++)  
+	//	ConnectionList[FairIs[l]]->doRHS();
+	//
+	//// calculate forces on anchors
+	//for (int l=0; l<nAnchs; l++)  
+	//	ConnectionList[AnchIs[l]]->doRHS();
+
+	
+	// get dynamics/forces (doRHS()) of coupled objects, which weren't addressed in above calls
+	
+	for (unsigned int l=0; l<CpldConIs.size(); l++)  
+		ConnectionList[CpldConIs[l]]->doRHS();
+	
+	for (unsigned int l=0; l<CpldRodIs.size(); l++)  
+		RodList[CpldRodIs[l]]->doRHS(); 		
+
+	for (unsigned int l=0; l<CpldBodyIs.size(); l++)  
+		BodyList[CpldBodyIs[l]]->doRHS(); 	
+	
+	// call ground body to update all the fixed things
+	//GroundBody->doRHS(); 
+	GroundBody->setDependentStates();  // (not likely needed) <<<
+
+	return MOORDYN_SUCCESS;
 }
 
 
 // Runge-Kutta 2 integration routine  (integrates states and time)
-void rk2 (double x0[], double *t0, const double dt )
+int rk2 (double x0[], double *t0, const double dt )
 {
+	int err;
+
 	if (env.writeLog > 2)
 		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
 		           << *t0 << " s -----\n";
-	
-	CalcStateDeriv(x0, f0, *t0, dt);   // get derivatives at t0. f0 = f(t0, x0);
+
+	err = CalcStateDeriv(x0, f0, *t0, dt);   // get derivatives at t0. f0 = f(t0, x0);
+	if (err)
+		return err;
 
 	for (int i=0; i<nX; i++)
-		xt[i] = x0[i] + 0.5 * dt * f0[i];  // integrate to t0  + dt/2. x1 = x0 + dt*f0/2.0;
-	
-	
+		xt[i] = x0[i] + 0.5 * dt * f0[i];    // integrate to t0  + dt/2. x1 = x0 + dt*f0/2.0;
+
+
 	if (env.writeLog > 2)
 		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
 		           << *t0 + 0.5 * dt << " s -----\n";
-	
-	CalcStateDeriv(xt, f1, *t0 + 0.5 * dt, dt);  // get derivatives at t0  + dt/2. f1 = f(t1, x1);
+
+	err = CalcStateDeriv(xt, f1, *t0 + 0.5 * dt, dt);  // get derivatives at t0  + dt/2. f1 = f(t1, x1);
+	if (err)
+		return err;
 
 	for (int i=0; i<nX; i++) 
-		x0[i] = x0[i] + dt * f1[i];  // integrate states to t0 + dt
+		x0[i] = x0[i] + dt * f1[i];                    // integrate states to t0 + dt
 
 	*t0 = *t0 + dt;                  // update time
 
 	// <<<<<<<<< maybe should check/force all rod unit vectors to be unit vectors here? <<<
+
+	return MOORDYN_SUCCESS;
 }
 
 
@@ -778,1740 +786,1731 @@ int MoorDynInit(double x[], double xd[], const char *infilename)
 #endif
 #endif	
 	
-//--	try
-//--	{
-		
-		// ---------------------------- MoorDyn title message ----------------------------
-		cout << "\n Running MoorDyn (v2.a10, 2022-01-01)" << endl;
-		cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
-		cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
-		cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
-		cout << "   This program is released under the GNU General Public License v3." << endl;
+	// ---------------------------- MoorDyn title message ----------------------------
+	cout << "\n Running MoorDyn (v2.a10, 2022-01-01)" << endl;
+	cout << "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl;
+	cout << "         MoorDyn v2 has significant ongoing input file changes from v1." << endl;  
+	cout << "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl;
+	cout << "   This program is released under the GNU General Public License v3." << endl;
 
-		//dt = *dTime; // store time step from FAST	
-		
+	//dt = *dTime; // store time step from FAST	
+	
 
-		// calculate TransMat
-	//	double TransMat[9];
-	//	RotMat(X[3], X[4], X[5], TransMat); <<<<<<<<<<<<<<<
-			
-		
-		
-		// ----------------------- initialize data holders -------------------------
-		
-		// defaults
-		env.g = 9.8;
-		env.WtrDpth = 0.;
-		env.rho_w = 1025.;
-		env.kb = 3.0e6;
-		env.cb = 3.0e5;
-		env.WaveKin = 0;    // 0=none
-		env.Current = 0;   // 0=none
-		env.dtWave = 0.25;
-		env.WriteUnits = 1;	// by default, write units line
-		env.writeLog = 0;   // by default, don't write out a log file
-		env.FrictionCoefficient = 0.0;
-		env.FricDamp = 200.0;
-		env.StatDynFricScale = 1.0;
-			
-		double ICDfac = 5; // factor by which to boost drag coefficients during dynamic relaxation IC generation
-		double ICdt = 1.0;						// convergence analysis time step for IC generation
-		double ICTmax = 120;						// max time for IC generation
-		double ICthresh = 0.001;					// threshold for relative change in tensions to call it converged
-		int WaveKinTemp = 0;				// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
-		npW = 0;   // assume no wave kinematics points are passed in externally, unless ExernalWaveKinInit is called later
-		
-		dtM0 = 0.001;  // default value for desired mooring model time step
+	// calculate TransMat
+	// double TransMat[9];
+	// RotMat(X[3], X[4], X[5], TransMat); <<<<<<<<<<<<<<<
 
-		// fairlead position arrays
-		vector< vector< double > > rFairRod;
-		vector< string > outchannels;  // string containing which channels to write to output
-		
-		// line connection info (temporary, until LineList addresses are done moving) <<????
-	//	vector< int > LineInd;
-	//	vector< int > RodInd;
-	//	vector< int > AnchInd;
-	//	vector< int > FairInd;
+	// ----------------------- initialize data holders -------------------------
 
-		// make a "ground body" that will be the parent of all fixed objects (connections and rods)
-		GroundBody = new Body(); 
-		GroundBody->setup(0, 1, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);  
-
+	// defaults
+	env.g = 9.8;
+	env.WtrDpth = 0.;
+	env.rho_w = 1025.;
+	env.kb = 3.0e6;
+	env.cb = 3.0e5;
+	env.WaveKin = 0;    // 0=none
+	env.Current = 0;   // 0=none
+	env.dtWave = 0.25;
+	env.WriteUnits = 1;	// by default, write units line
+	env.writeLog = 0;   // by default, don't write out a log file
+	env.FrictionCoefficient = 0.0;
+	env.FricDamp = 200.0;
+	env.StatDynFricScale = 1.0;
 		
-		nX = 0; // Make sure the state vector counter starts at zero.
-				// This will be incremented as each object is added.
+	double ICDfac = 5; // factor by which to boost drag coefficients during dynamic relaxation IC generation
+	double ICdt = 1.0;						// convergence analysis time step for IC generation
+	double ICTmax = 120;						// max time for IC generation
+	double ICthresh = 0.001;					// threshold for relative change in tensions to call it converged
+	int WaveKinTemp = 0;				// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
+	npW = 0;   // assume no wave kinematics points are passed in externally, unless ExernalWaveKinInit is called later
+	
+	dtM0 = 0.001;  // default value for desired mooring model time step
 
-		// make sure the object counteres start at zero (done here in case MoorDyn is called multiple times)
-		
-		nLineTypes        = 0; // number of line types
-		nRodTypes         = 0; // number of Rod types
-		nLines            = 0; // number of Line objects
-		nRods             = 0; // number of Rod objects
-		nBodys            = 0; // number of Body objects
-		nConnections      = 0; // total number of Connection objects
-		nConnectionsExtra = 0; // maximum number of Connection objects (allows addition of connections during simulation for line detachments)
-		nFails            = 0; // number of failure conditions read in
+	// fairlead position arrays
+	vector< vector< double > > rFairRod;
+	vector< string > outchannels;  // string containing which channels to write to output
+	
+	// line connection info (temporary, until LineList addresses are done moving) <<????
+//	vector< int > LineInd;
+//	vector< int > RodInd;
+//	vector< int > AnchInd;
+//	vector< int > FairInd;
 
-		
-		// ==================== load data about the mooring lines from lines.txt =====================
-		
-		string filename("Mooring/lines.txt");
-		
-		if (infilename && (strlen(infilename) > 0))
-			filename = infilename;
+	// make a "ground body" that will be the parent of all fixed objects (connections and rods)
+	GroundBody = new Body(); 
+	GroundBody->setup(0, 1, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);  
 
-		//MDbasename = filesystem::path(filename).stem().string();   // get just the file name without extension
-		//MDbasepath = filesystem::path(filename).parent_path().string();   // get the directory of the files
+	
+	nX = 0; // Make sure the state vector counter starts at zero.
+			// This will be incremented as each object is added.
 
-		cout << "Based on the provided infilename of " << infilename << endl;
-		cout << "The filename is " << filename << endl;
+	// make sure the object counteres start at zero (done here in case MoorDyn is called multiple times)
+	
+	nLineTypes        = 0; // number of line types
+	nRodTypes         = 0; // number of Rod types
+	nLines            = 0; // number of Line objects
+	nRods             = 0; // number of Rod objects
+	nBodys            = 0; // number of Body objects
+	nConnections      = 0; // total number of Connection objects
+	nConnectionsExtra = 0; // maximum number of Connection objects (allows addition of connections during simulation for line detachments)
+	nFails            = 0; // number of failure conditions read in
 
-		int lastSlash = filename.find_last_of("/\\");
-		int lastDot = filename.find_last_of('.');
-		MDbasename = filename.substr(lastSlash+1, lastDot-lastSlash-1);
-		MDbasepath = filename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
+	
+	// ==================== load data about the mooring lines from lines.txt =====================
+	
+	string filename("Mooring/lines.txt");
+	
+	if (infilename && (strlen(infilename) > 0))
+		filename = infilename;
 
-		cout << "The MDbasename is " << MDbasename << endl;
-		cout << "The MDbasepath is " << MDbasepath << endl;
-		
-		
-		// --------------------------------- read data from file -----------------------------
-		vector<string> lines;
-		string line;
-		ifstream myfile (filename);     // open an input stream to the line data input file
-	//	ifstream myfile ("Mooring/lines.txt");     // open an input stream to the line data input file
-		if (myfile.is_open())
+	//MDbasename = filesystem::path(filename).stem().string();   // get just the file name without extension
+	//MDbasepath = filesystem::path(filename).parent_path().string();   // get the directory of the files
+
+	cout << "Based on the provided infilename of " << infilename << endl;
+	cout << "The filename is " << filename << endl;
+
+	int lastSlash = filename.find_last_of("/\\");
+	int lastDot = filename.find_last_of('.');
+	MDbasename = filename.substr(lastSlash+1, lastDot-lastSlash-1);
+	MDbasepath = filename.substr(0, lastSlash+1);  // the path to the folder where the files are located, including the last slash
+
+	cout << "The MDbasename is " << MDbasename << endl;
+	cout << "The MDbasepath is " << MDbasepath << endl;
+	
+	
+	// --------------------------------- read data from file -----------------------------
+	vector<string> lines;
+	string line;
+	ifstream myfile (filename);     // open an input stream to the line data input file
+//	ifstream myfile ("Mooring/lines.txt");     // open an input stream to the line data input file
+	if (myfile.is_open())
+	{
+		while ( myfile.good() )
 		{
-			while ( myfile.good() )
-			{
-				getline (myfile,line);
-				lines.push_back(line);
-			}
-			myfile.close();
+			getline (myfile,line);
+			lines.push_back(line);
 		}
-		else
+		myfile.close();
+	}
+	else
+	{
+		cout << "Error: unable to open file " << filename << endl; 
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
+	
+	
+	// ----------------- go through file contents a first time, counting each entry -----------------------
+	
+	unsigned int i=0; // file line number
+	
+	while (i < lines.size())  
+	{
+		if (lines[i].find("---") != string::npos) // look for header line
 		{
-			cout << "Error: unable to open file " << filename << endl; 
-			return MOORDYN_INVALID_INPUT_FILE;
-		}
-		
-		
-		// ----------------- go through file contents a first time, counting each entry -----------------------
-		
-		unsigned int i=0; // file line number
-		
-		while (i < lines.size())  
-		{
-			if (lines[i].find("---") != string::npos) // look for header line
-			{
-				if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
-				{	
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nLineTypes++;
-						i++;
-					}
-				}
-				else if ( (lines[i].find("ROD DICTIONARY") != string::npos) || (lines[i].find("ROD TYPES") != string::npos) ) // if rod dictionary header
-				{	
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nRodTypes++;
-						i++;
-					}	
-				}
-				else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
-				{	
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nBodys++;
-						i++;
-					}		
-				}
-				else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
-				{	
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nRods++;
-						i++;
-					}	
-				}
-				else if ((lines[i].find("POINTS") != string::npos) || (lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
-				{	
-					if (nLineTypes < 1)
-						cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
+			if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
+			{	
+				i += 3; // skip following two lines (label line and unit line)
 				
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nConnections++;
-						i++;
-					}
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nLineTypes++;
+					i++;
 				}
-				else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINE LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
-				{	
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nLines++;
-						i++;
-					}
+			}
+			else if ( (lines[i].find("ROD DICTIONARY") != string::npos) || (lines[i].find("ROD TYPES") != string::npos) ) // if rod dictionary header
+			{	
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nRodTypes++;
+					i++;
+				}	
+			}
+			else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
+			{	
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nBodys++;
+					i++;
+				}		
+			}
+			else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
+			{	
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nRods++;
+					i++;
+				}	
+			}
+			else if ((lines[i].find("POINTS") != string::npos) || (lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
+			{	
+				if (nLineTypes < 1)
+					cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
+			
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nConnections++;
+					i++;
 				}
-				else if (lines[i].find("FAILURE") != string::npos) // if failure conditions header
-				{	
-					if (wordy>0) cout << "   Reading failure conditions: ";
-					
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// find how many elements of this type there are
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						nFails++;
-						i++;
-					}
+			}
+			else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINE LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
+			{	
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nLines++;
+					i++;
 				}
-				else if (lines[i].find("OPTIONS") != string::npos) // if options header
-				{	
-					i ++;
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{ 	
-						vector<string> entries = split(lines[i]);
-						
-						if (entries.size() >= 2) // if a valid "[value] [identifier] [optional comment]" format
-						{
-							if (entries[1] == "writeLog") 
-							{	env.writeLog = atoi(entries[0].c_str());
-								if (env.writeLog > 0)
-								{	// open log file for writing if needed
-									stringstream oname;
-									oname << MDbasepath << MDbasename << ".log";
+			}
+			else if (lines[i].find("FAILURE") != string::npos) // if failure conditions header
+			{	
+				if (wordy>0) cout << "   Reading failure conditions: ";
+				
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// find how many elements of this type there are
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					nFails++;
+					i++;
+				}
+			}
+			else if (lines[i].find("OPTIONS") != string::npos) // if options header
+			{	
+				i ++;
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{ 	
+					vector<string> entries = split(lines[i]);
+					
+					if (entries.size() >= 2) // if a valid "[value] [identifier] [optional comment]" format
+					{
+						if (entries[1] == "writeLog") 
+						{	env.writeLog = atoi(entries[0].c_str());
+							if (env.writeLog > 0)
+							{	// open log file for writing if needed
+								stringstream oname;
+								oname << MDbasepath << MDbasename << ".log";
+								
+								outfileLog.open(oname.str());
+								if (outfileLog.is_open())
+								{
+									outfileLog << "MoorDyn v2 log file with output level " << env.writeLog << "\n";
+									outfileLog << "Note: options above the writeLog line in the input file will not be recorded\n";
 									
-									outfileLog.open(oname.str());
-									if (outfileLog.is_open())
-									{
-										outfileLog << "MoorDyn v2 log file with output level " << env.writeLog << "\n";
-										outfileLog << "Note: options above the writeLog line in the input file will not be recorded\n";
-										
-										env.outfileLogPtr = & outfileLog; // get pointer to outfile for MD objects to use
-										
-										*env.outfileLogPtr << "will this work!\n";
-									}
-									else 
-									{	cout << "   ERROR: Unable to write to log file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
-										return MOORDYN_INVALID_OUTPUT_FILE;
-									}
+									env.outfileLogPtr = & outfileLog; // get pointer to outfile for MD objects to use
+									
+									*env.outfileLogPtr << "will this work!\n";
+								}
+								else 
+								{	cout << "   ERROR: Unable to write to log file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
+									return MOORDYN_INVALID_OUTPUT_FILE;
 								}
 							}
-							else if ((entries[1] == "dtM")           || (entries[1] == "DT"))        dtM0 = atof(entries[0].c_str());     // second is old way, should phase out
-							else if ((entries[1] == "g") || (entries[1] == "gravity"))          env.g  = atof(entries[0].c_str()); 
-							else if ((entries[1] =="Rho")||(entries[1]=="rho")||(entries[1]=="WtrDnsty"))   env.rho_w = atof(entries[0].c_str()); 
-							else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
-							else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
-							else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
-							else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
-							else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
-							else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
-							else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
-							else if (entries[1] == "WaveKin")                                   WaveKinTemp = atoi(entries[0].c_str());
-							else if (entries[1] == "Currents")                                  env.Current = atoi(entries[0].c_str());
-							else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
-							else if (entries[1] == "FrictionCoefficient")                       env.FrictionCoefficient = atof(entries[0].c_str());
-							else if (entries[1] == "FricDamp")                       env.FricDamp = atof(entries[0].c_str());
-							else if (entries[1] == "StatDynFricScale")             env.StatDynFricScale = atof(entries[0].c_str());
-							else if (entries[1] == "dtOut")                                     dtOut = atof(entries[0].c_str()); // output writing period (0 for at every call)
-							// >>>>>>>>>> add dtWave...
-							else cout << "Warning: solver option keyword \"" << entries[1] << "\" not recognized." << endl;
 						}
-						i++;
+						else if ((entries[1] == "dtM")           || (entries[1] == "DT"))        dtM0 = atof(entries[0].c_str());     // second is old way, should phase out
+						else if ((entries[1] == "g") || (entries[1] == "gravity"))          env.g  = atof(entries[0].c_str()); 
+						else if ((entries[1] =="Rho")||(entries[1]=="rho")||(entries[1]=="WtrDnsty"))   env.rho_w = atof(entries[0].c_str()); 
+						else if (entries[1] == "WtrDpth")                                   env.WtrDpth = atof(entries[0].c_str()); 
+						else if ((entries[1] == "kBot")     || (entries[1] == "kb"))        env.kb = atof(entries[0].c_str());   // "
+						else if ((entries[1] == "cBot")     || (entries[1] == "cb"))        env.cb = atof(entries[0].c_str());   // "
+						else if ((entries[1] == "dtIC")     || (entries[1] == "ICdt"))      ICdt     = atof(entries[0].c_str()); // "
+						else if ((entries[1] == "TmaxIC")   || (entries[1] == "ICTmax"))    ICTmax   = atof(entries[0].c_str()); // "
+						else if ((entries[1] == "CdScaleIC")|| (entries[1] == "ICDfac"))    ICDfac   = atof(entries[0].c_str()); // "
+						else if ((entries[1] == "threshIC") || (entries[1] == "ICthresh"))  ICthresh = atof(entries[0].c_str()); // "
+						else if (entries[1] == "WaveKin")                                   WaveKinTemp = atoi(entries[0].c_str());
+						else if (entries[1] == "Currents")                                  env.Current = atoi(entries[0].c_str());
+						else if (entries[1] == "WriteUnits")                                env.WriteUnits = atoi(entries[0].c_str());
+						else if (entries[1] == "FrictionCoefficient")                       env.FrictionCoefficient = atof(entries[0].c_str());
+						else if (entries[1] == "FricDamp")                       env.FricDamp = atof(entries[0].c_str());
+						else if (entries[1] == "StatDynFricScale")             env.StatDynFricScale = atof(entries[0].c_str());
+						else if (entries[1] == "dtOut")                                     dtOut = atof(entries[0].c_str()); // output writing period (0 for at every call)
+						// >>>>>>>>>> add dtWave...
+						else cout << "Warning: solver option keyword \"" << entries[1] << "\" not recognized." << endl;
+					}
+					i++;
+				
+				}
+			}
+			else
+				i++;
+		}
+		else i++;
+	}	
+	
+	nConnectionsExtra = nConnections + 2*nLines;    // set maximum number of connections, accounting for possible detachment of each line end and a connection for that
+	
+	
+	// ------------------------- allocate necessary object arrays -------------------------------
+	
+	// allocate space for array of pointers to entries
+	RodPropList    = new RodProps*[nRodTypes];
+	LinePropList   = new LineProps*[nLineTypes];
+	BodyList       = new Body*[nBodys];
+	RodList        = new Rod*[nRods];
+	ConnectionList = new Connection*[nConnectionsExtra]; // using nConnectionsExtra to leave room for additional connections for line detachments
+	LineList       = new Line*[nLines];
+	FailList       = new FailProps*[nFails];
+	
+	
+	// ---------------------- now go through again and process file contents --------------------
+	
+	i=0; // reset file line number
+
+	while (i < lines.size())  
+	{
+		if (lines[i].find("---") != string::npos) // look for header line
+		{
+			// might want to convert to uppercase to support lowercase headings too <<<
+			if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
+			{
+				if (wordy>0)
+					cout << "   Reading line types: " << endl;
+				
+				i += 3; // skip following two lines (label line and unit line)
+				
+				// set up each entry
+				for (int iLineType=0; iLineType<nLineTypes; iLineType++)
+				{
+					// parse out entries: Name  Diam MassDenInAir EA cIntDamp EI    Cd  Ca  CdAx  CaAx 
+					vector<string> entries = split(lines[i+iLineType]); // split by spaces
 					
+					if (entries.size() >= 10) // if valid number of inputs
+					{
+						LinePropList[iLineType] = new LineProps();
+						
+						LinePropList[iLineType]->type =    entries[0]; //.c_str());
+						LinePropList[iLineType]->d  = atof(entries[1].c_str());
+						LinePropList[iLineType]->w  = atof(entries[2].c_str());
+						
+						LinePropList[iLineType]->Cdn= atof(entries[6].c_str());
+						LinePropList[iLineType]->Can= atof(entries[7].c_str());
+						LinePropList[iLineType]->Cdt= atof(entries[8].c_str());
+						LinePropList[iLineType]->Cat= atof(entries[9].c_str());
+						
+						// read in stiffness value (and load nonlinear file if needed)
+						getCoefficientOrCurve(entries[3].c_str(), &(LinePropList[iLineType]->EA), 
+							&(LinePropList[iLineType]->nEApoints), LinePropList[iLineType]->stiffXs, LinePropList[iLineType]->stiffYs);
+							
+						// read in damping value (and load nonlinear file if needed)
+						getCoefficientOrCurve(entries[4].c_str(), &(LinePropList[iLineType]->c), 
+							&(LinePropList[iLineType]->nCpoints), LinePropList[iLineType]->dampXs, LinePropList[iLineType]->dampYs);
+							
+							
+						// read in bending stiffness value (and load nonlinear file if needed)
+						getCoefficientOrCurve(entries[5].c_str(), &(LinePropList[iLineType]->EI), 
+							&(LinePropList[iLineType]->nEIpoints), LinePropList[iLineType]->bstiffXs, LinePropList[iLineType]->bstiffYs);
+
+						if (wordy>0)
+							cout << entries[0] << " ";
+
+						// write lineType information to log file
+						if (env.writeLog > 1)
+						{
+							outfileLog << "  - LineType" << iLineType+1 << ":" << endl;
+							outfileLog << "    name: " << LinePropList[iLineType]->type << endl;
+							outfileLog << "    d   : " << LinePropList[iLineType]->d    << endl;
+							outfileLog << "    w   : " << LinePropList[iLineType]->w    << endl;
+							outfileLog << "    Cdn : " << LinePropList[iLineType]->Cdn  << endl;
+							outfileLog << "    Can : " << LinePropList[iLineType]->Can  << endl;
+							outfileLog << "    Cdt : " << LinePropList[iLineType]->Cdt  << endl;
+							outfileLog << "    Cat : " << LinePropList[iLineType]->Cat  << endl;
+						}
+					}
+					else
+					{
+						//cout << "Error: make sure the Line Types entries have 10 columns (including bending stiffness)..." << endl;  // <<<< make this proper
+						//cout << "Occured when reading line: " << lines[i+iLineType] << endl;
+
+						stringstream s;
+						s << " Error when reading LineType input: " << lines[i+iLineType] <<"\n";
+						s << " Make sure the Line Types entries have 10 columns (including bending stiffness)\n";
+						cout << s.str() << endl;
+						return MOORDYN_INVALID_INPUT;
+					}
+					//i++;
+				}
+				if (wordy>0)
+					cout << endl;
+			}
+			else if ( (lines[i].find("ROD DICTIONARY") != string::npos) || (lines[i].find("ROD TYPES") != string::npos) ) // if rod dictionary header
+			{	
+				if (wordy>0)
+					cout << "   Reading rod types: " << endl;
+
+				i += 3; // skip following two lines (label line and unit line)
+
+				// set up each entry
+				for (int iRodType=0; iRodType<nRodTypes; iRodType++)
+				{
+					// parse out entries: Name  Diam MassDen Cd  Ca  CdEnd  CaEnd
+					vector<string> entries = split(lines[i+iRodType]); // split by spaces
+											
+					if (entries.size() >= 7) // if valid number of inputs
+					{	
+						RodPropList[iRodType] = new RodProps();
+
+						RodPropList[iRodType]->type =    entries[0]; //.c_str());
+						RodPropList[iRodType]->d  = atof(entries[1].c_str());
+						RodPropList[iRodType]->w  = atof(entries[2].c_str());
+						RodPropList[iRodType]->Cdn= atof(entries[3].c_str());
+						RodPropList[iRodType]->Can= atof(entries[4].c_str());
+						RodPropList[iRodType]->Cdt= atof(entries[5].c_str());
+						RodPropList[iRodType]->Cat= atof(entries[6].c_str());
+						if (wordy>0)
+							cout << entries[0] << " ";
+					}
+					//i++;
+				}
+				if (wordy>0)
+					cout << endl;
+			}
+			else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
+			{	
+				if (wordy>0)
+					cout << "   Reading Body properties: " << endl;
+				i += 3; // skip following two lines (label line and unit line)
+
+				// set up each entry
+				for (int iBody=0; iBody<nBodys; iBody++)
+				{ 	
+					// parse out entries: ID   Attachment  X0  Y0  Z0  r0  p0  y0    M  CG*  I*    V  CdA*  Ca*
+					vector<string> entries = split(lines[i+iBody]); // split by spaces
+
+					if (entries.size() >= 14) // if valid number of inputs
+					{
+						int number          = atoi(entries[0].c_str());
+						int type;							
+						double r6[6];
+						
+						for (int I=0; I<6; I++) 
+							r6[  I] = atof(entries[2+I].c_str());					
+						
+						double M = atof(entries[ 8].c_str());						
+						double V = atof(entries[11].c_str());
+						
+						double rCG[3];
+						double Inert[3];
+						double CdA[3];
+						double Ca[3];								
+						
+						// process CG
+						vector<string> strings_rCG = splitBar(entries[ 9].c_str()); // split by braces, if any
+						if (strings_rCG.size() == 1) {                                // if only one entry, it is the z coordinate
+							rCG[0] = 0.0;
+							rCG[1] = 0.0;
+							rCG[2] = atof(strings_rCG[0].c_str());
+						}
+						else if (strings_rCG.size() == 3) {                           // all three coordinates provided
+							rCG[0] = atof(strings_rCG[0].c_str());
+							rCG[1] = atof(strings_rCG[1].c_str());
+							rCG[2] = atof(strings_rCG[2].c_str());
+						}
+						else {
+							cout << "Body " << number << " CG entry (col 10) must have 1 or 3 numbers." << endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+						// process mements of inertia
+						vector<string> strings_I   = splitBar(entries[10].c_str());
+						if (strings_I.size() == 1) {                                // if only one entry, use it for all directions
+							Inert[0] = atof(strings_I[0].c_str());
+							Inert[1] = Inert[0];
+							Inert[2] = Inert[0];
+						}
+						else if (strings_I.size() == 3) {                           // all three coordinates provided
+							Inert[0] = atof(strings_I[0].c_str());
+							Inert[1] = atof(strings_I[1].c_str());
+							Inert[2] = atof(strings_I[2].c_str());
+						}
+						else {
+							cout << "Body " << number << " inertia entry (col 11) must have 1 or 3 numbers." << endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+						// process drag ceofficient by area product
+						vector<string> strings_CdA = splitBar(entries[12].c_str());
+						if (strings_CdA.size() == 1) {                                // if only one entry, use it for all directions
+							CdA[0] = atof(strings_CdA[0].c_str());
+							CdA[1] = CdA[0];
+							CdA[2] = CdA[0];
+						}
+						else if (strings_CdA.size() == 3) {                           // all three coordinates provided
+							CdA[0] = atof(strings_CdA[0].c_str());
+							CdA[1] = atof(strings_CdA[1].c_str());
+							CdA[2] = atof(strings_CdA[2].c_str());
+						}
+						else {
+							cout << "Body " << number << " CdA entry (col 13) must have 1 or 3 numbers." << endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+						// process added mass coefficient
+						vector<string> strings_Ca  = splitBar(entries[13].c_str());							
+						if (strings_Ca.size() == 1) {                                // if only one entry, use it for all directions
+							Ca[0] = atof(strings_Ca[0].c_str());
+							Ca[1] = Ca[0];
+							Ca[2] = Ca[0];
+						}
+						else if (strings_Ca.size() == 3) {                           // all three coordinates provided
+							Ca[0] = atof(strings_Ca[0].c_str());
+							Ca[1] = atof(strings_Ca[1].c_str());
+							Ca[2] = atof(strings_Ca[2].c_str());
+						}
+						else {
+							cout << "Body " << number << " Ca entry (col 14) must have 1 or 3 numbers." << endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
+						// ----------- process body type -----------------
+
+						// substrings of grouped letters or numbers for processing each parameter                          
+						char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
+						char typeWord[10];							// the buffer
+
+						snprintf(typeWord, 10, entries[1].c_str());		// copy body type word to buffer
+
+						decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
+						{
+							type = 1;  // body is fixed  (this would just be used if someone wanted to temporarly fix a body that things were attached to)
+						}
+						if ((strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "CPLD") ==0))
+						{
+							type = -1;   // body is coupled - controlled from outside
+							CpldBodyIs.push_back(iBody);
+						}
+						else 
+						{
+							type = 0;      // body is free
+							FreeBodyIs.push_back(iBody);
+						}
+						// make an output file for it
+						//if (...)
+						//{
+							stringstream oname;
+							oname << MDbasepath << MDbasename << "_Body" << number << ".out";
+							outfiles.push_back( make_shared<ofstream>(oname.str()));
+						//}
+						//else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
+
+						// set up Body 
+						BodyList[iBody] = new Body(); 
+						BodyList[iBody]->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, outfiles.back());
+
+						// set up the body state info if applicable
+						if (type == 0)
+						{
+							BodyStateIs.push_back(nX);   // assign start index of this body's states
+							nX += 12;                        // add 12 state variables for the body
+						}
+
+						//if (BodyList.size() != number)  // check that ID numbers are in order
+						//	cout << "Warning: body ID numbers should be in order (1,2,3...)." << endl;
+					}
+					else 
+					{
+						cout << endl << "   Error with Body " << entries[0] << " inputs (14 expected but only " << entries.size() << " provided)." << endl;
+						return MOORDYN_INVALID_INPUT;
 					}
 				}
-				else
-					i++;
 			}
-			else i++;
-		}	
-		
-		nConnectionsExtra = nConnections + 2*nLines;    // set maximum number of connections, accounting for possible detachment of each line end and a connection for that
-		
-		
-		// ------------------------- allocate necessary object arrays -------------------------------
-		
-		// allocate space for array of pointers to entries
-		RodPropList    = new RodProps*[nRodTypes];
-		LinePropList   = new LineProps*[nLineTypes];
-		BodyList       = new Body*[nBodys];
-		RodList        = new Rod*[nRods];
-		ConnectionList = new Connection*[nConnectionsExtra]; // using nConnectionsExtra to leave room for additional connections for line detachments
-		LineList       = new Line*[nLines];
-		FailList       = new FailProps*[nFails];
-		
-		
-		// ---------------------- now go through again and process file contents --------------------
-		
-		i=0; // reset file line number
-		
-		while (i < lines.size())  
-		{
-			if (lines[i].find("---") != string::npos) // look for header line
-			{
-				// might want to convert to uppercase to support lowercase headings too <<<
-				if ( (lines[i].find("LINE DICTIONARY") != string::npos) || (lines[i].find("LINE TYPES") != string::npos) ) // if line dictionary header
+			else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
+			{	
+				if (wordy>0)
+					cout << "   Reading rod properties: " << endl;
+				i += 3; // skip following two lines (label line and unit line)
+
+				// set up each entry
+				for (int iRod=0; iRod<nRods; iRod++)
 				{
-					if (wordy>0)
-						cout << "   Reading line types: " << endl;
-					
-					i += 3; // skip following two lines (label line and unit line)
-					
-					// set up each entry
-					for (int iLineType=0; iLineType<nLineTypes; iLineType++)
+					//vector<string> entries = split(lines[i-nRods+iRod], ' '); // split by spaces
+					vector<string> entries = split(lines[i+iRod]); // split by spaces
+
+					if (entries.size() >= 8) // if valid number of inputs
 					{
-						// parse out entries: Name  Diam MassDenInAir EA cIntDamp EI    Cd  Ca  CdAx  CaAx 
-						vector<string> entries = split(lines[i+iLineType]); // split by spaces
+						// RodID  Type/BodyID  RodType  Xa   Ya   Za   Xb   Yb   Zb  NumSegs  Flags/Outputs
 						
-						if (entries.size() >= 10) // if valid number of inputs
+
+						// read in these properties first because they're needed for setting up various rod types
+						int number          = atoi(entries[0].c_str());
+						string RodType         = entries[1];
+						double endCoords[6]; 
+						for (int J=0; J<6; J++) endCoords[J]=atof(entries[3+J].c_str());
+						int NumSegs         = atoi(entries[9].c_str());
+						string outchannels  = entries[10];
+
+						// ----------- process rod type -----------------
+						int type;						
+						// substrings of grouped letters or numbers for processing each parameter                          
+						char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
+						char typeWord[10];							// the buffer
+
+						snprintf(typeWord, 10, entries[2].c_str());		// copy rod type word to buffer
+
+						decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
 						{
-							LinePropList[iLineType] = new LineProps();
-							
-							LinePropList[iLineType]->type =    entries[0]; //.c_str());
-							LinePropList[iLineType]->d  = atof(entries[1].c_str());
-							LinePropList[iLineType]->w  = atof(entries[2].c_str());
-							
-							LinePropList[iLineType]->Cdn= atof(entries[6].c_str());
-							LinePropList[iLineType]->Can= atof(entries[7].c_str());
-							LinePropList[iLineType]->Cdt= atof(entries[8].c_str());
-							LinePropList[iLineType]->Cat= atof(entries[9].c_str());
-							
-							// read in stiffness value (and load nonlinear file if needed)
-							getCoefficientOrCurve(entries[3].c_str(), &(LinePropList[iLineType]->EA), 
-								&(LinePropList[iLineType]->nEApoints), LinePropList[iLineType]->stiffXs, LinePropList[iLineType]->stiffYs);
-								
-							// read in damping value (and load nonlinear file if needed)
-							getCoefficientOrCurve(entries[4].c_str(), &(LinePropList[iLineType]->c), 
-								&(LinePropList[iLineType]->nCpoints), LinePropList[iLineType]->dampXs, LinePropList[iLineType]->dampYs);
-								
-								
-							// read in bending stiffness value (and load nonlinear file if needed)
-							getCoefficientOrCurve(entries[5].c_str(), &(LinePropList[iLineType]->EI), 
-								&(LinePropList[iLineType]->nEIpoints), LinePropList[iLineType]->bstiffXs, LinePropList[iLineType]->bstiffYs);
-
-							if (wordy>0)
-								cout << entries[0] << " ";
-
-							// write lineType information to log file
-							if (env.writeLog > 1)
+							type = 2;
+							//GroundBody->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass
+						}
+						else if ((strcmp(let1, "PINNED") ==0) || (strcmp(let1, "PIN") ==0))
+						{
+							type = 1;       
+							//GroundBody->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass	
+							FreeRodIs.push_back(iRod);	  // add this pinned rod to the free list because it is half free
+							RodStateIs.push_back(nX);   // assign start index of this rod's states
+							nX += 6;                        // add 6 state variables for each pinned rod							
+						}
+						else if (strcmp(let1, "BODY") ==0)
+						{
+							// attached to a body (either rididly or pinned)
+							if (strlen(num1)>0)
 							{
-								outfileLog << "  - LineType" << iLineType+1 << ":" << endl;
-								outfileLog << "    name: " << LinePropList[iLineType]->type << endl;
-								outfileLog << "    d   : " << LinePropList[iLineType]->d    << endl;
-								outfileLog << "    w   : " << LinePropList[iLineType]->w    << endl;
-								outfileLog << "    Cdn : " << LinePropList[iLineType]->Cdn  << endl;
-								outfileLog << "    Can : " << LinePropList[iLineType]->Can  << endl;
-								outfileLog << "    Cdt : " << LinePropList[iLineType]->Cdt  << endl;
-								outfileLog << "    Cat : " << LinePropList[iLineType]->Cat  << endl;
+								int bodyID = atoi(num1);
+								if ((bodyID <= nBodys) && (bodyID > 0))
+								{
+									//BodyList[bodyID-1]->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass
+									if ((strcmp(let2, "PINNED") ==0) || (strcmp(let2, "PIN") ==0))
+									{
+										type = 1;
+										FreeRodIs.push_back(iRod);	  // add this pinned rod to the free list because it is half free
+										RodStateIs.push_back(nX);   // assign start index of this rod's states
+										nX += 6;                        // add 6 state variables for each pinned rod	
+									}
+									else
+									{
+										type = 2;
+									}
+								}
+								else
+								{
+									cout << "Error: Body ID out of bounds for Rod " << number << "." << endl;
+									// cout << "   Error: Invalid body ID (" << bodyID << ") given for Rod " << number << endl;
+									return MOORDYN_INVALID_INPUT;								
+								}
+							}
+							else
+							{
+								cout << "Error: no number provided for Rod " << number << " Body attachment." << endl;
+								return MOORDYN_INVALID_INPUT;
 							}
 						}
-						else
+						else if ((strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
 						{
-							//cout << "Error: make sure the Line Types entries have 10 columns (including bending stiffness)..." << endl;  // <<<< make this proper
-							//cout << "Occured when reading line: " << lines[i+iLineType] << endl;
-
+							// if a rigid fairlead, add to list and add 
+							type = -2;
+							// rFairRod.push_back(vector<double>(6, 0.0));		                    // fairlead location in turbine ref frame
+							// for (int J=0; J<6; J++)  rFairRod.back().at(J) = endCoords[J]; 	// 6DOF coordinates of rigid connection
+							CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
+						}
+						else if ((strcmp(let1, "VESPIN") ==0) || (strcmp(let1, "CPLDPIN") ==0))
+						{
+							// if a pinned fairlead, add to list and add 
+							type = -1;
+							// rFairRod.push_back(vector<double>(3, 0.0));		                    // fairlead location in turbine ref frame
+							// for (int J=0; J<3; J++)  rFairRod.back().at(J) = endCoords[J]; 	// x,y,z coordinates of pinned connection
+							CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
+							FreeRodIs.push_back(iRod);	          // also add this pinned rod to the free list because it is half free
+							RodStateIs.push_back(nX);            // assign start index of this rod's states
+							nX += 6;                                 // add 6 state variables for each pinned rod	
+						}
+						else if ((strcmp(let1, "CONNECT") ==0) || (strcmp(let1, "CON") ==0) || (strcmp(let1, "FREE") ==0))
+						{
+							type = 0;
+							FreeRodIs.push_back(iRod);	          // add this free rod to the free list
+							RodStateIs.push_back(nX);            // assign start index of this rod's states
+							nX += 12;                                // add 12 state variables for each free rod
+						}
+						else 
+						{	// throw error if not identified
 							stringstream s;
-							s << " Error when reading LineType input: " << lines[i+iLineType] <<"\n";
-							s << " Make sure the Line Types entries have 10 columns (including bending stiffness)\n";
+							s << "Error: unidentified Type/BodyID for rod " << number << ": " << typeWord;
 							cout << s.str() << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
-						//i++;
+
+						// find Rod properties index (look in the Rod dictionary)
+						int TypeNum = -1;
+						for (int J=0; J<nRodTypes; J++)  {
+							if (RodPropList[J]->type.find(RodType) != string::npos)
+								TypeNum = J;
+						}
+						
+						if (TypeNum == -1)
+							cout << "   Error: unable to identify type of Rod " << number << " (" << RodType << ") from those provided." << endl;
+
+						if (wordy>1)
+							cout << "rod " << number << " type " << RodType << " typenum " << TypeNum << endl;
+
+						// make an output file for it
+						if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
+						{
+							stringstream oname;
+							oname << MDbasepath << MDbasename << "_Rod" << number << ".out";
+							outfiles.push_back( make_shared<ofstream>(oname.str()));
+						}
+						else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
+
+						// set up Rod
+						RodList[iRod] = new Rod(); 
+						RodList[iRod]->setup(number, type, RodPropList[TypeNum], endCoords,  
+							NumSegs, outfiles.back(), outchannels);
+
+						// depending on type, assign the Rod to its respective parent body
+						if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0)) // type = 2;
+							GroundBody->addRodToBody(RodList[iRod], endCoords);  
+						else if ((strcmp(let1, "PINNED") ==0) || (strcmp(let1, "PIN") ==0)) //	type = 1;       
+							GroundBody->addRodToBody(RodList[iRod], endCoords);  
+						else if (strcmp(let1, "BODY") ==0)  // attached to a body (either rigidly or pinned)
+						{
+							int bodyID = atoi(num1);
+							BodyList[bodyID-1]->addRodToBody(RodList[iRod], endCoords); 
+						}
+
+						if (wordy>0)
+							cout << "Rod "<< number << " is type "<<type<<"."<< endl;
 					}
-					if (wordy>0)
-						cout << endl;
-				}
-				else if ( (lines[i].find("ROD DICTIONARY") != string::npos) || (lines[i].find("ROD TYPES") != string::npos) ) // if rod dictionary header
-				{	
-					if (wordy>0)
-						cout << "   Reading rod types: " << endl;
-
-					i += 3; // skip following two lines (label line and unit line)
-
-					// set up each entry
-					for (int iRodType=0; iRodType<nRodTypes; iRodType++)
+					else 
 					{
-						// parse out entries: Name  Diam MassDen Cd  Ca  CdEnd  CaEnd
-						vector<string> entries = split(lines[i+iRodType]); // split by spaces
-												
-						if (entries.size() >= 7) // if valid number of inputs
-						{	
-							RodPropList[iRodType] = new RodProps();
-
-							RodPropList[iRodType]->type =    entries[0]; //.c_str());
-							RodPropList[iRodType]->d  = atof(entries[1].c_str());
-							RodPropList[iRodType]->w  = atof(entries[2].c_str());
-							RodPropList[iRodType]->Cdn= atof(entries[3].c_str());
-							RodPropList[iRodType]->Can= atof(entries[4].c_str());
-							RodPropList[iRodType]->Cdt= atof(entries[5].c_str());
-							RodPropList[iRodType]->Cat= atof(entries[6].c_str());
-							if (wordy>0)
-								cout << entries[0] << " ";
-						}
-						//i++;
+						cout << "   Error with rod " << entries[0] << " inputs (not enough)." << endl;
+						return MOORDYN_INVALID_INPUT;
 					}
-					if (wordy>0)
-						cout << endl;
+					//i++;
 				}
-				else if ((lines[i].find("BODIES") != string::npos) || (lines[i].find("BODY LIST") != string::npos)  || (lines[i].find("BODY PROPERTIES") != string::npos))
-				{	
-					if (wordy>0)
-						cout << "   Reading Body properties: " << endl;
-					i += 3; // skip following two lines (label line and unit line)
+			}
+			
+			
+			else if ((lines[i].find("POINTS") != string::npos) || (lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
+			{	
+				if (nLineTypes < 1)
+					cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
+			
+				if (wordy>0)
+					cout << "   Reading point list: " << endl;
+				i += 3; // skip following two lines (label line and unit line)
 
-					// set up each entry
-					for (int iBody=0; iBody<nBodys; iBody++)
-					{ 	
-						// parse out entries: ID   Attachment  X0  Y0  Z0  r0  p0  y0    M  CG*  I*    V  CdA*  Ca*
-						vector<string> entries = split(lines[i+iBody]); // split by spaces
-
-						if (entries.size() >= 14) // if valid number of inputs
-						{
-							int number          = atoi(entries[0].c_str());
-							int type;							
-							double r6[6];
-							
-							for (int I=0; I<6; I++) 
-								r6[  I] = atof(entries[2+I].c_str());					
-							
-							double M = atof(entries[ 8].c_str());						
-							double V = atof(entries[11].c_str());
-							
-							double rCG[3];
-							double Inert[3];
-							double CdA[3];
-							double Ca[3];								
-							
-							// process CG
-							vector<string> strings_rCG = splitBar(entries[ 9].c_str()); // split by braces, if any
-							if (strings_rCG.size() == 1) {                                // if only one entry, it is the z coordinate
-								rCG[0] = 0.0;
-								rCG[1] = 0.0;
-								rCG[2] = atof(strings_rCG[0].c_str());
-							}
-							else if (strings_rCG.size() == 3) {                           // all three coordinates provided
-								rCG[0] = atof(strings_rCG[0].c_str());
-								rCG[1] = atof(strings_rCG[1].c_str());
-								rCG[2] = atof(strings_rCG[2].c_str());
-							}
-							else {
-								cout << "Body " << number << " CG entry (col 10) must have 1 or 3 numbers." << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-							// process mements of inertia
-							vector<string> strings_I   = splitBar(entries[10].c_str());
-							if (strings_I.size() == 1) {                                // if only one entry, use it for all directions
-								Inert[0] = atof(strings_I[0].c_str());
-								Inert[1] = Inert[0];
-								Inert[2] = Inert[0];
-							}
-							else if (strings_I.size() == 3) {                           // all three coordinates provided
-								Inert[0] = atof(strings_I[0].c_str());
-								Inert[1] = atof(strings_I[1].c_str());
-								Inert[2] = atof(strings_I[2].c_str());
-							}
-							else {
-								cout << "Body " << number << " inertia entry (col 11) must have 1 or 3 numbers." << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-							// process drag ceofficient by area product
-							vector<string> strings_CdA = splitBar(entries[12].c_str());
-							if (strings_CdA.size() == 1) {                                // if only one entry, use it for all directions
-								CdA[0] = atof(strings_CdA[0].c_str());
-								CdA[1] = CdA[0];
-								CdA[2] = CdA[0];
-							}
-							else if (strings_CdA.size() == 3) {                           // all three coordinates provided
-								CdA[0] = atof(strings_CdA[0].c_str());
-								CdA[1] = atof(strings_CdA[1].c_str());
-								CdA[2] = atof(strings_CdA[2].c_str());
-							}
-							else {
-								cout << "Body " << number << " CdA entry (col 13) must have 1 or 3 numbers." << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-							// process added mass coefficient
-							vector<string> strings_Ca  = splitBar(entries[13].c_str());							
-							if (strings_Ca.size() == 1) {                                // if only one entry, use it for all directions
-								Ca[0] = atof(strings_Ca[0].c_str());
-								Ca[1] = Ca[0];
-								Ca[2] = Ca[0];
-							}
-							else if (strings_Ca.size() == 3) {                           // all three coordinates provided
-								Ca[0] = atof(strings_Ca[0].c_str());
-								Ca[1] = atof(strings_Ca[1].c_str());
-								Ca[2] = atof(strings_Ca[2].c_str());
-							}
-							else {
-								cout << "Body " << number << " Ca entry (col 14) must have 1 or 3 numbers." << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-
-							// ----------- process body type -----------------
-
-							// substrings of grouped letters or numbers for processing each parameter                          
-							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-							char typeWord[10];							// the buffer
-
-							snprintf(typeWord, 10, entries[1].c_str());		// copy body type word to buffer
-
-							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
-							{
-								type = 1;  // body is fixed  (this would just be used if someone wanted to temporarly fix a body that things were attached to)
-							}
-							if ((strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "CPLD") ==0))
-							{
-								type = -1;   // body is coupled - controlled from outside
-								CpldBodyIs.push_back(iBody);
-							}
-							else 
-							{
-								type = 0;      // body is free
-								FreeBodyIs.push_back(iBody);
-							}
-							// make an output file for it
-							//if (...)
-							//{
-								stringstream oname;
-								oname << MDbasepath << MDbasename << "_Body" << number << ".out";
-								outfiles.push_back( make_shared<ofstream>(oname.str()));
-							//}
-							//else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-
-							// set up Body 
-							BodyList[iBody] = new Body(); 
-							BodyList[iBody]->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, outfiles.back());
-
-							// set up the body state info if applicable
-							if (type == 0)
-							{
-								BodyStateIs.push_back(nX);   // assign start index of this body's states
-								nX += 12;                        // add 12 state variables for the body
-							}
-
-							//if (BodyList.size() != number)  // check that ID numbers are in order
-							//	cout << "Warning: body ID numbers should be in order (1,2,3...)." << endl;
-						}
-						else 
-						{
-							cout << endl << "   Error with Body " << entries[0] << " inputs (14 expected but only " << entries.size() << " provided)." << endl;
-							return MOORDYN_INVALID_INPUT;
-						}
-					}
-				}
-				else if ((lines[i].find("RODS") != string::npos) || (lines[i].find("ROD LIST") != string::npos) || (lines[i].find("ROD PROPERTIES") != string::npos)) // if rod properties header
-				{	
-					if (wordy>0)
-						cout << "   Reading rod properties: " << endl;
-					i += 3; // skip following two lines (label line and unit line)
-
-					// set up each entry
-					for (int iRod=0; iRod<nRods; iRod++)
-					{
-						//vector<string> entries = split(lines[i-nRods+iRod], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iRod]); // split by spaces
-
-						if (entries.size() >= 8) // if valid number of inputs
-						{
-							// RodID  Type/BodyID  RodType  Xa   Ya   Za   Xb   Yb   Zb  NumSegs  Flags/Outputs
-							
-
-							// read in these properties first because they're needed for setting up various rod types
-							int number          = atoi(entries[0].c_str());
-							string RodType         = entries[1];
-							double endCoords[6]; 
-							for (int J=0; J<6; J++) endCoords[J]=atof(entries[3+J].c_str());
-							int NumSegs         = atoi(entries[9].c_str());
-							string outchannels  = entries[10];
-
-							// ----------- process rod type -----------------
-							int type;						
-							// substrings of grouped letters or numbers for processing each parameter                          
-							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-							char typeWord[10];							// the buffer
-
-							snprintf(typeWord, 10, entries[2].c_str());		// copy rod type word to buffer
-
-							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
-							{
-								type = 2;
-								//GroundBody->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass
-							}
-							else if ((strcmp(let1, "PINNED") ==0) || (strcmp(let1, "PIN") ==0))
-							{
-								type = 1;       
-								//GroundBody->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass	
-								FreeRodIs.push_back(iRod);	  // add this pinned rod to the free list because it is half free
-								RodStateIs.push_back(nX);   // assign start index of this rod's states
-								nX += 6;                        // add 6 state variables for each pinned rod							
-							}
-							else if (strcmp(let1, "BODY") ==0)
-							{
-								// attached to a body (either rididly or pinned)
-								if (strlen(num1)>0)
-								{
-									int bodyID = atoi(num1);
-									if ((bodyID <= nBodys) && (bodyID > 0))
-									{
-										//BodyList[bodyID-1]->addRodToBody(RodList[iRod], endCoords);  // note: object not made yet, but only need pointer to pass
-										if ((strcmp(let2, "PINNED") ==0) || (strcmp(let2, "PIN") ==0))
-										{
-											type = 1;
-											FreeRodIs.push_back(iRod);	  // add this pinned rod to the free list because it is half free
-											RodStateIs.push_back(nX);   // assign start index of this rod's states
-											nX += 6;                        // add 6 state variables for each pinned rod	
-										}
-										else
-										{
-											type = 2;
-										}
-									}
-									else
-									{
-										cout << "Error: Body ID out of bounds for Rod " << number << "." << endl;
-										// cout << "   Error: Invalid body ID (" << bodyID << ") given for Rod " << number << endl;
-										return MOORDYN_INVALID_INPUT;								
-									}
-								}
-								else
-								{
-									cout << "Error: no number provided for Rod " << number << " Body attachment." << endl;
-									return MOORDYN_INVALID_INPUT;
-								}
-							}
-							else if ((strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
-							{
-								// if a rigid fairlead, add to list and add 
-								type = -2;
-								// rFairRod.push_back(vector<double>(6, 0.0));		                    // fairlead location in turbine ref frame
-								// for (int J=0; J<6; J++)  rFairRod.back().at(J) = endCoords[J]; 	// 6DOF coordinates of rigid connection
-								CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
-							}
-							else if ((strcmp(let1, "VESPIN") ==0) || (strcmp(let1, "CPLDPIN") ==0))
-							{
-								// if a pinned fairlead, add to list and add 
-								type = -1;
-								// rFairRod.push_back(vector<double>(3, 0.0));		                    // fairlead location in turbine ref frame
-								// for (int J=0; J<3; J++)  rFairRod.back().at(J) = endCoords[J]; 	// x,y,z coordinates of pinned connection
-								CpldRodIs.push_back(iRod);			                                    // index of fairlead in RodList vector
-								FreeRodIs.push_back(iRod);	          // also add this pinned rod to the free list because it is half free
-								RodStateIs.push_back(nX);            // assign start index of this rod's states
-								nX += 6;                                 // add 6 state variables for each pinned rod	
-							}
-							else if ((strcmp(let1, "CONNECT") ==0) || (strcmp(let1, "CON") ==0) || (strcmp(let1, "FREE") ==0))
-							{
-								type = 0;
-								FreeRodIs.push_back(iRod);	          // add this free rod to the free list
-								RodStateIs.push_back(nX);            // assign start index of this rod's states
-								nX += 12;                                // add 12 state variables for each free rod
-							}
-							else 
-							{	// throw error if not identified
-								stringstream s;
-								s << "Error: unidentified Type/BodyID for rod " << number << ": " << typeWord;
-								cout << s.str() << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-
-							// find Rod properties index (look in the Rod dictionary)
-							int TypeNum = -1;
-							for (int J=0; J<nRodTypes; J++)  {
-								if (RodPropList[J]->type.find(RodType) != string::npos)
-									TypeNum = J;
-							}
-							
-							if (TypeNum == -1)
-								cout << "   Error: unable to identify type of Rod " << number << " (" << RodType << ") from those provided." << endl;
-
-							if (wordy>1)
-								cout << "rod " << number << " type " << RodType << " typenum " << TypeNum << endl;
-
-							// make an output file for it
-							if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
-							{
-								stringstream oname;
-								oname << MDbasepath << MDbasename << "_Rod" << number << ".out";
-								outfiles.push_back( make_shared<ofstream>(oname.str()));
-							}
-							else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-
-							// set up Rod
-							RodList[iRod] = new Rod(); 
-							RodList[iRod]->setup(number, type, RodPropList[TypeNum], endCoords,  
-								NumSegs, outfiles.back(), outchannels);
-
-							// depending on type, assign the Rod to its respective parent body
-							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0)) // type = 2;
-								GroundBody->addRodToBody(RodList[iRod], endCoords);  
-							else if ((strcmp(let1, "PINNED") ==0) || (strcmp(let1, "PIN") ==0)) //	type = 1;       
-								GroundBody->addRodToBody(RodList[iRod], endCoords);  
-							else if (strcmp(let1, "BODY") ==0)  // attached to a body (either rigidly or pinned)
-							{
-								int bodyID = atoi(num1);
-								BodyList[bodyID-1]->addRodToBody(RodList[iRod], endCoords); 
-							}
-
-							if (wordy>0)
-								cout << "Rod "<< number << " is type "<<type<<"."<< endl;
-						}
-						else 
-						{
-							cout << "   Error with rod " << entries[0] << " inputs (not enough)." << endl;
-							return MOORDYN_INVALID_INPUT;
-						}
-						//i++;
-					}
-				}
-				
-				
-				else if ((lines[i].find("POINTS") != string::npos) || (lines[i].find("POINT LIST") != string::npos) || (lines[i].find("CONNECTION PROPERTIES") != string::npos) || (lines[i].find("NODE PROPERTIES") != string::npos) ) // if node properties header
-				{	
-					if (nLineTypes < 1)
-						cout << "   Error: began reading connection inputs before reading any line type inputs." << endl;
-				
-					if (wordy>0)
-						cout << "   Reading point list: " << endl;
-					i += 3; // skip following two lines (label line and unit line)
-
-					// set up each entry
-					for (int iConnection=0; iConnection<nConnections; iConnection++)
-					{
-						//vector<string> entries = split(lines[i-nConnections+iConnection], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iConnection]); // split by spaces
-
-						// Node  Type/attachID    X  Y   Z  M  V  [optional:FX FY FZ] CdA Ca
-
-						if (entries.size() >= 9) // if valid number of inputs
-						{
-							int number=atoi(entries[0].c_str());
-
-							// <<<<<<<<<< should check whether numbering is correct
-
-							// read these properties first, because they'll be used when processing various connection types
-							double M = atof(entries[5].c_str());
-							double V = atof(entries[6].c_str());
-							double CdA;
-							double Ca;
-
-							double r0[3];
-							double F[3] = {0.0};
-
-							if (entries.size() >= 12) // case with optional force inputs (12 total entries)
-							{
-								for (int I=0; I<3; I++)
-								{	r0[I] = atof(entries[2+I].c_str());
-									F[ I] = atof(entries[7+I].c_str());
-								}
-								CdA  = atof(entries[10].c_str());
-								Ca   = atof(entries[11].c_str());
-							}
-							else // case without optional force inputs (9 total entries)
-							{
-								for (int I=0; I<3; I++)
-									r0[I] = atof(entries[2+I].c_str());
-							
-								CdA  = atof(entries[7].c_str());
-								Ca   = atof(entries[8].c_str());
-							}
-
-							// ----------- process connection type -----------------
-							int type;
-							// substrings of grouped letters or numbers for processing each parameter                          
-							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-							char typeWord[10];							// the buffer
-
-							snprintf(typeWord, 10, entries[1].c_str());		// copy connection type word to buffer
-
-							decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
-							{
-								type = 1;                                   // if an anchor
-
-								// add to GroundBody
-								//GroundBody->addConnectionToBody(ConnectionList[iConnection], r0);  // note: object not made yet, but only need pointer to pass
-								//AnchIs.push_back(iConnection);
-								//nAnchs ++;
-							}
-							else if (strcmp(let1, "BODY") ==0)
-							{
-								type = 1;
-								if (strlen(num1)>0)
-								{
-									int bodyID = atoi(num1);
-									if ((bodyID <= nBodys) && (bodyID > 0))
-									{
-										//BodyList[bodyID-1]->addConnectionToBody(ConnectionList[iConnection], r0);  // note: object not made yet, but only need pointer to pass
-									}
-									else
-									{
-										cout << "Error: Body ID out of bounds for Connection " << number << "." << endl;
-										return MOORDYN_INVALID_INPUT;								
-									}
-								}
-								else
-								{
-									cout << "Error: no number provided for Connection " << number << " Body attachment." << endl;
-									return MOORDYN_INVALID_INPUT;
-								}
-							}
-							else if ((strcmp(let1, "FAIRLEAD") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
-							{
-								// if a fairlead, add to list and add 
-								type = -1;
-								CpldConIs.push_back(iConnection);			// index of fairlead in ConnectionList vector
-								//nFairs ++;
-							}
-							else if ((strcmp(let1, "CONNECT") ==0) || (strcmp(let1, "CON") ==0) || (strcmp(let1, "FREE") ==0))
-							{
-								type = 0;                                // if a connect, add to list and add states for it
-								FreeConIs.push_back(iConnection);
-								//nConns ++;
-								
-								ConnectStateIs.push_back(nX);   // assign start index of this connect's states
-								nX += 6;                       // add 6 state variables for each connect
-							}
-							else 
-							{
-								// throw error if not identified
-								stringstream s;
-								s << "Error: unidentified Type/BodyID for connection " << number << ": " << typeWord;
-								throw string(s.str());
-							}
-
-							// make default water depth at least the depth of the lowest node (so water depth input is optional)
-							if (r0[2] < -env.WtrDpth)  env.WtrDpth = -r0[2];
-
-							// now make Connection object!
-							ConnectionList[iConnection] = new Connection();
-							ConnectionList[iConnection]->setup(number, type, r0, M, V, F, CdA, Ca);
-
-							// depending on type, assign the Connection to its respective parent body
-							if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))// type = 1;                          
-								GroundBody->addConnectionToBody(ConnectionList[iConnection], r0); 
-							else if (strcmp(let1, "BODY") ==0) // type = 1;
-							{
-								int bodyID = atoi(num1);
-								BodyList[bodyID-1]->addConnectionToBody(ConnectionList[iConnection], r0);
-							}
-
-							//if (ConnectionList.size() != number)  // check that ID numbers are in order
-							//	cout << "Warning: connect ID numbers should be in order (1,2,3...)." << endl;
-						}
-						else 
-						{
-							cout << endl << "   Error - less than the 9 required input columns for connection " << entries[0] << " definition.  Remember CdA and Ca." << endl;
-							cout << "   The line in question was read as: ";
-							for (unsigned int ii=0; ii<entries.size(); ii++)
-								cout << entries[ii] << " ";
-							cout << endl;
-
-							return MOORDYN_INVALID_INPUT;
-						}
-						//i++;
-					}
-				}
-				else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINES LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
+				// set up each entry
+				for (int iConnection=0; iConnection<nConnections; iConnection++)
 				{
-					if (wordy>0)
-						cout << "   Reading line list: " << endl;
-					i += 3; // skip following two lines (label line and unit line)
+					//vector<string> entries = split(lines[i-nConnections+iConnection], ' '); // split by spaces
+					vector<string> entries = split(lines[i+iConnection]); // split by spaces
 
-					// set up each entry
-					for (int iLine=0; iLine<nLines; iLine++)
+					// Node  Type/attachID    X  Y   Z  M  V  [optional:FX FY FZ] CdA Ca
+
+					if (entries.size() >= 9) // if valid number of inputs
 					{
-						//vector<string> entries = split(lines[i-nLines+iLine], ' '); // split by spaces
-						vector<string> entries = split(lines[i+iLine]); // split by spaces
+						int number=atoi(entries[0].c_str());
 
-						if (entries.size() >= 7) // if valid number of inputs
+						// <<<<<<<<<< should check whether numbering is correct
+
+						// read these properties first, because they'll be used when processing various connection types
+						double M = atof(entries[5].c_str());
+						double V = atof(entries[6].c_str());
+						double CdA;
+						double Ca;
+
+						double r0[3];
+						double F[3] = {0.0};
+
+						if (entries.size() >= 12) // case with optional force inputs (12 total entries)
 						{
-							// Line     LineType  UnstrLen   NodeAnch  NodeFair  Flags/Outputs
-							int number= atoi(entries[0].c_str());
-							string type     = entries[1];
-							double UnstrLen = atof(entries[4].c_str());
-							int NumSegs    = atoi(entries[5].c_str()); // addition vs. MAP
-							//string anchID    = entries[2];
-							//string fairID    = entries[3];
-							string outchannels  = entries[6];
-
-							// find line properties index
-							int TypeNum = -1;
-							for (int J=0; J<nLineTypes; J++)  {
-								if (LinePropList[J]->type.find(type) != string::npos)
-									TypeNum = J;
+							for (int I=0; I<3; I++)
+							{	r0[I] = atof(entries[2+I].c_str());
+								F[ I] = atof(entries[7+I].c_str());
 							}
+							CdA  = atof(entries[10].c_str());
+							Ca   = atof(entries[11].c_str());
+						}
+						else // case without optional force inputs (9 total entries)
+						{
+							for (int I=0; I<3; I++)
+								r0[I] = atof(entries[2+I].c_str());
+						
+							CdA  = atof(entries[7].c_str());
+							Ca   = atof(entries[8].c_str());
+						}
 
-							if (TypeNum == -1)
-								cout << "   Error: unable to identify type of line " << number << " (" << type << ") from those provided." << endl;
+						// ----------- process connection type -----------------
+						int type;
+						// substrings of grouped letters or numbers for processing each parameter                          
+						char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
+						char typeWord[10];							// the buffer
 
-							if (wordy>1)
-								cout << "line " << number << " type " << type << " typenum " << TypeNum << endl;
+						snprintf(typeWord, 10, entries[1].c_str());		// copy connection type word to buffer
 
-							// make an output file for it
-							if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
+						decomposeString(typeWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))
+						{
+							type = 1;                                   // if an anchor
+
+							// add to GroundBody
+							//GroundBody->addConnectionToBody(ConnectionList[iConnection], r0);  // note: object not made yet, but only need pointer to pass
+							//AnchIs.push_back(iConnection);
+							//nAnchs ++;
+						}
+						else if (strcmp(let1, "BODY") ==0)
+						{
+							type = 1;
+							if (strlen(num1)>0)
 							{
-								stringstream oname;
-								oname << MDbasepath << MDbasename << "_Line" << number << ".out";
-								outfiles.push_back( make_shared<ofstream>(oname.str()));
+								int bodyID = atoi(num1);
+								if ((bodyID <= nBodys) && (bodyID > 0))
+								{
+									//BodyList[bodyID-1]->addConnectionToBody(ConnectionList[iConnection], r0);  // note: object not made yet, but only need pointer to pass
+								}
+								else
+								{
+									cout << "Error: Body ID out of bounds for Connection " << number << "." << endl;
+									return MOORDYN_INVALID_INPUT;								
+								}
 							}
-							else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
-
-							// set up line properties
-							LineList[iLine] = new Line();
-							LineList[iLine]->setup(number, LinePropList[TypeNum], UnstrLen, NumSegs, 
-								//ConnectionList[AnchIndex], ConnectionList[FairIndex], 
-								outfiles.back(), outchannels);
-
-							LineStateIs.push_back(nX);  // assign start index of this Line's states
-							nX += 6*(NumSegs - 1);                   // add 6 state variables for each internal node of this line
-
-							//if (LineList.size() != number)  // check that ID numbers are in order
-							//	cout << "Warning: line ID numbers should be in order (1,2,3...)." << endl;
-
-							// ================ Process attachment identfiers and attach line ends ===============
-
-							// substrings of grouped letters or numbers for processing each parameter                          
-							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-
-							char outWord[10];							// the buffer
-
-							// first for anchor...
-							snprintf(outWord, 10, entries[2].c_str());		// copy anchor connection word to buffer
-
-							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							if (strlen(num1)<1)
+							else
 							{
-								cout << "Error: no number provided for line " << number << " anchor attachment." << endl;
+								cout << "Error: no number provided for Connection " << number << " Body attachment." << endl;
 								return MOORDYN_INVALID_INPUT;
 							}
-
-							int id = atoi(num1);
-
-							// if id starts with an "R" or "Rod"
-							if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
-							{
-								if ((id <= nRods) && (id > 0))
-								{
-									if (strcmp(let2, "A") == 0) 
-										RodList[id-1]->addLineToRodEndA(LineList[iLine], 0);
-									else if (strcmp(let2, "B") == 0) 
-										RodList[id-1]->addLineToRodEndB(LineList[iLine], 0);
-									else
-									{
-										cout << "Error: rod end (A or B) must be specified for line " << number << " anchor attachment." << endl;
-										return MOORDYN_INVALID_INPUT;										
-									}
-								}
-								else
-								{
-									cout << "Error: rod connection ID out of bounds for line " << number << " anchor attachment." << endl;
-									return MOORDYN_INVALID_INPUT;								
-								}
-							}
-							// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
-							if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
-							{
-								if ((id <= nConnections) && (id > 0))
-								{
-									ConnectionList[id-1]->addLineToConnect(LineList[iLine], 0);
-								}
-								else
-								{
-									cout << "Error: connection ID out of bounds for line " << number << " anchor attachment." << endl;
-									return MOORDYN_INVALID_INPUT;								
-								}
-							}
-
-							// then again for fairlead
-							snprintf(outWord, 10, entries[3].c_str());		// copy fairlead connection word to buffer
-
-							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							if (strlen(num1)<1)
-							{
-								cout << "Error: no number provided for line " << number << " fairlead attachment." << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-
-							id = atoi(num1);
-
-							// if id starts with an "R" or "Rod"
-							if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
-							{
-								if ((id <= nRods) && (id > 0))
-								{
-									if (strcmp(let2, "A") == 0) 
-										RodList[id-1]->addLineToRodEndA(LineList[iLine], 1);
-									else if (strcmp(let2, "B") == 0) 
-										RodList[id-1]->addLineToRodEndB(LineList[iLine], 1);
-									else
-									{
-										cout << "Error: rod end (A or B) must be specified for line " << number << " fairlead attachment." << endl;
-										return MOORDYN_INVALID_INPUT;										
-									}
-								}
-								else
-								{
-									cout << "Error: rod connection ID out of bounds for line " << number << " fairlead attachment." << endl;
-									return MOORDYN_INVALID_INPUT;								
-								}
-							}
-							// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
-							if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
-							{
-								if ((id <= nConnections) && (id > 0))
-								{
-									ConnectionList[id-1]->addLineToConnect(LineList[iLine], 1);
-								}
-								else
-								{
-									cout << "Error: connection ID out of bounds for line " << number << " fairlead attachment." << endl;
-									return MOORDYN_INVALID_INPUT;								
-								}
-							}
+						}
+						else if ((strcmp(let1, "FAIRLEAD") ==0) || (strcmp(let1, "VESSEL") ==0) || (strcmp(let1, "VES") ==0) || (strcmp(let1, "COUPLED") ==0) || (strcmp(let1, "CPLD") ==0))
+						{
+							// if a fairlead, add to list and add 
+							type = -1;
+							CpldConIs.push_back(iConnection);			// index of fairlead in ConnectionList vector
+							//nFairs ++;
+						}
+						else if ((strcmp(let1, "CONNECT") ==0) || (strcmp(let1, "CON") ==0) || (strcmp(let1, "FREE") ==0))
+						{
+							type = 0;                                // if a connect, add to list and add states for it
+							FreeConIs.push_back(iConnection);
+							//nConns ++;
+							
+							ConnectStateIs.push_back(nX);   // assign start index of this connect's states
+							nX += 6;                       // add 6 state variables for each connect
 						}
 						else 
 						{
-							cout << endl << "   Error with line " << entries[0] << " inputs." << endl;
+							// throw error if not identified
+							stringstream s;
+							s << "Error: unidentified Type/BodyID for connection " << number << ": " << typeWord;
+							throw string(s.str());
+						}
+
+						// make default water depth at least the depth of the lowest node (so water depth input is optional)
+						if (r0[2] < -env.WtrDpth)  env.WtrDpth = -r0[2];
+
+						// now make Connection object!
+						ConnectionList[iConnection] = new Connection();
+						ConnectionList[iConnection]->setup(number, type, r0, M, V, F, CdA, Ca);
+
+						// depending on type, assign the Connection to its respective parent body
+						if ((strcmp(let1, "ANCHOR") ==0) || (strcmp(let1, "FIXED") ==0) || (strcmp(let1, "FIX") ==0))// type = 1;                          
+							GroundBody->addConnectionToBody(ConnectionList[iConnection], r0); 
+						else if (strcmp(let1, "BODY") ==0) // type = 1;
+						{
+							int bodyID = atoi(num1);
+							BodyList[bodyID-1]->addConnectionToBody(ConnectionList[iConnection], r0);
+						}
+
+						//if (ConnectionList.size() != number)  // check that ID numbers are in order
+						//	cout << "Warning: connect ID numbers should be in order (1,2,3...)." << endl;
+					}
+					else 
+					{
+						cout << endl << "   Error - less than the 9 required input columns for connection " << entries[0] << " definition.  Remember CdA and Ca." << endl;
+						cout << "   The line in question was read as: ";
+						for (unsigned int ii=0; ii<entries.size(); ii++)
+							cout << entries[ii] << " ";
+						cout << endl;
+
+						return MOORDYN_INVALID_INPUT;
+					}
+					//i++;
+				}
+			}
+			else if ((lines[i].find("LINES") != string::npos) || (lines[i].find("LINES LIST") != string::npos) || (lines[i].find("LINE PROPERTIES") != string::npos)) // if line properties header
+			{
+				if (wordy>0)
+					cout << "   Reading line list: " << endl;
+				i += 3; // skip following two lines (label line and unit line)
+
+				// set up each entry
+				for (int iLine=0; iLine<nLines; iLine++)
+				{
+					//vector<string> entries = split(lines[i-nLines+iLine], ' '); // split by spaces
+					vector<string> entries = split(lines[i+iLine]); // split by spaces
+
+					if (entries.size() >= 7) // if valid number of inputs
+					{
+						// Line     LineType  UnstrLen   NodeAnch  NodeFair  Flags/Outputs
+						int number= atoi(entries[0].c_str());
+						string type     = entries[1];
+						double UnstrLen = atof(entries[4].c_str());
+						int NumSegs    = atoi(entries[5].c_str()); // addition vs. MAP
+						//string anchID    = entries[2];
+						//string fairID    = entries[3];
+						string outchannels  = entries[6];
+
+						// find line properties index
+						int TypeNum = -1;
+						for (int J=0; J<nLineTypes; J++)  {
+							if (LinePropList[J]->type.find(type) != string::npos)
+								TypeNum = J;
+						}
+
+						if (TypeNum == -1)
+							cout << "   Error: unable to identify type of line " << number << " (" << type << ") from those provided." << endl;
+
+						if (wordy>1)
+							cout << "line " << number << " type " << type << " typenum " << TypeNum << endl;
+
+						// make an output file for it
+						if ((outchannels.size() > 0) && (strcspn( outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))  // if 1+ output flag chars are given and they're valid
+						{
+							stringstream oname;
+							oname << MDbasepath << MDbasename << "_Line" << number << ".out";
+							outfiles.push_back( make_shared<ofstream>(oname.str()));
+						}
+						else  outfiles.push_back(NULL);  // null pointer to indicate we're not using an output file here
+
+						// set up line properties
+						LineList[iLine] = new Line();
+						LineList[iLine]->setup(number, LinePropList[TypeNum], UnstrLen, NumSegs, 
+							//ConnectionList[AnchIndex], ConnectionList[FairIndex], 
+							outfiles.back(), outchannels);
+
+						LineStateIs.push_back(nX);  // assign start index of this Line's states
+						nX += 6*(NumSegs - 1);                   // add 6 state variables for each internal node of this line
+
+						//if (LineList.size() != number)  // check that ID numbers are in order
+						//	cout << "Warning: line ID numbers should be in order (1,2,3...)." << endl;
+
+						// ================ Process attachment identfiers and attach line ends ===============
+
+						// substrings of grouped letters or numbers for processing each parameter                          
+						char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
+
+						char outWord[10];							// the buffer
+
+						// first for anchor...
+						snprintf(outWord, 10, entries[2].c_str());		// copy anchor connection word to buffer
+
+						decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						if (strlen(num1)<1)
+						{
+							cout << "Error: no number provided for line " << number << " anchor attachment." << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
-						//i++;
-					}
-				}
-				else if (lines[i].find("FAILURE") != string::npos) // if failure conditions header
-				{	
-					if (wordy>0)
-						cout << "   Reading failure conditions: " << endl;
 
-					i += 3; // skip following two lines (label line and unit line)
+						int id = atoi(num1);
 
-					// set up each entry
-					for (int iFail=0; iFail<nFails; iFail++)
-					{
-						cout << "failure case " << iFail+1 ;
-
-						vector<string> entries = split(lines[i+iFail]); // split by spaces
-
-						if (entries.size() >= 4) // if valid number of inputs
+						// if id starts with an "R" or "Rod"
+						if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
 						{
-							FailList[iFail] = new FailProps();
-
-							// substrings of grouped letters or numbers for processing each parameter                          
-							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-							char outWord[10];							// the buffer
-
-							snprintf(outWord, 10, entries[0].c_str());		// copy connection word to buffer
-
-							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							if (strlen(num1)<1)
+							if ((id <= nRods) && (id > 0))
 							{
-								cout << "Error: no Node provided for Failure " << iFail+1 << endl;
-								return MOORDYN_INVALID_INPUT;
-							}
-
-							FailList[iFail]->attachID = atoi(num1);   // ID of connection or Rod the lines are attached to (index is -1 this value)
-
-							// if id starts with an "R" or "Rod"
-							if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
-							{
-								if ((FailList[iFail]->attachID <= nRods) && (FailList[iFail]->attachID > 0))
-								{
-									if (strcmp(let2, "A") == 0) 
-										FailList[iFail]->isRod = 1;
-									else if (strcmp(let2, "B") == 0) 
-										FailList[iFail]->isRod = 2;
-									else
-									{
-										cout << "Error: at line 1589ish" << endl;
-										return MOORDYN_UNHANDLED_ERROR;
-									}
-								}
+								if (strcmp(let2, "A") == 0) 
+									RodList[id-1]->addLineToRodEndA(LineList[iLine], 0);
+								else if (strcmp(let2, "B") == 0) 
+									RodList[id-1]->addLineToRodEndB(LineList[iLine], 0);
 								else
 								{
-									cout << "Error at line 1594ish" << endl;
+									cout << "Error: rod end (A or B) must be specified for line " << number << " anchor attachment." << endl;
+									return MOORDYN_INVALID_INPUT;										
+								}
+							}
+							else
+							{
+								cout << "Error: rod connection ID out of bounds for line " << number << " anchor attachment." << endl;
+								return MOORDYN_INVALID_INPUT;								
+							}
+						}
+						// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
+						if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
+						{
+							if ((id <= nConnections) && (id > 0))
+							{
+								ConnectionList[id-1]->addLineToConnect(LineList[iLine], 0);
+							}
+							else
+							{
+								cout << "Error: connection ID out of bounds for line " << number << " anchor attachment." << endl;
+								return MOORDYN_INVALID_INPUT;								
+							}
+						}
+
+						// then again for fairlead
+						snprintf(outWord, 10, entries[3].c_str());		// copy fairlead connection word to buffer
+
+						decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						if (strlen(num1)<1)
+						{
+							cout << "Error: no number provided for line " << number << " fairlead attachment." << endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
+						id = atoi(num1);
+
+						// if id starts with an "R" or "Rod"
+						if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
+						{
+							if ((id <= nRods) && (id > 0))
+							{
+								if (strcmp(let2, "A") == 0) 
+									RodList[id-1]->addLineToRodEndA(LineList[iLine], 1);
+								else if (strcmp(let2, "B") == 0) 
+									RodList[id-1]->addLineToRodEndB(LineList[iLine], 1);
+								else
+								{
+									cout << "Error: rod end (A or B) must be specified for line " << number << " fairlead attachment." << endl;
+									return MOORDYN_INVALID_INPUT;										
+								}
+							}
+							else
+							{
+								cout << "Error: rod connection ID out of bounds for line " << number << " fairlead attachment." << endl;
+								return MOORDYN_INVALID_INPUT;								
+							}
+						}
+						// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
+						if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
+						{
+							if ((id <= nConnections) && (id > 0))
+							{
+								ConnectionList[id-1]->addLineToConnect(LineList[iLine], 1);
+							}
+							else
+							{
+								cout << "Error: connection ID out of bounds for line " << number << " fairlead attachment." << endl;
+								return MOORDYN_INVALID_INPUT;								
+							}
+						}
+					}
+					else 
+					{
+						cout << endl << "   Error with line " << entries[0] << " inputs." << endl;
+						return MOORDYN_INVALID_INPUT;
+					}
+					//i++;
+				}
+			}
+			else if (lines[i].find("FAILURE") != string::npos) // if failure conditions header
+			{	
+				if (wordy>0)
+					cout << "   Reading failure conditions: " << endl;
+
+				i += 3; // skip following two lines (label line and unit line)
+
+				// set up each entry
+				for (int iFail=0; iFail<nFails; iFail++)
+				{
+					cout << "failure case " << iFail+1 ;
+
+					vector<string> entries = split(lines[i+iFail]); // split by spaces
+
+					if (entries.size() >= 4) // if valid number of inputs
+					{
+						FailList[iFail] = new FailProps();
+
+						// substrings of grouped letters or numbers for processing each parameter                          
+						char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
+						char outWord[10];							// the buffer
+
+						snprintf(outWord, 10, entries[0].c_str());		// copy connection word to buffer
+
+						decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						if (strlen(num1)<1)
+						{
+							cout << "Error: no Node provided for Failure " << iFail+1 << endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
+						FailList[iFail]->attachID = atoi(num1);   // ID of connection or Rod the lines are attached to (index is -1 this value)
+
+						// if id starts with an "R" or "Rod"
+						if ((strcmp(let1, "R") == 0) || (strcmp(let1, "ROD") == 0))
+						{
+							if ((FailList[iFail]->attachID <= nRods) && (FailList[iFail]->attachID > 0))
+							{
+								if (strcmp(let2, "A") == 0) 
+									FailList[iFail]->isRod = 1;
+								else if (strcmp(let2, "B") == 0) 
+									FailList[iFail]->isRod = 2;
+								else
+								{
+									cout << "Error: at line 1589ish" << endl;
 									return MOORDYN_UNHANDLED_ERROR;
 								}
 							}
-							// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
-							if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
-							{
-								if ((FailList[iFail]->attachID <= nConnections) && (FailList[iFail]->attachID > 0))
-								{
-									FailList[iFail]->isRod = 0;
-								}
-								else
-								{
-									cout << "Error: at line 1607ish" << endl;
-									return MOORDYN_UNHANDLED_ERROR;								
-								}
-							}
-							
-							// get lines
-							vector<string> lineNums = splitComma(entries[1]); // split by commas
-							FailList[iFail]->nLinesToDetach = lineNums.size();  // how many lines to dettach
-							for (unsigned int il=0; il<lineNums.size(); il++)
-								FailList[iFail]->lineIDs[il] = atoi(lineNums[il].c_str());  
-
-							FailList[iFail]->failTime = atof(entries[2].c_str());
-							FailList[iFail]->failTen  = atof(entries[3].c_str());
-
-							cout << " failTime is "<< FailList[iFail]->failTime << endl;
-
-							FailList[iFail]->failStatus  = 0; // initialize as unfailed, of course
-						}
-						//i++;
-					}
-				}
-				else if (lines[i].find("OUTPUT") != string::npos) // if output list header
-				{	
-					//cout << "in output section" << endl;
-					i ++;
-					while (lines[i].find("---") == string::npos) // while we DON'T find another header line
-					{
-						vector<string> entries = split(lines[i]);
-
-						for (unsigned int j=0; j<entries.size(); j++)  //loop through each word on each line
-						{
-
-							// ----------------- Process each "word" -----------------------
-							// (set index, name, and units for all of each output channel)
-
-							char outWord[10];							// the buffer
-							outWord[9] = '\0';
-							strncpy(outWord, entries[j].c_str(), 9);
-
-							// substrings of grouped letters or numbers for processing each parameter                          
-							char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
-
-							decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
-
-							// <<<<<<<<<<<<< check for errors! <<<<<<<<<<<<<<<						
-							//	cout << "   Error: no number in channel name ("  << outWord << ")." << endl;
-							//	cout << "Warning: invalid output specifier (must start with letter)." << endl;
-
-							OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later);
-							strncpy(dummy.Name, outWord, 10);
-
-							// figure out what type of output it is and process accordingly 
-							// TODO: add checks of first char of num1,2, let1,2,3 not being NULL to below and handle errors (e.g. invalid line number)
-
-							// The length of dummy.Units is hardcoded to 10 in
-							// Misc.h
-							const int UnitsSize = 9;
-							dummy.Units[UnitsSize] = '\0';
-
-							// fairlead tension case (changed to just be for single line, not all connected lines)
-							if (strcmp(let1, "FAIRTEN")==0)
-							{
-								dummy.OType = 1;             							// line object type
-								dummy.QType = Ten;           							// tension quantity type
-								strncpy(dummy.Units, UnitList[Ten], UnitsSize);     // set units according to QType
-								dummy.ObjID = atoi(num1);                             // get the line number
-								dummy.NodeID = LineList[dummy.ObjID-1]->getN();       // specify node N (fairlead)
-							}
-							// achor tension case (changed to just be for single line, not all connected lines)
-							else if (strcmp(let1, "ANCHTEN")==0) 
-							{
-								dummy.OType = 1;             							// line object type
-								dummy.QType = Ten;           							// tension quantity type
-								strncpy(dummy.Units, UnitList[Ten], UnitsSize);     // set units according to QType
-								dummy.ObjID = atoi(num1);                             // get the line number
-								dummy.NodeID = 0;                                      // specify node 0 (anchor)
-							}
-							// more general case
 							else
 							{
-								// get object type and node number if applicable
-								// Line case                                          ... L?N?xxxx
-								if (strcmp(let1, "L")==0)
-								{
-									//cout << "found line" << endl;
-									dummy.OType = 1;                // Line object type
-									// for now we'll just assume the next character(s) are "n" to represent node number:
-									dummy.NodeID = atoi(num2);
-								}
-								// Connect case                                     ... C?xxx or Con?xxx
-								else if((strcmp(let1, "C")==0) || (strcmp(let1, "CON")==0))
-								{
-									//cout << "found connect " << endl;
-									dummy.OType = 2;                // Connect object type
-									dummy.NodeID = -1;
-									strncpy(let3, let2, 10);				// copy quantity chars (let2) to let3 (unused for a connect) because let3 is what's checked below
-								}
-								// Rod case                                     ... R?xxx or Rod?xxx
-								else if((strcmp(let1, "R")==0) || (strcmp(let1, "ROD")==0))
-								{
-									//cout << "found rod " << endl;
-									dummy.OType = 3;                // Rod object type
-									dummy.NodeID = atoi(num2);
-									
-								}
-								// should do fairlead option also!
-								
-								else   // error
-								{
-									//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
-									cout << "Warning: invalid output specifier: "  << let1 << ".  Type must be L or C/Con." << endl;
-									dummy.OType = -1;  // flag as invalid
-									continue;  // break out of this loop iteration (don't add current output channel to list)
-								}
-
-								// object number
-								dummy.ObjID =  atoi(num1);             // line or connect ID number
-
-								// which kind of quantity?
-								if (strcmp(let3, "PX")==0) {
-									//cout << "SETTING QTYPE to " << PosX << endl;
-									dummy.QType = PosX;
-									strncpy(dummy.Units, UnitList[PosX], UnitsSize);
-								}
-								else if (strcmp(let3, "PY")==0)  {
-									dummy.QType = PosY;
-									strncpy(dummy.Units, UnitList[PosY], UnitsSize);
-								}
-								else if (strcmp(let3, "PZ")==0)  {
-									dummy.QType = PosZ;
-									strncpy(dummy.Units, UnitList[PosZ], UnitsSize);
-								}
-								else if (strcmp(let3, "VX")==0)  {
-									dummy.QType = VelX;
-									strncpy(dummy.Units, UnitList[VelX], UnitsSize);
-								}
-								else if (strcmp(let3, "VY")==0)  {
-									dummy.QType = VelY;
-									strncpy(dummy.Units, UnitList[VelY], UnitsSize);
-								}
-								else if (strcmp(let3, "VZ")==0)  {
-									dummy.QType = VelZ;
-									strncpy(dummy.Units, UnitList[VelZ], UnitsSize);
-								}
-								else if (strcmp(let3, "AX")==0)  {
-									dummy.QType = AccX;
-									strncpy(dummy.Units, UnitList[AccX], UnitsSize);
-								}
-								else if (strcmp(let3, "Ay")==0)  {
-									dummy.QType = AccY;
-									strncpy(dummy.Units, UnitList[AccY], UnitsSize);
-								}
-								else if (strcmp(let3, "AZ")==0)  {
-									dummy.QType = AccZ;
-									strncpy(dummy.Units, UnitList[AccZ], UnitsSize);
-								}
-								else if ((strcmp(let3, "T")==0) || (strcmp(let3, "TEN")==0)) {
-									dummy.QType = Ten;
-									strncpy(dummy.Units, UnitList[Ten], UnitsSize);
-								}
-								else if (strcmp(let3, "FX")==0)  {
-									dummy.QType = FX;
-									strncpy(dummy.Units, UnitList[FX], UnitsSize);
-								}
-								else if (strcmp(let3, "FY")==0)  {
-									dummy.QType = FY;
-									strncpy(dummy.Units, UnitList[FY], UnitsSize);
-								}
-								else if (strcmp(let3, "FZ")==0)  {
-									dummy.QType = FZ;
-									strncpy(dummy.Units, UnitList[FZ], UnitsSize);
-								}
-								else
-								{
-									cout << "Warning: invalid output specifier - quantity type not recognized" << endl;
-									dummy.QType = -1;  // flag as invalid
-									continue;  // break out of this loop iteration (don't add current output channel to list)
-								}
-
+								cout << "Error at line 1594ish" << endl;
+								return MOORDYN_UNHANDLED_ERROR;
 							}
-
-							// some name adjusting for special cases (maybe should handle this elsewhere...)
-							if ((dummy.OType==3) && (dummy.QType==Ten))
+						}
+						// if id starts with a "C" or "Con" or goes straight ot the number then it's attached to a Connection
+						if ((strlen(let1)==0) || (strcmp(let1, "C") == 0) || (strcmp(let1, "CON") == 0))
+						{
+							if ((FailList[iFail]->attachID <= nConnections) && (FailList[iFail]->attachID > 0))
 							{
-								if (dummy.NodeID > 0) strncpy(dummy.Name,"TenEndB", 10);
-								else                  strncpy(dummy.Name,"TenEndA", 10);
+								FailList[iFail]->isRod = 0;
+							}
+							else
+							{
+								cout << "Error: at line 1607ish" << endl;
+								return MOORDYN_UNHANDLED_ERROR;								
+							}
+						}
+						
+						// get lines
+						vector<string> lineNums = splitComma(entries[1]); // split by commas
+						FailList[iFail]->nLinesToDetach = lineNums.size();  // how many lines to dettach
+						for (unsigned int il=0; il<lineNums.size(); il++)
+							FailList[iFail]->lineIDs[il] = atoi(lineNums[il].c_str());  
+
+						FailList[iFail]->failTime = atof(entries[2].c_str());
+						FailList[iFail]->failTen  = atof(entries[3].c_str());
+
+						cout << " failTime is "<< FailList[iFail]->failTime << endl;
+
+						FailList[iFail]->failStatus  = 0; // initialize as unfailed, of course
+					}
+					//i++;
+				}
+			}
+			else if (lines[i].find("OUTPUT") != string::npos) // if output list header
+			{	
+				//cout << "in output section" << endl;
+				i ++;
+				while (lines[i].find("---") == string::npos) // while we DON'T find another header line
+				{
+					vector<string> entries = split(lines[i]);
+
+					for (unsigned int j=0; j<entries.size(); j++)  //loop through each word on each line
+					{
+
+						// ----------------- Process each "word" -----------------------
+						// (set index, name, and units for all of each output channel)
+
+						char outWord[10];							// the buffer
+						outWord[9] = '\0';
+						strncpy(outWord, entries[j].c_str(), 9);
+
+						// substrings of grouped letters or numbers for processing each parameter                          
+						char let1 [10]; char num1 [10]; char let2 [10]; char num2 [10]; char let3 [10]; 
+
+						decomposeString(outWord, let1, num1, let2, num2, let3); // divided outWord into letters and numbers
+
+						// <<<<<<<<<<<<< check for errors! <<<<<<<<<<<<<<<						
+						//	cout << "   Error: no number in channel name ("  << outWord << ")." << endl;
+						//	cout << "Warning: invalid output specifier (must start with letter)." << endl;
+
+						OutChanProps dummy;  		// declare dummy struct to be copied onto end of vector (and filled in later);
+						strncpy(dummy.Name, outWord, 10);
+
+						// figure out what type of output it is and process accordingly 
+						// TODO: add checks of first char of num1,2, let1,2,3 not being NULL to below and handle errors (e.g. invalid line number)
+
+						// The length of dummy.Units is hardcoded to 10 in
+						// Misc.h
+						const int UnitsSize = 9;
+						dummy.Units[UnitsSize] = '\0';
+
+						// fairlead tension case (changed to just be for single line, not all connected lines)
+						if (strcmp(let1, "FAIRTEN")==0)
+						{
+							dummy.OType = 1;             							// line object type
+							dummy.QType = Ten;           							// tension quantity type
+							strncpy(dummy.Units, UnitList[Ten], UnitsSize);     // set units according to QType
+							dummy.ObjID = atoi(num1);                             // get the line number
+							dummy.NodeID = LineList[dummy.ObjID-1]->getN();       // specify node N (fairlead)
+						}
+						// achor tension case (changed to just be for single line, not all connected lines)
+						else if (strcmp(let1, "ANCHTEN")==0) 
+						{
+							dummy.OType = 1;             							// line object type
+							dummy.QType = Ten;           							// tension quantity type
+							strncpy(dummy.Units, UnitList[Ten], UnitsSize);     // set units according to QType
+							dummy.ObjID = atoi(num1);                             // get the line number
+							dummy.NodeID = 0;                                      // specify node 0 (anchor)
+						}
+						// more general case
+						else
+						{
+							// get object type and node number if applicable
+							// Line case                                          ... L?N?xxxx
+							if (strcmp(let1, "L")==0)
+							{
+								//cout << "found line" << endl;
+								dummy.OType = 1;                // Line object type
+								// for now we'll just assume the next character(s) are "n" to represent node number:
+								dummy.NodeID = atoi(num2);
+							}
+							// Connect case                                     ... C?xxx or Con?xxx
+							else if((strcmp(let1, "C")==0) || (strcmp(let1, "CON")==0))
+							{
+								//cout << "found connect " << endl;
+								dummy.OType = 2;                // Connect object type
+								dummy.NodeID = -1;
+								strncpy(let3, let2, 10);				// copy quantity chars (let2) to let3 (unused for a connect) because let3 is what's checked below
+							}
+							// Rod case                                     ... R?xxx or Rod?xxx
+							else if((strcmp(let1, "R")==0) || (strcmp(let1, "ROD")==0))
+							{
+								//cout << "found rod " << endl;
+								dummy.OType = 3;                // Rod object type
+								dummy.NodeID = atoi(num2);
+								
+							}
+							// should do fairlead option also!
+							
+							else   // error
+							{
+								//CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+								cout << "Warning: invalid output specifier: "  << let1 << ".  Type must be L or C/Con." << endl;
+								dummy.OType = -1;  // flag as invalid
+								continue;  // break out of this loop iteration (don't add current output channel to list)
 							}
 
-							//  ! also check whether each object index and node index (if applicable) is in range
-							//  IF (p%OutParam(I)%OType==2) THEN
-							//    IF (p%OutParam(I)%ObjID > p%nConnections) THEN
-							//      call wrscr('warning, output Connect index excedes number of Connects')
-							//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
-							//    END IF
-							//  ELSE IF (p%OutParam(I)%OType==1) THEN
-							//    IF (p%OutParam(I)%ObjID > p%NLines) THEN
-							//      call wrscr('warning, output Line index excedes number of Line')
-							//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
-							//    END IF
-							//    IF (p%OutParam(I)%NodeID > other%LineList(p%OutParam(I)%ObjID)%N) THEN
-							//      call wrscr('warning, output node index excedes number of nodes')
-							//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
-							//    ELSE IF (p%OutParam(I)%NodeID < 0) THEN
-							//      call wrscr('warning, output node index is less than zero')
-							//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
-							//    END IF
-							//  END IF
+							// object number
+							dummy.ObjID =  atoi(num1);             // line or connect ID number
 
-							if ((dummy.OType > 0) && (dummy.QType > 0))
-								outChans.push_back(dummy);  	// if valid, add new entry to list!
-						}  // looping through words on line
-					//     SUBROUTINE DenoteInvalidOutput( OutParm )
-					//        TYPE(MD_OutParmType), INTENT (INOUT)  :: OutParm
-					//
-					//        OutParm%OType = 0  ! flag as invalid
-					//        OutParm%Name = 'Invalid'
-					//        OutParm%Units = ' - '
-					//
-					//     END SUBROUTINE DenoteInvalidOutput					
-						i++;
-					}  // looping through lines
-				}
-				else i++;
+							// which kind of quantity?
+							if (strcmp(let3, "PX")==0) {
+								//cout << "SETTING QTYPE to " << PosX << endl;
+								dummy.QType = PosX;
+								strncpy(dummy.Units, UnitList[PosX], UnitsSize);
+							}
+							else if (strcmp(let3, "PY")==0)  {
+								dummy.QType = PosY;
+								strncpy(dummy.Units, UnitList[PosY], UnitsSize);
+							}
+							else if (strcmp(let3, "PZ")==0)  {
+								dummy.QType = PosZ;
+								strncpy(dummy.Units, UnitList[PosZ], UnitsSize);
+							}
+							else if (strcmp(let3, "VX")==0)  {
+								dummy.QType = VelX;
+								strncpy(dummy.Units, UnitList[VelX], UnitsSize);
+							}
+							else if (strcmp(let3, "VY")==0)  {
+								dummy.QType = VelY;
+								strncpy(dummy.Units, UnitList[VelY], UnitsSize);
+							}
+							else if (strcmp(let3, "VZ")==0)  {
+								dummy.QType = VelZ;
+								strncpy(dummy.Units, UnitList[VelZ], UnitsSize);
+							}
+							else if (strcmp(let3, "AX")==0)  {
+								dummy.QType = AccX;
+								strncpy(dummy.Units, UnitList[AccX], UnitsSize);
+							}
+							else if (strcmp(let3, "Ay")==0)  {
+								dummy.QType = AccY;
+								strncpy(dummy.Units, UnitList[AccY], UnitsSize);
+							}
+							else if (strcmp(let3, "AZ")==0)  {
+								dummy.QType = AccZ;
+								strncpy(dummy.Units, UnitList[AccZ], UnitsSize);
+							}
+							else if ((strcmp(let3, "T")==0) || (strcmp(let3, "TEN")==0)) {
+								dummy.QType = Ten;
+								strncpy(dummy.Units, UnitList[Ten], UnitsSize);
+							}
+							else if (strcmp(let3, "FX")==0)  {
+								dummy.QType = FX;
+								strncpy(dummy.Units, UnitList[FX], UnitsSize);
+							}
+							else if (strcmp(let3, "FY")==0)  {
+								dummy.QType = FY;
+								strncpy(dummy.Units, UnitList[FY], UnitsSize);
+							}
+							else if (strcmp(let3, "FZ")==0)  {
+								dummy.QType = FZ;
+								strncpy(dummy.Units, UnitList[FZ], UnitsSize);
+							}
+							else
+							{
+								cout << "Warning: invalid output specifier - quantity type not recognized" << endl;
+								dummy.QType = -1;  // flag as invalid
+								continue;  // break out of this loop iteration (don't add current output channel to list)
+							}
+
+						}
+
+						// some name adjusting for special cases (maybe should handle this elsewhere...)
+						if ((dummy.OType==3) && (dummy.QType==Ten))
+						{
+							if (dummy.NodeID > 0) strncpy(dummy.Name,"TenEndB", 10);
+							else                  strncpy(dummy.Name,"TenEndA", 10);
+						}
+
+						//  ! also check whether each object index and node index (if applicable) is in range
+						//  IF (p%OutParam(I)%OType==2) THEN
+						//    IF (p%OutParam(I)%ObjID > p%nConnections) THEN
+						//      call wrscr('warning, output Connect index excedes number of Connects')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    END IF
+						//  ELSE IF (p%OutParam(I)%OType==1) THEN
+						//    IF (p%OutParam(I)%ObjID > p%NLines) THEN
+						//      call wrscr('warning, output Line index excedes number of Line')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    END IF
+						//    IF (p%OutParam(I)%NodeID > other%LineList(p%OutParam(I)%ObjID)%N) THEN
+						//      call wrscr('warning, output node index excedes number of nodes')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    ELSE IF (p%OutParam(I)%NodeID < 0) THEN
+						//      call wrscr('warning, output node index is less than zero')
+						//      CALL DenoteInvalidOutput(p%OutParam(I)) ! flag as invalid
+						//    END IF
+						//  END IF
+
+						if ((dummy.OType > 0) && (dummy.QType > 0))
+							outChans.push_back(dummy);  	// if valid, add new entry to list!
+					}  // looping through words on line
+				//     SUBROUTINE DenoteInvalidOutput( OutParm )
+				//        TYPE(MD_OutParmType), INTENT (INOUT)  :: OutParm
+				//
+				//        OutParm%OType = 0  ! flag as invalid
+				//        OutParm%Name = 'Invalid'
+				//        OutParm%Units = ' - '
+				//
+				//     END SUBROUTINE DenoteInvalidOutput					
+					i++;
+				}  // looping through lines
 			}
 			else i++;
 		}
+		else i++;
+	}
 
-		// ==============================================================================
+	// ==============================================================================
 
 	// do some input validity checking?
 	// should there be a flag in the input file that clearly distingiushes the coupling type? <<<<< I guess it's implied by whether bodies are coupled or not??
 	// TODO: make sure things are consistent for only ONE coupling type (body centric or fairlead centric) <<<<<<<<<<<<<<<< also do checks when time step function is called...
 
+	if (wordy > 1) 
+	{
+		cout << "  nLineTypes     = " << nLineTypes        << endl;
+		cout << "  nRodTypes      = " << nRodTypes         << endl;
+		cout << "  nPoints        = " << nConnections      << endl;
+		cout << "  nBodies        = " << nBodys            << endl;
+		cout << "  nRods          = " << nRods             << endl;
+		cout << "  nLines         = " << nLines            << endl;
+		cout << "  nFails         = " << nFails            << endl;
+		cout << "  nFreeBodies    = " << FreeBodyIs.size() << endl;  
+		cout << "  nFreeRods      = " << FreeRodIs.size()  << endl;  
+		cout << "  nFreePonts     = " << FreeConIs.size()  << endl;  
+		cout << "  nCpldBodies    = " << CpldBodyIs.size() << endl;
+		cout << "  nCpldRods      = " << CpldRodIs.size()  << endl; 
+		cout << "  nCpldPoints    = " << CpldConIs.size()  << endl;
+	}
+	
+	// write system description to log file
+	if (env.writeLog > 0)
+	{
+		char outline[100];
+	
+		snprintf(outline, sizeof(outline), "%s", "----- MoorDyn Model Summary (to be written) -----");
+	
+		outfileLog << outline << "\n";
+	}
 
-	   if (wordy > 1) 
-	   {
-		   cout << "  nLineTypes     = " << nLineTypes        << endl;
-		   cout << "  nRodTypes      = " << nRodTypes         << endl;
-		   cout << "  nPoints        = " << nConnections      << endl;
-		   cout << "  nBodies        = " << nBodys            << endl;
-		   cout << "  nRods          = " << nRods             << endl;
-		   cout << "  nLines         = " << nLines            << endl;
-		   cout << "  nFails         = " << nFails            << endl;
-		   cout << "  nFreeBodies    = " << FreeBodyIs.size() << endl;  
-		   cout << "  nFreeRods      = " << FreeRodIs.size()  << endl;  
-		   cout << "  nFreePonts     = " << FreeConIs.size()  << endl;  
-		   cout << "  nCpldBodies    = " << CpldBodyIs.size() << endl;
-		   cout << "  nCpldRods      = " << CpldRodIs.size()  << endl; 
-		   cout << "  nCpldPoints    = " << CpldConIs.size()  << endl;
-	   }
-	   
-		// write system description to log file
-		if (env.writeLog > 0)
-		{
-			char outline[100];
+	// make sure non-NULL kinematics are being passed if anything is coupled
+	int nCpldDOF = 6*CpldBodyIs.size() +  3*CpldConIs.size();  // number of coupled degrees of freedom
+	for (unsigned int l=0; l<CpldRodIs.size(); l++)  
+	{	if (RodList[CpldRodIs[l]]->type == -2)
+			nCpldDOF += 6;                                     // for cantilevered rods 6 entries will be taken
+		else
+			nCpldDOF += 3;                                     // for pinned rods 3 entries will be taken
+	}			
+	
+	cout << "Based on the input file, MoorDyn is expecting " << nCpldDOF << " coupled degrees of freedom." << endl;
 		
-			snprintf(outline, sizeof(outline), "%s", "----- MoorDyn Model Summary (to be written) -----");
-		
-			outfileLog << outline << "\n";
-		}
+	if (nCpldDOF > 0)
+	{
+		if (x==NULL)
+			cout << "ERROR: MoorDynInit received a Null position vector, but expects size " << nCpldDOF << endl;
+	}
 
-		// make sure non-NULL kinematics are being passed if anything is coupled
-		int nCpldDOF = 6*CpldBodyIs.size() +  3*CpldConIs.size();  // number of coupled degrees of freedom
-		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
-		{	if (RodList[CpldRodIs[l]]->type == -2)
-				nCpldDOF += 6;                                     // for cantilevered rods 6 entries will be taken
-			else
-				nCpldDOF += 3;                                     // for pinned rods 3 entries will be taken
-		}			
-		
-		cout << "Based on the input file, MoorDyn is expecting " << nCpldDOF << " coupled degrees of freedom." << endl;
+
+	if (nX == 0)
+	{
+		cout << "ERROR: MoorDyn has no state variables. (Is there a mooring sytem?) " << nCpldDOF << endl;
+	}
+	//nConnections = ConnectionList.size();
+	//nLines = LineList.size();
+	//nRods = RodList.size();
+	
+	// <<<<<<<<< need to add bodys
 			
-		if (nCpldDOF > 0)
-		{
-			if (x==NULL)
-				cout << "ERROR: MoorDynInit received a Null position vector, but expects size " << nCpldDOF << endl;
-		}
 
-
-		if (nX == 0)
-		{
-			cout << "ERROR: MoorDyn has no state variables. (Is there a mooring sytem?) " << nCpldDOF << endl;
-		}
-		//nConnections = ConnectionList.size();
-		//nLines = LineList.size();
-		//nRods = RodList.size();
-		
-		// <<<<<<<<< need to add bodys
-				
-
-		//  ------------------------ set up waves if needed -------------------------------
-		
-		waves = new Waves();        // make waves object
-		
-		waves->setup(&env);          // set up the waves (this will pass the WaveKin flag in the env struct, which the setup function will then use as needed)
-		
+	//  ------------------------ set up waves if needed -------------------------------
+	
+	waves = new Waves();        // make waves object
+	
+	waves->setup(&env);          // set up the waves (this will pass the WaveKin flag in the env struct, which the setup function will then use as needed)
+	
 //		env.waves = waves;  // now assign the waves pointer to the env struct so that it gets passed to other objects that might need it
-		
-	/*	// @mth: new approach to wave kinematics will be implemented - this part needs to be redone	
-	//	// (in general, set up wave stuff here BEFORE adding line to vector)
-		vector<double> Ucurrent(3, 0.0);  // should make this an input to the DLL at some point.
+	
+/*	// @mth: new approach to wave kinematics will be implemented - this part needs to be redone	
+//	// (in general, set up wave stuff here BEFORE adding line to vector)
+	vector<double> Ucurrent(3, 0.0);  // should make this an input to the DLL at some point.
+
+
+//	if (env.WaveKin == 2)
+//	{
+//		if (wordy>0) cout << "   Setting up wave kinematics by reading from file" << endl;
+//		SetupWavesFromFile();
+//				
+//		for (int l=0; l<nLines; l++) 
+//			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // TODO: update.  last entry is bogus!
+//	}			
+//	else
+//	{ 	// no waves case
+		for (int l=0; l<nLines; l++) 
+			LineList[l].setupWaves(env, Ucurrent, 0.);   // sending env struct (important)
+//	}								
+	
+	// note: each Line's WaveKin switch should be off by default, and can be switched on when the wave kinematics 
+	// are calculated AFTER the initial position has been solved for.
+*/
+	
+	// send environmental properties struct to all objects 
+	GroundBody->setEnv( &env, waves); 
+	for (int l=0; l<nBodys; l++)  
+		BodyList[l]->setEnv( &env, waves); 
+	for (int l=0; l<nRods; l++)  
+		RodList[l]->setEnv( &env, waves); 
+	for (int l=0; l<nConnections; l++)  
+		ConnectionList[l]->setEnv( &env, waves); 
+	for (int l=0; l<nLines; l++)  
+		LineList[l]->setEnv( &env, waves); 
 
 	
-	//	if (env.WaveKin == 2)
-	//	{
-	//		if (wordy>0) cout << "   Setting up wave kinematics by reading from file" << endl;
-	//		SetupWavesFromFile();
-	//				
-	//		for (int l=0; l<nLines; l++) 
-	//			LineList[l].setupWaves(env, zetaCglobal,  dwW, 0.25 );  // TODO: update.  last entry is bogus!
-	//	}			
-	//	else
-	//	{ 	// no waves case
-			for (int l=0; l<nLines; l++) 
-				LineList[l].setupWaves(env, Ucurrent, 0.);   // sending env struct (important)
-	//	}								
+	
+	// ----------------- allocate arrays ------------------
+	
+	// calculate maximum possible size of state vector if new connects were created for each line end that 
+	// could become detached (limit case). This just avoids having to reallocate the states vectors if lines detach.
+	nXtra = nX + 6*2*nLines;     
 		
-		// note: each Line's WaveKin switch should be off by default, and can be switched on when the wave kinematics 
-		// are calculated AFTER the initial position has been solved for.
-	*/
-		
-		// send environmental properties struct to all objects 
-		GroundBody->setEnv( &env, waves); 
-		for (int l=0; l<nBodys; l++)  
-			BodyList[l]->setEnv( &env, waves); 
-		for (int l=0; l<nRods; l++)  
-			RodList[l]->setEnv( &env, waves); 
-		for (int l=0; l<nConnections; l++)  
-			ConnectionList[l]->setEnv( &env, waves); 
-		for (int l=0; l<nLines; l++)  
-			LineList[l]->setEnv( &env, waves); 
+	// make state vector	
+	if (wordy > 1) cout << "   Creating state vectors of size " << nXtra << endl;
+	states    = (double*) malloc( nXtra*sizeof(double) );
 
-		
-		
-		// ----------------- allocate arrays ------------------
-		
-		// calculate maximum possible size of state vector if new connects were created for each line end that 
-		// could become detached (limit case). This just avoids having to reallocate the states vectors if lines detach.
-		nXtra = nX + 6*2*nLines;     
-			
-		// make state vector	
-		if (wordy > 1) cout << "   Creating state vectors of size " << nXtra << endl;
-		states    = (double*) malloc( nXtra*sizeof(double) );
-
-		// make arrays for integration
-		f0 = (double*) malloc( nXtra*sizeof(double) );
-		f1 = (double*) malloc( nXtra*sizeof(double) );
-		xt = (double*) malloc( nXtra*sizeof(double) );
-		
-		memset(states, 0.0, nXtra*sizeof(double));
-		
-		// make array used for passing fairlead kinematics and forces between fairlead- and platform-centric interface functions
-	//	Ffair = make2Darray(nFairs, 3); 
-		
-	//	rFairi = make2Darray(nFairs, 3);
-	//	rdFairi = make2Darray(nFairs, 3);
-		
-		// --------- Allocate/size some global, persistent vectors -------------
+	// make arrays for integration
+	f0 = (double*) malloc( nXtra*sizeof(double) );
+	f1 = (double*) malloc( nXtra*sizeof(double) );
+	xt = (double*) malloc( nXtra*sizeof(double) );
+	
+	memset(states, 0.0, nXtra*sizeof(double));
+	
+	// make array used for passing fairlead kinematics and forces between fairlead- and platform-centric interface functions
+//	Ffair = make2Darray(nFairs, 3); 
+	
+//	rFairi = make2Darray(nFairs, 3);
+//	rdFairi = make2Darray(nFairs, 3);
+	
+	// --------- Allocate/size some global, persistent vectors -------------
 
 
-		FairTensLast = make2Darray(nLines, 10); // allocate past line fairlead tension array, which is used for convergence test during IC gen
+	FairTensLast = make2Darray(nLines, 10); // allocate past line fairlead tension array, which is used for convergence test during IC gen
+	
+	for (int i=0; i < nLines; i++)
+		for (int j=0; j < 10; j++)
+			FairTensLast[i][j] = 1.0*j;
+	
 		
-		for (int i=0; i < nLines; i++)
-			for (int j=0; j < 10; j++)
-				FairTensLast[i][j] = 1.0*j;
-		
-			
-		// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
-		
-		cout << "   Creating mooring system.  " << endl; // << nFairs << " fairleads, " << nAnchs << " anchors, " << nConns << " connections." << endl;	
-		//for (int l=0; l<nConnections; l++)  {
-		//	ConnectionList[l].initialize( (states + 6*l), env, X, TransMat); // connections
-		//}	
-		
-		
-		// call ground body to update all the fixed things...
-		GroundBody->initializeUnfreeBody(NULL, NULL, 0.0);
+	// ------------------- initialize system, including trying catenary IC gen of Lines -------------------
+	
+	cout << "   Creating mooring system.  " << endl; // << nFairs << " fairleads, " << nAnchs << " anchors, " << nConns << " connections." << endl;	
+	//for (int l=0; l<nConnections; l++)  {
+	//	ConnectionList[l].initialize( (states + 6*l), env, X, TransMat); // connections
+	//}	
+	
+	
+	// call ground body to update all the fixed things...
+	GroundBody->initializeUnfreeBody(NULL, NULL, 0.0);
 
 
-		// initialize coupled objects based on passed kinematics
+	// initialize coupled objects based on passed kinematics
 
-		int ix = 0;
+	int ix = 0;
 
-		for (unsigned int l=0; l<CpldBodyIs.size(); l++)
+	for (unsigned int l=0; l<CpldBodyIs.size(); l++)
+	{
+		if (wordy>0) cout << "Initializing coupled Body " << CpldBodyIs[l] << endl;
+		BodyList[CpldBodyIs[l]]->initializeUnfreeBody(x + ix, xd + ix, 0.0);   // this calls initiateStep and updateFairlead, then initializes dependent Rods
+		ix += 6;
+	}
+
+	for (unsigned int l=0; l<CpldRodIs.size(); l++)  
+	{
+		if (wordy>0) cout << "Initializing coupled Rod " << CpldRodIs[l] << endl;
+		RodList[CpldRodIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
+		RodList[CpldRodIs[l]]->updateFairlead(0.0);
+		RodList[CpldRodIs[l]]->initializeRod(NULL);  // call this just to set up the output file header
+		
+		if (RodList[CpldRodIs[l]]->type == -2)
+			ix += 6;                                     // for cantilevered rods 6 entries will be taken
+		else
+			ix += 3;                                     // for pinned rods 3 entries will be taken
+	}
+
+	for (unsigned int l=0; l<CpldConIs.size(); l++)  
+	{
+		if (wordy>0)
+			cout << "Initializing coupled Connection " << CpldConIs[l]
+					<< " in " << x[ix] << ", " << x[ix + 1] << ", "
+					<< x[ix + 2] << endl;
+		ConnectionList[CpldConIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
+		ConnectionList[CpldConIs[l]]->updateFairlead(0.0);
+		ix += 3;
+	}
+
+
+	// initialize objects with states, writing their initial states to the master state vector (states)
+
+	// Go through Bodys and write the coordinates to the state vector
+	for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
+		BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
+
+	// Go through independent (including pinned) Rods and write the coordinates to the state vector
+	for (unsigned int l=0; l<FreeRodIs.size(); l++)  
+		RodList[FreeRodIs[l]]->initializeRod(states + RodStateIs[l]);
+
+	// Go through independent connections (Connects) and write the coordinates to 
+	// the state vector and set positions of attached line ends
+	for (unsigned int l=0; l<FreeConIs.size(); l++)  
+		ConnectionList[FreeConIs[l]]->initializeConnect(states + ConnectStateIs[l]);
+
+
+	// Lastly, go through lines and initialize internal node positions using quasi-static model
+	for (int l=0; l<nLines; l++)  
+		LineList[l]->initializeLine(states + LineStateIs[l]); 
+
+
+
+	// write t=-1 output line for troubleshooting preliminary ICs
+	//AllOutput(-1.0);
+	//cout << "outputting ICs for troubleshooting" << endl;
+
+
+	// ------------------ do dynamic relaxation IC gen --------------------
+	
+	cout << "   Finalizing ICs using dynamic relaxation (" << ICDfac << "X normal drag)" << endl;
+	
+	// boost drag coefficients to speed static equilibrium convergence
+	for (int l=0; l < nLines; l++)
+		LineList[l]->scaleDrag(ICDfac); 
+	for (int l=0; l < nConnections; l++)
+		ConnectionList[l]->scaleDrag(ICDfac);
+	for (int l=0; l < nRods; l++)
+		RodList[l]->scaleDrag(ICDfac);
+	for (int l=0; l < nBodys; l++)
+		BodyList[l]->scaleDrag(ICDfac);
+	
+	int niic = round(ICTmax / ICdt);      // max number of IC gen time steps
+	
+	vector<double> FairTens(nLines, 0.0); // vector to store tensions for analyzing convergence
+
+	// round to get appropriate mooring model time step
+	int NdtM = ceil(ICdt / dtM0); // number of mooring model time steps per outer time step
+	double dtM = ICdt / NdtM;     // mooring model time step size (s)
+
+	// loop through IC generation time analysis time steps
+	for (int iic=0; iic<niic; iic++)
+	{
+		double t = iic * ICdt;      // IC gen time (s).  << is this a robust way to handle time progression?
+
+		// loop through line integration time steps
+		for (int its = 0; its < NdtM; its++)
 		{
-			if (wordy>0) cout << "Initializing coupled Body " << CpldBodyIs[l] << endl;
-			BodyList[CpldBodyIs[l]]->initializeUnfreeBody(x + ix, xd + ix, 0.0);   // this calls initiateStep and updateFairlead, then initializes dependent Rods
-			ix += 6;
+			const int err = rk2(states, &t, dtM );  // call RK2 time integrator (which calls the model)
+			if (err != MOORDYN_SUCCESS)
+				return err;
 		}
 
-		for (unsigned int l=0; l<CpldRodIs.size(); l++)  
+		// check for NaNs
+		for (int i=0; i<nX; i++)
 		{
-			if (wordy>0) cout << "Initializing coupled Rod " << CpldRodIs[l] << endl;
-			RodList[CpldRodIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
-			RodList[CpldRodIs[l]]->updateFairlead(0.0);
-			RodList[CpldRodIs[l]]->initializeRod(NULL);  // call this just to set up the output file header
-			
-			if (RodList[CpldRodIs[l]]->type == -2)
-				ix += 6;                                     // for cantilevered rods 6 entries will be taken
-			else
-				ix += 3;                                     // for pinned rods 3 entries will be taken
-		}
-
-		for (unsigned int l=0; l<CpldConIs.size(); l++)  
-		{
-			if (wordy>0)
-				cout << "Initializing coupled Connection " << CpldConIs[l]
-				     << " in " << x[ix] << ", " << x[ix + 1] << ", "
-					 << x[ix + 2] << endl;
-			ConnectionList[CpldConIs[l]]->initiateStep(x + ix, xd + ix, 0.0);
-			ConnectionList[CpldConIs[l]]->updateFairlead(0.0);
-			ix += 3;
-		}
-
-
-		// initialize objects with states, writing their initial states to the master state vector (states)
-
-		// Go through Bodys and write the coordinates to the state vector
-		for (unsigned int l=0; l<FreeBodyIs.size(); l++)  
-			BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
-
-		// Go through independent (including pinned) Rods and write the coordinates to the state vector
-		for (unsigned int l=0; l<FreeRodIs.size(); l++)  
-			RodList[FreeRodIs[l]]->initializeRod(states + RodStateIs[l]);
-
-		// Go through independent connections (Connects) and write the coordinates to 
-		// the state vector and set positions of attached line ends
-		for (unsigned int l=0; l<FreeConIs.size(); l++)  
-			ConnectionList[FreeConIs[l]]->initializeConnect(states + ConnectStateIs[l]);
-
-
-		// Lastly, go through lines and initialize internal node positions using quasi-static model
-		for (int l=0; l<nLines; l++)  
-			LineList[l]->initializeLine(states + LineStateIs[l]); 
-
-
-
-		// write t=-1 output line for troubleshooting preliminary ICs
-		//AllOutput(-1.0);
-		//cout << "outputting ICs for troubleshooting" << endl;
-
-
-		// ------------------ do dynamic relaxation IC gen --------------------
-		
-		cout << "   Finalizing ICs using dynamic relaxation (" << ICDfac << "X normal drag)" << endl;
-		
-		// boost drag coefficients to speed static equilibrium convergence
-		for (int l=0; l < nLines; l++)               LineList[l]->scaleDrag(ICDfac); 
-		for (int l=0; l < nConnections; l++)   ConnectionList[l]->scaleDrag(ICDfac);
-		for (int l=0; l < nRods; l++)                 RodList[l]->scaleDrag(ICDfac);
-		for (int l=0; l < nBodys; l++)               BodyList[l]->scaleDrag(ICDfac);
-		
-		int niic = round(ICTmax/ICdt);			// max number of IC gen time steps
-		
-		//vector< double > Tensions(nLines*3*niic, 0.0); // vector to store tensions for analyzing convergence
-		vector< double > FairTens(nLines, 0.0); 		// vector to store tensions for analyzing convergence
-		//vector< double > FairTensLast(nFairs, 0.0); 	// vector to store tensions for analyzing convergence
-		//vector< double > FairTensLast2(nFairs, 0.0); 	// vector to store tensions for analyzing convergence
-				
-		// round to get appropriate mooring model time step
-		int NdtM = ceil(ICdt/dtM0);   // number of mooring model time steps per outer time step
-		double dtM = ICdt/NdtM;		// mooring model time step size (s)
-			
-		// loop through IC generation time analysis time steps
-		for (int iic=0; iic<niic; iic++)
-		{
-			double t = iic*ICdt;			// IC gen time (s).  << is this a robust way to handle time progression?
-			
-			// loop through line integration time steps
-			for (int its = 0; its < NdtM; its++)
-				rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
-		
-			// check for NaNs
-			for (int i=0; i<nX; i++)
+			if (isnan(states[i]))
 			{
-				if (isnan(states[i]))
-				{
-					cout << "   Error: NaN value detected in MoorDyn state at dynamic relaxation time " << t << " s." << endl;
-					return MOORDYN_NAN_ERROR;
-				}
+				cout << "   Error: NaN value detected in MoorDyn state at dynamic relaxation time " << t << " s." << endl;
+				return MOORDYN_NAN_ERROR;
 			}
-		
-			// store previous fairlead tensions for comparison
+		}
+	
+		// store previous fairlead tensions for comparison
+		for (int lf=0; lf<nLines; lf++) 
+		{
+			for (int pt=9; pt>0; pt--)
+				FairTensLast[lf][pt] = FairTensLast[lf][pt-1];
+			FairTensLast[lf][0] = FairTens[lf];
+		}
+	
+		// go through connections to get fairlead forces 
+		for (int lf=0; lf<nLines; lf++) 
+		{
+			//double Ffair[3];						// array to temporarily store fairlead force components
+			//double FairTenSqrd = 0.0;
+
+			FairTens[lf] = LineList[lf]->getNodeTen(LineList[lf]->getN());  // get fairlead tension of each line
+
+			//for (int j=0; j<3; j++) 
+			//	FairTenSqrd += Ffair[j]*Ffair[j];
+			//
+			//FairTens[lf] = sqrt(FairTenSqrd);        // <<<<< why is this returnign zeros???
+		}
+
+		// cout << "size of FairIs is " << FairIs.size() << endl;
+		// cout << "FairIs 1,2 are " << FairIs[0] << FairIs[1] << endl;
+		// cout << "size of ConnectionList is " << ConnectionList.size() << endl;
+		// cout << " nFairs is " << nFairs << endl;
+
+		// cout << "    t = " << t << " s, tension at first fairlead is " << FairTens[0] << " N    \r";   // write status update and send cursor back to start of line
+
+		// cout << "IC step number is " << iic << " and latest tensions are as follows:" << endl;
+		//
+		// for (int lf=0; lf<nLines; lf++) {
+			// cout << "Line " << lf << " fairlead" << endl;
+			// cout << FairTens[lf] << endl;
+			// for (int pt=0; pt<10; pt++)
+				// cout << FairTensLast[lf][pt] << endl; 
+		// }
+
+
+		// >>>>>>>>> is convergence check working yet for all lines???
+
+		// check for convergence (compare current tension at each fairlead with previous 9 values)
+		if (iic > 10)
+		{
+			// check for any non-convergence, and continue to the next time step if any occurs
+			int converged=1;
 			for (int lf=0; lf<nLines; lf++) 
 			{
-				for (int pt=9; pt>0; pt--)
-					FairTensLast[lf][pt] = FairTensLast[lf][pt-1];
-				
-				FairTensLast[lf][0] = FairTens[lf];
-			}
-		
-			// go through connections to get fairlead forces 
-			for (int lf=0; lf<nLines; lf++) 
-			{
-				//double Ffair[3];						// array to temporarily store fairlead force components
-				//double FairTenSqrd = 0.0;
-		
-				FairTens[lf] = LineList[lf]->getNodeTen(LineList[lf]->getN());  // get fairlead tension of each line
-				
-				//for (int j=0; j<3; j++) 
-				//	FairTenSqrd += Ffair[j]*Ffair[j];
-				//
-				//FairTens[lf] = sqrt(FairTenSqrd);        // <<<<< why is this returnign zeros???
-			}
-					
-		//	cout << "size of FairIs is " << FairIs.size() << endl;
-		//	cout << "FairIs 1,2 are " << FairIs[0] << FairIs[1] << endl;
-		//	cout << "size of ConnectionList is " << ConnectionList.size() << endl;
-		//	cout << " nFairs is " << nFairs << endl;
-			
-					
-			//cout << "    t = " << t << " s, tension at first fairlead is " << FairTens[0] << " N    \r";   // write status update and send cursor back to start of line
-
-		//	cout << "IC step number is " << iic << " and latest tensions are as follows:" << endl;
-		//	
-		//	for (int lf=0; lf<nLines; lf++) {
-		//		cout << "Line " << lf << " fairlead" << endl;
-		//		cout << FairTens[lf] << endl;
-		//		//for (int pt=0; pt<10; pt++)
-		//		//	cout << FairTensLast[lf][pt] << endl; 
-		//	}	
-
-
-	// >>>>>>>>> is convergence check working yet for all lines???
-
-			// check for convergence (compare current tension at each fairlead with previous 9 values)
-			if (iic > 10)
-			{
-				// check for any non-convergence, and continue to the next time step if any occurs
-				int converged=1;
-				for (int lf=0; lf<nLines; lf++) 
+				for (int pt=0; pt<10; pt++)
 				{
-					for (int pt=0; pt<10; pt++)
+					if ( abs( FairTens[lf] / FairTensLast[lf][pt] - 1.0 ) > ICthresh ) 
 					{
-						if ( abs( FairTens[lf] / FairTensLast[lf][pt] - 1.0 ) > ICthresh ) 
-						{
-							converged=0;	
-							break;						
-						}
+						converged=0;
+						break;
 					}
-					if (converged == 0) break; // break out of this inner loop
 				}
+				if (converged == 0)
+					break;
+			}
+			
+			if (converged == 1)
+			{
+				// if no non-convergence conditions have occured, i.e. we've converged, move on
+				cout << "   Fairlead tensions converged to " << 100.0*ICthresh << "\% after " << t << " seconds.        " << endl;
+				// if (wordy > 0) 
+				// {
+					// cout << "IC step number is " << iic << " and converged tensions are as follows:" << endl;
+					//
+					// for (lf=0; lf<nFairs; lf++) {
+						// cout << "Fairlead " << lf << endl;
+						// cout << FairTens[lf] << endl;
+						// for (int pt=0; pt<10; pt++)
+							// cout << FairTensLast[lf][pt] << endl; 
+					// }
+				// }
 				
-				if (converged == 1) // if no non-convergence conditions have occured, i.e. we've converged, move on
-				{
-					cout << "   Fairlead tensions converged to " << 100.0*ICthresh << "\% after " << t << " seconds.        " << endl;
-				//	if (wordy > 0) 
-				//	{	
-				//		cout << "IC step number is " << iic << " and converged tensions are as follows:" << endl;
-				//		
-				//	//	for (lf=0; lf<nFairs; lf++) {
-				//	//		cout << "Fairlead " << lf << endl;
-				//	//		cout << FairTens[lf] << endl;
-				//	//		for (int pt=0; pt<10; pt++)
-				//	//			cout << FairTensLast[lf][pt] << endl; 
-				//	//	}	
-				//	}
-					
-					break; // break out of the time stepping loop
-				}
+				break; // break out of the time stepping loop
 			}
 		}
-		
-		// restore drag coefficients to normal values and restart time counter of each object
-		for (int l=0; l < nLines; l++) 
-		{	LineList[l]->scaleDrag(1.0/ICDfac); // restore drag coefficients
-			LineList[l]->setTime(0.0);		// reset time to zero so first output line doesn't start at > 0 s
-		}
-		for (int l=0; l < nConnections; l++) 
-		{	ConnectionList[l]->scaleDrag(1.0/ICDfac); // restore drag coefficients
-			ConnectionList[l]->setTime(0.0);		// reset time to zero so first output line doesn't start at > 0 s
-		}
-		for (int l=0; l < nRods; l++) 
-		{	RodList[l]->scaleDrag(1.0/ICDfac); // restore drag coefficients
-			RodList[l]->setTime(0.0);		// reset time to zero so first output line doesn't start at > 0 s
-		}
-		for (int l=0; l < nBodys; l++) 
-		{	BodyList[l]->scaleDrag(1.0/ICDfac); // restore drag coefficients
-			BodyList[l]->setTime(0.0);		// reset time to zero so first output line doesn't start at > 0 s
-		}
-		
+	}
+	
+	// restore drag coefficients to normal values and restart time counter of each object
+	for (int l=0; l < nLines; l++) 
+	{
+		LineList[l]->scaleDrag(1.0 / ICDfac); // restore drag coefficients
+		LineList[l]->setTime(0.0);            // reset time to zero so first output line doesn't start at > 0 s
+	}
+	for (int l=0; l < nConnections; l++) 
+	{
+		ConnectionList[l]->scaleDrag(1.0 / ICDfac); // restore drag coefficients
+		ConnectionList[l]->setTime(0.0);            // reset time to zero so first output line doesn't start at > 0 s
+	}
+	for (int l=0; l < nRods; l++) 
+	{
+		RodList[l]->scaleDrag(1.0 / ICDfac); // restore drag coefficients
+		RodList[l]->setTime(0.0);            // reset time to zero so first output line doesn't start at > 0 s
+	}
+	for (int l=0; l < nBodys; l++) 
+	{
+		BodyList[l]->scaleDrag(1.0 / ICDfac); // restore drag coefficients
+		BodyList[l]->setTime(0.0);            // reset time to zero so first output line doesn't start at > 0 s
+	}
 
-		// store passed WaveKin value to enable waves in simulation if applicable (they're not enabled during IC gen)
-		env.WaveKin = WaveKinTemp;
+	// store passed WaveKin value to enable waves in simulation if applicable (they're not enabled during IC gen)
+	env.WaveKin = WaveKinTemp;
 
-	// @mth: new approach to be implemented
-	//	// ------------------------- calculate wave time series if needed -------------------
-	//	if (env.WaveKin == 2)
-	//	{
-	//		for (int l=0; l<nLines; l++) 
-	//			LineList[l]->makeWaveKinematics( 0.0 );
-	//	}
+// @mth: new approach to be implemented
+//	// ------------------------- calculate wave time series if needed -------------------
+//	if (env.WaveKin == 2)
+//	{
+//		for (int l=0; l<nLines; l++) 
+//			LineList[l]->makeWaveKinematics( 0.0 );
+//	}
 
-		
-		// -------------------------- start main output file --------------------------------
-		
-		stringstream oname;
-		oname << MDbasepath << MDbasename << ".out";
-		
-		outfileMain.open(oname.str());
-		if (outfileMain.is_open())
+	
+	// -------------------------- start main output file --------------------------------
+
+	stringstream oname;
+	oname << MDbasepath << MDbasename << ".out";
+
+	outfileMain.open(oname.str());
+	if (outfileMain.is_open())
+	{
+		// --- channel titles ---
+		outfileMain << "Time" << "\t "; 	
+		// output all LINE fairlead (top end) tensions
+		for (unsigned int lf=0; lf<outChans.size(); lf++)
+			outfileMain << outChans[lf].Name << "\t ";
+
+		outfileMain << "\n";
+
+		if (env.WriteUnits > 0)
 		{
-			// --- channel titles ---
-			outfileMain << "Time" << "\t "; 	
+			// --- units ---
+			outfileMain << "(s)" << "\t "; 	
 			// output all LINE fairlead (top end) tensions
 			for (unsigned int lf=0; lf<outChans.size(); lf++)
-				outfileMain << outChans[lf].Name << "\t ";
-			
+				outfileMain << outChans[lf].Units << "\t ";
 			outfileMain << "\n";
-			
-			if (env.WriteUnits > 0)
-			{
-				// --- units ---
-				outfileMain << "(s)" << "\t "; 	
-				// output all LINE fairlead (top end) tensions
-				for (unsigned int lf=0; lf<outChans.size(); lf++)
-					outfileMain << outChans[lf].Units << "\t ";
-				outfileMain << "\n";
-			}
 		}
-		else 
-		{	cout << "   ERROR: Unable to write to main output file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
-			return MOORDYN_INVALID_OUTPUT_FILE;
-		}
-		
-		// write t=0 output line
-		if (AllOutput(0.0, 0.0) < 0)
-			return MOORDYN_INVALID_OUTPUT_FILE;
-		
-							
-		cout <<endl;
-		return MOORDYN_SUCCESS;
-//--	}
-//--	catch(string e) 
-//--	{
-//--		cout << "\nError in MoorDynInit\n" << e << endl;
-//--		throw string("MoorDynInit error!");
-//--		return -1;
-//--	}
-//--	
-//--	cout << "It seems whtere was an unahndeld exception, and Im not sure i can know what it is" << endl;
-//--	return -1;
-	
+	}
+	else 
+	{
+		cout << "   ERROR: Unable to write to main output file " << oname.str() << endl;  //TODO: handle error <<<<<<<<<<<<<<<<<<<<
+		return MOORDYN_INVALID_OUTPUT_FILE;
+	}
+
+	// write t=0 output line
+	if (AllOutput(0.0, 0.0) < 0)
+		return MOORDYN_INVALID_OUTPUT_FILE;
+
+	cout <<endl;
+	return MOORDYN_SUCCESS;
 }
 
 
@@ -2591,10 +2590,12 @@ int DECLDIR MoorDynStep(double x[], double xd[], double f[], double* t_in, doubl
 		
 		// loop through line integration time steps (integrate solution forward by dtC)
 		for (int its = 0; its < NdtM; its++)
-			rk2 (states, &t, dtM );  			// call RK2 time integrator (which calls the model)
+		{
+			const int err = rk2 (states, &t, dtM );  // call RK2 time integrator (which calls the model)
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		}
 
-		
-		
 		// -------------------- check for NaNs ---------------------------
 		for (int i=0; i<nX; i++)
 		{
