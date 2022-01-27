@@ -17,7 +17,7 @@ VPATH = ../source
 
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -DLINUX -fPIC
 
-CFLAGS = -c -O3 -w -Wall -std=gnu++0x -DLINUX -fPIC
+CFLAGS = -c -O3 -Wall -Wextra -std=gnu++0x -DLINUX -fPIC
 EXEFLAGS = -DLINUX
 
 all: libmoordyn.so
