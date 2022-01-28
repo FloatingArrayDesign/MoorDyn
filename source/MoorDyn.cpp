@@ -413,7 +413,7 @@ int CalcStateDeriv(double *X,  double *Xd, const double t, const double dt)
 		}
 		catch(nan_error const& e)
 		{
-			cout << "NaN detected: " << e.what() << endl;
+			cout << "NaN detected at " << t << " s: " << e.what() << endl;
 			return MOORDYN_NAN_ERROR;
 		}
 	}

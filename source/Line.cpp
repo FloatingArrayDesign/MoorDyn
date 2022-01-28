@@ -846,8 +846,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			stringstream s;
 			s << "Line " << number << " node positions:";
 			for (int j=0; j<=N; j++)
-				s << "\n" << j
-				  << r[j][0] << "," << r[j][1] << "," << r[j][2] << ";";
+				s << "\n" << j << " : "
+				  << r[j][0] << ", " << r[j][1] << ", " << r[j][2] << ";";
 			s << "\n" << " at time " << t;
 			throw nan_error(s.str().c_str());
 		}
