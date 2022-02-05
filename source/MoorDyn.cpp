@@ -2690,7 +2690,7 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 {
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
-	MoorDyn instance = NULL;
+	MoorDynSystem *instance = NULL;
 	try
 	{
 		instance = new MoorDynSystem(infilename);
@@ -2702,7 +2702,7 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 		cerr << "Error (" << err << ") during the Mooring System creation:"
 		      << endl << err_msg << endl;
 	}
-	return instance;
+	return (void*)instance;
 
 }
 
@@ -2719,26 +2719,26 @@ unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system)
 {
 	if (!system)
 		return 0;
-	return system->NCoupedDOF();
+	return ((MoorDynSystem*)system)->NCoupedDOF();
 }
 
 int DECLDIR MoorDyn_Init(MoorDyn system, const double *x, const double *xd)
 {
 	CHECK_SYSTEM(system);
-	return system->Init(x, xd);
+	return ((MoorDynSystem*)system)->Init(x, xd);
 }
 
 int DECLDIR MoorDyn_Step(MoorDyn system, const double *x, const double *xd,
                          double *f, double *t, double *dt)
 {
 	CHECK_SYSTEM(system);
-	return system->Step(x, xd, f, *t, *dt);
+	return ((MoorDynSystem*)system)->Step(x, xd, f, *t, *dt);
 }
 
 int DECLDIR MoorDyn_Close(MoorDyn system)
 {
 	CHECK_SYSTEM(system);
-	delete(system);
+	delete((MoorDynSystem*)system);
 	return MOORDYN_SUCCESS;
 }
 
@@ -2750,7 +2750,7 @@ int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n)
 	string err_msg;
 	try
 	{
-		*n = system->ExternalWaveKinInit();
+		*n = ((MoorDynSystem*)system)->ExternalWaveKinInit();
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)
@@ -2765,7 +2765,7 @@ int DECLDIR MoorDyn_GetWavesCoords(MoorDyn system, double *r)
 {
 	CHECK_SYSTEM(system);
 
-	return system->GetWaveKinCoordinates(r);
+	return ((MoorDynSystem*)system)->GetWaveKinCoordinates(r);
 }
 
 int DECLDIR MoorDyn_SetWaves(MoorDyn system, const double *U,
@@ -2774,35 +2774,35 @@ int DECLDIR MoorDyn_SetWaves(MoorDyn system, const double *U,
 {
 	CHECK_SYSTEM(system);
 
-	return system->SetWaveKin(U, Ud, t);
+	return ((MoorDynSystem*)system)->SetWaveKin(U, Ud, t);
 }
 
 unsigned int DECLDIR MoorDyn_GetNumberBodies(MoorDyn system)
 {
 	if (!system)
 		return 0;
-	return system->GetBodies().size();
+	return ((MoorDynSystem*)system)->GetBodies().size();
 }
 
 unsigned int DECLDIR MoorDyn_GetNumberRods(MoorDyn system)
 {
 	if (!system)
 		return 0;
-	return system->GetRods().size();
+	return ((MoorDynSystem*)system)->GetRods().size();
 }
 
 unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system)
 {
 	if (!system)
 		return 0;
-	return system->GetConnections().size();
+	return ((MoorDynSystem*)system)->GetConnections().size();
 }
 
 unsigned int DECLDIR MoorDyn_GetNumberLines(MoorDyn system)
 {
 	if (!system)
 		return 0;
-	return system->GetLines().size();
+	return ((MoorDynSystem*)system)->GetLines().size();
 }
 
 unsigned int DECLDIR MoorDyn_GetNumberLineNodes(MoorDyn system,
@@ -2811,7 +2811,7 @@ unsigned int DECLDIR MoorDyn_GetNumberLineNodes(MoorDyn system,
 	if (!system)
 		return 0;
 
-	auto lines = system->GetLines();
+	auto lines = ((MoorDynSystem*)system)->GetLines();
 	if (!line || (line > lines.size()))
 	{
 		cerr << "Error: There is not such line " << line << endl
@@ -2826,7 +2826,7 @@ double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line)
 {
 	CHECK_SYSTEM(system);
 
-	auto lines = system->GetLines();
+	auto lines = ((MoorDynSystem*)system)->GetLines();
 	if (!line || (line > lines.size()))
 	{
 		cerr << "Error: There is not such line " << line << endl
@@ -2843,7 +2843,7 @@ int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, int* numLines,
 {
 	CHECK_SYSTEM(system);
 
-	auto lines = system->GetLines();
+	auto lines = ((MoorDynSystem*)system)->GetLines();
 	if ((unsigned int)(*numLines) > lines.size())
 	{
 		cerr << "Error: There is not " << *numLines << " lines" << endl
@@ -2862,7 +2862,7 @@ int DECLDIR MoorDyn_GetConnectPos(MoorDyn system, unsigned int l, double pos[3])
 {
 	CHECK_SYSTEM(system);
 
-	auto conns = system->GetConnections();
+	auto conns = ((MoorDynSystem*)system)->GetConnections();
 	if (!l || (l > conns.size()))
 	{
 		cerr << "Error: There is not such connection " << l << endl
@@ -2881,7 +2881,7 @@ int DECLDIR MoorDyn_GetConnectForce(MoorDyn system, unsigned int l, double f[3])
 {
 	CHECK_SYSTEM(system);
 
-	auto conns = system->GetConnections();
+	auto conns = ((MoorDynSystem*)system)->GetConnections();
 	if (!l || (l > conns.size()))
 	{
 		cerr << "Error: There is not such connection " << l << endl
@@ -2899,7 +2899,7 @@ int DECLDIR MoorDyn_GetNodePos(MoorDyn system,
 {
 	CHECK_SYSTEM(system);
 
-	auto lines = system->GetLines();
+	auto lines = ((MoorDynSystem*)system)->GetLines();
 	if (!LineNum || (LineNum > lines.size()))
 	{
 		cerr << "Error: There is not such line " << LineNum << endl
@@ -2918,9 +2918,9 @@ int DECLDIR MoorDyn_DrawWithGL(MoorDyn system)
 #ifdef USEGL
 	// draw the mooring system with OpenGL commands (assuming a GL context has
 	// been created by the calling program)
-	for (auto line : system->GetLines())
+	for (auto line : ((MoorDynSystem*)system)->GetLines())
 		line->drawGL2();  
-	for (auto conn : system->GetConnections())
+	for (auto conn : ((MoorDynSystem*)system)->GetConnections())
 		conn->drawGL();  
 #endif
 	return MOORDYN_SUCCESS;

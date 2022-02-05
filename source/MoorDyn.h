@@ -40,7 +40,7 @@ extern "C"
 
 
 /// A mooring system instance
-typedef class MoorDynSystem* MoorDyn;
+typedef void* MoorDyn;
 
 
 /** @brief Creates a MoorDyn instance
