@@ -58,6 +58,21 @@
 #define PARAM_UNUSED
 #endif
 
+#ifndef __FUNC_NAME__
+#ifdef WIN32
+#define __FUNC_NAME__   __FUNCTION__  
+#else
+#define __FUNC_NAME__   __func__ 
+#endif
+#endif
+
+#ifndef XSTR
+#define XSTR(s) STR(s)
+#endif
+#ifndef STR
+#define STR(s) #s
+#endif
+
 // note: this file contains the struct definitions for environmental and line/connect properties
 
 
@@ -67,6 +82,26 @@ template<typename T> static inline T round(T val) {return floor(val + 0.5);}
 #endif
 
 using namespace std;
+
+namespace moordyn
+{
+
+/** \addtogroup moordyn_log
+ *  @{
+ */
+
+/// Error message
+#define MOORDYN_ERR_LEVEL 3
+/// Warning message
+#define MOORDYN_WRN_LEVEL 2
+/// Info message
+#define MOORDYN_MSG_LEVEL 1
+/// Debug message
+#define MOORDYN_DBG_LEVEL 0
+
+/**
+ * @}
+ */
 
 /** \addtogroup moordyn_errors
  *  @{
@@ -82,18 +117,146 @@ using namespace std;
 #define MOORDYN_INVALID_INPUT -3
 /// NaN detected
 #define MOORDYN_NAN_ERROR -4
+/// Memory errors, like filures allocating memory
+#define MOORDYN_MEM_ERROR -5
+/// Invalid values
+#define MOORDYN_INVALID_VALUE -6
 /// Unhandled error
-#define MOORDYN_UNHANDLED_ERROR -4
+#define MOORDYN_UNHANDLED_ERROR -255
 
-class nan_error : public std::runtime_error
-{
-public:
-	nan_error(const char* msg) : std::runtime_error(msg) {}
-};
+/// Error identifier
+typedef int error_id;
+
+/// Simple macro to define custom exceptions
+#define MAKE_EXCEPTION(name)                                                    \
+	class name : public std::runtime_error                                      \
+	{                                                                           \
+	public:                                                                     \
+		name(const char* msg) : std::runtime_error(msg) {}                      \
+	};
+
+/// Exception thrown for invalid input files
+MAKE_EXCEPTION(input_file_error)
+/// Exception thrown for invalid output files
+MAKE_EXCEPTION(output_file_error)
+/// Exception thrown for invalid input values
+MAKE_EXCEPTION(input_error)
+/// Exception thrown when NaN values are encountered
+MAKE_EXCEPTION(nan_error)
+/// Exception thrown when memory errors are triggered
+MAKE_EXCEPTION(mem_error)
+/// Exception thrown when invalid values are found
+MAKE_EXCEPTION(invalid_value_error)
+/// Exception thrown for other uhandled errors
+MAKE_EXCEPTION(unhandled_error)
+
+/// Throw the exception associated with the provided error. Do nothing if
+/// MOORDYN_SUCCESS is passed
+#define MOORDYN_THROW(err, msg)                                                 \
+	switch(err) {                                                               \
+		case MOORDYN_SUCCESS:                                                   \
+			break;                                                              \
+		case MOORDYN_INVALID_INPUT_FILE:                                        \
+			throw moordyn::input_file_error(msg);                               \
+			break;                                                              \
+		case MOORDYN_INVALID_OUTPUT_FILE:                                       \
+			throw moordyn::output_file_error(msg);                              \
+			break;                                                              \
+		case MOORDYN_INVALID_INPUT:                                             \
+			throw moordyn::input_error(msg);                                    \
+			break;                                                              \
+		case MOORDYN_NAN_ERROR:                                                 \
+			throw moordyn::nan_error(msg);                                      \
+			break;                                                              \
+		case MOORDYN_MEM_ERROR:                                                 \
+			throw moordyn::mem_error(msg);                                      \
+			break;                                                              \
+		case MOORDYN_INVALID_VALUE:                                             \
+			throw moordyn::invalid_value_error(msg);                            \
+			break;                                                              \
+		default:                                                                \
+			throw moordyn::unhandled_error(msg);                                \
+			break;                                                              \
+	}
+
+/// Catch thrown exceptions and convert them in an error_id. It also gives the
+/// message on the Exception. This macro will only handle known exceptions, i.e.
+/// the ones declared in moordyn_errors. You can add more catch() instances
+/// afterwards
+#define MOORDYN_CATCHER(err, msg)                                               \
+	catch(moordyn::input_file_error const& e) {                                 \
+		err = MOORDYN_INVALID_INPUT_FILE;                                       \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::output_file_error const& e) {                                \
+		err = MOORDYN_INVALID_OUTPUT_FILE;                                      \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::input_error const& e) {                                      \
+		err = MOORDYN_INVALID_INPUT;                                            \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::nan_error const& e) {                                        \
+		err = MOORDYN_NAN_ERROR;                                                \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::mem_error const& e) {                                        \
+		err = MOORDYN_MEM_ERROR;                                                \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::invalid_value_error const& e) {                              \
+		err = MOORDYN_INVALID_VALUE;                                            \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::unhandled_error const& e) {                                  \
+		err = MOORDYN_UNHANDLED_ERROR;                                          \
+		msg = e.what();                                                         \
+	}
 
 /**
  * @}
  */
+
+/** \addtogroup string_tools
+ *  @{
+ */
+
+namespace str
+{
+
+/** @brief Convert a string to lower case
+ * @param str String to check
+ * @return A lower case copy of the string
+ */
+string lower(const string &str);
+
+/** @brief Convert a string to lower case
+ * @param str String to check
+ * @return A lower case copy of the string
+ */
+string upper(const string &str);
+
+/** @brief Check if a string contains one of the provided terms
+ * @param str String to check
+ * @param terms List of terms to look for
+ * @return true if the string contains one or more of the terms, false
+ * otherwise
+ */
+bool has(const string &str, const vector<string> terms);
+
+/** @brief Split a string in a list of substrings
+ * @param str String to split
+ * @param sep Separator
+ */
+vector<string> split(const string &str, const char sep);
+
+}  // ::moordyn::str
+
+/**
+ * @}
+ */
+
+}  // ::moordyn
 
 typedef complex<double> doubleC; 		// make shorthand for complex double type
 typedef complex<float> floatC; 		// make shorthand for complex float type
@@ -104,7 +267,7 @@ const double rad2deg = 57.29577951;
 const doubleC i1(0., 1.); 			// set imaginary number 1
 //const floatC i1f(0., 1.); 			// set imaginary number 1
 
-const int wordy = 2;   			// flag to enable excessive output (if > 0) for troubleshooting
+const int wordy = 1;   			// flag to enable excessive output (if > 0) for troubleshooting
 
 const int nCoef = 30;   // maximum number of entries to allow in nonlinear coefficient lookup tables
 
@@ -127,6 +290,14 @@ typedef struct
 	int Current;
 	/// time step used to downsample wave elevation data with
 	double dtWave;
+
+	/// general bottom friction coefficient, as a start
+	double FrictionCoefficient;
+	/// a damping coefficient used to model the friction at speeds near zero
+	double FricDamp;
+	/// a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
+	double StatDynFricScale;
+
 	/// a global switch for whether to show the units line in the output files
 	/// (1, default), or skip it (0)
 	int WriteUnits;
@@ -135,12 +306,6 @@ typedef struct
 	int writeLog;
 	/// The log file stream
 	ofstream *outfileLogPtr;
-	/// general bottom friction coefficient, as a start
-	double FrictionCoefficient;
-	/// a damping coefficient used to model the friction at speeds near zero
-	double FricDamp;
-	/// a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
-	double StatDynFricScale;
 } EnvCond;
 
 

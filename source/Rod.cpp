@@ -30,13 +30,13 @@ using namespace std;
 
 
 // set up Rod object  
-int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6], int NumSegs, 
+int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6], int NumSegs, 
 	shared_ptr<ofstream> outfile_pointer, string channels_in)
 {
 	// ================== set up properties ===========	
-	number = number_in;	
+	number = number_in;
 	type = type_in;
-	
+
 	N = NumSegs;             // assign number of segments to rod
 	
 	if (wordy >0) cout << "Setting up Rod " << number << " (type "<<type<<") with " << N << " segments." << endl;
@@ -94,7 +94,7 @@ int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6],
 		UnstrLen = 0.0;                          // set Rod length to zero
 		
 		// set Rod positions if applicable
-		if (type==0)                // for an independent rod, set the position right off the bat
+		if (type == FREE)                // for an independent rod, set the position right off the bat
 		{		
 			for (int J=0; J<3; J++)
 			{
@@ -105,7 +105,7 @@ int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6],
 				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
 			}
 		}
-		else if (abs(type)==1)     // for a pinned rod, just set the orientation (position will be set later by parent object)
+		else if ((type == PINNED) || (type == CPLDPIN))     // for a pinned rod, just set the orientation (position will be set later by parent object)
 		{		
 			for (int J=0; J<3; J++)
 			{
@@ -151,9 +151,9 @@ int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6],
 		// ------------------------- set starting kinematics -------------------------
 		
 		UnstrLen = unitvector(q, endCoords, endCoords+3); // get Rod axis direction vector and Rod length
-		
+
 		// set Rod positions if applicable
-		if (type==0)                // for an independent rod, set the position right off the bat
+		if (type == FREE)                // for an independent rod, set the position right off the bat
 		{		
 			for (int J=0; J<3; J++)
 			{
@@ -164,7 +164,7 @@ int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6],
 				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
 			}
 		}
-		else if (abs(type)==1)     // for a pinned rod, just set the orientation (position will be set later by parent object)
+		else if ((type == PINNED) || (type == CPLDPIN))     // for a pinned rod, just set the orientation (position will be set later by parent object)
 		{		
 			for (int J=0; J<3; J++)
 			{
@@ -199,7 +199,7 @@ int Rod::setup(int number_in, int type_in, RodProps *props, double endCoords[6],
 // this function handles assigning a line to a Rod end
 void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "A ";
+	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "A " << endl;
 	
 	if (nAttachedA <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
@@ -211,7 +211,7 @@ void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
 };
 void Rod::addLineToRodEndB(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "B ";
+	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "B " << endl;
 	
 	if (nAttachedB <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
@@ -429,14 +429,14 @@ void Rod::initializeRod(double* X )
 	
 	// Pass kinematics to any attached lines (this is just like what a Connection does, except for both ends)
 	// so that they have the correct initial positions at this initialization stage.
-	if (type>-2)
+	if (type > COUPLED)
 		setDependentStates();  // don't call this for type -2 coupled Rods as it's already been called
 
 
 	// assign the resulting kinematics to its part of the state vector (only matters if it's an independent Rod)
 	
 	// copy over state values for potential use during derivative calculations
-	if (type==0)               // free Rod type
+	if (type == FREE)               // free Rod type
 	{	
 		for (int J=0; J<3; J++)
 		{
@@ -446,7 +446,7 @@ void Rod::initializeRod(double* X )
 			X[9+J] = q[J];      // rod direction unit vector
 		}
 	}
-	else if (abs(type)==1)           // pinned rod type (coupled or attached to something previously via setPinKin)
+	else if ((type == PINNED) || (type == CPLDPIN))           // pinned rod type (coupled or attached to something previously via setPinKin)
 	{	
 		for (int J=0; J<3; J++)
 		{
@@ -538,11 +538,11 @@ void Rod::setTime(double time)
 
 
 // called at the beginning of each coupling step to update the boundary conditions (fairlead kinematics) for the proceeding line time steps
-void Rod::initiateStep(double rFairIn[6], double rdFairIn[6], double time)
+void Rod::initiateStep(const double rFairIn[6], const double rdFairIn[6], double time)
 {	
 	t0 = time; // set start time for BC functions
 	
-	if (type==-2)  // rod rigidly coupled to outside program
+	if (type == COUPLED)  // rod rigidly coupled to outside program
 	{						
 		// set Rod kinematics based on BCs (linear model for now) 
 		for (int J=0; J<6; J++)  
@@ -554,7 +554,7 @@ void Rod::initiateStep(double rFairIn[6], double rdFairIn[6], double time)
 		// since this rod has no states and all DOFs have been set, pass its kinematics to dependent Lines
 		setDependentStates();
 	}
-	else if (type==-1)  // rod end A pinned and coupled to outside program
+	else if (type == CPLDPIN)  // rod end A pinned and coupled to outside program
 	{	
 		// set Rod *end A only* kinematics based on BCs (linear model for now) 
 		for (int J=0; J<3; J++)  // note only setting first three entries
@@ -575,7 +575,7 @@ void Rod::updateFairlead(const double time)
 {	
 	t = time;
 
-	if (type==-2)  // rod rigidly coupled to outside program
+	if (type == COUPLED)  // rod rigidly coupled to outside program
 	{						
 		// set Rod kinematics based on BCs (linear model for now) 
 		for (int J=0; J<6; J++)  
@@ -589,7 +589,7 @@ void Rod::updateFairlead(const double time)
 		// since this rod has no states and all DOFs have been set, pass its kinematics to dependent Lines
 		setDependentStates();
 	}
-	else if (type==-1)  // rod end A pinned and coupled to outside program
+	else if (type == CPLDPIN)  // rod end A pinned and coupled to outside program
 	{	
 		// set Rod *end A only* kinematics based on BCs (linear model for now) 
 		for (int J=0; J<3; J++)  // note only setting first three entries
@@ -611,7 +611,7 @@ void Rod::updateFairlead(const double time)
 // set kinematics for Rods ONLY if they are attached to a body (including a coupled body) (otherwise shouldn't be called)
 void Rod::setKinematics(double *r_in, double *rd_in)
 {	
-	if (type==2)  // rod rigidly coupled to body
+	if (type == FIXED)  // rod rigidly coupled to body
 	{		
 		for (int J=0; J<6; J++)  
 		{
@@ -624,7 +624,7 @@ void Rod::setKinematics(double *r_in, double *rd_in)
 		// since this rod has no states and all DOFs have been set, pass its kinematics to dependent Lines
 		setDependentStates();
 	}
-	else if (type==1)  // rod end A pinned to a body
+	else if (type == PINNED)  // rod end A pinned to a body
 	{	
 		// set Rod *end A only* kinematics based on BCs (linear model for now) 
 		for (int J=0; J<3; J++)  // note only setting first three entries
@@ -663,7 +663,7 @@ int Rod::setState( double* X, const double time)
 	t = time;
 	
 	// copy over state values for potential use during derivative calculations
-	if (type==0)               // free Rod type
+	if (type == FREE)               // free Rod type
 	{	
 		scalevector(X+9, 1.0, X+9); // enforce direction vector to be a unit vector
 	
@@ -676,7 +676,7 @@ int Rod::setState( double* X, const double time)
 		}
 		setDependentStates();
 	}
-	else if (abs(type)==1)           // pinned rod type (coupled or attached to something)t previously via setPinKin)
+	else if ((type == CPLDPIN) || (type == PINNED))           // pinned rod type (coupled or attached to something)t previously via setPinKin)
 	{	
 		scalevector(X+3, 1.0, X+3); // enforce direction vector to be a unit vector
 		
@@ -812,7 +812,7 @@ int Rod::getStateDeriv(double* Xd)
 	// solve for accelerations in [M]{a}={f} using LU decomposition, then fill in state derivatives
 	
 	
-	if (type == 0)                  // free rod, 12 states  
+	if (type == FREE)                  // free rod, 12 states  
 	{
 		if (N==0)   // special zero-length Rod case, orientation is not an actual state
 		{
@@ -881,9 +881,9 @@ void Rod::getFnet(double Fnet_out[])
 
 	int nDOF = 0;
 	
-	if (type == -1)  // if coupled pinned
+	if (type == CPLDPIN)  // if coupled pinned
 		nDOF = 3;
-	else if (type == -2) // if coupled rigidly
+	else if (type == COUPLED) // if coupled rigidly
 		nDOF = 6;
 	else
 		throw string("Error: getFnet called for a Rod that isn't of a coupled type.");

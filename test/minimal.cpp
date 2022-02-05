@@ -24,29 +24,34 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 
 using namespace std;
 
+namespace old_api
+{
 
 /** @brief Check that bad input files are correctly handled
  * @return true if the test worked, false otherwise
  */
 bool bad_input_file()
 {
+    cout << "bad_input_file()..." << endl;
+
     int err;
     double x[6], dx[6];
     std::fill(x, x + 6, 0.0);
     std::fill(dx, dx + 6, 0.0);
     err = MoorDynInit(x, dx, "badfile.txt");
-    if (err != MOORDYN_INVALID_INPUT_FILE) {
-        cerr << "The error code " << MOORDYN_INVALID_INPUT_FILE
+    if (err != MOORDYN_UNHANDLED_ERROR) {
+        cerr << "The error code " << MOORDYN_UNHANDLED_ERROR
              << " was expected, but " << err << " was received" << endl;
         return false;
     }
 
     err = MoorDynClose();
-    if (err != MOORDYN_SUCCESS) {
+    if (err != MOORDYN_INVALID_VALUE) {
         cerr << "Failure closing Moordyn: " << err << endl;
         return false;
     }
@@ -60,6 +65,8 @@ bool bad_input_file()
  */
 bool minimal()
 {
+    cout << "minimal()..." << endl;
+
     int err;
     double x[9], dx[9];
     // Set the fairlead connections, as they are in the config file
@@ -90,6 +97,8 @@ bool minimal()
     return true;
 }
 
+}  // ::old_api
+
 /** @brief Runs all the test
  * @param argc Unused
  * @param argv Unused
@@ -98,9 +107,9 @@ bool minimal()
  */
 int main(int argc, char** argv)
 {
-    if (!bad_input_file())
+    if (!old_api::bad_input_file())
         return 1;
-    if (!minimal())
+    if (!old_api::minimal())
         return 2;
     return 0;
 }

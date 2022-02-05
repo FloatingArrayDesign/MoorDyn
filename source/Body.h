@@ -84,19 +84,51 @@ class Body
 	
 	
 public:
-	
+
+	/** @brief Types of bodies
+	 */
+	typedef enum {
+		/// Is coupled, i.e. is controlled by the user
+		COUPLED = -1,
+		/// Is free to move, controlled by MoorDyn
+		FREE = 0,
+		/// Is fixed, either to a location or to another moving entity
+		FIXED = 1,
+		// Some aliases
+		VESSEL = COUPLED,
+		ANCHOR = FIXED,
+	} types;
+
+	/** @brief Return a string with the name of a type
+	 *
+	 * This tool is useful mainly for debugging
+	 */
+	static string TypeName(types t)
+	{
+		switch(t)
+		{
+		case COUPLED:
+			return "COUPLED";
+		case FREE:
+			return "FREE";
+		case FIXED:
+			return "FIXED";
+		}
+		return "UNKNOWN";
+	}
+
 	//
 	int number;
-	int type;  // <<< N/A ??
+	types type;  // <<< N/A ??
 		
-	void setup(int number_in, int type_in, double r6_in[6], double rCG_in[3], double M_in,
+	void setup(int number_in, types type_in, double r6_in[6], double rCG_in[3], double M_in,
 	double V_in, double I_in[3], double CdA_in[3], double Ca_in[3], shared_ptr<ofstream> outfile_pointer);
 	
 	void addConnectionToBody(Connection *theConnection, double coords[3]);
 	
 	void addRodToBody(Rod *theRod, double endCoords[6]);
 	
-	void initializeUnfreeBody(double r_in[6], double rd_in[6], double time);
+	void initializeUnfreeBody(const double r_in[6], const double rd_in[6], double time);
 	
 	void initializeBody( double* X );
 
@@ -106,7 +138,7 @@ public:
 	
 	void getBodyState(double r_out[6], double rd_out[6]);
 		
-	void getFnet(double Fnet_out[]);
+	void getFnet(double Fnet_out[]) const;
 	
 	void getM(double M_out[6][6]);
 	
@@ -115,7 +147,7 @@ public:
 	void scaleDrag(double scaler);	
 	void setTime(double time);
 	
-	void initiateStep(double r_in[6], double rd_in[6], double time);
+	void initiateStep(const double r_in[6], const double rd_in[6], double time);
 	void updateFairlead( const double time);
 	
 	void setState( const double* X, const double time);

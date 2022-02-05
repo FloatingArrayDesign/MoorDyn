@@ -26,7 +26,7 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1025.0        WtrDnsty      water density (kg/m^3)
 320           WtrDpth       water depth (m)
 1.0           dtIC          time interval for analyzing convergence during IC gen (s)
-60.0          TmaxIC        max time for ic gen (s)
+100.0         TmaxIC        max time for ic gen (s)
 4.0           CdScaleIC     factor by which to scale drag coefficients during dynamic relaxation (-)
 0.001         threshIC      threshold for IC convergence (-)
 ------------------------- need this line -------------------------------------- 

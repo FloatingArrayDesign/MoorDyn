@@ -132,8 +132,50 @@ class Rod
 
 
 public:
+	/** @brief Types of rods
+	 */
+	typedef enum {
+		/// Is coupled, i.e. is controlled by the user
+		COUPLED = -2,
+		/// Is a pinned fairlead
+		CPLDPIN = -1,
+		/// Is free to move, controlled by MoorDyn
+		FREE = 0,
+		/// Is pinned
+		PINNED = 1,
+		/// Is fixed, either to a location or to another moving entity
+		FIXED = 2,
+		// Some aliases
+		VESSEL = COUPLED,
+		VESPIN = CPLDPIN,
+		CONNECT = FREE,
+		ANCHOR = FIXED,
+	} types;
+
+	/** @brief Return a string with the name of a type
+	 *
+	 * This tool is useful mainly for debugging
+	 */
+	static string TypeName(types t)
+	{
+		switch(t)
+		{
+		case COUPLED:
+			return "COUPLED";
+		case CPLDPIN:
+			return "CPLDPIN";
+		case FREE:
+			return "FREE";
+		case PINNED:
+			return "PINNED";
+		case FIXED:
+			return "FIXED";
+		}
+		return "UNKNOWN";
+	}
+
  	int number; // rod "number" id
-	int type;  // 	0: free to move; 1: pinned; 2: attached rigidly (positive if to something, negative if coupled)
+	types type;  // 	0: free to move; 1: pinned; 2: attached rigidly (positive if to something, negative if coupled)
 //	int pinned;      // flag indicating of Rod end A is pinned (1) or free (0/default). Triggered by setting BodyToAddTO to -1.
 	
 	int WaterKin;  // flag indicating whether wave/current kinematics will be considered for this linec
@@ -146,7 +188,7 @@ public:
  
 	int getN(); // returns N (number of segments)
 	
-	int setup(int number_in, int type_in, RodProps *props, double endCoords[6], int NumSegs, 
+	int setup(int number_in, types type_in, RodProps *props, double endCoords[6], int NumSegs, 
 	shared_ptr<ofstream> outfile_pointer, string channels_in);
 	
 	void addLineToRodEndA(Line *theLine, int TopOfLine);
@@ -167,7 +209,7 @@ public:
 	void scaleDrag(double scaler);	
 	void setTime(double time);
 	
-	void initiateStep(double rFairIn[6], double rdFairIn[6], double time);
+	void initiateStep(const double rFairIn[6], const double rdFairIn[6], double time);
 	
 	void updateFairlead(const double time);
 	void setKinematics(double *r_in, double *rd_in);

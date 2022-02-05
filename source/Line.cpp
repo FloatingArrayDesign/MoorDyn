@@ -133,7 +133,7 @@ void Line::setEnv(EnvCond *env_in, Waves *waves_in)
 // get ICs for line using quasi-static approach
 void Line::initializeLine(double* X)
 {
-		// write line information to log file
+	// write line information to log file
 	if (env->writeLog > 1)
 	{
 		*(env->outfileLogPtr) << "  - Line" << number << ":" << endl;
@@ -844,12 +844,13 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		if (isnan(r[i][0] + r[i][1] + r[i][2])) 
 		{
 			stringstream s;
-			s << "Line " << number << " node positions:";
+			s << "NaN detected" << endl
+			  << "Line " << number << " node positions:" << endl;
 			for (int j=0; j<=N; j++)
-				s << "\n" << j << " : "
-				  << r[j][0] << ", " << r[j][1] << ", " << r[j][2] << ";";
-			s << "\n" << " at time " << t;
-			throw nan_error(s.str().c_str());
+				s << j << " : "
+				  << r[j][0] << ", " << r[j][1] << ", " << r[j][2] << ";"
+				  << endl;
+			throw moordyn::nan_error(s.str().c_str());
 		}
 	}
 	
