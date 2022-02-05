@@ -17,15 +17,7 @@
 #ifndef __MOORDYN_H__
 #define __MOORDYN_H__
 
-#ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
-	#ifndef LINUX
-		#define DECLDIR __declspec(dllexport)
-	#else
-		#define DECLDIR 
-	#endif
-#else
-	#define DECLDIR //__declspec(dllimport)
-#endif
+#include "MoorDynAPI.h"
 
 #ifdef __cplusplus
 extern "C"

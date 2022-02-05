@@ -20,7 +20,6 @@
  */
 
 #include "MoorDyn.h" 
-#include "Misc.h"
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>

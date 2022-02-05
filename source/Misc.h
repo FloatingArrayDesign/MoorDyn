@@ -17,6 +17,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include "MoorDynAPI.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -52,27 +54,6 @@
 #include <iostream>
 #include <fstream>
 
-#if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
-#define PARAM_UNUSED __attribute__((__unused__))
-#else
-#define PARAM_UNUSED
-#endif
-
-#ifndef __FUNC_NAME__
-#ifdef WIN32
-#define __FUNC_NAME__   __FUNCTION__  
-#else
-#define __FUNC_NAME__   __func__ 
-#endif
-#endif
-
-#ifndef XSTR
-#define XSTR(s) STR(s)
-#endif
-#ifndef STR
-#define STR(s) #s
-#endif
-
 // note: this file contains the struct definitions for environmental and line/connect properties
 
 
@@ -86,43 +67,9 @@ using namespace std;
 namespace moordyn
 {
 
-/** \addtogroup moordyn_log
- *  @{
- */
-
-/// Error message
-#define MOORDYN_ERR_LEVEL 3
-/// Warning message
-#define MOORDYN_WRN_LEVEL 2
-/// Info message
-#define MOORDYN_MSG_LEVEL 1
-/// Debug message
-#define MOORDYN_DBG_LEVEL 0
-
-/**
- * @}
- */
-
 /** \addtogroup moordyn_errors
  *  @{
  */
-
-/// Successfully dispatched task
-#define MOORDYN_SUCCESS 0
-/// Invalid input file path
-#define MOORDYN_INVALID_INPUT_FILE -1
-/// Invalid output file path
-#define MOORDYN_INVALID_OUTPUT_FILE -2
-/// Invalid input in the input file
-#define MOORDYN_INVALID_INPUT -3
-/// NaN detected
-#define MOORDYN_NAN_ERROR -4
-/// Memory errors, like filures allocating memory
-#define MOORDYN_MEM_ERROR -5
-/// Invalid values
-#define MOORDYN_INVALID_VALUE -6
-/// Unhandled error
-#define MOORDYN_UNHANDLED_ERROR -255
 
 /// Error identifier
 typedef int error_id;
