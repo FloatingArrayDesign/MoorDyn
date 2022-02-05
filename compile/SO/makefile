@@ -58,13 +58,17 @@ Misc.o: ../../source/Misc.cpp ../../source/Misc.h
 
 clean:
 	rm -f *.o *.so
-	rm -f test_minimal 
+	rm -f test_*
 
 test_minimal: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h ../../source/Misc.h
 	g++ $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../test/minimal.cpp
 
-test: test_minimal
-	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
+test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so ../../source/MoorDyn.h ../../source/Misc.h
+	g++ $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
+
+test: test_minimal test_quasi_static_chain
+#	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_quasi_static_chain
 
 debug: CFLAGS += -g -DDEBUG=1
 debug: EXEFLAGS += -g -DDEBUG=1
