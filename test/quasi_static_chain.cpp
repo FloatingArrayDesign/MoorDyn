@@ -113,14 +113,29 @@ bool validation(const char* depth, const char* motion)
     auto motion_data = read_tab_file(motion_file.str().c_str());
     auto ref_data = read_tab_file(ref_file.str().c_str());
 
+    MoorDyn system = MoorDyn_Create(lines_file.str().c_str());
+    if (!system)
+    {
+        cerr << "Failure Creating the Mooring system" << endl;
+        return false;        
+    }
+
+    const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+    if (n_dof != 3) {
+        cerr << "3x1 = 3 DOFs were expected, but " << n_dof
+             << "were reported" << endl;
+        MoorDyn_Close(system);
+        return false;
+    }
+
     int err;
     double x[3], dx[3];
     // Set the fairlead connections, as they are in the config file
     std::fill(x, x + 3, 0.0);
     std::fill(dx, dx + 3, 0.0);
-    err = MoorDynInit(x, dx, lines_file.str().c_str());
+    err = MoorDyn_Init(system, x, dx);
     if (err != MOORDYN_SUCCESS) {
-        MoorDynClose();
+        MoorDyn_Close(system);
         cerr << "Failure during the mooring initialization: " << err << endl;
         return false;
     }
@@ -128,9 +143,9 @@ bool validation(const char* depth, const char* motion)
     // Compute the static tension
     int num_lines = 1;
     float fh, fv, ah, av;
-    err = GetFASTtens(&num_lines, &fh, &fv, &ah, &av);
+    err = MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av);
     if (err != MOORDYN_SUCCESS) {
-        MoorDynClose();
+        MoorDyn_Close(system);
         cerr << "Failure getting the initial tension: " << err << endl;
         return false;
     }
@@ -146,7 +161,7 @@ bool validation(const char* depth, const char* motion)
     const double eanch0 = (fanch0 - fanch_ref0) / fanch_ref0;
     if ((efair0 > MAX_STATIC_ERROR) || (eanch0 > MAX_STATIC_ERROR))
     {
-        MoorDynClose();
+        MoorDyn_Close(system);
         cerr << "Too large error" << endl;
         return false;        
     }
@@ -161,7 +176,7 @@ bool validation(const char* depth, const char* motion)
     double ea_value = 0.0;
     double ea_ref = 0.0;
     unsigned int i_ref = 0;  // To track the line in the ref values file
-    double f[6 + 3];  // 6x1 for the fairleads, 3x1 for the anchors
+    double f[3];
     for (unsigned int i = 0; i < motion_data.size() - 1; i++)
     {
         double t = motion_data[i][0];
@@ -171,9 +186,9 @@ bool validation(const char* depth, const char* motion)
             x[j] = motion_data[i][j + 1];
             dx[j] = (motion_data[i + 1][j + 1] - x[j]) / dt;
         }
-        err = MoorDynStep(x, dx, f, &t, &dt);
+        err = MoorDyn_Step(system, x, dx, f, &t, &dt);
         if (err != MOORDYN_SUCCESS) {
-            MoorDynClose();
+            MoorDyn_Close(system);
             cerr << "Failure during the mooring step: " << err << endl;
             return false;
         }
@@ -181,9 +196,9 @@ bool validation(const char* depth, const char* motion)
         if (t < 0.0)
             continue;
 
-        err = GetFASTtens(&num_lines, &fh, &fv, &ah, &av);
+        err = MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av);
         if (err != MOORDYN_SUCCESS) {
-            MoorDynClose();
+            MoorDyn_Close(system);
             cerr << "Failure getting the initial tension: " << err << endl;
             return false;
         }
@@ -209,7 +224,7 @@ bool validation(const char* depth, const char* motion)
         i_ref++;
     }
 
-    err = MoorDynClose();
+    err = MoorDyn_Close(system);
     if (err != MOORDYN_SUCCESS) {
         cerr << "Failure closing Moordyn: " << err << endl;
         return false;

@@ -2837,7 +2837,7 @@ double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line)
 	return lines[line - 1]->getNodeTen(lines[line - 1]->getN());
 }
 
-int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, int* numLines,
+int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
                                 float FairHTen[], float FairVTen[],
                                 float AnchHTen[], float AnchVTen[])
 {
