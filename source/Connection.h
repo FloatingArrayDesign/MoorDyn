@@ -55,24 +55,20 @@ class Connection
 	double t0;              // simulation time current integration was started at (used for BC function)
 	double r_ves[3]; 		// fairlead position for vessel node types [x/y/z]
 	double rd_ves[3];		// fairlead velocity for vessel node types [x/y/z]	
-	double tlast;
-		
+
 	double Fnet[3];	// total force on node
-	double Fnet_i[3];
-	double RHS[3];	// RHS of state-space equation (Forces divided by mass matrix)
-	
+
 	double M[3][3]; // node mass + added mass matrices
-	
+
 	// wave things
 	//double F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	double zeta;           // free surface elevation
 	double U [3];             // wave velocities	
 	double Ud[3];            // wave accelerations	
-	
+
 	//vector< vector< double > > S;  // inverse mass matrices (3x3) for each node
 	//vector< vector< double > > M_i;
-			
-	
+
 public:
 	/** @brief Types of connections
 	 */

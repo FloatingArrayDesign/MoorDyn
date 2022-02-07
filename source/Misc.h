@@ -255,7 +255,7 @@ typedef struct
 
 
 
-typedef struct  // (matching Line Dictionary inputs)
+typedef struct _LineProps // (matching Line Dictionary inputs)
 {
 	string type; 
 	double d;
@@ -279,7 +279,7 @@ typedef struct  // (matching Line Dictionary inputs)
 	double bstiffYs[nCoef]; // y array for stress-strain lookup table
 } LineProps;
 
-typedef struct  // (matching Rod Dictionary inputs)
+typedef struct _RodProps // (matching Rod Dictionary inputs)
 {
 	string type; 
 	double d;
@@ -290,7 +290,7 @@ typedef struct  // (matching Rod Dictionary inputs)
 	double Cdt;
 } RodProps;
 
-typedef struct // matching node input stuff
+typedef struct _ConnectProps // matching node input stuff
 {
 	int number;
 	string type;
@@ -306,7 +306,7 @@ typedef struct // matching node input stuff
 	double Ca;  // added 2015/1/15  - added mass coefficient
 } ConnectProps;
 
-typedef struct // matching body input stuff
+typedef struct _BodyProps // matching body input stuff
 {
 	int number;
 	string type;
@@ -325,7 +325,7 @@ typedef struct // matching body input stuff
 	double Ca;	
 } BodyProps;
 
-typedef struct     // for failure conditions
+typedef struct _FailProps    // for failure conditions
 {
 	int attachID;         // ID of connection or Rod the lines are attached to (index is -1 this value)
 	int isRod;             // 1 Rod end A, 2 Rod end B, 0 if connection
@@ -337,7 +337,7 @@ typedef struct     // for failure conditions
 	int failStatus;    // 0 not failed yet, 1 failed
 } FailProps;
 
-typedef struct 
+typedef struct _OutChanProps
 {  // this is C version of MDOutParmType - a less literal alternative of the NWTC OutParmType for MoorDyn (to avoid huge lists of possible output channel permutations)                                                                         
 	char Name[10]; 		// "name of output channel"   
 	char Units[10];			// "units string"     - should match UnitsSize in MoorDyn.cpp (should turn into def)                                                                            

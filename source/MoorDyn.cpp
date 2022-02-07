@@ -1456,7 +1456,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 
 				char let1[10], num1[10], let2[10], num2[10], let3[10]; 
 				char typeWord[10];
-				snprintf(typeWord, 9, entries[1].c_str());
+				strncpy(typeWord, entries[1].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
 				decomposeString(typeWord, let1, num1, let2, num2, let3);
@@ -1530,7 +1530,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 
 				char let1[10], num1[10], let2[10], num2[10], let3[10]; 
 				char typeWord[10];
-				snprintf(typeWord, 9, entries[2].c_str());
+                strncpy(typeWord, entries[2].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
 				decomposeString(typeWord, let1, num1, let2, num2, let3);
@@ -1598,7 +1598,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					_rods_map.push_back(_n_states);          // assign start index of this rod's states
 					_n_states += 6;                          // add 6 state variables for each pinned rod	
 				}
-				else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") || !strcmp(let1, "FREE") ==0)
+				else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") || !strcmp(let1, "FREE"))
 				{
 					type = Rod::FREE;
 					_rods_free_map.push_back(_rods.size());  // add this free rod to the free list
@@ -1724,7 +1724,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				Connection::types type;
 				char let1[10], num1[10], let2[10], num2[10], let3[10]; 
 				char typeWord[10];
-				snprintf(typeWord, 9, entries[1].c_str());
+                strncpy(typeWord, entries[1].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
 				decomposeString(typeWord, let1, num1, let2, num2, let3);
@@ -1894,7 +1894,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				{
 					char let1[10], num1[10], let2[10], num2[10], let3[10]; 
 					char typeWord[10];
-					snprintf(typeWord, 9, entries[2 + I].c_str());
+					strncpy(typeWord, entries[2 + I].c_str(), 9);
 					typeWord[9] = '\0';
 					// divided outWord into letters and numbers
 					decomposeString(typeWord, let1, num1, let2, num2, let3);
@@ -1985,7 +1985,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 
 				char let1[10], num1[10], let2[10], num2[10], let3[10]; 
 				char typeWord[10];
-				snprintf(typeWord, 9, entries[0].c_str());
+				strncpy(typeWord, entries[0].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
 				decomposeString(typeWord, let1, num1, let2, num2, let3);

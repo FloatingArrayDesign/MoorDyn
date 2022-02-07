@@ -65,21 +65,17 @@ class Rod
 	double Cdn;
 	double Cdt;
 	//double ReFac;
-	
-	
-	double A;               // line cross-sectional area to pre-compute
-	
+
 	// degrees of freedom (or states)
 	double r6 [6];          // Rod 6dof position [x/y/z/u1/u2/u3] (end A coordinates and direction unit vector)
 	double v6 [6];	        // Rod 6dof velocity[vx/vy/vz/wx/wy/wz] (end A velocity and rotational velocities about unrotated axes)
-	
-	
+
 	// kinematics
 	double **r;             // node positions [i][x/y/z]
 	double **rd;            // node velocities [i][x/y/z]
 	double q[3];      	    // unit tangent vector for rod
 	double *l; 		        // line unstretched segment lengths
-	
+
 	double ***M;            // node mass + added mass matrix
 	//double Mext[3];         // net moment from attached lines at either end <<< should rename to be clearly moment not mass
 	double *V;              // line segment volume	
@@ -87,7 +83,7 @@ class Rod
 	double FextB[3];              // external forces from attached lines on/about end A 
 	double MextA[3];              // external moments from attached lines on/about end A 
 	double MextB[3];              // external moments from attached lines on/about end B
-				
+
 	// forces 
 	double **W;             // node weight 	
 	double **Dp;            // node drag (transverse)
@@ -96,32 +92,30 @@ class Rod
 	double **Aq;            // node added mass forcing (axial)
 	double **B;             // node bottom contact force	
 	double **Fnet;          // total force on node  <<<<<<< might remove this for Rods
-		
+
 	// wave things
 	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	double *zeta;           // free surface elevation
 	double **U;             // wave velocities	
 	double **Ud;            // wave accelerations
 
-	
 	// time
 	double t;               // simulation time
 	double t0;              // simulation time current integration was started at (used for BC function)
 	double r_ves[6]; 		// fairlead position for coupled rods [x/y/z]
 	double rd_ves[6];		// fairlead velocity for coupled rods [x/y/z]
-	double tlast;
-		
+
 	// motion component vectors (declaring these here as they caused problems if declared in the loop)
 	double vi[3];           // relative velocity
 	double vp[3];           // transverse component of relative velocity
 	double vq[3];           // axial component of relative velocity
 	double ap[3];           // transverse component of absolute acceleration - HAD TO MOVE THIS UP FROM LOWER DOWN (USED TO CRASH AFTER I=3)
 	double aq[3];           // axial component of absolute acceleration
-		
+
 	// file stuff
 	ofstream * outfile;     // if not a pointer, caused odeint system initialization error during compilation
 	string channels;
-	
+
 	// data structures for precalculated nodal water kinematics if applicable
 	double **zetaTS;        // time series of wave elevations above each node
 	double **FTS;
@@ -129,7 +123,6 @@ class Rod
 	double ***UdTS;
 	int ntWater;            // number of water kinematics time steps
 	double dtWater;         // water kinematics time step size (s)
-
 
 public:
 	/** @brief Types of rods

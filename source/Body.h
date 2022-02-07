@@ -64,25 +64,20 @@ class Body
 	double t0; 					// simulation time current integration was started at (used for BC function)
 	double r_ves[6]; 		    // fairlead position for coupled bodies [x/y/z]
 	double rd_ves[6];		    // fairlead velocity for coupled bodies [x/y/z]
-	double tlast;
-		
+
 	double F6net  [6];	// total force and moment vector on node
-	double F6net_i[6];
-	double RHS6   [6];	// RHS of state-space equation (Forces divided by mass matrix)
-	
-	double S[6][6];  // inverse mass matrices (6x6) for each body
+
 	double M[6][6]; // total body mass + added mass matrix including all elements
 	double M0[6][6]; // starting mass and added mass matrix (6x6) of body without any rod elements in inertital orientation
 	
 	double OrMat[9]; // orientation matrix of body (rotation matrix that gets it to its current orientation)
-			
+
 	double  U[3];     // wave velocities at body reference point
 	double  Ud[3];     // wave accelerations
-	
-	
+
+
 	ofstream * outfile;
-	
-	
+
 public:
 
 	/** @brief Types of bodies

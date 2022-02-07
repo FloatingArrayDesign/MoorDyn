@@ -437,7 +437,6 @@ void Waves::setup(EnvCond *env)
 		
 		
 		double zetaRMS = 0.0; // <<<<<<<<<< should print these and other stats as a check... <<<<<<
-		double zetaCRMS = 0.0;
 		
 		
 		// copy wave elevation time series into input vector (could bypass this <<<<)
@@ -466,7 +465,6 @@ void Waves::setup(EnvCond *env)
 		// copy frequencies over from FFT output (should try to bypass this copy operation too <<<)
 		for (int i=0; i<nw; i++)  {
 			zetaC0[i] = cx_out_w[i].r + i1*(cx_out_w[i].i);
-			zetaCRMS += norm(zetaC0[i]);
 		}
 		
 		// cut frequencies above 0.5 Hz (2 s) to avoid FTT noise getting amplified when moving to other points in the wave field... <<<<
