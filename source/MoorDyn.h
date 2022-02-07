@@ -53,7 +53,7 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename);
  * MoorDyn_Step() can be known using this function
  * @return The number of coupled DOF, 0 if errors are detected
  */
-unsigned int DECLDIR MoorDyn_NCoupledDOF();
+unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system);
 
 /** @brief Compute the initial condition of a MoorDyn system
  * 
@@ -84,7 +84,7 @@ int DECLDIR MoorDyn_Init(MoorDyn system, const double *x, const double *xd);
  * required for \p x, \p xd and \p f
  */
 int DECLDIR MoorDyn_Step(MoorDyn system, const double *x, const double *xd,
-                         double *f, double &t, double &dt);
+                         double *f, double *t, double *dt);
 
 /** @brief Releases MoorDyn allocated resources
  * @param system The Moordyn system

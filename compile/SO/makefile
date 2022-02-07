@@ -67,7 +67,7 @@ test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so ../../s
 	g++ $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
 
 test: test_minimal test_quasi_static_chain
-#	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_quasi_static_chain
 
 debug: CFLAGS += -g -DDEBUG=1

@@ -41,6 +41,14 @@
 #endif
 #endif
 
+#ifndef __PRETTY_FUNC_NAME__
+#ifdef WIN32
+#define __PRETTY_FUNC_NAME__   __FUNCSIG__
+#else
+#define __PRETTY_FUNC_NAME__   __PRETTY_FUNCTION__
+#endif
+#endif
+
 #ifndef XSTR
 #define XSTR(s) STR(s)
 #endif
