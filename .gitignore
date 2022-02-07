@@ -4,6 +4,9 @@
 *.class
 *.o
 *.so
+compile/SO/*.so.*
+*.dll
+*.exe
 
 # Packages #
 ############
