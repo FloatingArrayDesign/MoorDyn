@@ -182,7 +182,7 @@ bool minimal()
  * @return 0 if the tests have ran just fine. The index of the failing test
  * otherwise
  */
-int main(int argc, char** argv)
+int main(int, char**)
 {
     if (!old_api::bad_input_file())
         return 1;

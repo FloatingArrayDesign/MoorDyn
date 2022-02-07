@@ -257,7 +257,7 @@ bool validation(const char* depth, const char* motion)
  * @param argv Unused
  * @return 0 if the tests have ran just fine, 1 otherwise
  */
-int main(int argc, char** argv)
+int main(int, char**)
 {
     for (auto depth : DEPTHS)
     {
