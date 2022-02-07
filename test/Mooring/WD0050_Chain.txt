@@ -20,10 +20,8 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1025.0        WtrDnsty             water density (kg/m^3)
 50            WtrDpth              water depth (m)
 1.0           dtIC                 time interval for analyzing convergence during IC gen (s)
-100.0         TmaxIC               max time for ic gen (s)
+200.0         TmaxIC               max time for ic gen (s)
 4.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
 1.0e-3        threshIC             threshold for IC convergence (-)
 0.5           FrictionCoefficient  general bottom friction coefficient, as a start (-)
-10.0          FricDamp             a damping coefficient used to model the friction at speeds near zero
-1.0           StatDynFricScale     a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
 ------------------------- need this line -------------------------------------- 

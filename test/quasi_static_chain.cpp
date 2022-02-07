@@ -15,8 +15,7 @@
  */
 
 /** @file minimal.cpp
- * Minimal tests that only checks the library is correctly initialized,
- * running and closing
+ * Validation against Orcaflex
  */
 
 #include "MoorDyn.h" 
@@ -194,7 +193,6 @@ bool validation(const char* depth, const char* motion)
         const double fanch_ref = 2.0 * (1.e3 * ref_data[i_ref][4] - fanch_ref0);
         if (fabs(ffair - ffair_ref) > ef_value)
         {
-            cout << "t = " << t << ", fair = " << ffair << " - " << ffair_ref << endl;
             ef_time = t;
             ef_value = fabs(ffair - ffair_ref);
         }

@@ -22,6 +22,6 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1.0           dtIC                 time interval for analyzing convergence during IC gen (s)
 200.0         TmaxIC               max time for ic gen (s)
 4.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
-1.0e-6        threshIC             threshold for IC convergence (-)
+1.0e-3        threshIC             threshold for IC convergence (-)
 0.5           FrictionCoefficient  Coulomb friction between the line and the seabed (-)
 ------------------------- need this line -------------------------------------- 
