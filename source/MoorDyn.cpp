@@ -2896,8 +2896,7 @@ int DECLDIR MoorDyn_DrawWithGL(MoorDyn system)
  *  @{
  */
 
-#ifndef LINUX
-#ifndef OSX
+#ifdef WIN32
 
 /// Console handle
 int hConHandle;
@@ -2909,7 +2908,6 @@ char const* PromptPtr;
 /// 0 if the system console is used, 1 if the console has been created by us
 int OwnConsoleWindow = 0;
 
-#endif
 #endif
 
 /**
@@ -2930,8 +2928,7 @@ MoorDyn md_singleton = NULL;
 
 int DECLDIR MoorDynInit(const double x[], const double xd[], const char *infilename)
 {
-#ifndef LINUX
-#ifndef OSX
+#ifdef WIN32
 	// ------------ create console window for messages if none already available -----------------
 	// adapted from Andrew S. Tucker, "Adding Console I/O to a Win32 GUI App" in Windows Developer Journal, December 1997. source code at http://dslweb.nwnexus.com/~ast/dload/guicon.htm
 
@@ -2979,7 +2976,6 @@ int DECLDIR MoorDynInit(const double x[], const double xd[], const char *infilen
 		cout << "(MoorDyn-initiated console window)" << endl;
 	}
 #endif
-#endif
 
 	MoorDyn instance = MoorDyn_Create(infilename);
 	if (!instance)
@@ -3017,14 +3013,12 @@ int DECLDIR MoorDynClose(void)
 	md_singleton = NULL;
 	cout << "   MoorDyn closed." << endl;
 
-#ifndef OSX	
-#ifndef LINUX	
+#ifdef WIN32
 	if (OwnConsoleWindow == 1)  {
 		cout << "press enter to close: " << endl;
 		cin.get();
 		FreeConsole();
 	}
-#endif
 #endif
 
 	return 0;

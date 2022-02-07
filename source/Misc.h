@@ -42,9 +42,7 @@
 
 #ifdef OSX
  #include <sys/uio.h>
-#elif defined LINUX
-
-#else
+#elif defined WIN32
  #include <windows.h>  // these are for guicon function RedirectIOToConsole
  #include <io.h>
 #endif

@@ -24,10 +24,8 @@ extern "C"
 {
 #endif
 
-#ifndef OSX
-#ifndef LINUX
-    #include <Windows.h>
-#endif
+#ifdef WIN32
+    #include <windows.h>
 #endif
 
 

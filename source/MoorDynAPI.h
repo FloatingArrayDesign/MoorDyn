@@ -18,13 +18,17 @@
 #define __MOORDYNAPI_H__
 
 #ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
-	#ifndef LINUX
+	#ifdef WIN32
 		#define DECLDIR __declspec(dllexport)
 	#else
 		#define DECLDIR 
 	#endif
 #else
-	#define DECLDIR //__declspec(dllimport)
+	#ifdef WIN32
+		#define DECLDIR //__declspec(dllimport)
+	#else
+		#define DECLDIR 
+	#endif
 #endif
 
 #if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
@@ -34,7 +38,7 @@
 #endif
 
 #ifndef __FUNC_NAME__
-#ifdef WIN32
+#if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
 #define __FUNC_NAME__   __FUNCTION__  
 #else
 #define __FUNC_NAME__   __func__ 
@@ -42,7 +46,7 @@
 #endif
 
 #ifndef __PRETTY_FUNC_NAME__
-#ifdef WIN32
+#if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
 #define __PRETTY_FUNC_NAME__   __FUNCSIG__
 #else
 #define __PRETTY_FUNC_NAME__   __PRETTY_FUNCTION__
