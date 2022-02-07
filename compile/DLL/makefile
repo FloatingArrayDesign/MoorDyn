@@ -1,8 +1,18 @@
-# makefile for MoorDyn v2 compiled as libmoordyn2.dll
-# optional compile def:  USEGL
+# makefile for MoorDyn compiled as libmoordyn2.dll (so it can be linked with
+# -lmoordyn2)
+#
+# The following targets are provided:
+#
+# all: Builds the library libmoordyn2.dll
+#
+# test: Build libmoordyn2.dll, if not yet built, and then the tests:
+#        - test_minimal
+#        - test_quasi_static_chain
+#
+# debug: Build both targets, "all" and "test", with debug information
 
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -fPIC
-CFLAGS = -c -O3 -g -Wall -Wextra -fPIC -DMoorDyn_EXPORTS
+CFLAGS = -c -O3 -g -Wall -Wextra -DMoorDyn_EXPORTS -fPIC
 
 ifdef USEGL
 CFLAGS += -DUSEGL

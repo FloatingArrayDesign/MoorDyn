@@ -1,5 +1,5 @@
-# makefile for MoorDyn compiled as libmoordyn.so.2.0.0, and creating a convenient symbolic
-# link as libmoordyn.so (so it can be linked with -lmoordyn)
+# makefile for MoorDyn compiled as libmoordyn.so.2.0.0, and linked as
+# libmoordyn.so (so it can be linked with -lmoordyn)
 #
 # The following targets are provided:
 #
@@ -8,12 +8,13 @@
 #
 # test: Build libmoordyn.so, if not yet built, and then the tests:
 #        - test_minimal
+#        - test_quasi_static_chain
 #
-# debug: Build both targets, all and test, with debug information
+# debug: Build both targets, "all" and "test", with debug information
 
 
-LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -DLINUX -fPIC
-CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -fPIC -DMoorDyn_EXPORTS
+LFLAGS = -shared -static-libgcc -static-libstdc++ -DLINUX -DMoorDyn_EXPORTS -fPIC
+CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC
 
 ifdef USEGL
 CFLAGS += -DUSEGL
