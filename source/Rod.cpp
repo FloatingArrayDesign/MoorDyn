@@ -794,7 +794,7 @@ int Rod::getStateDeriv(double* Xd)
 	
 	// calculate forces and added mass for each node (including those from lines attached to ends)
 	double Fnet_out[6] = {0.0};    // total force vector
-	double M_out6[6][6] = {0.0};  // total mass matrix
+	double M_out6[6][6] = {{0.0}};  // total mass matrix
 	
 	getNetForceAndMass(NULL, Fnet_out, M_out6);  // call doRHS and sum each node's contributions about end A
 	
@@ -1137,14 +1137,14 @@ void Rod::doRHS()
 			for (int J=0; J<3; J++)  vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
 			
 			for (int J=0; J<3; J++) 
-			{	
+			{
 				vq[J] = dotProd( vi , q ) * q[J]; 	// tangential relative flow component
 				vp[J] = vi[J] - vq[J];					// transverse relative flow component
-				vq_squared += vq[J]*vq[J];
-				vp_squared += vp[J]*vp[J];
+				vq_squared += vq[J] * vq[J];
+				vp_squared += vp[J] * vp[J];
 			}
 			double vp_mag = sqrt(vp_squared);
-			double vq_mag = sqrt(vp_squared);
+			double vq_mag = sqrt(vq_squared);
 			
 			// transverse drag		
 			if (i==0) 		
