@@ -1303,10 +1303,10 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				obj->type = entries[0];
 				obj->d = atof(entries[1].c_str());
 				obj->w = atof(entries[2].c_str());
-				obj->Cdn = atof(entries[6].c_str());
-				obj->Can = atof(entries[7].c_str());
-				obj->Cdt = atof(entries[8].c_str());
-				obj->Cat = atof(entries[9].c_str());
+				obj->Cdn = atof(entries[3].c_str());
+				obj->Can = atof(entries[4].c_str());
+				obj->Cdt = atof(entries[5].c_str());
+				obj->Cat = atof(entries[6].c_str());
 
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << obj->type << "'"
 					<< " - with id " << _rod_props.size() << endl;
