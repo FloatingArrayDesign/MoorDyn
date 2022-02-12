@@ -26,7 +26,7 @@ using namespace std;
 
 
 
-// ================== Line member functions ===========================
+// ================== Rod member functions ===========================
 
 
 // set up Rod object  
@@ -73,7 +73,9 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 		V   = make1Darray(1);          // segment volume?
 		
 		// forces 
-		W   = make2Darray(N+1, 3);     // node weights
+		W   = make2Darray(N+1, 3);     // node dry weights
+		Bo  = make2Darray(N+1, 3);     // node buoyancy 
+		Pd  = make2Darray(N+1, 3);     // dynamic pressure
 		Dp  = make2Darray(N+1, 3);     // node drag (transverse)
 		Dq  = make2Darray(N+1, 3);     // node drag (axial)
 		Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
@@ -84,6 +86,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 		// wave things
 		F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
 		zeta= make1Darray(N+1);        // wave elevation above each node
+		PDyn= make1Darray(N+1);        // dynamic pressure
 		U   = make2Darray(N+1, 3);     // wave velocities
 		Ud  = make2Darray(N+1, 3);     // wave accelerations
 		
@@ -144,6 +147,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 		// wave things
 		F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
 		zeta= make1Darray(N+1);        // wave elevation above each node
+		PDyn= make1Darray(N+1);        // dynamic pressure
 		U   = make2Darray(N+1, 3);     // wave velocities
 		Ud  = make2Darray(N+1, 3);     // wave accelerations
 		
@@ -400,7 +404,7 @@ void Rod::initializeRod(double* X )
 	//if (-env->WtrDpth > r[0][2]) {
 	//	cout << "   Error: water depth is shallower than Line " << number << " anchor." << endl;
 	//	return;
-	//}
+	//
 	
 	
 	// set water kinematics flag based on global wave and current settings (for now)
@@ -918,7 +922,7 @@ void Rod::getFnet(double Fnet_out[])
 	
 	// add any moments applied from lines at either end (might be zero)
 	for (int J=0; J<3; J++)
-		Fnet_out[J+3] = Fnet_out[J+3] + MextA[J] + MextB[J];
+		Fnet_out[J+3] = Fnet_out[J+3] + Mext[J];
 	
 	//  this is where we'd add inertial loads for coupled rods! <<<<<<<<<<<<
 	
@@ -951,7 +955,31 @@ void Rod::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6
 	else
 		for (int J=0; J<3; J++)
 			rRef[J] = rBody[J];
+		
+	// NEW APPROACH:  (6 DOF properties now already summed in doRHS)
 	
+	// shift everything from end A reference to rRef reference point
+	double rRel[3];     // position of a given node relative to the body reference point (global orientation frame)
+	
+	for (int J=0; J<3; J++)  
+		rRel[J] = r[0][J] - rRef[J];                // vector from reference point to end A            
+	 
+	translateForce3to6DOF(rRel, F6net, Fnet_out);   // shift net forces
+	
+	for (int J=3; J<6; J++)
+		Fnet_out[J] += F6net[J];                    // add in the existing moments
+	 
+	translateMass6to6DOF(rRel, M6net, M_out);       // shift mass matrix to be about ref point
+	 
+	// >>> do we need to ensure zero moment is passed if it's pinned? <<<
+	//if (abs(Rod%typeNum)==1) then
+	//   Fnet_out(4:6) = 0.0_DbKi
+	//end if
+	
+	
+	
+	// >>> OLD APPROACH:
+	/*
 	// now go through each node's contributions, put them in body ref frame, and sum them
 	for (int i=0; i<=N; i++)
 	{		
@@ -984,7 +1012,10 @@ void Rod::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6
 	
 	// add any moments applied from lines at either end (might be zero)
 	for (int J=0; J<3; J++)
-		Fnet_out[J+3] = Fnet_out[J+3] + MextA[J] + MextB[J];
+		Fnet_out[J+3] = Fnet_out[J+3] + Mext[J];
+	
+	*/
+	
 	
 	return;
 }
@@ -1004,6 +1035,19 @@ void Rod::doRHS()
 //	FairConnect->getFnet(FconnB);
 //	AnchConnect->getM(MconnA);
 //	FairConnect->getM(MconnB);
+
+	double phi, beta, sinPhi, cosPhi, tanPhi, sinBeta, cosBeta; // various orientation things
+	
+	double Lsum = 0.0;
+
+    // ---------------------------- initial rod and node calculations ------------------------
+
+    // calculate some orientation information for the Rod as a whole
+    GetOrientationAngles(r[0], r[N], &phi, &sinPhi, &cosPhi, &tanPhi, &beta, &sinBeta, &cosBeta);
+ 
+    // save to internal roll and pitch variables for use in output <<< should check these, make Euler angles isntead of independent <<<
+    roll  = -180.0/pi * phi*sinBeta;
+    pitch =  180.0/pi * phi*cosBeta;
 
 	// set interior node positions and velocities (stretch the nodes between the endpoints linearly) (skipped for zero-length Rods)
 	for (int i=1; i<N; i++)
@@ -1044,6 +1088,7 @@ void Rod::doRHS()
 		for (int i=0; i<=N; i++)
 		{
 			zeta[i] = zetaTS[i][it] + frac*( zetaTS[i][it+1] - zetaTS[i][it] );			
+			PDyn[i] = 0.0;  // this option is out of date <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<		
 			F[i] = 1.0;   // FTS[i][it] + frac*(FTS[i][it+1] - FTS[i][it]);
 			
 			for (int J=0; J<3; J++)
@@ -1057,7 +1102,7 @@ void Rod::doRHS()
 	{		
 		for (int i=0; i<=N; i++)
 		{
-			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i]); // call generic function to get water velocities
+			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i], &PDyn[i]); // call generic function to get water velocities
 			
 			// >>> add Pd variable for dynamic pressure, which will be applied on Rod surface
 			
@@ -1068,73 +1113,84 @@ void Rod::doRHS()
 		cout << "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
 
 	
-	// ========================= calculate buoyancy of submerged portion only ===================
+	// >>> remember to check for violated conditions, if there are any... <<<
+           
+	double zeta_i = zeta[N];    // just use the wave elevation computed at the location of the top node for now
+
+	if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i))  // check if it's crossing the water plane (should also add some limits to avoid near-horizontals at some point)
+		h0 = (zeta_i - r[0][2])/q[2];              // distance along rod centerline from end A to the waterplane
+	else if (r[0][2] < zeta_i)
+		h0 = UnstrLen;                             // fully submerged case   <<<<<< remove the 2.0 and double check there are no if statements that get changed <<<<
+	else
+		h0 = 0.0;                                  // fully unsubmerged case (ever applicable?)
 	
 	
 	
-	//============================================================================================
-	
-	
-    // calculate mass matrix   <<<< can probably simplify/eliminate this...
-	for (int i=0; i<=N; i++) 
+	// -------------------------- loop through all the nodes -----------------------------------
+    for (int i=0; i<=N; i++) 
 	{
+		// calculate mass matrix   <<<< can probably simplify/eliminate this...
+		double dL;  // segment length corresponding to the node
 		double m_i; // node mass
 		double v_i; // node submerged volume 
+		double Area = 0.25*pi*d*d;
 		
 		if (i==0) 
-		{
-			m_i = pi/8.*d*d*l[0]*rho;   //  (will be zero for zero-length Rods)
-			v_i = 1./2. *F[i]*V[i];
+		{	dL = 0.5*l[i];
+			m_i = Area*dL*rho;   //  (will be zero for zero-length Rods)
+			v_i = 0.5 *F[i]*V[i];
 		}
 		else if (i==N) 
-		{
-			m_i = pi/8.*d*d*l[N-2]*rho;
-			v_i = 1./2. *F[i-1]*V[i-1];
+		{	dL = 0.5*l[i-1];
+			m_i = Area*dL*rho;
+			v_i = 0.5 *F[i-1]*V[i-1];
 		}
 		else
-		{
-			m_i = pi/8.*( d*d*rho*(l[i] + l[i-1]));
-			v_i = 1./2. *(F[i-1]*V[i-1] + F[i]*V[i]);
+		{	dL = 0.5*(l[i-1] + l[i]);
+			m_i = Area*dL*rho;
+			v_i = 0.5 *(F[i-1]*V[i-1] + F[i]*V[i]);   // <<< remove F term here and above 2 cases??
 		}
 		
+		// get scalar for submerged portion
+		double VOF; 
+		if (Lsum + dL <= h0)        // if fully submerged 
+			VOF = 1.0;
+		else if (Lsum < h0)     // if partially below waterline 
+			VOF = (h0 - Lsum)/dL;
+		else                        // must be out of water
+			VOF = 0.0;
+		
+		Lsum = Lsum + dL;            // add length attributed to this node to the total
+		
 		// make node mass matrix  (will be zero for zero-length Rods)
-		for (int I=0; I<3; I++) {
-			for (int J=0; J<3; J++) { 
-				M[i][I][J] = m_i*eye(I,J) + env->rho_w*v_i *( Can*(eye(I,J) - q[I]*q[J]) + Cat*q[I]*q[J] );					
-			}
-		}		
+		for (int I=0; I<3; I++)
+			for (int J=0; J<3; J++)
+				M[i][I][J] = m_i*eye(I,J) + env->rho_w*v_i *( Can*(eye(I,J) - q[I]*q[J]) + Cat*q[I]*q[J] );
 		
 		// mass matrices will be summed up before inversion, near end of this function
-	}
-	
 
-	// ============  CALCULATE FORCES ON EACH NODE ===============================
+		// ============  CALCULATE FORCES ON EACH NODE ===============================
 	
-	if (N > 0)   // this is only nonzero for finite-length rods (skipped for zero-length Rods)
-	{  //<<< should put this if statement inside one larger i=0:N for loop, and use v_i etc. for efficiency! <<<
-
-		// loop through the nodes
-		for (int i=0; i<=N; i++)
+		if (N > 0)   // this is only nonzero for finite-length rods (skipped for zero-length Rods)
 		{
 			// note: no nodal axial structural loads calculated since it's assumed rigid, but should I calculate tension/compression due to other loads?
 
-			// submerged weight (including buoyancy)
-			if (i==0)
-				W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env->rho_w) )*(-env->g);     // (will be zero for zero-length Rods)
-			else if (i==N)
-				W[i][2] = pi/8.*( d*d*l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
-			else
-				W[i][2] = pi/8.*( d*d*l[i]*(rho-F[i]*env->rho_w) + d*d*l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
-					
-					
-			// buoyancy and dynamic pressure term
-					
-					
+			// weight (now only the dry weight)
+			W[i][2] = m_i*(-env->g);
+
+			// buoyance (now calculated based on outside pressure, for submerged portion only)
+			// radial buoyancy force from sides
+			double Ftemp = -VOF * Area*dL * env->rho_w * env->g * sinPhi;
+			Bo[i][0] =  Ftemp*cosBeta*cosPhi;
+			Bo[i][1] =  Ftemp*sinBeta*cosPhi;
+			Bo[i][2] = -Ftemp*sinPhi;
+
 			// flow velocity calculations       
 			double vq_squared = 0.;
 			double vp_squared = 0.;
 			
-			for (int J=0; J<3; J++)  vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
+			for (int J=0; J<3; J++)  
+				vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
 			
 			for (int J=0; J<3; J++) 
 			{
@@ -1146,22 +1202,9 @@ void Rod::doRHS()
 			double vp_mag = sqrt(vp_squared);
 			double vq_mag = sqrt(vq_squared);
 			
-			// transverse drag		
-			if (i==0) 		
-				for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env->rho_w*Cdn* (F[i]*d*l[i])/2. * vp_mag * vp[J]; 
-			else if (i==N) 
-				for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env->rho_w*Cdn* (F[i-1]*d*l[i-1])/2. * vp_mag * vp[J]; 
-			else 
-				for (int J=0; J<3; J++)  Dp[i][J] = 1./2.*env->rho_w*Cdn* (F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vp_mag * vp[J]; 
-			
-			// tangential drag		
-			if (i==0)
-				for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env->rho_w*Cdt* pi*(F[i]*d*l[i])/2. * vq_mag * vq[J]; 
-			else if (i==N)
-				for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env->rho_w*Cdt* pi*(F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
-			else
-				for (int J=0; J<3; J++)  Dq[i][J] = 1./2.*env->rho_w*Cdt* pi*(F[i]*d*l[i] + F[i-1]*d*l[i-1])/2. * vq_mag * vq[J]; 
-					
+			// transverse and tangential drag		
+			for (int J=0; J<3; J++)  Dp[i][J] = VOF * 0.5*env->rho_w*Cdn*    d*dL * vp_mag * vp[J];
+			for (int J=0; J<3; J++)  Dq[i][J] = VOF * 0.5*env->rho_w*Cdt* pi*d*dL * vq_mag * vq[J]; 
 			
 			// fluid acceleration components for current node				
 			for (int J=0; J<3; J++)  {
@@ -1169,76 +1212,132 @@ void Rod::doRHS()
 				ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
 			}
 			
-			// transverse Froude-Krylov force
-			if (i==0)	
-				for (int J=0; J<3; J++)  Ap[i][J] = env->rho_w*(1.+Can)*0.5*( V[i]) * ap[J]; 
-			else if (i==N)
-				for (int J=0; J<3; J++)  Ap[i][J] = env->rho_w*(1.+Can)*0.5*(V[i-1] ) * ap[J]; 
-			else
-				for (int J=0; J<3; J++)  Ap[i][J] = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] ) * ap[J]; 
+			// transverse and axial Froude-Krylov force
+			for (int J=0; J<3; J++)  Ap[i][J] = VOF * env->rho_w*(1.+Can)* v_i * ap[J]; 
+			for (int J=0; J<3; J++)  Aq[i][J] = 0.0;  // VOF * env->rho_w*(1.+Cat)* v_i * aq[J]; <<< should anything here be included?
 			
-			// tangential Froude-Krylov force					
-			if (i==0)	
-				for (int J=0; J<3; J++)  Aq[i][J] = env->rho_w*(1.+Cat)*0.5*( V[i]) * aq[J]; 
-			else if (i==N)
-				for (int J=0; J<3; J++)  Aq[i][J] = env->rho_w*(1.+Cat)*0.5*( V[i-1] ) * aq[J]; 
-			else
-				for (int J=0; J<3; J++)  Aq[i][J] = env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] ) * aq[J]; 
-			
-			// bottom contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
+            // dynamic pressure
+            for (int J=0; J<3; J++)  Pd[i][J] = 0.0;  // assuming zero for sides for now, until taper comes into play
+            
+			// seabed contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
 			if (r[i][2] < -env->WtrDpth)
-			{
-				if (i==0)
-					B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*(          d*l[i-1] );
-				else if (i==N)
-					B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( d*l[i]            );
-				else
-					B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( d*l[i] + d*l[i-1] );
-				
-				// new rough-draft addition of seabed friction
-				//double FrictionCoefficient = 0.5;                  // just using one coefficient to start with          
-				double FrictionMax = abs(B[i][2])*env->FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
-				// saturated damping approach to applying friction, for now
-				double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
-				double FrictionForce = BottomVel * env->FrictionCoefficient*env->FricDamp; // some arbitrary damping scaling thing at end
-				if (FrictionForce > env->StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
-				// apply force in correct directions -- opposing direction of motion
-				 // could add ifs in here to handle end nodes
-				B[i][0] = -FrictionForce*rd[i][0]/BottomVel;
-				B[i][1] = -FrictionForce*rd[i][1]/BottomVel;
-			}
-			else 
-			{
-				B[i][0] = 0.;
-				B[i][1] = 0.;
-				B[i][2] = 0.;
+				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * d*dL;
+			else  
+			{	B[i][0] = 0.0;
+				B[i][1] = 0.0;
+				B[i][2] = 0.0;
 			}	
-			
-			// total forces summation
-			if (i==0)
-				for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
-			else if (i==N)                          
-				for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
-			else                                   
-				for (int J=0; J<3; J++) Fnet[i][J] = W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J];
-			
 		}
-	}
-	else
-	{	// for zero-length rods, just ensure the net force from the Rod itself is set to zero
-		for (int J=0; J<3; J++) Fnet[0][J] = 0.0;
-	}	
+		else
+		{	// for zero-length rods, make sure various forces are zero
+			for (int J=0; J<3; J++)
+			{	W[ i][J] = 0.0;
+				Bo[i][J] = 0.0;
+				Dp[i][J] = 0.0;
+				Dq[i][J] = 0.0;
+				Ap[i][J] = 0.0;
+				Aq[i][J] = 0.0;
+				Pd[i][J] = 0.0;
+				B[ i][J] = 0.0;
+			}
+		}	
+			
+			
+		// ------ now add forces, moments, and added mass from Rod end effects (these can exist even if N==0) -------
+         
+		// end A
+		if ((i==0) && (h0 > 0.0))    // if this is end A and it is submerged 
+		{
+			// >>> eventually should consider a VOF approach for the ends    hTilt = 0.5*Rod%d/cosPhi <<<
+         
+            // buoyancy force
+            double Ftemp = -VOF * Area * env->rho_w*env->g * r[i][2];
+            Bo[i][0] +=  Ftemp*cosBeta*sinPhi; 
+            Bo[i][1] +=  Ftemp*sinBeta*sinPhi; 
+            Bo[i][2] +=  Ftemp*cosPhi;
+         
+            // buoyancy moment
+            double Mtemp = -VOF * 1.0/64.0*pi*pow(d, 4) * env->rho_w*env->g * sinPhi;
+            Mext[0] +=  Mtemp*sinBeta;
+            Mext[1] += -Mtemp*cosBeta;
+            Mext[2] +=  0.0;
+         
+            // axial drag
+            for (int J=0; J<3; J++) 
+				Dq[i][J] += VOF * Area * env->rho_w * Cdt * vq_mag * vq[J];
+         
+            // Froud-Krylov force
+			for (int J=0; J<3; J++)
+				Aq[i][J] += VOF * env->rho_w*(1.0+Cat)* (2.0/3.0*pi* pow(d,3) /8.0) * aq[J];
+            
+            // dynamic pressure force
+			for (int J=0; J<3; J++)
+				Pd[i][J] += VOF * Area * PDyn[i] * q[J];
+            
+            // added mass
+			for (int I=0; I<3; I++) 
+				for (int J=0; J<3; J++) 
+					M[i][I][J] += VOF * env->rho_w * (2.0/3.0*pi*pow(d,3)/8.0) * Cat*q[I]*q[J]; 
+		}
+		 
+		if ((i==N) && (h0 >= UnstrLen))  // if this end B and it is submerged (note, if N=0, both this and previous if statement are true)
+		{
+            // buoyancy force
+            double Ftemp = VOF * Area * env->rho_w*env->g * r[i][2];
+            Bo[i][0] +=  Ftemp*cosBeta*sinPhi; 
+            Bo[i][1] +=  Ftemp*sinBeta*sinPhi; 
+            Bo[i][2] +=  Ftemp*cosPhi;
+         
+            // buoyancy moment
+            double Mtemp = VOF * 1.0/64.0*pi*pow(d, 4) * env->rho_w*env->g * sinPhi;
+            Mext[0] +=  Mtemp*sinBeta;
+            Mext[1] += -Mtemp*cosBeta;
+            Mext[2] +=  0.0;
+         
+            // axial drag
+            for (int J=0; J<3; J++) 
+				Dq[i][J] += VOF * Area * env->rho_w * Cdt * vq_mag * vq[J];
+         
+            // Froud-Krylov force
+			for (int J=0; J<3; J++)
+				Aq[i][J] += VOF * env->rho_w*(1.0+Cat)* (2.0/3.0*pi* pow(d,3) /8.0) * aq[J];
+            
+            // dynamic pressure force
+			for (int J=0; J<3; J++)
+				Pd[i][J] += (-VOF * Area * PDyn[i] * q[J]);
+            
+            // added mass
+			for (int I=0; I<3; I++) 
+				for (int J=0; J<3; J++) 
+					M[i][I][J] += VOF * env->rho_w * (2.0/3.0*pi*pow(d,3)/8.0) * Cat*q[I]*q[J]; 
+		}
+			
+			
+		// ----------------- total forces for this node --------------------
+		
+		for (int J=0; J<3; J++) 
+			Fnet[i][J] = W[i][J] + Bo[i][J] + Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J] + Pd[i][J] + B[i][J];
 	
+	
+	} // i - done looping through nodes
+
+
+	// ----- add waterplane moment of inertia moment if applicable -----
+    if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i))  // check if it's crossing the water plane
+	{  	double Mtemp = 1.0/16.0 *pi* pow(d,4) * env->rho_w * env->g * sinPhi * (1.0 + 0.5* tanPhi*tanPhi);
+		Mext[0] +=  Mtemp*sinBeta;
+		Mext[1] += -Mtemp*cosBeta;
+		Mext[2] +=  0.0;
+    }
+	  
 	
 	// ============ now add in forces on end nodes from attached lines =============
 	
 	// zero the external force/moment sums (important!)
 	for (int I=0; I<3; I++) 
-	{	
-		FextA[I] = 0.0;
+	{	FextA[I] = 0.0;
 		FextB[I] = 0.0;  
-		MextA[I] = 0.0;
-		MextB[I] = 0.0;
+		Mext[ I] = 0.0;
 	}
 	
 	// loop through lines attached to end A
@@ -1247,7 +1346,7 @@ void Rod::doRHS()
 		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
 		
 		// get quantities
-      AttachedA[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopA[l]);
+		AttachedA[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopA[l]);
 			
 		// Process outline for line failure, similar to as done for connections (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if failure time has elapsed for line
@@ -1257,16 +1356,14 @@ void Rod::doRHS()
 			
 		// sum quantitites
 		for (int I=0; I<3; I++) 
-      {
+		{
 			Fnet[0][I] += Fnet_i[I];    // forces
-			FextA[I]   += Fnet_i[I];
-			MextA[I]   += Mnet_i[I];    // moments
-         
-         for (int J=0; J<3; J++) 
-            M[0][I][J] += M_i[I][J]; // mass matrix
-         
-		}
+			FextA[I]   += Fnet_i[I];    // a copy for outputting totalled line loads
+			Mext[I]    += Mnet_i[I];    // moments
 		
+			for (int J=0; J<3; J++) 
+				M[0][I][J] += M_i[I][J]; // mass matrix
+        }
 	}
 	
 	// loop through lines attached to end B
@@ -1275,19 +1372,113 @@ void Rod::doRHS()
 		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0}; double M_i[3][3] = {{0.0}};
 		
 		// get quantities
-      AttachedB[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopB[l]);
+		AttachedB[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopB[l]);
 	
-      // sum quantitites
+		// sum quantitites
 		for (int I=0; I<3; I++) 
-      {
-         Fnet[N][I] += Fnet_i[I];    // forces
-			FextB[I]   += Fnet_i[I];
-			MextB[I]   += Mnet_i[I];    // moments
+		{
+			Fnet[N][I] += Fnet_i[I];    // forces
+			FextB[I]   += Fnet_i[I];    // a copy for outputting totalled line loads
+			Mext[I]    += Mnet_i[I];    // moments
          
-         for (int J=0; J<3; J++) 
-            M[N][I][J] += M_i[I][J]; // mass matrix
+			for (int J=0; J<3; J++) 
+				M[N][I][J] += M_i[I][J]; // mass matrix
 		}
 	}
+	
+	
+	// ---------------- now lump everything in 6DOF about end A -----------------------------
+
+	// question: do I really want to neglect the rotational inertia/drag/etc across the length of each segment?
+   
+	// make sure 6DOF quantiaties are zeroed before adding them up
+	for (int J=0; J<6; J++)
+	{	F6net[J] = 0.0;
+		for (int K=0; K<6; K++)
+			M6net[J][K] = 0.0;
+	}
+
+	// now go through each node's contributions, put them about end A, and sum them
+	for (int i=0; i<=N; i++)
+	{
+		double rRel[3];                   // position of a given node relative to end A node
+		double F6_i[6];     // 6dof force-moment from rod about body ref point (but global orientation frame of course)
+		double M6_i[6][6];  // mass matrix of each rod to be added		
+		double M_dub[3][3]; // 3x3 node mass matrix needed for passing to transformation function
+		for (int J=0; J<3; J++) 
+			for (int K=0; K<3; K++) 
+				M_dub[J][K] = M[i][J][K];
+				
+		for (int J=0; J<3; J++)
+			rRel[J] = r[i][J] - r[0][J];  // vector from reference end A to node      
+
+		// convert segment net force into 6dof force about end A
+		translateForce3to6DOF(rRel, Fnet[i], F6_i);
+
+		// convert segment mass matrix to 6by6 mass matrix about end A
+		translateMass3to6DOF(rRel, M_dub, M6_i);
+			  
+		// sum contributions	 
+		for (int J=0; J<6; J++)
+		{
+			F6net[J] += F6_i[J]; // add force to total force vector
+			
+			for (int K=0; K<6; K++)
+				M6net[J][K] += M6_i[J][K];  // add element mass matrix to body mass matrix
+		}
+	}
+
+
+	// ------------- Calculate some items for the Rod as a whole here -----------------
+
+	// >>> could some of these be precalculated just once? <<<
+	
+	double mass = UnstrLen*0.25*pi*pi*rho;   // rod total mass, used to help with making generic inertia coefficients
+		
+	// add inertia terms for the Rod assuming it is uniform density (radial terms add to existing matrix which contains parallel-axis-theorem components only)
+	double I_l = 0.125*mass * d*d;                                 // axial moment of inertia
+	double I_r = mass/12.0 * (0.75*d*d + pow(UnstrLen/N,2)) *N;    // summed radial moment of inertia for each segment individually
+
+	double Imat_l[3][3] = {{0.0}};    // inertia about Rod CG in local orientations (as if Rod is vertical)
+	Imat_l[0][0] = I_r;  
+	Imat_l[1][1] = I_r;
+	Imat_l[2][2] = I_l;
+
+	// get rotation matrix to put things in global rather than rod-axis orientations
+	double OrMat[9];
+	double OrMat2[3][3];
+	double Imat[3][3];
+	RotMat(phi, beta, 0.0, OrMat);     // calculate an orientation matrix for the Rod
+	for (int I=0; I<3; I++) for (int J=0; J<3; J++) OrMat2[I][J]=OrMat[3*I+J];	// convert DCM formats (should really make this more consistent throughout MD)
+	rotateM3(Imat_l, OrMat2, Imat);     // rotate to give inertia matrix about CG in global frame
+
+	// these supplementary inertias can then be added the matrix (these are the terms ASIDE from the parallel axis terms)
+	for (int J=0; J<3; J++)
+		for (int K=0; K<3; K++)
+			M6net[J+3][K+3] += Imat[J][K];
+
+	// now add centripetal and gyroscopic forces/moments, and that should be everything
+	/*
+	double h_c = 0.5*UnstrLen;          // distance to center of mass
+	double r_c[3];
+	for (int J=0; J<3; J++)
+		r_c[J] = h_c*q[J];                 // vector to center of mass
+
+	// note that Rod%v6(4:6) is the rotational velocity vector, omega   
+	for (int J=0; J<3; J++)
+	{	Fcentripetal[J] = 0.0; //<<<TEMP<<< -cross_product(Rod%v6(4:6), cross_product(Rod%v6(4:6), r_c ))*Rod%mass <<<
+		Mcentripetal[J] = 0.0; //<<<TEMP<<< cross_product(r_c, Fcentripetal) - cross_product(Rod%v6(4:6), MATMUL(Imat,Rod%v6(4:6)))
+	}
+	*/
+	
+	// add centripetal force/moment, gyroscopic moment, and any moments applied from lines at either end (might be zero)
+	for (int J=0; J<3; J++)
+	{	//F6net[J] += Fcentripetal[J] 
+		F6net[J] += Mext[J]; // + Mcentripetal[J] 
+	}
+	// Note: F6net saves the Rod's net forces and moments (excluding inertial ones) for use in later output
+	//       (this is what the rod will apply to whatever it's attached to, so should be zero moments if pinned).
+	//       M6net saves the rod's mass matrix.
 	
 	return;
 }
@@ -1350,6 +1541,8 @@ Rod::~Rod()
 	
 	// forces        
 	free2Darray(W   , N+1);    
+	free2Darray(Bo  , N+1);    
+	free2Darray(Pd  , N+1);    
 	free2Darray(Dp  , N+1);    
 	free2Darray(Dq  , N+1);    
 	free2Darray(Ap  , N+1);    
@@ -1360,16 +1553,20 @@ Rod::~Rod()
 	// wave things   
 	free(F   );       
 	free(zeta);       
+	free(PDyn);       
 	free2Darray(U   , N+1);    
 	free2Darray(Ud  , N+1);    
 	
 	// wave time series vectors (may never have been used)
 	if (ntWater > 0)
-	{	free2Darray(zetaTS, N+1);
+	{
+		free2Darray(zetaTS, N+1);
 		free2Darray(FTS   , N+1);
 		free3Darray(UTS   , N+1, ntWater);
 		free3Darray(UdTS  , N+1, ntWater);
 	}
+	
+	return;
 }
 
 

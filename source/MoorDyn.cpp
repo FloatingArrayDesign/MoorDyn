@@ -2640,6 +2640,14 @@ moordyn::error_id MoorDynSystem::AllOutput(double t, double dt)
 
 MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 {
+	// ---------------------------- MoorDyn title message ----------------------------
+	cout << endl
+		<< " Running MoorDyn (v2.a11, 2022-01-03)" << endl
+		<< "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl
+		<< "         MoorDyn v2 has significant ongoing input file changes from v1." << endl
+		<< "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl
+		<< "   This program is released under the GNU General Public License v3." << endl;
+
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	MoorDynSystem *instance = NULL;

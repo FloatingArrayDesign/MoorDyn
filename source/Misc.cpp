@@ -367,6 +367,48 @@ double GetCurvature(double length, double q1[3], double q2[3])
 }
 
 
+// calculate orientation angles of a cylindrical object
+void GetOrientationAngles(double p1[3], double p2[3], double* phi, double* sinPhi, double* cosPhi, 
+                          double* tanPhi, double* beta, double* sinBeta, double* cosBeta)
+{
+    // p1 and p2 are the end A and end B coordinate of the rod
+	
+    double vec[3];
+	double vecLen;
+	double vecLen2D;
+	double k_hat[3]; // output unit vector no longer used <<<
+
+	// calculate isntantaneous incline angle and heading, and related trig values
+	// the first and last NodeIndx values point to the corresponding Joint nodes idices which are at the start of the Mesh
+	for (int i=0; i<3; i++)  vec[i] = p2[i] - p1[i];   
+	
+	vecLen   = sqrt(dotProd(vec,vec));
+	vecLen2D = sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
+	if ( vecLen < 0.000001 )  {
+		cout << "ERROR in GetOrientationAngles in MoorDyn" << endl;
+		cout << p1 << endl;
+		cout << p2 << endl;
+		k_hat[0] = 1.0/0.0;
+	}
+	else  { 
+		for (int i=0; i<3; i++)  k_hat[i] = vec[i] / vecLen; 
+		*phi   = atan2(vecLen2D, vec[2]);   // incline angle   
+	}
+	if ( *phi < 0.000001)  
+		*beta = 0.0;
+	else
+		*beta = atan2(vec[1], vec[0]);    // heading of incline     
+	
+	*sinPhi  = sin(*phi);
+	*cosPhi  = cos(*phi);
+	*tanPhi  = tan(*phi); 
+	*sinBeta = sin(*beta);
+	*cosBeta = cos(*beta);
+		
+	return;
+}
+
+
 // split a string into separate letter strings and integers
 int decomposeString(char outWord[10], char let1[10], 
      char num1[10], char let2[10], char num2[10], char let3[10])

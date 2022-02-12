@@ -137,6 +137,7 @@ void Waves::allocateKinematicsArrays()
 	if ((nx > 0) && (ny > 0) && (nz > 0) && (nt > 0))
 	{
 		zeta = make3Darray(nx,ny,nt);
+		PDyn = make4Darray(nx,ny,nz,nt);
 		ux   = make4Darray(nx,ny,nz,nt);
 		uy   = make4Darray(nx,ny,nz,nt);
 		uz   = make4Darray(nx,ny,nz,nt);
@@ -156,6 +157,8 @@ void Waves::setup(EnvCond *env)
 	//WaveKin = env_in.WaveKin;
 	
 	dtWave = env->dtWave;
+	rho_w = env->rho_w;
+	g     = env->g;
 	
 	
 	// ------------------- start with wave kinematics -----------------------
@@ -473,12 +476,6 @@ void Waves::setup(EnvCond *env)
 				zetaC0[i] = 0.0;
 			
 		
-		// free things up  (getting errors here! suggests heap corruption elsewhere?)
-		free(cx_in_t);
-		free(cx_out_w);
-		free(cfg);
-
-		if (wordy > 1) cout << "freed" << endl;
 		
 	
 		// ---------------- calculate wave kinematics throughout the grid --------------------
@@ -486,6 +483,14 @@ void Waves::setup(EnvCond *env)
 		makeGrid(); // make a grid for wave kinematics based on settings in water_grid.txt
 	
 		fillWaveGrid(zetaC0, nw, dw, env->g, env->WtrDpth );
+		
+		// free things up  (getting errors here! suggests heap corruption elsewhere?)
+		free(cx_in_t);
+		free(cx_out_w);
+		free(cfg);
+		free(zetaC0);
+		
+		if (wordy > 1) cout << "freed" << endl;
 		
 	}
 	
@@ -591,9 +596,9 @@ void Waves::setup(EnvCond *env)
 			allocateKinematicsArrays();
 			
 			// fill in output arrays
+			zeta[0][0][0]    = 0.0;
 			for (int i=0; i<nz; i++)
-			{
-				zeta[0][0][0]    = 0.0;
+			{	PDyn[0][0][i][0] = 0.0;
 				ux  [0][0][i][0] = UProfileUx[i];
 				uy  [0][0][i][0] = 0.0; //UProfileUy[i];   <<<<<<<    temporary hack
 				uz  [0][0][i][0] = 0.0; //UProfileUz[i];   <<<<<<<   
@@ -628,6 +633,7 @@ void Waves::setup(EnvCond *env)
 					}
 				}
 			}
+			free(pzin);
 			
 		}
 		
@@ -739,7 +745,8 @@ void Waves::setup(EnvCond *env)
 				
 		}
 		if (wordy > 1) cout << "   Done reading file. " << endl;
-		
+		free(pzin);
+		free(tin);
 		
 		// ------------- check data ----------------
 		
@@ -791,6 +798,7 @@ void Waves::setup(EnvCond *env)
 					getInterpNums(tin, ntin, it*dtWave, fti, iti); // note this is an alternative form of this function
 
 					zeta[0][0][it]     = 0.0;
+					PDyn[0][0][iz][it] = 0.0;
 					ux  [0][0][iz][it] = Uxin[iti[0]][iz]*fti[0] + Uxin[iti[1]][iz]*fti[1];
 					uy  [0][0][iz][it] = Uyin[iti[0]][iz]*fti[0] + Uyin[iti[1]][iz]*fti[1];
 					uz  [0][0][iz][it] = Uzin[iti[0]][iz]*fti[0] + Uzin[iti[1]][iz]*fti[1];
@@ -841,7 +849,8 @@ void Waves::setup(EnvCond *env)
 
 // master function to get wave/water kinematics at a given point -- called by each object fro grid-based data
 void Waves::getWaveKin(double x, double y, double z, double PARAM_UNUSED t,
-                       double U[3], double Ud[3], double* zeta_out)
+                       double U[3], double Ud[3], double* zeta_out,
+                       double* PDyn_out)
 {
 	
 	double fx, fy, fz, ft;          // interpolation fractions
@@ -858,6 +867,8 @@ void Waves::getWaveKin(double x, double y, double z, double PARAM_UNUSED t,
 	
 	*zeta_out  = calculate3Dinterpolation(zeta, ix, iy, it, fx, fy, ft);
 	
+	*PDyn_out  = calculate4Dinterpolation(PDyn, ix, iy, iz, it, fx, fy, fz, ft);
+	
 	U[0]  = calculate4Dinterpolation(ux, ix, iy, iz, it, fx, fy, fz, ft);
 	U[1]  = calculate4Dinterpolation(uy, ix, iy, iz, it, fx, fy, fz, ft);
 	U[2]  = calculate4Dinterpolation(uz, ix, iy, iz, it, fx, fy, fz, ft);
@@ -869,39 +880,6 @@ void Waves::getWaveKin(double x, double y, double z, double PARAM_UNUSED t,
 	return;
 }
 	
-	
-	
-
-// function to clear any remaining data allocations in Waves <<<<<<<<<<< (should these be in all objects?)
-Waves::~Waves()
-{
-	// TODO: clear everything <<<<<<
-}
-
-
-
-// perform a real-valued IFFT using kiss_fftr
-void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar* cx_out_t, doubleC *inputs, double *outputs)
-{
-	
-	int nw = nFFT/2 + 1;
-
-	for (int I=0; I<nw; I++)  
-	{	                                    // copy frequency-domain data into input vector (simpler way to do this, or bypass altogether? <<<)
-		cx_in_w[I].r = real(inputs[I]);       // real component - kiss_fft likes floats
-		cx_in_w[I].i = imag(inputs[I]);       // imaginary component
-	}
-	
-	// do the IFFT
-	kiss_fftri(cfg, cx_in_w, cx_out_t); // kiss_fftri(kiss_fftr_cfg cfg,const kiss_fft_cpx *freqdata,kiss_fft_scalar *timedata);
-	
-	
-	// copy out the IFFT data to the time series
-	for (int I=0; I<nFFT; I++) 
-		outputs[I] = cx_out_t[I] /(double)nFFT;     // is dividing by nFFT correct? (prevously was nw) <<<<<<<<<<<
-	
-	return;
-}
 
 
 // NEW - instantiator that takes discrete wave elevation fft data only (MORE RECENT)
@@ -918,6 +896,7 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 	vector< double > k(nw, 0.);	
 	
 	doubleC *zetaC = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of wave elevation
+	doubleC *PDynC = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of dynamic pressure
 	doubleC *UCx   = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of wave velocities
 	doubleC *UCy   = (doubleC*) malloc(nw*sizeof(doubleC));
 	doubleC *UCz   = (doubleC*) malloc(nw*sizeof(doubleC));
@@ -1002,35 +981,43 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 				for (int I=0; I<nw; I++)  // Loop through the positive frequency components (including zero) of the Fourier transforms
 				{
 
-					// Calculate SINH( k*( z + h ) )/SINH( k*h ) and COSH( k*( z + h ) )/SINH( k*h )
+					// Calculate SINH( k*( z + h ) )/SINH( k*h ) and COSH( k*( z + h ) )/SINH( k*h ) 
+					// and COSH( k*( z + h ) )/COSH( k*h )
 					// given the wave number, k, water depth, h, and elevation z, as inputs.
 					double SINHNumOvrSIHNDen;
 					double COSHNumOvrSIHNDen;
+					double COSHNumOvrCOSHDen;
 					
 					if (    k[I]   == 0.0  )  					// When .TRUE., the shallow water formulation is ill-conditioned; thus, the known value of unity is returned.
 					{	SINHNumOvrSIHNDen = 1.0;
 						COSHNumOvrSIHNDen = 99999;
+						COSHNumOvrCOSHDen = 99999;
 					}
 					else if ( k[I]*h >  89.4 )  				// When .TRUE., the shallow water formulation will trigger a floating point overflow error; however, with h > 14.23*wavelength (since k = 2*Pi/wavelength) we can use the numerically-stable deep water formulation instead.
 					{	SINHNumOvrSIHNDen = exp(  k[I]*z );
 						COSHNumOvrSIHNDen = exp(  k[I]*z );
+						COSHNumOvrCOSHDen = exp(  k[I]*z ) + exp( -k[I]*( z + 2.0*h ));
 					}
 					else if (-k[I]*h >  89.4 )    					// @mth: added negative k case
 					{	SINHNumOvrSIHNDen = -exp( -k[I]*z );
 						COSHNumOvrSIHNDen = -exp( -k[I]*z );
+						COSHNumOvrCOSHDen = -exp( -k[I]*z ) + exp( -k[I]*( z + 2.0*h ));  // <<< CHECK CORRECTNESS <<< 
 					}
 					else                          // 0 < k*h <= 89.4; use the shallow water formulation.
 					{	SINHNumOvrSIHNDen = sinh( k[I]*( z + h ) )/sinh( k[I]*h );
 						COSHNumOvrSIHNDen = cosh( k[I]*( z + h ) )/sinh( k[I]*h );
+						COSHNumOvrCOSHDen = cosh( k[I]*( z + h ) )/cosh( k[I]*h );
 					}
 
+					
+					// Fourier transform of dynamic pressure
+					PDynC[I] = rho_w*g* zetaC[I]*COSHNumOvrCOSHDen;
 
 					// Fourier transform of wave velocities 
 					// (note: need to multiply by abs(w) to avoid inverting negative half of spectrum) <<< ???
-					UCx[I] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen *cos(beta); 
-					UCy[I] =      w[I]* zetaC[I]*COSHNumOvrSIHNDen *sin(beta);
+					UCx[I] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen *cos(beta); 
+					UCy[I] =     w[I]* zetaC[I]*COSHNumOvrSIHNDen *sin(beta);
 					UCz[I] = i1* w[I]* zetaC[I]*SINHNumOvrSIHNDen;
-
 
 					// Fourier transform of wave accelerations					
 					UdCx[I] = i1*w[I]*UCx[I];	// should confirm correct signs of +/- halves of spectrum here
@@ -1043,11 +1030,13 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 				
 				//cout << "about to call IFFT " << ix << " " << iy << " " << iz << endl;
 			
+				// IFFT the dynamic pressure
+				doIFFT(cfg, nFFT, cx_in_w, cx_out_t, PDynC, PDyn[ix][iy][iz]);
+				
 				// IFFT the wave velocities
 				doIFFT(cfg, nFFT, cx_in_w, cx_out_t, UCx, ux[ix][iy][iz]);
 				doIFFT(cfg, nFFT, cx_in_w, cx_out_t, UCy, uy[ix][iy][iz]);
 				doIFFT(cfg, nFFT, cx_in_w, cx_out_t, UCz, uz[ix][iy][iz]);
-				
 				
 				// IFFT the wave accelerations
 				doIFFT(cfg, nFFT, cx_in_w, cx_out_t, UdCx, ax[ix][iy][iz]);
@@ -1103,6 +1092,16 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 	free(cx_out_t);
 	free(cfg);
 	
+	// free complex vectors
+	free(zetaC);
+	free(PDynC);
+	free(UCx  );
+	free(UCy  );
+	free(UCz  );
+	free(UdCx );
+	free(UdCy );
+	free(UdCz ); 
+	
 	
 	if (wordy>1) 
 		cout << "    done wave Kinematics" << endl;
@@ -1157,6 +1156,48 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 }
 
 
+// function to clear any remaining data allocations in Waves
+Waves::~Waves()
+{
+	// clear everything 
+	free(px);
+	free(py);
+	free(pz);
+	
+	free(zeta);
+	free(PDyn);
+	free(ux  );
+	free(uy  );
+	free(uz  );
+	free(ax  );
+	free(ay  );
+	free(az  );
+}
+
+
+
+// perform a real-valued IFFT using kiss_fftr
+void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar* cx_out_t, doubleC *inputs, double *outputs)
+{
+	
+	int nw = nFFT/2 + 1;
+
+	for (int I=0; I<nw; I++)  
+	{	                                    // copy frequency-domain data into input vector (simpler way to do this, or bypass altogether? <<<)
+		cx_in_w[I].r = real(inputs[I]);       // real component - kiss_fft likes floats
+		cx_in_w[I].i = imag(inputs[I]);       // imaginary component
+	}
+	
+	// do the IFFT
+	kiss_fftri(cfg, cx_in_w, cx_out_t); // kiss_fftri(kiss_fftr_cfg cfg,const kiss_fft_cpx *freqdata,kiss_fft_scalar *timedata);
+	
+	
+	// copy out the IFFT data to the time series
+	for (int I=0; I<nFFT; I++) 
+		outputs[I] = cx_out_t[I] /(double)nFFT;     // is dividing by nFFT correct? (prevously was nw) <<<<<<<<<<<
+	
+	return;
+}
 
 // calculate wave number from frequency, g, and depth (credit: FAST source)
 double WaveNumber( double Omega, double g, double h )
