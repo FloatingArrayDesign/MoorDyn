@@ -100,6 +100,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	// wave things
 	F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
 	zeta= make1Darray(N+1);        // wave elevation above each node
+	PDyn= make1Darray(N+1);        // dynamic pressure
 	U   = make2Darray(N+1, 3);     // wave velocities
 	Ud  = make2Darray(N+1, 3);     // wave accelerations
 	
@@ -896,7 +897,7 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	{		
 		for (int i=0; i<=N; i++)
 		{
-			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i]); // call generic function to get water velocities
+			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i], &PDyn[i]); // call generic function to get water velocities
 			
 			F[i] = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
 		}
@@ -1409,6 +1410,7 @@ Line::~Line()
 	// wave things   
 	free(F   );       
 	free(zeta);       
+	free(PDyn);       
 	free2Darray(U   , N+1);    
 	free2Darray(Ud  , N+1);    
 		

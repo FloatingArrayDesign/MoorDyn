@@ -282,9 +282,9 @@ This section (optional) describes the 6DOF body objects to be simulated.
 .. code-block:: none
 
  ---------------------- BODIES ---------------------------------------
- ID   Attachment  X0     Y0    Z0     r0      p0     y0     Mass  CG*   I*      Volume   CdA*   Ca
- (#)     (-)      (m)    (m)   (m)   (deg)   (deg)  (deg)   (kg)  (m)  (kg-m^2)  (m^3)   (m^2)  (-)
- 1    coupled      0     0      0     0       0      0       0     0     0        0       0      0
+ ID   Attachment  X0     Y0    Z0     r0      p0     y0     Mass  CG*   I*      Volume   CdA*   Ca*
+ (#)   (word)     (m)    (m)   (m)   (deg)   (deg)  (deg)   (kg)  (m)  (kg-m^2)  (m^3)   (m^2)  (-)
+ 1     coupled     0     0      0     0       0      0       0     0     0        0       0      0
  
 
 Rods list
@@ -296,7 +296,7 @@ This section (optional) describes the rigid Rod objects
 
  ---------------------- RODS ----------------------------------------
  ID   RodType  Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs  RodOutputs
- (#)  (name)    (#/key)    (m)   (m)   (m)   (m)   (m)   (m)  (-)       (-)
+ (#)  (name)   (word/ID)   (m)   (m)   (m)   (m)   (m)   (m)  (-)       (-)
  1      Can      Body1      0     0     2     0     0     15   8         p
  2      Can   Body1Pinned   2     0     2     5     0     15   8         p
  
@@ -309,11 +309,11 @@ This section (optional) describes the Point objects
 .. code-block:: none
 
  ---------------------- POINTS ---------------------------------------
- ID    Type      X       Y     Z       Mass   Volume  CdA    Ca
- (#)   (-)       (m)     (m)   (m)     (kg)   (mˆ3)   (m^2)  (-)
- 1     Fixed     -500    0     -150    0      0       0      0
- 4     Coupled   0       0     -9      0      0       0      0
- 11    Body2     0       0     1.0     0      0       0      0
+ ID   Attachment  X       Y     Z      Mass   Volume  CdA    Ca
+ (#)   (word/ID) (m)     (m)   (m)    (kg)   (mˆ3)   (m^2)  (-)
+ 1     Fixed      -500    0     -150    0      0       0      0
+ 4     Coupled    0       0     -9      0      0       0      0
+ 11    Body2      0       0     1.0     0      0       0      0
  
  
 Lines list
@@ -325,8 +325,8 @@ This section (optional) describes the Line objects, typically used for mooring l
 
  ---------------------- LINES ----------------------------------------
  ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
- (#)   (name)     (#)      (#)       (m)       (-)     (-)
- 1     Chain       1        2        300       20       p
+ (#)   (name)     (ID)     (ID)      (m)       (-)      (-)
+ 1     Chain       1        2        300        20       p
 									  
 
 Options
@@ -365,6 +365,23 @@ needs to end with another header-style line (as shown below) for the program to 
  AnchTen3
  END
  ------------------------- need this line -------------------------------------
+
+General output suffixes
+
+========         ======================== =======  =====  =====  =====  =====
+Suffix           Description              Units    Node   Point  Rod    Body
+========         ======================== =======  =====  =====  =====  =====
+PX/PY/PZ         Position coordinates     [m]      X      X      X      X
+VX/VY/VZ         Velocity components      [m/s]    X      X      X      X
+Ax/Ay/AZ         Acceleration components  [m/s^2]  X      X      X      X
+T                Tension or net force     [N]      X      X      X      X
+Fx/Fy/Fz         Force components         [N]      X      X      X      X
+Roll/Pitch/Yaw   Orientation angles       [deg]                  X      X
+Sub              Fraction of submergence  [0-1]                  X      
+========         ======================== =======  =====  =====  =====  =====
+
+
+
 
 
 

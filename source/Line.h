@@ -96,6 +96,7 @@ class Line
 	// wave things
 	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	double *zeta;           // free surface elevation
+	double *PDyn;           // dynamic pressure
 	double **U;             // wave velocities	
 	double **Ud;            // wave accelerations	
 	

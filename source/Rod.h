@@ -85,11 +85,14 @@ class Rod
 	double *V;              // line segment volume	
 	double FextA[3];              // external forces from attached lines on/about end A 
 	double FextB[3];              // external forces from attached lines on/about end A 
-	double MextA[3];              // external moments from attached lines on/about end A 
-	double MextB[3];              // external moments from attached lines on/about end B
+	double Mext[3];         // external moments (from attached cables or waterplane hydrostatic moment) 
+	double F6net[6];        // total force and moment about end A (excluding inertial loads) that Rod may exert on whatever it's attached to
+	double M6net[6][6];     // total mass matrix about end A of Rod and any attached Points
 				
 	// forces 
-	double **W;             // node weight 	
+	double **W;             // node dry weight 	
+	double **Bo;            // node buoyancy 	
+	double **Pd;            // dynamic pressure
 	double **Dp;            // node drag (transverse)
 	double **Dq;            // node drag (axial)
 	double **Ap;            // node added mass forcing (transverse)
@@ -100,9 +103,10 @@ class Rod
 	// wave things
 	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	double *zeta;           // free surface elevation
+	double *PDyn;           // dynamic pressure
 	double **U;             // wave velocities	
 	double **Ud;            // wave accelerations
-
+	double h0;				// instantaneous axial submerged length [m]
 	
 	// time
 	double t;               // simulation time
@@ -135,6 +139,9 @@ public:
  	int number; // rod "number" id
 	int type;  // 	0: free to move; 1: pinned; 2: attached rigidly (positive if to something, negative if coupled)
 //	int pinned;      // flag indicating of Rod end A is pinned (1) or free (0/default). Triggered by setting BodyToAddTO to -1.
+	
+	double roll;
+	double pitch;
 	
 	int WaterKin;  // flag indicating whether wave/current kinematics will be considered for this linec
 	// 0: none, or use value set externally for each node of the object; 1: interpolate from stored; 2: call interpolation function from global Waves grid

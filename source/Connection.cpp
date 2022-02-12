@@ -603,7 +603,7 @@ int Connection::doRHS()
 	}
 	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
 	{	
-		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, &zeta); // call generic function to get water velocities
+		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, &zeta, &PDyn); // call generic function to get water velocities
 		
 		//F = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
 	

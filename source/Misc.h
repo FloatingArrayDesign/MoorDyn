@@ -267,6 +267,9 @@ void getInterpNums(double *xlist, int nx, double xin, double fout[2], int iout[2
 
 double GetCurvature(double length, double q1[3], double q2[3]);
 
+void GetOrientationAngles(double p1[3], double p2[3], double* phi, double* sinPhi, double* cosPhi, 
+                          double* tanPhi, double* beta, double* sinBeta, double* cosBeta);
+
 int decomposeString(char outWord[10], char let1[10], 
      char num1[10], char let2[10], char num2[10], char let3[10]);
 
