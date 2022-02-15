@@ -134,19 +134,19 @@ public:
 
 	/** @brief Get the connections
 	 */
-	inline vector<Body*> GetBodies() const { return _bodies; }
+	inline vector<Body*> GetBodies() const { return BodyList; }
 
 	/** @brief Get the connections
 	 */
-	inline vector<Rod*> GetRods() const { return _rods; }
+	inline vector<Rod*> GetRods() const { return RodList; }
 
 	/** @brief Get the connections
 	 */
-	inline vector<Connection*> GetConnections() const { return _connections; }
+	inline vector<Connection*> GetConnections() const { return ConnectionList; }
 
 	/** @brief Get the lines
 	 */
-	inline vector<Line*> GetLines() const { return _lines; }
+	inline vector<Line*> GetLines() const { return LineList; }
 
 
 	/** @brief Return the number of coupled Degrees Of Freedom (DOF)
@@ -166,11 +166,11 @@ public:
 	 */
 	inline unsigned int NCoupedDOF() const
 	{
-		unsigned int n = 6 * _bodies_coupled_map.size() +
-		                 3 * _connections_coupled_map.size();
-		for (auto rodi : _rods_coupled_map)  
+		unsigned int n = 6 * CpldBodyIs.size() +
+		                 3 * CpldConIs.size();
+		for (auto rodi : CpldRodIs)
 		{
-			if (_rods[rodi]->type == -2)
+			if (RodList[rodi]->type == -2)
 				n += 6;  // cantilevered rods
 			else
 				n += 3;  // pinned rods
@@ -180,31 +180,31 @@ public:
 
 	/** @brief Initializes the external Wave kinetics
 	 *
-	 * This is only used if _env.WaveKin > 0
+	 * This is only used if env.WaveKin > 0
 	 * @return The number of points where the wave kinematics shall be provided
 	 */
 	inline unsigned int ExternalWaveKinInit()
 	{
-		_n_points_W = 0;
+		npW = 0;
 		
-		for (auto line : _lines)
-			_n_points_W += line->getN() + 1;
+		for (auto line : LineList)
+			npW += line->getN() + 1;
 
 		// allocate arrays to hold data that could be passed in
-		_U1      = make1Darray(3 * _n_points_W);
-		_Ud1     = make1Darray(3 * _n_points_W);
-		_U2      = make1Darray(3 * _n_points_W);
-		_Ud2     = make1Darray(3 * _n_points_W);
+		U_1      = make1Darray(3 * npW);
+		Ud_1     = make1Darray(3 * npW);
+		U_2      = make1Darray(3 * npW);
+		Ud_2     = make1Darray(3 * npW);
 
 		// initialize with zeros for safety
-		_t_W1 = 0.0;
-		_t_W2 = 0.0;
-		memset(_U1, 0.0, 3 * _n_points_W * sizeof(double));
-		memset(_Ud1, 0.0, 3 * _n_points_W * sizeof(double));
-		memset(_U2, 0.0, 3 * _n_points_W * sizeof(double));
-		memset(_Ud2, 0.0, 3 * _n_points_W * sizeof(double));
+		tW_1 = 0.0;
+		tW_2 = 0.0;
+		memset(U_1, 0.0, 3 * npW * sizeof(double));
+		memset(Ud_1, 0.0, 3 * npW * sizeof(double));
+		memset(U_2, 0.0, 3 * npW * sizeof(double));
+		memset(Ud_2, 0.0, 3 * npW * sizeof(double));
 
-		return _n_points_W;
+		return npW;
 	}
 
 	/** @brief Get the points where the waves kinematics shall be provided
@@ -216,7 +216,7 @@ public:
 	inline moordyn::error_id GetWaveKinCoordinates(double *r) const
 	{
 		unsigned int i = 0;
-		for (auto line : _lines)
+		for (auto line : LineList)
 		{
 			line->getNodeCoordinates(r + 3 * i);
 			i += line->getN() + 1;
@@ -247,7 +247,7 @@ public:
 			return MOORDYN_INVALID_VALUE;
 		}
 
-		if (!_U1 || !_U2 || !_Ud1 || !_Ud2)
+		if (!U_1 || !U_2 || !Ud_1 || !Ud_2)
 		{
 			Cout(MOORDYN_ERR_LEVEL) << "Error: Memory not allocated."
 				<< " Have you called MoorDynSystem::ExternalWaveKinInit()?"
@@ -256,15 +256,15 @@ public:
 		}
 
 		// set time stamp
-		_t_W2 = _t_W1;
-		_t_W1 = t;
+		tW_2 = tW_1;
+		tW_1 = t;
 
-		for (unsigned int i = 0; i < 3 * _n_points_W; i++)
+		for (unsigned int i = 0; i < 3 * npW; i++)
 		{
-			_U2[i] = _U1[i];
-			_Ud2[i] = _Ud1[i];
-			_U1[i] = U[i];
-			_Ud1[i] = Ud[i];
+			U_2[i] = U_1[i];
+			Ud_2[i] = Ud_1[i];
+			U_1[i] = U[i];
+			Ud_1[i] = Ud[i];
 		}
 		return MOORDYN_SUCCESS;
 	}
@@ -294,22 +294,22 @@ protected:
 		if (!f)
 			return MOORDYN_INVALID_VALUE;
 		unsigned int ix = 0;
-		for (auto l : _bodies_coupled_map)
+		for (auto l : CpldBodyIs)
 		{
-			_bodies[l]->getFnet(f + ix);
+			BodyList[l]->getFnet(f + ix);
 			ix += 6;
 		}
-		for (auto l : _rods_coupled_map)
+		for (auto l : CpldRodIs)
 		{
-			_rods[l]->getFnet(f + ix);
-			if (_rods[l]->type == -2)
+			RodList[l]->getFnet(f + ix);
+			if (RodList[l]->type == -2)
 				ix += 6;  // for cantilevered rods 6 entries will be taken
 			else
 				ix += 3;  // for pinned rods 3 entries will be taken
 		}
-		for (auto l : _connections_coupled_map)
+		for (auto l : CpldConIs)
 		{
-			_connections[l]->getFnet(f + ix);
+			ConnectionList[l]->getFnet(f + ix);
 			ix += 3;
 		}
 		return MOORDYN_SUCCESS;
@@ -326,148 +326,145 @@ private:
 	int _verbosity;
 
 	// factor by which to boost drag coefficients during dynamic relaxation IC generation
-	double _ICD_factor = 5.0;
+	double ICDfac;
 	// convergence analysis time step for IC generation
-	double _ICD_dt = 1.0;
+	double ICdt;
 	// max time for IC generation
-	double _ICD_t_max = 120;
+	double ICTmax;
 	// threshold for relative change in tensions to call it converged
-	double _ICD_threshold = 0.001;
+	double ICthresh;
 	// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
-	int _wave_kin_temp = 0;
-	/// number of points that wave kinematics are input at
-	/// (if using env.WaveKin=1)
-	unsigned int _n_points_wave;
+	int WaveKinTemp;
 	/// (s) desired mooring line model time step
-	double _dt;
+	double dtM0;
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
-	double _dt_out;
+	double dtOut;
 
 	/// General options of the Mooryng system
-	EnvCond _env;
+	EnvCond env;
 	/// The ground body, which is unique
-	Body* _ground;
+	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
-	Waves *_waves = NULL;
+	Waves *waves = NULL;
 
 	/// array of pointers to hold line library types
-	vector<LineProps*> _line_props;
+	vector<LineProps*> LinePropList;
 	/// array of pointers to hold rod library types
-	vector<RodProps*> _rod_props;
+	vector<RodProps*> RodPropList;
 	/// array of pointers to hold failure condition structs
-	vector<FailProps*> _fail_props;
+	vector<FailProps*> FailList;
 	/// array of pointers to connection objects (line joints or ends)
-	vector<Body*> _bodies;
+	vector<Body*> BodyList;
 	/// array of pointers to Rod objects
-	vector<Rod*> _rods;
+	vector<Rod*> RodList;
 	/// array of pointers to connection objects (line joints or ends)
-	vector<Connection*> _connections;
+	vector<Connection*> ConnectionList;
 	/// array of pointers to line objects
-	vector<Line*> _lines;
+	vector<Line*> LineList;
 
 	/// array of starting indices for Lines in "states" array
-	vector<int> _lines_map;
+	vector<int> LineStateIs;
 	/// array of starting indices for indendent Connections in "states" array
-	vector<int> _connections_map;
+	vector<int> ConnectStateIs;
 	/// array of starting indices for independent Rods in "states" array
-	vector<int> _rods_map;
+	vector<int> RodStateIs;
 	/// array of starting indices for Bodies in "states" array
-	vector<int> _bodies_map;
+	vector<int> BodyStateIs;
 
-	/// vector of free body indices in _bodies vector
-	vector<int> _bodies_free_map;
-	/// vector of coupled/fairlead body indices in _bodies vector
-	vector<int> _bodies_coupled_map;
+	/// vector of free body indices in BodyList vector
+	vector<int> FreeBodyIs;
+	/// vector of coupled/fairlead body indices in BodyList vector
+	vector<int> CpldBodyIs;
 
-	/// vector of free rod indices in _rods vector (this includes pinned rods
+	/// vector of free rod indices in RodList vector (this includes pinned rods
 	/// because they are partially free and have states)
-	vector<int> _rods_free_map;
-	/// vector of coupled/fairlead rod indices in _rods vector
-	vector<int> _rods_coupled_map;
+	vector<int> FreeRodIs;
+	/// vector of coupled/fairlead rod indices in RodList vector
+	vector<int> CpldRodIs;
 
-	/// vector of free connection indices in _connections vector
-	vector<int> _connections_free_map;
-	/// vector of coupled/fairlead connection indices in _connections vector
-	vector<int> _connections_coupled_map;
+	/// vector of free connection indices in ConnectionList vector
+	vector<int> FreeConIs;
+	/// vector of coupled/fairlead connection indices in ConnectionList vector
+	vector<int> CpldConIs;
 
 	/// Number of used state vector components
-	unsigned int _n_states;
+	unsigned int nX;
 	/// full size of state vector array including extra space for detaching up
 	/// to all line ends, each which could get its own 6-state connect
-	/// (_n_states_extra = _n_states + 6 * 2 * _lines.size())
-	unsigned int _n_states_extra;
+	/// (nXtra = nX + 6 * 2 * LineList.size())
+	unsigned int nXtra;
 
 	/// Global state vector
-	double* _states;
+	double* states;
 	/// State vector at midpoint in the RK-2 integration scheme 
-	double* _x_temp;
+	double* xt;
 	/// Drivatives computed in the first step of the RK-2 integration scheme 
-	double* _f0;
+	double* f0;
 	/// Drivatives computed in the second step of the RK-2 integration scheme 
-	double* _f1;
+	double* f1;
 
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
-	unsigned int _n_points_W;
+	unsigned int npW;
 	/// time corresponding to the wave kinematics data
-	double _t_W1;
-	/// array of wave velocity at each of the _n_points_W points at time _t_W1
-	double* _U1;
-	/// array of wave acceleration at each of the _n_points_W points
-	double* _Ud1;
+	double tW_1;
+	/// array of wave velocity at each of the npW points at time tW_1
+	double* U_1;
+	/// array of wave acceleration at each of the npW points
+	double* Ud_1;
 	/// time corresponding to the wave kinematics data
-	double _t_W2;
-	/// array of wave velocity at each of the _n_points_W points at time _t_W2
-	double* _U2;
-	/// array of wave acceleration at each of the _n_points_W points
-	double* _Ud2;
+	double tW_2;
+	/// array of wave velocity at each of the npW points at time tW_2
+	double* U_2;
+	/// array of wave acceleration at each of the npW points
+	double* Ud_2;
 
 	/// log output file
-	ofstream _log_file;
+	ofstream outfileLog;
 
 	/// main output file
-	ofstream _out_file;
+	ofstream outfileMain;
 
 	/// a vector to hold ofstreams for each body, line or rod
-	vector<shared_ptr<ofstream>> _outfiles;
+	vector<shared_ptr<ofstream>> outfiles;
 
 	/// list of structs describing selected output channels for main out file
-	vector<OutChanProps> _out_channels;
+	vector<OutChanProps> outChans;
 
 	/** @brief Create the log file if queried, close it otherwise
 	 *
-	 * Depending on the value of _env.writeLog value, a Log file stream will
+	 * Depending on the value of env.writeLog value, a Log file stream will
 	 * be open or closed
 	 */
 	inline moordyn::error_id SetupLog()
 	{
-		if (_env.writeLog > 0)
+		if (env.writeLog > 0)
 		{
 			stringstream oname;
 			oname << _basepath << _basename << ".log";
 			Cout(MOORDYN_DBG_LEVEL) << "Creating a log file: '"
 				<< oname.str() << "'" << endl;
-			_log_file.open(oname.str());
-			if (!_log_file.is_open())
+			outfileLog.open(oname.str());
+			if (!outfileLog.is_open())
 			{
 				Cout(MOORDYN_ERR_LEVEL) << "Unable to create the log file '"
 				                        << oname.str() << "'" << endl;
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
-			_log_file << "MoorDyn v2 log file with output level "
-			          << _env.writeLog << endl
+			outfileLog << "MoorDyn v2 log file with output level "
+			          << env.writeLog << endl
 			          << "Note: options above the writeLog line in the input "
 					  << "file will not be recorded" << endl;
 			// get pointer to outfile for MD objects to use
-			_env.outfileLogPtr = & _log_file;
+			env.outfileLogPtr = & outfileLog;
 			return MOORDYN_SUCCESS;
 		}
 
-		if (_log_file.is_open())
+		if (outfileLog.is_open())
 		{
-			_env.outfileLogPtr = NULL;
-			_log_file.close();
+			env.outfileLogPtr = NULL;
+			outfileLog.close();
 		}
 
 		return MOORDYN_SUCCESS;
@@ -595,11 +592,11 @@ private:
 	inline double GetOutput(const OutChanProps channel) const
 	{
 		if (channel.OType == 1)
-			return _lines[channel.ObjID - 1]->GetLineOutput(channel);
+			return LineList[channel.ObjID - 1]->GetLineOutput(channel);
 		else if (channel.OType == 2)
-			return _connections[channel.ObjID - 1]->GetConnectionOutput(channel);
+			return ConnectionList[channel.ObjID - 1]->GetConnectionOutput(channel);
 		else if (channel.OType == 3)
-			return _rods[channel.ObjID - 1]->GetRodOutput(channel);
+			return RodList[channel.ObjID - 1]->GetRodOutput(channel);
 		stringstream s;
 		s << "Error: output type of " << channel.Name
 			<< " does not match a supported object type";
@@ -659,29 +656,28 @@ MoorDynSystem::MoorDynSystem(const char *infilename, const int verbosity)
 	, _basename("lines")
 	, _basepath("Mooring/")
 	, _verbosity(verbosity)
-	, _ICD_factor(5.0)
-	, _ICD_dt(1.0)
-	, _ICD_t_max(120.0)
-	, _ICD_threshold(0.001)
-	, _wave_kin_temp(0)
-	, _n_points_wave(0)
-	, _dt(0.001)
-	, _dt_out(0.0)
-	, _ground(NULL)
-	, _waves(NULL)
-	, _n_states(0)
-	, _n_states_extra(0)
-	, _states(NULL)
-	, _x_temp(NULL)
-	, _f0(NULL)
-	, _f1(NULL)
-	, _n_points_W(0)
-	, _t_W1(0.0)
-	, _U1(NULL)
-	, _Ud1(NULL)
-	, _t_W2(0.0)
-	, _U2(NULL)
-	, _Ud2(NULL)
+	, ICDfac(5.0)
+	, ICdt(1.0)
+	, ICTmax(120.0)
+	, ICthresh(0.001)
+	, WaveKinTemp(0)
+	, dtM0(0.001)
+	, dtOut(0.0)
+	, GroundBody(NULL)
+	, waves(NULL)
+	, nX(0)
+	, nXtra(0)
+	, states(NULL)
+	, xt(NULL)
+	, f0(NULL)
+	, f1(NULL)
+	, npW(0)
+	, tW_1(0.0)
+	, U_1(NULL)
+	, Ud_1(NULL)
+	, tW_2(0.0)
+	, U_2(NULL)
+	, Ud_2(NULL)
 {
 	if (infilename && (strlen(infilename) > 0))
 	{
@@ -703,19 +699,19 @@ MoorDynSystem::MoorDynSystem(const char *infilename, const int verbosity)
 	Cout(MOORDYN_DBG_LEVEL) << "The basename is " << _basename << endl;
 	Cout(MOORDYN_DBG_LEVEL) << "The basepath is " << _basepath << endl;
 
-	_env.g = 9.8;
-	_env.WtrDpth = 0.;
-	_env.rho_w = 1025.;
-	_env.kb = 3.0e6;
-	_env.cb = 3.0e5;
-	_env.WaveKin = 0;                // 0=none
-	_env.Current = 0;                // 0=none
-	_env.dtWave = 0.25;
-	_env.WriteUnits = 1;             // by default, write units line
-	_env.writeLog = 0;               // by default, don't write out a log file
-	_env.FrictionCoefficient = 0.0;
-	_env.FricDamp = 200.0;
-	_env.StatDynFricScale = 1.0;
+	env.g = 9.8;
+	env.WtrDpth = 0.;
+	env.rho_w = 1025.;
+	env.kb = 3.0e6;
+	env.cb = 3.0e5;
+	env.WaveKin = 0;                // 0=none
+	env.Current = 0;                // 0=none
+	env.dtWave = 0.25;
+	env.WriteUnits = 1;             // by default, write units line
+	env.writeLog = 0;               // by default, don't write out a log file
+	env.FrictionCoefficient = 0.0;
+	env.FricDamp = 200.0;
+	env.StatDynFricScale = 1.0;
 
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
@@ -723,62 +719,62 @@ MoorDynSystem::MoorDynSystem(const char *infilename, const int verbosity)
 	Cout(MOORDYN_DBG_LEVEL) << "MoorDyn is expecting " << NCoupedDOF()
 	                        << " coupled degrees of freedom" << endl;
 
-	if (!_n_states)
+	if (!nX)
 	{
 		Cout(MOORDYN_WRN_LEVEL) << "WARNING: MoorDyn has no state variables."
 		                        << " (Is there a mooring sytem?)" << endl;
 	}
 
-	_n_states_extra = _n_states + 6 * 2 * _lines.size();
+	nXtra = nX + 6 * 2 * LineList.size();
 	Cout(MOORDYN_DBG_LEVEL) << "Creating state vectors of size "
-	                        << _n_states_extra << endl;
-	_states = (double*) malloc(_n_states_extra * sizeof(double));
-	_x_temp = (double*) malloc(_n_states_extra * sizeof(double));
-	_f0 = (double*) malloc(_n_states_extra * sizeof(double));
-	_f1 = (double*) malloc(_n_states_extra * sizeof(double));
-	if (!_states || !_f0 || !_f1 || !_x_temp)
+	                        << nXtra << endl;
+	states = (double*) malloc(nXtra * sizeof(double));
+	xt = (double*) malloc(nXtra * sizeof(double));
+	f0 = (double*) malloc(nXtra * sizeof(double));
+	f1 = (double*) malloc(nXtra * sizeof(double));
+	if (!states || !f0 || !f1 || !xt)
 	{
 		MOORDYN_THROW(MOORDYN_MEM_ERROR,
 		              "Error allocating memory for state variables");
 	}
 
-	memset(_states, 0.0, _n_states_extra * sizeof(double));
-	memset(_x_temp, 0.0, _n_states_extra * sizeof(double));
-	memset(_f0, 0.0, _n_states_extra * sizeof(double));
-	memset(_f1, 0.0, _n_states_extra * sizeof(double));
+	memset(states, 0.0, nXtra * sizeof(double));
+	memset(xt, 0.0, nXtra * sizeof(double));
+	memset(f0, 0.0, nXtra * sizeof(double));
+	memset(f1, 0.0, nXtra * sizeof(double));
 }
 
 MoorDynSystem::~MoorDynSystem()
 {
-	if (_log_file.is_open())
-		_log_file.close();
-	if (_out_file.is_open())
-		_out_file.close();
-	for (auto outfile : _outfiles)  // int l=0; l<nLines; l++) 
+	if (outfileLog.is_open())
+		outfileLog.close();
+	if (outfileMain.is_open())
+		outfileMain.close();
+	for (auto outfile : outfiles)  // int l=0; l<nLines; l++)
 		if (outfile && outfile->is_open())
 			outfile->close();
 
-	delete _ground;
-	delete _waves;
-	for (auto obj : _line_props)
+	delete GroundBody;
+	delete waves;
+	for (auto obj : LinePropList)
 		delete obj;
-	for (auto obj : _rod_props)
+	for (auto obj : RodPropList)
 		delete obj;
-	for (auto obj : _fail_props)
+	for (auto obj : FailList)
 		delete obj;
-	for (auto obj : _bodies)
+	for (auto obj : BodyList)
 		delete obj;
-	for (auto obj : _rods)
+	for (auto obj : RodList)
 		delete obj;
-	for (auto obj : _connections)
+	for (auto obj : ConnectionList)
 		delete obj;
-	for (auto obj : _lines)
+	for (auto obj : LineList)
 		delete obj;
 
-	free(_states);
-	free(_x_temp);
-	free(_f0);
-	free(_f1);
+	free(states);
+	free(xt);
+	free(f0);
+	free(f1);
 }
 
 moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
@@ -795,8 +791,8 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	// Allocate past line fairlead tension array, which is used for convergence
 	// test during IC gen
 	const unsigned int convergence_iters = 10;
-	double **FairTensLast = make2Darray(_lines.size(), convergence_iters);
-	for (unsigned int i = 0; i < _lines.size(); i++)
+	double **FairTensLast = make2Darray(LineList.size(), convergence_iters);
+	for (unsigned int i = 0; i < LineList.size(); i++)
 		for (unsigned int j = 0; j < convergence_iters; j++)
 			FairTensLast[i][j] = 1.0 * j;
 
@@ -805,44 +801,44 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	Cout(MOORDYN_MSG_LEVEL) << "Creating mooring system..." << endl;
 
 	// call ground body to update all the fixed things...
-	_ground->initializeUnfreeBody(NULL, NULL, 0.0);
+	GroundBody->initializeUnfreeBody(NULL, NULL, 0.0);
 
 	// initialize coupled objects based on passed kinematics
 	int ix = 0;
 
-	for (auto l : _bodies_coupled_map)
+	for (auto l : CpldBodyIs)
 	{
 		Cout(MOORDYN_MSG_LEVEL) << "Initializing coupled Body " << l
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
 		// this calls initiateStep and updateFairlead, then initializes
 		// dependent Rods
-		_bodies[l]->initializeUnfreeBody(x + ix, xd + ix, 0.0);
+		BodyList[l]->initializeUnfreeBody(x + ix, xd + ix, 0.0);
 		ix += 6;
 	}
 
-	for (auto l : _rods_coupled_map)
+	for (auto l : CpldRodIs)
 	{
 		Cout(MOORDYN_MSG_LEVEL) << "Initializing coupled Rod " << l
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
-		_rods[l]->initiateStep(x + ix, xd + ix, 0.0);
-		_rods[l]->updateFairlead(0.0);
-		_rods[l]->initializeRod(NULL);  // call this just to set up the output file header
+		RodList[l]->initiateStep(x + ix, xd + ix, 0.0);
+		RodList[l]->updateFairlead(0.0);
+		RodList[l]->initializeRod(NULL);  // call this just to set up the output file header
 		
-		if (_rods[l]->type == -2)
+		if (RodList[l]->type == -2)
 			ix += 6;  // for cantilevered rods 6 entries will be taken
 		else
 			ix += 3;  // for pinned rods 3 entries will be taken
 	}
 
-	for (auto l : _connections_coupled_map)
+	for (auto l : CpldConIs)
 	{
 		Cout(MOORDYN_MSG_LEVEL) << "Initializing coupled Connection " << l
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
-		_connections[l]->initiateStep(x + ix, xd + ix, 0.0);
-		_connections[l]->updateFairlead(0.0);
+		ConnectionList[l]->initiateStep(x + ix, xd + ix, 0.0);
+		ConnectionList[l]->updateFairlead(0.0);
 		ix += 3;
 	}
 
@@ -850,77 +846,77 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	//  master state vector (states)
 
 	// Go through Bodys and write the coordinates to the state vector
-	for (unsigned int l = 0; l < _bodies_free_map.size(); l++)  
-		_bodies[_bodies_free_map[l]]->initializeBody(_states + _bodies_map[l]);
+	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
+		BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
 
 	// Go through independent (including pinned) Rods and write the coordinates to the state vector
-	for (unsigned int l = 0; l < _rods_free_map.size(); l++)  
-		_rods[_rods_free_map[l]]->initializeRod(_states + _rods_map[l]);
+	for (unsigned int l = 0; l < FreeRodIs.size(); l++)
+		RodList[FreeRodIs[l]]->initializeRod(states + RodStateIs[l]);
 
 	// Go through independent connections (Connects) and write the coordinates to 
 	// the state vector and set positions of attached line ends
-	for (unsigned int l = 0; l < _connections_free_map.size(); l++)  
-		_connections[_connections_free_map[l]]->initializeConnect(_states + _connections_map[l]);
+	for (unsigned int l = 0; l < FreeConIs.size(); l++)
+		ConnectionList[FreeConIs[l]]->initializeConnect(states + ConnectStateIs[l]);
 
 
 	// Lastly, go through lines and initialize internal node positions using quasi-static model
-	for (unsigned int l = 0; l < _lines.size(); l++)
-		_lines[l]->initializeLine(_states + _lines_map[l]);
+	for (unsigned int l = 0; l < LineList.size(); l++)
+		LineList[l]->initializeLine(states + LineStateIs[l]);
 
 	// ------------------ do dynamic relaxation IC gen --------------------
 	
 	Cout(MOORDYN_MSG_LEVEL) << "Finalizing ICs using dynamic relaxation ("
-	                        << _ICD_factor << "X normal drag)" << endl;
+	                        << ICDfac << "X normal drag)" << endl;
 	
 	// boost drag coefficients to speed static equilibrium convergence
-	for (auto obj : _lines)
-		obj->scaleDrag(_ICD_factor); 
-	for (auto obj : _connections)
-		obj->scaleDrag(_ICD_factor);
-	for (auto obj : _rods)
-		obj->scaleDrag(_ICD_factor);
-	for (auto obj : _bodies)
-		obj->scaleDrag(_ICD_factor);
+	for (auto obj : LineList)
+		obj->scaleDrag(ICDfac);
+	for (auto obj : ConnectionList)
+		obj->scaleDrag(ICDfac);
+	for (auto obj : RodList)
+		obj->scaleDrag(ICDfac);
+	for (auto obj : BodyList)
+		obj->scaleDrag(ICDfac);
 
 	// vector to store tensions for analyzing convergence
-	vector<double> FairTens(_lines.size(), 0.0);
+	vector<double> FairTens(LineList.size(), 0.0);
 
 	unsigned int iic = 0;
 	double t = 0;
 	bool converged = true;
 	double max_error = 0.0;
-	while (t < _ICD_t_max)
+	while (t < ICTmax)
 	{
-		// Integrate one ICD timestep (_ICD_dt)
-		double t_target = t + _ICD_dt;
+		// Integrate one ICD timestep (ICdt)
+		double t_target = t + ICdt;
 		double dt;
 		while ((dt = t_target - t) > 0.0)
 		{
-			if (_dt < dt)
-				dt = _dt;
-			const moordyn::error_id err = RK2(_states, t, dt);
+			if (dtM0 < dt)
+				dt = dtM0;
+			const moordyn::error_id err = RK2(states, t, dt);
 			if (err != MOORDYN_SUCCESS)
 			{
-				free2Darray(FairTensLast, _lines.size());
+				free2Darray(FairTensLast, LineList.size());
 				return err;
 			}
 		}
 
 		// check for NaNs (actually it was already done in RK2)
-		for (unsigned int i = 0; i < _n_states; i++)
+		for (unsigned int i = 0; i < nX; i++)
 		{
-			if (isnan(_states[i]))
+			if (isnan(states[i]))
 			{
 				Cout(MOORDYN_ERR_LEVEL) << "Error: NaN value detected "
 				    << "in MoorDyn state at dynamic relaxation time "
 					<< t << " s." << endl;
-				free2Darray(FairTensLast, _lines.size());
+				free2Darray(FairTensLast, LineList.size());
 				return MOORDYN_NAN_ERROR;
 			}
 		}
 
 		// Roll previous fairlead tensions for comparison
-		for (unsigned int lf = 0; lf < _lines.size(); lf++) 
+		for (unsigned int lf = 0; lf < LineList.size(); lf++)
 		{
 			for (int pt = convergence_iters - 1; pt > 0; pt--)
 				FairTensLast[lf][pt] = FairTensLast[lf][pt - 1];
@@ -928,8 +924,8 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 		}
 
 		// go through connections to get fairlead forces 
-		for (unsigned int lf = 0; lf < _lines.size(); lf++) 
-			FairTens[lf] = _lines[lf]->getNodeTen(_lines[lf]->getN());
+		for (unsigned int lf = 0; lf < LineList.size(); lf++)
+			FairTens[lf] = LineList[lf]->getNodeTen(LineList[lf]->getN());
 
 		// check for convergence (compare current tension at each fairlead with
 		// previous convergence_iters-1 values)
@@ -939,7 +935,7 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 			// if any occurs
 			converged = true;
 			max_error = 0.0;
-			for (unsigned int lf = 0; lf < _lines.size(); lf++) 
+			for (unsigned int lf = 0; lf < LineList.size(); lf++)
 			{
 				for (unsigned int pt = 0; pt < convergence_iters; pt++)
 				{
@@ -947,7 +943,7 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 						FairTens[lf] / FairTensLast[lf][pt] - 1.0);
 					if (error > max_error)
 						max_error = error;
-					if (max_error > _ICD_threshold)
+					if (max_error > ICthresh)
 					{
 						converged = false;
 						break;
@@ -972,40 +968,40 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	Cout(MOORDYN_MSG_LEVEL) << "Remaining error after " << t << " s = "
 	                        << 100.0 * max_error << "%" << endl;
 
-	free2Darray(FairTensLast, _lines.size());
+	free2Darray(FairTensLast, LineList.size());
 
 	// restore drag coefficients to normal values and restart time counter of each object
-	for (auto obj : _lines)
+	for (auto obj : LineList)
 	{
-		obj->scaleDrag(1.0 / _ICD_factor);
+		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
-	for (auto obj : _connections)
+	for (auto obj : ConnectionList)
 	{
-		obj->scaleDrag(1.0 / _ICD_factor);
+		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
-	for (auto obj : _rods)
+	for (auto obj : RodList)
 	{
-		obj->scaleDrag(1.0 / _ICD_factor);
+		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
-	for (auto obj : _bodies)
+	for (auto obj : BodyList)
 	{
-		obj->scaleDrag(1.0 / _ICD_factor);
+		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
-	_env.WaveKin = _wave_kin_temp;
+	env.WaveKin = WaveKinTemp;
 
 	// @mth: new approach to be implemented
 	// ------------------------- calculate wave time series if needed -------------------
-// 	if (_env.WaveKin == 2)
+// 	if (env.WaveKin == 2)
 // 	{
-// 		for (int l=0; l<_lines.size(); l++) 
-// 			_lines[l]->makeWaveKinematics( 0.0 );
+// 		for (int l=0; l<LineList.size(); l++)
+// 			LineList[l]->makeWaveKinematics( 0.0 );
 // 	}
 
 	// -------------------------- start main output file --------------------------------
@@ -1013,8 +1009,8 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	stringstream oname;
 	oname << _basepath << _basename << ".out";
 
-	_out_file.open(oname.str());
-	if (!_out_file.is_open())
+	outfileMain.open(oname.str());
+	if (!outfileMain.is_open())
 	{
 		Cout(MOORDYN_ERR_LEVEL) << "ERROR: Unable to write to main output file "
 			<< oname.str() << endl;
@@ -1022,18 +1018,18 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	}
 
 	// --- channel titles ---
-	_out_file << "Time" << "\t ";
-	for (auto channel : _out_channels)
-		_out_file << channel.Name << "\t ";
-	_out_file << endl;
+	outfileMain << "Time" << "\t ";
+	for (auto channel : outChans)
+		outfileMain << channel.Name << "\t ";
+	outfileMain << endl;
 
-	if (_env.WriteUnits > 0)
+	if (env.WriteUnits > 0)
 	{
 		// --- units ---
-		_out_file << "(s)" << "\t ";
-		for (auto channel : _out_channels)
-			_out_file << channel.Units << "\t ";
-		_out_file << "\n";
+		outfileMain << "(s)" << "\t ";
+		for (auto channel : outChans)
+			outfileMain << channel.Units << "\t ";
+		outfileMain << "\n";
 	}
 
 	// write t=0 output
@@ -1066,22 +1062,22 @@ moordyn::error_id MoorDynSystem::Step(const double *x,
 	// ---------------- set positions and velocities -----------------------
 	// ... of any coupled bodies, rods, and connections at this instant, to be
 	// used later for extrapolating motions
-	for (auto l : _bodies_coupled_map)
+	for (auto l : CpldBodyIs)
 	{
-		_bodies[l]->initiateStep(x + ix, xd + ix, t);
+		BodyList[l]->initiateStep(x + ix, xd + ix, t);
 		ix += 6;
 	}
-	for (auto l : _rods_coupled_map)
+	for (auto l : CpldRodIs)
 	{
-		_rods[l]->initiateStep(x + ix, xd + ix, t);
-		if (_rods[_rods_coupled_map[l]]->type == -2)
+		RodList[l]->initiateStep(x + ix, xd + ix, t);
+		if (RodList[CpldRodIs[l]]->type == -2)
 			ix += 6;  // for cantilevered rods 6 entries will be taken
 		else
 			ix += 3;  // for pinned rods 3 entries will be taken
 	}
-	for (auto l : _connections_coupled_map)
+	for (auto l : CpldConIs)
 	{
-		_connections[l]->initiateStep(x + ix, xd + ix, t);
+		ConnectionList[l]->initiateStep(x + ix, xd + ix, t);
 		ix += 3;
 	}
 
@@ -1090,18 +1086,18 @@ moordyn::error_id MoorDynSystem::Step(const double *x,
 	double dt_step;
 	while ((dt_step = t_target - t) > 0.0)
 	{
-		if (_dt < dt_step)
-			dt_step = _dt;
-		const moordyn::error_id err = RK2(_states, t, dt_step);
+		if (dtM0 < dt_step)
+			dt_step = dtM0;
+		const moordyn::error_id err = RK2(states, t, dt_step);
 		if (err != MOORDYN_SUCCESS)
 			return err;
 	}
 	t = t_target;
 
 	// check for NaNs (actually it was already done in RK2)
-	for (unsigned int i = 0; i < _n_states; i++)
+	for (unsigned int i = 0; i < nX; i++)
 	{
-		if (isnan(_states[i]))
+		if (isnan(states[i]))
 		{
 			Cout(MOORDYN_ERR_LEVEL) << "Error: NaN value detected "
 			                        << "in MoorDyn state " << i
@@ -1112,21 +1108,21 @@ moordyn::error_id MoorDynSystem::Step(const double *x,
 
 	// --------------- check for line failures (detachments!) ----------------
 	// step 1: check for time-triggered failures
-	for (unsigned int l = 0; l < _fail_props.size(); l++)
+	for (unsigned int l = 0; l < FailList.size(); l++)
 	{
-		if (_fail_props[l]->failStatus)
+		if (FailList[l]->failStatus)
 			continue;
-		if (t >= _fail_props[l]->failTime)
+		if (t >= FailList[l]->failTime)
 		{
 			Cout(MOORDYN_MSG_LEVEL) << "Failure number " << l + 1
 				<< " triggered at time " << t << endl;
-			_fail_props[l]->failStatus = 1;
+			FailList[l]->failStatus = 1;
 			const moordyn::error_id err = detachLines(
-				_fail_props[l]->attachID,
-				_fail_props[l]->isRod,
-				_fail_props[l]->lineIDs,
-				_fail_props[l]->lineTops,
-				_fail_props[l]->nLinesToDetach,
+				FailList[l]->attachID,
+				FailList[l]->isRod,
+				FailList[l]->lineIDs,
+				FailList[l]->lineTops,
+				FailList[l]->nLinesToDetach,
 				t);
 			if (err)
 				return err;
@@ -1148,19 +1144,19 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 	unsigned int i=0;
 
 	// factor by which to boost drag coefficients during dynamic relaxation IC generation
-	_ICD_factor = 5.0;
+	ICDfac = 5.0;
 	// convergence analysis time step for IC generation
-	_ICD_dt = 1.0;
+	ICdt = 1.0;
 	// max time for IC generation
-	_ICD_t_max = 120;
+	ICTmax = 120;
 	// threshold for relative change in tensions to call it converged
-	_ICD_threshold = 0.001;
+	ICthresh = 0.001;
 	// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
-	_wave_kin_temp = 0;
+	WaveKinTemp = 0;
 	// assume no wave kinematics points are passed in externally, unless ExernalWaveKinInit is called later
-	_n_points_wave = 0;
+	npW = 0;
 	// default value for desired mooring model time step
-	_dt = 0.001;
+	dtM0 = 0.001;
 
 	// string containing which channels to write to output
 	vector<string> outchannels;
@@ -1168,12 +1164,12 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 	// make a "ground body" that will be the parent of all fixed objects (connections and rods)
 	Cout(MOORDYN_DBG_LEVEL) << "Creating the ground body of type "
 		<< Body::TypeName(Body::FIXED) << "..." << endl;
-	_ground = new Body(); 
-	_ground->setup(0, Body::FIXED, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);  
+	GroundBody = new Body();
+	GroundBody->setup(0, Body::FIXED, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);
 
 	// Make sure the state vector counter starts at zero
 	// This will be conveniently incremented as each object is added
-	_n_states = 0;
+	nX = 0;
 
 	// Load the mooring lines input file in lines of text
 	ifstream in_file(_filepath);
@@ -1259,10 +1255,10 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					return err;
 
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << obj->type << "'"
-					<< " - with id " << _line_props.size() << endl;
-				if (_env.writeLog > 1)
+					<< " - with id " << LinePropList.size() << endl;
+				if (env.writeLog > 1)
 				{
-					_log_file << "  - LineType" << _line_props.size() << ":"
+					outfileLog << "  - LineType" << LinePropList.size() << ":"
 					          << endl
 					          << "    name: " << obj->type << endl
 					          << "    d   : " << obj->d    << endl
@@ -1273,7 +1269,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					          << "    Cat : " << obj->Cat  << endl;
 				}
 
-				_line_props.push_back(obj);
+				LinePropList.push_back(obj);
 				i++;
 			}
 		}
@@ -1309,10 +1305,10 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				obj->Cat = atof(entries[6].c_str());
 
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << obj->type << "'"
-					<< " - with id " << _rod_props.size() << endl;
-				if (_env.writeLog > 1)
+					<< " - with id " << RodPropList.size() << endl;
+				if (env.writeLog > 1)
 				{
-					_log_file << "  - RodType" << _rod_props.size() << ":"
+					outfileLog << "  - RodType" << RodPropList.size() << ":"
 					          << endl
 					          << "    name: " << obj->type << endl
 					          << "    d   : " << obj->d    << endl
@@ -1323,7 +1319,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					          << "    Cat : " << obj->Cat  << endl;
 				}
 
-				_rod_props.push_back(obj);
+				RodPropList.push_back(obj);
 				i++;
 			}
 		}
@@ -1470,18 +1466,18 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				{
 					// it is coupled - controlled from outside
 					type = Body::COUPLED;
-					_bodies_coupled_map.push_back(_bodies.size() - 1);
+					CpldBodyIs.push_back(BodyList.size() - 1);
 				}
 				else 
 				{
 					// it is free - controlled by MoorDyn
 					type = Body::FREE;
-					_bodies_free_map.push_back(_bodies.size() - 1);
+					FreeBodyIs.push_back(BodyList.size() - 1);
 				}
 				stringstream oname;
 				oname << _basepath << _basename << "_Body" << number << ".out";
-				_outfiles.push_back(make_shared<ofstream>(oname.str()));
-				if (!_outfiles.back()->is_open())
+				outfiles.push_back(make_shared<ofstream>(oname.str()));
+				if (!outfiles.back()->is_open())
 				{
 					Cout(MOORDYN_ERR_LEVEL) << "Cannot create the output file '"
 						<< oname.str() << endl;
@@ -1491,10 +1487,10 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				Body *obj = new Body();
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
 					<< " - of type " << Body::TypeName(type)
-					<< " with id " << _bodies.size() << endl;
+					<< " with id " << BodyList.size() << endl;
 				obj->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca,
-				           _outfiles.back());
-				_bodies.push_back(obj);
+				           outfiles.back());
+				BodyList.push_back(obj);
 				i++;
 			}
 		}
@@ -1545,9 +1541,9 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				{
 					// it is pinned
 					type = Rod::PINNED;
-					_rods_free_map.push_back(_rods.size());  // add this pinned rod to the free list because it is half free
-					_rods_map.push_back(_n_states);       // assign start index of this rod's states
-					_n_states += 6;                       // add 6 state variables for each pinned rod
+					FreeRodIs.push_back(RodList.size());  // add this pinned rod to the free list because it is half free
+					RodStateIs.push_back(nX);       // assign start index of this rod's states
+					nX += 6;                       // add 6 state variables for each pinned rod
 				}
 				else if (!strcmp(let1, "BODY"))
 				{
@@ -1561,7 +1557,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 						return MOORDYN_INVALID_INPUT;
 					}
 					unsigned int bodyID = atoi(num1);
-					if (!bodyID || (bodyID > _bodies.size()))
+					if (!bodyID || (bodyID > BodyList.size()))
 					{
 						Cout(MOORDYN_ERR_LEVEL) << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
@@ -1574,9 +1570,9 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					{
 						// it is pinned
 						type = Rod::PINNED;
-						_rods_free_map.push_back(_rods.size());  // add this pinned rod to the free list because it is half free
-						_rods_map.push_back(_n_states);       // assign start index of this rod's states
-						_n_states += 6;                       // add 6 state variables for each pinned rod	
+						FreeRodIs.push_back(RodList.size());  // add this pinned rod to the free list because it is half free
+						RodStateIs.push_back(nX);       // assign start index of this rod's states
+						nX += 6;                       // add 6 state variables for each pinned rod
 					}
 					else
 					{
@@ -1587,23 +1583,23 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				{
 					// if a rigid fairlead, add to list and add 
 					type = Rod::COUPLED;
-					_rods_coupled_map.push_back(_rods.size());  // index of fairlead in _rods vector
+					CpldRodIs.push_back(RodList.size());  // index of fairlead in RodList vector
 				}
 				else if (!strcmp(let1, "VESPIN") || !strcmp(let1, "CPLDPIN"))
 				{
 					// if a pinned fairlead, add to list and add 
 					type = Rod::CPLDPIN;
-					_rods_coupled_map.push_back(_rods.size());  // index of fairlead in _rods vector
-					_rods_free_map.push_back(_rods.size());     // also add this pinned rod to the free list because it is half free
-					_rods_map.push_back(_n_states);          // assign start index of this rod's states
-					_n_states += 6;                          // add 6 state variables for each pinned rod	
+					CpldRodIs.push_back(RodList.size());  // index of fairlead in RodList vector
+					FreeRodIs.push_back(RodList.size());     // also add this pinned rod to the free list because it is half free
+					RodStateIs.push_back(nX);          // assign start index of this rod's states
+					nX += 6;                          // add 6 state variables for each pinned rod
 				}
 				else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") || !strcmp(let1, "FREE"))
 				{
 					type = Rod::FREE;
-					_rods_free_map.push_back(_rods.size());  // add this free rod to the free list
-					_rods_map.push_back(_n_states);       // assign start index of this rod's states
-					_n_states += 12;                      // add 12 state variables for each free rod
+					FreeRodIs.push_back(RodList.size());  // add this free rod to the free list
+					RodStateIs.push_back(nX);       // assign start index of this rod's states
+					nX += 12;                      // add 12 state variables for each free rod
 				}
 				else 
 				{
@@ -1616,8 +1612,8 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				}
 
 				int TypeNum = -1;
-				for (unsigned int J = 0; J < _rod_props.size(); J++)  {
-					if (_rod_props[J]->type == RodType)
+				for (unsigned int J = 0; J < RodPropList.size(); J++)  {
+					if (RodPropList[J]->type == RodType)
 						TypeNum = J;
 				}
 				if (TypeNum == -1)
@@ -1636,8 +1632,8 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					// if 1+ output flag chars are given and they're valid
 					stringstream oname;
 					oname << _basepath << _basename << "_Rod" << number << ".out";
-					_outfiles.push_back(make_shared<ofstream>(oname.str()));
-					if (!_outfiles.back()->is_open())
+					outfiles.push_back(make_shared<ofstream>(oname.str()));
+					if (!outfiles.back()->is_open())
 					{
 						Cout(MOORDYN_ERR_LEVEL)
 							<< "Cannot create the output file '"
@@ -1646,27 +1642,27 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					}
 				}
 				else
-					_outfiles.push_back(NULL);
+					outfiles.push_back(NULL);
 
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
 					<< " - of class " << RodType << " (" << TypeNum << ")"
 					<< " and type " << Rod::TypeName(type)
-					<< " with id " << _rods.size() << endl;
+					<< " with id " << RodList.size() << endl;
 
 				Rod *obj = new Rod();
-				obj->setup(number, type, _rod_props[TypeNum], endCoords,  
-				           NumSegs, _outfiles.back(), outchannels);
-				_rods.push_back(obj);
+				obj->setup(number, type, RodPropList[TypeNum], endCoords,
+				           NumSegs, outfiles.back(), outchannels);
+				RodList.push_back(obj);
 
 				// depending on type, assign the Rod to its respective parent body
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") || !strcmp(let1, "FIX"))
-					_ground->addRodToBody(obj, endCoords);  
+					GroundBody->addRodToBody(obj, endCoords);
 				else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN"))
-					_ground->addRodToBody(obj, endCoords);  
+					GroundBody->addRodToBody(obj, endCoords);
 				else if (!strcmp(let1, "BODY"))
 				{
 					unsigned int bodyID = atoi(num1);
-					_bodies[bodyID - 1]->addRodToBody(obj, endCoords); 
+					BodyList[bodyID - 1]->addRodToBody(obj, endCoords);
 				}
 
 				i++;
@@ -1747,7 +1743,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 						return MOORDYN_INVALID_INPUT;
 					}
 					unsigned int bodyID = atoi(num1);
-					if (!bodyID || (bodyID > _bodies.size()))
+					if (!bodyID || (bodyID > BodyList.size()))
 					{
 						Cout(MOORDYN_ERR_LEVEL) << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
@@ -1760,15 +1756,15 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				{
 					// if a fairlead, add to list and add 
 					type = Connection::COUPLED;
-					_connections_coupled_map.push_back(_connections.size());
+					CpldConIs.push_back(ConnectionList.size());
 				}
 				else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") || !strcmp(let1, "FREE"))
 				{
 					// if a connect, add to list and add states for it
 					type = Connection::FREE;
-					_connections_free_map.push_back(_connections.size());
-					_connections_map.push_back(_n_states);  // assign start index of this connect's states
-					_n_states += 6;                         // add 6 state variables for each connect
+					FreeConIs.push_back(ConnectionList.size());
+					ConnectStateIs.push_back(nX);  // assign start index of this connect's states
+					nX += 6;                         // add 6 state variables for each connect
 				}
 				else 
 				{
@@ -1781,25 +1777,25 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				}
 
 				// make default water depth at least the depth of the lowest node (so water depth input is optional)
-				if (r0[2] < -_env.WtrDpth)
-					_env.WtrDpth = -r0[2];
+				if (r0[2] < -env.WtrDpth)
+					env.WtrDpth = -r0[2];
 
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
 					<< " - of type " << Connection::TypeName(type)
-					<< " with id " << _connections.size() << endl;
+					<< " with id " << ConnectionList.size() << endl;
 
 				// now make Connection object!
 				Connection *obj = new Connection();
 				obj->setup(number, type, r0, M, V, F, CdA, Ca);
-				_connections.push_back(obj);
+				ConnectionList.push_back(obj);
 
 				// depending on type, assign the Connection to its respective parent body
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") || !strcmp(let1, "FIX"))
-					_ground->addConnectionToBody(obj, r0); 
+					GroundBody->addConnectionToBody(obj, r0);
 				else if (!strcmp(let1, "BODY"))
 				{
 					int bodyID = atoi(num1);
-					_bodies[bodyID - 1]->addConnectionToBody(obj, r0);
+					BodyList[bodyID - 1]->addConnectionToBody(obj, r0);
 				}
 
 				i++;
@@ -1811,13 +1807,13 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 		{
 			Cout(MOORDYN_DBG_LEVEL) << "Reading lines..." << endl;
 
-			if (!_line_props.size())
+			if (!LinePropList.size())
 			{
 				Cout(MOORDYN_ERR_LEVEL)
 					<< "Reading lines without defined line types" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
-			if (!_connections.size())
+			if (!ConnectionList.size())
 			{
 				Cout(MOORDYN_ERR_LEVEL)
 					<< "Reading lines without defined connections" << endl;
@@ -1847,8 +1843,8 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				string outchannels = entries[6];
 
 				int TypeNum = -1;
-				for (unsigned int J = 0; J < _line_props.size(); J++)  {
-					if (_line_props[J]->type == type)
+				for (unsigned int J = 0; J < LinePropList.size(); J++)  {
+					if (LinePropList[J]->type == type)
 						TypeNum = J;
 				}
 				if (TypeNum == -1)
@@ -1867,8 +1863,8 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					// if 1+ output flag chars are given and they're valid
 					stringstream oname;
 					oname << _basepath << _basename << "_Line" << number << ".out";
-					_outfiles.push_back(make_shared<ofstream>(oname.str()));
-					if (!_outfiles.back()->is_open())
+					outfiles.push_back(make_shared<ofstream>(oname.str()));
+					if (!outfiles.back()->is_open())
 					{
 						Cout(MOORDYN_ERR_LEVEL)
 							<< "Cannot create the output file '"
@@ -1877,18 +1873,18 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					}
 				}
 				else
-					_outfiles.push_back(NULL);
+					outfiles.push_back(NULL);
 
 				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
 					<< " - of class " << type << " (" << TypeNum << ")"
-					<< " with id " << _lines.size() << endl;
+					<< " with id " << LineList.size() << endl;
 
 				Line *obj = new Line();
-				obj->setup(number, _line_props[TypeNum], UnstrLen, NumSegs, 
-				           _outfiles.back(), outchannels);
-				_lines.push_back(obj);
-				_lines_map.push_back(_n_states);  // assign start index of this Line's states
-				_n_states += 6 * (NumSegs - 1);   // add 6 state variables for each internal node of this line
+				obj->setup(number, LinePropList[TypeNum], UnstrLen, NumSegs,
+				           outfiles.back(), outchannels);
+				LineList.push_back(obj);
+				LineStateIs.push_back(nX);  // assign start index of this Line's states
+				nX += 6 * (NumSegs - 1);   // add 6 state variables for each internal node of this line
 
 				for (unsigned int I = 0; I < 2; I++)
 				{
@@ -1912,7 +1908,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 
 					if (!strcmp(let1, "R") || !strcmp(let1, "ROD"))
 					{
-						if (!id || id > _rods.size())
+						if (!id || id > RodList.size())
 						{
 							Cout(MOORDYN_ERR_LEVEL) << "Error in "
 								<< _filepath << ":" << i + 1 << "..." << endl
@@ -1921,9 +1917,9 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 							return MOORDYN_INVALID_INPUT;
 						}
 						if (!strcmp(let2, "A")) 
-							_rods[id - 1]->addLineToRodEndA(obj, I);
+							RodList[id - 1]->addLineToRodEndA(obj, I);
 						else if (!strcmp(let2, "B")) 
-							_rods[id - 1]->addLineToRodEndB(obj, I);
+							RodList[id - 1]->addLineToRodEndB(obj, I);
 						else
 						{
 							Cout(MOORDYN_ERR_LEVEL) << "Error in "
@@ -1935,7 +1931,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					}
 					else if (!strlen(let1) || !strcmp(let1, "C") || !strcmp(let1, "CON"))
 					{
-						if (!id || id > _connections.size())
+						if (!id || id > ConnectionList.size())
 						{
 							Cout(MOORDYN_ERR_LEVEL) << "Error in "
 								<< _filepath << ":" << i + 1 << "..." << endl
@@ -1943,7 +1939,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 								<< "There are not " << id << " connections" << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
-						_connections[id - 1]->addLineToConnect(obj, I);
+						ConnectionList[id - 1]->addLineToConnect(obj, I);
 					}
 					else 
 					{
@@ -1981,7 +1977,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				}
 
 				FailProps *obj = new FailProps();
-				_fail_props.push_back(obj);
+				FailList.push_back(obj);
 
 				char let1[10], num1[10], let2[10], num2[10], let3[10]; 
 				char typeWord[10];
@@ -2003,7 +1999,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				obj->attachID = id;
 				if (!strcmp(let1, "R") || !strcmp(let1, "ROD"))
 				{
-					if (!id || id > _rods.size())
+					if (!id || id > RodList.size())
 					{
 						Cout(MOORDYN_ERR_LEVEL) << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
@@ -2026,7 +2022,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				}
 				else if (!strlen(let1) || !strcmp(let1, "C") || !strcmp(let1, "CON"))
 				{
-					if (!id || id > _connections.size())
+					if (!id || id > ConnectionList.size())
 					{
 						Cout(MOORDYN_ERR_LEVEL) << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
@@ -2085,47 +2081,47 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				const string name = entries[1];
 				if (name == "writeLog")
 				{
-					_env.writeLog = atoi(entries[0].c_str());
+					env.writeLog = atoi(entries[0].c_str());
 					const moordyn::error_id err = SetupLog();
 					if (err != MOORDYN_SUCCESS)
 						return err;
 				}
 				// DT is old way, should phase out
 				else if ((name == "dtM") || (name == "DT"))
-					_dt = atof(entries[0].c_str());
+					dtM0 = atof(entries[0].c_str());
 				else if ((name == "g") || (name == "gravity"))
-					_env.g  = atof(entries[0].c_str()); 
+					env.g  = atof(entries[0].c_str());
 				else if ((name =="Rho") || (name=="rho") || (name=="WtrDnsty"))
-					_env.rho_w = atof(entries[0].c_str()); 
+					env.rho_w = atof(entries[0].c_str());
 				else if (name == "WtrDpth")
-					_env.WtrDpth = atof(entries[0].c_str()); 
+					env.WtrDpth = atof(entries[0].c_str());
 				else if ((name == "kBot") || (name == "kb"))
-					_env.kb = atof(entries[0].c_str());
+					env.kb = atof(entries[0].c_str());
 				else if ((name == "cBot") || (name == "cb"))
-					_env.cb = atof(entries[0].c_str());
-				else if ((name == "dtIC") || (name == "_ICD_dt"))
-					_ICD_dt = atof(entries[0].c_str());
-				else if ((name == "TmaxIC") || (name == "_ICD_t_max"))
-					_ICD_t_max = atof(entries[0].c_str());
-				else if ((name == "CdScaleIC") || (name == "_ICD_factor"))
-					_ICD_factor   = atof(entries[0].c_str());
-				else if ((name == "threshIC") || (name == "_ICD_threshold"))
-					_ICD_threshold = atof(entries[0].c_str());
+					env.cb = atof(entries[0].c_str());
+				else if ((name == "dtIC") || (name == "ICdt"))
+					ICdt = atof(entries[0].c_str());
+				else if ((name == "TmaxIC") || (name == "ICTmax"))
+					ICTmax = atof(entries[0].c_str());
+				else if ((name == "CdScaleIC") || (name == "ICDfac"))
+					ICDfac   = atof(entries[0].c_str());
+				else if ((name == "threshIC") || (name == "ICthresh"))
+					ICthresh = atof(entries[0].c_str());
 				else if (name == "WaveKin")
-					_wave_kin_temp = atoi(entries[0].c_str());
+					WaveKinTemp = atoi(entries[0].c_str());
 				else if (name == "Currents")
-					_env.Current = atoi(entries[0].c_str());
+					env.Current = atoi(entries[0].c_str());
 				else if (name == "WriteUnits")
-					_env.WriteUnits = atoi(entries[0].c_str());
+					env.WriteUnits = atoi(entries[0].c_str());
 				else if (name == "FrictionCoefficient")
-					_env.FrictionCoefficient = atof(entries[0].c_str());
+					env.FrictionCoefficient = atof(entries[0].c_str());
 				else if (name == "FricDamp")
-					_env.FricDamp = atof(entries[0].c_str());
+					env.FricDamp = atof(entries[0].c_str());
 				else if (name == "StatDynFricScale")
-					_env.StatDynFricScale = atof(entries[0].c_str());
+					env.StatDynFricScale = atof(entries[0].c_str());
 				// output writing period (0 for at every call)
 				else if (name == "dtOut")
-					_dt_out = atof(entries[0].c_str());
+					dtOut = atof(entries[0].c_str());
 				// >>>>>>>>>> add dtWave...
 				else
 					Cout(MOORDYN_WRN_LEVEL) << "Warning: Unrecognized option '"
@@ -2173,7 +2169,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 						dummy.QType = Ten;
 						strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
 						dummy.ObjID = atoi(num1);
-						dummy.NodeID = _lines[dummy.ObjID-1]->getN();
+						dummy.NodeID = LineList[dummy.ObjID-1]->getN();
 					}
 					// achor tension case (changed to just be for single line, not all connected lines)
 					else if (!strcmp(let1, "ANCHTEN")) 
@@ -2300,7 +2296,7 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 					}
 
 					if ((dummy.OType > 0) && (dummy.QType > 0))
-						_out_channels.push_back(dummy);
+						outChans.push_back(dummy);
 				}
 
 				i++;
@@ -2320,40 +2316,40 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 	// <<<<<<<<<<<<<<<< also do checks when time step function is called...
 
 	Cout(MOORDYN_MSG_LEVEL) << "Generated entities:" << endl
-		<< "\tnLineTypes  = " << _line_props.size() << endl
-		<< "\tnRodTypes   = " << _rod_props.size() << endl
-		<< "\tnPoints     = " << _connections.size() << endl
-		<< "\tnBodies     = " << _bodies.size() << endl
-		<< "\tnRods       = " << _rods.size() << endl
-		<< "\tnLines      = " << _lines.size() << endl
-		<< "\tnFails      = " << _fail_props.size() << endl
-		<< "\tnFreeBodies = " << _bodies_free_map.size() << endl
-		<< "\tnFreeRods   = " << _rods_free_map.size() << endl
-		<< "\tnFreePonts  = " << _connections_free_map.size() << endl
-		<< "\tnCpldBodies = " << _bodies_coupled_map.size() << endl
-		<< "\tnCpldRods   = " << _rods_coupled_map.size() << endl
-		<< "\tnCpldPoints = " << _connections_coupled_map.size() << endl;
+		<< "\tnLineTypes  = " << LinePropList.size() << endl
+		<< "\tnRodTypes   = " << RodPropList.size() << endl
+		<< "\tnPoints     = " << ConnectionList.size() << endl
+		<< "\tnBodies     = " << BodyList.size() << endl
+		<< "\tnRods       = " << RodList.size() << endl
+		<< "\tnLines      = " << LineList.size() << endl
+		<< "\tnFails      = " << FailList.size() << endl
+		<< "\tnFreeBodies = " << FreeBodyIs.size() << endl
+		<< "\tnFreeRods   = " << FreeRodIs.size() << endl
+		<< "\tnFreePonts  = " << FreeConIs.size() << endl
+		<< "\tnCpldBodies = " << CpldBodyIs.size() << endl
+		<< "\tnCpldRods   = " << CpldRodIs.size() << endl
+		<< "\tnCpldPoints = " << CpldConIs.size() << endl;
 	
 	// write system description to log file
-	if (_env.writeLog > 0)
+	if (env.writeLog > 0)
 	{
-		_log_file << "----- MoorDyn Model Summary (to be written) -----"
+		outfileLog << "----- MoorDyn Model Summary (to be written) -----"
 		          << endl;
 	}
 
 	// Setup the waves and populate them
-	_waves = new Waves();
-	_waves->setup(&_env);
+	waves = new Waves();
+	waves->setup(&env);
 
-	_ground->setEnv( &_env, _waves); 
-	for (auto obj : _bodies)
-		obj->setEnv( &_env, _waves); 
-	for (auto obj : _rods)
-		obj->setEnv( &_env, _waves); 
-	for (auto obj : _connections)
-		obj->setEnv( &_env, _waves); 
-	for (auto obj : _lines)
-		obj->setEnv( &_env, _waves);
+	GroundBody->setEnv( &env, waves);
+	for (auto obj : BodyList)
+		obj->setEnv( &env, waves);
+	for (auto obj : RodList)
+		obj->setEnv( &env, waves);
+	for (auto obj : ConnectionList)
+		obj->setEnv( &env, waves);
+	for (auto obj : LineList)
+		obj->setEnv( &env, waves);
 
 	return MOORDYN_SUCCESS;
 }
@@ -2362,40 +2358,40 @@ moordyn::error_id MoorDynSystem::CalcStateDeriv(double *x,  double *xd,
                                                 const double t, const double dt)
 {
 	// call ground body to update all the fixed things...
-	_ground->updateFairlead(t); 
+	GroundBody->updateFairlead(t);
 
 	// couple things...
 
 	// extrapolate instantaneous positions of any coupled bodies (type -1)
-	for (auto l : _bodies_coupled_map)  
-		_bodies[l]->updateFairlead(t);
+	for (auto l : CpldBodyIs)
+		BodyList[l]->updateFairlead(t);
 
 	// extrapolate instantaneous positions of any coupled or fixed rods (type -1 or -2)
-	for (auto l : _rods_coupled_map)  
-		_rods[l]->updateFairlead(t);
+	for (auto l : CpldRodIs)
+		RodList[l]->updateFairlead(t);
 
 	// extrapolate instantaneous positions of any coupled or fixed connections (type -1)
-	for (auto l : _connections_coupled_map)  
-		_connections[l]->updateFairlead(t); 
+	for (auto l : CpldConIs)
+		ConnectionList[l]->updateFairlead(t);
 
 	// update wave kinematics if applicable
-	if (_env.WaveKin == 1)
+	if (env.WaveKin == 1)
 	{
 		// extrapolate velocities from accelerations
 		// (in future could extrapolote from most recent two points,
-		// (_U1 and _U2)
+		// (U_1 and U_2)
 
-		double t_delta = t - _t_W1;
+		double t_delta = t - tW_1;
 
 		vector<double> U_extrap;
-		for (unsigned int i = 0; i < _n_points_W * 3; i++)
-			U_extrap.push_back(_U1[i] + _Ud1[i] * t_delta);
+		for (unsigned int i = 0; i < npW * 3; i++)
+			U_extrap.push_back(U_1[i] + Ud_1[i] * t_delta);
 
 		// distribute to the appropriate objects
 		unsigned int i = 0;
-		for (auto line : _lines) 	
+		for (auto line : LineList)
 		{
-			line->setNodeWaveKin(U_extrap.data() + 3 * i, _Ud1 + 3 * i);
+			line->setNodeWaveKin(U_extrap.data() + 3 * i, Ud_1 + 3 * i);
 			i += 3 * line->getN() + 3;
 		}
 	}
@@ -2403,32 +2399,32 @@ moordyn::error_id MoorDynSystem::CalcStateDeriv(double *x,  double *xd,
 	// independent or semi-independent things with their own states...
 
 	// give Bodies latest state variables (kinematics will also be assigned to dependent connections and rods, and thus line ends)
-	for (unsigned int l = 0; l < _bodies_free_map.size(); l++)  
-		_bodies[_bodies_free_map[l]]->setState((x + _bodies_map[l]), t);
+	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
+		BodyList[FreeBodyIs[l]]->setState((x + BodyStateIs[l]), t);
 
 	// give independent or pinned rods' latest state variables (kinematics will also be assigned to attached line ends)
-	for (unsigned int l = 0; l < _rods_free_map.size(); l++)  
-		_rods[_rods_free_map[l]]->setState((x + _rods_map[l]), t);
+	for (unsigned int l = 0; l < FreeRodIs.size(); l++)
+		RodList[FreeRodIs[l]]->setState((x + RodStateIs[l]), t);
 
 	// give Connects (independent connections) latest state variable values (kinematics will also be assigned to attached line ends)
-	for (unsigned int l = 0; l < _connections_free_map.size(); l++)  
-		_connections[_connections_free_map[l]]->setState((x + _connections_map[l]), t);
+	for (unsigned int l = 0; l < FreeConIs.size(); l++)
+		ConnectionList[FreeConIs[l]]->setState((x + ConnectStateIs[l]), t);
 
 	// give Lines latest state variable values for internal nodes
-	for (unsigned int l = 0; l < _lines.size(); l++)
-		_lines[l]->setState((x + _lines_map[l]), t);
+	for (unsigned int l = 0; l < LineList.size(); l++)
+		LineList[l]->setState((x + LineStateIs[l]), t);
 
 	// calculate dynamics of free objects (will also calculate forces (doRHS())
 	// from any child/dependent objects)...
 
 	// calculate line dynamics (and calculate line forces and masses attributed to connections)
-	for (unsigned int l = 0; l < _lines.size(); l++)
+	for (unsigned int l = 0; l < LineList.size(); l++)
 	{
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try
 		{
-			_lines[l]->getStateDeriv((xd + _lines_map[l]), dt);
+			LineList[l]->getStateDeriv((xd + LineStateIs[l]), dt);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
@@ -2440,31 +2436,31 @@ moordyn::error_id MoorDynSystem::CalcStateDeriv(double *x,  double *xd,
 
 	// calculate connect dynamics (including contributions from attached lines
 	// as well as hydrodynamic forces etc. on connect object itself if applicable)
-	for (unsigned int l = 0; l < _connections_free_map.size(); l++)  
-		_connections[_connections_free_map[l]]->getStateDeriv((xd + _connections_map[l]));
+	for (unsigned int l = 0; l < FreeConIs.size(); l++)
+		ConnectionList[FreeConIs[l]]->getStateDeriv((xd + ConnectStateIs[l]));
 
 	// calculate dynamics of independent Rods 
-	for (unsigned int l = 0; l < _rods_free_map.size(); l++)  
-		_rods[_rods_free_map[l]]->getStateDeriv((xd + _rods_map[l]));
+	for (unsigned int l = 0; l < FreeRodIs.size(); l++)
+		RodList[FreeRodIs[l]]->getStateDeriv((xd + RodStateIs[l]));
 
 	// calculate dynamics of Bodies
-	for (unsigned int l = 0; l < _bodies_free_map.size(); l++)  
-		_bodies[_bodies_free_map[l]]->getStateDeriv((xd + _bodies_map[l]));
+	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
+		BodyList[FreeBodyIs[l]]->getStateDeriv((xd + BodyStateIs[l]));
 
 	// get dynamics/forces (doRHS()) of coupled objects, which weren't addressed in above calls
 
-	for (unsigned int l = 0; l < _connections_coupled_map.size(); l++)  
-		_connections[_connections_coupled_map[l]]->doRHS();
+	for (unsigned int l = 0; l < CpldConIs.size(); l++)
+		ConnectionList[CpldConIs[l]]->doRHS();
 
-	for (unsigned int l = 0; l < _rods_coupled_map.size(); l++)  
-		_rods[_rods_coupled_map[l]]->doRHS();
+	for (unsigned int l = 0; l < CpldRodIs.size(); l++)
+		RodList[CpldRodIs[l]]->doRHS();
 
-	for (unsigned int l = 0; l < _bodies_coupled_map.size(); l++)  
-		_bodies[_bodies_coupled_map[l]]->doRHS();
+	for (unsigned int l = 0; l < CpldBodyIs.size(); l++)
+		BodyList[CpldBodyIs[l]]->doRHS();
 
 	// call ground body to update all the fixed things
-	// _ground->doRHS();
-	_ground->setDependentStates();  // (not likely needed) <<<
+	// GroundBody->doRHS();
+	GroundBody->setDependentStates();  // (not likely needed) <<<
 
 	return MOORDYN_SUCCESS;
 }
@@ -2473,31 +2469,31 @@ moordyn::error_id MoorDynSystem::RK2(double *x, double &t, const double dt)
 {
 	moordyn::error_id err;
 
-	if (_env.writeLog > 2)
-		_log_file << "\n----- RK2 predictor call to CalcStateDeriv at time "
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
 		          << t << " s -----\n";
 
 	// get derivatives at t0. f0 = f(t0, x0);
-	err = CalcStateDeriv(x, _f0, t, dt);
+	err = CalcStateDeriv(x, f0, t, dt);
 	if (err)
 		return err;
 
 	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
-	for (unsigned int i = 0; i < _n_states; i++)
-		_x_temp[i] = x[i] + 0.5 * dt * _f0[i];
+	for (unsigned int i = 0; i < nX; i++)
+		xt[i] = x[i] + 0.5 * dt * f0[i];
 
-	if (_env.writeLog > 2)
-		_log_file << "\n----- RK2 corrector call to CalcStateDeriv at time "
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK2 corrector call to CalcStateDeriv at time "
 		          << t + 0.5 * dt << " s -----\n";
 
 	// get derivatives at t0 + dt/2. f1 = f(t1, x1);
-	err = CalcStateDeriv(_x_temp, _f1, t + 0.5 * dt, dt);
+	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
 	if (err)
 		return err;
 
 	// integrate states to t0 + dt
-	for (unsigned int i = 0; i < _n_states; i++)
-		x[i] = x[i] + dt * _f1[i];
+	for (unsigned int i = 0; i < nX; i++)
+		x[i] = x[i] + dt * f1[i];
 
 	// update time
 	t = t + dt;
@@ -2520,28 +2516,28 @@ moordyn::error_id MoorDynSystem::detachLines(int attachID, int isRod,
 	double Ca   = 0.0;
 	Connection::types type = Connection::FREE;
 
-	_n_states += 6;  // add 6 state variables for each connect
+	nX += 6;  // add 6 state variables for each connect
 
 	// check to make sure we haven't gone beyond the extra size allotted to the
 	// state arrays or the connections list <<<< really should throw an error
 	// here
-	if (_n_states > _n_states_extra)
+	if (nX > nXtra)
 	{
-		Cout(MOORDYN_ERR_LEVEL) << "Error: _n_states = " << _n_states
-			<< " is bigger than _n_states_extra = " << _n_states_extra << endl;
+		Cout(MOORDYN_ERR_LEVEL) << "Error: nX = " << nX
+			<< " is bigger than nXtra = " << nXtra << endl;
 		return MOORDYN_MEM_ERROR;
 	}
 
 	// add connect to list of free ones and add states for it
-	_connections_free_map.push_back(_connections.size());
+	FreeConIs.push_back(ConnectionList.size());
 	// assign start index of this connect's states
-	_connections_map.push_back(_n_states);
+	ConnectStateIs.push_back(nX);
 
 	// now make Connection object!
 	Connection *obj = new Connection();
-	obj->setup(_connections.size() + 1, type, r0, M, V, F, CdA, Ca);
-	obj->setEnv(&_env, _waves);
-	_connections.push_back(obj);
+	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
+	obj->setEnv(&env, waves);
+	ConnectionList.push_back(obj);
 
 	// dummy state array to hold kinematics of old attachment point (format in
 	// terms of part of connection state vector:
@@ -2552,17 +2548,17 @@ moordyn::error_id MoorDynSystem::detachLines(int attachID, int isRod,
 	for (int l = 0; l < nLinesToDetach; l++)
 	{
 		if (isRod == 1)
-			_rods[attachID-1]->removeLineFromRodEndA(lineIDs[l],
+			RodList[attachID-1]->removeLineFromRodEndA(lineIDs[l],
 			                                         lineTops + l,
 			                                         dummyConnectState + 3,
 			                                         dummyConnectState);
 		else if (isRod == 2)
-			_rods[attachID-1]->removeLineFromRodEndB(lineIDs[l],
+			RodList[attachID-1]->removeLineFromRodEndB(lineIDs[l],
 			                                         lineTops + l,
 			                                         dummyConnectState + 3,
 			                                         dummyConnectState);
 		else if (isRod == 0)
-			_connections[attachID-1]->removeLineFromConnect(lineIDs[l],
+			ConnectionList[attachID-1]->removeLineFromConnect(lineIDs[l],
 			                                                lineTops + l,
 			                                                dummyConnectState + 3,
 			                                                dummyConnectState);
@@ -2576,7 +2572,7 @@ moordyn::error_id MoorDynSystem::detachLines(int attachID, int isRod,
 
 	// attach lines to new connection
 	for (int l = 0; l < nLinesToDetach; l++)
-		obj->addLineToConnect(_lines[lineIDs[l] - 1], lineTops[l]);
+		obj->addLineToConnect(LineList[lineIDs[l] - 1], lineTops[l]);
 
 	// update connection kinematics to match old line attachment point
 	// kinematics and set positions of attached line ends
@@ -2584,32 +2580,32 @@ moordyn::error_id MoorDynSystem::detachLines(int attachID, int isRod,
 
 	// now make the state vector up to date!
 	for (unsigned int J = 0; J < 6; J++)
-		_states[_connections_map.back() + J] = dummyConnectState[J];
+		states[ConnectStateIs.back() + J] = dummyConnectState[J];
 
 	return MOORDYN_SUCCESS;
 }
 
 moordyn::error_id MoorDynSystem::AllOutput(double t, double dt)
 {
-	if (_dt_out > 0)
-		if (t < (floor((t - dt) / _dt_out) + 1.0) * _dt_out)
+	if (dtOut > 0)
+		if (t < (floor((t - dt) / dtOut) + 1.0) * dtOut)
 			return MOORDYN_SUCCESS;
 	
 	// write to master output file
-	if (!_out_file.is_open())
+	if (!outfileMain.is_open())
 	{
 		Cout(MOORDYN_ERR_LEVEL) << "Error: Unable to write to main output file "
 		                        << endl;
 		return MOORDYN_INVALID_OUTPUT_FILE;
 	}
-	_out_file << t << "\t "; 		// output time
-	for (auto channel : _out_channels)   
+	outfileMain << t << "\t "; 		// output time
+	for (auto channel : outChans)
 	{
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try
 		{
-			_out_file << GetOutput(channel) << "\t ";
+			outfileMain << GetOutput(channel) << "\t ";
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
@@ -2619,14 +2615,14 @@ moordyn::error_id MoorDynSystem::AllOutput(double t, double dt)
 			return err;
 		}
 	}
-	_out_file << endl;
+	outfileMain << endl;
 
 	// write individual output files
-	for (auto obj : _lines)
+	for (auto obj : LineList)
 		obj->Output(t);
-	for (auto obj : _rods)
+	for (auto obj : RodList)
 		obj->Output(t);
-	for (auto obj : _bodies)
+	for (auto obj : BodyList)
 		obj->Output(t);
 
 	return MOORDYN_SUCCESS;
