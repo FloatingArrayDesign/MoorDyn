@@ -1170,7 +1170,10 @@ void Rod::doRHS()
 		// mass matrices will be summed up before inversion, near end of this function
 
 		// ============  CALCULATE FORCES ON EACH NODE ===============================
-	
+
+		double vp_mag = 0.0;
+		double vq_mag = 0.0;
+
 		if (N > 0)   // this is only nonzero for finite-length rods (skipped for zero-length Rods)
 		{
 			// note: no nodal axial structural loads calculated since it's assumed rigid, but should I calculate tension/compression due to other loads?
@@ -1199,8 +1202,8 @@ void Rod::doRHS()
 				vq_squared += vq[J] * vq[J];
 				vp_squared += vp[J] * vp[J];
 			}
-			double vp_mag = sqrt(vp_squared);
-			double vq_mag = sqrt(vq_squared);
+			vp_mag = sqrt(vp_squared);
+			vq_mag = sqrt(vq_squared);
 			
 			// transverse and tangential drag		
 			for (int J=0; J<3; J++)  Dp[i][J] = VOF * 0.5*env->rho_w*Cdn*    d*dL * vp_mag * vp[J];

@@ -376,7 +376,6 @@ void GetOrientationAngles(double p1[3], double p2[3], double* phi, double* sinPh
     double vec[3];
 	double vecLen;
 	double vecLen2D;
-	double k_hat[3]; // output unit vector no longer used <<<
 
 	// calculate isntantaneous incline angle and heading, and related trig values
 	// the first and last NodeIndx values point to the corresponding Joint nodes idices which are at the start of the Mesh
@@ -388,10 +387,8 @@ void GetOrientationAngles(double p1[3], double p2[3], double* phi, double* sinPh
 		cout << "ERROR in GetOrientationAngles in MoorDyn" << endl;
 		cout << p1 << endl;
 		cout << p2 << endl;
-		k_hat[0] = 1.0/0.0;
 	}
 	else  { 
-		for (int i=0; i<3; i++)  k_hat[i] = vec[i] / vecLen; 
 		*phi   = atan2(vecLen2D, vec[2]);   // incline angle   
 	}
 	if ( *phi < 0.000001)  
