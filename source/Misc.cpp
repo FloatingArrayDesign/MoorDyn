@@ -15,8 +15,58 @@
  */
 
 #include "Misc.h"
+#include <algorithm>
 
 using namespace std;
+
+
+namespace moordyn
+{
+
+namespace str
+{
+
+string lower(const string &str)
+{
+	string out = str;
+	transform(out.begin(), out.end(), out.begin(), ::tolower);
+	return out;
+}
+
+string upper(const string &str)
+{
+	string out = str;
+	transform(out.begin(), out.end(), out.begin(), ::toupper);
+	return out;
+}
+
+bool has(const string &str, const vector<string> terms)
+{
+	for (auto term : terms)
+	{
+		if(str.find(term) != string::npos)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+vector<string> split(const string &str, const char sep)
+{
+	stringstream spliter(str);
+	string token;
+	vector<string> words;
+	while (std::getline(spliter, token, sep)) {
+		if (token.size())
+			words.push_back(token);
+	}
+	return words;
+}
+
+}  // ::moordyn::str
+
+}  // ::moordyn
 
 
 // interpolate an array of data, x values must be increasing
@@ -317,18 +367,61 @@ double GetCurvature(double length, double q1[3], double q2[3])
 }
 
 
+// calculate orientation angles of a cylindrical object
+void GetOrientationAngles(double p1[3], double p2[3], double* phi, double* sinPhi, double* cosPhi, 
+                          double* tanPhi, double* beta, double* sinBeta, double* cosBeta)
+{
+    // p1 and p2 are the end A and end B coordinate of the rod
+	
+    double vec[3];
+	double vecLen;
+	double vecLen2D;
+
+	// calculate isntantaneous incline angle and heading, and related trig values
+	// the first and last NodeIndx values point to the corresponding Joint nodes idices which are at the start of the Mesh
+	for (int i=0; i<3; i++)  vec[i] = p2[i] - p1[i];   
+	
+	vecLen   = sqrt(dotProd(vec,vec));
+	vecLen2D = sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
+	if ( vecLen < 0.000001 )  {
+		cout << "ERROR in GetOrientationAngles in MoorDyn" << endl;
+		cout << p1 << endl;
+		cout << p2 << endl;
+	}
+	else  { 
+		*phi   = atan2(vecLen2D, vec[2]);   // incline angle   
+	}
+	if ( *phi < 0.000001)  
+		*beta = 0.0;
+	else
+		*beta = atan2(vec[1], vec[0]);    // heading of incline     
+	
+	*sinPhi  = sin(*phi);
+	*cosPhi  = cos(*phi);
+	*tanPhi  = tan(*phi); 
+	*sinBeta = sin(*beta);
+	*cosBeta = cos(*beta);
+		
+	return;
+}
+
+
 // split a string into separate letter strings and integers
 int decomposeString(char outWord[10], char let1[10], 
      char num1[10], char let2[10], char num2[10], char let3[10])
 {
 	// convert to uppercase for string matching purposes
-	for (int charIdx=0; charIdx<10; charIdx++) 
+	for (int charIdx=0; charIdx<10; charIdx++)
+	{
+		if (outWord[charIdx] == '\0')
+			break;
 		outWord[charIdx] = toupper(outWord[charIdx]);
+	}
 
 	//int wordLength = strlen(outWord);  // get length of input word (based on null termination)
 		//cout << "1";	
 	//! find indicies of changes in number-vs-letter in characters
-	int in1 = strcspn( outWord, "1234567890");  // scan( OutListTmp , '1234567890' )              ! index of first number in the string
+	unsigned int in1 = strcspn( outWord, "1234567890");  // scan( OutListTmp , '1234567890' )              ! index of first number in the string
 	strncpy(let1, outWord, in1);   // copy up to first number as object type
 	let1[in1] = '\0';				// add null termination
 
@@ -336,7 +429,7 @@ int decomposeString(char outWord[10], char let1[10],
 	{	
 	 // >>>>>>> the below line seems redundant - could just use in1 right??? <<<<<<<
 		char *outWord1 = strpbrk(outWord, "1234567890");  		// get pointer to first number
-		int il1 = strcspn( outWord1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");  // in1+verify( OutListTmp(in1+1:) , '1234567890' )  ! second letter start (assuming first character is a letter, i.e. in1>1)
+		unsigned int il1 = strcspn( outWord1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");  // in1+verify( OutListTmp(in1+1:) , '1234567890' )  ! second letter start (assuming first character is a letter, i.e. in1>1)
 		strncpy(num1, outWord1, il1);   	// copy number
 		num1[il1] = '\0';				// add null termination
 		
@@ -344,7 +437,7 @@ int decomposeString(char outWord[10], char let1[10],
 		{	
 			char *outWord2 = strpbrk(outWord1, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 			//cout << "3 il1=" << il1 << ", " ;	
-			int in2 = strcspn( outWord2, "1234567890");  // il1+scan( OutListTmp(il1+1:) , '1234567890' )    ! second number start
+			unsigned int in2 = strcspn( outWord2, "1234567890");  // il1+scan( OutListTmp(il1+1:) , '1234567890' )    ! second number start
 			strncpy(let2, outWord2, in2);   // copy chars
 			let2[in2] = '\0';				// add null termination
 			
@@ -352,7 +445,7 @@ int decomposeString(char outWord[10], char let1[10],
 			{
 				char *outWord3 = strpbrk(outWord2, "1234567890");
 				//cout << "4";	
-				int il2 = strcspn( outWord3, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");  // in2+verify( OutListTmp(in2+1:) , '1234567890' )  ! third letter start
+				unsigned int il2 = strcspn( outWord3, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");  // in2+verify( OutListTmp(in2+1:) , '1234567890' )  ! third letter start
 				strncpy(num2, outWord3, il2);   // copy number
 				num2[il2] = '\0';				// add null termination
 				
@@ -360,8 +453,8 @@ int decomposeString(char outWord[10], char let1[10],
 				{
 					char *outWord4 = strpbrk(outWord3, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 					//cout << "5";	
-					strncpy(let3, outWord4, strlen(outWord4));   // copy remaining chars (should be letters)  ??
-					let3[strlen(outWord4)] = '\0';				// add null termination  (hopefully takes care of case where letter D.N.E.)
+					strncpy(let3, outWord4, 9);   // copy remaining chars (should be letters)  ??
+					let3[9] = '\0';               // add null termination  (hopefully takes care of case where letter D.N.E.)
 				}
 				else
 					let3[0] = '\0';
@@ -617,20 +710,23 @@ double distance3d( double* r1, double* r2)
 double dotProd( vector<double>& A, vector<double>& B)
 {	
 	double ans = 0.;
-	for (int i=0; i<A.size(); i++) ans += A[i]*B[i];	
+	for (unsigned int i=0; i<A.size(); i++)
+		ans += A[i]*B[i];	
 	return ans;
 }
 
 double dotProd( double A[], vector<double>& B)
 {	
 	double ans = 0.;
-	for (int i=0; i<B.size(); i++) ans += A[i]*B[i];	
+	for (unsigned int i=0; i<B.size(); i++)
+		ans += A[i]*B[i];	
 	return ans;
 }
 double dotProd( double A[3], double B[3])
 {	
 	double ans = 0.;
-	for (int i=0; i<3; i++) ans += A[i]*B[i];	
+	for (unsigned int i=0; i<3; i++)
+		ans += A[i]*B[i];
 	return ans;
 }
 
@@ -987,22 +1083,17 @@ void rotateM6(double Min[36], double rotMat[9], double outMat[36])
 	// are structured to go through four 3x3 quadrants in row-major order,
 	// meaning the array can be split into quadrants by passing with shift
 	// of 0, 9, 18, and 24.
-		
-	double tempM[3][3];
-	double tempMrotated[3][3];
-	
+
 	// mass matrix
 	rotateM3(Min, rotMat, outMat);
-	
+
 	// product of inertia matrix	
 	rotateM3(Min+9, rotMat, outMat+9);
 	// copy over second quadrant to third quadrant using transpose
 	for (int I=0; I<3; I++) for (int J=0; J<3; J++) outMat[18 + 3*I + J] = outMat[9 + 3*J + I];
-	
+
 	// moment of inertia matrix
 	rotateM3(Min+24, rotMat, outMat+24);
-	
-	return;
 }
 
 
@@ -1132,7 +1223,11 @@ void translateForce3to6DOF(double dx[3], double F[3], double Fout[6])
 }
 
 
-void transformMass3to6DOF(double r[3], double TransMat[9], double Min[3][3], double Iin[3][3], double Mout[6][6])
+void transformMass3to6DOF(double PARAM_UNUSED r[3],
+                          double PARAM_UNUSED TransMat[9],
+                          double PARAM_UNUSED Min[3][3],
+                          double PARAM_UNUSED Iin[3][3],
+                          double PARAM_UNUSED Mout[6][6])
 {
 	// r - vector from ref point to CG (center of Min and Iin) in UNROTATED ref frame?
 	
@@ -1422,49 +1517,16 @@ void translateMass6to6DOF(double r[3], double Min[36], double Mout[36])
 // new better string splitting function
 vector<string> split(const string &s)
 {
-	vector<string> elems;  // the vector of words to return
-    
-	char str[200];  // this gives some memory for the char array
-	strncpy(str, s.c_str(), 200);  // copy input string to str (to avoid strtok modifying the input string)
-	char * pch;
-	pch = strtok (str, " \t");  // give strtok the c string of s
-	while (pch != NULL)
-	{
-		elems.push_back(pch);
-		pch = strtok (NULL, " \t");  // split by spaces or tabs
-	}
-	return elems;
+	return moordyn::str::split(s, ' ');
 }
 vector<string> splitBar(const string &s)
 {
-	vector<string> elems;  // the vector of words to return
-    
-	char str[200];  // this gives some memory for the char array
-	strncpy(str, s.c_str(), 200);  // copy input string to str (to avoid strtok modifying the input string)
-	char * pch;
-	pch = strtok (str, "|");  // give strtok the c string of s
-	while (pch != NULL)
-	{
-		elems.push_back(pch);
-		pch = strtok (NULL, "|");  // split by spaces or tabs
-	}
-	return elems;
+	return moordyn::str::split(s, '|');
 }
 
 vector<string> splitComma(const string &s)  // this one splits at commas
 {
-	vector<string> elems;  // the vector of words to return
-    
-	char str[200];  // this gives some memory for the char array
-	strncpy(str, s.c_str(), 200);  // copy input string to str (to avoid strtok modifying the input string)
-	char * pch;
-	pch = strtok (str, ",");  // give strtok the c string of s
-	while (pch != NULL)
-	{
-		elems.push_back(pch);
-		pch = strtok (NULL, ",");  // split by spaces or tabs
-	}
-	return elems;
+	return moordyn::str::split(s, ',');
 }
 
 
@@ -1547,6 +1609,14 @@ void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, 
 	return;
 }
 
+void free2Dmem(void** ptr, int n1)
+{
+	if (!ptr)
+		return;
+	for (int i1 = 0; i1 < n1; i1++)
+		free(ptr[i1]);
+	free(ptr);
+}
 
 // 2D,3D,4D double array creation and destruction functions (these could easily be nested) <<< should  inittialize all with zeros!
 double** make2Darray(int n1, int n2) 
@@ -1590,9 +1660,7 @@ double* make1Darray(int n1)  // because I'm forgetful and this is easier than re
 
 void free2Darray(double** theArray, int n1)
 {
-	for (int i1 = 0; i1 < n1; i1++)
-		free(theArray[i1]);
-	free(theArray);
+	free2Dmem((void**)theArray, n1);
 }
 void free3Darray(double*** theArray, int n1, int n2)
 {

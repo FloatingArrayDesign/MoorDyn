@@ -66,7 +66,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	for (int I=0; I<nCpoints; I++)
 	{	dampXs[I] = props->dampXs[I];
 		dampYs[I] = props->dampYs[I];  // should these divide by area too?
-	}	
+	}
 	
 	A = pi/4.*d*d;
 	
@@ -100,6 +100,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	// wave things
 	F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
 	zeta= make1Darray(N+1);        // wave elevation above each node
+	PDyn= make1Darray(N+1);        // dynamic pressure
 	U   = make2Darray(N+1, 3);     // wave velocities
 	Ud  = make2Darray(N+1, 3);     // wave accelerations
 	
@@ -118,9 +119,8 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	channels = channels_in; 				// copy string of output channels to object
 	
 	
-	if (wordy >0)  cout << "Set up Line " << number << "." << endl;
-		
-	return;
+	if (wordy >0)
+		cout << "Set up Line " << number << "." << endl;
 };
 
 
@@ -132,9 +132,9 @@ void Line::setEnv(EnvCond *env_in, Waves *waves_in)
 
 
 // get ICs for line using quasi-static approach
-void Line::initializeLine(double* X )	
+void Line::initializeLine(double* X)
 {
-		// write line information to log file
+	// write line information to log file
 	if (env->writeLog > 1)
 	{
 		*(env->outfileLogPtr) << "  - Line" << number << ":" << endl;
@@ -155,7 +155,7 @@ void Line::initializeLine(double* X )
 	
 	
 	// create output file for writing output (and write channel header and units lines) if applicable
-				
+
 	if (outfile) // check it's not null.  Null signals no individual line output files
 	{
 		if (outfile->is_open())
@@ -337,14 +337,16 @@ void Line::initializeLine(double* X )
 	
 	// process unstretched line length input
 	if (UnstrLen < 0)  // if a negative input, interpret as scaler relative to distance between initial line end points (which have now been set by the relevant Connection objects)
-	{	UnstrLen = -UnstrLen*sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) + pow(( r[N][2] - r[0][2]), 2.0) );
+	{
+		UnstrLen = -UnstrLen*sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) + pow(( r[N][2] - r[0][2]), 2.0) );
 		cout << "   Line " << number << " unstretched length set to " << UnstrLen << " m." << endl;
 	}
 	// otherwise just use the value provided (in m)
 	
 	// now that line length is known, assign length and volume properties
 	for (int i=0; i<N; i++)	
-	{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
+	{
+		l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
 		V[i] = l[i]*0.25*pi*d*d;    // previously missing second d
 	}
 		
@@ -367,12 +369,13 @@ void Line::initializeLine(double* X )
 	// input variables for the Catenary function
 	double XF = sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) ); // quasi-static mooring line coordinate system (vertical plane with corners at anchor and fairlead) 
 	double ZF = r[N][2] - r[0][2];	
-	double W = ( (rho - env->rho_w)*(pi/4.*d*d) )*9.81; 
+	double LW = ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81;
 	double CB = 0.;
 	double Tol = 0.00001;	
 	
 	vector<double> snodes(N+1, 0.0);   					// locations of line nodes along line length - evenly distributed here 
-	for (int i=1; i<=N; i++) snodes[i] = snodes[i-1] + l[i-1]; 
+	for (int i=1; i<=N; i++)
+		snodes[i] = snodes[i-1] + l[i-1]; 
 	snodes[N] = UnstrLen; 								// double check to ensure the last node does not surpass the line length
 	
 	
@@ -382,27 +385,42 @@ void Line::initializeLine(double* X )
 	vector<double> Zl(N+1, 0.0);
 	vector<double> Te(N+1, 0.0);
 			
-	if( XF == 0.0 ) // if the current mooring line is exactly vertical; thus, the solution below is ill-conditioned because the orientation is undefined; so set it such that the tensions and nodal positions are only vertical
-	{   COSPhi = 0.0;   SINPhi = 0.0; }
-	else 	// The current mooring line must not be vertical; use simple trigonometry
-	{   	COSPhi = ( r[N][0] - r[0][0] )/XF;
-		SINPhi = ( r[N][1] - r[0][1] )/XF; 
+	if( XF == 0.0 ) 
+	{
+		// if the current mooring line is exactly vertical; thus, the solution
+		// below is ill-conditioned because the orientation is undefined; so set
+		// it such that the tensions and nodal positions are only vertical
+		COSPhi = 0.0;
+		SINPhi = 0.0;
+		
 	}
-			
-	int success = Catenary( XF, ZF, UnstrLen, E*pi/4.*d*d, W , CB, Tol, &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
-	
+	else
+	{
+		// The current mooring line must not be vertical; use simple
+		// trigonometry
+		COSPhi = (r[N][0] - r[0][0]) / XF;
+		SINPhi = (r[N][1] - r[0][1]) / XF; 
+	}
+
+	int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, LW, CB, Tol,
+	                       &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
+
 	if (success>=0)
-	{	// assign the resulting line positions to the model
+	{
+		// assign the resulting line positions to the model
 		for (int i=1; i<N; i++)
 		{
-			r[i][0]  = r[0][0] + Xl[i]*COSPhi;
-			r[i][1]  = r[0][1] + Xl[i]*SINPhi;
+			r[i][0]  = r[0][0] + Xl[i] * COSPhi;
+			r[i][1]  = r[0][1] + Xl[i] * SINPhi;
 			r[i][2]  = r[0][2] + Zl[i];
 		}
 	}
 	else
-	{	// otherwise just stretch the nodes between the endpoints linearly and hope for the best
-		if (wordy > 0)  cout << "   Catenary IC gen failed for Line" << number << ", so using linear node spacing." << endl;
+	{
+		// otherwise just stretch the nodes between the endpoints linearly and hope for the best
+		if (wordy > 0)
+			cout << "   Catenary IC gen failed for Line" << number
+			     << ", so using linear node spacing." << endl;
 		for (int i=1; i<N; i++)
 		{
 			r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
@@ -415,14 +433,11 @@ void Line::initializeLine(double* X )
 	for (int i=1; i<N; i++) {
 		for (int J=0; J<3; J++) {
 			X[3*N-3 + 3*i-3 + J] = r[i][J];  // positions
-			X[        3*i-3 + J] = 0.0;       // velocities=0
+			X[        3*i-3 + J] = 0.0;      // velocities=0
 		}
 	}
 	// now we need to return to the integrator for the dynamic relaxation stuff
-		
 	cout << "Initialized Line " << number << endl;
-		
-	return;
 };
 
 
@@ -578,7 +593,21 @@ void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in,
 	FTS    = make2Darray(N+1, ntWater);
 	UTS    = make3Darray(N+1, ntWater, 3);
 	UdTS   = make3Darray(N+1, ntWater, 3);
-	
+
+	for (int i=0; i<N+1; i++)
+	{
+		for (int j=0; j<ntWater; j++)
+		{
+			zetaTS[i][j] = zeta_in[i][j];
+			FTS[i][j] = f_in[i][j];
+			for (int k=0; k<3; k++)
+			{
+				UTS[i][j][k] = u_in[i][j][k];
+				UdTS[i][j][k] = ud_in[i][j][k];
+			}
+		}
+	}
+
 	return;
 };
 
@@ -686,20 +715,20 @@ void Line::setTime(double time)
 
 
 // set the line positions and velocities based on latest states
-void Line::setState( const double* X, const double time)
+void Line::setState(const double* X, const double time)
 {
 	// store current time
 	t = time;
 	
 	// set interior node positions and velocities based on state vector
 	for (int i=1; i<N; i++) 
-	{	for (int J=0; J<3; J++)
+	{
+		for (int J=0; J<3; J++)
 		{
-			r[i][J]  = X[3*N-3 + 3*i-3 + J]; // get positions
-			rd[i][J] = X[        3*i-3 + J]; // get velocities
+			r[i][J]  = X[3 * N - 3 + 3 * i - 3 + J]; // get positions
+			rd[i][J] = X[            3 * i - 3 + J]; // get velocities
 		}
 	}
-	return;
 }
 
 
@@ -707,43 +736,29 @@ void Line::setState( const double* X, const double time)
 void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 {
 	int i;
-	
+
 	if (topOfLine==1)
-	{	i = N;           // fairlead case
+	{
+		i = N;        // fairlead case
 		endTypeB = 0; // indicate pinned
 	}
 	else
-	{	i = 0;           // anchor case
+	{
+		i = 0;        // anchor case
 		endTypeA = 0; // indicate pinned
 	}
-	
+
 	for (int J=0; J<3; J++)
 	{
-		r[i][J] = r_in[J];
-		rd[i][J] = rd_in[J];
+		memcpy(r[i], r_in, 3 * sizeof(double));
+		memcpy(rd[i], rd_in, 3 * sizeof(double));
 	}
-	return;
-}		
+}
+
 void Line::setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine)
 {
-	int i;
-	
-	if (topOfLine==1)
-	{	i = N;           // fairlead case
-		endTypeB = 0; // indicate pinned
-	}
-	else
-	{	i = 0;           // anchor case
-		endTypeA = 0; // indicate pinned
-	}
-	
-	for (int J=0; J<3; J++)
-	{
-		r[i][J] = r_in[J];
-		rd[i][J] = rd_in[J];
-	}
-	return;
-}		
+	setEndState(r_in.data(), rd_in.data(), topOfLine);
+}
 
 // set end node unit vector of a line (this is called by an attached to a Rod, only applicable for bending stiffness)
 void Line::setEndOrientation(double *qin, int topOfLine, int rodEndB)
@@ -815,11 +830,11 @@ void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int t
 	}
 	
 	return;
-}	
-	
-	
+}
+
+
 // calculate forces and get the derivative of the line's states
-void Line::getStateDeriv(double* Xd, const double dt)
+void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 {
 	
 	//for (int i=0; i<=N; i++) cout << " " << r[i][0] << " " << r[i][1] << " " << r[i][2] << endl;
@@ -827,13 +842,16 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	// attempting error handling <<<<<<<<
 	for (int i=0; i<=N; i++)
 	{
-		if (isnan(r[i][0]+r[i][1]+r[i][2])) 
+		if (isnan(r[i][0] + r[i][1] + r[i][2])) 
 		{
 			stringstream s;
-			s << "Line " << number << " node positions:";
-			for (int j=0; j<=N; j++) s << "\n" << r[j][0] << "," << r[j][1] << "," << r[j][2] << "; ";
-			s << " at time " << t;
-			throw string(s.str());
+			s << "NaN detected" << endl
+			  << "Line " << number << " node positions:" << endl;
+			for (int j=0; j<=N; j++)
+				s << j << " : "
+				  << r[j][0] << ", " << r[j][1] << ", " << r[j][2] << ";"
+				  << endl;
+			throw moordyn::nan_error(s.str().c_str());
 		}
 	}
 	
@@ -852,7 +870,8 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		lstr[i] = unitvector(qs[i], r[i], r[i+1]);
 				
 		double ldstr_top = 0.0;          // this is the denominator of how the stretch rate equation was formulated
-		for (int J=0; J<3; J++) ldstr_top += (r[i+1][J] - r[i][J])*(rd[i+1][J] - rd[i][J]);
+		for (int J=0; J<3; J++)
+			ldstr_top += (r[i+1][J] - r[i][J]) * (rd[i+1][J] - rd[i][J]);
 		ldstr[i] = ldstr_top/lstr[i]; 	// strain rate of segment
 						
 		V[i] = A*l[i];		// volume attributed to segment
@@ -896,7 +915,7 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	{		
 		for (int i=0; i<=N; i++)
 		{
-			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i]); // call generic function to get water velocities
+			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i], &PDyn[i]); // call generic function to get water velocities
 			
 			F[i] = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
 		}
@@ -974,22 +993,20 @@ void Line::getStateDeriv(double* Xd, const double dt)
 	}
 	
 	
-	// Bending loads	
+	// Bending loads
+	// first zero out the forces from last run
+	for (int i=0; i<=N; i++)
+		for (int J=0; J<3; J++)
+			Bs[i][J] = 0.0;
+	// and now compute them (if possible)
 	if (EI > 0)
 	{
-		// first zero out the forces from last run
-		for (int i=0; i<=N; i++)
-			for (int J=0; J<3; J++) 
-				Bs[i][J] = 0.0;
-			
-		
 		// loop through all nodes to calculate bending forces
 		for (int i=0; i<=N; i++)
 		{
-			double Kurvi;
+			double Kurvi = 0.0;
 			double pvec[3];
 			double Mforce_im1[3];
-			double Mforce_ip1_temp[3];
 			double Mforce_ip1[3];
 			double Mforce_i[  3];
 			
@@ -1053,20 +1070,21 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			}
 			else   // internal node
 			{
-				Kurvi = GetCurvature(lstr[i-1]+lstr[i], qs[i-1], qs[i]);  // curvature <<< remember to check sign, or just take abs
-				
+				Kurvi = GetCurvature(lstr[i-1] + lstr[i], qs[i-1], qs[i]);  // curvature <<< remember to check sign, or just take abs
+
 				crossProd(qs[i-1], qs[i], pvec);         // get direction of bending radius axis
-				
+
 				crossProd(qs[i-1], pvec, Mforce_im1);    // get direction of resulting force from bending to apply on node i-1
 				crossProd(qs[i  ], pvec, Mforce_ip1);    // get direction of resulting force from bending to apply on node i+1
-				
+
 				// scale force direction vectors by desired moment force magnitudes to get resulting forces on adjacent nodes
-				scalevector(Mforce_im1, Kurvi*EI/lstr[i-1], Mforce_im1);
-				scalevector(Mforce_ip1, Kurvi*EI/lstr[i  ], Mforce_ip1 );
-			
+				scalevector(Mforce_im1, Kurvi * EI / lstr[i-1], Mforce_im1);
+				scalevector(Mforce_ip1, Kurvi * EI / lstr[i  ], Mforce_ip1 );
+
 				// set force on node i to cancel out forces on adjacent nodes
-				for (int J=0; J<3; J++) Mforce_i[J] = - Mforce_im1[J] - Mforce_ip1[J];
-				
+				for (int J=0; J<3; J++)
+					Mforce_i[J] = - Mforce_im1[J] - Mforce_ip1[J];
+
 				// apply these forces to the node forces
 				for (int J=0; J<3; J++) 
 				{
@@ -1135,12 +1153,13 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			*/
 		}   // for i=0,N (looping through nodes)
 	}  // if EI > 0
-	
-	
-	
+
+
+
 	// loop through the nodes
 	for (int i=0; i<=N; i++)
 	{
+		W[i][0] = W[i][1] = 0.0;
 		// submerged weight (including buoyancy)
 		if (i==0)
 			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env->rho_w) )*(-env->g);
@@ -1152,18 +1171,19 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		// flow velocity calculations       
 		double vq_squared = 0.;
 		double vp_squared = 0.;
-		
-		for (int J=0; J<3; J++)  vi[J] = U[i][J] - rd[i][J]; // relative flow velocity over node
-		
+
+		for (int J=0; J<3; J++)
+			vi[J] = U[i][J] - rd[i][J];            // relative flow velocity over node
+
 		for (int J=0; J<3; J++) 
-		{	
-			vq[J] = dotProd( vi , q[i] ) * q[i][J]; 	// tangential relative flow component  <<<<<<< check sign since I've reversed q
-			vp[J] = vi[J] - vq[J];					// transverse relative flow component
-			vq_squared += vq[J]*vq[J];
-			vp_squared += vp[J]*vp[J];
+		{
+			vq[J] = dotProd(vi , q[i]) * q[i][J];  // tangential relative flow component  <<<<<<< check sign since I've reversed q
+			vp[J] = vi[J] - vq[J];                 // transverse relative flow component
+			vq_squared += vq[J] * vq[J];
+			vp_squared += vp[J] * vp[J];
 		}
+		double vq_mag = sqrt(vq_squared);
 		double vp_mag = sqrt(vp_squared);
-		double vq_mag = sqrt(vp_squared);
 		
 		// transverse drag		
 		if (i==0) 		
@@ -1238,23 +1258,26 @@ void Line::getStateDeriv(double* Xd, const double dt)
 			B[i][2] = 0.;
 		}		
 		// total forces
-		if (i==0)
-			for (int J=0; J<3; J++) Fnet[i][J] = T[i][J]             + Td[i][J]              + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J]     + Bs[i][J];
-		else if (i==N)                                               
-			for (int J=0; J<3; J++) Fnet[i][J] =          -T[i-1][J]            - Td[i-1][J] + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J]     + Bs[i][J];
-		else                                                           
-			for (int J=0; J<3; J++) Fnet[i][J] = T[i][J] - T[i-1][J] + Td[i][J] - Td[i-1][J] + W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J]  + Bs[i][J];
-		
+		for (int J=0; J<3; J++)
+		{
+			if (i==0)
+				Fnet[i][J] = T[i][J]             + Td[i][J];
+			else if (i==N)
+				Fnet[i][J] =          -T[i-1][J]            - Td[i-1][J];
+			else
+				Fnet[i][J] = T[i][J] - T[i-1][J] + Td[i][J] - Td[i-1][J];
+			Fnet[i][J] += W[i][J] + (Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]) + B[i][J] + Bs[i][J];
+		}
 	}
-		
+
 //	if (t > 5)
 //	{
 //		cout << " in getStateDeriv of line " << number << endl;
 //		
 //		B[0][0] = 0.001; // meaningless
 //	}
-		
-		
+
+
 	// loop through internal nodes and update their states
 	for (int i=1; i<N; i++)	
 	{
@@ -1280,12 +1303,10 @@ void Line::getStateDeriv(double* Xd, const double dt)
 		// fill in state derivatives
 		for (int I=0; I<3; I++) 
 		{
-			Xd[3*N-3 + 3*i-3 + I] = rd[i][I]; //X[3*i-3 + I];    	// dxdt = V  (velocities)
-			Xd[        3*i-3 + I] = acc[I]; //RHSiI;      		// dVdt = RHS * A  (accelerations)
-		}		
+			Xd[            3 * i - 3 + I] = acc[I];    //RHSiI;         dVdt = RHS * A  (accelerations)
+			Xd[3 * N - 3 + 3 * i - 3 + I] = rd[i][I];  //X[3*i-3 + I];  dxdt = V  (velocities)
+		}
 	}
-	
-	return;
 };
 
 
@@ -1409,6 +1430,7 @@ Line::~Line()
 	// wave things   
 	free(F   );       
 	free(zeta);       
+	free(PDyn);       
 	free2Darray(U   , N+1);    
 	free2Darray(Ud  , N+1);    
 		

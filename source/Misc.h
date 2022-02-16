@@ -17,6 +17,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include "MoorDynAPI.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -40,9 +42,7 @@
 
 #ifdef OSX
  #include <sys/uio.h>
-#elif defined LINUX
-
-#else
+#elif defined WIN32
  #include <windows.h>  // these are for guicon function RedirectIOToConsole
  #include <io.h>
 #endif
@@ -62,6 +62,147 @@ template<typename T> static inline T round(T val) {return floor(val + 0.5);}
 
 using namespace std;
 
+namespace moordyn
+{
+
+/** \addtogroup moordyn_errors
+ *  @{
+ */
+
+/// Error identifier
+typedef int error_id;
+
+/// Simple macro to define custom exceptions
+#define MAKE_EXCEPTION(name)                                                    \
+	class name : public std::runtime_error                                      \
+	{                                                                           \
+	public:                                                                     \
+		name(const char* msg) : std::runtime_error(msg) {}                      \
+	};
+
+/// Exception thrown for invalid input files
+MAKE_EXCEPTION(input_file_error)
+/// Exception thrown for invalid output files
+MAKE_EXCEPTION(output_file_error)
+/// Exception thrown for invalid input values
+MAKE_EXCEPTION(input_error)
+/// Exception thrown when NaN values are encountered
+MAKE_EXCEPTION(nan_error)
+/// Exception thrown when memory errors are triggered
+MAKE_EXCEPTION(mem_error)
+/// Exception thrown when invalid values are found
+MAKE_EXCEPTION(invalid_value_error)
+/// Exception thrown for other uhandled errors
+MAKE_EXCEPTION(unhandled_error)
+
+/// Throw the exception associated with the provided error. Do nothing if
+/// MOORDYN_SUCCESS is passed
+#define MOORDYN_THROW(err, msg)                                                 \
+	switch(err) {                                                               \
+		case MOORDYN_SUCCESS:                                                   \
+			break;                                                              \
+		case MOORDYN_INVALID_INPUT_FILE:                                        \
+			throw moordyn::input_file_error(msg);                               \
+			break;                                                              \
+		case MOORDYN_INVALID_OUTPUT_FILE:                                       \
+			throw moordyn::output_file_error(msg);                              \
+			break;                                                              \
+		case MOORDYN_INVALID_INPUT:                                             \
+			throw moordyn::input_error(msg);                                    \
+			break;                                                              \
+		case MOORDYN_NAN_ERROR:                                                 \
+			throw moordyn::nan_error(msg);                                      \
+			break;                                                              \
+		case MOORDYN_MEM_ERROR:                                                 \
+			throw moordyn::mem_error(msg);                                      \
+			break;                                                              \
+		case MOORDYN_INVALID_VALUE:                                             \
+			throw moordyn::invalid_value_error(msg);                            \
+			break;                                                              \
+		default:                                                                \
+			throw moordyn::unhandled_error(msg);                                \
+			break;                                                              \
+	}
+
+/// Catch thrown exceptions and convert them in an error_id. It also gives the
+/// message on the Exception. This macro will only handle known exceptions, i.e.
+/// the ones declared in moordyn_errors. You can add more catch() instances
+/// afterwards
+#define MOORDYN_CATCHER(err, msg)                                               \
+	catch(moordyn::input_file_error const& e) {                                 \
+		err = MOORDYN_INVALID_INPUT_FILE;                                       \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::output_file_error const& e) {                                \
+		err = MOORDYN_INVALID_OUTPUT_FILE;                                      \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::input_error const& e) {                                      \
+		err = MOORDYN_INVALID_INPUT;                                            \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::nan_error const& e) {                                        \
+		err = MOORDYN_NAN_ERROR;                                                \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::mem_error const& e) {                                        \
+		err = MOORDYN_MEM_ERROR;                                                \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::invalid_value_error const& e) {                              \
+		err = MOORDYN_INVALID_VALUE;                                            \
+		msg = e.what();                                                         \
+	}                                                                           \
+	catch(moordyn::unhandled_error const& e) {                                  \
+		err = MOORDYN_UNHANDLED_ERROR;                                          \
+		msg = e.what();                                                         \
+	}
+
+/**
+ * @}
+ */
+
+/** \addtogroup string_tools
+ *  @{
+ */
+
+namespace str
+{
+
+/** @brief Convert a string to lower case
+ * @param str String to check
+ * @return A lower case copy of the string
+ */
+string lower(const string &str);
+
+/** @brief Convert a string to lower case
+ * @param str String to check
+ * @return A lower case copy of the string
+ */
+string upper(const string &str);
+
+/** @brief Check if a string contains one of the provided terms
+ * @param str String to check
+ * @param terms List of terms to look for
+ * @return true if the string contains one or more of the terms, false
+ * otherwise
+ */
+bool has(const string &str, const vector<string> terms);
+
+/** @brief Split a string in a list of substrings
+ * @param str String to split
+ * @param sep Separator
+ */
+vector<string> split(const string &str, const char sep);
+
+}  // ::moordyn::str
+
+/**
+ * @}
+ */
+
+}  // ::moordyn
+
 typedef complex<double> doubleC; 		// make shorthand for complex double type
 typedef complex<float> floatC; 		// make shorthand for complex float type
 
@@ -71,33 +212,50 @@ const double rad2deg = 57.29577951;
 const doubleC i1(0., 1.); 			// set imaginary number 1
 //const floatC i1f(0., 1.); 			// set imaginary number 1
 
-const int wordy = 2;   			// flag to enable excessive output (if > 0) for troubleshooting
+const int wordy = 1;   			// flag to enable excessive output (if > 0) for troubleshooting
 
 const int nCoef = 30;   // maximum number of entries to allow in nonlinear coefficient lookup tables
 
 typedef struct 
 {
+	/// Gavity acceleration (m/s^2)
 	double g;
+	/// Water depth (m)
 	double WtrDpth;
+	/// Water density (kg/m^3)
 	double rho_w;
-	
-	double kb;       // bottom stiffness (Pa/m)
-	double cb;       // bottom damping   (Pa/m/s)
-	int WaveKin;      // wave kinematics flag (0=off, >0=on...)<<<
-	int Current;      // current flag (0=off, >0=on...)<<<
-	double dtWave;   // time step used to downsample wave elevation data with
-	int WriteUnits;	// a global switch for whether to show the units line in the output files (1, default), or skip it (0)
-	int writeLog;   // whether to write a log file. (0=no, 1=basic, 2=full description, 3=ongoing output
+
+	/// bottom stiffness (Pa/m)
+	double kb;
+	/// bottom damping   (Pa/m/s)
+	double cb;
+	/// wave kinematics flag (0=off, >0=on...)<<<
+	int WaveKin;
+	/// current flag (0=off, >0=on...)<<<
+	int Current;
+	/// time step used to downsample wave elevation data with
+	double dtWave;
+
+	/// general bottom friction coefficient, as a start
+	double FrictionCoefficient;
+	/// a damping coefficient used to model the friction at speeds near zero
+	double FricDamp;
+	/// a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
+	double StatDynFricScale;
+
+	/// a global switch for whether to show the units line in the output files
+	/// (1, default), or skip it (0)
+	int WriteUnits;
+	/// whether to write a log file. (0=no, 1=basic, 2=full description,
+	/// 3=ongoing output
+	int writeLog;
+	/// The log file stream
 	ofstream *outfileLogPtr;
-	double FrictionCoefficient; // general bottom friction coefficient, as a start
-	double FricDamp; // a damping coefficient used to model the friction at speeds near zero
-	double StatDynFricScale; // a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
-	
 } EnvCond;
 
 
 
-typedef struct  // (matching Line Dictionary inputs)
+typedef struct _LineProps // (matching Line Dictionary inputs)
 {
 	string type; 
 	double d;
@@ -121,7 +279,7 @@ typedef struct  // (matching Line Dictionary inputs)
 	double bstiffYs[nCoef]; // y array for stress-strain lookup table
 } LineProps;
 
-typedef struct  // (matching Rod Dictionary inputs)
+typedef struct _RodProps // (matching Rod Dictionary inputs)
 {
 	string type; 
 	double d;
@@ -132,7 +290,7 @@ typedef struct  // (matching Rod Dictionary inputs)
 	double Cdt;
 } RodProps;
 
-typedef struct // matching node input stuff
+typedef struct _ConnectProps // matching node input stuff
 {
 	int number;
 	string type;
@@ -148,7 +306,7 @@ typedef struct // matching node input stuff
 	double Ca;  // added 2015/1/15  - added mass coefficient
 } ConnectProps;
 
-typedef struct // matching body input stuff
+typedef struct _BodyProps // matching body input stuff
 {
 	int number;
 	string type;
@@ -167,7 +325,7 @@ typedef struct // matching body input stuff
 	double Ca;	
 } BodyProps;
 
-typedef struct     // for failure conditions
+typedef struct _FailProps    // for failure conditions
 {
 	int attachID;         // ID of connection or Rod the lines are attached to (index is -1 this value)
 	int isRod;             // 1 Rod end A, 2 Rod end B, 0 if connection
@@ -179,7 +337,7 @@ typedef struct     // for failure conditions
 	int failStatus;    // 0 not failed yet, 1 failed
 } FailProps;
 
-typedef struct 
+typedef struct _OutChanProps
 {  // this is C version of MDOutParmType - a less literal alternative of the NWTC OutParmType for MoorDyn (to avoid huge lists of possible output channel permutations)                                                                         
 	char Name[10]; 		// "name of output channel"   
 	char Units[10];			// "units string"     - should match UnitsSize in MoorDyn.cpp (should turn into def)                                                                            
@@ -267,6 +425,9 @@ void getInterpNums(double *xlist, int nx, double xin, double fout[2], int iout[2
 
 double GetCurvature(double length, double q1[3], double q2[3]);
 
+void GetOrientationAngles(double p1[3], double p2[3], double* phi, double* sinPhi, double* cosPhi, 
+                          double* tanPhi, double* beta, double* sinBeta, double* cosBeta);
+
 int decomposeString(char outWord[10], char let1[10], 
      char num1[10], char let2[10], char num2[10], char let3[10]);
 
@@ -317,43 +478,39 @@ void LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, double *y, double*x)
 	// Solves Ax=b for x
 	// LU contains LU matrices, y is a temporary vector
 	// all dimensions are n
-	
-   for(int k=0; k<n; ++k)
+
+	for(int k=0; k<n; ++k)
 	{
-      for(int i=k; i<n; ++i)
+		for(int i=k; i<n; ++i)
 		{
-         double sum=0.;
-			
-         for(int p=0; p<k; ++p)
-				sum += LU[i][p]*LU[p][k];
-			
-         LU[i][k] = A[i][k]-sum; // not dividing by diagonals
-      }
-      for(int j=k+1;j<n;++j)
+			double sum=0.;
+
+			for(int p=0; p<k; ++p)
+				sum += LU[i][p] * LU[p][k];
+			LU[i][k] = A[i][k] - sum; // not dividing by diagonals
+		}
+		for(int j=k+1;j<n;++j)
 		{
-         double sum=0.;
-         for(int p=0;p<k;++p)
-				sum += LU[k][p]*LU[p][j];
-         
-			LU[k][j] = (A[k][j]-sum)/LU[k][k];
-      }
-   }
-	
-   for(int i=0; i<n; ++i)
+			double sum=0.;
+			for(int p=0;p<k;++p)
+				sum += LU[k][p] * LU[p][j];
+			LU[k][j] = (A[k][j] - sum) / LU[k][k];
+		}
+	}
+
+	for(int i=0; i<n; ++i)
 	{
-      double sum=0.;
-      for(int k=0; k<i; ++k)
-			sum += LU[i][k]*y[k];
-      
-		y[i] = (b[i]-sum)/LU[i][i];
-   }
-   for(int i=n-1; i>=0; --i)
+		double sum=0.;
+		for(int k=0; k<i; ++k)
+			sum += LU[i][k] * y[k];
+		y[i] = (b[i] - sum) / LU[i][i];
+	}
+	for(int i=n-1; i>=0; --i)
 	{
-      double sum=0.;
-      for(int k=i+1; k<n; ++k)
-			sum += LU[i][k]*x[k];
-      
-		x[i] = (y[i]-sum); // not dividing by diagonals
+		double sum=0.;
+		for(int k=i+1; k<n; ++k)
+			sum += LU[i][k] * x[k];
+		x[i] = (y[i] - sum);  // not dividing by diagonals
    }
 }
 
@@ -401,6 +558,8 @@ vector<string> splitComma(const string &s);
 void reverse(double* data, int datasize);
 void doIIR(double* in, double* out, int dataSize, double* a, double* b, int kernelSize);
 void doSSfilter(double* in, double* out, int dataSize, double* a, double* beta, double b0, int kernelSize);
+
+void free2Dmem(void** theArray, int n1);
 
 double*    make1Darray(int n1);
 double**   make2Darray(int n1, int n2);

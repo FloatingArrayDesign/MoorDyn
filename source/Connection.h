@@ -55,35 +55,64 @@ class Connection
 	double t0;              // simulation time current integration was started at (used for BC function)
 	double r_ves[3]; 		// fairlead position for vessel node types [x/y/z]
 	double rd_ves[3];		// fairlead velocity for vessel node types [x/y/z]	
-	double tlast;
-		
+
 	double Fnet[3];	// total force on node
-	double Fnet_i[3];
-	double RHS[3];	// RHS of state-space equation (Forces divided by mass matrix)
-	
+
 	double M[3][3]; // node mass + added mass matrices
-	
+
 	// wave things
 	//double F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	double zeta;           // free surface elevation
+	double PDyn;           // dynamic pressure
 	double U [3];             // wave velocities	
 	double Ud[3];            // wave accelerations	
-	
+
 	//vector< vector< double > > S;  // inverse mass matrices (3x3) for each node
 	//vector< vector< double > > M_i;
-			
-	
+
 public:
-	
+	/** @brief Types of connections
+	 */
+	typedef enum {
+		/// Is coupled, i.e. is controlled by the user
+		COUPLED = -1,
+		/// Is free to move, controlled by MoorDyn
+		FREE = 0,
+		/// Is fixed, either to a location or to another moving entity
+		FIXED = 1,
+		// Some aliases
+		VESSEL = COUPLED,
+		FAIRLEAD = COUPLED,
+		CONNECT = FREE,
+		ANCHOR = FIXED,
+	} types;
+
+	/** @brief Return a string with the name of a type
+	 *
+	 * This tool is useful mainly for debugging
+	 */
+	static string TypeName(types t)
+	{
+		switch(t)
+		{
+		case COUPLED:
+			return "COUPLED";
+		case FREE:
+			return "FREE";
+		case FIXED:
+			return "FIXED";
+		}
+		return "UNKNOWN";
+	}
 	//
 	int number;
-	int type;  // defining whether 1: fixed/attached to something, 0 free to move, or -1 coupled externally
+	types type;  // defining whether 1: fixed/attached to something, 0 free to move, or -1 coupled externally
 		
 	int WaterKin;  // flag indicating whether wave/current kinematics will be considered for this linec
 	// 0: none, or use value set externally for each node of the object; 1: interpolate from stored; 2: call interpolation function from global Waves grid
 
 		
-	void setup(int number_in, int type_in, double r0_in[3], double M_in,
+	void setup(int number_in, types type_in, double r0_in[3], double M_in,
 	double V_in, double F_in[3], double CdA_in, double Ca_in);
 	
 	void addLineToConnect(Line *theLine, int TopOfLine);
@@ -111,7 +140,7 @@ public:
 	
 	//void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
 	
-	void initiateStep(double rFairIn[3], double rdFairIn[3], double time);
+	void initiateStep(const double rFairIn[3], const double rdFairIn[3], double time);
 	
 	void updateFairlead( const double time);
 	void setKinematics( double *r_in, double *rd_in);

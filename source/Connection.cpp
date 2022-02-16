@@ -20,7 +20,7 @@
 
 // connection member functions
 
-void Connection::setup(int number_in, int type_in, double r0_in[3], double M_in,
+void Connection::setup(int number_in, types type_in, double r0_in[3], double M_in,
 	double V_in, double F_in[3], double CdA_in, double Ca_in) 
 {
 	//props contains: Node      Type      X        Y         Z        M        V        FX       FY      FZ  CdA  Ca
@@ -63,7 +63,7 @@ void Connection::setup(int number_in, int type_in, double r0_in[3], double M_in,
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->P" << number << " ";
+	if (wordy>0) cout << "L" << theLine->number << "->P" << number << endl;
 	
 	
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
@@ -182,7 +182,7 @@ void Connection::initializeAnchor()
 
 void Connection::initializeConnect( double* X )
 {
-	if (type==0)  // error check
+	if (type==FREE)  // error check
 	{	
 		// pass kinematics to any attached lines so they have initial positions at this initialization stage
 		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
@@ -348,11 +348,11 @@ void Connection::setTime(double time)
 
 
 // called at the beginning of each coupling step to update the boundary conditions (fairlead kinematics) for the proceeding line time steps
-void Connection::initiateStep(double rFairIn[3], double rdFairIn[3], double time)
+void Connection::initiateStep(const double rFairIn[3], const double rdFairIn[3], double time)
 {	
 	t0 = time; // set start time for BC functions
 	
-	if (type==-1)  {  // if vessel type 
+	if (type==COUPLED)  {  // if vessel type 
 		// update values to fairlead position and velocity functions (fn of time)
 		for (int J=0; J<3; J++)  {
 			r_ves[J] = rFairIn[J];
@@ -369,7 +369,7 @@ void Connection::updateFairlead(const double time)
 {	
 	t = time;
 
-	if (type==-1) // vessel (moves with platform)		CHANGED
+	if (type==COUPLED) // vessel (moves with platform)		CHANGED
 	{						
 		// set fairlead position and velocity based on BCs (linear model for now)
 		for (int J=0; J<3; J++)  
@@ -398,7 +398,7 @@ void Connection::updateFairlead(const double time)
 // sets Connection states and ends of attached lines ONLY if this Connection is attached to a body (otherwise shouldn't be called)
 void Connection::setKinematics(double *r_in, double *rd_in)
 {	
-	if (type==1) // attached to something (body or fixed) CHANGED
+	if (type==FIXED) // attached to something (body or fixed) CHANGED
 	{						
 		// set position and velocity
 		for (int J=0; J<3; J++)  {
@@ -425,7 +425,7 @@ int Connection::setState( const double* X, const double time)
 	t = time;
 	
 	// the kinematics should only be set with this function of it's an independent/free connection
-	if (type==0) // "connect" type
+	if (type==FREE) // "connect" type
 	{
 		// from state values, get r and rdot values 
 		for (int J=0; J<3; J++) 	
@@ -450,7 +450,7 @@ int Connection::setState( const double* X, const double time)
 int Connection::getStateDeriv(double* Xd)
 {	
 	// the RHS is only relevant (there are only states to worry about) if it is a Connect type of Connection
-	if (type==0) // free (previously "connect") type
+	if (type==FREE) // free (previously "connect") type
 	{
 		if (t==0)   // with current IC gen approach, we skip the first call to the line objects, because they're set AFTER the call to the connects
 		{		// above is no longer true!!! <<<
@@ -603,7 +603,7 @@ int Connection::doRHS()
 	}
 	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
 	{	
-		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, &zeta); // call generic function to get water velocities
+		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, &zeta, &PDyn); // call generic function to get water velocities
 		
 		//F = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
 	

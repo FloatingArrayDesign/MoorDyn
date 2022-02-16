@@ -65,63 +65,62 @@ class Rod
 	double Cdn;
 	double Cdt;
 	//double ReFac;
-	
-	
-	double A;               // line cross-sectional area to pre-compute
-	
+
 	// degrees of freedom (or states)
 	double r6 [6];          // Rod 6dof position [x/y/z/u1/u2/u3] (end A coordinates and direction unit vector)
 	double v6 [6];	        // Rod 6dof velocity[vx/vy/vz/wx/wy/wz] (end A velocity and rotational velocities about unrotated axes)
-	
-	
+
 	// kinematics
 	double **r;             // node positions [i][x/y/z]
 	double **rd;            // node velocities [i][x/y/z]
 	double q[3];      	    // unit tangent vector for rod
 	double *l; 		        // line unstretched segment lengths
-	
+
 	double ***M;            // node mass + added mass matrix
 	//double Mext[3];         // net moment from attached lines at either end <<< should rename to be clearly moment not mass
 	double *V;              // line segment volume	
 	double FextA[3];              // external forces from attached lines on/about end A 
 	double FextB[3];              // external forces from attached lines on/about end A 
-	double MextA[3];              // external moments from attached lines on/about end A 
-	double MextB[3];              // external moments from attached lines on/about end B
-				
+	double Mext[3];         // external moments (from attached cables or waterplane hydrostatic moment) 
+	double F6net[6];        // total force and moment about end A (excluding inertial loads) that Rod may exert on whatever it's attached to
+	double M6net[6][6];     // total mass matrix about end A of Rod and any attached Points
+
 	// forces 
-	double **W;             // node weight 	
+	double **W;             // node dry weight 	
+	double **Bo;            // node buoyancy 	
+	double **Pd;            // dynamic pressure
 	double **Dp;            // node drag (transverse)
 	double **Dq;            // node drag (axial)
 	double **Ap;            // node added mass forcing (transverse)
 	double **Aq;            // node added mass forcing (axial)
 	double **B;             // node bottom contact force	
 	double **Fnet;          // total force on node  <<<<<<< might remove this for Rods
-		
+
 	// wave things
 	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	double *zeta;           // free surface elevation
+	double *PDyn;           // dynamic pressure
 	double **U;             // wave velocities	
 	double **Ud;            // wave accelerations
+	double h0;              // instantaneous axial submerged length [m]
 
-	
 	// time
 	double t;               // simulation time
 	double t0;              // simulation time current integration was started at (used for BC function)
 	double r_ves[6]; 		// fairlead position for coupled rods [x/y/z]
 	double rd_ves[6];		// fairlead velocity for coupled rods [x/y/z]
-	double tlast;
-		
+
 	// motion component vectors (declaring these here as they caused problems if declared in the loop)
 	double vi[3];           // relative velocity
 	double vp[3];           // transverse component of relative velocity
 	double vq[3];           // axial component of relative velocity
 	double ap[3];           // transverse component of absolute acceleration - HAD TO MOVE THIS UP FROM LOWER DOWN (USED TO CRASH AFTER I=3)
 	double aq[3];           // axial component of absolute acceleration
-		
+
 	// file stuff
 	ofstream * outfile;     // if not a pointer, caused odeint system initialization error during compilation
 	string channels;
-	
+
 	// data structures for precalculated nodal water kinematics if applicable
 	double **zetaTS;        // time series of wave elevations above each node
 	double **FTS;
@@ -130,11 +129,55 @@ class Rod
 	int ntWater;            // number of water kinematics time steps
 	double dtWater;         // water kinematics time step size (s)
 
-
 public:
+	/** @brief Types of rods
+	 */
+	typedef enum {
+		/// Is coupled, i.e. is controlled by the user
+		COUPLED = -2,
+		/// Is a pinned fairlead
+		CPLDPIN = -1,
+		/// Is free to move, controlled by MoorDyn
+		FREE = 0,
+		/// Is pinned
+		PINNED = 1,
+		/// Is fixed, either to a location or to another moving entity
+		FIXED = 2,
+		// Some aliases
+		VESSEL = COUPLED,
+		VESPIN = CPLDPIN,
+		CONNECT = FREE,
+		ANCHOR = FIXED,
+	} types;
+
+	/** @brief Return a string with the name of a type
+	 *
+	 * This tool is useful mainly for debugging
+	 */
+	static string TypeName(types t)
+	{
+		switch(t)
+		{
+		case COUPLED:
+			return "COUPLED";
+		case CPLDPIN:
+			return "CPLDPIN";
+		case FREE:
+			return "FREE";
+		case PINNED:
+			return "PINNED";
+		case FIXED:
+			return "FIXED";
+		}
+		return "UNKNOWN";
+	}
+
  	int number; // rod "number" id
-	int type;  // 	0: free to move; 1: pinned; 2: attached rigidly (positive if to something, negative if coupled)
+	types type;  // 	0: free to move; 1: pinned; 2: attached rigidly (positive if to something, negative if coupled)
 //	int pinned;      // flag indicating of Rod end A is pinned (1) or free (0/default). Triggered by setting BodyToAddTO to -1.
+	
+	double roll;
+	double pitch;
 	
 	int WaterKin;  // flag indicating whether wave/current kinematics will be considered for this linec
 	// 0: none, or use value set externally for each node of the object; 1: interpolate from stored; 2: call interpolation function from global Waves grid
@@ -146,7 +189,7 @@ public:
  
 	int getN(); // returns N (number of segments)
 	
-	int setup(int number_in, int type_in, RodProps *props, double endCoords[6], int NumSegs, 
+	int setup(int number_in, types type_in, RodProps *props, double endCoords[6], int NumSegs, 
 	shared_ptr<ofstream> outfile_pointer, string channels_in);
 	
 	void addLineToRodEndA(Line *theLine, int TopOfLine);
@@ -167,7 +210,7 @@ public:
 	void scaleDrag(double scaler);	
 	void setTime(double time);
 	
-	void initiateStep(double rFairIn[6], double rdFairIn[6], double time);
+	void initiateStep(const double rFairIn[6], const double rdFairIn[6], double time);
 	
 	void updateFairlead(const double time);
 	void setKinematics(double *r_in, double *rd_in);

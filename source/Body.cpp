@@ -22,20 +22,17 @@
 
 // connection member functions
 
-void Body::setup(int number_in, int type_in, double r6_in[6], double rCG_in[3], double M_in,
+void Body::setup(int number_in, types type_in, double r6_in[6], double rCG_in[3], double M_in,
 	double V_in, double I_in[3], double CdA_in[3], double Ca_in[3], shared_ptr<ofstream> outfile_pointer) 
 {
 	//props contains: input file has	Name/ID      X0   Y0   Z0   Xcg   Ycg   Zcg      M      V        IX       IY       IZ     CdA-x,y,z Ca-x,y,z
-	
-	// copy in input file data
 	number = number_in;
 	type = type_in;
-	
 	
 	outfile = outfile_pointer.get(); 		// make outfile point to the right place
 	
 	
-	if (type==0)
+	if (type == FREE)
 	{
 		bodyM = M_in;
 		bodyV = V_in;
@@ -115,26 +112,25 @@ void Body::addConnectionToBody(Connection *theConnection, double coords[3])
 // this function handles assigning a line to a connection node
 void Body::addRodToBody(Rod *theRod, double endCoords[6])
 {
-	if (wordy>0) cout << "R" << theRod->number << "->B" << number << " ";	
-	
+	if (wordy>0) cout << "R" << theRod->number << "->B" << number << " " << endl;
+
 	if (nAttachedR <30) // this is currently just a maximum imposed by a fixed array size. 
 	{
 		// store Rod address
 		attachedR[nAttachedR] = theRod;
-		
+
 		// store Rod end A relative position and unit vector from end A to B
 		double tempUnitVec[3];
-		double dummyLength;
-		
+
 		unitvector(tempUnitVec, endCoords, endCoords+3);
-		
+
 		for (int I=0; I<3; I++)
-		{	r6RodRel[nAttachedR][  I] =   endCoords[I];
+		{
+            r6RodRel[nAttachedR][  I] =   endCoords[I];
 			r6RodRel[nAttachedR][3+I] = tempUnitVec[I];
 		}
-		
+
 		nAttachedR += 1;
-		
 	}
 	// <<<<<<<< add error catch <<<<<<<<
 };
@@ -149,14 +145,14 @@ void Body::setEnv(EnvCond *env_in, Waves *waves_in)
 
 
 // used to initialize bodies that aren't free i.e. don't have states
-void Body::initializeUnfreeBody(double r6_in[6], double v6_in[6], double time)
+void Body::initializeUnfreeBody(const double r6_in[6], const double v6_in[6], double time)
 {
 	initiateStep(r6_in, v6_in, time);
 	updateFairlead( time);
 	
 	// If any Rod is fixed to the body (not pinned), initialize it now because otherwise it won't be initialized
 	for (int i=0; i<nAttachedR; i++)
-		if (attachedR[i]->type == 2)
+		if (attachedR[i]->type == Rod::FIXED)
 			attachedR[i]->initializeRod(NULL); 
 	// (connects don't need this)
 
@@ -179,7 +175,7 @@ void Body::initializeBody( double* X )
 	
 	// If the Rod is fixed to the body (not pinned), initialize it now because it won't be initialized otherwise
 	for (int i=0; i<nAttachedR; i++)
-		if (attachedR[i]->type == 2)
+		if (attachedR[i]->type == Rod::FIXED)
 			attachedR[i]->initializeRod(NULL); 
 	// (connects don't need this)
 	
@@ -238,7 +234,7 @@ void Body::getBodyState(double r_out[6], double rd_out[6])
 
 
 // function to return net forces and moments on body (just to allow public reading of Fnet)
-void Body::getFnet(double Fnet_out[])
+void Body::getFnet(double Fnet_out[]) const
 {
 	for (int I=0; I<6; I++) 	Fnet_out[I] = F6net[I];
 };
@@ -292,12 +288,12 @@ void Body::setTime(double time)
 
 
 // called at the beginning of each coupling step to update the boundary conditions (body kinematics) for the proceeding time steps
-void Body::initiateStep(double r_in[6], double rd_in[6], double time)
+void Body::initiateStep(const double r_in[6], const double rd_in[6], double time)
 {
 	
 	t0 = time; // set start time for BC functions
 	
-	if (type==-1)   // if coupled, update boundary conditions
+	if (type==COUPLED)   // if coupled, update boundary conditions
 	{
 		for (int J=0; J<6; J++)  
 		{
@@ -305,7 +301,7 @@ void Body::initiateStep(double r_in[6], double rd_in[6], double time)
 			rd_ves[J] = rd_in[J];
 		}
 	}
-	else if (type==1)   // if the ground body, set the BCs to stationary
+	else if (type==FIXED)   // if the ground body, set the BCs to stationary
 	{
 		for (int J=0; J<6; J++)  
 		{
@@ -325,7 +321,7 @@ void Body::updateFairlead( const double time)
 	// store current time
 	t = time;
 	
-	if (abs(type)==1)   // if coupled OR GROUND BODY
+	if ((type==COUPLED) || (type==FIXED))   // if coupled OR GROUND BODY
 	{		
 		// set Body kinematics based on BCs (linear model for now) 
 		for (int J=0; J<6; J++)  
@@ -417,7 +413,7 @@ void Body::setDependentStates()
 int Body::getStateDeriv(double* Xd)
 {	
 
-	if (type==0)  // this should ONLY be called for free bodies
+	if (type==FREE)  // this should ONLY be called for free bodies
 	{
 		// Get contributions from attached connections (and lines attached to them)
 		

@@ -3,6 +3,11 @@
 *.com
 *.class
 *.o
+*.so
+compile/SO/*.so.*
+*.dll
+*.exe
+*.dylib
 
 # Packages #
 ############
@@ -37,6 +42,8 @@ Thumbs.db
 #duplicate files
 *~
 
-#program output files
+#binary tests
+compile/SO/test*
 
+#program output files
 *.out

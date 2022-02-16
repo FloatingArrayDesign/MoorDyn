@@ -24,21 +24,18 @@ using namespace std;
 
 
 class Waves
-{		
-	int WaveKin;    // flag of wave types, same as in EnvCond
-
-	
+{
 	int nx;           // number of grid points in x direction
 	int ny;           //
 	int nz;           //
 	int nt;           // number of time steps used in wave kinematics time series
 	double dtWave;      // time step for wave kinematics time series
-	
+
 	double *px;      // grid coordinate arrays
 	double *py;
 	double *pz;
-	
-	double ***zeta;   // wave elevation [x,y,t]
+	double  ***zeta;   // wave elevation [x,y,t]
+	double ****PDyn;   // dynamic pressure [x,y,z,t]
 	double ****ux;   // wave velocity [x,y,z,t]
 	double ****uy;   //
 	double ****uz;   //
@@ -46,7 +43,8 @@ class Waves
 	double ****ay;   //
 	double ****az;   //
 	
-	
+	double g;
+	double rho_w;
 	
 	// ------------ from Line object... -----------
 	// new additions for handling waves in-object and precalculating them	(not necessarily used right now)
@@ -65,7 +63,7 @@ public:
 	void makeGrid();
 	void allocateKinematicsArrays();
 	void setup(EnvCond *env);
-	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta);
+	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta, double* PDyn_out);
 	void fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h );
 	~Waves();
 };
