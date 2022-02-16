@@ -137,6 +137,8 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 		
 		// forces 
 		W   = make2Darray(N+1, 3);     // node weights
+		Bo  = make2Darray(N+1, 3);     // node buoyancy 
+		Pd  = make2Darray(N+1, 3);     // dynamic pressure
 		Dp  = make2Darray(N+1, 3);     // node drag (transverse)
 		Dq  = make2Darray(N+1, 3);     // node drag (axial)
 		Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)

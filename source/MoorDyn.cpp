@@ -1050,7 +1050,7 @@ moordyn::error_id MoorDynSystem::Step(const double *x,
 		return GetForces(f);
 	}
 
-	if (!x || !xd || !f)
+	if (NCoupedDOF() && (!x || !xd || !f))
 	{
 		Cout(MOORDYN_ERR_LEVEL) << "Null Pointer received in "
 			<< __FUNC_NAME__
@@ -1466,13 +1466,15 @@ moordyn::error_id MoorDynSystem::ReadInFile()
 				{
 					// it is coupled - controlled from outside
 					type = Body::COUPLED;
-					CpldBodyIs.push_back(BodyList.size() - 1);
+					CpldBodyIs.push_back(BodyList.size());
 				}
 				else 
 				{
 					// it is free - controlled by MoorDyn
 					type = Body::FREE;
-					FreeBodyIs.push_back(BodyList.size() - 1);
+					FreeBodyIs.push_back(BodyList.size());
+					BodyStateIs.push_back(nX);       // assign start index of this body's states
+					nX += 12;                        // add 12 state variables for the body
 				}
 				stringstream oname;
 				oname << _basepath << _basename << "_Body" << number << ".out";
