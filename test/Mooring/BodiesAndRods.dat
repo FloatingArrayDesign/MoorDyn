@@ -48,7 +48,7 @@ Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 5.0      DfacUC       - factor by which to scale drag coefficients during dynamic relaxation IC gen
 0.001    threshIC     - threshold for IC convergence
 0        TmaxIC       - threshold for IC convergence (set to zero for debugging)
-3        writeLog
+3        writeLog     - Write a log file
 ------------------------------ OUTPUTS -----------------------------------------------------
 FairTen1 FairTen2 FairTen3
 Con2px Con2py Con2pz
