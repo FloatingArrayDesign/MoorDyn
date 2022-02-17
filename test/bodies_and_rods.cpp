@@ -58,7 +58,7 @@ int main(int, char**)
     }
 
     double dt = 0.1;
-    const unsigned int nts = 600;
+    const unsigned int nts = 10;
     for (unsigned int i = 0; i < nts; i++)
     {
         double t = i * dt;
