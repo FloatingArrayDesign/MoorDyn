@@ -721,7 +721,7 @@ void Line::setState(const double* X, const double time)
 	t = time;
 	
 	// set interior node positions and velocities based on state vector
-	for (int i=1; i<N; i++) 
+	for (int i=1; i<N; i++)
 	{
 		for (int J=0; J<3; J++)
 		{
@@ -748,11 +748,8 @@ void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 		endTypeA = 0; // indicate pinned
 	}
 
-	for (int J=0; J<3; J++)
-	{
-		memcpy(r[i], r_in, 3 * sizeof(double));
-		memcpy(rd[i], rd_in, 3 * sizeof(double));
-	}
+	memcpy(r[i], r_in, 3 * sizeof(double));
+	memcpy(rd[i], rd_in, 3 * sizeof(double));
 }
 
 void Line::setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine)

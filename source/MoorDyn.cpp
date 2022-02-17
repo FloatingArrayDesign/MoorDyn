@@ -291,8 +291,21 @@ protected:
 	 */
 	inline moordyn::error_id GetForces(double *f) const
 	{
-		if (!f)
+		if (!NCoupedDOF())
+		{
+			if (f)
+				Cout(MOORDYN_WRN_LEVEL) << "Warning: Forces have been asked on "
+					<< "the coupled entities, but there are no such entities"
+					<< endl;
+			return MOORDYN_SUCCESS;
+		}
+		if (NCoupedDOF() && !f)
+		{
+			Cout(MOORDYN_ERR_LEVEL) << "Error: " << __PRETTY_FUNC_NAME__
+				<< " called with a NULL forces pointer, but there are "
+				<< NCoupedDOF() << " coupled Degrees Of Freedom" << endl;
 			return MOORDYN_INVALID_VALUE;
+		}
 		unsigned int ix = 0;
 		for (auto l : CpldBodyIs)
 		{
@@ -950,7 +963,12 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 					}
 				}
 				if (!converged)
+				{
+					Cout(MOORDYN_DBG_LEVEL) << "Dynamic relaxation t = "
+						<< t << "s (time step " << iic << "), error = "
+						<< 100.0 * max_error << "%" << endl;
 					break;
+				}
 			}
 
 			if (converged)
@@ -963,7 +981,7 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	if (converged) {
 		Cout(MOORDYN_MSG_LEVEL) << "Fairlead tensions converged" << endl;
 	} else {
-		Cout(MOORDYN_MSG_LEVEL) << "Fairlead tensions did not converged" << endl;
+		Cout(MOORDYN_WRN_LEVEL) << "Fairlead tensions did not converged" << endl;
 	}
 	Cout(MOORDYN_MSG_LEVEL) << "Remaining error after " << t << " s = "
 	                        << 100.0 * max_error << "%" << endl;
@@ -1043,6 +1061,7 @@ moordyn::error_id MoorDynSystem::Step(const double *x,
                                       double &dt)
 {
 	// should check if wave kinematics have been set up if expected!
+	Cout(MOORDYN_DBG_LEVEL) << "t = " << t << "s" << endl;
 
 	if (dt <= 0)
 	{
@@ -2433,6 +2452,7 @@ moordyn::error_id MoorDynSystem::CalcStateDeriv(double *x,  double *xd,
 		{
 			Cout(MOORDYN_ERR_LEVEL) << "Exception detected at " << t << " s: "
 			                        << err_msg << endl;
+			return err;
 		}
 	}
 

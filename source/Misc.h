@@ -516,7 +516,7 @@ void LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, double *y, double*x)
 
 // void LUsolve(int n, double **A,double **LU, double*b, double *y, double*x);
 void LUsolve3(double A[3][3], double x[3], double b[3]);
-void LUsolve6(double A[6][6], double x[6], double b[6]);
+void LUsolve6(const double A[6][6], double x[6], const double b[6]);
 
 void RotMat( double x1, double x2, double x3, double TransMat[]);
 
@@ -531,7 +531,7 @@ void rotateM6(double Min[36], double rotMat[9], double outMat[36]);
 void rotateVector3(double inVec[3], double rotMat[9], double outVec[3]);
 void rotateVector6(double inVec[6], double rotMat[9], double outVec[6]);
 
-void transformKinematics(double rRelBody[3], double r_in[3], double TransMat[9], double rd_in[6], double rOut[3], double rdOut[3]);
+void transformKinematics(const double rRelBody[3], const double r_in[3], const double TransMat[9], const double rd_in[6], double rOut[3], double rdOut[3]);
 void transformKinematicsAtoB(double rA[3], double u[3], double L, double rd_in[6], vector< double > &rOut, vector< double > &rdOut);
 void transformKinematicsAtoB(double rA[3], double u[3], double L, double rd_in[6], double rOut[3], double rdOut[3]);
 

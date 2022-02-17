@@ -177,8 +177,6 @@ bool minimal()
 }
 
 /** @brief Runs all the test
- * @param argc Unused
- * @param argv Unused
  * @return 0 if the tests have ran just fine. The index of the failing test
  * otherwise
  */

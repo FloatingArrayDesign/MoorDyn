@@ -253,8 +253,6 @@ bool validation(const char* depth, const char* motion)
 }
 
 /** @brief Runs all the test
- * @param argc Unused
- * @param argv Unused
  * @return 0 if the tests have ran just fine, 1 otherwise
  */
 int main(int, char**)
