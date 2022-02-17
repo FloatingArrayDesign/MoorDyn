@@ -53,6 +53,20 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename);
  */
 unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system);
 
+/** @brief Set the instance verbosity level
+ *
+ * @param system The Moordyn system
+ * @param verbosity The verbosity level. It can take the following values
+ *  - MOORDYN_DBG_LEVEL Every single message will be printed
+ *  - MOORDYN_MSG_LEVEL Messages specially designed to help debugging the code
+ *    will be omitted
+ *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
+ *  - MOORDYN_WRN_LEVEL Just errors will be reported
+ * @return 0 If the verbosity level is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR MoorDyn_SetVerbosity(MoorDyn system, int verbosity);
+
 /** @brief Compute the initial condition of a MoorDyn system
  * 
  * At the time of creating a new MoorDyn instance, the input file is read and
