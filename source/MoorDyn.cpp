@@ -976,7 +976,7 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 	if (converged) {
 		Cout(MOORDYN_MSG_LEVEL) << "Fairlead tensions converged" << endl;
 	} else {
-		Cout(MOORDYN_MSG_LEVEL) << "Fairlead tensions did not converged" << endl;
+		Cout(MOORDYN_WRN_LEVEL) << "Fairlead tensions did not converged" << endl;
 	}
 	Cout(MOORDYN_MSG_LEVEL) << "Remaining error after " << t << " s = "
 	                        << 100.0 * max_error << "%" << endl;
