@@ -963,7 +963,12 @@ moordyn::error_id MoorDynSystem::Init(const double *x, const double *xd)
 					}
 				}
 				if (!converged)
+				{
+					Cout(MOORDYN_DBG_LEVEL) << "Dynamic relaxation t = "
+						<< t << "s (time step " << iic << "), error = "
+						<< 100.0 * max_error << "%" << endl;
 					break;
+				}
 			}
 
 			if (converged)
