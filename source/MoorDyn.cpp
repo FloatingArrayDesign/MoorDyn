@@ -86,6 +86,7 @@ public:
 	 *
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
+	 * @param verbosity The verbosity level (see @ref moordyn_log)
 	 */
 	MoorDynSystem(const char *infilename=NULL,
 	              const int verbosity=MOORDYN_DBG_LEVEL);
@@ -108,6 +109,16 @@ public:
 			return cerr;
 		return cout;
 	}
+
+	/** @brief Get the verbosity level
+	 * @return The verbosity level (see @ref moordyn_log)
+	 */
+	inline int GetVerbosity() const { return _verbosity; }
+
+	/** @brief Set the verbosity level
+	 * @param verbosity The verbosity level (see @ref moordyn_log)
+	 */
+	inline void SetVerbosity(const int verbosity) { _verbosity = verbosity; }
 
 	/** @brief Initializes Moordyn, reading the input file and setting up the
 	 * mooring lines
@@ -2696,6 +2707,13 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
 		return MOORDYN_INVALID_VALUE;                                           \
 	}
+
+int DECLDIR MoorDyn_SetVerbosity(MoorDyn system, int verbosity)
+{
+	CHECK_SYSTEM(system);
+	((MoorDynSystem*)system)->SetVerbosity(verbosity);
+	return MOORDYN_SUCCESS;
+}
 
 unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system)
 {
