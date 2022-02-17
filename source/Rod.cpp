@@ -40,7 +40,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 	N = NumSegs;             // assign number of segments to rod
 	
 	if (wordy >0) cout << "Setting up Rod " << number << " (type "<<type<<") with " << N << " segments." << endl;
-			
+
 	// store passed rod properties (and convert to numbers)
 	d   = props->d;
 	rho = props->w/(pi/4.*d*d);
@@ -48,18 +48,17 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 	Cat = props->Cat;
 	Cdn = props->Cdn;
 	Cdt = props->Cdt;
-	
+
 	t=0.;
-	
+
 	nAttachedA = 0;  // start off with zero connections
 	nAttachedA = 0;
 
-	
+
 //	WaveKin = 0;  // start off with wave kinematics disabled.  Can be enabled after initial conditions are found and wave kinematics are calculated
 
 	// <<<<<<<<<<<<<<<<< add some special handling for zero-length rods if N=0 <<<<<<<<<<<<<<<<<
-	
-	
+
 	if (N==0)  // special case of zero-length rod, which is denoted by numsegs=0 in the intput file 
 	{
 		// >>> reduce major redundancy in these if statements
@@ -160,7 +159,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 
 		// set Rod positions if applicable
 		if (type == FREE)                // for an independent rod, set the position right off the bat
-		{		
+		{
 			for (int J=0; J<3; J++)
 			{
 				r6[J] = endCoords[J]; // (end A coordinates) 
@@ -171,7 +170,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 			}
 		}
 		else if ((type == PINNED) || (type == CPLDPIN))     // for a pinned rod, just set the orientation (position will be set later by parent object)
-		{		
+		{
 			for (int J=0; J<3; J++)
 			{
 				r6[3+J] = q[J];   // (Rod direction unit vector)
@@ -183,21 +182,36 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 
 		// calculate a few segment properties
 		for (int i=0; i<N; i++)	
-		{	l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
+		{
+			l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
 			V[i] = l[i]*0.25*pi*d*d;   
 		}
 	}
-	
+
+	// Initialialize some variables (Just a bunch of them would be used, but we
+	// better initialize everything just in case Output methods are called, so
+	// no memory errors are triggered)
+	for (int i = 0; i <= N; i++)
+	{
+		zeta[i] = 0.0;
+		for (int J = 0; J < 3; J++)
+		{
+			const double f = i / (double)N;
+			r[i][J] = endCoords[J] + f * (endCoords[J + 3] - endCoords[J]);
+			rd[0][J] = 0.0;
+		}
+	}
+
 	// set the number of preset wave kinematic time steps to zero (flagging disabled) to start with
 	ntWater = 0; 
-	
+
 	// record output file pointer and channel key-letter list
 	outfile = outfile_pointer.get(); 		// make outfile point to the right place
 	channels = channels_in; 				// copy string of output channels to object
-			
-			
+
+
 	if (wordy >0)  cout << "Set up Rod " << number << ", type " << type << endl;
-			
+
 	return 0;
 };
 
@@ -244,17 +258,16 @@ void Rod::removeLineFromRodEndA(int lineID, int *topOfLine, double rEnd[], doubl
 				TopA[      m] =       TopA[m+1]; 
 			}
 			nAttachedA -= 1;                       // reduce attached line counter by 1
-		
+
 			// also pass back the kinematics at the end
 			for (int J=0; J<3; J++)
 			{
 				rEnd[ J] = r[ 0][J];
 				rdEnd[J] = rd[0][J];
 			}
-		
+
 			cout << "Detached line " << lineID << " from Rod " << number << " end A" << endl;
 			break;
-			
 		}
 		if (l==nAttachedA-1)   // detect if line not found
 			cout << "Error: failed to find line to remove during removeLineFromRodEndA call to rod " << number << ". Line " << lineID << endl;
@@ -274,17 +287,17 @@ void Rod::removeLineFromRodEndB(int lineID, int *topOfLine, double rEnd[], doubl
 				TopB[      m] =       TopB[m+1]; 
 			}
 			nAttachedB -= 1;                       // reduce attached line counter by 1
-		
+
 			// also pass back the kinematics at the end
 			for (int J=0; J<3; J++)
 			{
 				rEnd[ J] = r[ N][J];
 				rdEnd[J] = rd[N][J];
 			}
-			
+
 			cout << "Detached line " << lineID << " from Rod " << number << " end B" << endl;
 			break;
-			
+
 		}
 		if (l==nAttachedB-1)   // detect if line not found
 			cout << "Error: failed to find line to remove during removeLineFromRodEndA call to rod " << number << ". Line " << lineID << endl;
@@ -936,20 +949,21 @@ void Rod::getFnet(double Fnet_out[])
 void Rod::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6])
 {
 	// rBody is the location of the body reference point. A NULL pointer value means the end A coordinates should be used instead.
-	
+
 	// question: do I really want to neglect the rotational inertia/drag/etc across the length of each segment?
 
 	doRHS(); // do calculations of forces and masses on each rod node
-	
+
 	// make sure Fnet_out and M_out are zeroed first
 	for (int J=0; J<6; J++)
-	{	Fnet_out[J] = 0.0;
+	{
+		Fnet_out[J] = 0.0;
 		for (int K=0; K<6; K++)
 			M_out[J][K] = 0.0;
 	}
-	
+
 	double rRef[3];  // global x/y/z coordinate to sum forces, moments, masses about
-	
+
 	// set reference coordinate to return things about
 	if (rBody == NULL)            // if this function is called by the Rod itself, the reference point is just end A
 		for (int J=0; J<3; J++)
@@ -957,29 +971,27 @@ void Rod::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6
 	else
 		for (int J=0; J<3; J++)
 			rRef[J] = rBody[J];
-		
+
 	// NEW APPROACH:  (6 DOF properties now already summed in doRHS)
-	
+
 	// shift everything from end A reference to rRef reference point
 	double rRel[3];     // position of a given node relative to the body reference point (global orientation frame)
-	
+
 	for (int J=0; J<3; J++)  
 		rRel[J] = r[0][J] - rRef[J];                // vector from reference point to end A            
-	 
+
 	translateForce3to6DOF(rRel, F6net, Fnet_out);   // shift net forces
-	
+
 	for (int J=3; J<6; J++)
 		Fnet_out[J] += F6net[J];                    // add in the existing moments
-	 
+
 	translateMass6to6DOF(rRel, M6net, M_out);       // shift mass matrix to be about ref point
-	 
+
 	// >>> do we need to ensure zero moment is passed if it's pinned? <<<
 	//if (abs(Rod%typeNum)==1) then
 	//   Fnet_out(4:6) = 0.0_DbKi
 	//end if
-	
-	
-	
+
 	// >>> OLD APPROACH:
 	/*
 	// now go through each node's contributions, put them in body ref frame, and sum them
@@ -1026,7 +1038,7 @@ void Rod::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6
 //  this is the big function that calculates the forces on the rod, including from attached lines
 void Rod::doRHS()
 {
-	
+
 	
 	// also get net force and mass on each connect object (used to apply constant-length constraint)	
 //	double FconnA[3];
@@ -1181,6 +1193,7 @@ void Rod::doRHS()
 			// note: no nodal axial structural loads calculated since it's assumed rigid, but should I calculate tension/compression due to other loads?
 
 			// weight (now only the dry weight)
+			W[i][0] = W[i][1] = 0.0;
 			W[i][2] = m_i*(-env->g);
 
 			// buoyance (now calculated based on outside pressure, for submerged portion only)
@@ -1319,37 +1332,34 @@ void Rod::doRHS()
 			
 			
 		// ----------------- total forces for this node --------------------
-		
-		for (int J=0; J<3; J++) 
+		for (int J=0; J<3; J++)
 			Fnet[i][J] = W[i][J] + Bo[i][J] + Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J] + Pd[i][J] + B[i][J];
-	
-	
 	} // i - done looping through nodes
 
-
 	// ----- add waterplane moment of inertia moment if applicable -----
-    if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i))  // check if it's crossing the water plane
-	{  	double Mtemp = 1.0/16.0 *pi* pow(d,4) * env->rho_w * env->g * sinPhi * (1.0 + 0.5* tanPhi*tanPhi);
+	if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i))  // check if it's crossing the water plane
+	{
+		double Mtemp = 1.0/16.0 *pi* pow(d,4) * env->rho_w * env->g * sinPhi * (1.0 + 0.5* tanPhi*tanPhi);
 		Mext[0] +=  Mtemp*sinBeta;
 		Mext[1] += -Mtemp*cosBeta;
 		Mext[2] +=  0.0;
-    }
-	  
-	
+	}
+
 	// ============ now add in forces on end nodes from attached lines =============
-	
+
 	// zero the external force/moment sums (important!)
 	for (int I=0; I<3; I++) 
-	{	FextA[I] = 0.0;
+	{
+		FextA[I] = 0.0;
 		FextB[I] = 0.0;  
 		Mext[ I] = 0.0;
 	}
-	
+
 	// loop through lines attached to end A
 	for (int l=0; l < nAttachedA; l++)
 	{
 		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
-		
+
 		// get quantities
 		AttachedA[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopA[l]);
 			
@@ -1358,7 +1368,7 @@ void Rod::doRHS()
 		// 2. create new massless connect with same instantaneous kinematics as current Rod end
 		// 3. disconnect line end from current Rod end and instead attach to new connect
 		// The above may require rearrangement of connection indices, expansion of state vector, etc.
-			
+
 		// sum quantitites
 		for (int I=0; I<3; I++) 
 		{
@@ -1375,10 +1385,10 @@ void Rod::doRHS()
 	for (int l=0; l < nAttachedB; l++)
 	{
 		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0}; double M_i[3][3] = {{0.0}};
-		
+
 		// get quantities
 		AttachedB[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopB[l]);
-	
+
 		// sum quantitites
 		for (int I=0; I<3; I++) 
 		{
@@ -1390,8 +1400,8 @@ void Rod::doRHS()
 				M[N][I][J] += M_i[I][J]; // mass matrix
 		}
 	}
-	
-	
+
+
 	// ---------------- now lump everything in 6DOF about end A -----------------------------
 
 	// question: do I really want to neglect the rotational inertia/drag/etc across the length of each segment?
@@ -1413,7 +1423,7 @@ void Rod::doRHS()
 		for (int J=0; J<3; J++) 
 			for (int K=0; K<3; K++) 
 				M_dub[J][K] = M[i][J][K];
-				
+
 		for (int J=0; J<3; J++)
 			rRel[J] = r[i][J] - r[0][J];  // vector from reference end A to node      
 
@@ -1422,7 +1432,7 @@ void Rod::doRHS()
 
 		// convert segment mass matrix to 6by6 mass matrix about end A
 		translateMass3to6DOF(rRel, M_dub, M6_i);
-			  
+
 		// sum contributions	 
 		for (int J=0; J<6; J++)
 		{
@@ -1432,7 +1442,6 @@ void Rod::doRHS()
 				M6net[J][K] += M6_i[J][K];  // add element mass matrix to body mass matrix
 		}
 	}
-
 
 	// ------------- Calculate some items for the Rod as a whole here -----------------
 
@@ -1475,16 +1484,17 @@ void Rod::doRHS()
 		Mcentripetal[J] = 0.0; //<<<TEMP<<< cross_product(r_c, Fcentripetal) - cross_product(Rod%v6(4:6), MATMUL(Imat,Rod%v6(4:6)))
 	}
 	*/
-	
+
 	// add centripetal force/moment, gyroscopic moment, and any moments applied from lines at either end (might be zero)
 	for (int J=0; J<3; J++)
 	{	//F6net[J] += Fcentripetal[J] 
 		F6net[J] += Mext[J]; // + Mcentripetal[J] 
 	}
+
 	// Note: F6net saves the Rod's net forces and moments (excluding inertial ones) for use in later output
 	//       (this is what the rod will apply to whatever it's attached to, so should be zero moments if pinned).
 	//       M6net saves the rod's mass matrix.
-	
+
 	return;
 }
 

@@ -901,7 +901,7 @@ void LUsolve3(double A[3][3], double x[3], double b[3])
 		x[i] = (y[i]-sum); // not dividing by diagonals
    }
 }
-void LUsolve6(double A[6][6], double x[6], double b[6])
+void LUsolve6(const double A[6][6], double x[6], const double b[6])
 {
 	// Solves Ax=b for x, with size 6
 	
@@ -1127,7 +1127,7 @@ void rotateVector6(double inVec[6], double rotMat[9], double outVec[6])
 }
 
 // calculate position and velocity of point based on its position relative to moving 6DOF body
-void transformKinematics(double rRelBody[3], double r_in[3], double TransMat[9], double rd_in[6], double rOut[3], double rdOut[3])
+void transformKinematics(const double rRelBody[3], const double r_in[3], const double TransMat[9], const double rd_in[6], double rOut[3], double rdOut[3])
 {
 	// rd_in should be in global orientation frame
 	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be written, and 4-6 will

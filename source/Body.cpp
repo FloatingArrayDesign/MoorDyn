@@ -416,9 +416,12 @@ int Body::getStateDeriv(double* Xd)
 	if (type==FREE)  // this should ONLY be called for free bodies
 	{
 		// Get contributions from attached connections (and lines attached to them)
-		
-		if (t==0)   // with current IC gen approach, we skip the first call to the line objects, because they're set AFTER the call to the connects
-		{		// above is no longer true!!! <<<
+
+		// with current IC gen approach, we skip the first call to the line
+		// objects, because they're set AFTER the call to the connects
+		// above is no longer true!!! <<<
+		if (t==0)
+		{
 			for (int I=0; I<6; I++)  {
 				Xd[6+I] = v6[I];  // velocities - these are unused in integration
 				Xd[I] = 0.;     // accelerations - these are unused in integration
@@ -426,10 +429,8 @@ int Body::getStateDeriv(double* Xd)
 		}//<<<<<<<<<<<<<<<<<<<<
 		else
 		{
-			
 			doRHS();
-			
-					
+
 			// solve for accelerations in [M]{a}={f} using LU decomposition
 		//	double M_tot[36];                     // serialize total mass matrix for easy processing
 		//	for (int I=0; I<6; I++) for (int J=0; J<6; J++) M_tot[6*I+J]=M[I][J];
@@ -437,10 +438,10 @@ int Body::getStateDeriv(double* Xd)
 		//	Crout(6, M_tot, LU);                  // perform LU decomposition on mass matrix
 			double acc[6];                        // acceleration vector to solve for
 		//	solveCrout(6, LU, F6net, acc);     // solve for acceleration vector
-						
+
 			LUsolve6(M, acc, F6net);
 			
-			
+
 			// fill in state derivatives
 			for (int I=0; I<6; I++) 
 			{
@@ -469,20 +470,19 @@ void Body::doRHS()
 		for (int J=0; J<6; J++)
 			M[I][J] = 0.0; 		
 	}
-	
+
 	// First, the body's own mass matrix must be adjusted based on its orientation so that 
 	// we have a mass matrix in the global orientation frame	
 	double OrMat2[3][3]; 
 	for (int I=0; I<3; I++) for (int J=0; J<3; J++) OrMat2[I][J]=OrMat[3*I+J];
 	rotateM6(M0, OrMat2, M);
-	
+
 	// gravity on core body
 	double body_rCGrotated[3];
 	double Fgrav[3] = {0.0}; Fgrav[2] = bodyV*env->rho_w*env->g - bodyM*env->g; // weight+buoyancy vector
 	rotateVector3(body_rCG, OrMat, body_rCGrotated);            // relative vector to body CG in inertial orientation
 	translateForce3to6DOF(body_rCGrotated, Fgrav, F6net);      // gravity forces and moments about body ref point given CG location
-	
-	
+
 	// --------------------------------- apply wave kinematics ------------------------------------
 	
 	//env->waves->getU(r6, t, U); // call generic function to get water velocities <<<<<<<<< all needs updating
@@ -505,7 +505,7 @@ void Body::doRHS()
 	for (int J=0; J<6; J++)
 		F6net[J] += 0.5*env->rho_w*vi[J]*abs(vi[J])*bodyCdA[J]; //<<<
 	  // <<< NOTE, for body this should be fixed to account for orientation!! <<< what about drag in rotational DOFs??? <<<<<<<<<<<<<<
-	
+
 	// Get contributions from any connections attached to the body
 	for (int c=0; c < nAttachedC; c++)
 	{			
@@ -540,8 +540,8 @@ void Body::doRHS()
 				M[I][J] += M6_i[I][J];
 		}
 	}
-	
-	
+
+
 	// Get contributions from any rods that are part of the body
 	for (int i=0; i<nAttachedR; i++)
 	{
@@ -573,7 +573,7 @@ void Body::doRHS()
 		}			
 		
 	}
-	
+
 	return;
 }	
 	
