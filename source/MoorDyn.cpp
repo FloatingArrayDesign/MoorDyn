@@ -2447,6 +2447,7 @@ moordyn::error_id MoorDynSystem::CalcStateDeriv(double *x,  double *xd,
 		{
 			Cout(MOORDYN_ERR_LEVEL) << "Exception detected at " << t << " s: "
 			                        << err_msg << endl;
+			return err;
 		}
 	}
 
