@@ -67,15 +67,19 @@ clean:
 test_minimal: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../test/minimal.cpp
 
+test_bodies_and_rods: ../../test/bodies_and_rods.cpp libmoordyn.so ../../source/MoorDyn.h
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_bodies_and_rods ../../test/bodies_and_rods.cpp
+
 test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
 
-test: test_minimal test_quasi_static_chain
+test: test_minimal test_bodies_and_rods test_quasi_static_chain
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_bodies_and_rods
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_quasi_static_chain
 
-debug: CFLAGS += -g -DDEBUG=1
-debug: CPPFLAGS += -g -DDEBUG=1
-debug: EXEFLAGS += -g -DDEBUG=1
+debug: CFLAGS += -O0 -g -DDEBUG=1
+debug: CPPFLAGS += -O0 -g -DDEBUG=1
+debug: EXEFLAGS += -O0 -g -DDEBUG=1
 
 debug: all test

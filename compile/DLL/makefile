@@ -60,15 +60,19 @@ clean:
 test_minimal.exe: ../../test/minimal.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_minimal.exe ../../test/minimal.cpp
 
+test_bodies_and_rods.exe: ../../test/bodies_and_rods.cpp libmoordyn.so ../../source/MoorDyn.h
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_bodies_and_rods.exe ../../test/bodies_and_rods.cpp
+
 test_quasi_static_chain.exe: ../../test/quasi_static_chain.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_quasi_static_chain.exe ../../test/quasi_static_chain.cpp
 
-test: test_minimal.exe test_quasi_static_chain.exe
+test: test_minimal.exe test_bodies_and_rods.exe test_quasi_static_chain.exe
 	./test_minimal.exe
+	./test_bodies_and_rods.exe
 	./test_quasi_static_chain.exe
 
-debug: CFLAGS += -g -DDEBUG=1
-debug: CPPFLAGS += -g -DDEBUG=1
-debug: EXEFLAGS += -g -DDEBUG=1
+debug: CFLAGS += -O0 -g -DDEBUG=1
+debug: CPPFLAGS += -O0 -g -DDEBUG=1
+debug: EXEFLAGS += -O0 -g -DDEBUG=1
 
 debug: all test
