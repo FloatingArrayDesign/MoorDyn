@@ -1187,7 +1187,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					<< " with id " << ConnectionList.size() << endl;
 
 				// now make Connection object!
-				Connection *obj = new Connection();
+				Connection *obj = new Connection(this);
 				obj->setup(number, type, r0, M, V, F, CdA, Ca);
 				ConnectionList.push_back(obj);
 
@@ -1938,7 +1938,7 @@ moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 	ConnectStateIs.push_back(nX);
 
 	// now make Connection object!
-	Connection *obj = new Connection();
+	Connection *obj = new Connection(this);
 	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
 	obj->setEnv(&env, waves);
 	ConnectionList.push_back(obj);
