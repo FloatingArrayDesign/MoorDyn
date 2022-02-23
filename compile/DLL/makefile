@@ -24,11 +24,14 @@ EXEFLAGS = -O3 -g -Wall -Wextra
 
 all: libmoordyn2.dll
 
-libmoordyn2.dll: MoorDyn.o Line.o Connection.o Rod.o Body.o Misc.o Waves.o kiss_fftr.o kiss_fft.o
-	$(CXX) $(LFLAGS) -o libmoordyn2.dll MoorDyn.o Line.o Rod.o Body.o Connection.o Misc.o Waves.o kiss_fftr.o kiss_fft.o
+libmoordyn2.dll: MoorDyn.o MoorDyn2.o Line.o Connection.o Rod.o Body.o Log.o Misc.o Waves.o kiss_fftr.o kiss_fft.o
+	$(CXX) $(LFLAGS) -o libmoordyn2.dll MoorDyn.o MoorDyn2.o Line.o Rod.o Body.o Connection.o Log.o Misc.o Waves.o kiss_fftr.o kiss_fft.o
 
 MoorDyn.o: ../../source/MoorDyn.cpp ../../source/MoorDyn.h ../../source/MoorDynAPI.h
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn.cpp
+
+MoorDyn2.o: ../../source/MoorDyn2.cpp ../../source/MoorDyn2.h ../../source/MoorDyn2.hpp ../../source/MoorDynAPI.h
+	$(CXX) $(CPPFLAGS) ../../source/MoorDyn2.cpp
 
 kiss_fft.o: ../../source/kiss_fft.c ../../source/kiss_fft.h
 	$(CXX) $(CFLAGS) ../../source/kiss_fft.c
@@ -51,6 +54,9 @@ Rod.o: ../../source/Rod.cpp ../../source/Rod.h
 Waves.o: ../../source/Waves.cpp ../../source/Waves.h
 	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
 
+Log.o: ../../source/Log.cpp ../../source/Log.hpp
+	$(CXX) $(CPPFLAGS) ../../source/Log.cpp
+
 Misc.o: ../../source/Misc.cpp ../../source/Misc.h ../../source/MoorDynAPI.h
 	$(CXX) $(CPPFLAGS) ../../source/Misc.cpp
 
@@ -60,8 +66,8 @@ clean:
 test_minimal.exe: ../../test/minimal.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_minimal.exe ../../test/minimal.cpp
 
-test_bodies_and_rods.exe: ../../test/bodies_and_rods.cpp libmoordyn.so ../../source/MoorDyn.h
-	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_bodies_and_rods.exe ../../test/bodies_and_rods.cpp
+test_bodies_and_rods.exe: ../../test/bodies_and_rods.cpp libmoordyn2.dll ../../source/MoorDyn.h
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_bodies_and_rods.exe ../../test/bodies_and_rods.cpp
 
 test_quasi_static_chain.exe: ../../test/quasi_static_chain.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_quasi_static_chain.exe ../../test/quasi_static_chain.cpp

@@ -19,7 +19,7 @@
  * A simple driver program that will run MoorDyn VERSION 2 without any platform
  * motion. It includes bodies and rods
  */
-#include "MoorDyn.h"
+#include "MoorDyn2.h"
 #include <iostream>
 #include <algorithm>
 
