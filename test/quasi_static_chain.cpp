@@ -18,7 +18,7 @@
  * Validation against Orcaflex
  */
 
-#include "MoorDyn.h" 
+#include "MoorDyn2.h" 
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>

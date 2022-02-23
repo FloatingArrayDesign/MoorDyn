@@ -30,11 +30,14 @@ libmoordyn.so: libmoordyn.so.2.0.0
 	rm -f libmoordyn.so
 	ln -s libmoordyn.so.2.0.0 libmoordyn.so
 
-libmoordyn.so.2.0.0: MoorDyn.o Line.o Connection.o Body.o Rod.o Waves.o Misc.o kiss_fft.o kiss_fftr.o
-	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 MoorDyn.o Line.o Connection.o Body.o Rod.o Waves.o Misc.o kiss_fft.o kiss_fftr.o
+libmoordyn.so.2.0.0: MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
+	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
 
 MoorDyn.o: ../../source/MoorDyn.cpp ../../source/MoorDyn.h ../../source/MoorDynAPI.h
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn.cpp
+
+MoorDyn2.o: ../../source/MoorDyn2.cpp ../../source/MoorDyn2.h ../../source/MoorDyn2.hpp ../../source/MoorDynAPI.h
+	$(CXX) $(CPPFLAGS) ../../source/MoorDyn2.cpp
 
 kiss_fft.o: ../../source/kiss_fft.c ../../source/kiss_fft.h
 	$(CXX) $(CFLAGS) ../../source/kiss_fft.c
@@ -56,6 +59,9 @@ Rod.o: ../../source/Rod.cpp ../../source/Rod.h
 
 Waves.o: ../../source/Waves.cpp ../../source/Waves.h
 	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
+
+Log.o: ../../source/Log.cpp ../../source/Log.hpp
+	$(CXX) $(CPPFLAGS) ../../source/Log.cpp
 
 Misc.o: ../../source/Misc.cpp ../../source/Misc.h ../../source/MoorDynAPI.h
 	$(CXX) $(CPPFLAGS) ../../source/Misc.cpp
