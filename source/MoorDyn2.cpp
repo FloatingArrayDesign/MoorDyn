@@ -232,7 +232,20 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
 		ConnectionList[l]->initiateStep(x + ix, xd + ix, 0.0);
-		ConnectionList[l]->updateFairlead(0.0);
+
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try
+		{
+			ConnectionList[l]->updateFairlead(0.0);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+		{
+			Cout(MOORDYN_ERR_LEVEL) << "Error initializing coupled connection"
+				<< l << ": " << err_msg << endl;
+			return err;
+		}
 		ix += 3;
 	}
 
@@ -250,7 +263,22 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 	// Go through independent connections (Connects) and write the coordinates to 
 	// the state vector and set positions of attached line ends
 	for (unsigned int l = 0; l < FreeConIs.size(); l++)
-		ConnectionList[FreeConIs[l]]->initializeConnect(states + ConnectStateIs[l]);
+	{
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try
+		{
+			ConnectionList[FreeConIs[l]]->initializeConnect(
+				states + ConnectStateIs[l]);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+		{
+			Cout(MOORDYN_ERR_LEVEL) << "Error initializing free connection"
+				<< FreeConIs[l] << ": " << err_msg << endl;
+			return err;
+		}
+	}
 
 
 	// Lastly, go through lines and initialize internal node positions using quasi-static model
@@ -1775,7 +1803,21 @@ moordyn::error_id moordyn::MoorDyn::CalcStateDeriv(double *x,  double *xd,
 
 	// extrapolate instantaneous positions of any coupled or fixed connections (type -1)
 	for (auto l : CpldConIs)
-		ConnectionList[l]->updateFairlead(t);
+	{
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try
+		{
+			ConnectionList[l]->updateFairlead(t);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+		{
+			Cout(MOORDYN_ERR_LEVEL) << "Error updating connection: "
+				<< err_msg << endl;
+			return err;
+		}
+	}
 
 	// update wave kinematics if applicable
 	if (env.WaveKin == 1)
@@ -1951,6 +1993,8 @@ moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 	// detach lines from old Rod or Connection, and get kinematics of the old attachment point
 	for (int l = 0; l < nLinesToDetach; l++)
 	{
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
 		if (isRod == 1)
 			RodList[attachID-1]->removeLineFromRodEndA(lineIDs[l],
 			                                         lineTops + l,
@@ -1962,15 +2006,26 @@ moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 			                                         dummyConnectState + 3,
 			                                         dummyConnectState);
 		else if (isRod == 0)
-			ConnectionList[attachID-1]->removeLineFromConnect(lineIDs[l],
-			                                                lineTops + l,
-			                                                dummyConnectState + 3,
-			                                                dummyConnectState);
+		{
+			try
+			{
+				ConnectionList[attachID-1]->removeLineFromConnect(
+					lineIDs[l], lineTops + l,
+					dummyConnectState + 3, dummyConnectState);
+			}
+			MOORDYN_CATCHER(err, err_msg);
+		}
 		else
 		{
-			Cout(MOORDYN_ERR_LEVEL)
-				<< "Error: Failure does not have a valid isRod value" << endl;
-			return MOORDYN_INVALID_VALUE;
+			err_msg = "Error: Failure does not have a valid isRod value";
+			err = MOORDYN_INVALID_VALUE;
+		}
+
+		if (err != MOORDYN_SUCCESS)
+		{
+			Cout(MOORDYN_ERR_LEVEL) << "Error detaching line: "
+				<< err_msg << endl;
+			return err;
 		}
 	}
 

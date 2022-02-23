@@ -378,7 +378,14 @@ void Body::setDependentStates()
 		transformKinematics(rConnectRel[c], r6, OrMat, v6, rConnect, rdConnect); //<<< should double check this function
 					
 		// pass above to the connection and get it to calculate the forces
-		attachedC[c]->setKinematics(rConnect, rdConnect);
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try
+		{
+			attachedC[c]->setKinematics(rConnect, rdConnect);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		// BUG: HANDLE THE ERROR
 	}
 	
 	// set kinematics of any dependent Rods
