@@ -18,6 +18,7 @@
 #define CONNECTION_H
 
 #include "Misc.h"
+#include "Log.hpp"
 
 using namespace std;
 
@@ -26,7 +27,21 @@ class Waves;
 
 class Connection
 {
-	
+public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 */
+	Connection(moordyn::Log *log);
+
+	/** @brief Destructor
+	 */
+	~Connection();
+
+private:
+	/// The Log handler
+	moordyn::Log *_log;
+
+
 	// ENVIRONMENTAL STUFF	
 	EnvCond *env;  // pointer to global struct that holds environmental settings
 	Waves *waves;  // pointer to global Waves object
@@ -157,7 +172,6 @@ public:
 	//void doRHS( const double* X,  double* Xd, const double time);
 	
 	
-	~Connection();
 	
 	#ifdef USEGL
 	void drawGL(void);

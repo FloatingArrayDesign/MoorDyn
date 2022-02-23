@@ -18,6 +18,15 @@
 #include "Line.h"
 #include "Waves.h"
 
+Connection::Connection(moordyn::Log *log)
+    : _log(log)
+{
+}
+
+Connection::~Connection()
+{
+}
+
 // connection member functions
 
 void Connection::setup(int number_in, types type_in, double r0_in[3], double M_in,
@@ -56,16 +65,17 @@ void Connection::setup(int number_in, types type_in, double r0_in[3], double M_i
 	//M.resize(3, vector< double >(3, 0.0)); // node mass + added mass matrix
 	//M_i.resize(3, vector< double >(3, 0.0));
 	
-	if (wordy >0)  cout << "Set up Connection " << number << ", type " << type << endl;
+	_log->Cout(MOORDYN_DBG_LEVEL) << "Set up Connection " << number
+	                              << ", type " << type << endl;
 }
 
 
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->P" << number << endl;
-	
-	
+	_log->Cout(MOORDYN_DBG_LEVEL) << "L" << theLine->number
+	                              << "->P" << number << endl;
+
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
 		Attached[nAttached] = theLine;
@@ -98,13 +108,17 @@ void Connection::removeLineFromConnect(int lineID, int *TopOfLine, double rEnd[]
 				rEnd[ J] =  r[J];
 				rdEnd[J] = rd[J];
 			}
-			
-			cout << "Detached line " << lineID << " from Connection " << number << endl;
-			
+
+			_log->Cout(MOORDYN_MSG_LEVEL) << "Detached line " << lineID
+			                              << " from Connection " << number
+			                              << endl;
 			break;
 		}
-		if (l==nAttached-1)   // detect if line not found
-			cout << "Error: failed to find line to remove during removeLineFromConnect call to connection " << number << ". Line " << lineID << endl;
+		if (l == nAttached - 1)   // detect if line not found
+			_log->Cout(MOORDYN_ERR_LEVEL)
+				<< "Error: failed to find line to remove during "
+				<< __PRETTY_FUNC_NAME__ << " call to connection " << number
+				<< ". Line " << lineID << endl;
 	}
 };
 
@@ -196,7 +210,9 @@ void Connection::initializeConnect( double* X )
 		
 		
 		if (-env->WtrDpth > r[2]) {
-			cout << "   Error: water depth is shallower than Point " << number << "." << endl;
+			_log->Cout(MOORDYN_ERR_LEVEL)
+				<< "Error: water depth is shallower than Point "
+				<< number << "." << endl;
 			return;
 		}
 		
@@ -206,22 +222,28 @@ void Connection::initializeConnect( double* X )
 		else if((env->WaveKin==4) || (env->WaveKin==5) || (env->Current==3) || (env->Current==4))
 			WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
 		else
-		{	
+		{
 			WaterKin = 0;   // no water kinematics to be considered (or to be set externally on each node)
-		
+
 			// in this case make sure kinematics for each node start at zeroed
 			for (int J=0; J<3; J++)		
-			{	U[ J] = 0.0;
+			{
+				U[ J] = 0.0;
 				Ud[J] = 0.0;
 			}
 		}
-		
-		
-		
-		if (wordy>0) cout << "Initialized Connection " << number << endl;
+
+		_log->Cout(MOORDYN_DBG_LEVEL)
+			<< "Initialized Connection " << number << endl;
 	}
-	else  cout << "   Error: wrong connection type given to initializeFree().  Something's not right." << endl;
+	else
+	{
+		_log->Cout(MOORDYN_ERR_LEVEL)
+			<< "Error: wrong connection type given to "
+			<< __PRETTY_FUNC_NAME__ << "." << endl;
+
 		// TODO: should handle.
+	}
 
 	return;
 };
@@ -389,8 +411,11 @@ void Connection::updateFairlead(const double time)
 //		for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
 //	}
 	else
-		cout << "Error: updateFairlead called for wrong Connection type." << endl;
-	
+	{
+		_log->Cout(MOORDYN_ERR_LEVEL)
+			<< "Error: updateFairlead called for wrong Connection type."
+			<< endl;
+	}
 	return;
 }
 
@@ -440,7 +465,11 @@ int Connection::setState( const double* X, const double time)
 		return 0;
 	}
 	else
-	{	cout << "Error: setState called for wrong type of Connection. Connection " << number << " type " << type << endl;
+	{
+		_log->Cout(MOORDYN_ERR_LEVEL)
+			<< "Error: " << __PRETTY_FUNC_NAME__
+			<< "called for wrong Connection type. Connection "
+			<< number << " type " << type << endl;
 		return -1; 
 	}
 }
@@ -499,7 +528,9 @@ int Connection::getStateDeriv(double* Xd)
 	}
 	else
 	{
-		cout << "Error: wrong connection type sent to getStateDeriv().  " << endl;
+		_log->Cout(MOORDYN_ERR_LEVEL)
+			<< "Error: wrong connection type sent to "
+			<< __PRETTY_FUNC_NAME__ << endl;
 		return -1;
 	}
 		
@@ -598,7 +629,9 @@ int Connection::doRHS()
 	if (WaterKin == 1) // wave kinematics time series set internally for each node
 	{
 		// =========== obtain (precalculated) wave kinematics at current time instant ============
-		cout << "unsupported connection kinematics option " << endl;
+		_log->Cout(MOORDYN_WRN_LEVEL)
+			<< "unsupported connection kinematics option"
+			<< __PRETTY_FUNC_NAME__ << endl;
 		// TBD
 	}
 	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
@@ -609,10 +642,9 @@ int Connection::doRHS()
 	
 	}
 	else if (WaterKin != 0) // Hopefully WaterKin is set to zero, meaning no waves or set externally, otherwise it's an error
-		cout << "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
+		_log->Cout(MOORDYN_ERR_LEVEL)
+			<< "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
 
-	
-	
 	// --------------------------------- hydrodynamic loads ----------------------------------		
 			
 	// viscous drag calculation
@@ -644,16 +676,6 @@ int Connection::doRHS()
 	for (int I=0; I<3; I++) 	M[I][I] += conV*env->rho_w*conCa;
 		
 	return 0;
-}
-
-	
-Connection::~Connection()
-{
-	// destory vectors
-	//S.clear();  // inverse mass matrices (3x3) for each node
-	//M.clear(); // node mass + added mass matrix
-	//M_i.clear();
-	
 }
 
 // new function to draw instantaneous line positions in openGL context
