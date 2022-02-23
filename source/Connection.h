@@ -119,65 +119,63 @@ public:
 		}
 		return "UNKNOWN";
 	}
-	//
+
+	/// Connection ID
 	int number;
-	types type;  // defining whether 1: fixed/attached to something, 0 free to move, or -1 coupled externally
-		
+	/// Connection type
+	types type;
+
 	int WaterKin;  // flag indicating whether wave/current kinematics will be considered for this linec
 	// 0: none, or use value set externally for each node of the object; 1: interpolate from stored; 2: call interpolation function from global Waves grid
 
-		
 	void setup(int number_in, types type_in, double r0_in[3], double M_in,
 	double V_in, double F_in[3], double CdA_in, double Ca_in);
-	
+
 	void addLineToConnect(Line *theLine, int TopOfLine);
 	void removeLineFromConnect(int lineID, int *TopOfLine, double rEnd[], double rdEnd[]);
-	
+
 	//void initializeFairlead( double pX[], double TransMat[] );
 //	void initializeCpld( double pX[], double vX[] );
 	void initializeConnect( double* X );
 //	void initializeAnchor();
-	
+
 	void getConnectState(vector<double> &r_out, vector<double> &rd_out);
-		
+
 	//void addRodEffect(vector<double> &F_rod, vector< vector<double> > &M_rod);
-		
+
 	void getFnet(double Fnet_out[]);
-	
+
 	void getM(double M_out[3][3]);
-	
+
 	double GetConnectionOutput(OutChanProps outChan);
-	
+
 	void setEnv(EnvCond *env_in, Waves *waves_in);
-	
+
 	void scaleDrag(double scaler);	
 	void setTime(double time);
-	
+
 	//void initialize( double* X, EnvCond env_in, double pX[], double TransMat[] );
-	
+
 	void initiateStep(const double rFairIn[3], const double rdFairIn[3], double time);
-	
+
 	void updateFairlead( const double time);
 	void setKinematics( double *r_in, double *rd_in);
-	int setState( const double* X, const double time);
-	
-	int getStateDeriv( double* Xd);
-	
-	int getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6]);
-	
-	int doRHS();
-	
+	moordyn::error_id setState( const double* X, const double time);
+
+	moordyn::error_id getStateDeriv( double* Xd);
+
+	moordyn::error_id getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6]);
+
+	moordyn::error_id doRHS();
+
 	//void sumNetForceAndMass();
-	
+
 	//void doRHS( const double* X,  double* Xd, const double time);
-	
-	
-	
-	#ifdef USEGL
+
+#ifdef USEGL
 	void drawGL(void);
-	#endif
-	
-	
+#endif
+
 };
 
 #endif
