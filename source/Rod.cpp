@@ -57,129 +57,51 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 
 //	WaveKin = 0;  // start off with wave kinematics disabled.  Can be enabled after initial conditions are found and wave kinematics are calculated
 
-	// <<<<<<<<<<<<<<<<< add some special handling for zero-length rods if N=0 <<<<<<<<<<<<<<<<<
+	// ----- size arrays that are the same no matter what -----
+	
+	r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]
+	rd  = make2Darray(N+1, 3);     // node velocities [i][x/y/z]
+	M   = make3Darray(N+1, 3, 3);  // mass matrices (3x3) for each node
+	
+	// forces 
+	W   = make2Darray(N+1, 3);     // node weights
+	Bo  = make2Darray(N+1, 3);     // node buoyancy 
+	Pd  = make2Darray(N+1, 3);     // dynamic pressure
+	Dp  = make2Darray(N+1, 3);     // node drag (transverse)
+	Dq  = make2Darray(N+1, 3);     // node drag (axial)
+	Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
+	Aq  = make2Darray(N+1, 3);     // node added mass forcing (axial)
+	B   = make2Darray(N+1, 3);     // node bottom contact force
+	Fnet= make2Darray(N+1, 3);     // total force on node
+	
+	// wave things
+	F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
+	zeta= make1Darray(N+1);        // wave elevation above each node
+	PDyn= make1Darray(N+1);        // dynamic pressure
+	U   = make2Darray(N+1, 3);     // wave velocities
+	Ud  = make2Darray(N+1, 3);     // wave accelerations
+	
+	
+	UnstrLen = unitvector(q, endCoords, endCoords+3); // get Rod axis direction vector and Rod length
 
+
+	// ----- different handling for zero-length rods if N=0 -----
+	
 	if (N==0)  // special case of zero-length rod, which is denoted by numsegs=0 in the intput file 
 	{
-		// >>> reduce major redundancy in these if statements
-		// ------------------------- size vectors -------------------------
-			
-		r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]
-		rd  = make2Darray(N+1, 3);     // node velocities [i][x/y/z]
 		l   = make1Darray(1);          // line unstretched segment lengths
-		
-		M   = make3Darray(N+1, 3, 3);  // mass matrices (3x3) for each node
 		V   = make1Darray(1);          // segment volume?
+		UnstrLen = 0.0;                // set Rod length to zero
 		
-		// forces 
-		W   = make2Darray(N+1, 3);     // node dry weights
-		Bo  = make2Darray(N+1, 3);     // node buoyancy 
-		Pd  = make2Darray(N+1, 3);     // dynamic pressure
-		Dp  = make2Darray(N+1, 3);     // node drag (transverse)
-		Dq  = make2Darray(N+1, 3);     // node drag (axial)
-		Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
-		Aq  = make2Darray(N+1, 3);     // node added mass forcing (axial)
-		B   = make2Darray(N+1, 3);     // node bottom contact force
-		Fnet= make2Darray(N+1, 3);     // total force on node
-		
-		// wave things
-		F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
-		zeta= make1Darray(N+1);        // wave elevation above each node
-		PDyn= make1Darray(N+1);        // dynamic pressure
-		U   = make2Darray(N+1, 3);     // wave velocities
-		Ud  = make2Darray(N+1, 3);     // wave accelerations
-		
-
-		// ------------------------- set starting kinematics -------------------------
-				
-		unitvector(q, endCoords, endCoords+3);   // get Rod axis direction vector
-		UnstrLen = 0.0;                          // set Rod length to zero
-		
-		// set Rod positions if applicable
-		if (type == FREE)                // for an independent rod, set the position right off the bat
-		{		
-			for (int J=0; J<3; J++)
-			{
-				r6[J] = endCoords[J]; // (end A coordinates) 
-				v6[J] = 0.0;      // (end A velocity, unrotated axes) 
-
-				r6[3+J] = q[J];   // (Rod direction unit vector)
-				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
-			}
-		}
-		else if ((type == PINNED) || (type == CPLDPIN))     // for a pinned rod, just set the orientation (position will be set later by parent object)
-		{		
-			for (int J=0; J<3; J++)
-			{
-				r6[3+J] = q[J];   // (Rod direction unit vector)
-				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
-			}
-		}
-		// otherwise (for a fixed rod) the positions will be set by the parent body or via coupling
-
-		// calculate a few segment properties (for one segment, even though there aren't actually any segments)
-		l[0] = 0.0;
+		// calculate properties for one (imaginary) segment
+		l[0] = 0.0;                    
 		V[0] = 0.0;   
-		
 	}
 	else       // normal finite-length case
 	{
-		
-		// ------------------------- size vectors -------------------------
-			
-		r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]
-		rd  = make2Darray(N+1, 3);     // node velocities [i][x/y/z]
 		l   = make1Darray(N);          // line unstretched segment lengths
-		
-		M   = make3Darray(N+1, 3, 3);  // mass matrices (3x3) for each node
 		V   = make1Darray(N);          // segment volume?
 		
-		// forces 
-		W   = make2Darray(N+1, 3);     // node weights
-		Bo  = make2Darray(N+1, 3);     // node buoyancy 
-		Pd  = make2Darray(N+1, 3);     // dynamic pressure
-		Dp  = make2Darray(N+1, 3);     // node drag (transverse)
-		Dq  = make2Darray(N+1, 3);     // node drag (axial)
-		Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
-		Aq  = make2Darray(N+1, 3);     // node added mass forcing (axial)
-		B   = make2Darray(N+1, 3);     // node bottom contact force
-		Fnet= make2Darray(N+1, 3);     // total force on node
-		
-		// wave things
-		F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
-		zeta= make1Darray(N+1);        // wave elevation above each node
-		PDyn= make1Darray(N+1);        // dynamic pressure
-		U   = make2Darray(N+1, 3);     // wave velocities
-		Ud  = make2Darray(N+1, 3);     // wave accelerations
-		
-
-		// ------------------------- set starting kinematics -------------------------
-		
-		UnstrLen = unitvector(q, endCoords, endCoords+3); // get Rod axis direction vector and Rod length
-
-		// set Rod positions if applicable
-		if (type == FREE)                // for an independent rod, set the position right off the bat
-		{
-			for (int J=0; J<3; J++)
-			{
-				r6[J] = endCoords[J]; // (end A coordinates) 
-				v6[J] = 0.0;      // (end A velocity, unrotated axes) 
-
-				r6[3+J] = q[J];   // (Rod direction unit vector)
-				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
-			}
-		}
-		else if ((type == PINNED) || (type == CPLDPIN))     // for a pinned rod, just set the orientation (position will be set later by parent object)
-		{
-			for (int J=0; J<3; J++)
-			{
-				r6[3+J] = q[J];   // (Rod direction unit vector)
-				v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
-			}
-		}
-		// otherwise (for a fixed rod) the positions will be set by the parent body or via coupling
-		
-
 		// calculate a few segment properties
 		for (int i=0; i<N; i++)	
 		{
@@ -187,6 +109,32 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 			V[i] = l[i]*0.25*pi*d*d;   
 		}
 	}
+
+	// ------------------------- set starting kinematics -------------------------
+	
+	// set Rod positions if applicable
+	if (type == FREE)                // for an independent rod, set the position right off the bat
+	{
+		for (int J=0; J<3; J++)
+		{
+			r6[J] = endCoords[J]; // (end A coordinates) 
+			v6[J] = 0.0;      // (end A velocity, unrotated axes) 
+
+			r6[3+J] = q[J];   // (Rod direction unit vector)
+			v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
+		}
+	}
+	else if ((type == PINNED) || (type == CPLDPIN))     // for a pinned rod, just set the orientation (position will be set later by parent object)
+	{
+		for (int J=0; J<3; J++)
+		{
+			r6[3+J] = q[J];   // (Rod direction unit vector)
+			v6[3+J] = 0.0;    // (rotational velocities about unrotated axes) 
+		}
+	}
+	// otherwise (for a fixed rod) the positions will be set by the parent body or via coupling
+	
+	
 
 	// Initialialize some variables (Just a bunch of them would be used, but we
 	// better initialize everything just in case Output methods are called, so
@@ -732,6 +680,8 @@ int Rod::setState( double* X, const double time)
 // This also determines the orientation of zero-length rods.
 void Rod::setDependentStates()
 {
+	//TODO: add bool initialization flag that will skip the N==0 block if true, to avoid calling uninitialized lines during initialization <<<
+	
 	// from state values, set positions of end nodes 
 	for (int J=0; J<3; J++) 	                                          // end A
 	{	r[0][J]  = r6[J];  // get positions
@@ -1057,7 +1007,7 @@ void Rod::doRHS()
     // ---------------------------- initial rod and node calculations ------------------------
 
     // calculate some orientation information for the Rod as a whole
-    GetOrientationAngles(r[0], r[N], &phi, &sinPhi, &cosPhi, &tanPhi, &beta, &sinBeta, &cosBeta);
+    GetOrientationAngles(q, &phi, &sinPhi, &cosPhi, &tanPhi, &beta, &sinBeta, &cosBeta);
  
     // save to internal roll and pitch variables for use in output <<< should check these, make Euler angles isntead of independent <<<
     roll  = -180.0/pi * phi*sinBeta;
@@ -1450,13 +1400,16 @@ void Rod::doRHS()
 	double mass = UnstrLen*0.25*pi*pi*rho;   // rod total mass, used to help with making generic inertia coefficients
 		
 	// add inertia terms for the Rod assuming it is uniform density (radial terms add to existing matrix which contains parallel-axis-theorem components only)
-	double I_l = 0.125*mass * d*d;                                 // axial moment of inertia
-	double I_r = mass/12.0 * (0.75*d*d + pow(UnstrLen/N,2)) *N;    // summed radial moment of inertia for each segment individually
-
 	double Imat_l[3][3] = {{0.0}};    // inertia about Rod CG in local orientations (as if Rod is vertical)
-	Imat_l[0][0] = I_r;  
-	Imat_l[1][1] = I_r;
-	Imat_l[2][2] = I_l;
+	if (N > 0)
+	{
+		double I_l = 0.125*mass * d*d;                                 // axial moment of inertia
+		double I_r = mass/12.0 * (0.75*d*d + pow(UnstrLen/N,2)) *N;    // summed radial moment of inertia for each segment individually
+
+		Imat_l[0][0] = I_r;  
+		Imat_l[1][1] = I_r;
+		Imat_l[2][2] = I_l;
+	}
 
 	// get rotation matrix to put things in global rather than rod-axis orientations
 	double OrMat[9];

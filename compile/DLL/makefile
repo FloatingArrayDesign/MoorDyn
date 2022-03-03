@@ -11,6 +11,7 @@
 #
 # debug: Build both targets, "all" and "test", with debug information
 
+
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -fPIC
 CFLAGS = -c -O3 -g -Wall -Wextra -DMoorDyn_EXPORTS -fPIC
 
@@ -20,7 +21,7 @@ LFLAGS += -lopengl32 -lglu32
 endif
 
 CPPFLAGS = $(CFLAGS) -std=c++14
-EXEFLAGS = -O3 -g -Wall -Wextra
+EXEFLAGS = -O3 -g -Wall -Wextra -std=c++14
 
 all: libmoordyn2.dll
 
