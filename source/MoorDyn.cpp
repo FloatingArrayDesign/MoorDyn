@@ -213,14 +213,16 @@ int DECLDIR GetConnectPos(int l, double pos[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	return MoorDyn_GetConnectPos(md_singleton, (unsigned int)l, pos);
+	auto conn = MoorDyn_GetConnection(md_singleton, (unsigned int)l);
+	return MoorDyn_GetConnectPos(conn, pos);
 }
 
 int DECLDIR GetConnectForce(int l, double force[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	return MoorDyn_GetConnectForce(md_singleton, (unsigned int)l, force);
+	auto conn = MoorDyn_GetConnection(md_singleton, (unsigned int)l);
+    return MoorDyn_GetConnectForce(conn, force);
 }
 
 int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])
