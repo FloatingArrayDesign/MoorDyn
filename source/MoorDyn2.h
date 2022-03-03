@@ -18,6 +18,7 @@
 #define __MOORDYN2_H__
 
 #include "MoorDynAPI.h"
+#include "Connection.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -170,6 +171,14 @@ unsigned int DECLDIR MoorDyn_GetNumberRods(MoorDyn system);
  */
 unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system);
 
+/** @brief Get a connection
+ * @param system The Moordyn system
+ * @param l The connection
+ * @return The connection instance, NULL if errors happened
+ */
+MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
+                                                unsigned int l);
+
 /** @brief Get the number of lines
  *
  * Remember that the first line index is 1
@@ -214,28 +223,6 @@ double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line);
 int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
                                 float FairHTen[], float FairVTen[],
                                 float AnchHTen[], float AnchVTen[]);
-
-/** @brief Get the position of a connection
- * @param system The Moordyn system
- * @param l The connection
- * @param pos The output position
- * @return 0 If the data is correctly set, an error code otherwise
- * (see @ref moordyn_errors)
- */
-int DECLDIR MoorDyn_GetConnectPos(MoorDyn system,
-                                  unsigned int l,
-                                  double pos[3]);
-
-/** @brief Get the force at a connection
- * @param system The Moordyn system
- * @param l The connection
- * @param f The output force
- * @return 0 If the data is correctly set, an error code otherwise
- * (see @ref moordyn_errors)
- */
-int DECLDIR MoorDyn_GetConnectForce(MoorDyn system,
-                                    unsigned int l,
-                                    double f[3]);
 
 /** @brief Get a line node position
  * @param system The Moordyn system

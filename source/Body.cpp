@@ -16,7 +16,6 @@
  */
 
 #include "Body.h"
-#include "Connection.hpp"
 #include "Rod.h"
 #include "Waves.h"
 
@@ -91,7 +90,7 @@ void Body::setup(int number_in, types type_in, double r6_in[6], double rCG_in[3]
 
 
 // this function handles assigning a line to a connection node
-void Body::addConnectionToBody(Connection *theConnection, double coords[3])
+void Body::addConnectionToBody(moordyn::Connection *theConnection, double coords[3])
 {
 	if (wordy>0) cout << "C" << theConnection->number << "->B" << number << " ";	
 	

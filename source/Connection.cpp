@@ -15,8 +15,12 @@
  */
 
 #include "Connection.hpp"
+#include "Connection.h"
 #include "Line.h"
 #include "Waves.h"
+
+namespace moordyn
+{
 
 Connection::Connection(moordyn::Log *log)
 	: _log(log)
@@ -658,3 +662,67 @@ void Connection::drawGL(void)
 	Sphere(r[0], r[1], r[2], radius);
 };
 #endif
+
+}  // ::moordyn
+
+// =============================================================================
+//
+//                     ||                     ||
+//                     ||        C API        ||
+//                    \  /                   \  /
+//                     \/                     \/
+//
+// =============================================================================
+
+/// Check that the provided system is not Null
+#define CHECK_CONNECTION(s)                                                     \
+	if (!s)                                                                     \
+	{                                                                           \
+		cerr << "Null system received in " << __FUNC_NAME__                     \
+		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
+		return MOORDYN_INVALID_VALUE;                                           \
+	}
+
+int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn)
+{
+	CHECK_CONNECTION(conn);
+	return ((moordyn::Connection*)conn)->number;
+}
+
+int DECLDIR MoorDyn_GetConnectType(MoorDynConnection conn)
+{
+	CHECK_CONNECTION(conn);
+	return ((moordyn::Connection*)conn)->type;
+}
+
+int DECLDIR MoorDyn_GetConnectPos(MoorDynConnection conn,
+                                  double pos[3])
+{
+	CHECK_CONNECTION(conn);
+	vector<double> r(3);
+	vector<double> rd(3);
+	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	for (unsigned int i = 0; i < 3; i++)
+		pos[i] = r[i];
+	return MOORDYN_SUCCESS;    
+}
+
+int DECLDIR MoorDyn_GetConnectVel(MoorDynConnection conn,
+                                  double v[3])
+{
+	CHECK_CONNECTION(conn);
+	vector<double> r(3);
+	vector<double> rd(3);
+	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	for (unsigned int i = 0; i < 3; i++)
+		v[i] = rd[i];
+	return MOORDYN_SUCCESS;    
+}
+
+int DECLDIR MoorDyn_GetConnectForce(MoorDynConnection conn,
+                                    double f[3])
+{
+	CHECK_CONNECTION(conn);
+	((moordyn::Connection*)conn)->getFnet(f);
+	return MOORDYN_SUCCESS;    
+}

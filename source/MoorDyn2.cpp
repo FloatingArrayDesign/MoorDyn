@@ -2223,6 +2223,21 @@ unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system)
 	return ((moordyn::MoorDyn*)system)->GetConnections().size();
 }
 
+MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
+                                                unsigned int l)
+{
+	if (!system)
+		return NULL;
+	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
+	if (!l || (l > conns.size()))
+	{
+		cerr << "Error: There is not such connection " << l << endl
+		     << "while calling " << __FUNC_NAME__ << "()" << endl;
+		return NULL;
+	}
+	return (MoorDynConnection)(conns[l - 1]);
+}
+
 unsigned int DECLDIR MoorDyn_GetNumberLines(MoorDyn system)
 {
 	if (!system)
@@ -2280,40 +2295,6 @@ int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
 		lines[l]->getFASTtens(FairHTen + l, FairVTen + l,
 		                      AnchHTen + l, AnchVTen + l);
 
-	return MOORDYN_SUCCESS;
-}
-
-int DECLDIR MoorDyn_GetConnectPos(MoorDyn system, unsigned int l, double pos[3])
-{
-	CHECK_SYSTEM(system);
-
-	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
-	if (!l || (l > conns.size()))
-	{
-		cerr << "Error: There is not such connection " << l << endl
-		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return MOORDYN_INVALID_VALUE;
-	}
-	vector<double> rs(3);
-	vector<double> rds(3);
-	conns[l - 1]->getConnectState(rs, rds);
-	for (unsigned int i = 0; i < 3; i++)
-		pos[i] = rs[i];
-	return MOORDYN_SUCCESS;
-}
-
-int DECLDIR MoorDyn_GetConnectForce(MoorDyn system, unsigned int l, double f[3])
-{
-	CHECK_SYSTEM(system);
-
-	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
-	if (!l || (l > conns.size()))
-	{
-		cerr << "Error: There is not such connection " << l << endl
-		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return MOORDYN_INVALID_VALUE;
-	}
-	conns[l - 1]->getFnet(f);
 	return MOORDYN_SUCCESS;
 }
 

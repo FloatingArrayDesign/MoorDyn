@@ -143,8 +143,9 @@ bool minimal()
     // Get the initial positions from the config file
     for (unsigned int i = 0; i < 3; i++)
     {
-        err = MoorDyn_GetConnectPos(system,
-                                    i + 4,  // 4 = first fairlead id
+        // 4 = first fairlead id
+        MoorDynConnection conn = MoorDyn_GetConnection(system, i + 4);
+        err = MoorDyn_GetConnectPos(conn,
                                     x + 3 * i);
         if (err != MOORDYN_SUCCESS) {
             cerr << "Failure retrieving the fairlead " << i + 4

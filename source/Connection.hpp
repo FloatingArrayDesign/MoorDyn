@@ -14,8 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONNECTION_H
-#define CONNECTION_H
+#pragma once
 
 #include "Misc.h"
 #include "Log.hpp"
@@ -24,6 +23,9 @@ using namespace std;
 
 class Line;
 class Waves;
+
+namespace moordyn
+{
 
 class Connection
 {
@@ -178,4 +180,4 @@ public:
 
 };
 
-#endif
+}  // ::moordyn
