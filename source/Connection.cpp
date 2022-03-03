@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Connection.h"
+#include "Connection.hpp"
 #include "Line.h"
 #include "Waves.h"
 

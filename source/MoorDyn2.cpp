@@ -21,7 +21,6 @@
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
 #include "Line.h"
-#include "Connection.h" 
 #include "Rod.h" 
 #include "Body.h"
 

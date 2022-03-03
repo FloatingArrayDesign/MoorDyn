@@ -16,7 +16,7 @@
  */
 
 #include "Body.h"
-#include "Connection.h"
+#include "Connection.hpp"
 #include "Rod.h"
 #include "Waves.h"
 

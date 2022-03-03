@@ -23,7 +23,7 @@
 #include "Waves.h"
 #include "MoorDyn.h"
 #include "Line.h"
-#include "Connection.h" 
+#include "Connection.hpp" 
 #include "Rod.h" 
 #include "Body.h"
 

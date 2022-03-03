@@ -43,7 +43,7 @@ kiss_fftr.o: ../../source/kiss_fftr.c ../../source/kiss_fftr.h
 Line.o: ../../source/Line.cpp ../../source/Line.h ../../source/QSlines.h
 	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
 
-Connection.o: ../../source/Connection.cpp ../../source/Connection.h
+Connection.o: ../../source/Connection.cpp ../../source/Connection.hpp
 	$(CXX) $(CPPFLAGS) ../../source/Connection.cpp
 
 Body.o: ../../source/Body.cpp ../../source/Body.h
