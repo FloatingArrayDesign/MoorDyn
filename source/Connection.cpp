@@ -203,7 +203,7 @@ void Connection::initializeAnchor()
 };
 */
 
-void Connection::initializeConnect(double* X)
+void Connection::initializeConnect(double X[6])
 {
 	// the default is for no water kinematics to be considered (or to be set externally on each node)
 	WaterKin = 0;
@@ -257,9 +257,10 @@ void Connection::getConnectState(vector<double> &r_out, vector<double> &rd_out)
 
 
 // function to return net force on connection (just to allow public reading of Fnet)
-void Connection::getFnet(double Fnet_out[])
+void Connection::getFnet(double Fnet_out[3])
 {
-	for (int I=0; I<3; I++) 	Fnet_out[I] = Fnet[I];
+	for (int I=0; I<3; I++)
+		Fnet_out[I] = Fnet[I];
 };
 
 
@@ -353,15 +354,13 @@ void Connection::sumNetForceAndMass()
 // function for boosting drag coefficients during IC generation	
 void Connection::scaleDrag(double scaler)
 {
-	conCdA = conCdA*scaler;
-	return;
+	conCdA *= scaler;
 }
 
 // function to reset time after IC generation
 void Connection::setTime(double time)
 {
 	t = time;
-	return;
 }
 
 
@@ -453,14 +452,15 @@ moordyn::error_id Connection::setState(const double* X,
 	}
 
 	// pass kinematics to any attached lines (NEW)
-	for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
+	for (int l=0; l < nAttached; l++)
+		Attached[l]->setEndState(r, rd, Top[l]);
 
 	return MOORDYN_SUCCESS;
 }
 	
 	
 // calculate the forces and state derivatives of the connectoin	
-moordyn::error_id Connection::getStateDeriv(double* Xd)
+moordyn::error_id Connection::getStateDeriv(double Xd[6])
 {
 	// the RHS is only relevant (there are only states to worry about) if it is a Connect type of Connection
 	if (type != FREE)
@@ -537,7 +537,7 @@ moordyn::error_id Connection::getNetForceAndMass(double rBody[3], double Fnet_ou
 		for (int J=0; J<3; J++) rRel[J] = r[J] - rBody[J]; // vector from body reference point to node
 
 	// convert segment net force into 6dof force about body ref point
-	translateForce3to6DOF(rRel, Fnet, Fnet_out); 		
+	translateForce3to6DOF(rRel, Fnet, Fnet_out);
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	translateMass3to6DOF(rRel, M, M_out);
