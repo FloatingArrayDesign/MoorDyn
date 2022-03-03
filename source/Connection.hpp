@@ -218,7 +218,7 @@ public:
 	 * (bottom)
 	 * @param rEnd Output position of the node
 	 * @param rdEnd Output velocity of the node
-	 * @exceptions moordyn::invalid_value_error There is no an attached line
+	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
 	void removeLineFromConnect(int lineID, int *TopOfLine,
@@ -227,7 +227,7 @@ public:
 	/** @brief Initialize the FREE connection state
 	 * @param X The output state variables, i.e. the velocity [x,y,z] and
 	 * position [x,y,z]
-	 * @exceptions moordyn::invalid_value_error It is not a FREE connection
+	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
 	void initializeConnect(double X[6]);
 
@@ -286,7 +286,7 @@ public:
 	 * Sets Connection states and ends of attached lines ONLY if this Connection
 	 * is driven externally, i.e. type = COUPLED (otherwise shouldn't be called)
 	 * @param time Simulation time
-	 * @exceptions moordyn::invalid_value_error It is not a COUPLED connection
+	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
 	void updateFairlead(const double time);
 
@@ -296,7 +296,7 @@ public:
 	 * is attached to a body, i.e. type = FIXED (otherwise shouldn't be called)
 	 * @param r_in Position
 	 * @param rd_in Velocity
-	 * @exceptions moordyn::invalid_value_error It is not a FIXED connection
+	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
 	 */
 	void setKinematics(double *r_in, double *rd_in);
 
