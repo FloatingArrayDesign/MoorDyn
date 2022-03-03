@@ -19,7 +19,8 @@
 #include "Waves.h"
 
 Connection::Connection(moordyn::Log *log)
-    : _log(log)
+	: _log(log)
+	, WaterKin(0)
 {
 }
 
