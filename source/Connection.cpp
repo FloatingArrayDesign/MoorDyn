@@ -34,8 +34,8 @@ Connection::~Connection()
 
 // connection member functions
 
-void Connection::setup(int number_in, types type_in, double r0_in[3], double M_in,
-	double V_in, double F_in[3], double CdA_in, double Ca_in) 
+void Connection::setup(int number_in, types type_in, const double r0_in[3], double M_in,
+	double V_in, const double F_in[3], double CdA_in, double Ca_in) 
 {
 	//props contains: Node      Type      X        Y         Z        M        V        FX       FY      FZ  CdA  Ca
 	
@@ -518,7 +518,7 @@ moordyn::error_id Connection::getStateDeriv(double Xd[6])
 
 
 // calculate the force and mass contributions of the connect on the parent body (only for type 3 connects?)
-moordyn::error_id Connection::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6])
+moordyn::error_id Connection::getNetForceAndMass(const double rBody[3], double Fnet_out[6], double M_out[6][6])
 {
 	doRHS();
 
