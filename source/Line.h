@@ -192,7 +192,12 @@ public:
 	void doRHS( const double* X,  double* Xd, const double time, const double dt);
 
 	//void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
-		
+
+	/** @brief Compute the critical time step
+	 * @return The critical time step
+	 */
+	double CriticalTimeStep() const;
+
 	void Output(double );
 	
 	~Line();

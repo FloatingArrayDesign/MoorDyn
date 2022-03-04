@@ -25,6 +25,8 @@
 #include "Rod.h" 
 #include "Body.h"
 
+#include <float.h>
+#include <algorithm>
 #ifdef LINUX
 	#include <cmath>
 	#include <ctype.h>
@@ -55,8 +57,9 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	, ICTmax(120.0)
 	, ICthresh(0.001)
 	, WaveKinTemp(0)
-	, dtM0(0.001)
 	, dtOut(0.0)
+	, dtM0(0.001)
+	, dtMax_factor(1.e64)
 	, GroundBody(NULL)
 	, waves(NULL)
 	, nX(0)
@@ -585,6 +588,9 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	npW = 0;
 	// default value for desired mooring model time step
 	dtM0 = 0.001;
+	// default value for the critical time step factor (it is so big that it is
+	// indeed disabled)
+	dtMax_factor = 1.e64;
 
 	// string containing which channels to write to output
 	vector<string> outchannels;
@@ -1519,6 +1525,8 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				// DT is old way, should phase out
 				else if ((name == "dtM") || (name == "DT"))
 					dtM0 = atof(entries[0].c_str());
+				else if ((name == "dtMFactor") || (name == "DTFactor"))
+					dtMax_factor = atof(entries[0].c_str());
 				else if ((name == "g") || (name == "gravity"))
 					env.g  = atof(entries[0].c_str());
 				else if ((name =="Rho") || (name=="rho") || (name=="WtrDnsty"))
@@ -1784,6 +1792,16 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	return MOORDYN_SUCCESS;
 }
 
+double moordyn::MoorDyn::CriticalTimeStep() const
+{
+	double dt = DBL_MAX;
+	for (auto obj : LineList)
+	{
+		dt = std::min(obj->CriticalTimeStep(), dt);
+	}
+	return dt;
+}
+
 moordyn::error_id moordyn::MoorDyn::CalcStateDeriv(double *x,  double *xd,
                                                    const double t,
                                                    const double dt)
@@ -1911,7 +1929,7 @@ moordyn::error_id moordyn::MoorDyn::CalcStateDeriv(double *x,  double *xd,
 	return MOORDYN_SUCCESS;
 }
 
-moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
+moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, double dt)
 {
 	moordyn::error_id err;
 
@@ -1923,6 +1941,9 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 	err = CalcStateDeriv(x, f0, t, dt);
 	if (err)
 		return err;
+
+	// Collect the maximum time step that we can consider
+	dt = std::min(dtMax_factor * CriticalTimeStep(), dt);
 
 	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
 	for (unsigned int i = 0; i < nX; i++)
@@ -1936,6 +1957,12 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
 	if (err)
 		return err;
+
+	// This is a bit more controversial... The new derivatives, f1, are supposed
+	// to be computed at the mid point of the time step. But if we shrink the
+	// time step, then that holds no more true. Anyway, the eventual difference
+	// shall be rather small, and stability should have preemptive access
+	dt = std::min(dtMax_factor * CriticalTimeStep(), dt);
 
 	// integrate states to t0 + dt
 	for (unsigned int i = 0; i < nX; i++)

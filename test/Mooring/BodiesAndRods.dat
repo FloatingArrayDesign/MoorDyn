@@ -41,7 +41,8 @@ Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 5      buoyancy     8          9       50          6        p
 6        cable      9         10       50          6        p
 -------------------------- SOLVER OPTIONS---------------------------------------------------
-0.0001   dtM          - time step to use in mooring integration
+0.01     dtM          - time step to use in mooring integration
+0.25     dtMFactor    - Critical time step multiplier
 3.0e6    kb           - bottom stiffness
 3.0e5    cb           - bottom damping
 70       WtrDpth      - water depth

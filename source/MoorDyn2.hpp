@@ -291,11 +291,50 @@ private:
 	double ICthresh;
 	// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
 	int WaveKinTemp;
-	/// (s) desired mooring line model time step
-	double dtM0;
-	/// (s) desired output interval (the default zero value provides output at
-	/// every call to MoorDyn)
+
+	///@{
+	/**
+	 * The time step used to integrate the Moordyn system is defined as the
+	 * minimum of 3 possibilities:
+	 *
+	 *  - The time remaining to the targetted time instant (set when calling
+	 *    moordyn::MoorDyn::Step())
+	 *  - The maximum time step set with the option dtM / DT
+	 *  - The critical time step multiplied by a factor
+	 */
+
+	/** (s) desired output interval (the default zero value provides output at
+	 * every call to MoorDyn). Notice that this time step will not impose any
+	 * limitation to the model time step, and thus the user is responsible of
+	 * calling moordyn::MoorDyn::Step() with a timestep which is compatible with
+	 * this value
+	 */ 
 	double dtOut;
+
+	/** (s) Maximum model time step.
+	 *
+	 * This parameter is related with the accuracy. While dtMax_factor will
+	 * ensure the model is stable, it has some limitations. For instance, a
+	 * quasi-static system would lead to extremelly large time steps, so to keep
+	 * the accuracy a maximum timestep should be set
+	 * @see dtMax_factor
+	 */
+	double dtM0;
+
+	/** Critical time step multiplier
+	 *
+	 * The critical time step is defined as the minimum of the following:
+	 *
+	 *  - The line nodes cannot move more than 1/2 the length of the segment,
+	 *    i.e. \f$ dt_{crit} \le 1/2 l_i / v_i \f$, with \f$ l_i, v_i \f$
+	 *    the length and velocity at an arbitrary i-th node
+	 *  - The time step is not larger than the smallest natural period of the
+	 *    lines segments
+	 * @see dtM0
+	 */
+	double dtMax_factor;
+
+	///@}
 
 	/// General options of the Mooryng system
 	EnvCond env;
@@ -560,6 +599,12 @@ private:
 		return 0.0;
 	}
 
+	/** @brief Compute the critical time step
+	 * @return The critical time step
+	 * @see dtMax_factor
+	 */
+	double CriticalTimeStep() const;
+
 	/** @brief Compute the state derivatives
 	 * @param x Array of states (input)
 	 * @param xd Array of state derivatives (output)
@@ -580,7 +625,7 @@ private:
 	 * @return MOORDYN_SUCCESS if the system was correctly integrated, an error
 	 * code otherwise
 	 */
-	moordyn::error_id RK2(double *x, double &t, const double dt);
+	moordyn::error_id RK2(double *x, double &t, double dt);
 
 	/** @brief Detach lines from a failed connection
 	 * @param attachID ID of connection or Rod the lines are attached to (index

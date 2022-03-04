@@ -18,6 +18,8 @@
 #include "Waves.h"
 #include "QSlines.h" // the c++ version of quasi-static model Catenary
 
+#include <algorithm>
+
 using namespace std;
 
 // here is the new numbering scheme (N segments per line)
@@ -1306,6 +1308,26 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	}
 };
 
+double Line::CriticalTimeStep() const
+{
+	// Let's start with the natural period
+	double dt = UnstrLen / (M_PI * N) * sqrt(rho / E);
+	// Now traverse the nodes and assert that they cannot move more than half
+	// the distance of the segment
+	for (int i = 0; i <= N; i++)	
+	{
+		double li = 0.0;
+		if (i==0)
+			li = 0.5 * l[i];
+		else if (i==N)
+			li = 0.5* l[i-1];
+		else
+			li = 0.25*(l[i-1] + l[i]);
+		const double vi = std::max(1.e-16, sqrt(dotProd(rd[i], rd[i])));
+		dt = std::min(dt, li / vi);
+	}
+	return dt;
+}
 
 
 // write output file for line  (accepts time parameter since retained time value (t) will be behind by one line time step

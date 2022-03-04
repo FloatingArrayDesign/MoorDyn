@@ -20,7 +20,8 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 2     main       2        5         902.2     20      -
 3     main       3        6         902.2     20      -
 ---------------------- OPTIONS -----------------------------------------
-0.002         dtM           time step to use in mooring integration (s)
+0.01          dtM           time step to use in mooring integration (s)
+0.25          dtMFactor     critical time step multiplier
 3.0e6         kBot          bottom stiffness (Pa/m)
 3.0e5         cBot          bottom damping (Pa-s/m)
 1025.0        WtrDnsty      water density (kg/m^3)
