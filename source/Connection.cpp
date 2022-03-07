@@ -67,7 +67,7 @@ void Connection::setup(int number_in, types type_in, double r0_in[3], double M_i
 	//M_i.resize(3, vector< double >(3, 0.0));
 	
 	_log->Cout(MOORDYN_DBG_LEVEL) << "   Set up Connection " << number
-	                              << ", type " << type << endl;
+	                              << ", type " << type << ". ";
 }
 
 

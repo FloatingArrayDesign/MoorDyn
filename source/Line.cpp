@@ -363,71 +363,56 @@ void Line::initializeLine(double* X)
 		c = BAin/(pi/4.*d*d);  // otherwise it's the regular internal damping coefficient, which should be divided by area to get a material coefficient
 			
 	
-	// try to calculate initial line profile using catenary routine (from FAST v.7)
-	// note: much of this function is adapted from the FAST source code
+	// initialize line node positions as distributed linearly between the endpoints
+	for (int i=1; i<N; i++)
+	{
+		r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
+		r[i][1]  = r[0][1] + (r[N][1] - r[0][1]) * (float(i)/float(N));
+		r[i][2]  = r[0][2] + (r[N][2] - r[0][2]) * (float(i)/float(N));
+	}
+	
+	// if conditions are ideal, try to calculate initial line profile using catenary routine (from FAST v.7)
+	if (-r[0][0] == env->WtrDpth)
+	{
+		double XF = sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) ); // horizontal spread
+		double ZF = r[N][2] - r[0][2];	
+		double LW = ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81;
+		double CB = 0.;
+		double Tol = 0.00001;	
 		
-	// input variables for the Catenary function
-	double XF = sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) ); // quasi-static mooring line coordinate system (vertical plane with corners at anchor and fairlead) 
-	double ZF = r[N][2] - r[0][2];	
-	double LW = ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81;
-	double CB = 0.;
-	double Tol = 0.00001;	
-	
-	vector<double> snodes(N+1, 0.0);   					// locations of line nodes along line length - evenly distributed here 
-	for (int i=1; i<=N; i++)
-		snodes[i] = snodes[i-1] + l[i-1]; 
-	snodes[N] = UnstrLen; 								// double check to ensure the last node does not surpass the line length
-	
-	
-	// output variables
-	double HF, VF, HA, VA, COSPhi, SINPhi;
-	vector<double> Xl(N+1, 0.0); // x location of line nodes
-	vector<double> Zl(N+1, 0.0);
-	vector<double> Te(N+1, 0.0);
+		if(( XF > 0.0) && (ZF > 0.0))   
+		{
+			// locations of line nodes along line length - evenly distributed here 
+			vector<double> snodes(N+1, 0.0);   					
+			for (int i=1; i<=N; i++)
+				snodes[i] = snodes[i-1] + l[i-1]; 
+			snodes[N] = UnstrLen; 								// double check to ensure the last node does not surpass the line length
 			
-	if( XF == 0.0 ) 
-	{
-		// if the current mooring line is exactly vertical; thus, the solution
-		// below is ill-conditioned because the orientation is undefined; so set
-		// it such that the tensions and nodal positions are only vertical
-		COSPhi = 0.0;
-		SINPhi = 0.0;
+			// output variables
+			double HF, VF, HA, VA, COSPhi, SINPhi;
+			vector<double> Xl(N+1, 0.0); // x location of line nodes
+			vector<double> Zl(N+1, 0.0);
+			vector<double> Te(N+1, 0.0);
+				
+			COSPhi = (r[N][0] - r[0][0]) / XF;
+			SINPhi = (r[N][1] - r[0][1]) / XF; 
 		
-	}
-	else
-	{
-		// The current mooring line must not be vertical; use simple
-		// trigonometry
-		COSPhi = (r[N][0] - r[0][0]) / XF;
-		SINPhi = (r[N][1] - r[0][1]) / XF; 
-	}
+			int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, LW, CB, Tol,
+							   &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
 
-	int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, LW, CB, Tol,
-	                       &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
-
-	if (success>=0)
-	{
-		// assign the resulting line positions to the model
-		for (int i=1; i<N; i++)
-		{
-			r[i][0]  = r[0][0] + Xl[i] * COSPhi;
-			r[i][1]  = r[0][1] + Xl[i] * SINPhi;
-			r[i][2]  = r[0][2] + Zl[i];
+			if (success >= 0)   // if the catenary solve is successful, update the node positions <<< do we ever get here? <<<
+			{
+				cout << "   Catenary initial profile available for Line " << number << endl;
+				for (int i=1; i<N; i++)
+				{
+					r[i][0]  = r[0][0] + Xl[i] * COSPhi;
+					r[i][1]  = r[0][1] + Xl[i] * SINPhi;
+					r[i][2]  = r[0][2] + Zl[i];
+				}
+			}
 		}
 	}
-	else
-	{
-		// otherwise just stretch the nodes between the endpoints linearly and hope for the best
-		if (wordy > 0)
-			cout << "   Catenary IC gen failed for Line" << number
-			     << ", so using linear node spacing." << endl;
-		for (int i=1; i<N; i++)
-		{
-			r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
-			r[i][1]  = r[0][1] + (r[N][1] - r[0][1]) * (float(i)/float(N));
-			r[i][2]  = r[0][2] + (r[N][2] - r[0][2]) * (float(i)/float(N));
-		}
-	}
+
 		
 	// also assign the resulting internal node positions to the integrator initial state vector! (velocities leave at 0)
 	for (int i=1; i<N; i++) {

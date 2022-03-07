@@ -1925,7 +1925,7 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 
 	// get derivatives at t0. f0 = f(t0, x0);
 	err = CalcStateDeriv(x, f0, t, dt);
-	if (err)
+	if (err != MOORDYN_SUCCESS)
 		return err;
 
 	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
@@ -1938,7 +1938,7 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 
 	// get derivatives at t0 + dt/2. f1 = f(t1, x1);
 	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
-	if (err)
+	if (err != MOORDYN_SUCCESS)
 		return err;
 
 	// integrate states to t0 + dt
