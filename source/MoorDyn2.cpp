@@ -246,6 +246,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 				<< l << ": " << err_msg << endl;
 			return err;
 		}
+		ConnectionList[l]->initializeConnect(NULL);  // call this just to set WaterKin (may also set up output file in future)
 		ix += 3;
 	}
 
@@ -375,7 +376,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 				{
 					Cout(MOORDYN_DBG_LEVEL) << "Dynamic relaxation t = "
 						<< t << "s (time step " << iic << "), error = "
-						<< 100.0 * max_error << "%" << endl;
+						<< 100.0 * max_error << "%     \r";
 					break;
 				}
 			}
@@ -470,7 +471,7 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
                                          double &dt)
 {
 	// should check if wave kinematics have been set up if expected!
-	Cout(MOORDYN_DBG_LEVEL) << "t = " << t << "s" << endl;
+	Cout(MOORDYN_DBG_LEVEL) << "t = " << t << "s     \r";
 
 	if (dt <= 0)
 	{
@@ -631,7 +632,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"LINE DICTIONARY", "LINE TYPES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading line types..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading line types:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -705,7 +706,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"ROD DICTIONARY", "ROD TYPES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading rod types..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading rod types:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -755,7 +756,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"BODIES", "BODY LIST", "BODY PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading bodies..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading body list:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -928,7 +929,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"RODS", "ROD LIST", "ROD PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading rods..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading rod list:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -1094,6 +1095,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					unsigned int bodyID = atoi(num1);
 					BodyList[bodyID - 1]->addRodToBody(obj, endCoords);
 				}
+				Cout(MOORDYN_DBG_LEVEL) << endl;
 
 				i++;
 			}
@@ -1103,7 +1105,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		                      {"POINTS", "POINT LIST", "CONNECTION PROPERTIES",
 		                       "NODE PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading connections..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading point list:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -1227,6 +1229,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					int bodyID = atoi(num1);
 					BodyList[bodyID - 1]->addConnectionToBody(obj, r0);
 				}
+				Cout(MOORDYN_DBG_LEVEL) << endl;
 
 				i++;
 			}
@@ -1235,7 +1238,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"LINES", "LINE LIST", "LINE PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading lines..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading line list: " << endl;
 
 			if (!LinePropList.size())
 			{
@@ -1380,6 +1383,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 						return MOORDYN_INVALID_INPUT;
 					}
 				}
+				Cout(MOORDYN_DBG_LEVEL) << endl;
 
 				i++;
 			}
@@ -1388,7 +1392,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"FAILURE"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading failure conditions..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading failure conditions:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -1490,7 +1494,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"OPTIONS"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading options..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading options:" << endl;
 
 			i++;
 			// Parse options until the next header or the end of the file
@@ -1564,7 +1568,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"OUTPUT"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "Reading output options..." << endl;
+			Cout(MOORDYN_DBG_LEVEL) << "   Reading output options:" << endl;
 
 			// parse until the next header or the end of the file
 			while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size()))
@@ -2102,12 +2106,6 @@ moordyn::error_id moordyn::MoorDyn::AllOutput(double t, double dt)
 MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 {
 	// ---------------------------- MoorDyn title message ----------------------------
-	cout << endl
-		<< " Running MoorDyn (v2.a11, 2022-01-03)" << endl
-		<< "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl
-		<< "         MoorDyn v2 has significant ongoing input file changes from v1." << endl
-		<< "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl
-		<< "   This program is released under the GNU General Public License v3." << endl;
 
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;

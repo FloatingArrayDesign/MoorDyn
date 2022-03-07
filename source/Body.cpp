@@ -85,7 +85,7 @@ void Body::setup(int number_in, types type_in, double r6_in[6], double rCG_in[3]
 	// calculate orientation matrix based on latest angles
 	RotMat(r6[3], r6[4], r6[5], OrMat);
 	
-	if (wordy >0)  cout << "Set up Body " << number << ", type " << type << endl;
+	if (wordy >0)  cout << "Set up Body " << number << ", type " << type << ". " << endl;
 	
 };
 
@@ -93,7 +93,7 @@ void Body::setup(int number_in, types type_in, double r6_in[6], double rCG_in[3]
 // this function handles assigning a line to a connection node
 void Body::addConnectionToBody(Connection *theConnection, double coords[3])
 {
-	//if (wordy>0) cout << "C" << theConnection->number << "->B" << number << " ";	
+	if (wordy>0) cout << "C" << theConnection->number << "->B" << number << " ";	
 	
 	if (nAttachedC <30) // this is currently just a maximum imposed by a fixed array size. 
 	{
@@ -112,7 +112,7 @@ void Body::addConnectionToBody(Connection *theConnection, double coords[3])
 // this function handles assigning a line to a connection node
 void Body::addRodToBody(Rod *theRod, double endCoords[6])
 {
-	if (wordy>0) cout << "R" << theRod->number << "->B" << number << " " << endl;
+	if (wordy>0) cout << "R" << theRod->number << "->B" << number << " ";
 
 	if (nAttachedR <30) // this is currently just a maximum imposed by a fixed array size. 
 	{
@@ -154,7 +154,9 @@ void Body::initializeUnfreeBody(const double r6_in[6], const double v6_in[6], do
 	for (int i=0; i<nAttachedR; i++)
 		if (attachedR[i]->type == Rod::FIXED)
 			attachedR[i]->initializeRod(NULL); 
-	// (connects don't need this)
+	// If there's an attached Point, initialize it now because it won't be initialized otherwise
+	for (int i=0; i<nAttachedC; i++)
+		attachedC[i]->initializeConnect(NULL); 
 
 	return;
 }
@@ -177,7 +179,9 @@ void Body::initializeBody( double* X )
 	for (int i=0; i<nAttachedR; i++)
 		if (attachedR[i]->type == Rod::FIXED)
 			attachedR[i]->initializeRod(NULL); 
-	// (connects don't need this)
+	// If there's an attached Point, initialize it now because it won't be initialized otherwise
+	for (int i=0; i<nAttachedC; i++)
+		attachedC[i]->initializeConnect(NULL); 
 	
 	
 	

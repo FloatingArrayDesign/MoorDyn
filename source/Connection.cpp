@@ -66,7 +66,7 @@ void Connection::setup(int number_in, types type_in, double r0_in[3], double M_i
 	//M.resize(3, vector< double >(3, 0.0)); // node mass + added mass matrix
 	//M_i.resize(3, vector< double >(3, 0.0));
 	
-	_log->Cout(MOORDYN_DBG_LEVEL) << "Set up Connection " << number
+	_log->Cout(MOORDYN_DBG_LEVEL) << "   Set up Connection " << number
 	                              << ", type " << type << endl;
 }
 
@@ -74,8 +74,7 @@ void Connection::setup(int number_in, types type_in, double r0_in[3], double M_i
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
-	_log->Cout(MOORDYN_DBG_LEVEL) << "L" << theLine->number
-	                              << "->P" << number << endl;
+	_log->Cout(MOORDYN_DBG_LEVEL) << "L" << theLine->number << "->P" << number << " ";
 
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
@@ -202,6 +201,14 @@ void Connection::initializeAnchor()
 
 void Connection::initializeConnect(double* X)
 {
+	// the default is for no water kinematics to be considered (or to be set externally on each node)
+	WaterKin = 0;
+	for (int J=0; J<3; J++)		// make sure kinematics for each node start at zeroed
+	{
+		U[ J] = 0.0;
+		Ud[J] = 0.0;
+	}	
+			
 	if (type==FREE)
 	{
 		// pass kinematics to any attached lines so they have initial positions at this initialization stage
@@ -212,7 +219,6 @@ void Connection::initializeConnect(double* X)
 			X[3 + I] = r[I];
 			X[    I] = rd[I];
 		}
-		
 		
 		if (-env->WtrDpth > r[2]) {
 			_log->Cout(MOORDYN_ERR_LEVEL)
@@ -226,29 +232,12 @@ void Connection::initializeConnect(double* X)
 			WaterKin = 2;   // water kinematics to be considered through precalculated global grid stored in Waves object
 		else if((env->WaveKin==4) || (env->WaveKin==5) || (env->Current==3) || (env->Current==4))
 			WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
-		else
-		{
-			WaterKin = 0;   // no water kinematics to be considered (or to be set externally on each node)
 
-			// in this case make sure kinematics for each node start at zeroed
-			for (int J=0; J<3; J++)		
-			{
-				U[ J] = 0.0;
-				Ud[J] = 0.0;
-			}
-		}
-
-		_log->Cout(MOORDYN_DBG_LEVEL)
-			<< "Initialized Connection " << number << endl;
 	}
-	else
-	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
-			<< "Error: wrong connection type given to "
-			<< __PRETTY_FUNC_NAME__ << ". Connection " << number
-			<< " type " << type << endl;
-		throw moordyn::invalid_value_error("Wrong connection type");
-	}
+	
+	_log->Cout(MOORDYN_DBG_LEVEL)
+		<< "   Initialized Connection " << number << endl;
+			
 };
 
 

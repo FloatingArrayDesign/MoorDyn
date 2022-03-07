@@ -14,6 +14,7 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 (#)   (name)     (#)      (#)       (m)       (-)     (-)
 1     chain      1        2         410       82      -
 ---------------------- OPTIONS -----------------------------------------
+2             writeLog             Write a log file
 0.001         dtM                  time step to use in mooring integration (s)
 1.0e5         kBot                 bottom stiffness (Pa/m)
 1.0e4         cBot                 bottom damping (Pa-s/m)

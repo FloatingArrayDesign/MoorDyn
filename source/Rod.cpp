@@ -158,7 +158,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 	channels = channels_in; 				// copy string of output channels to object
 
 
-	if (wordy >0)  cout << "Set up Rod " << number << ", type " << type << endl;
+	if (wordy >0)  cout << "Set up Rod " << number << ", type " << type << ". ";
 
 	return 0;
 };
@@ -167,7 +167,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 // this function handles assigning a line to a Rod end
 void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "A " << endl;
+	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "A ";
 	
 	if (nAttachedA <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
@@ -179,7 +179,7 @@ void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
 };
 void Rod::addLineToRodEndB(Line *theLine, int TopOfLine)
 {
-	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "B " << endl;
+	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "B ";
 	
 	if (nAttachedB <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{

@@ -120,7 +120,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	
 	
 	if (wordy >0)
-		cout << "Set up Line " << number << "." << endl;
+		cout << "   Set up Line " << number << ". ";
 };
 
 

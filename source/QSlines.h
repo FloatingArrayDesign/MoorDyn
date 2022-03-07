@@ -81,8 +81,8 @@ int Catenary(double XF, double ZF, double L, double EA, double W , double CB,
         LMax = XF - EA/W + sqrt( (EA/W)*(EA/W) + 2.0*ZF*EA/W ); // Compute the maximum stretched length of the line with seabed interaction beyond which the line would have to double-back on itself; here the line forms an "L" between the anchor and fairlead (i.e. it is horizontal along the seabed from the anchor, then vertical to the fairlead)
         if( ( L  >=  LMax   ) && ( CB >= 0.0 ) )  // .TRUE. if the line is as long or longer than its maximum possible value with seabed interaction
         {
-            cout << "   Warning from Catenary: Unstretched line length too large." << endl;
-            if (longwinded==1) cout << "       d (horiz) is " << XF << " and h (vert) is " << ZF << " and L is " << L << endl;
+            //cout << "   Warning from Catenary: Unstretched line length too large." << endl;
+            //if (longwinded==1) cout << "       d (horiz) is " << XF << " and h (vert) is " << ZF << " and L is " << L << endl;
             return -1;
         }
     }
@@ -283,7 +283,7 @@ int Catenary(double XF, double ZF, double L, double EA, double W , double CB,
         
         else if( ( I == MaxIter ) && ( !FirstIter ) ) // .TRUE. if we've iterated as much as we can take without finding a solution; Abort
         {
-            cout << "   Warning from Catenary:: Iteration not convergent. Cannot solve quasi-static mooring line solution." << endl;
+            //cout << "   Warning from Catenary:: Iteration not convergent. Cannot solve quasi-static mooring line solution." << endl;
             return -1;
         }
         
@@ -315,8 +315,8 @@ int Catenary(double XF, double ZF, double L, double EA, double W , double CB,
 
             if( ( s[I] <  0.0 ) || ( s[I] >  L ) )
             {
-                cout << "   Warning from Catenary:: All line nodes must be located between the anchor and fairlead (inclusive) in routine Catenary()." << endl;
-                cout << "        s[I] = " << s[I] << " and L = " << L << endl;
+                //cout << "   Warning from Catenary:: All line nodes must be located between the anchor and fairlead (inclusive) in routine Catenary()." << endl;
+                //cout << "        s[I] = " << s[I] << " and L = " << L << endl;
                 return -1;
             }
             
@@ -343,8 +343,8 @@ int Catenary(double XF, double ZF, double L, double EA, double W , double CB,
         {
             if( ( s[I] <  0.0 ) || ( s[I] >  L ) )  
             {
-            cout << "   Warning from Catenary:: All line nodes must be located between the anchor and fairlead (inclusive) in routine Catenary()." << endl;
-            cout << "        s[I] = " << s[I] << " and L = " << L << endl;
+            //cout << "   Warning from Catenary:: All line nodes must be located between the anchor and fairlead (inclusive) in routine Catenary()." << endl;
+            //cout << "        s[I] = " << s[I] << " and L = " << L << endl;
             return -1;
             }
 
@@ -381,8 +381,8 @@ int Catenary(double XF, double ZF, double L, double EA, double W , double CB,
          {
             if( ( s[I] <  0.0 ) || ( s[I] >  L ) ) 
             {
-                cout << "   Warning from Catenary:: All line nodes must be located between the anchor and fairlead (inclusive) in routine Catenary()." << endl;
-                cout << "        s[I] = " << s[I] << " and L = " << L << endl;
+                //cout << "   Warning from Catenary:: All line nodes must be located between the anchor and fairlead (inclusive) in routine Catenary()." << endl;
+                //cout << "        s[I] = " << s[I] << " and L = " << L << endl;
                 return -1;
             }
 
