@@ -22,6 +22,22 @@
 namespace moordyn
 {
 
+std::string __log_level_name(int level)
+{
+	switch(level)
+	{
+	case MOORDYN_DBG_LEVEL:
+		return "DBG";
+	case MOORDYN_MSG_LEVEL:
+		return "MSG";
+	case MOORDYN_WRN_LEVEL:
+		return "WRN";
+	case MOORDYN_ERR_LEVEL:
+		return "ERR";
+	}
+	return "???";
+}
+
 /** @brief Null buffer to avoid printing on screen
  * @see moordyn::cnul
  */

@@ -27,9 +27,35 @@
 namespace moordyn
 {
 
+/** @brief Name the log level
+ * @param level The log level
+ * @see @ref moordyn_log
+ */
+std::string __log_level_name(int level);
+
+/** @brief Utility to log messages
+ *
+ * This macro is assuming you hava access to the log handler as the _log
+ * variable
+ */
+#define LOGGER(level) _log->Cout(level) << __log_level_name(level)              \
+	<< " " << __FILE__ << ":" << __LINE__ << " " << __FUNC_NAME__ << "(): "
+
+/// Log a debug message, without extra info about the source code
+#define LOGDBG _log->Cout(MOORDYN_DBG_LEVEL)
+/// Log an info message, without extra info about the source code
+#define LOGMSG _log->Cout(MOORDYN_MSG_LEVEL)
+/// Log a warning
+#define LOGWRN LOGGER(MOORDYN_WRN_LEVEL)
+/// Log an error
+#define LOGERR LOGGER(MOORDYN_ERR_LEVEL)
+
 class MultiStream;
 
 /** @brief Streamer able to redirect the output to several substreams
+ *
+ * This class is actually meant as a helper for moordyn::Log
+ * @see Log
  */
 class MultiStream
 {

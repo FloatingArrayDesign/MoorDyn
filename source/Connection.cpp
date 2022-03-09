@@ -70,7 +70,7 @@ void Connection::setup(int number_in, types type_in, const double r0_in[3], doub
 	//M.resize(3, vector< double >(3, 0.0)); // node mass + added mass matrix
 	//M_i.resize(3, vector< double >(3, 0.0));
 	
-	_log->Cout(MOORDYN_DBG_LEVEL) << "   Set up Connection " << number
+	LOGDBG << "   Set up Connection " << number
 	                              << ", type " << type << ". ";
 }
 
@@ -78,7 +78,7 @@ void Connection::setup(int number_in, types type_in, const double r0_in[3], doub
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
-	_log->Cout(MOORDYN_DBG_LEVEL) << "L" << theLine->number << "->P" << number << " ";
+	LOGDBG << "L" << theLine->number << "->P" << number << " ";
 
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
@@ -117,14 +117,14 @@ void Connection::removeLineFromConnect(int lineID, int *TopOfLine, double rEnd[]
 			rdEnd[J] = rd[J];
 		}
 
-		_log->Cout(MOORDYN_MSG_LEVEL) << "Detached line " << lineID
+		LOGMSG << "Detached line " << lineID
 										<< " from Connection " << number
 										<< endl;
 		return;
 	}
 
 	// line not found
-	_log->Cout(MOORDYN_ERR_LEVEL)
+	LOGERR
 		<< "Error: failed to find line to remove during "
 		<< __PRETTY_FUNC_NAME__ << " call to connection " << number
 		<< ". Line " << lineID << endl;
@@ -225,7 +225,7 @@ void Connection::initializeConnect(double X[6])
 		}
 		
 		if (-env->WtrDpth > r[2]) {
-			_log->Cout(MOORDYN_ERR_LEVEL)
+			LOGERR
 				<< "Error: water depth is shallower than Point "
 				<< number << "." << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
@@ -239,7 +239,7 @@ void Connection::initializeConnect(double X[6])
 
 	}
 	
-	_log->Cout(MOORDYN_DBG_LEVEL)
+	LOGDBG
 		<< "   Initialized Connection " << number << endl;
 			
 };
@@ -388,7 +388,7 @@ void Connection::updateFairlead(const double time)
 
 	if (type != COUPLED)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -412,7 +412,7 @@ void Connection::setKinematics(double *r_in, double *rd_in)
 {	
 	if (type != FIXED)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -437,7 +437,7 @@ moordyn::error_id Connection::setState(const double* X,
 	// the kinematics should only be set with this function of it's an independent/free connection
 	if (type != FREE) // "connect" type
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -465,7 +465,7 @@ moordyn::error_id Connection::getStateDeriv(double Xd[6])
 	// the RHS is only relevant (there are only states to worry about) if it is a Connect type of Connection
 	if (type != FREE)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -604,7 +604,7 @@ moordyn::error_id Connection::doRHS()
 	if (WaterKin == 1) // wave kinematics time series set internally for each node
 	{
 		// =========== obtain (precalculated) wave kinematics at current time instant ============
-		_log->Cout(MOORDYN_WRN_LEVEL)
+		LOGWRN
 			<< "unsupported connection kinematics option"
 			<< __PRETTY_FUNC_NAME__ << endl;
 		// TBD
@@ -618,7 +618,7 @@ moordyn::error_id Connection::doRHS()
 	}
 	else if (WaterKin != 0)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
 		return MOORDYN_INVALID_VALUE;
 	}
