@@ -118,16 +118,16 @@ int DECLDIR MoorDyn_Close(MoorDyn system);
  * @return 0 If the mooring system is correctly destroyed, an error code
  * otherwise (see @ref moordyn_errors)
  */
-int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n);
+int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int *n);
 
 /** @brief Get the points where the waves kinematics shall be provided
  * @param system The Moordyn system
  * @param r The output coordinates (3 components per point)
  * @return 0 If the data is correctly set, an error code otherwise
  * (see @ref moordyn_errors)
- * @see MoorDyn_InitExtWaves()
+ * @see MoorDyn_ExternalWaveKinInit()
  */
-int DECLDIR MoorDyn_GetWavesCoords(MoorDyn system, double *r);
+int DECLDIR MoorDyn_GetWaveKinCoordinates(MoorDyn system, double *r);
 
 /** @brief Set the kinematics of the waves
  *
@@ -137,12 +137,12 @@ int DECLDIR MoorDyn_GetWavesCoords(MoorDyn system, double *r);
  * @param Ud The accelerations at the points (3 components per point)
  * @return 0 If the data is correctly set, an error code otherwise
  * (see @ref moordyn_errors)
- * @see MoorDyn_InitExtWaves()
- * @see MoorDyn_GetWavesCoords()
+ * @see MoorDyn_ExternalWaveKinInit()
+ * @see MoorDyn_GetWaveKinCoordinates()
  */
-int DECLDIR MoorDyn_SetWaves(MoorDyn system, const double *U,
-                                             const double *Ud,
-                                             double t);
+int DECLDIR MoorDyn_SetWaveKin(MoorDyn system, const double *U,
+                                               const double *Ud,
+                                               double t);
 
 /** @brief Get the number of bodies
  *

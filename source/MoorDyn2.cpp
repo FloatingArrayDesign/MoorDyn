@@ -2167,7 +2167,7 @@ int DECLDIR MoorDyn_Close(MoorDyn system)
 	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n)
+int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int *n)
 {
 	CHECK_SYSTEM(system);
 
@@ -2186,16 +2186,16 @@ int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n)
 	return err;
 }
 
-int DECLDIR MoorDyn_GetWavesCoords(MoorDyn system, double *r)
+int DECLDIR MoorDyn_GetWaveKinCoordinates(MoorDyn system, double *r)
 {
 	CHECK_SYSTEM(system);
 
 	return ((moordyn::MoorDyn*)system)->GetWaveKinCoordinates(r);
 }
 
-int DECLDIR MoorDyn_SetWaves(MoorDyn system, const double *U,
-                                             const double *Ud,
-                                             double t)
+int DECLDIR MoorDyn_SetWaveKin(MoorDyn system, const double *U,
+                                               const double *Ud,
+                                               double t)
 {
 	CHECK_SYSTEM(system);
 
