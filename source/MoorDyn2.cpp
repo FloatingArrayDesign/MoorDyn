@@ -44,7 +44,7 @@ const char *UnitList[] = {"(s)     ", "(m)     ", "(m)     ", "(m)     ",
                           "(N)     ", "(N)     "};
 
 
-moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
+moordyn::MoorDyn::MoorDyn(const char *infilename)
 	: _log(NULL)
 	, _filepath("Mooring/lines.txt")
 	, _basename("lines")
@@ -72,7 +72,7 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	, U_2(NULL)
 	, Ud_2(NULL)
 {
-	_log = new Log(verbosity);
+	_log = new Log();
 
 	if (infilename && (strlen(infilename) > 0))
 	{

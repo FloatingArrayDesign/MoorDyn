@@ -46,10 +46,8 @@ public:
 	 *
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
-	 * @param verbosity The verbosity level (see @ref moordyn_log)
 	 */
-	MoorDyn(const char *infilename=NULL,
-            const int verbosity=MOORDYN_DBG_LEVEL);
+	MoorDyn(const char *infilename=NULL);
 
 	/** @brief Destuctor
 	 */    
