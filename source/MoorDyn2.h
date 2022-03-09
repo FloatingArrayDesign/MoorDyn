@@ -58,18 +58,40 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename);
 unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system);
 
 /** @brief Set the instance verbosity level
- *
  * @param system The Moordyn system
  * @param verbosity The verbosity level. It can take the following values
  *  - MOORDYN_DBG_LEVEL Every single message will be printed
  *  - MOORDYN_MSG_LEVEL Messages specially designed to help debugging the code
  *    will be omitted
  *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
- *  - MOORDYN_WRN_LEVEL Just errors will be reported
+ *  - MOORDYN_ERR_LEVEL Just errors will be reported
+ *  - MOORDYN_NO_OUTPUT No info will be reported
  * @return 0 If the verbosity level is correctly set, an error code otherwise
  * (see @ref moordyn_errors)
  */
 int DECLDIR MoorDyn_SetVerbosity(MoorDyn system, int verbosity);
+
+/** @brief Set the instance log file
+ * @param system The Moordyn system
+ * @param log_path The file path to print the log file
+ * @return 0 If the log file is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR MoorDyn_SetLogFile(MoorDyn system, const char* log_path);
+
+/** @brief Set the instance log file printing level
+ * @param system The Moordyn system
+ * @param verbosity The log file print level. It can take the following values
+ *  - MOORDYN_DBG_LEVEL Every single message will be printed
+ *  - MOORDYN_MSG_LEVEL Messages specially designed to help debugging the code
+ *    will be omitted
+ *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
+ *  - MOORDYN_ERR_LEVEL Just errors will be reported
+ *  - MOORDYN_NO_OUTPUT No info will be reported
+ * @return 0 If the printing level is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR MoorDyn_SetLogLevel(MoorDyn system, int verbosity);
 
 /** @brief Compute the initial condition of a MoorDyn system
  * 

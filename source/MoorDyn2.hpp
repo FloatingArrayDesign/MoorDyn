@@ -37,7 +37,7 @@ namespace moordyn
  * This class contains everything required to hold a whole mooring system,
  * making everything thread-friendly easier
  */
-class MoorDyn : public Log
+class MoorDyn
 {
 public:
 	/** @brief Constructor
@@ -54,6 +54,11 @@ public:
 	/** @brief Destuctor
 	 */    
 	~MoorDyn();
+
+	/** @brief Get the Log handler
+	 * @return The Log handler
+	 */
+	inline Log* GetLogger() const { return _log; }
 
 	/** @brief Initializes Moordyn, reading the input file and setting up the
 	 * mooring lines
@@ -185,7 +190,7 @@ public:
 	{
 		if (!U || !Ud)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Received a Null pointer in "
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Received a Null pointer in "
 				<< "MoorDyn::SetWaveKin()" << endl
 				<< "Both velocity and acceleration arrays are needed"
 				<< endl;
@@ -194,7 +199,7 @@ public:
 
 		if (!U_1 || !U_2 || !Ud_1 || !Ud_2)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Memory not allocated."
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Memory not allocated."
 				<< " Have you called MoorDyn::ExternalWaveKinInit()?"
 				<< endl;
 			return MOORDYN_MEM_ERROR;
@@ -239,14 +244,14 @@ protected:
 		if (!NCoupedDOF())
 		{
 			if (f)
-				Cout(MOORDYN_WRN_LEVEL) << "Warning: Forces have been asked on "
+				_log->Cout(MOORDYN_WRN_LEVEL) << "Warning: Forces have been asked on "
 					<< "the coupled entities, but there are no such entities"
 					<< endl;
 			return MOORDYN_SUCCESS;
 		}
 		if (NCoupedDOF() && !f)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: " << __PRETTY_FUNC_NAME__
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: " << __PRETTY_FUNC_NAME__
 				<< " called with a NULL forces pointer, but there are "
 				<< NCoupedDOF() << " coupled Degrees Of Freedom" << endl;
 			return MOORDYN_INVALID_VALUE;
@@ -274,6 +279,9 @@ protected:
 	}
 
 private:
+	/// The Log handler
+	moordyn::Log *_log;
+
 	/// The input file
 	string _filepath;
 	/// The input file basename
@@ -399,12 +407,12 @@ private:
 		{
 			stringstream oname;
 			oname << _basepath << _basename << ".log";
-			Cout(MOORDYN_DBG_LEVEL) << "Creating a log file: '"
+			_log->Cout(MOORDYN_DBG_LEVEL) << "Creating a log file: '"
 				<< oname.str() << "'" << endl;
 			outfileLog.open(oname.str());
 			if (!outfileLog.is_open())
 			{
-				Cout(MOORDYN_ERR_LEVEL) << "Unable to create the log file '"
+				_log->Cout(MOORDYN_ERR_LEVEL) << "Unable to create the log file '"
 				                        << oname.str() << "'" << endl;
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
@@ -452,12 +460,12 @@ private:
 		}
 
 		string fpath = _basepath + entry;
-		Cout(MOORDYN_MSG_LEVEL) << "Loading a curve from '"
+		_log->Cout(MOORDYN_MSG_LEVEL) << "Loading a curve from '"
 		                        << fpath << "'..." << endl;
 		ifstream f(fpath);
 		if (!f.is_open())
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Cannot read the file" << endl;
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Cannot read the file" << endl;
 			return MOORDYN_INVALID_INPUT_FILE;
 		}
 
@@ -475,7 +483,7 @@ private:
 			vector<string> entries = moordyn::str::split(fline, ' ');
 			if (entries.size() < 2)
 			{
-				Cout(MOORDYN_ERR_LEVEL) << "Error: Bad curve point" << endl
+				_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Bad curve point" << endl
 					<< "\t'" << fline << "'" << endl
 					<< "\t2 fields required, but just " << entries.size()
 					<< " are provided" << endl;
@@ -483,11 +491,11 @@ private:
 			}
 			x.push_back(atof(entries[0].c_str()));
 			y.push_back(atof(entries[0].c_str()));
-			Cout(MOORDYN_DBG_LEVEL) << "(" << x.back() << ", "
+			_log->Cout(MOORDYN_DBG_LEVEL) << "(" << x.back() << ", "
 				<< y.back() << ")" << endl;
 		}
 
-		Cout(MOORDYN_MSG_LEVEL) << "OK" << endl;
+		_log->Cout(MOORDYN_MSG_LEVEL) << "OK" << endl;
 		return MOORDYN_SUCCESS;
 	}
 
@@ -525,7 +533,7 @@ private:
 
 		if (xv.size() > nCoef)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Too much points in the curve"
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Too much points in the curve"
 				<< endl << "\t" << xv.size() << " points given, but just "
 				<< nCoef << " are accepted" << endl;
 			return MOORDYN_INVALID_INPUT;

@@ -56,7 +56,6 @@ private:
 	/// The Log handler
 	moordyn::Log *_log;
 
-
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
 	EnvCond *env;
