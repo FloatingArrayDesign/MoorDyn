@@ -31,7 +31,7 @@ namespace moordyn
  * @param level The log level
  * @see @ref moordyn_log
  */
-std::string __log_level_name(int level);
+std::string log_level_name(int level);
 
 /** @brief Utility to log messages
  *
@@ -39,7 +39,7 @@ std::string __log_level_name(int level);
  * variable. The easiest way to grant you can safety use this macro is
  * inheriting the LogUser class
  */
-#define LOGGER(level) _log->Cout(level) << __log_level_name(level)              \
+#define LOGGER(level) _log->Cout(level) << log_level_name(level)                \
 	<< " " << __FILE__ << ":" << __LINE__ << " " << __FUNC_NAME__ << "(): "
 
 /// Log a debug message, without extra info about the source code

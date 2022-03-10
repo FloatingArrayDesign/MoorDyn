@@ -22,7 +22,7 @@
 namespace moordyn
 {
 
-std::string __log_level_name(int level)
+std::string log_level_name(int level)
 {
 	switch(level)
 	{

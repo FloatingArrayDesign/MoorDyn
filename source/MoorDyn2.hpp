@@ -421,9 +421,7 @@ private:
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
 			outfileLog << "MoorDyn v2 legacy log file with output level "
-			           << env.writeLog << endl
-			           << "Note: options above the writeLog line in the input "
-			           << "file will not be recorded" << endl;
+			           << env.writeLog << endl;
 			// get pointer to outfile for MD objects to use
 			env.outfileLogPtr = &outfileLog;
 
@@ -440,9 +438,8 @@ private:
 				       << err_msg << endl;
 			else
 				LOGMSG << "MoorDyn v2 log file with output level "
-			           << GetLogger()->GetLogLevel() << endl
-			           << "Note: options above the writeLog line in the input "
-			           << "file will not be recorded" << endl;
+			           << log_level_name(GetLogger()->GetLogLevel())
+			           << " at '" << filepath.str() << "'" << endl;
 			return err;
 		}
 

@@ -575,6 +575,60 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 {
 	unsigned int i=0;
 
+	// We are really interested in looking for the writeLog option, to start
+	// logging as soon as possible
+	ifstream in_file(_filepath);
+	vector<string> in_txt;
+	string line;
+	if (!in_file.is_open())
+	{
+		LOGERR << "Error: unable to open file '"
+		                        << _filepath << "'" << endl;
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
+	while (in_file.good())
+	{
+		string line_txt;
+		getline(in_file, line_txt);
+		in_txt.push_back(line_txt);
+	}
+	in_file.close();
+	while (i < in_txt.size())
+	{
+		// Skip until we find the options header line
+		if ((in_txt[i].find("---") == string::npos) ||
+			!moordyn::str::has(moordyn::str::upper(in_txt[i]), {"OPTIONS"}))
+		{
+			i++;
+			continue;
+		}
+
+		i++;
+		// Look for writeLog option entries until the end of section or file
+		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size()))
+		{
+			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+			if (entries.size() < 2)
+			{
+				i++;
+				continue;
+			}
+			const string value = entries[0];
+			const string name = entries[1];
+			if (name != "writeLog")
+			{
+				i++;
+				continue;
+			}
+			env.writeLog = atoi(entries[0].c_str());
+			const moordyn::error_id err = SetupLog();
+			if (err != MOORDYN_SUCCESS)
+				return err;
+
+			i++;
+		}
+	}
+
 	// factor by which to boost drag coefficients during dynamic relaxation IC generation
 	ICDfac = 5.0;
 	// convergence analysis time step for IC generation
@@ -603,25 +657,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	// This will be conveniently incremented as each object is added
 	nX = 0;
 
-	// Load the mooring lines input file in lines of text
-	ifstream in_file(_filepath);
-	vector<string> in_txt;
-	string line;
-	if (!in_file.is_open())
-	{
-		LOGERR << "Error: unable to open file '"
-		                        << _filepath << "'" << endl;
-		return MOORDYN_INVALID_INPUT_FILE;
-	}
-	while (in_file.good())
-	{
-		string line_txt;
-		getline(in_file, line_txt);
-		in_txt.push_back(line_txt);
-	}
-	in_file.close();
-
-	// Parse the input file
+	// Now we can parse the whole input file
 	i=0;
 	while (i < in_txt.size())
 	{
@@ -688,13 +724,12 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 
 				LOGDBG << "\t'" << obj->type << "'"
 					<< " - with id " << LinePropList.size() << endl
-					<< "    name: " << obj->type << endl
-					<< "    d   : " << obj->d    << endl
-					<< "    w   : " << obj->w    << endl
-					<< "    Cdn : " << obj->Cdn  << endl
-					<< "    Can : " << obj->Can  << endl
-					<< "    Cdt : " << obj->Cdt  << endl
-					<< "    Cat : " << obj->Cat  << endl;
+					<< "\t\td   : " << obj->d    << endl
+					<< "\t\tw   : " << obj->w    << endl
+					<< "\t\tCdn : " << obj->Cdn  << endl
+					<< "\t\tCan : " << obj->Can  << endl
+					<< "\t\tCdt : " << obj->Cdt  << endl
+					<< "\t\tCat : " << obj->Cat  << endl;
 
 				LinePropList.push_back(obj);
 				i++;
@@ -733,13 +768,12 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 
 				LOGDBG << "\t'" << obj->type << "'"
 					<< " - with id " << RodPropList.size() << endl
-					<< "    name: " << obj->type << endl
-					<< "    d   : " << obj->d    << endl
-					<< "    w   : " << obj->w    << endl
-					<< "    Cdn : " << obj->Cdn  << endl
-					<< "    Can : " << obj->Can  << endl
-					<< "    Cdt : " << obj->Cdt  << endl
-					<< "    Cat : " << obj->Cat  << endl;
+					<< "\t\td   : " << obj->d    << endl
+					<< "\t\tw   : " << obj->w    << endl
+					<< "\t\tCdn : " << obj->Cdn  << endl
+					<< "\t\tCan : " << obj->Can  << endl
+					<< "\t\tCdt : " << obj->Cdt  << endl
+					<< "\t\tCat : " << obj->Cat  << endl;
 
 				RodPropList.push_back(obj);
 				i++;
@@ -1508,10 +1542,9 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				const string name = entries[1];
 				if (name == "writeLog")
 				{
-					env.writeLog = atoi(entries[0].c_str());
-					const moordyn::error_id err = SetupLog();
-					if (err != MOORDYN_SUCCESS)
-						return err;
+					// Already registered
+					i++;
+					continue;
 				}
 				// DT is old way, should phase out
 				else if ((name == "dtM") || (name == "DT"))
