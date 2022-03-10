@@ -92,12 +92,12 @@ public:
 
 	/** @brief Functionality for std::endl alike operators
 	 */
-	std::ostream& operator<< (std::ostream& (*pfun)(std::ostream&))
+	MultiStream& operator<< (std::ostream& (*pfun)(std::ostream&))
 	{
 		if(_fout_enabled && _fout.is_open())
 			pfun(_fout);
 		pfun(*_terminal);
-		return *_terminal;
+		return *this;
 	}
 
 	/// The file path
