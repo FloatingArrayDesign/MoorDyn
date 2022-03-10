@@ -94,7 +94,8 @@ public:
 	 */
 	std::ostream& operator<< (std::ostream& (*pfun)(std::ostream&))
 	{
-		pfun(_fout);
+		if(_fout_enabled && _fout.is_open())
+			pfun(_fout);
 		pfun(*_terminal);
 		return *_terminal;
 	}
