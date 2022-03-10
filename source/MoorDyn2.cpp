@@ -687,19 +687,14 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					return err;
 
 				LOGDBG << "\t'" << obj->type << "'"
-					<< " - with id " << LinePropList.size() << endl;
-				if (env.writeLog > 1)
-				{
-					outfileLog << "  - LineType" << LinePropList.size() << ":"
-					          << endl
-					          << "    name: " << obj->type << endl
-					          << "    d   : " << obj->d    << endl
-					          << "    w   : " << obj->w    << endl
-					          << "    Cdn : " << obj->Cdn  << endl
-					          << "    Can : " << obj->Can  << endl
-					          << "    Cdt : " << obj->Cdt  << endl
-					          << "    Cat : " << obj->Cat  << endl;
-				}
+					<< " - with id " << LinePropList.size() << endl
+					<< "    name: " << obj->type << endl
+					<< "    d   : " << obj->d    << endl
+					<< "    w   : " << obj->w    << endl
+					<< "    Cdn : " << obj->Cdn  << endl
+					<< "    Can : " << obj->Can  << endl
+					<< "    Cdt : " << obj->Cdt  << endl
+					<< "    Cat : " << obj->Cat  << endl;
 
 				LinePropList.push_back(obj);
 				i++;
@@ -737,19 +732,14 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				obj->Cat = atof(entries[6].c_str());
 
 				LOGDBG << "\t'" << obj->type << "'"
-					<< " - with id " << RodPropList.size() << endl;
-				if (env.writeLog > 1)
-				{
-					outfileLog << "  - RodType" << RodPropList.size() << ":"
-					          << endl
-					          << "    name: " << obj->type << endl
-					          << "    d   : " << obj->d    << endl
-					          << "    w   : " << obj->w    << endl
-					          << "    Cdn : " << obj->Cdn  << endl
-					          << "    Can : " << obj->Can  << endl
-					          << "    Cdt : " << obj->Cdt  << endl
-					          << "    Cat : " << obj->Cat  << endl;
-				}
+					<< " - with id " << RodPropList.size() << endl
+					<< "    name: " << obj->type << endl
+					<< "    d   : " << obj->d    << endl
+					<< "    w   : " << obj->w    << endl
+					<< "    Cdn : " << obj->Cdn  << endl
+					<< "    Can : " << obj->Can  << endl
+					<< "    Cdt : " << obj->Cdt  << endl
+					<< "    Cat : " << obj->Cat  << endl;
 
 				RodPropList.push_back(obj);
 				i++;
@@ -1767,12 +1757,8 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		<< "\tnCpldRods   = " << CpldRodIs.size() << endl
 		<< "\tnCpldPoints = " << CpldConIs.size() << endl;
 	
-	// write system description to log file
-	if (env.writeLog > 0)
-	{
-		outfileLog << "----- MoorDyn Model Summary (to be written) -----"
-		          << endl;
-	}
+	// write system description
+	LOGDBG << "----- MoorDyn Model Summary (to be written) -----" << endl;
 
 	// Setup the waves and populate them
 	waves = new Waves();
@@ -1922,10 +1908,6 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 {
 	moordyn::error_id err;
 
-	if (env.writeLog > 2)
-		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
-		          << t << " s -----\n";
-
 	// get derivatives at t0. f0 = f(t0, x0);
 	err = CalcStateDeriv(x, f0, t, dt);
 	if (err != MOORDYN_SUCCESS)
@@ -1934,10 +1916,6 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
 	for (unsigned int i = 0; i < nX; i++)
 		xt[i] = x[i] + 0.5 * dt * f0[i];
-
-	if (env.writeLog > 2)
-		outfileLog << "\n----- RK2 corrector call to CalcStateDeriv at time "
-		          << t + 0.5 * dt << " s -----\n";
 
 	// get derivatives at t0 + dt/2. f1 = f(t1, x1);
 	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);

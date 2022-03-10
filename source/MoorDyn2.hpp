@@ -393,26 +393,57 @@ private:
 	 */
 	inline moordyn::error_id SetupLog()
 	{
+		// env.writeLog = 0 -> MOORDYN_NO_OUTPUT
+		// env.writeLog = 1 -> MOORDYN_WRN_LEVEL
+		// env.writeLog = 2 -> MOORDYN_MSG_LEVEL
+		// env.writeLog >= 3 -> MOORDYN_DBG_LEVEL
+		int log_level = MOORDYN_ERR_LEVEL - env.writeLog;
+		if (log_level >= MOORDYN_ERR_LEVEL)
+			log_level = MOORDYN_NO_OUTPUT;
+		if (log_level < MOORDYN_DBG_LEVEL)
+			log_level = MOORDYN_DBG_LEVEL;
+		GetLogger()->SetLogLevel(log_level);
+
 		if (env.writeLog > 0)
 		{
+			// BUG: The legacy file shall be removed in the future, when all
+			// the API revamp is done. For the time being I am keeping it for
+			// simplicity
 			stringstream oname;
-			oname << _basepath << _basename << ".log";
-			_log->Cout(MOORDYN_DBG_LEVEL) << "Creating a log file: '"
+			oname << _basepath << _basename << ".legacy.log";
+			LOGDBG << "Creating the legacy log file: '"
 				<< oname.str() << "'" << endl;
 			outfileLog.open(oname.str());
 			if (!outfileLog.is_open())
 			{
-				_log->Cout(MOORDYN_ERR_LEVEL) << "Unable to create the log file '"
+				LOGERR << "Unable to create the legacy log file '"
 				                        << oname.str() << "'" << endl;
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
-			outfileLog << "MoorDyn v2 log file with output level "
-			          << env.writeLog << endl
-			          << "Note: options above the writeLog line in the input "
-					  << "file will not be recorded" << endl;
+			outfileLog << "MoorDyn v2 legacy log file with output level "
+			           << env.writeLog << endl
+			           << "Note: options above the writeLog line in the input "
+			           << "file will not be recorded" << endl;
 			// get pointer to outfile for MD objects to use
-			env.outfileLogPtr = & outfileLog;
-			return MOORDYN_SUCCESS;
+			env.outfileLogPtr = &outfileLog;
+
+			moordyn::error_id err = MOORDYN_SUCCESS;
+			string err_msg;
+			stringstream filepath;
+			filepath << _basepath << _basename << ".log";
+			try {
+				GetLogger()->SetFile(filepath.str().c_str());
+			} MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS)
+				LOGERR << "Unable to create the log at '"
+				       << filepath.str() << "': " << endl
+				       << err_msg << endl;
+			else
+				LOGMSG << "MoorDyn v2 log file with output level "
+			           << GetLogger()->GetLogLevel() << endl
+			           << "Note: options above the writeLog line in the input "
+			           << "file will not be recorded" << endl;
+			return err;
 		}
 
 		if (outfileLog.is_open())
