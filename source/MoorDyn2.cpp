@@ -2158,6 +2158,13 @@ int DECLDIR MoorDyn_SetLogLevel(MoorDyn system, int verbosity)
 	return MOORDYN_SUCCESS;
 }
 
+int DECLDIR MoorDyn_Log(MoorDyn system, int level, const char* msg)
+{
+	CHECK_SYSTEM(system);
+	((moordyn::MoorDyn*)system)->GetLogger()->Cout(level) << msg;
+	return MOORDYN_SUCCESS;
+}
+
 unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system)
 {
 	if (!system)

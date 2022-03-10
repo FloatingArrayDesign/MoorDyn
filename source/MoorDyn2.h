@@ -93,6 +93,25 @@ int DECLDIR MoorDyn_SetLogFile(MoorDyn system, const char* log_path);
  */
 int DECLDIR MoorDyn_SetLogLevel(MoorDyn system, int verbosity);
 
+/** @brief Log a message
+ * @param system The Moordyn system
+ * @param level The message level. It can take the following values
+ *  - MOORDYN_DBG_LEVEL for debugging messages
+ *  - MOORDYN_MSG_LEVEL for regular information messages
+ *  - MOORDYN_WRN_LEVEL for warnings
+ *  - MOORDYN_ERR_LEVEL for errors
+ * @param msg The message to log
+ * @return 0 If the printing level is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ * @note This messages are subjected to the same rules than the inner messages,
+ * i.e. if @p level is lower than the threshold levels set with
+ * MoorDyn_SetVerbosity() and MoorDyn_SetLogLevel(), the message will not be
+ * logged in the terminal and the log file respectively
+ * @note This function will not log the file, line and function where it is
+ * called from, not even in case of warnings or errors
+ */
+int DECLDIR MoorDyn_Log(MoorDyn system, int level, const char* msg);
+
 /** @brief Compute the initial condition of a MoorDyn system
  * 
  * At the time of creating a new MoorDyn instance, the input file is read and
