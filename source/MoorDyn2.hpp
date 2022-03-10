@@ -37,7 +37,7 @@ namespace moordyn
  * This class contains everything required to hold a whole mooring system,
  * making everything thread-friendly easier
  */
-class MoorDyn
+class MoorDyn : public LogUser
 {
 public:
 	/** @brief Constructor
@@ -52,11 +52,6 @@ public:
 	/** @brief Destuctor
 	 */    
 	~MoorDyn();
-
-	/** @brief Get the Log handler
-	 * @return The Log handler
-	 */
-	inline Log* GetLogger() const { return _log; }
 
 	/** @brief Initializes Moordyn, reading the input file and setting up the
 	 * mooring lines
@@ -277,9 +272,6 @@ protected:
 	}
 
 private:
-	/// The Log handler
-	moordyn::Log *_log;
-
 	/// The input file
 	string _filepath;
 	/// The input file basename

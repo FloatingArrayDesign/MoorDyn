@@ -40,7 +40,7 @@ namespace moordyn
  *          failing
  *  - Coupled: The connection position and velocity is externally imposed
  */
-class Connection
+class Connection : public LogUser
 {
 public:
 	/** @brief Costructor
@@ -53,9 +53,6 @@ public:
 	~Connection();
 
 private:
-	/// The Log handler
-	moordyn::Log *_log;
-
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
 	EnvCond *env;

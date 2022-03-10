@@ -45,7 +45,7 @@ const char *UnitList[] = {"(s)     ", "(m)     ", "(m)     ", "(m)     ",
 
 
 moordyn::MoorDyn::MoorDyn(const char *infilename)
-	: _log(NULL)
+	: LogUser(NULL)
 	, _filepath("Mooring/lines.txt")
 	, _basename("lines")
 	, _basepath("Mooring/")
@@ -72,7 +72,7 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 	, U_2(NULL)
 	, Ud_2(NULL)
 {
-	_log = new Log();
+	SetLogger(new Log());
 
 	if (infilename && (strlen(infilename) > 0))
 	{

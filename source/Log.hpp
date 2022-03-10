@@ -36,7 +36,8 @@ std::string __log_level_name(int level);
 /** @brief Utility to log messages
  *
  * This macro is assuming you hava access to the log handler as the _log
- * variable
+ * variable. The easiest way to grant you can safety use this macro is
+ * inheriting the LogUser class
  */
 #define LOGGER(level) _log->Cout(level) << __log_level_name(level)              \
 	<< " " << __FILE__ << ":" << __LINE__ << " " << __FUNC_NAME__ << "(): "
@@ -192,6 +193,41 @@ private:
 	int _file_verbosity;
 	/// The streamer which might redirects to both the terminal and a file
 	MultiStream *_streamer;
+};
+
+/** @brief A helper for the entities to use the logger
+ *
+ * Inheriting this class you can grant the class will have everything required
+ * to use the macros LOGGER, LOGDBG, LOGMSG, LOGWRN and LOGERR
+ */
+class LogUser
+{
+public:
+	/** @brief Constructor
+	 * @param log The log handler. NULL can be passed, providing later the log
+     * handler with SetLogger()
+	 * @warning No messages shall be logged until a non NULL log handler is
+     * provided
+	 */
+	LogUser(Log* log=NULL) : _log(log) {}
+
+	/** @brief Destuctor
+	 */    
+	~LogUser() {}
+
+	/** @brief Set the log handler
+	 * @param log The log handler
+	 */
+	inline void SetLogger(Log* log) { _log = log; }
+
+	/** @brief Get the log handler
+	 * @return The log handler
+	 */
+	inline Log* GetLogger() const { return _log; }
+
+protected:
+	/// The log handler
+	Log *_log;
 };
 
 }  // ::moordyn

@@ -23,7 +23,7 @@ namespace moordyn
 {
 
 Connection::Connection(moordyn::Log *log)
-	: _log(log)
+	: LogUser(log)
 	, WaterKin(0)
 {
 }
