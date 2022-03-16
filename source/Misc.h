@@ -518,6 +518,90 @@ void LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, double *y, double*x)
 void LUsolve3(double A[3][3], double x[3], double b[3]);
 void LUsolve6(const double A[6][6], double x[6], const double b[6]);
 
+/** @brief Compute 3x3 matrices determinant
+ * @param m The matrix
+ */
+template <typename T>
+inline double DetM3(const T **m)
+{
+	return m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) -
+	       m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+	       m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+}
+
+/** @brief Invert a 3x3 matrix
+ * @param m The matrix to invert
+ * @return The matrix determinant
+ * @warning This function is overwriting the matrix
+ * @note This function computes the invert without checking for non-null
+ * determinants
+ * @note This function is way faster than any LU decomposition for 3x3 matrices
+ */
+template <typename T>
+inline double InvM3(T **m)
+{
+	T minv[3][3];
+	const double det = DetM3((const T**)m);
+	const double idet = 1.0 / det;
+
+	minv[0][0] = (m[1][1] * m[2][2] - m[2][1] * m[1][2]) * idet;
+	minv[0][1] = (m[0][2] * m[2][1] - m[0][1] * m[2][2]) * idet;
+	minv[0][2] = (m[0][1] * m[1][2] - m[0][2] * m[1][1]) * idet;
+	minv[1][0] = (m[1][2] * m[2][0] - m[1][0] * m[2][2]) * idet;
+	minv[1][1] = (m[0][0] * m[2][2] - m[0][2] * m[2][0]) * idet;
+	minv[1][2] = (m[1][0] * m[0][2] - m[0][0] * m[1][2]) * idet;
+	minv[2][0] = (m[1][0] * m[2][1] - m[2][0] * m[1][1]) * idet;
+	minv[2][1] = (m[2][0] * m[0][1] - m[0][0] * m[2][1]) * idet;
+	minv[2][2] = (m[0][0] * m[1][1] - m[1][0] * m[0][1]) * idet;
+
+	memcpy(m[0], minv[0], 3 * sizeof(T));
+	memcpy(m[1], minv[1], 3 * sizeof(T));
+	memcpy(m[2], minv[2], 3 * sizeof(T));
+	return det;
+}
+
+/** @brief Inner product of 3D vectors
+ * @param a First vector
+ * @param b Second vector
+ * @return the inner product result
+ * @note This function is way faster than any other general solution
+ */
+template <typename T>
+inline T dotProd3(const T *a, const T *b)
+{
+	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+/** @brief Solve a 3x3 linear system
+ * @param m The matrix to invert
+ * @return The matrix determinant
+ * @warning This function is overwriting the matrix
+ * @note This function does not check if the matrix is actually invertible
+ * @note This function is way faster than any LU decomposition for 3x3 matrices
+ */
+template <typename T>
+inline double Solve3(T **m, T *x, const T *b)
+{
+	const double det = InvM3(m);
+	x[0] = dotProd3((const T*)m[0], b);
+	x[1] = dotProd3((const T*)m[1], b);
+	x[2] = dotProd3((const T*)m[2], b);
+	return det;
+}
+
+/** @brief Duplicate a matrix
+ * @param src The original matrix
+ * @param dst The duplicate
+ */
+template <typename T>
+inline void CopyMat(int n, const T **src, T **dst)
+{
+	for(int i=0; i<n; ++i)
+	{
+		memcpy(dst[i], src[i], n * sizeof(T));
+	}
+}
+
 void RotMat( double x1, double x2, double x3, double TransMat[]);
 
 void QuaternionToDCM(double q[4], double outMat[3][3]);

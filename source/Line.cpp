@@ -1277,11 +1277,14 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	//	solveCrout(3, LU, F_out, acc);     // solve for acceleration vector
 						
 	//	LUsolve3(M[i], acc, Fnet[i]);
-	
+
+		/*
 		double LU[3][3];
 		double ytemp[3];
 		LUsolve(3, M[i], LU, Fnet[i], ytemp, acc);
-		
+		*/
+		Solve3(M[i], acc, (const double*)Fnet[i]);
+
 		// fill in state derivatives
 		for (int I=0; I<3; I++) 
 		{
