@@ -481,13 +481,6 @@ int decomposeString(char outWord[10], char let1[10],
 }
 
 
-// simple convenience function for identity matrix
-double eye(int I, int J)
-{
-	if (I==J) return 1.0;
-	else return 0.0;
-}
-
 // produce alternator matrix
 void getH(double r[3], double H[3][3])
 {
@@ -689,30 +682,6 @@ double dotProd( double A[3], double B[3])
 		ans += A[i]*B[i];
 	return ans;
 }
-
-
-void crossProd(double u[3], double v[3], double out[3])
-{
-	out[0] = u[1]*v[2] - u[2]*v[1];
-	out[1] = u[2]*v[0] - u[0]*v[2];
-	out[2] = u[0]*v[1] - u[1]*v[0];
-	return;
-}
-void crossProd(vector<double>& u, vector<double>& v, double out[3])
-{
-	out[0] = u[1]*v[2] - u[2]*v[1];
-	out[1] = u[2]*v[0] - u[0]*v[2];
-	out[2] = u[0]*v[1] - u[1]*v[0];
-	return;
-}
-void crossProd(vector<double>& u, double v[3], double out[3])
-{
-	out[0] = u[1]*v[2] - u[2]*v[1];
-	out[1] = u[2]*v[0] - u[0]*v[2];
-	out[2] = u[0]*v[1] - u[1]*v[0];
-	return;
-}
-
 
 void inverseM3( vector< vector< double > > & minv, vector< vector< double > > & m)
 {		

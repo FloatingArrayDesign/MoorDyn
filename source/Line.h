@@ -111,13 +111,6 @@ class Line
 	int endTypeB;
 	double endMomentA[3];   // moment at end A from bending, to be applied on attached Rod/Body
 	double endMomentB[3];
-		
-	// motion component vectors (declaring these here as they caused problems if declared in the loop)
-	double vi[3];           // relative velocity
-	double vp[3];           // transverse component of relative velocity
-	double vq[3];           // axial component of relative velocity
-	double ap[3];           // transverse component of absolute acceleration - HAD TO MOVE THIS UP FROM LOWER DOWN (USED TO CRASH AFTER I=3)
-	double aq[3];           // axial component of absolute acceleration
 
 	// file stuff	
 	ofstream * outfile;     // if not a pointer, caused odeint system initialization error during compilation

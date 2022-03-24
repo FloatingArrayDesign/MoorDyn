@@ -431,10 +431,30 @@ void GetOrientationAngles(double q[3], double* phi, double* sinPhi, double* cosP
 int decomposeString(char outWord[10], char let1[10], 
      char num1[10], char let2[10], char num2[10], char let3[10]);
 
-double eye(int I, int J);
+/** @brief Eye matrix component
+ *
+ * Simply returns 1.0 if both component indexes matches, 0 otherwise
+ * @param I Row
+ * @param J Column
+ * @return The eye matrix component
+ */
+inline double eye(int I, int J)
+{
+	return (double)(I == J);
+}
 
 void getH(double r[3], double H[3][3]);
 void getH(double r[3], double H[9]);
+
+/** @brief Get the length of a vector
+ * @param v The vector
+ * @return The vector length
+ */
+template <typename T>
+inline double vectorLength(T *v)
+{
+	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
 
 /** @brief Normalized direction vector
  * @param u The output normalized direction vector
@@ -446,7 +466,7 @@ template <typename T>
 inline double unitvector(T *u, const T *r1, const T *r2)
 {
 	const T v[3] = {r2[0] - r1[0], r2[1] - r1[1], r2[2] - r1[2]};
-	const double l = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+	const double l = vectorLength(v);
 	u[0] = v[0] / l;
 	u[1] = v[1] / l;
 	u[2] = v[2] / l;
@@ -485,12 +505,72 @@ double dotProd( vector<double>& A, vector<double>& B);
 double dotProd( double A[], vector<double>& B);
 double dotProd( double A[], double B[]);
 
-void scalevector( vector< double > & u, double newlength, vector< double > & y);
-void scalevector( double u[3], double newlength, double y[3]);
+/** @brief Inner product of 3D vectors
+ * @param a First vector
+ * @param b Second vector
+ * @return the inner product result
+ * @note This function is way faster than any other general solution
+ */
+template <typename T>
+inline T dotProd3(const T *a, const T *b)
+{
+	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
 
-void crossProd(double u[3], double v[3], double out[3]);
-void crossProd(vector<double>& u, vector<double>& v, double out[3]);
-void crossProd(vector<double>& u, double v[3], double out[3]);
+/** @brief Compute a nw vector with the same direction of the provided one, but
+ * a new length
+ * @param u The vector to set the direction
+ * @param newlength The new length
+ * @param y The output vector
+ * @not If the input vector has null length, the output vector will as well,
+ * no matter @p newlength is provided
+ */
+template <typename T>
+inline void scalevector(const T *u, T newlength, T *y)
+{
+	const double l2 = dotProd3(u, u);
+	if (l2 == 0.0)
+	{
+		memcpy(y, u, 3 * sizeof(double));
+		return;
+	}
+	const double scaler = newlength / sqrt(l2);
+	y[0] = scaler * u[0];
+	y[1] = scaler * u[1];
+	y[2] = scaler * u[2];
+}
+
+template <typename T>
+inline void scalevector(vector<T> &u, T newlength, vector<T> &y)
+{
+	scalevector(u.data(), newlength, y.data());
+}
+
+
+/** @brief 3D cross vector product
+ * @param u First vector
+ * @param v Second vector
+ * @param out The result
+ */
+template <typename T>
+inline void crossProd(const T *u, const T *v, T *out)
+{
+	out[0] = u[1] * v[2] - u[2] * v[1];
+	out[1] = u[2] * v[0] - u[0] * v[2];
+	out[2] = u[0] * v[1] - u[1] * v[0];
+}
+
+template <typename T>
+inline double crossProd(vector<T> &u, vector<T> &v, T *out)
+{
+	return crossProd(u.data(), v.data(), out);
+}
+
+template <typename T>
+inline double crossProd(vector<T> &u, const T* v, T *out)
+{
+	return crossProd(u.data(), v, out);
+}
 
 void inverse3by3( vector< vector< double > > & minv, vector< vector< double > > & m);
 
@@ -583,18 +663,6 @@ inline double InvM3(T **m)
 	memcpy(m[1], minv[1], 3 * sizeof(T));
 	memcpy(m[2], minv[2], 3 * sizeof(T));
 	return det;
-}
-
-/** @brief Inner product of 3D vectors
- * @param a First vector
- * @param b Second vector
- * @return the inner product result
- * @note This function is way faster than any other general solution
- */
-template <typename T>
-inline T dotProd3(const T *a, const T *b)
-{
-	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
 /** @brief Solve a 3x3 linear system
