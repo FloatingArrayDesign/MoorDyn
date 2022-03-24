@@ -436,9 +436,34 @@ double eye(int I, int J);
 void getH(double r[3], double H[3][3]);
 void getH(double r[3], double H[9]);
 
-double unitvector( vector< double > & u, vector< double > & r1, vector< double > & r2);
-double unitvector( double u[3], vector< double > & r1, vector< double > & r2);
-double unitvector( double u[3], double r1[3], double r2[3]);
+/** @brief Normalized direction vector
+ * @param u The output normalized direction vector
+ * @param r1 The orig point
+ * @param r2 The dest point
+ * @return The distance between the points
+ */
+template <typename T>
+inline double unitvector(T *u, const T *r1, const T *r2)
+{
+	const T v[3] = {r2[0] - r1[0], r2[1] - r1[1], r2[2] - r1[2]};
+	const double l = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+	u[0] = v[0] / l;
+	u[1] = v[1] / l;
+	u[2] = v[2] / l;
+	return l;
+}
+
+template <typename T>
+inline double unitvector(vector<T> &u, vector<T> & r1, vector<T> & r2)
+{
+	return unitvector(u.data(), r1.data(), r2.data());
+}
+
+template <typename T>
+inline double unitvector(T *u, vector<T> & r1, vector<T> & r2)
+{
+	return unitvector(u, r1.data(), r2.data());
+}
 
 void transposeM3(double A[3][3], double Atrans[3][3]);
 void transposeM3(double A[9], double Atrans[9]);

@@ -1083,7 +1083,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				{
 					cout << "   Error: NaN value detected in bending force at Line " << number << " node " << i << endl;
 					cout << lstr[i-1]+lstr[i] << endl;
-					cout << sqrt( 0.5*(1 - dotProd( qs[i-1], qs[i] ) ) ) << endl;
+					cout << sqrt(0.5 * (1 - dotProd3(qs[i-1], qs[i]))) << endl;
 
 					cout << Bs[i-1][J] << endl;
 					cout << Bs[i  ][J] << endl;
@@ -1116,7 +1116,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					// + \sin(\alpha_i) (\uvec{p}_i \times \uvec{s}_\iminus)
 					
 					double p_p_dot_s[3];
-					scalevector( pvec, dotprod(pvec, s[i-1]), p_p_dot_s)  // \uvec{p}_i(\uvec{p}_i \cdot \uvec{s}_\iminus)
+					scalevector( pvec, dotprod3(pvec, s[i-1]), p_p_dot_s)  // \uvec{p}_i(\uvec{p}_i \cdot \uvec{s}_\iminus)
 					
 					double p_cross_s[3];
 					crossprod(pvec, s[i-1], p_cross_s)// \uvec{p}_i \times \uvec{s}_\iminus
@@ -1159,8 +1159,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 
 		for (int J=0; J<3; J++) 
 		{
-			vq[J] = dotProd(vi , q[i]) * q[i][J];  // tangential relative flow component  <<<<<<< check sign since I've reversed q
-			vp[J] = vi[J] - vq[J];                 // transverse relative flow component
+			vq[J] = dotProd3(vi , q[i]) * q[i][J];  // tangential relative flow component  <<<<<<< check sign since I've reversed q
+			vp[J] = vi[J] - vq[J];                  // transverse relative flow component
 			vq_squared += vq[J] * vq[J];
 			vp_squared += vp[J] * vp[J];
 		}
@@ -1186,8 +1186,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		
 		// acceleration calculations					
 		for (int J=0; J<3; J++)  {
-			aq[J] = dotProd(Ud[i], q[i]) * q[i][J]; // tangential component of fluid acceleration    <<<<<<< check sign since I've reversed q
-			ap[J] = Ud[i][J] - aq[J]; 			// normal component of fluid acceleration
+			aq[J] = dotProd3(Ud[i], q[i]) * q[i][J];  // tangential component of fluid acceleration    <<<<<<< check sign since I've reversed q
+			ap[J] = Ud[i][J] - aq[J];                 // normal component of fluid acceleration
 		}
 		
 		// transverse Froude-Krylov force

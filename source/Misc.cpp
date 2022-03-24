@@ -514,38 +514,6 @@ void getH(double r[3], double H[9])
 	return;
 }
 
-// calculate unit vector (u) in direction from r1 to r2. Also returns distance between points. 
-double unitvector( vector< double > & u, vector< double > & r1, vector< double > & r2)
-{
-	double length_squared = 0.0;	
-	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
-
-	double length = sqrt(length_squared);	
-	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / length; // write to unit vector
-	
-	return length;
-}
-double unitvector( double u[3], vector< double > & r1, vector< double > & r2)
-{
-	double length_squared = 0.0;	
-	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
-
-	double length = sqrt(length_squared);	
-	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / length; // write to unit vector
-	
-	return length;
-}
-double unitvector( double u[3], double r1[3], double r2[3])
-{
-	double length_squared = 0.0;	
-	for (int J=0; J<3; J++) length_squared += (r2[J] - r1[J])*(r2[J] - r1[J]);				
-
-	double length = sqrt(length_squared);	
-	for (int J=0; J<3; J++) u[J] = (r2[J] - r1[J]) / length; // write to unit vector
-	
-	return length;
-}
-
 // scale vector to length
 void scalevector( vector< double > & u, double newlength, vector< double > & y)
 {
