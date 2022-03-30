@@ -824,6 +824,7 @@ void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int t
  * @param Can Normal added mass coefficient
  * @param Cat Tangential added mass coefficient
  * @param rho Water density
+ * @return Mass matrix component
  */
 inline double node_mass(unsigned int i, unsigned int j,
 	                    double m, double v, const double *q,
