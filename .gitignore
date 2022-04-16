@@ -8,6 +8,7 @@ compile/SO/*.so.*
 *.dll
 *.exe
 *.dylib
+compile/*/*.mod
 
 # Packages #
 ############

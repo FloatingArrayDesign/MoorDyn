@@ -12,9 +12,12 @@
 #
 # debug: Build both targets, "all" and "test", with debug information
 
+# Use gfortran, no matters what the hell was in $(FC) variable
+FC = gfortran
 
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DLINUX -DMoorDyn_EXPORTS -fPIC
 CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC
+FCFLAGS = -shared -fPIC
 
 ifdef USEGL
 CFLAGS += -DUSEGL
@@ -24,7 +27,10 @@ endif
 CPPFLAGS = $(CFLAGS) -std=c++14
 EXEFLAGS = -O3 -g -Wall -Wextra -DLINUX
 
-all: libmoordyn.so
+all: libmoordyn.so bindings
+
+# MoorDyn library
+# ===============
 
 libmoordyn.so: libmoordyn.so.2.0.0
 	rm -f libmoordyn.so
@@ -70,6 +76,17 @@ clean:
 	rm -f *.o *.so *.so.*
 	rm -f test_*
 
+# Bindings
+# ========
+
+fortran_binding: libmoordyn.so
+	$(FC) -o libmoordynf90.so -c $(FCFLAGS) ../../bindings/MoorDyn.f90 -lmoordyn
+
+bindings: fortran_binding
+
+# Tests
+# =====
+
 test_minimal: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../test/minimal.cpp
 
@@ -79,10 +96,14 @@ test_bodies_and_rods: ../../test/bodies_and_rods.cpp libmoordyn.so ../../source/
 test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
 
-test: test_minimal test_bodies_and_rods test_quasi_static_chain
+test_fortran: ../../test/minimal.f90 libmoordyn.so fortran_binding
+	$(FC) $(EXEFLAGS) -L./ -lmoordynf90 -lmoordyn -o test_fortran ../../test/minimal.f90
+
+test: test_minimal test_bodies_and_rods test_quasi_static_chain test_fortran
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_bodies_and_rods
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_quasi_static_chain
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_fortran
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
 debug: CPPFLAGS += -O0 -g -DDEBUG=1
