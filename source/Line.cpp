@@ -891,15 +891,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		V[i] = A * l[i];
 	}
 		
-	// calculate unit tangent vectors (q) for each internal node.
-	// note: I've reversed these from pointing toward 0 rather than N.
-	// Check sign of wave loads. <<<<
+	// calculate unit tangent vectors (q) for each internal node. note: I've reversed these from pointing toward 0 rather than N. Check sign of wave loads. <<<<
 	for (int i=1; i<N; i++) 
 		unitvector(q[i], r[i-1], r[i+1]);    // compute unit vector q ... using adjacent two nodes!
 	
-	// calculate unit tangent vectors for either end node if the line has no
-	// bending stiffness of if either end is pinned (otherwise it's already been
-	// set via setEndStateFromRod)
+	// calculate unit tangent vectors for either end node if the line has no bending stiffness of if either end is pinned (otherwise it's already been set via setEndStateFromRod)
 	if ((endTypeA == 0) || (EI == 0)) unitvector(q[0], r[0  ], r[1]);  
 	if ((endTypeB == 0) || (EI == 0)) unitvector(q[N], r[N-1], r[N]);
 
@@ -948,21 +944,21 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	{
 		double m_i; // node mass
 		double v_i; // node submerged volume 
-
-		if (i == 0) 
+	
+		if (i==0) 
 		{
-			m_i = pi / 8. * d * d * l[0] * rho;
-			v_i = 1./2. * F[i] * V[i];
+			m_i = pi/8.*d*d*l[0]*rho;
+			v_i = 1./2. *F[i]*V[i];
 		}
-		else if (i == N) 
+		else if (i==N) 
 		{
-			m_i = pi / 8. * d * d * l[N - 1] * rho;
-			v_i = 1. / 2. * F[i - 1] * V[i - 1];
+			m_i = pi/8.*d*d*l[N-2]*rho;
+			v_i = 1./2. *F[i-1]*V[i-1];
 		}
 		else
 		{
-			m_i = pi / 8. * d * d * rho * (l[i] + l[i - 1]);
-			v_i = 1. / 2. * (F[i - 1] * V[i - 1] + F[i] * V[i]);
+		m_i = pi/8.*( d*d*rho*(l[i] + l[i-1]));
+			v_i = 1./2. *(F[i-1]*V[i-1] + F[i]*V[i]);
 		}
 
 		// Make node mass matrix (Avoid loops for better performance)
@@ -978,10 +974,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	}
 
 	// ============  CALCULATE FORCES ON EACH NODE ===============================
-
+	
 	// loop through the segments
 	for (int i=0; i<N; i++)
 	{
+
 		/*
 		// attempting error handling <<<<<<<<
 		if (abs(lstr[i]/l[i] - 1) > 0.5) {
@@ -1036,7 +1033,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			double pvec[3];
 			double Mforce_im1[3] = {0.0, 0.0, 0.0};
 			double Mforce_ip1[3] = {0.0, 0.0, 0.0};
-			double Mforce_i[3];
+			double Mforce_i[  3];
 			
 			// calculate force on each node due to bending stiffness!
 			
@@ -1045,24 +1042,17 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			{
 				if (endTypeA > 0) // if attached to Rod i.e. cantilever connection
 				{
-					// curvature <<< check if this approximation works for an
-					// end (assuming rod angle is node angle which is middle of
-					// if there was a segment -1/2
-					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);
+					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);  // curvature <<< check if this approximation works for an end (assuming rod angle is node angle which is middle of if there was a segment -1/2
 
-					// get direction of bending radius axis
-					crossProd(q[0], qs[i], pvec);
-					// get direction of resulting force from bending to apply on
-					// node i+1
-					crossProd(qs[i  ], pvec, Mforce_ip1);
+					crossProd(q[0], qs[i], pvec);           // get direction of bending radius axis
 
-					// record bending moment at end for potential application to
-					// attached object   <<<< do double check this....
-					scalevector(pvec, Kurvi * EI, endMomentA );
-					
-					// scale force direction vectors by desired moment force
-					// magnitudes to get resulting forces on adjacent nodes
-					scalevector(Mforce_ip1, Kurvi * EI / lstr[i], Mforce_ip1);
+					crossProd(qs[i  ], pvec, Mforce_ip1);    // get direction of resulting force from bending to apply on node i+1
+
+					// record bending moment at end for potential application to attached object   <<<< do double check this....
+					scalevector(pvec, Kurvi*EI, endMomentA );
+
+					// scale force direction vectors by desired moment force magnitudes to get resulting forces on adjacent nodes
+					scalevector(Mforce_ip1, Kurvi*EI/lstr[i  ], Mforce_ip1 );					
 
 					// set force on node i to cancel out forces on adjacent nodes
 					Mforce_i[0] = - Mforce_ip1[0];
@@ -1083,24 +1073,16 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			{
 				if (endTypeB > 0) // if attached to Rod i.e. cantilever connection
 				{
-					// curvature <<< check if this approximation works for an
-					// end (assuming rod angle is node angle which is middle of
-					// if there was a segment -1/2
-					Kurvi = GetCurvature(lstr[i-1], qs[i-1], q[i]);
+					Kurvi = GetCurvature(lstr[i-1], qs[i-1], q[i]); // curvature <<< check if this approximation works for an end (assuming rod angle is node angle which is middle of if there was a segment -1/2
+					crossProd(qs[i-1], q[N], pvec);         // get direction of bending radius axis
 
-					// get direction of bending radius axis
-					crossProd(qs[i-1], q[N], pvec);
-					// get direction of resulting force from bending to apply on
-					// node i-1
-					crossProd(qs[i-1], pvec, Mforce_im1);
-					
-					// record bending moment at end for potential application to
-					// attached object   <<<< do double check this....
+					crossProd(qs[i-1], pvec, Mforce_im1);    // get direction of resulting force from bending to apply on node i-1
+
+					// record bending moment at end for potential application to attached object   <<<< do double check this....
 					scalevector(pvec, -Kurvi*EI, endMomentB ); // note end B is oposite sign as end A
-					
-					// scale force direction vectors by desired moment force
-					// magnitudes to get resulting forces on adjacent nodes
-					scalevector(Mforce_im1, Kurvi * EI / lstr[i - 1], Mforce_im1);
+
+					// scale force direction vectors by desired moment force magnitudes to get resulting forces on adjacent nodes
+					scalevector(Mforce_im1, Kurvi*EI/lstr[i-1], Mforce_im1);
 						
 					// set force on node i to cancel out forces on adjacent nodes
 					Mforce_i[0] = - Mforce_im1[0];
@@ -1118,18 +1100,15 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			}
 			else   // internal node
 			{
-				// curvature <<< remember to check sign, or just take abs
-				Kurvi = GetCurvature(lstr[i-1] + lstr[i], qs[i-1], qs[i]);
+				Kurvi = GetCurvature(lstr[i-1] + lstr[i], qs[i-1], qs[i]); // curvature <<< remember to check sign, or just take abs
 
-				// get direction of bending radius axis
-				crossProd(qs[i-1], qs[i], pvec);
+				crossProd(qs[i-1], qs[i], pvec); // get direction of bending radius axis
+				crossProd(qs[i-1], pvec, Mforce_im1);    // get direction of resulting force from bending to apply on node i-1
+				crossProd(qs[i  ], pvec, Mforce_ip1);    // get direction of resulting force from bending to apply on node i+1
 
-				// get direction of resulting force from bending to apply on
-				// node i-1
-				crossProd(qs[i-1], pvec, Mforce_im1);
-				// get direction of resulting force from bending to apply on
-				// node i+1
-				crossProd(qs[i  ], pvec, Mforce_ip1);
+				// scale force direction vectors by desired moment force magnitudes to get resulting forces on adjacent nodes
+				scalevector(Mforce_im1, Kurvi * EI / lstr[i-1], Mforce_im1);
+				scalevector(Mforce_ip1, Kurvi * EI / lstr[i  ], Mforce_ip1 );
 
 				// scale force direction vectors by desired moment force
 				// magnitudes to get resulting forces on adjacent nodes
@@ -1180,14 +1159,10 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				     << Mforce_ip1[1] << ", "
 				     << Mforce_ip1[2] << endl;
 			}
-
 			// record curvature at node!!
 			Kurv[i] = Kurvi;
-
 			// any damping forces for bending? I hope not...
-
 			// get normal component at each adjacent node
-
 			// trace along line to find torsion at each segment
 			/*
 			if (torsion)
@@ -1224,17 +1199,17 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	}  // if EI > 0
 
 
-
+	// loop through the nodes
 	for (int i=0; i<=N; i++)
 	{
 		W[i][0] = W[i][1] = 0.0;
 		// submerged weight (including buoyancy)
 		if (i==0)
-			W[i][2] = 0.5 * A * (l[i] * (rho - F[i] * env->rho_w)) * (-env->g);
+			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env->rho_w) )*(-env->g);
 		else if (i==N)
-			W[i][2] = 0.5 * A * (l[i - 1]*(rho - F[i - 1] * env->rho_w)) * (-env->g); // missing the "W[i][2] =" previously!
+			W[i][2] = 0.5*A*( l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g); // missing the "W[i][2] =" previously!
 		else
-			W[i][2] = 0.5 * A * (l[i] * (rho - F[i] * env->rho_w) + l[i -1] * (rho - F[i-1] * env->rho_w)) * (-env->g);
+			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env->rho_w) + l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
 
 		// relative flow velocity over node
 		const double vi[3] = {U[i][0] - rd[i][0],
@@ -1292,22 +1267,22 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		// transverse Froude-Krylov force
 		double Ap_factor;
 		if (i == 0)
-			Ap_factor = 0.5 * env->rho_w * (1. + Can) * V[i];
+			Ap_factor = env->rho_w*(1.+Can)*0.5*( V[i]);
 		else if (i == N)
-			Ap_factor = 0.5 * env->rho_w * (1. + Can) * V[i - 1];
+			Ap_factor = env->rho_w*(1.+Can)*0.5*(V[i-1] );
 		else
-			Ap_factor = 0.5 * env->rho_w * (1. + Can) * (V[i] + V[i-1]);
+			Ap_factor = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] );
 		Ap[i][0] = Ap_factor * ap[0];
 		Ap[i][1] = Ap_factor * ap[1];
 		Ap[i][2] = Ap_factor * ap[2];
 		// tangential Froude-Krylov force					
 		double Aq_factor;
 		if (i == 0)
-			Aq_factor = 0.5 * env->rho_w * (1. + Cat) * V[i];
+			Aq_factor = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i]);
 		else if (i == N)
-			Aq_factor = 0.5 * env->rho_w * (1. + Cat) * V[i - 1];
+			Aq_factor = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i-1] );
 		else
-			Aq_factor = 0.5 * env->rho_w * (1. + Cat) * (V[i] + V[i-1]);
+			Aq_factor = env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] );
 		Aq[i][0] = Aq_factor * aq[0];
 		Aq[i][1] = Aq_factor * aq[1];
 		Aq[i][2] = Aq_factor * aq[2];
@@ -1316,42 +1291,24 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		if (r[i][2] < -env->WtrDpth)
 		{
 			if (i==0)
-				B[i][2] =
-					((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
-					0.5 * d * l[i];
+				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( d*l[i] );
 			else if (i==N)
-				B[i][2] =
-					((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
-					0.5 * d * l[i - 1];
+				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( d*l[i-1] );
 			else
-				B[i][2] =
-					((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
-					0.5 * d * (l[i - 1] + l[i]);
+				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*d*( l[i-1] + l[i] );
 			
 			// new rough-draft addition of seabed friction
-
-			// dynamic friction force saturation level based on bottom contact
-			// force
-			double FrictionMax = abs(B[i][2]) * env->FrictionCoefficient;
+			double FrictionMax = abs(B[i][2])*env->FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
 			
 			// saturated damping approach to applying friction, for now
-
-			// velocity of node along sea bed
-			double BottomVel = sqrt(rd[i][0] * rd[i][0] + rd[i][1] * rd[i][1]);
-			// some arbitrary damping scaling thing at end
-			double FrictionForce =
-				BottomVel * env->FrictionCoefficient * env->FricDamp;
-			// saturate (quickly) to static/dynamic friction force level 
-			if (FrictionForce > env->StatDynFricScale * FrictionMax)
-				FrictionForce = FrictionMax;
+			double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
+			double FrictionForce = BottomVel * env->FrictionCoefficient*env->FricDamp; // some arbitrary damping scaling thing at end
+			if (FrictionForce > env->StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
 			
-			if (BottomVel == 0.0) {
-				// check for zero velocity, in which case friction force is zero
+			if (BottomVel == 0.0) { // check for zero velocity, in which case friction force is zero
 				memset(B[i], 0.0, 2 * sizeof(double));
 			}
-			else {
-				// otherwise, apply friction force in correct direction
-				// (opposing direction of motion)
+			else { // otherwise, apply friction force in correct direction(opposing direction of motion)
 				B[i][0] = -FrictionForce * rd[i][0] / BottomVel;
 				B[i][1] = -FrictionForce * rd[i][1] / BottomVel;
 			}
@@ -1362,35 +1319,53 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		// total forces
 		if (i==0)
 		{
-			Fnet[i][0] = T[i][0] + Td[i][0];
-			Fnet[i][1] = T[i][1] + Td[i][1];
-			Fnet[i][2] = T[i][2] + Td[i][2];
+			Fnet[i][0] = T[i][0]              + Td[i][0];
+			Fnet[i][1] = T[i][1]              + Td[i][1];
+			Fnet[i][2] = T[i][2]              + Td[i][2];
 		}
 		else if (i==N)
 		{
-			Fnet[i][0] = -T[i - 1][0] - Td[i - 1][0];
-			Fnet[i][1] = -T[i - 1][1] - Td[i - 1][1];
-			Fnet[i][2] = -T[i - 1][2] - Td[i - 1][2];
+			Fnet[i][0] =         - T[i - 1][0]            - Td[i - 1][0];
+			Fnet[i][1] =         - T[i - 1][1]            - Td[i - 1][1];
+			Fnet[i][2] =         - T[i - 1][2]            - Td[i - 1][2];
 		}
 		else
 		{
-			Fnet[i][0] = T[i][0] + Td[i][0] - T[i - 1][0] - Td[i - 1][0];
-			Fnet[i][1] = T[i][1] + Td[i][1] - T[i - 1][1] - Td[i - 1][1];
-			Fnet[i][2] = T[i][2] + Td[i][2] - T[i - 1][2] - Td[i - 1][2];
+			Fnet[i][0] = T[i][0] - T[i - 1][0] + Td[i][0] - Td[i - 1][0];
+			Fnet[i][1] = T[i][1] - T[i - 1][1] + Td[i][1] - Td[i - 1][1];
+			Fnet[i][2] = T[i][2] - T[i - 1][2] + Td[i][2] - Td[i - 1][2];
 		}
-		Fnet[i][0] += W[i][0] + (Dp[i][0] + Dq[i][0] + Ap[i][0] + Aq[i][0]) +
-			B[i][0] + Bs[i][0];
-		Fnet[i][1] += W[i][1] + (Dp[i][1] + Dq[i][1] + Ap[i][1] + Aq[i][1]) +
-			B[i][0] + Bs[i][1];
-		Fnet[i][2] += W[i][2] + (Dp[i][2] + Dq[i][2] + Ap[i][2] + Aq[i][2]) +
-			B[i][2] + Bs[i][2];
+		Fnet[i][0] += W[i][0] + (Dp[i][0] + Dq[i][0] + Ap[i][0] + Aq[i][0]) + B[i][0] + Bs[i][0];
+		Fnet[i][1] += W[i][1] + (Dp[i][1] + Dq[i][1] + Ap[i][1] + Aq[i][1]) + B[i][0] + Bs[i][1];
+		Fnet[i][2] += W[i][2] + (Dp[i][2] + Dq[i][2] + Ap[i][2] + Aq[i][2]) + B[i][2] + Bs[i][2];
 	}
+
+	//	if (t > 5)
+	//	{
+	//		cout << " in getStateDeriv of line " << number << endl;
+	//		
+	//		B[0][0] = 0.001; // meaningless
+	//	}
+
 
 	// loop through internal nodes and update their states
 	for (int i=1; i<N; i++)	
 	{
-		// acceleration vector to solve for
-		double acc[3];
+	//	double M_out[9];
+	//	double F_out[3];
+	//	for (int I=0; I<3; I++) 
+	//	{	F_out[I] = Fnet[i][I];
+	//		for (int J=0; J<3; J++) M_out[3*I + J] = M[i][I][J];
+	//	}
+
+		// solve for accelerations in [M]{a}={f} using LU decomposition
+	//	double LU[9];                        // serialized matrix that will hold LU matrices combined
+	//	Crout(3, M_out, LU);                  // perform LU decomposition on mass matrix
+		double acc[3];                        // acceleration vector to solve for
+	//	solveCrout(3, LU, F_out, acc);     // solve for acceleration vector
+
+	//	LUsolve3(M[i], acc, Fnet[i]);
+
 		Solve3(M[i], acc, (const double*)Fnet[i]);
 
 		// fill in state derivatives
