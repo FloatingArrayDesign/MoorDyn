@@ -898,7 +898,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	// calculate unit tangent vectors for either end node if the line has no bending stiffness of if either end is pinned (otherwise it's already been set via setEndStateFromRod)
 	if ((endTypeA == 0) || (EI==0)) unitvector(q[0], r[0  ], r[1]);  
 	if ((endTypeB == 0) || (EI==0)) unitvector(q[N], r[N-1], r[N]);
-
+	
+		
 	//============================================================================================
 	// --------------------------------- apply wave kinematics -----------------------------
 	
@@ -973,13 +974,14 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		M[i][2][1] = node_mass(2, 1, m_i, v_i, q[i], Can, Cat, env->rho_w);
 		M[i][2][2] = node_mass(2, 2, m_i, v_i, q[i], Can, Cat, env->rho_w);
 	}
+	
 
 	// ============  CALCULATE FORCES ON EACH NODE ===============================
-		
+	
 	// loop through the segments
 	for (int i=0; i<N; i++)
 	{
-
+		
 		/*
 		// attempting error handling <<<<<<<<
 		if (abs(lstr[i]/l[i] - 1) > 0.5) {
@@ -1018,7 +1020,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		Td[i][1] = CA_l * (r[i+1][1] - r[i][1]);
 		Td[i][2] = CA_l * (r[i+1][2] - r[i][2]);
 	}
-
+	
+	
 	// Bending loads
 	// first zero out the forces from last run
 	for (int i=0; i<=N; i++)
@@ -1061,12 +1064,12 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					Mforce_i[2] = - Mforce_ip1[2];
 
 					// apply these forces to the node forces
-					Bs[i][0] += Mforce_i[0];
-					Bs[i][0] += Mforce_i[0];
-					Bs[i][0] += Mforce_i[0];
-					Bs[i + 1][0] += Mforce_ip1[0];
-					Bs[i + 1][0] += Mforce_ip1[0];
-					Bs[i + 1][0] += Mforce_ip1[0];
+					Bs[i  ][0] += Mforce_i[0];
+					Bs[i  ][0] += Mforce_i[0];
+					Bs[i  ][0] += Mforce_i[0];
+					Bs[i+1][0] += Mforce_ip1[0];
+					Bs[i+1][0] += Mforce_ip1[0];
+					Bs[i+1][0] += Mforce_ip1[0];
 				}
 			}
 			// end node A case (only if attached to a Rod, i.e. a cantilever rather than pinned connection)
@@ -1092,12 +1095,12 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					Mforce_i[2] = - Mforce_im1[2];
 					
 					// apply these forces to the node forces
-					Bs[i - 1][0] += Mforce_im1[0];
-					Bs[i - 1][0] += Mforce_im1[0];
-					Bs[i - 1][0] += Mforce_im1[0];
-					Bs[i][0] += Mforce_i[0];
-					Bs[i][0] += Mforce_i[0];
-					Bs[i][0] += Mforce_i[0];
+					Bs[i-1][0] += Mforce_im1[0];
+					Bs[i-1][0] += Mforce_im1[0];
+					Bs[i-1][0] += Mforce_im1[0];
+					Bs[i  ][0] += Mforce_i[0];
+					Bs[i  ][0] += Mforce_i[0];
+					Bs[i  ][0] += Mforce_i[0];
 				}
 			}
 			else   // internal node
@@ -1119,15 +1122,15 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				Mforce_i[2] = - Mforce_im1[2] - Mforce_ip1[2];
 
 				// apply these forces to the node forces
-				Bs[i - 1][0] += Mforce_im1[0];
-				Bs[i - 1][0] += Mforce_im1[0];
-				Bs[i - 1][0] += Mforce_im1[0];
-				Bs[i][0] += Mforce_i[0];
-				Bs[i][0] += Mforce_i[0];
-				Bs[i][0] += Mforce_i[0];
-				Bs[i + 1][0] += Mforce_ip1[0];
-				Bs[i + 1][0] += Mforce_ip1[0];
-				Bs[i + 1][0] += Mforce_ip1[0];
+				Bs[i-1][0] += Mforce_im1[0];
+				Bs[i-1][0] += Mforce_im1[0];
+				Bs[i-1][0] += Mforce_im1[0];
+				Bs[i  ][0] += Mforce_i[0];
+				Bs[i  ][0] += Mforce_i[0];
+				Bs[i  ][0] += Mforce_i[0];
+				Bs[i+1][0] += Mforce_ip1[0];
+				Bs[i+1][0] += Mforce_ip1[0];
+				Bs[i+1][0] += Mforce_ip1[0];
 			}
 
 			// check for NaNs <<<<<<<<<<<<<<< temporary measure <<<<<<<
@@ -1157,10 +1160,14 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				     << Mforce_ip1[1] << ", "
 				     << Mforce_ip1[2] << endl;
 			}
+			
 			// record curvature at node!!
 			Kurv[i] = Kurvi;
+			
 			// any damping forces for bending? I hope not...
+			
 			// get normal component at each adjacent node
+		
 			// trace along line to find torsion at each segment
 			/*
 			if (torsion)
@@ -1290,9 +1297,9 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		if (r[i][2] < -env->WtrDpth)
 		{
 			if (i==0)
-				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*(            l[i] );
+				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*d*(            l[i] );
 			else if (i==N)
-				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*( l[i-1]          );
+				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*d*( l[i-1]          );
 			else
 				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*d*( l[i-1] + l[i] );
 			
