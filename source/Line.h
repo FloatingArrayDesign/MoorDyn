@@ -40,36 +40,36 @@ class Line
 	// parameters
 	LineProps props;	
 	int N; // number of line nodes 
-	double UnstrLen;
-	double d;		// line diameter
-	double rho;		// line linear density
-	double E;		// line elasticity modulus [Pa] 
-	double EI;		// line bending stiffness [Nm^2] <<<<<<<< need to figure out how to load in through input file (where to put)
-	double c;		// line axial internal damping coefficient [Ns]
-	double cI;		// line bending internal damping coefficient [??]
-	double Can;
-	double Cat;
-	double Cdn;
-	double Cdt;
+	moordyn::real UnstrLen;
+	moordyn::real d;		// line diameter
+	moordyn::real rho;		// line linear density
+	moordyn::real E;		// line elasticity modulus [Pa] 
+	moordyn::real EI;		// line bending stiffness [Nm^2] <<<<<<<< need to figure out how to load in through input file (where to put)
+	moordyn::real c;		// line axial internal damping coefficient [Ns]
+	moordyn::real cI;		// line bending internal damping coefficient [??]
+	moordyn::real Can;
+	moordyn::real Cat;
+	moordyn::real Cdn;
+	moordyn::real Cdt;
 	
-	double BAin;		// line axial internal damping coefficient input (before proceessing)
+	moordyn::real BAin;		// line axial internal damping coefficient input (before proceessing)
 	
-	double A; // line cross-sectional area to pre-compute
+	moordyn::real A; // line cross-sectional area to pre-compute
 	
 	int nEApoints = 0; // number of values in stress-strain lookup table (0 means using constant E)
-	double stiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
-	double stiffYs[nCoef]; // y array for stress-strain lookup table
+	moordyn::real stiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
+	moordyn::real stiffYs[nCoef]; // y array for stress-strain lookup table
 	int nCpoints;        // number of values in stress-strainrate lookup table (0 means using constant c)
-	double dampXs[nCoef]; // x array for stress-strainrate lookup table (up to nCoef)
-	double dampYs[nCoef]; // y array for stress-strainrate lookup table
+	moordyn::real dampXs[nCoef]; // x array for stress-strainrate lookup table (up to nCoef)
+	moordyn::real dampYs[nCoef]; // y array for stress-strainrate lookup table
 	int nEIpoints = 0; // number of values in stress-strain lookup table (0 means using constant E)
-	double bstiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
-	double bstiffYs[nCoef]; // y array for stress-strain lookup table
+	moordyn::real bstiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
+	moordyn::real bstiffYs[nCoef]; // y array for stress-strain lookup table
 	
 	
 	// kinematics
-	double **r;             // node positions [i][x/y/z]
-	double **rd;            // node velocities [i][x/y/z]
+	std::vector<vec> r;             // node positions [i][x/y/z]
+	std::vector<vec> rd;            // node velocities [i][x/y/z]
 	double **q;             // unit tangent vectors for each node
 	double **qs;            // unit tangent vectors for each segment (used in bending calcs)
 	double *l;              // line unstretched segment lengths
@@ -102,9 +102,9 @@ class Line
 	
 	
 	// time
-	double t;               // simulation time
-	double t0;              // simulation time current integration was started at (used for BC function)
-	double tlast;
+	moordyn::real t;               // simulation time
+	moordyn::real t0;              // simulation time current integration was started at (used for BC function)
+	moordyn::real tlast;
 	
 	// end conditions
 	int endTypeA;           // type of connection at end A: 0=pinned to Connection, 1=cantilevered to Rod.
@@ -122,7 +122,7 @@ class Line
 	double ***UTS;
 	double ***UdTS;
 	int ntWater;            // number of water kinematics time steps
-	double dtWater;         // water kinematics time step size (s)
+	moordyn::real dtWater;         // water kinematics time step size (s)
 
 //	int ts0; 				// time step index used for interpolating wave kinematics time series data (put here so it's persistent) ????
 	

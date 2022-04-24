@@ -73,8 +73,8 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 
 	// ------------------------- size vectors -------------------------
 		
-	r   = make2Darray(N+1, 3);     // node positions [i][x/y/z]
-	rd  = make2Darray(N+1, 3);     // node velocities [i][x/y/z]
+	r.assign(N+1, vec(0., 0., 0.));     // node positions [i][x/y/z]
+	rd.assign(N+1, vec(0., 0., 0.));    // node positions [i][x/y/z]
 	q   = make2Darray(N+1, 3);     // unit tangent vectors for each node
 	qs  = make2Darray(N  , 3);     // unit tangent vectors for each segment
 	l   = make1Darray(N);          // line unstretched segment lengths
@@ -140,7 +140,7 @@ void Line::initializeLine(double* X)
 		*(env->outfileLogPtr) << "  - Line" << number << ":" << endl;
 		*(env->outfileLogPtr) << "    ID: " << number << endl;
 		*(env->outfileLogPtr) << "    UnstrLen: " << UnstrLen << endl;
-		*(env->outfileLogPtr) << "    N: " << N << endl;		
+		*(env->outfileLogPtr) << "    N   : " << N << endl;		
 		*(env->outfileLogPtr) << "    d   : " << d    << endl;		
 		*(env->outfileLogPtr) << "    rho : " << rho  << endl;		
 		*(env->outfileLogPtr) << "    E   : " << E    << endl;		
@@ -336,9 +336,10 @@ void Line::initializeLine(double* X)
 	
 	
 	// process unstretched line length input
+	vec dir = r[N] - r[0];
 	if (UnstrLen < 0)  // if a negative input, interpret as scaler relative to distance between initial line end points (which have now been set by the relevant Connection objects)
 	{
-		UnstrLen = -UnstrLen*sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) + pow(( r[N][2] - r[0][2]), 2.0) );
+		UnstrLen = -UnstrLen*dir.norm();
 		cout << "   Line " << number << " unstretched length set to " << UnstrLen << " m." << endl;
 	}
 	// otherwise just use the value provided (in m)
@@ -366,16 +367,14 @@ void Line::initializeLine(double* X)
 	// initialize line node positions as distributed linearly between the endpoints
 	for (int i=1; i<N; i++)
 	{
-		r[i][0]  = r[0][0] + (r[N][0] - r[0][0]) * (float(i)/float(N));
-		r[i][1]  = r[0][1] + (r[N][1] - r[0][1]) * (float(i)/float(N));
-		r[i][2]  = r[0][2] + (r[N][2] - r[0][2]) * (float(i)/float(N));
+		r[i] = r[0] + dir * (float(i)/float(N));
 	}
 	
 	// if conditions are ideal, try to calculate initial line profile using catenary routine (from FAST v.7)
 	if (-r[0][0] == env->WtrDpth)
 	{
-		double XF = sqrt( pow(( r[N][0] - r[0][0]), 2.0) + pow(( r[N][1] - r[0][1]), 2.0) ); // horizontal spread
-		double ZF = r[N][2] - r[0][2];	
+		double XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
+		double ZF = dir[2];	
 		double LW = ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81;
 		double CB = 0.;
 		double Tol = 0.00001;	
@@ -405,9 +404,8 @@ void Line::initializeLine(double* X)
 				cout << "   Catenary initial profile available for Line " << number << endl;
 				for (int i=1; i<N; i++)
 				{
-					r[i][0]  = r[0][0] + Xl[i] * COSPhi;
-					r[i][1]  = r[0][1] + Xl[i] * SINPhi;
-					r[i][2]  = r[0][2] + Zl[i];
+					vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
+					r[i] = r[0] + l;
 				}
 			}
 		}
@@ -416,10 +414,8 @@ void Line::initializeLine(double* X)
 		
 	// also assign the resulting internal node positions to the integrator initial state vector! (velocities leave at 0)
 	for (int i=1; i<N; i++) {
-		for (int J=0; J<3; J++) {
-			X[3*N-3 + 3*i-3 + J] = r[i][J];  // positions
-			X[        3*i-3 + J] = 0.0;      // velocities=0
-		}
+		moordyn::vec2array(r[i],               &(X[3*N-3 + 3*i-3]));
+		moordyn::vec2array(vec(0.0, 0.0, 0.0), &(X[        3*i-3]));
 	}
 	// now we need to return to the integrator for the dynamic relaxation stuff
 	cout << "Initialized Line " << number << endl;
@@ -450,8 +446,7 @@ int Line::getNodePos(int NodeNum, double pos[3])
 {
 	if ((NodeNum >= 0 ) && (NodeNum <= N))
 	{
-		for (int i=0; i<3; i++)
-			pos[i] = r[NodeNum][i];
+		moordyn::vec2array(r[NodeNum], pos);
 		
 		return 0;
 	}
@@ -463,8 +458,7 @@ int Line::getNodePos(int NodeNum, double pos[3])
 void Line::getNodeCoordinates(double r_out[])
 {
 	for (int i=0; i<=N; i++)
-		for (int j=0; j<3; j++)
-			r_out[3*i + j] = r[i][j];
+		moordyn::vec2array(r[i], &(r_out[3*i]));
 	
 	return;
 }
@@ -708,11 +702,8 @@ void Line::setState(const double* X, const double time)
 	// set interior node positions and velocities based on state vector
 	for (int i=1; i<N; i++)
 	{
-		for (int J=0; J<3; J++)
-		{
-			r[i][J]  = X[3 * N - 3 + 3 * i - 3 + J]; // get positions
-			rd[i][J] = X[            3 * i - 3 + J]; // get velocities
-		}
+		moordyn::array2vec(&(X[3 * N - 3 + 3 * i - 3]), r[i]);
+		moordyn::array2vec(&(X[            3 * i - 3]), rd[i]);
 	}
 }
 
@@ -733,8 +724,8 @@ void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 		endTypeA = 0; // indicate pinned
 	}
 
-	memcpy(r[i], r_in, 3 * sizeof(double));
-	memcpy(rd[i], rd_in, 3 * sizeof(double));
+	moordyn::array2vec(r_in, r[i]);
+	moordyn::array2vec(rd_in, rd[i]);
 }
 
 void Line::setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine)
@@ -774,7 +765,7 @@ void Line::getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB)
 {  	
 	double dlEnd;
 	double EIend;
-	double qEnd[3];
+	vec qEnd;
 
 	if (topOfLine==1)
 	{	
@@ -788,9 +779,10 @@ void Line::getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB)
 		if (rodEndB == 0) EIend = -EI; // <----line-----[A==ROD==>B]
 		else              EIend =  EI; // <----line-----[B==ROD==>A]
 	}
-	
+
+	qEnd *= EIend / dlEnd;
 	for (int i=0; i<3; i++)
-		q_EI_dl[i] = qEnd[i]*EIend/dlEnd;
+		q_EI_dl[i] = qEnd[i];
 
 	
 	return;
@@ -849,15 +841,13 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	// attempting error handling <<<<<<<<
 	for (int i=0; i<=N; i++)
 	{
-		if (isnan(r[i][0] + r[i][1] + r[i][2])) 
+		if (isnan(r[i].sum())) 
 		{
 			stringstream s;
 			s << "NaN detected" << endl
 			  << "Line " << number << " node positions:" << endl;
 			for (int j=0; j<=N; j++)
-				s << j << " : "
-				  << r[j][0] << ", " << r[j][1] << ", " << r[j][2] << ";"
-				  << endl;
+				s << j << " : " << r[j] << ";" << endl;
 			throw moordyn::nan_error(s.str().c_str());
 		}
 	}
@@ -876,14 +866,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		//calculate current (Stretched) segment lengths and unit tangent vectors (qs) for each segment (this is used for bending calculations)
 		lstr[i] = unitvector(qs[i], r[i], r[i+1]);
 
-		const double dr[3] = {r[i+1][0] - r[i][0],
-		                      r[i+1][1] - r[i][1],
-		                      r[i+1][2] - r[i][2]};
-		const double drd[3] = {rd[i+1][0] - rd[i][0],
-		                       rd[i+1][1] - rd[i][1],
-		                       rd[i+1][2] - rd[i][2]};
 		// this is the denominator of how the stretch rate equation was formulated
-		const double ldstr_top = dotProd3(dr, drd);
+		const double ldstr_top = (r[i+1]  - r[i]).dot(rd[i+1] - rd[i]);
 		// strain rate of segment
 		ldstr[i] = ldstr_top / lstr[i];
 
@@ -999,10 +983,10 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	
 		if (lstr[i] / l[i] > 1.0)
 		{
-			const double EA_l = E * A * (1. / l[i] - 1. / lstr[i]);
-			T[i][0] = EA_l * (r[i+1][0] - r[i][0]);
-			T[i][1] = EA_l * (r[i+1][1] - r[i][1]);
-			T[i][2] = EA_l * (r[i+1][2] - r[i][2]);
+			const vec t = E*A* ( 1./l[i] - 1./lstr[i] ) * (r[i+1]-r[i]);
+			T[i][0] = t[0];
+			T[i][1] = t[1];
+			T[i][2] = t[2];
 		}
 		else
 		{
@@ -1015,10 +999,10 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		if (nCpoints > 0)
 			c = getNonlinearC(ldstr[i], l[i]);
 		
-		const double CA_l = c * A * ldstr[i] / l[i] / lstr[i];
-		Td[i][0] = CA_l * (r[i+1][0] - r[i][0]);
-		Td[i][1] = CA_l * (r[i+1][1] - r[i][1]);
-		Td[i][2] = CA_l * (r[i+1][2] - r[i][2]);
+		const vec td = c*A* ( ldstr[i] / l[i] ) * (r[i+1]-r[i])/lstr[i]; 
+		Td[i][0] = td[0];
+		Td[i][1] = td[1];
+		Td[i][2] = td[2];
 	}
 	
 	
@@ -1375,8 +1359,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		Solve3(M[i], acc, (const double*)Fnet[i]);
 
 		// fill in state derivatives
-		memcpy(&(Xd[3 * i - 3]), acc, 3 * sizeof(double));
-		memcpy(&(Xd[3 * N - 3 + 3 * i - 3]), rd[i], 3 * sizeof(double));
+		moordyn::vec2array(rd[i], &Xd[3 * N - 3 + 3 * i - 3]);  //X[3*i-3 + I];  dxdt = V  (velocities)
+		for (int I=0; I<3; I++) 
+		{
+			Xd[            3 * i - 3 + I] = acc[I];    //RHSiI;         dVdt = RHS * A  (accelerations)
+		}
 	}
 };
 
@@ -1474,8 +1461,6 @@ Line::~Line()
 {
 	// free memory
 
-	free2Darray(r   , N+1);    
-	free2Darray(rd  , N+1);    
 	free2Darray(q   , N+1);    
 	free2Darray(qs  , N  );    
 	free(l);
