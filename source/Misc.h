@@ -18,6 +18,7 @@
 #define MISC_H
 
 #include "MoorDynAPI.h"
+#include "Eigen/Dense"
 
 #include <iostream>
 #include <vector>
@@ -62,8 +63,30 @@ template<typename T> static inline T round(T val) {return floor(val + 0.5);}
 
 using namespace std;
 
+#ifdef MOORDYN_SINGLEPRECISSION
+typedef Eigen::Vector2f vec2;
+typedef Eigen::Vector3f vec3;
+typedef Eigen::Vector4f vec4;
+typedef vec3 vec;
+#else
+typedef Eigen::Vector2d vec2;
+typedef Eigen::Vector3d vec3;
+typedef Eigen::Vector4d vec4;
+typedef vec3 vec;
+#endif
+typedef Eigen::Vector2i ivec2;
+typedef Eigen::Vector3i ivec3;
+typedef Eigen::Vector4i ivec4;
+typedef ivec3 ivec;
+
 namespace moordyn
 {
+
+#ifdef MOORDYN_SINGLEPRECISSION
+typedef float real;
+#else
+typedef double real;
+#endif
 
 /** \addtogroup moordyn_errors
  *  @{
@@ -456,6 +479,10 @@ inline double vectorLength(T *v)
 	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
 
+/**
+ * @{
+ */
+
 /** @brief Normalized direction vector
  * @param u The output normalized direction vector
  * @param r1 The orig point
@@ -472,6 +499,28 @@ inline double unitvector(T *u, const T *r1, const T *r2)
 	u[2] = v[2] / l;
 	return l;
 }
+
+inline double unitvector(vec &u, const vec &r1, const vec &r2)
+{
+	vec v = r2 - r1;
+	const double l = v.norm();
+	u = v / l;
+	return l;
+}
+
+inline double unitvector(double *u, const vec &r1, const vec &r2)
+{
+	vec v = r2 - r1;
+	const double l = v.norm();
+	u[0] = v[0] / l;
+	u[1] = v[1] / l;
+	u[2] = v[2] / l;
+	return l;
+}
+
+/**
+ * @}
+ */
 
 template <typename T>
 inline double unitvector(vector<T> &u, vector<T> & r1, vector<T> & r2)

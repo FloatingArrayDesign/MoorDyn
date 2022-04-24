@@ -1,6 +1,13 @@
 # makefile for MoorDyn compiled as libmoordyn.so.2.0.0, and linked as
 # libmoordyn.so (so it can be linked with -lmoordyn)
 #
+# Several options can be set:
+#
+#  - USEGL: Enables the OpenGL visualization
+#  - SINGLE_PRECISSION: Performs thecomputations using 32bits float instead of
+#                       64bits ones, whch implies some performance benefits
+#  - SEE: Use SSE instructions set. In general SSE=2 is recommended
+#
 # The following targets are provided:
 #
 # all: Builds the library libmoordyn.so.2.0.0, and the symbolic link
@@ -19,6 +26,14 @@ CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC
 ifdef USEGL
 CFLAGS += -DUSEGL
 LFLAGS += -lopengl32 -lglu32
+endif
+
+ifdef SINGLE_PRECISSION
+CFLAGS += -DMOORDYN_SINGLEPRECISSION
+endif
+
+ifdef SEE
+CFLAGS += -msse$(SSE)
 endif
 
 CPPFLAGS = $(CFLAGS) -std=c++14
