@@ -88,6 +88,30 @@ typedef float real;
 typedef double real;
 #endif
 
+/** @brief Convert a vector to a C-ish array
+ * @param v The input vector
+ * @param a The output array
+ */
+template <typename T>
+inline void vec2array(const vec &v, T *a)
+{
+	a[0] = (T)v[0];
+	a[1] = (T)v[1];
+	a[2] = (T)v[2];
+}
+
+/** @brief Convert a C-ish array to a vector
+ * @param a The input array
+ * @param v The output vector
+ */
+template <typename T>
+inline void array2vec(const T *a, vec &v)
+{
+	v[0] = (moordyn::real)a[0];
+	v[1] = (moordyn::real)a[1];
+	v[2] = (moordyn::real)a[2];
+}
+
 /** \addtogroup moordyn_errors
  *  @{
  */
@@ -512,15 +536,9 @@ inline double unitvector(double *u, const vec &r1, const vec &r2)
 {
 	vec v = r2 - r1;
 	const double l = v.norm();
-	u[0] = v[0] / l;
-	u[1] = v[1] / l;
-	u[2] = v[2] / l;
+	moordyn::vec2array(v / l, u);
 	return l;
 }
-
-/**
- * @}
- */
 
 template <typename T>
 inline double unitvector(vector<T> &u, vector<T> & r1, vector<T> & r2)
@@ -533,6 +551,10 @@ inline double unitvector(T *u, vector<T> & r1, vector<T> & r2)
 {
 	return unitvector(u, r1.data(), r2.data());
 }
+
+/**
+ * @}
+ */
 
 void transposeM3(double A[3][3], double Atrans[3][3]);
 void transposeM3(double A[9], double Atrans[9]);
