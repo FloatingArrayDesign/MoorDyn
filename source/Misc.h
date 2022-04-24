@@ -470,7 +470,7 @@ double calculate2Dinterpolation(double** f, int ix0, int iy0, double fx, double 
 int getInterpNums(double *xlist, int nx, double xin, double *fout);
 void getInterpNums(double *xlist, int nx, double xin, double fout[2], int iout[2]);
 
-double GetCurvature(double length, double q1[3], double q2[3]);
+moordyn::real GetCurvature(moordyn::real length, const vec& q1, const vec& q2);
 
 void GetOrientationAngles(double q[3], double* phi, double* sinPhi, double* cosPhi, 
                           double* tanPhi, double* beta, double* sinBeta, double* cosBeta);
@@ -576,6 +576,10 @@ double dotProd( vector<double>& A, vector<double>& B);
 double dotProd( double A[], vector<double>& B);
 double dotProd( double A[], double B[]);
 
+/**
+ * @{
+ */
+
 /** @brief Inner product of 3D vectors
  * @param a First vector
  * @param b Second vector
@@ -587,6 +591,30 @@ inline T dotProd3(const T *a, const T *b)
 {
 	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
+
+template <typename T>
+inline moordyn::real __attribute__((deprecated)) dotProd3(const vec& a, const T *b)
+{
+	vec bb;
+	moordyn::array2vec(b, bb);
+	return a.dot(bb);
+}
+
+template <typename T>
+inline moordyn::real __attribute__((deprecated)) dotProd3(const T *a, const vec& b)
+{
+	vec aa;
+	moordyn::array2vec(a, aa);
+	return aa.dot(b);
+}
+
+/**
+ * @}
+ */
+
+/**
+ * @{
+ */
 
 /** @brief Compute a nw vector with the same direction of the provided one, but
  * a new length
@@ -612,11 +640,27 @@ inline void scalevector(const T *u, T newlength, T *y)
 }
 
 template <typename T>
+inline void scalevector(const vec &u, T newlength, vec &y)
+{
+	const moordyn::real l2 = u.squaredNorm();
+	if (l2 == 0.0)
+	{
+		y = u;
+		return;
+	}
+	const moordyn::real scaler = (moordyn::real)newlength / sqrt(l2);
+	y = scaler * u;
+}
+
+template <typename T>
 inline void scalevector(vector<T> &u, T newlength, vector<T> &y)
 {
 	scalevector(u.data(), newlength, y.data());
 }
 
+/**
+ * @}
+ */
 
 /** @brief 3D cross vector product
  * @param u First vector

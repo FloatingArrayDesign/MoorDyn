@@ -75,8 +75,8 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 		
 	r.assign(N+1, vec(0., 0., 0.));     // node positions [i][x/y/z]
 	rd.assign(N+1, vec(0., 0., 0.));    // node positions [i][x/y/z]
-	q   = make2Darray(N+1, 3);     // unit tangent vectors for each node
-	qs  = make2Darray(N  , 3);     // unit tangent vectors for each segment
+	q.assign(N+1, vec(0., 0., 0.));     // unit tangent vectors for each node
+	qs.assign(N, vec(0., 0., 0.));      // unit tangent vectors for each segment
 	l   = make1Darray(N);          // line unstretched segment lengths
 	lstr= make1Darray(N);          // stretched lengths
 	ldstr=make1Darray(N);          // rate of stretch
@@ -740,22 +740,17 @@ void Line::setEndOrientation(double *qin, int topOfLine, int rodEndB)
 	
 	if (topOfLine==1)
 	{
-		endTypeB = 1;                  // indicate attached to Rod (at every time step, just in case line get detached)
-		
+		endTypeB = 1;                    // indicate attached to Rod (at every time step, just in case line get detached)
+		moordyn::array2vec(qin, q[N]);   // -----line----->[A==ROD==>B]
 		if (rodEndB==1)
-			for (int J=0; J<3; J++)  q[N][J] = -qin[J];   // -----line----->[B<==ROD==A]
-		else
-			for (int J=0; J<3; J++)  q[N][J] =  qin[J];   // -----line----->[A==ROD==>B]
+			q[N] *= -1;                  // -----line----->[B<==ROD==A]
 	}
 	else
 	{	
-		endTypeA = 1;                  // indicate attached to Rod (at every time step, just in case line get detached)                 // indicate attached to Rod
-		
-		if (rodEndB==1)
-			for (int J=0; J<3; J++)  q[0][J] =  qin[J];   // [A==ROD==>B]-----line----->
-		else
-			for (int J=0; J<3; J++)  q[0][J] = -qin[J];   // [B<==ROD==A]-----line----->
-		
+		endTypeA = 1;                    // indicate attached to Rod (at every time step, just in case line get detached)
+		moordyn::array2vec(qin, q[0]);   // [A==ROD==>B]-----line----->
+		if (rodEndB!=1)
+			q[0] *= -1;                  // [B<==ROD==A]-----line----->
 	}
 	return;
 }	
@@ -780,10 +775,7 @@ void Line::getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB)
 		else              EIend =  EI; // <----line-----[B==ROD==>A]
 	}
 
-	qEnd *= EIend / dlEnd;
-	for (int i=0; i<3; i++)
-		q_EI_dl[i] = qEnd[i];
-
+	moordyn::vec2array(qEnd * EIend / dlEnd, q_EI_dl);
 	
 	return;
 }	
@@ -819,7 +811,7 @@ void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int t
  * @return Mass matrix component
  */
 inline double node_mass(unsigned int i, unsigned int j,
-	                    double m, double v, const double *q,
+	                    double m, double v, const vec& q,
 	                    double Can, double Cat, double rho)
 {
 	//	    <<<<<<< check since I've reversed q
@@ -1017,11 +1009,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		// loop through all nodes to calculate bending forces
 		for (int i=0; i<=N; i++)
 		{
-			double Kurvi = 0.0;
-			double pvec[3];
-			double Mforce_im1[3] = {0.0, 0.0, 0.0};
-			double Mforce_ip1[3] = {0.0, 0.0, 0.0};
-			double Mforce_i[  3];
+			moordyn::real Kurvi = 0.0;
+			vec pvec;
+			vec Mforce_im1(0.0, 0.0, 0.0);
+			vec Mforce_ip1(0.0, 0.0, 0.0);
+			vec Mforce_i;
 			
 			// calculate force on each node due to bending stiffness!
 			
@@ -1032,9 +1024,9 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				{
 					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);  // curvature <<< check if this approximation works for an end (assuming rod angle is node angle which is middle of if there was a segment -1/2
 		
-					crossProd(q[0], qs[i], pvec);           // get direction of bending radius axis
+					pvec = q[0].cross(qs[i]);           // get direction of bending radius axis
 					
-					crossProd(qs[i  ], pvec, Mforce_ip1);    // get direction of resulting force from bending to apply on node i+1
+					Mforce_ip1 = qs[i].cross(pvec);     // get direction of resulting force from bending to apply on node i+1
 					
 					// record bending moment at end for potential application to attached object   <<<< do double check this....
 					scalevector(pvec, Kurvi*EI, endMomentA );
@@ -1043,17 +1035,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					scalevector(Mforce_ip1, Kurvi*EI/lstr[i  ], Mforce_ip1 );					
 						
 					// set force on node i to cancel out forces on adjacent nodes
-					Mforce_i[0] = - Mforce_ip1[0];
-					Mforce_i[1] = - Mforce_ip1[1];
-					Mforce_i[2] = - Mforce_ip1[2];
+					Mforce_i = - Mforce_ip1;
 
 					// apply these forces to the node forces
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i+1][0] += Mforce_ip1[0];
-					Bs[i+1][0] += Mforce_ip1[0];
-					Bs[i+1][0] += Mforce_ip1[0];
+					moordyn::vec2array(Mforce_i,   Bs[i  ]);
+					moordyn::vec2array(Mforce_ip1, Bs[i+1]);
 				}
 			}
 			// end node A case (only if attached to a Rod, i.e. a cantilever rather than pinned connection)
@@ -1063,9 +1049,9 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				{
 					Kurvi = GetCurvature(lstr[i-1], qs[i-1], q[i]); // curvature <<< check if this approximation works for an end (assuming rod angle is node angle which is middle of if there was a segment -1/2
 					
-					crossProd(qs[i-1], q[N], pvec);         // get direction of bending radius axis
+					pvec = qs[i-1].cross(q[N]);          // get direction of bending radius axis
 					
-					crossProd(qs[i-1], pvec, Mforce_im1);    // get direction of resulting force from bending to apply on node i-1
+					Mforce_im1 = qs[i-1].cross(pvec);    // get direction of resulting force from bending to apply on node i-1
 					
 					// record bending moment at end for potential application to attached object   <<<< do double check this....
 					scalevector(pvec, -Kurvi*EI, endMomentB ); // note end B is oposite sign as end A
@@ -1074,47 +1060,33 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					scalevector(Mforce_im1, Kurvi*EI/lstr[i-1], Mforce_im1);
 						
 					// set force on node i to cancel out forces on adjacent nodes
-					Mforce_i[0] = - Mforce_im1[0];
-					Mforce_i[1] = - Mforce_im1[1];
-					Mforce_i[2] = - Mforce_im1[2];
+					Mforce_i = -Mforce_im1;
 					
 					// apply these forces to the node forces
-					Bs[i-1][0] += Mforce_im1[0];
-					Bs[i-1][0] += Mforce_im1[0];
-					Bs[i-1][0] += Mforce_im1[0];
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
+					moordyn::vec2array(Mforce_im1, Bs[i-1]);
+					moordyn::vec2array(Mforce_i,   Bs[i  ]);
 				}
 			}
 			else   // internal node
 			{
 				Kurvi = GetCurvature(lstr[i-1] + lstr[i], qs[i-1], qs[i]);  // curvature <<< remember to check sign, or just take abs
 
-				crossProd(qs[i-1], qs[i], pvec);         // get direction of bending radius axis
+				pvec = qs[i-1].cross(q[i]);          // get direction of bending radius axis
 
-				crossProd(qs[i-1], pvec, Mforce_im1);    // get direction of resulting force from bending to apply on node i-1
-				crossProd(qs[i  ], pvec, Mforce_ip1);    // get direction of resulting force from bending to apply on node i+1
+				Mforce_im1 = qs[i-1].cross(pvec);    // get direction of resulting force from bending to apply on node i-1
+				Mforce_ip1 = qs[i  ].cross(pvec);    // get direction of resulting force from bending to apply on node i+1
 
 				// scale force direction vectors by desired moment force magnitudes to get resulting forces on adjacent nodes
 				scalevector(Mforce_im1, Kurvi * EI / lstr[i-1], Mforce_im1);
 				scalevector(Mforce_ip1, Kurvi * EI / lstr[i  ], Mforce_ip1 );
 
 				// set force on node i to cancel out forces on adjacent nodes
-				Mforce_i[0] = - Mforce_im1[0] - Mforce_ip1[0];
-				Mforce_i[1] = - Mforce_im1[1] - Mforce_ip1[1];
-				Mforce_i[2] = - Mforce_im1[2] - Mforce_ip1[2];
+				Mforce_i = - Mforce_im1 - Mforce_ip1;
 
 				// apply these forces to the node forces
-				Bs[i-1][0] += Mforce_im1[0];
-				Bs[i-1][0] += Mforce_im1[0];
-				Bs[i-1][0] += Mforce_im1[0];
-				Bs[i  ][0] += Mforce_i[0];
-				Bs[i  ][0] += Mforce_i[0];
-				Bs[i  ][0] += Mforce_i[0];
-				Bs[i+1][0] += Mforce_ip1[0];
-				Bs[i+1][0] += Mforce_ip1[0];
-				Bs[i+1][0] += Mforce_ip1[0];
+				moordyn::vec2array(Mforce_im1, Bs[i-1]);
+				moordyn::vec2array(Mforce_i,   Bs[i  ]);
+				moordyn::vec2array(Mforce_ip1, Bs[i+1]);
 			}
 
 			// check for NaNs <<<<<<<<<<<<<<< temporary measure <<<<<<<
@@ -1123,7 +1095,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				cout << "   Error: NaN value detected in bending force at Line "
 				     << number << " node " << i << endl;
 				cout << lstr[i-1]+lstr[i] << endl;
-				cout << sqrt(0.5 * (1 - dotProd3(qs[i - 1], qs[i]))) << endl;
+				cout << sqrt(0.5 * (1 - qs[i - 1].dot(qs[i]))) << endl;
 
 				cout << Bs[i - 1][0] << ", "
 				     << Bs[i - 1][1] << ", "
@@ -1202,21 +1174,21 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env->rho_w) + l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
 
 		// relative flow velocity over node
-		const double vi[3] = {U[i][0] - rd[i][0],
-		                      U[i][1] - rd[i][1],
-		                      U[i][2] - rd[i][2]};
+		const vec vi(U[i][0] - rd[i][0],
+		             U[i][1] - rd[i][1],
+		             U[i][2] - rd[i][2]);
 		// tangential relative flow component
 		// <<<<<<< check sign since I've reversed q
-		const double vql = dotProd3(vi , q[i]);
-		const double vq[3] = {vql * q[i][0], vql * q[i][1], vql * q[i][2]};
+		const moordyn::real vql = vi.dot(q[i]);
+		const vec vq = vql * q[i];
 		// transverse relative flow component
-		const double vp[3] = {vi[0] - vq[0], vi[1] - vq[1], vi[2] - vq[2]};
+		const vec vp = vi - vq;
 
-		const double vq_mag = vectorLength(vq);
-		const double vp_mag = vectorLength(vp);
+		const moordyn::real vq_mag = vq.norm();
+		const moordyn::real vp_mag = vp.norm();
 
 		// transverse drag
-		double Dp_factor;
+		moordyn::real Dp_factor;
 		if (i == 0)
 			Dp_factor = 0.25 * vp_mag * env->rho_w * Cdn * d *
 				F[i] * l[i];
@@ -1226,12 +1198,10 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		else
 			Dp_factor = 0.25 * vp_mag * env->rho_w * Cdn * d *
 				(F[i] * l[i] + F[i - 1] * l[i -1]);
-		Dp[i][0] = Dp_factor * vp[0];
-		Dp[i][1] = Dp_factor * vp[1];
-		Dp[i][2] = Dp_factor * vp[2];
+		moordyn::vec2array(Dp_factor * vp, Dp[i]);
 
 		// tangential drag
-		double Dq_factor;
+		moordyn::real Dq_factor;
 		if (i == 0)
 			Dq_factor = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
 				F[i] * l[i];
@@ -1241,21 +1211,19 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		else
 			Dq_factor = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
 				(F[i] * l[i] + F[i - 1] * l[i -1]);
-		Dq[i][0] = Dq_factor * vq[0];
-		Dq[i][1] = Dq_factor * vq[1];
-		Dq[i][2] = Dq_factor * vq[2];
+		moordyn::vec2array(Dq_factor * vq, Dq[i]);
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
-		const double aql = dotProd3(Ud[i], q[i]);
-		const double aq[3] = {aql * q[i][0], aql * q[i][1], aql * q[i][2]};
+		const moordyn::real aql = dotProd3(Ud[i], q[i]);
+		const vec aq = aql * q[i];
 		// normal component of fluid acceleration
-		const double ap[3] = {Ud[i][0] - aq[0],
-		                      Ud[i][1] - aq[1],
-		                      Ud[i][2] - aq[2]};
+		const vec ap(Ud[i][0] - aq[0],
+		             Ud[i][1] - aq[1],
+		             Ud[i][2] - aq[2]);
 		
 		// transverse Froude-Krylov force
-		double Ap_factor;
+		moordyn::real Ap_factor;
 		if (i == 0)
 			Ap_factor = env->rho_w*(1.+Can)*0.5*( V[i]);
 		else if (i == N)
@@ -1266,7 +1234,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		Ap[i][1] = Ap_factor * ap[1];
 		Ap[i][2] = Ap_factor * ap[2];
 		// tangential Froude-Krylov force					
-		double Aq_factor;
+		moordyn::real Aq_factor;
 		if (i == 0)
 			Aq_factor = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i]);
 		else if (i == N)
@@ -1461,8 +1429,6 @@ Line::~Line()
 {
 	// free memory
 
-	free2Darray(q   , N+1);    
-	free2Darray(qs  , N  );    
 	free(l);
 	free(lstr);
 	free(ldstr);

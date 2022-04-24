@@ -348,11 +348,11 @@ void getInterpNums(double *xlist, int nx, double xin, double fout[2], int iout[2
 
 
 // convenience function to calculate curvature based on adjacent segments' direction vectors and their combined length
-double GetCurvature(double length, double q1[3], double q2[3])
+moordyn::real GetCurvature(moordyn::real length, const vec& q1, const vec& q2)
 {
 	// note "length" here is combined from both segments
 	
-	double q1_dot_q2 = dotProd( q1, q2 );
+	auto q1_dot_q2 = q1.dot(q2);
 	
 	if (q1_dot_q2 > 1.0)    // this is just a small numerical error, so set q1_dot_q2 to 1
 		return 0.0;          // this occurs when there's no curvature, so return zero curvature

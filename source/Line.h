@@ -70,8 +70,8 @@ class Line
 	// kinematics
 	std::vector<vec> r;             // node positions [i][x/y/z]
 	std::vector<vec> rd;            // node velocities [i][x/y/z]
-	double **q;             // unit tangent vectors for each node
-	double **qs;            // unit tangent vectors for each segment (used in bending calcs)
+	std::vector<vec> q;             // unit tangent vectors for each node
+	std::vector<vec> qs;            // unit tangent vectors for each segment (used in bending calcs)
 	double *l;              // line unstretched segment lengths
 	double *lstr;           // stretched lengths
 	double *ldstr;          // rate of stretch
@@ -109,8 +109,8 @@ class Line
 	// end conditions
 	int endTypeA;           // type of connection at end A: 0=pinned to Connection, 1=cantilevered to Rod.
 	int endTypeB;
-	double endMomentA[3];   // moment at end A from bending, to be applied on attached Rod/Body
-	double endMomentB[3];
+	vec endMomentA;   // moment at end A from bending, to be applied on attached Rod/Body
+	vec endMomentB;
 
 	// file stuff	
 	ofstream * outfile;     // if not a pointer, caused odeint system initialization error during compilation
