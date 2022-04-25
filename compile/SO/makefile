@@ -32,7 +32,7 @@ ifdef SINGLE_PRECISSION
 CFLAGS += -DMOORDYN_SINGLEPRECISSION
 endif
 
-ifdef SEE
+ifdef SSE
 CFLAGS += -msse$(SSE)
 endif
 
