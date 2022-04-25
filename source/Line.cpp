@@ -77,13 +77,13 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	rd.assign(N+1, vec(0., 0., 0.));    // node positions [i][x/y/z]
 	q.assign(N+1, vec(0., 0., 0.));     // unit tangent vectors for each node
 	qs.assign(N, vec(0., 0., 0.));      // unit tangent vectors for each segment
-	l   = make1Darray(N);          // line unstretched segment lengths
-	lstr= make1Darray(N);          // stretched lengths
-	ldstr=make1Darray(N);          // rate of stretch
-	Kurv= make1Darray(N+1);        // curvatures at node points (1/m)
+	l.assign(N, 0.0);                   // line unstretched segment lengths
+	lstr.assign(N, 0.0);                // stretched lengths
+	ldstr.assign(N, 0.0);               // rate of stretch
+	Kurv.assign(N, 0.0);                // curvatures at node points (1/m)
 	
-	M   = make3Darray(N+1, 3, 3);  // mass matrices (3x3) for each node
-	V   = make1Darray(N);          // segment volume?
+	M   = make3Darray(N+1, 3, 3);       // mass matrices (3x3) for each node
+	V.assign(N, 0.0);                   // segment volume?
 	
 	// forces 
 	T   = make2Darray(N  , 3);     // segment tensions
@@ -1428,14 +1428,8 @@ void Line::Output(double time)
 Line::~Line()
 {
 	// free memory
-
-	free(l);
-	free(lstr);
-	free(ldstr);
-	free(Kurv);
 	
 	free3Darray(M   , N+1, 3); 
-	free(V);
 					 
 	// forces        
 	free2Darray(T   , N  );    

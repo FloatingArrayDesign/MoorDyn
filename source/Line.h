@@ -68,18 +68,17 @@ class Line
 	
 	
 	// kinematics
-	std::vector<vec> r;             // node positions [i][x/y/z]
-	std::vector<vec> rd;            // node velocities [i][x/y/z]
-	std::vector<vec> q;             // unit tangent vectors for each node
-	std::vector<vec> qs;            // unit tangent vectors for each segment (used in bending calcs)
-	double *l;              // line unstretched segment lengths
-	double *lstr;           // stretched lengths
-	double *ldstr;          // rate of stretch
-	double *Kurv;           // curvatures at node points (1/m)
+	std::vector<vec> r;               // node positions [i][x/y/z]
+	std::vector<vec> rd;              // node velocities [i][x/y/z]
+	std::vector<vec> q;               // unit tangent vectors for each node
+	std::vector<vec> qs;              // unit tangent vectors for each segment (used in bending calcs)
+	std::vector<moordyn::real> l;     // line unstretched segment lengths
+	std::vector<moordyn::real> lstr;  // stretched lengths
+	std::vector<moordyn::real> ldstr; // rate of stretch
+	std::vector<moordyn::real> Kurv;  // curvatures at node points (1/m)
 	
-	double ***M;            // node mass + added mass matrix
-	double Mext[3];         // net moment from attached lines at either end
-	double *V;              // line segment volume	
+	double ***M;                      // node mass + added mass matrix
+	std::vector<moordyn::real> V;     // line segment volume	
 				
 	// forces 
 	double **T;             // segment tensions
