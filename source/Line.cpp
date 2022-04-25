@@ -1065,11 +1065,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 
 					// apply these forces to the node forces
 					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
+					Bs[i  ][1] += Mforce_i[1];
+					Bs[i  ][2] += Mforce_i[2];
 					Bs[i+1][0] += Mforce_ip1[0];
-					Bs[i+1][0] += Mforce_ip1[0];
-					Bs[i+1][0] += Mforce_ip1[0];
+					Bs[i+1][1] += Mforce_ip1[1];
+					Bs[i+1][2] += Mforce_ip1[2];
 				}
 			}
 			// end node A case (only if attached to a Rod, i.e. a cantilever rather than pinned connection)
@@ -1096,11 +1096,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					
 					// apply these forces to the node forces
 					Bs[i-1][0] += Mforce_im1[0];
-					Bs[i-1][0] += Mforce_im1[0];
-					Bs[i-1][0] += Mforce_im1[0];
+					Bs[i-1][1] += Mforce_im1[1];
+					Bs[i-1][2] += Mforce_im1[2];
 					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
-					Bs[i  ][0] += Mforce_i[0];
+					Bs[i  ][1] += Mforce_i[1];
+					Bs[i  ][2] += Mforce_i[2];
 				}
 			}
 			else   // internal node
@@ -1123,14 +1123,14 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 
 				// apply these forces to the node forces
 				Bs[i-1][0] += Mforce_im1[0];
-				Bs[i-1][0] += Mforce_im1[0];
-				Bs[i-1][0] += Mforce_im1[0];
+				Bs[i-1][1] += Mforce_im1[1];
+				Bs[i-1][2] += Mforce_im1[2];
 				Bs[i  ][0] += Mforce_i[0];
-				Bs[i  ][0] += Mforce_i[0];
-				Bs[i  ][0] += Mforce_i[0];
+				Bs[i  ][1] += Mforce_i[1];
+				Bs[i  ][2] += Mforce_i[2];
 				Bs[i+1][0] += Mforce_ip1[0];
-				Bs[i+1][0] += Mforce_ip1[0];
-				Bs[i+1][0] += Mforce_ip1[0];
+				Bs[i+1][1] += Mforce_ip1[1];
+				Bs[i+1][2] += Mforce_ip1[2];
 			}
 
 			// check for NaNs <<<<<<<<<<<<<<< temporary measure <<<<<<<
