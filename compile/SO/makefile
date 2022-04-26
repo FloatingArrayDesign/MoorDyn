@@ -4,9 +4,11 @@
 # Several options can be set:
 #
 #  - USEGL: Enables the OpenGL visualization
-#  - SINGLE_PRECISSION: Performs thecomputations using 32bits float instead of
-#                       64bits ones, whch implies some performance benefits
-#  - SEE: Use SSE instructions set. In general SSE=2 is recommended
+#  - COPTS: Compilation options. For good performance and compatibility use:
+#           COPTS='-msse2 -ffast-math -DMOORDYN_SINGLEPRECISSION'
+#           However, for local-only installations a more aggresive instructions
+#           set can be used:
+#           COPTS='-march=native -ffast-math -DMOORDYN_SINGLEPRECISSION'
 #
 # The following targets are provided:
 #
@@ -28,16 +30,11 @@ CFLAGS += -DUSEGL
 LFLAGS += -lopengl32 -lglu32
 endif
 
-ifdef SINGLE_PRECISSION
-CFLAGS += -DMOORDYN_SINGLEPRECISSION
-endif
-
-ifdef SSE
-CFLAGS += -msse$(SSE)
-endif
+CFLAGS += $(COPTS)
+LFLAGS += $(LOPTS)
 
 CPPFLAGS = $(CFLAGS) -std=c++14
-EXEFLAGS = -O3 -g -Wall -Wextra -DLINUX
+EXEFLAGS = -O3 -g -Wall -Wextra -DLINUX $(EXEOPTS)
 
 all: libmoordyn.so
 
