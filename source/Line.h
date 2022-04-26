@@ -77,20 +77,20 @@ class Line
 	std::vector<moordyn::real> ldstr; // rate of stretch
 	std::vector<moordyn::real> Kurv;  // curvatures at node points (1/m)
 	
-	double ***M;                      // node mass + added mass matrix
+	std::vector<mat> M;               // node mass + added mass matrix
 	std::vector<moordyn::real> V;     // line segment volume	
 				
 	// forces 
-	double **T;             // segment tensions
-	double **Td;            // segment damping forces
-	double **Bs;            // bending stiffness forces
-	double **W;             // node weight 	
-	double **Dp;            // node drag (transverse)
-	double **Dq;            // node drag (axial)
-	double **Ap;            // node added mass forcing (transverse)
-	double **Aq;            // node added mass forcing (axial)
-	double **B;             // node bottom contact force	
-	double **Fnet;          // total force on node  <<<<<<< might remove this for Rods
+	std::vector<vec> T;               // segment tensions
+	std::vector<vec> Td;              // segment damping forces
+	std::vector<vec> Bs;              // bending stiffness forces
+	std::vector<vec> W;               // node weight 	
+	std::vector<vec> Dp;              // node drag (transverse)
+	std::vector<vec> Dq;              // node drag (axial)
+	std::vector<vec> Ap;              // node added mass forcing (transverse)
+	std::vector<vec> Aq;              // node added mass forcing (axial)
+	std::vector<vec> B;               // node bottom contact force	
+	std::vector<vec> Fnet;            // total force on node  <<<<<<< might remove this for Rods
 		
 	// wave things
 	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)

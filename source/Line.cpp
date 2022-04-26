@@ -80,22 +80,22 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	l.assign(N, 0.0);                   // line unstretched segment lengths
 	lstr.assign(N, 0.0);                // stretched lengths
 	ldstr.assign(N, 0.0);               // rate of stretch
-	Kurv.assign(N, 0.0);                // curvatures at node points (1/m)
+	Kurv.assign(N+1, 0.0);              // curvatures at node points (1/m)
 	
-	M   = make3Darray(N+1, 3, 3);       // mass matrices (3x3) for each node
+	M.assign(N+1, mat());               // mass matrices (3x3) for each node
 	V.assign(N, 0.0);                   // segment volume?
 	
 	// forces 
-	T   = make2Darray(N  , 3);     // segment tensions
-	Td  = make2Darray(N  , 3);     // segment damping forces
-	Bs  = make2Darray(N+1, 3);     // bending stiffness forces
-	W   = make2Darray(N+1, 3);     // node weights
-	Dp  = make2Darray(N+1, 3);     // node drag (transverse)
-	Dq  = make2Darray(N+1, 3);     // node drag (axial)
-	Ap  = make2Darray(N+1, 3);     // node added mass forcing (transverse)
-	Aq  = make2Darray(N+1, 3);     // node added mass forcing (axial)
-	B   = make2Darray(N+1, 3);     // node bottom contact force
-	Fnet= make2Darray(N+1, 3);     // total force on node
+	T.assign(N, vec(0., 0., 0.));       // segment tensions
+	Td.assign(N, vec(0., 0., 0.));      // segment damping forces
+	Bs.assign(N+1, vec(0., 0., 0.));    // bending stiffness forces
+	W.assign(N+1, vec(0., 0., 0.));     // node weights
+	Dp.assign(N+1, vec(0., 0., 0.));    // node drag (transverse)
+	Dq.assign(N+1, vec(0., 0., 0.));    // node drag (axial)
+	Ap.assign(N+1, vec(0., 0., 0.));    // node added mass forcing (transverse)
+	Aq.assign(N+1, vec(0., 0., 0.));    // node added mass forcing (axial)
+	B.assign(N+1, vec(0., 0., 0.));     // node bottom contact force
+	Fnet.assign(N+1, vec(0., 0., 0.));  // total force on node
 	
 	// wave things
 	F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
@@ -106,10 +106,8 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	
 	
 	// ensure end moments start at zero
-	for (int J=0; J<3; J++)        
-	{	endMomentA[J] = 0.0;
-		endMomentB[J] = 0.0;
-	}
+	endMomentA = vec(0., 0., 0.);
+	endMomentB = vec(0., 0., 0.);
 	
 	// set the number of preset wave kinematic time steps to zero (flagging disabled) to start with
 	ntWater = 0; 
@@ -426,16 +424,12 @@ void Line::initializeLine(double* X)
 double Line::getNodeTen(int i)
 {
 	double NodeTen = 0.0;
-	
-	if (i==0) 
-		NodeTen = sqrt(Fnet[i][0]*Fnet[i][0] + Fnet[i][1]*Fnet[i][1] + (Fnet[i][2]+M[i][0][0]*(-env->g))*(Fnet[i][2]+M[i][0][0]*(-env->g)));
-	else if (i==N)                             
-		NodeTen = sqrt(Fnet[i][0]*Fnet[i][0] + Fnet[i][1]*Fnet[i][1] + (Fnet[i][2]+M[i][0][0]*(-env->g))*(Fnet[i][2]+M[i][0][0]*(-env->g)));
+	if ((i==0) || (i==N))
+		NodeTen = (Fnet[i] + vec(0.0, 0.0, M[i](0, 0) * (-env->g))).norm();
 	else 
 	{
-		double Tmag_squared = 0.; 
-		for (int J=0; J<3; J++)  Tmag_squared += 0.25*(T[i][J] + T[i-1][J])*(T[i][J] + T[i-1][J]);  // take average of tension in adjacent segments 
-		NodeTen = sqrt(Tmag_squared);  	// 		previously used: NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
+		// take average of tension in adjacent segments 
+		NodeTen = (0.5 * (T[i] + T[i-1])).norm();  	// 		previously used: NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
 	}
 	return NodeTen;
 };
@@ -479,10 +473,10 @@ void Line::setNodeWaveKin(double U_in[], double Ud_in[])
 // FASTv7 style line tension outputs
 void Line::getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen)
 {		
-	*FairHTen = (float)sqrt(Fnet[N][0]*Fnet[N][0] + Fnet[N][1]*Fnet[N][1]);
-	*FairVTen = (float)(Fnet[N][2] + M[N][0][0]*(-env->g));
-	*AnchHTen = (float)sqrt(Fnet[0][0]*Fnet[0][0] + Fnet[0][1]*Fnet[0][1]);
-	*AnchVTen = (float)(Fnet[0][2] + M[0][0][0]*(-env->g));
+	*FairHTen = (float)(Fnet[N](Eigen::seqN(0, 2)).norm());
+	*FairVTen = (float)(Fnet[N][2] + M[N](0, 0)*(-env->g));
+	*AnchHTen = (float)(Fnet[0](Eigen::seqN(0, 2)).norm());
+	*AnchVTen = (float)(Fnet[0][2] + M[0](0, 0)*(-env->g));
 	
 	return;
 };
@@ -508,23 +502,15 @@ void Line::getEndStuff(double Fnet_out[3], double Moment_out[3], double M_out[3]
 {
    if (topOfLine==1)  // end B of line
    {
-      for (int I=0; I<3; I++) 
-      {	
-         Fnet_out[  I] = Fnet[N][I];			
-         Moment_out[I] = endMomentB[I];
-         
-         for (int J=0; J<3; J++) M_out[I][J] = M[N][I][J];
-      }
+      moordyn::vec2array(Fnet[N], Fnet_out);
+      moordyn::vec2array(endMomentB, Moment_out);
+      moordyn::mat2array(M[N], M_out);
    }
    else               // end A of line
    {
-      for (int I=0; I<3; I++) 
-      {	
-         Fnet_out[  I] = Fnet[0][I];			
-         Moment_out[I] = endMomentA[I];
-         
-         for (int J=0; J<3; J++) M_out[I][J] = M[0][I][J];
-      }
+      moordyn::vec2array(Fnet[0], Fnet_out);
+      moordyn::vec2array(endMomentA, Moment_out);
+      moordyn::mat2array(M[0], M_out);
    }
 };
 
@@ -799,27 +785,6 @@ void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int t
 }
 
 
-/** @brief Compute a node mass matrix component
- * @param i Matrix row
- * @param j Matrix column
- * @param m Node mass
- * @param v Node volume
- * @param q Normalized direction vector
- * @param Can Normal added mass coefficient
- * @param Cat Tangential added mass coefficient
- * @param rho Water density
- * @return Mass matrix component
- */
-inline double node_mass(unsigned int i, unsigned int j,
-	                    double m, double v, const vec& q,
-	                    double Can, double Cat, double rho)
-{
-	//	    <<<<<<< check since I've reversed q
-	const double I = eye(i, j);
-	const double Q = q[i] * q[j];
-	return m * I + rho * v * (Can * (I - Q) + Cat * Q);
-}
-
 // calculate forces and get the derivative of the line's states
 void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 {
@@ -939,16 +904,10 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			v_i = 1./2. *(F[i-1]*V[i-1] + F[i]*V[i]);
 		}
 		
-		// Make node mass matrix (Avoid loops for better performance)
-		M[i][0][0] = node_mass(0, 0, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][0][1] = node_mass(0, 1, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][0][2] = node_mass(0, 2, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][1][0] = node_mass(1, 0, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][1][1] = node_mass(1, 1, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][1][2] = node_mass(1, 2, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][2][0] = node_mass(2, 0, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][2][1] = node_mass(2, 1, m_i, v_i, q[i], Can, Cat, env->rho_w);
-		M[i][2][2] = node_mass(2, 2, m_i, v_i, q[i], Can, Cat, env->rho_w);
+		// Make node mass matrix
+		const mat I = mat::Identity();
+		const mat Q = q[i] * q[i].transpose();
+		M[i] = m_i * I + env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
 	}
 	
 
@@ -975,33 +934,27 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	
 		if (lstr[i] / l[i] > 1.0)
 		{
-			const vec t = E*A* ( 1./l[i] - 1./lstr[i] ) * (r[i+1]-r[i]);
-			T[i][0] = t[0];
-			T[i][1] = t[1];
-			T[i][2] = t[2];
+			T[i] = E*A* ( 1./l[i] - 1./lstr[i] ) * (r[i+1]-r[i]);
 		}
 		else
 		{
 			// cable can't "push" ...
 			// or can it, if bending stiffness is nonzero? <<<<<<<<<
-			memset(T[i], 0.0, 3.0 * sizeof(double));
+			T[i] = vec(0.0, 0.0, 0.0);
 		}
 				
 		// line internal damping force
 		if (nCpoints > 0)
 			c = getNonlinearC(ldstr[i], l[i]);
 		
-		const vec td = c*A* ( ldstr[i] / l[i] ) * (r[i+1]-r[i])/lstr[i]; 
-		Td[i][0] = td[0];
-		Td[i][1] = td[1];
-		Td[i][2] = td[2];
+		Td[i] = c*A* ( ldstr[i] / l[i] ) * (r[i+1]-r[i])/lstr[i]; 
 	}
 	
 	
 	// Bending loads
 	// first zero out the forces from last run
 	for (int i=0; i<=N; i++)
-		memset(Bs[i], 0.0, 3 * sizeof(double));
+		Bs[i] = vec(0.0, 0.0, 0.0);
 
 	// and now compute them (if possible)
 	if (EI > 0)
@@ -1038,8 +991,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					Mforce_i = - Mforce_ip1;
 
 					// apply these forces to the node forces
-					moordyn::vec2array(Mforce_i,   Bs[i  ]);
-					moordyn::vec2array(Mforce_ip1, Bs[i+1]);
+					Bs[i  ] = Mforce_i;
+					Bs[i+1] = Mforce_ip1;
 				}
 			}
 			// end node A case (only if attached to a Rod, i.e. a cantilever rather than pinned connection)
@@ -1063,8 +1016,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					Mforce_i = -Mforce_im1;
 					
 					// apply these forces to the node forces
-					moordyn::vec2array(Mforce_im1, Bs[i-1]);
-					moordyn::vec2array(Mforce_i,   Bs[i  ]);
+					Bs[i-1] = Mforce_im1;
+					Bs[i  ] = Mforce_i;
 				}
 			}
 			else   // internal node
@@ -1084,9 +1037,9 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				Mforce_i = - Mforce_im1 - Mforce_ip1;
 
 				// apply these forces to the node forces
-				moordyn::vec2array(Mforce_im1, Bs[i-1]);
-				moordyn::vec2array(Mforce_i,   Bs[i  ]);
-				moordyn::vec2array(Mforce_ip1, Bs[i+1]);
+				Bs[i-1] = Mforce_im1;
+				Bs[i  ] = Mforce_i;
+				Bs[i+1] = Mforce_ip1;
 			}
 
 			// check for NaNs <<<<<<<<<<<<<<< temporary measure <<<<<<<
@@ -1097,24 +1050,12 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				cout << lstr[i-1]+lstr[i] << endl;
 				cout << sqrt(0.5 * (1 - qs[i - 1].dot(qs[i]))) << endl;
 
-				cout << Bs[i - 1][0] << ", "
-				     << Bs[i - 1][1] << ", "
-				     << Bs[i - 1][2] << endl;
-				cout << Bs[i][0] << ", "
-				     << Bs[i][1] << ", "
-				     << Bs[i][2] << endl;
-				cout << Bs[i + 1][0] << ", "
-				     << Bs[i + 1][1] << ", "
-				     << Bs[i + 1][2] << endl;
-				cout << Mforce_im1[0] << ", "
-				     << Mforce_im1[1] << ", "
-				     << Mforce_im1[2] << endl;
-				cout << Mforce_i[0] << ", "
-				     << Mforce_i[1] << ", "
-				     << Mforce_i[2] << endl;
-				cout << Mforce_ip1[0] << ", "
-				     << Mforce_ip1[1] << ", "
-				     << Mforce_ip1[2] << endl;
+				cout << Bs[i - 1] << endl;
+				cout << Bs[i] << endl;
+				cout << Bs[i + 1] << endl;
+				cout << Mforce_im1 << endl;
+				cout << Mforce_i << endl;
+				cout << Mforce_ip1 << endl;
 			}
 			
 			// record curvature at node!!
@@ -1188,30 +1129,26 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		const moordyn::real vp_mag = vp.norm();
 
 		// transverse drag
-		moordyn::real Dp_factor;
 		if (i == 0)
-			Dp_factor = 0.25 * vp_mag * env->rho_w * Cdn * d *
-				F[i] * l[i];
+			Dp[i] = 0.25 * vp_mag * env->rho_w * Cdn * d *
+				(F[i] * l[i]                     ) * vp;
 		else if (i == N)
-			Dp_factor = 0.25 * vp_mag * env->rho_w * Cdn * d *
-				F[i - 1] * l[i -1];
+			Dp[i] = 0.25 * vp_mag * env->rho_w * Cdn * d *
+				(              F[i - 1] * l[i -1]) * vp;
 		else
-			Dp_factor = 0.25 * vp_mag * env->rho_w * Cdn * d *
-				(F[i] * l[i] + F[i - 1] * l[i -1]);
-		moordyn::vec2array(Dp_factor * vp, Dp[i]);
+			Dp[i] = 0.25 * vp_mag * env->rho_w * Cdn * d *
+				(F[i] * l[i] + F[i - 1] * l[i -1]) * vp;
 
 		// tangential drag
-		moordyn::real Dq_factor;
 		if (i == 0)
-			Dq_factor = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
-				F[i] * l[i];
+			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
+				(F[i] * l[i]                     ) * vq;
 		else if (i == N)
-			Dq_factor = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
-				F[i - 1] * l[i -1];
+			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
+				(              F[i - 1] * l[i -1]) * vq;
 		else
-			Dq_factor = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
-				(F[i] * l[i] + F[i - 1] * l[i -1]);
-		moordyn::vec2array(Dq_factor * vq, Dq[i]);
+			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
+				(F[i] * l[i] + F[i - 1] * l[i -1]) * vq;
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
@@ -1223,27 +1160,19 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		             Ud[i][2] - aq[2]);
 		
 		// transverse Froude-Krylov force
-		moordyn::real Ap_factor;
 		if (i == 0)
-			Ap_factor = env->rho_w*(1.+Can)*0.5*( V[i]);
+			Ap[i] = env->rho_w*(1.+Can)*0.5*( V[i]          )*ap;
 		else if (i == N)
-			Ap_factor = env->rho_w*(1.+Can)*0.5*(V[i-1] );
+			Ap[i] = env->rho_w*(1.+Can)*0.5*(        V[i-1] )*ap;
 		else
-			Ap_factor = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] );
-		Ap[i][0] = Ap_factor * ap[0];
-		Ap[i][1] = Ap_factor * ap[1];
-		Ap[i][2] = Ap_factor * ap[2];
+			Ap[i] = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] )*ap;
 		// tangential Froude-Krylov force					
-		moordyn::real Aq_factor;
 		if (i == 0)
-			Aq_factor = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i]);
+			Aq[i] = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i])*aq;
 		else if (i == N)
-			Aq_factor = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i-1] );
+			Aq[i] = 0.5 * env->rho_w*(1.+Cat)*0.5*(        V[i-1] )*aq;
 		else
-			Aq_factor = env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] );
-		Aq[i][0] = Aq_factor * aq[0];
-		Aq[i][1] = Aq_factor * aq[1];
-		Aq[i][2] = Aq_factor * aq[2];
+			Aq[i] =       env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] )*aq;
 
 		// bottom contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
 		if (r[i][2] < -env->WtrDpth)
@@ -1264,7 +1193,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			if (FrictionForce > env->StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
 			
 			if (BottomVel == 0.0) { // check for zero velocity, in which case friction force is zero
-				memset(B[i], 0.0, 2 * sizeof(double));
+				B[i][0] = 0.0;
+				B[i][1] = 0.0;
 			}
 			else { // otherwise, apply friction force in correct direction(opposing direction of motion)
 				B[i][0] = -FrictionForce*rd[i][0]/BottomVel;
@@ -1272,30 +1202,16 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			}
 		}
 		else 
-			memset(B[i], 0.0, 3 * sizeof(double));
+			B[i] = vec(0.0, 0.0, 0.0);
 
 		// total forces
 		if (i==0)
-		{
-			Fnet[i][0] = T[i][0]              + Td[i][0];
-			Fnet[i][1] = T[i][1]              + Td[i][1];
-			Fnet[i][2] = T[i][2]              + Td[i][2];
-		}
+			Fnet[i] = T[i]            + Td[i];
 		else if (i==N)
-		{
-			Fnet[i][0] =         - T[i - 1][0]            - Td[i - 1][0];
-			Fnet[i][1] =         - T[i - 1][1]            - Td[i - 1][1];
-			Fnet[i][2] =         - T[i - 1][2]            - Td[i - 1][2];
-		}
+			Fnet[i] =      - T[i - 1]         - Td[i - 1];
 		else
-		{
-			Fnet[i][0] = T[i][0] - T[i - 1][0] + Td[i][0] - Td[i - 1][0];
-			Fnet[i][1] = T[i][1] - T[i - 1][1] + Td[i][1] - Td[i - 1][1];
-			Fnet[i][2] = T[i][2] - T[i - 1][2] + Td[i][2] - Td[i - 1][2];
-		}
-		Fnet[i][0] += W[i][0] + (Dp[i][0] + Dq[i][0] + Ap[i][0] + Aq[i][0]) + B[i][0] + Bs[i][0];
-		Fnet[i][1] += W[i][1] + (Dp[i][1] + Dq[i][1] + Ap[i][1] + Aq[i][1]) + B[i][0] + Bs[i][1];
-		Fnet[i][2] += W[i][2] + (Dp[i][2] + Dq[i][2] + Ap[i][2] + Aq[i][2]) + B[i][2] + Bs[i][2];
+			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
+		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i];
 	}
 
 //	if (t > 5)
@@ -1319,19 +1235,21 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		// solve for accelerations in [M]{a}={f} using LU decomposition
 	//	double LU[9];                        // serialized matrix that will hold LU matrices combined
 	//	Crout(3, M_out, LU);                  // perform LU decomposition on mass matrix
-		double acc[3];                        // acceleration vector to solve for
+	//	double acc[3];                        // acceleration vector to solve for
 	//	solveCrout(3, LU, F_out, acc);     // solve for acceleration vector
 						
 	//	LUsolve3(M[i], acc, Fnet[i]);
 
-		Solve3(M[i], acc, (const double*)Fnet[i]);
+	//	Solve3(M[i], acc, (const double*)Fnet[i]);
+
+		// For small systems it is usually faster to compute the inverse
+		// of the matrix. See
+		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
+		vec acc = M[i].inverse() * Fnet[i];
 
 		// fill in state derivatives
+		moordyn::vec2array(acc,   &Xd[            3 * i - 3]);  //RHSiI;         dVdt = RHS * A  (accelerations)
 		moordyn::vec2array(rd[i], &Xd[3 * N - 3 + 3 * i - 3]);  //X[3*i-3 + I];  dxdt = V  (velocities)
-		for (int I=0; I<3; I++) 
-		{
-			Xd[            3 * i - 3 + I] = acc[I];    //RHSiI;         dVdt = RHS * A  (accelerations)
-		}
 	}
 };
 
@@ -1387,9 +1305,7 @@ void Line::Output(double time)
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
 				for (int i=0; i<N; i++)  {
-					double Tmag_squared = 0.; 
-					for (int J=0; J<3; J++)  Tmag_squared += T[i][J]*T[i][J]; // doing this calculation here only, for the sake of speed
-					*outfile << sqrt(Tmag_squared) << "\t ";
+					*outfile << T[i].norm() << "\t ";
 				}
 			}
 			// output internal damping force?
@@ -1428,20 +1344,6 @@ void Line::Output(double time)
 Line::~Line()
 {
 	// free memory
-	
-	free3Darray(M   , N+1, 3); 
-					 
-	// forces        
-	free2Darray(T   , N  );    
-	free2Darray(Td  , N  );    
-	free2Darray(Bs  , N+1);    
-	free2Darray(W   , N+1);    
-	free2Darray(Dp  , N+1);    
-	free2Darray(Dq  , N+1);    
-	free2Darray(Ap  , N+1);    
-	free2Darray(Aq  , N+1);    
-	free2Darray(B   , N+1);    
-	free2Darray(Fnet, N+1);    
 					
 	// wave things   
 	free(F   );       
