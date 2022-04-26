@@ -93,35 +93,35 @@ class Line
 	std::vector<vec> Fnet;            // total force on node  <<<<<<< might remove this for Rods
 		
 	// wave things
-	double *F; 		        // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	double *zeta;           // free surface elevation
-	double *PDyn;           // dynamic pressure
-	double **U;             // wave velocities	
-	double **Ud;            // wave accelerations	
+	std::vector<moordyn::real> F;     // VOF scalar for each segment (1 = fully submerged, 0 = out of water)
+	std::vector<moordyn::real> zeta;  // free surface elevation
+	std::vector<moordyn::real> PDyn;  // dynamic pressure
+	std::vector<vec> U;               // wave velocities	
+	std::vector<vec> Ud;              // wave accelerations	
 	
 	
 	// time
-	moordyn::real t;               // simulation time
-	moordyn::real t0;              // simulation time current integration was started at (used for BC function)
+	moordyn::real t;                  // simulation time
+	moordyn::real t0;                 // simulation time current integration was started at (used for BC function)
 	moordyn::real tlast;
 	
 	// end conditions
-	int endTypeA;           // type of connection at end A: 0=pinned to Connection, 1=cantilevered to Rod.
+	int endTypeA;                     // type of connection at end A: 0=pinned to Connection, 1=cantilevered to Rod.
 	int endTypeB;
-	vec endMomentA;   // moment at end A from bending, to be applied on attached Rod/Body
+	vec endMomentA;                   // moment at end A from bending, to be applied on attached Rod/Body
 	vec endMomentB;
 
 	// file stuff	
-	ofstream * outfile;     // if not a pointer, caused odeint system initialization error during compilation
+	ofstream * outfile;               // if not a pointer, caused odeint system initialization error during compilation
 	string channels;
 	
 	// data structures for precalculated nodal water kinematics if applicable
-	double **zetaTS;        // time series of wave elevations above each node
-	double **FTS;
-	double ***UTS;
-	double ***UdTS;
-	int ntWater;            // number of water kinematics time steps
-	moordyn::real dtWater;         // water kinematics time step size (s)
+	std::vector<std::vector<moordyn::real>> zetaTS; // time series of wave elevations above each node
+	std::vector<std::vector<moordyn::real>> FTS;
+	std::vector<std::vector<vec>> UTS;
+	std::vector<std::vector<vec>> UdTS;
+	int ntWater;                                    // number of water kinematics time steps
+	moordyn::real dtWater;                          // water kinematics time step size (s)
 
 //	int ts0; 				// time step index used for interpolating wave kinematics time series data (put here so it's persistent) ????
 	

@@ -879,7 +879,21 @@ void Waves::getWaveKin(double x, double y, double z, double PARAM_UNUSED t,
 	
 	return;
 }
-	
+
+// NOTE: For the time being this is just a wrapper to the original C-ish
+// function
+void Waves::getWaveKin(double x, double y, double z, double t,
+                       vec &U, vec &Ud, moordyn::real &zeta,
+					   moordyn::real &PDyn_out)
+{
+	double U_tmp[3], Ud_tmp[3], zeta_tmp, PDyn_tmp;
+	getWaveKin(x, y, z, t, U_tmp, Ud_tmp, &zeta_tmp, &PDyn_tmp);
+
+	moordyn::array2vec(U_tmp, U);
+	moordyn::array2vec(Ud_tmp, Ud);
+	zeta = (moordyn::real)zeta_tmp;
+	PDyn_out = (moordyn::real)PDyn_tmp;
+}
 
 
 // NEW - instantiator that takes discrete wave elevation fft data only (MORE RECENT)

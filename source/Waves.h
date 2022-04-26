@@ -64,6 +64,7 @@ public:
 	void allocateKinematicsArrays();
 	void setup(EnvCond *env);
 	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta, double* PDyn_out);
+	void getWaveKin(double x, double y, double z, double t, vec &U, vec &Ud, moordyn::real &zeta, moordyn::real &PDyn_out);
 	void fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h );
 	~Waves();
 };

@@ -98,11 +98,11 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	Fnet.assign(N+1, vec(0., 0., 0.));  // total force on node
 	
 	// wave things
-	F   = make1Darray(N+1);        // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
-	zeta= make1Darray(N+1);        // wave elevation above each node
-	PDyn= make1Darray(N+1);        // dynamic pressure
-	U   = make2Darray(N+1, 3);     // wave velocities
-	Ud  = make2Darray(N+1, 3);     // wave accelerations
+	F.assign(N+1, 0.0);                 // VOF scaler for each NODE (mean of two half adjacent segments) (1 = fully submerged, 0 = out of water)
+	zeta.assign(N+1, 0.0);              // wave elevation above each node
+	PDyn.assign(N+1, 0.0);              // dynamic pressure
+	U.assign(N+1, vec(0., 0., 0.));     // wave velocities
+	Ud.assign(N+1, vec(0., 0., 0.));    // wave accelerations
 	
 	
 	// ensure end moments start at zero
@@ -324,10 +324,8 @@ void Line::initializeLine(double* X)
 	
 		for (int i=0; i<=N; i++)   // in this case make sure kinematics for each node start at zeroed
 		{
-			for (int J=0; J<3; J++)		
-			{	U[ i][J] = 0.0;
-				Ud[i][J] = 0.0;
-			}					
+			U[ i] = vec(0.0, 0.0, 0.0);
+			Ud[i] = vec(0.0, 0.0, 0.0);
 			F[i] = 1.0;   // set VOF variable to 1 for now (everything is submerged) <<<<<<<<
 		}
 	}
@@ -461,10 +459,9 @@ void Line::getNodeCoordinates(double r_out[])
 void Line::setNodeWaveKin(double U_in[], double Ud_in[])
 {
 	for (int i=0; i<=N; i++)
-	{	for (int j=0; j<3; j++)
-		{	U[ i][j] = U_in[ 3*i + j];
-		 	Ud[i][j] = Ud_in[3*i + j];
-		}
+	{
+		moordyn::array2vec(&(U_in[ 3*i]), U[ i]);
+		moordyn::array2vec(&(Ud_in[3*i]), Ud[i]);
 	}
 	return;
 }
@@ -554,10 +551,10 @@ void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in,
 	dtWater = dtin;
 
 	// resize the new time series vectors
-	zetaTS = make2Darray(N+1, ntWater);
-	FTS    = make2Darray(N+1, ntWater);
-	UTS    = make3Darray(N+1, ntWater, 3);
-	UdTS   = make3Darray(N+1, ntWater, 3);
+	zetaTS.assign(N+1, std::vector<moordyn::real>(ntWater, 0.0));
+	FTS.assign(N+1, std::vector<moordyn::real>(ntWater, 0.0));
+	UTS.assign(N+1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
+	UdTS.assign(N+1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
 
 	for (int i=0; i<N+1; i++)
 	{
@@ -565,11 +562,8 @@ void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in,
 		{
 			zetaTS[i][j] = zeta_in[i][j];
 			FTS[i][j] = f_in[i][j];
-			for (int k=0; k<3; k++)
-			{
-				UTS[i][j][k] = u_in[i][j][k];
-				UdTS[i][j][k] = ud_in[i][j][k];
-			}
+			moordyn::array2vec(u_in[i][j], UTS[i][j]);
+			moordyn::array2vec(ud_in[i][j], UdTS[i][j]);
 		}
 	}
 
@@ -859,18 +853,15 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			zeta[i] = zetaTS[i][it] + frac*( zetaTS[i][it+1] - zetaTS[i][it] );			
 			F[i] = 1.0;   // FTS[i][it] + frac*(FTS[i][it+1] - FTS[i][it]);
 			
-			for (int J=0; J<3; J++)
-			{
-				U[i][J] = UTS[i][it][J] + frac*( UTS[i][it+1][J] - UTS[i][it][J] );				
-				Ud[i][J] = UdTS[i][it][J] + frac*( UdTS[i][it+1][J] - UdTS[i][it][J] );
-			}
+			U[i] = UTS[i][it] + frac*( UTS[i][it+1] - UTS[i][it] );
+			Ud[i] = UdTS[i][it] + frac*( UdTS[i][it+1] - UdTS[i][it] );
 		}	
 	}
 	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
 	{		
 		for (int i=0; i<=N; i++)
 		{
-			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], &zeta[i], &PDyn[i]); // call generic function to get water velocities
+			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], zeta[i], PDyn[i]); // call generic function to get water velocities
 			
 			F[i] = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
 		}
@@ -1115,9 +1106,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			W[i][2] = 0.5*A*( l[i]*(rho-F[i]*env->rho_w) + l[i-1]*(rho-F[i-1]*env->rho_w) )*(-env->g);
 
 		// relative flow velocity over node
-		const vec vi(U[i][0] - rd[i][0],
-		             U[i][1] - rd[i][1],
-		             U[i][2] - rd[i][2]);
+		const vec vi = U[i] - rd[i];
 		// tangential relative flow component
 		// <<<<<<< check sign since I've reversed q
 		const moordyn::real vql = vi.dot(q[i]);
@@ -1152,12 +1141,10 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
-		const moordyn::real aql = dotProd3(Ud[i], q[i]);
+		const moordyn::real aql = Ud[i].dot(q[i]);
 		const vec aq = aql * q[i];
 		// normal component of fluid acceleration
-		const vec ap(Ud[i][0] - aq[0],
-		             Ud[i][1] - aq[1],
-		             Ud[i][2] - aq[2]);
+		const vec ap = Ud[i] - aq;
 		
 		// transverse Froude-Krylov force
 		if (i == 0)
@@ -1343,22 +1330,6 @@ void Line::Output(double time)
 
 Line::~Line()
 {
-	// free memory
-					
-	// wave things   
-	free(F   );       
-	free(zeta);       
-	free(PDyn);       
-	free2Darray(U   , N+1);    
-	free2Darray(Ud  , N+1);    
-		
-	// wave time series vectors (may never have been used)
-	if (ntWater > 0)
-	{	free2Darray(zetaTS, N+1);
-		free2Darray(FTS   , N+1);
-		free3Darray(UTS   , N+1, ntWater);
-		free3Darray(UdTS  , N+1, ntWater);
-	}
 }
 
 
