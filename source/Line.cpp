@@ -819,11 +819,9 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 
 		// this is the denominator of how the stretch rate equation was formulated
 		const double ldstr_top = (r[i+1]  - r[i]).dot(rd[i+1] - rd[i]);
-		// strain rate of segment
-		ldstr[i] = ldstr_top / lstr[i];
-
-		// volume attributed to segment
-		V[i] = A * l[i];
+		ldstr[i] = ldstr_top/lstr[i]; 	// strain rate of segment
+						
+		V[i] = A * l[i];		// volume attributed to segment
 	}
 		
 	// calculate unit tangent vectors (q) for each internal node. note: I've reversed these from pointing toward 0 rather than N. Check sign of wave loads. <<<<
@@ -980,7 +978,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 						
 					// set force on node i to cancel out forces on adjacent nodes
 					Mforce_i = - Mforce_ip1;
-
+					
 					// apply these forces to the node forces
 					Bs[i  ] = Mforce_i;
 					Bs[i+1] = Mforce_ip1;
@@ -1071,7 +1069,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 					// + \sin(\alpha_i) (\uvec{p}_i \times \uvec{s}_\iminus)
 					
 					double p_p_dot_s[3];
-					scalevector( pvec, dotprod3(pvec, s[i-1]), p_p_dot_s)  // \uvec{p}_i(\uvec{p}_i \cdot \uvec{s}_\iminus)
+					scalevector( pvec, dotprod(pvec, s[i-1]), p_p_dot_s)  // \uvec{p}_i(\uvec{p}_i \cdot \uvec{s}_\iminus)
 					
 					double p_cross_s[3];
 					crossprod(pvec, s[i-1], p_cross_s)// \uvec{p}_i \times \uvec{s}_\iminus
@@ -1147,20 +1145,20 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		const vec ap = Ud[i] - aq;
 		
 		// transverse Froude-Krylov force
-		if (i == 0)
-			Ap[i] = env->rho_w*(1.+Can)*0.5*( V[i]          )*ap;
+		if (i==0)
+			Ap[i] = env->rho_w*(1.+Can)*0.5*( V[i]          ) * ap;
 		else if (i == N)
-			Ap[i] = env->rho_w*(1.+Can)*0.5*(        V[i-1] )*ap;
+			Ap[i] = env->rho_w*(1.+Can)*0.5*(V[i-1] ) * ap;
 		else
-			Ap[i] = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] )*ap;
+			Ap[i] = env->rho_w*(1.+Can)*0.5*( V[i] + V[i-1] ) * ap;
 		// tangential Froude-Krylov force					
 		if (i == 0)
-			Aq[i] = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i])*aq;
+			Aq[i] = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i]) * aq;
 		else if (i == N)
-			Aq[i] = 0.5 * env->rho_w*(1.+Cat)*0.5*(        V[i-1] )*aq;
+			Aq[i] = 0.5 * env->rho_w*(1.+Cat)*0.5*( V[i-1] ) * aq;
 		else
-			Aq[i] =       env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] )*aq;
-
+			Aq[i] =       env->rho_w*(1.+Cat)*0.5*( V[i] + V[i-1] ) * aq;
+		
 		// bottom contact (stiffness and damping, vertical-only for now) - updated for general case of potentially anchor or fairlead end in contact
 		if (r[i][2] < -env->WtrDpth)
 		{
@@ -1232,7 +1230,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		vec acc = M[i].inverse() * Fnet[i];
+		const vec acc = M[i].inverse() * Fnet[i];
 
 		// fill in state derivatives
 		moordyn::vec2array(acc,   &Xd[            3 * i - 3]);  //RHSiI;         dVdt = RHS * A  (accelerations)
