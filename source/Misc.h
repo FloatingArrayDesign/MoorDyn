@@ -68,11 +68,19 @@ typedef Eigen::Vector2f vec2;
 typedef Eigen::Vector3f vec3;
 typedef Eigen::Vector4f vec4;
 typedef vec3 vec;
+typedef Eigen::Matrix2f mat2;
+typedef Eigen::Matrix3f mat3;
+typedef Eigen::Matrix4f mat4;
+typedef mat3 mat;
 #else
 typedef Eigen::Vector2d vec2;
 typedef Eigen::Vector3d vec3;
 typedef Eigen::Vector4d vec4;
 typedef vec3 vec;
+typedef Eigen::Matrix2d mat2;
+typedef Eigen::Matrix3d mat3;
+typedef Eigen::Matrix4d mat4;
+typedef mat3 mat;
 #endif
 typedef Eigen::Vector2i ivec2;
 typedef Eigen::Vector3i ivec3;
@@ -111,6 +119,43 @@ inline void array2vec(const T *a, vec &v)
 	v[1] = (moordyn::real)a[1];
 	v[2] = (moordyn::real)a[2];
 }
+
+/** @brief Convert a matrix to a C-ish array
+ * @param v The input matrix
+ * @param a The output array
+ */
+template <typename T>
+inline void mat2array(const mat &v, T a[3][3])
+{
+	a[0][0] = (T)v(0, 0);
+	a[0][1] = (T)v(0, 1);
+	a[0][2] = (T)v(0, 2);
+	a[1][0] = (T)v(1, 0);
+	a[1][1] = (T)v(1, 1);
+	a[1][2] = (T)v(1, 2);
+	a[2][0] = (T)v(2, 0);
+	a[2][1] = (T)v(2, 1);
+	a[2][2] = (T)v(2, 2);
+}
+
+/** @brief Convert a C-ish array to a matrix
+ * @param a The input array
+ * @param v The output matrix
+ */
+template <typename T>
+inline void array2mat(const T a[3][3], mat &v)
+{
+	v(0, 0) = (moordyn::real)a[0][0];
+	v(0, 1) = (moordyn::real)a[0][1];
+	v(0, 2) = (moordyn::real)a[0][2];
+	v(1, 0) = (moordyn::real)a[1][0];
+	v(1, 1) = (moordyn::real)a[1][1];
+	v(1, 2) = (moordyn::real)a[1][2];
+	v(2, 0) = (moordyn::real)a[2][0];
+	v(2, 1) = (moordyn::real)a[2][1];
+	v(2, 2) = (moordyn::real)a[2][2];
+}
+
 
 /** \addtogroup moordyn_errors
  *  @{
