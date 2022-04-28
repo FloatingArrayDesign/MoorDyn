@@ -27,7 +27,7 @@ extern "C"
  */
 
 /// A mooring connection instance
-typedef void* MoorDynConnection;
+typedef struct __MoorDynConnection* MoorDynConnection;
 
 /** @brief Get the connection identifier
  * @param conn The Moordyn connection

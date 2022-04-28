@@ -2134,7 +2134,7 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 		cerr << "Error (" << err << ") during the Mooring System creation:"
 		      << endl << err_msg << endl;
 	}
-	return (void*)instance;
+	return (MoorDyn)instance;
 
 }
 
