@@ -1,6 +1,15 @@
 # makefile for MoorDyn compiled as libmoordyn2.dll (so it can be linked with
 # -lmoordyn2)
 #
+# Several options can be set:
+#
+#  - USEGL: Enables the OpenGL visualization
+#  - COPTS: Compilation options. For good performance and compatibility use:
+#           COPTS='-msse2 -ffast-math -DMOORDYN_SINGLEPRECISSION'
+#           However, for local-only installations a more aggresive instructions
+#           set can be used:
+#           COPTS='-march=native -ffast-math -DMOORDYN_SINGLEPRECISSION'
+#
 # The following targets are provided:
 #
 # all: Builds the library libmoordyn2.dll
@@ -35,10 +44,10 @@ MoorDyn2.o: ../../source/MoorDyn2.cpp ../../source/MoorDyn2.h ../../source/MoorD
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn2.cpp
 
 kiss_fft.o: ../../source/kiss_fft.c ../../source/kiss_fft.h
-	$(CXX) $(CFLAGS) ../../source/kiss_fft.c
+	$(CC) $(CFLAGS) ../../source/kiss_fft.c
 
 kiss_fftr.o: ../../source/kiss_fftr.c ../../source/kiss_fftr.h
-	$(CXX) $(CFLAGS) ../../source/kiss_fftr.c
+	$(CC) $(CFLAGS) ../../source/kiss_fftr.c
 
 Line.o: ../../source/Line.cpp ../../source/Line.h ../../source/QSlines.h
 	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
