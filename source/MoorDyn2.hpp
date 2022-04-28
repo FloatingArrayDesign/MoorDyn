@@ -121,6 +121,11 @@ public:
 		return n;
 	}
 
+	/** @brief Get the wave kinematics instance
+	 * @return The wave knematics instance
+	 */
+	inline moordyn::Waves* GetWaves() const { return waves; }
+
 	/** @brief Initializes the external Wave kinetics
 	 *
 	 * This is only used if env.WaveKin > 0

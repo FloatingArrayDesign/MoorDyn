@@ -2202,6 +2202,13 @@ int DECLDIR MoorDyn_Close(MoorDyn system)
 	return MOORDYN_SUCCESS;
 }
 
+MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system)
+{
+	if (!system)
+		return NULL;
+	return (MoorDynWaves)(((moordyn::MoorDyn*)system)->GetWaves());
+}
+
 int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int *n)
 {
 	CHECK_SYSTEM(system);

@@ -19,6 +19,7 @@
 
 #include "MoorDynAPI.h"
 #include "Connection.h"
+#include "Waves.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -149,6 +150,15 @@ int DECLDIR MoorDyn_Step(MoorDyn system, const double *x, const double *xd,
  * otherwise (see @ref moordyn_errors)
  */
 int DECLDIR MoorDyn_Close(MoorDyn system);
+
+/** @brief Get the wave kinematics instance
+ *
+ * The wave kinematics instance is only useful if WaveKin option is set in the
+ * input file.
+ * @param system The Moordyn system
+ * @return The waves instance, NULL if errors happened
+ */
+MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system);
 
 /** @brief Initializes the external Wave kinetics
  *
