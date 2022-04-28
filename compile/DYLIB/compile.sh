@@ -1,4 +1,4 @@
 #!/bin/sh
 
-CXX=clang++ make clean
-CXX=clang++ make
+CXX=clang++ CC=clang make clean
+CXX=clang++ CC=clang make
