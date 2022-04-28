@@ -122,13 +122,15 @@ public:
 	}
 
 	/** @brief Get the wave kinematics instance
+	 *
+	 * The wave kinematics instance is used just if env.WaveKin = 2
 	 * @return The wave knematics instance
 	 */
 	inline moordyn::Waves* GetWaves() const { return waves; }
 
 	/** @brief Initializes the external Wave kinetics
 	 *
-	 * This is only used if env.WaveKin > 0
+	 * This is only used if env.WaveKin = 1
 	 * @return The number of points where the wave kinematics shall be provided
 	 */
 	inline unsigned int ExternalWaveKinInit()
@@ -156,10 +158,14 @@ public:
 	}
 
 	/** @brief Get the points where the waves kinematics shall be provided
+	 *
+	 * The kinematics are provided in those points just if env.WaveKin is 1.
+	 * Otherwise moordyn::Waves is used
 	 * @param r The output coordinates
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise  (see @ref moordyn_errors)
 	 * @see MoorDyn::ExternalWaveKinInit()
+	 * @see MoorDyn::GetWaves()
 	 */
 	inline moordyn::error_id GetWaveKinCoordinates(double *r) const
 	{
@@ -174,7 +180,7 @@ public:
 
 	/** @brief Set the kinematics of the waves
 	*
-	* Use this function if WaveKin option is set in the input file
+	* Use this function if env.WaveKin = 1
 	* @param U The velocities at the points (3 components per point)
 	* @param Ud The accelerations at the points (3 components per point)
 	* @return MOORDYN_SUCCESS If the data is correctly set, an error code

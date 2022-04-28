@@ -153,8 +153,8 @@ int DECLDIR MoorDyn_Close(MoorDyn system);
 
 /** @brief Get the wave kinematics instance
  *
- * The wave kinematics instance is only useful if WaveKin option is set in the
- * input file.
+ * The wave kinematics instance is only useful if WaveKin option is set to 2 in
+ * the input file.
  * @param system The Moordyn system
  * @return The waves instance, NULL if errors happened
  */
@@ -162,8 +162,8 @@ MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system);
 
 /** @brief Initializes the external Wave kinetics
  *
- * This is useless unless WaveKin option is set in the input file. If that is
- * the case, remember calling this function after MoorDyn_Init()
+ * This is useless unless WaveKin option is set to 1 in the input file. If that
+ * is the case, remember calling this function after MoorDyn_Init()
  * @param system The Moordyn system
  * @param n The number of points where the wave kinematics shall be provided
  * @return 0 If the mooring system is correctly destroyed, an error code
@@ -172,6 +172,9 @@ MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system);
 int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int *n);
 
 /** @brief Get the points where the waves kinematics shall be provided
+ *
+ * The kinematics on those points shall be provided just if WaveKin is set to 1
+ * in the input file
  * @param system The Moordyn system
  * @param r The output coordinates (3 components per point)
  * @return 0 If the data is correctly set, an error code otherwise
@@ -182,7 +185,7 @@ int DECLDIR MoorDyn_GetWaveKinCoordinates(MoorDyn system, double *r);
 
 /** @brief Set the kinematics of the waves
  *
- * Use this function if WaveKin option is set in the input file
+ * Use this function if WaveKin option is set to 1 in the input file
  * @param system The Moordyn system
  * @param U The velocities at the points (3 components per point)
  * @param Ud The accelerations at the points (3 components per point)
