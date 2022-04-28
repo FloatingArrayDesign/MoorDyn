@@ -14,14 +14,14 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WAVES_H
-#define WAVES_H
+#pragma once
 
 #include "Misc.h"
 
 using namespace std;
 
-
+namespace moordyn
+{
 
 class Waves
 {
@@ -78,6 +78,4 @@ void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* c
 
 double WaveNumber( double Omega, double g, double h );
 
-#endif
-
-
+}  // ::moordyn

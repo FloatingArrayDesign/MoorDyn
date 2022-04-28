@@ -1793,7 +1793,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	LOGDBG << "----- MoorDyn Model Summary (to be written) -----" << endl;
 
 	// Setup the waves and populate them
-	waves = new Waves();
+	waves = new moordyn::Waves();
 	waves->setup(&env);
 
 	GroundBody->setEnv( &env, waves);

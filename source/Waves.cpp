@@ -18,6 +18,8 @@
 
 using namespace std;
 
+namespace moordyn
+{
 
 // -------------------------------------------------------
 
@@ -1263,5 +1265,5 @@ double WaveNumber( double Omega, double g, double h )
 	}
 }
 
-
+}  // ::moordyn
 

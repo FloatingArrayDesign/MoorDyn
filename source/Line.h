@@ -25,14 +25,17 @@ using namespace std;
 //   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] --- ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
 
 //class Connection;
-class Waves;
+namespace moordyn {
+	// NOTE: The namespace will be extended to the class below in the future
+	class Waves;
+}
 
 class Line 
 {
 	
 	// ENVIRONMENTAL STUFF	
 	EnvCond *env;  // pointer to global struct that holds environmental settings
-	Waves *waves;  // pointer to global Waves object
+	moordyn::Waves *waves;  // pointer to global Waves object
 	
 		
 	// LINE STUFF
@@ -151,7 +154,7 @@ public:
 	
 	void initializeLine(double* X );
 
-	void setEnv(EnvCond *env_in, Waves* waves_in);
+	void setEnv(EnvCond *env_in, moordyn::Waves* waves_in);
 
 	double getNodeTen(int i);
 	

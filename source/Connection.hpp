@@ -22,10 +22,11 @@
 using namespace std;
 
 class Line;
-class Waves;
 
 namespace moordyn
 {
+
+class Waves;
 
 /** @class Connection Connection.hpp
  * @brief A connection for a line endpoint
@@ -57,7 +58,7 @@ private:
 	/// Global struct that holds environmental settings
 	EnvCond *env;
 	/// global Waves object
-	Waves *waves;
+	moordyn::Waves *waves;
 	
 	// unique to Connection:
 	/// Lines attached to this connection node
@@ -253,7 +254,7 @@ public:
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond *env_in, Waves *waves_in);
+	void setEnv(EnvCond *env_in, moordyn::Waves *waves_in);
 
 	/** @brief Multiply the drag by a factor
 	 * @param scaler Drag factor

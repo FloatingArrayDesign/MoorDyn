@@ -23,7 +23,10 @@
 using namespace std;
 
 class Rod;
-class Waves;
+namespace moordyn {
+	// NOTE: The namespace will be extended to the class below in the future
+	class Waves;
+}
 
 class Body
 {
@@ -31,7 +34,7 @@ class Body
 	
 	// ENVIRONMENTAL STUFF	
 	EnvCond *env;  // pointer to global struct that holds environmental settings
-	Waves *waves;  // pointer to global Waves object
+	moordyn::Waves *waves;  // pointer to global Waves object
 	
 	
 	// unique to Body:
@@ -127,7 +130,7 @@ public:
 	
 	void initializeBody( double* X );
 
-	void setEnv(EnvCond *env_in, Waves *waves_in);
+	void setEnv(EnvCond *env_in, moordyn::Waves *waves_in);
 
 	void setDependentStates();
 	

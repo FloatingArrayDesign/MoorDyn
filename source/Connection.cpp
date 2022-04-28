@@ -294,7 +294,7 @@ double Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 
-void Connection::setEnv(EnvCond *env_in, Waves *waves_in)
+void Connection::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 {
 	env = env_in;      // set pointer to environment settings object
 	waves = waves_in;  // set pointer to Waves  object
