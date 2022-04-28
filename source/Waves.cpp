@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Waves.h"
+#include "Waves.hpp"
 
 using namespace std;
 

@@ -16,7 +16,7 @@
  
 #include "Rod.h"
 #include "Line.h"
-#include "Waves.h"
+#include "Waves.hpp"
 
 using namespace std;
 

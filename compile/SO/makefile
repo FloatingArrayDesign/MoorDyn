@@ -57,7 +57,7 @@ Body.o: ../../source/Body.cpp ../../source/Body.h
 Rod.o: ../../source/Rod.cpp ../../source/Rod.h
 	$(CXX) $(CPPFLAGS) ../../source/Rod.cpp
 
-Waves.o: ../../source/Waves.cpp ../../source/Waves.h
+Waves.o: ../../source/Waves.cpp ../../source/Waves.hpp
 	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
 
 Log.o: ../../source/Log.cpp ../../source/Log.hpp

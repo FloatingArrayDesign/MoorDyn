@@ -17,7 +17,6 @@
  // This is version 2.a5, 2021-03-16
  
 #include "Misc.h"
-#include "Waves.h"
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
 #include "Line.h"

@@ -17,7 +17,7 @@
 
 #include "Body.h"
 #include "Rod.h"
-#include "Waves.h"
+#include "Waves.hpp"
 
 // connection member functions
 

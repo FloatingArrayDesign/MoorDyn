@@ -20,7 +20,7 @@
 #include "Log.hpp"
 #include "Misc.h"
 
-#include "Waves.h"
+#include "Waves.hpp"
 #include "MoorDyn.h"
 #include "Line.h"
 #include "Connection.hpp" 

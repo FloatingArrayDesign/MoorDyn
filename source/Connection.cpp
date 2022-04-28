@@ -17,7 +17,7 @@
 #include "Connection.hpp"
 #include "Connection.h"
 #include "Line.h"
-#include "Waves.h"
+#include "Waves.hpp"
 
 namespace moordyn
 {

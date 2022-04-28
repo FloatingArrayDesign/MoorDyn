@@ -15,7 +15,7 @@
  */
  
 #include "Line.h"
-#include "Waves.h"
+#include "Waves.hpp"
 #include "QSlines.h" // the c++ version of quasi-static model Catenary
 
 using namespace std;
