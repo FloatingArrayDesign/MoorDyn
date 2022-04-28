@@ -15,6 +15,7 @@
  */
 
 #include "Waves.hpp"
+#include "Waves.h"
 
 using namespace std;
 
@@ -1201,7 +1202,17 @@ void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar*
 	return;
 }
 
-// calculate wave number from frequency, g, and depth (credit: FAST source)
+}  // ::moordyn
+
+// =============================================================================
+//
+//                     ||                     ||
+//                     ||        C API        ||
+//                    \  /                   \  /
+//                     \/                     \/
+//
+// =============================================================================
+
 double WaveNumber( double Omega, double g, double h )
 {
 	// 
@@ -1264,6 +1275,3 @@ double WaveNumber( double Omega, double g, double h )
 
 	}
 }
-
-}  // ::moordyn
-

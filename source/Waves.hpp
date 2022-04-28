@@ -76,6 +76,4 @@ int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray
 
 void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out, doubleC *inputs, double *outputs);
 
-double WaveNumber( double Omega, double g, double h );
-
 }  // ::moordyn
