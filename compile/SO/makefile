@@ -52,10 +52,10 @@ MoorDyn2.o: ../../source/MoorDyn2.cpp ../../source/MoorDyn2.h ../../source/MoorD
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn2.cpp
 
 kiss_fft.o: ../../source/kiss_fft.c ../../source/kiss_fft.h
-	$(CXX) $(CFLAGS) ../../source/kiss_fft.c
+	$(CC) $(CFLAGS) ../../source/kiss_fft.c
 
 kiss_fftr.o: ../../source/kiss_fftr.c ../../source/kiss_fftr.h
-	$(CXX) $(CFLAGS) ../../source/kiss_fftr.c
+	$(CC) $(CFLAGS) ../../source/kiss_fftr.c
 
 Line.o: ../../source/Line.cpp ../../source/Line.h ../../source/QSlines.h
 	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
