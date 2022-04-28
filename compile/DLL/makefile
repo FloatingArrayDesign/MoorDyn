@@ -29,8 +29,11 @@ CFLAGS += -DUSEGL
 LFLAGS += -lopengl32 -lglu32
 endif
 
+CFLAGS += $(COPTS)
+LFLAGS += $(LOPTS)
+
 CPPFLAGS = $(CFLAGS) -std=c++14
-EXEFLAGS = -O3 -g -Wall -Wextra -std=c++14
+EXEFLAGS = -O3 -g -Wall -Wextra -std=c++14 $(EXEOPTS)
 
 all: libmoordyn2.dll
 
