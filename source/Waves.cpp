@@ -1160,6 +1160,20 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 	return;
 }
 
+Waves::Waves()
+	: px(NULL)
+	, py(NULL)
+	, pz(NULL)
+	, zeta(NULL)
+	, PDyn(NULL)
+	, ux(NULL)
+	, uy(NULL)
+	, uz(NULL)
+	, ax(NULL)
+	, ay(NULL)
+	, az(NULL)
+{
+}
 
 // function to clear any remaining data allocations in Waves
 Waves::~Waves()
@@ -1169,14 +1183,14 @@ Waves::~Waves()
 	free(py);
 	free(pz);
 	
-	free(zeta);
-	free(PDyn);
-	free(ux  );
-	free(uy  );
-	free(uz  );
-	free(ax  );
-	free(ay  );
-	free(az  );
+	if(zeta) free3Darray(zeta, nx, ny);
+	if(PDyn) free4Darray(PDyn, nx, ny, nz);
+	if(ux) free4Darray(ux, nx, ny, nz);
+	if(uy) free4Darray(uy, nx, ny, nz);
+	if(uz) free4Darray(uz, nx, ny, nz);
+	if(ax) free4Darray(ax, nx, ny, nz);
+	if(ay) free4Darray(ay, nx, ny, nz);
+	if(az) free4Darray(az, nx, ny, nz);
 }
 
 

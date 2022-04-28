@@ -135,6 +135,8 @@ public:
 	 */
 	void fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h );
 
+	/// Constructor
+	Waves();
 	/// Destructor
 	~Waves();
 };
