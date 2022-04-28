@@ -77,13 +77,15 @@ int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray
 
 
 // function to set up the wave/current kinematics grid from file water_grid.txt
-void Waves::makeGrid()
+void Waves::makeGrid(const char* filepath)
 {
+	string WaveFilename = "Mooring/water_grid.txt";  // should set as overideable default later
+	if (filepath && (strlen(filepath) > 0))
+		WaveFilename = filepath;
 
 	// --------------------- read grid data from file ------------------------
 	vector<string> lines2;
 	string line2;
-	string WaveFilename = "Mooring/water_grid.txt";  // should set as overideable default later
 	
 	ifstream myfile2 (WaveFilename);     // open an input stream to the wave elevation time series file
 	if (myfile2.is_open())
@@ -213,15 +215,15 @@ void Waves::setup(EnvCond *env)
 		else                          cout << "ERROR in WaveKin input settings (must be 0-6)" << endl;
 	}
 	// grid approaches
-	else if ((env->WaveKin==2) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
-	else if ((env->WaveKin==2) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
-	else if ((env->WaveKin==3) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
-	else if ((env->WaveKin==3) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
+	else if ((env->WaveKin==2) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
+	else if ((env->WaveKin==2) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
+	else if ((env->WaveKin==3) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
+	else if ((env->WaveKin==3) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
 	// node approaches
-	else if ((env->WaveKin==4) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
-	else if ((env->WaveKin==4) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
-	else if ((env->WaveKin==5) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
-	else if ((env->WaveKin==5) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
+	else if ((env->WaveKin==4) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
+	else if ((env->WaveKin==4) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
+	else if ((env->WaveKin==5) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
+	else if ((env->WaveKin==5) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
 
 	else cout << "ERROR: Waves and currents settings are incompatible!" << endl;
 	

@@ -23,27 +23,52 @@ using namespace std;
 namespace moordyn
 {
 
+/** @class Waves Waves.hpp
+ * @brief Wave kinematics
+ *
+ * The wave kinematics can be used to set the underwater velocity field, which
+ * is obviously affecting the dynamics. To this end both the velocity and
+ * acceleration fields are provided in 4-D, i.e. 3D grid + time
+ */
 class Waves
 {
-	int nx;           // number of grid points in x direction
-	int ny;           //
-	int nz;           //
-	int nt;           // number of time steps used in wave kinematics time series
-	double dtWave;      // time step for wave kinematics time series
+	/// number of grid points in x direction
+	int nx;           
+	/// number of grid points in y direction
+	int ny;
+	/// number of grid points in z direction
+	int nz;
+	/// number of time steps used in wave kinematics time series
+	int nt;
+	/// time step for wave kinematics time series
+	double dtWave;
 
-	double *px;      // grid coordinate arrays
+	/// grid x coordinate arrays
+	double *px;
+	/// grid y coordinate arrays
 	double *py;
+	/// grid z coordinate arrays
 	double *pz;
-	double  ***zeta;   // wave elevation [x,y,t]
-	double ****PDyn;   // dynamic pressure [x,y,z,t]
-	double ****ux;   // wave velocity [x,y,z,t]
-	double ****uy;   //
-	double ****uz;   //
-	double ****ax;   // wave acceleration
-	double ****ay;   //
-	double ****az;   //
+	/// wave elevation [x,y,t]
+	double  ***zeta;
+	/// dynamic pressure [x,y,z,t]
+	double ****PDyn;
+	/// wave velocity x component [x,y,z,t]
+	double ****ux;
+	/// wave velocity y component [x,y,z,t]
+	double ****uy;
+	/// wave velocity z component [x,y,z,t]
+	double ****uz;
+	/// wave acceleration x component [x,y,z,t]
+	double ****ax;
+	/// wave acceleration y component [x,y,z,t]
+	double ****ay;
+	/// wave acceleration z component [x,y,z,t]
+	double ****az;
 	
+	/// gravity acceleration
 	double g;
+	/// water density
 	double rho_w;
 	
 	// ------------ from Line object... -----------
@@ -59,12 +84,58 @@ class Waves
 	
 	
 public:
-	
-	void makeGrid();
+	/** @brief Setup the grid
+	 *
+	 * The grid is defined in a tabulated file (separator=' '). That file has 3
+	 * head lines, which are ignored, and then 3 lines defining the grid points
+	 * in x, y, z.
+	 *
+	 * Each one can be defined in 3 ways:
+	 *   - Defining just a point in 0
+	 *   - Defining the list of coordinates
+	 *   - Defining the boundaries and the number of equispaced points
+	 *
+	 * @param filepath The definition file path. If NULL or "" isprovided, then
+	 * "Mooring/water_grid.txt" is considered
+	 */
+	void makeGrid(const char* filepath=NULL);
+
+	/** @brief Allocate the needed memory for the kinematics storage
+	 * @param filepath The definition file path. If NULL or "" isprovided, then
+	 * "Mooring/water_grid.txt" is considered
+	 */
 	void allocateKinematicsArrays();
+
+	/** @brief Setup the wave kinematics
+	 *
+	 * Always call this function after the construtor
+	 * @param env The enviromental options
+	 */
 	void setup(EnvCond *env);
+
+	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
+	 * at a specific positon and time
+	 * @param x The point x coordinate
+	 * @param y The point y coordinate
+	 * @param z The point z coordinate
+	 * @param U The output velocity
+	 * @param Ud The output acceleration
+	 * @param zeta The output wave height
+	 * @param PDyn_out The output dynamic pressure
+	 */
 	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta, double* PDyn_out);
+
+	/** @brief instantiator that takes discrete wave elevation fft data only
+	 * (MORE RECENT)
+	 * @param zetaC0 Amplitude of each frequency component
+	 * @param nw Number of wave components
+	 * @param dw The difference in frequency between consequtive modes
+	 * @param g Gravity accelerations
+	 * @param h Water depth
+	 */
 	void fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h );
+
+	/// Destructor
 	~Waves();
 };
 
@@ -72,6 +143,17 @@ public:
 
 // other relevant functions being thrown into this file for now (should move to Misc?) <<<<
 
+/** @brief Compute the coordinates from a grid definition entry line
+ * @param coordtype 0 for a single point in zero, 1 for a list of coords, 2
+ * for equispaced points between the provided boundaries
+ * @param entries Nothing if @p coordtype is 0; the list of coordinates if
+ * @p coordtype is 1 and minimum limit; the maximum limit and the number of
+ * points if @p coordtype is 2
+ * @param coordarray The output coordinates array
+ * @return The number of points in coordarray
+ * @warning Memory will be allocated in coordarray. The user is responsible of
+ * deallocating it afterwards
+ */
 int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray);
 
 void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out, doubleC *inputs, double *outputs);
