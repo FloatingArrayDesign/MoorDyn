@@ -1229,6 +1229,24 @@ void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar*
 //
 // =============================================================================
 
+/// Check that the provided waves instance is not Null
+#define CHECK_WAVES(w)                                                          \
+	if (!w)                                                                     \
+	{                                                                           \
+		cerr << "Null waves instance received in " << __FUNC_NAME__             \
+		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
+		return MOORDYN_INVALID_VALUE;                                           \
+	}
+
+int MoorDyn_GetWavesKin(MoorDynWaves waves, double x, double y, double z,
+                        double t, double U[3], double Ud[3], double* zeta,
+                        double* PDyn)
+{
+	CHECK_WAVES(waves);
+	((moordyn::Waves*)waves)->getWaveKin(x, y, z, t, U, Ud, zeta, PDyn);
+	return MOORDYN_SUCCESS;
+}
+
 double WaveNumber( double Omega, double g, double h )
 {
 	// 

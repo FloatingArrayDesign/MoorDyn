@@ -29,6 +29,8 @@ namespace moordyn
  * The wave kinematics can be used to set the underwater velocity field, which
  * is obviously affecting the dynamics. To this end both the velocity and
  * acceleration fields are provided in 4-D, i.e. 3D grid + time
+ *
+ * This system is used just if WaveKin is set to 2
  */
 class Waves
 {

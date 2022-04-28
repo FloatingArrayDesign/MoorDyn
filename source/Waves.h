@@ -29,6 +29,23 @@ extern "C"
 /// A mooring connection instance
 typedef struct __MoorDynWaves* MoorDynWaves;
 
+/** @brief Get the velocity, acceleration, wave height and dynamic pressure
+ * at a specific positon and time
+ * @param waves The Waves instance
+ * @param x The point x coordinate
+ * @param y The point y coordinate
+ * @param z The point z coordinate
+ * @param U The output velocity
+ * @param Ud The output acceleration
+ * @param zeta The output wave height
+ * @param PDyn_out The output dynamic pressure
+ * @return 0 If the data is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int MoorDyn_GetWavesKin(MoorDynWaves waves, double x, double y, double z,
+                        double t, double U[3], double Ud[3], double* zeta,
+                        double* PDyn);
+
 /** @brief Compute the wave number
  * @param Omega The wave angular frequency
  * @param g The gravity acceleration
