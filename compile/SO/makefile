@@ -76,12 +76,16 @@ test_minimal: ../../test/minimal.cpp libmoordyn.so ../../source/MoorDyn.h
 test_bodies_and_rods: ../../test/bodies_and_rods.cpp libmoordyn.so ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_bodies_and_rods ../../test/bodies_and_rods.cpp
 
+test_wavekin: ../../test/wavekin.cpp libmoordyn.so ../../source/MoorDyn.h
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_wavekin ../../test/wavekin.cpp
+
 test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
 
-test: test_minimal test_bodies_and_rods test_quasi_static_chain
+test: test_minimal test_bodies_and_rods test_wavekin test_quasi_static_chain
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_bodies_and_rods
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_wavekin
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_quasi_static_chain
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
