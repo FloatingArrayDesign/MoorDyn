@@ -168,7 +168,7 @@ int DECLDIR externalWaveKinInit()
 		return 0;
 
 	unsigned int n;
-	int err = MoorDyn_InitExtWaves(md_singleton, &n);
+	int err = MoorDyn_ExternalWaveKinInit(md_singleton, &n);
 	if (err)
 		return 0;
 
@@ -180,7 +180,7 @@ void DECLDIR getWaveKinCoordinates(double r_out[])
 {
 	if (!md_singleton)
 		return;
-	MoorDyn_GetWavesCoords(md_singleton, r_out);
+	MoorDyn_GetWaveKinCoordinates(md_singleton, r_out);
 }
 
 // receives arrays containing U and Ud for each point at which wave kinematics will be applied (and the time they are calculated at)
@@ -188,7 +188,7 @@ void DECLDIR setWaveKin(const double U_in[], const double Ud_in[], double t_in)
 {
 	if (!md_singleton)
 		return;
-	MoorDyn_SetWaves(md_singleton, U_in, Ud_in, t_in);
+	MoorDyn_SetWaveKin(md_singleton, U_in, Ud_in, t_in);
 }
 
 
@@ -213,14 +213,16 @@ int DECLDIR GetConnectPos(int l, double pos[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	return MoorDyn_GetConnectPos(md_singleton, (unsigned int)l, pos);
+	auto conn = MoorDyn_GetConnection(md_singleton, (unsigned int)l);
+	return MoorDyn_GetConnectPos(conn, pos);
 }
 
 int DECLDIR GetConnectForce(int l, double force[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	return MoorDyn_GetConnectForce(md_singleton, (unsigned int)l, force);
+	auto conn = MoorDyn_GetConnection(md_singleton, (unsigned int)l);
+    return MoorDyn_GetConnectForce(conn, force);
 }
 
 int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])

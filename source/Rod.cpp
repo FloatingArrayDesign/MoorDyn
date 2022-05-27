@@ -16,7 +16,7 @@
  
 #include "Rod.h"
 #include "Line.h"
-#include "Waves.h"
+#include "Waves.hpp"
 
 using namespace std;
 
@@ -254,7 +254,7 @@ void Rod::removeLineFromRodEndB(int lineID, int *topOfLine, double rEnd[], doubl
 	
 
 
-void Rod::setEnv(EnvCond *env_in, Waves *waves_in)
+void Rod::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 {
 	env = env_in;      // set pointer to environment settings object
 	waves = waves_in;  // set pointer to Waves  object

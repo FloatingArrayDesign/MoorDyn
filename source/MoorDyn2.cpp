@@ -17,11 +17,9 @@
  // This is version 2.a5, 2021-03-16
  
 #include "Misc.h"
-#include "Waves.h"
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
 #include "Line.h"
-#include "Connection.h" 
 #include "Rod.h" 
 #include "Body.h"
 
@@ -45,8 +43,8 @@ const char *UnitList[] = {"(s)     ", "(m)     ", "(m)     ", "(m)     ",
                           "(N)     ", "(N)     "};
 
 
-moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
-	: Log(verbosity)
+moordyn::MoorDyn::MoorDyn(const char *infilename)
+	: LogUser(NULL)
 	, _filepath("Mooring/lines.txt")
 	, _basename("lines")
 	, _basepath("Mooring/")
@@ -73,6 +71,8 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	, U_2(NULL)
 	, Ud_2(NULL)
 {
+	SetLogger(new Log());
+
 	if (infilename && (strlen(infilename) > 0))
 	{
 		_filepath = infilename;
@@ -82,16 +82,16 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 		_basepath = _filepath.substr(0, lastSlash + 1);
 	}
 
-	Cout(MOORDYN_MSG_LEVEL)
+	LOGMSG
 		<< "\n Running MoorDyn (v2.a10, 2022-01-01)" << endl
 		<< "   NOTE: This is an alpha version of MoorDyn v2, intended for testing and debugging." << endl
 		<< "         MoorDyn v2 has significant ongoing input file changes from v1." << endl
 		<< "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl
 		<< "   This program is released under the GNU General Public License v3." << endl;
 
-	Cout(MOORDYN_MSG_LEVEL) << "The filename is " << _filepath << endl;
-	Cout(MOORDYN_DBG_LEVEL) << "The basename is " << _basename << endl;
-	Cout(MOORDYN_DBG_LEVEL) << "The basepath is " << _basepath << endl;
+	LOGMSG << "The filename is " << _filepath << endl;
+	LOGDBG << "The basename is " << _basename << endl;
+	LOGDBG << "The basepath is " << _basepath << endl;
 
 	env.g = 9.8;
 	env.WtrDpth = 0.;
@@ -110,17 +110,17 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
 
-	Cout(MOORDYN_DBG_LEVEL) << "MoorDyn is expecting " << NCoupedDOF()
+	LOGDBG << "MoorDyn is expecting " << NCoupedDOF()
 	                        << " coupled degrees of freedom" << endl;
 
 	if (!nX)
 	{
-		Cout(MOORDYN_WRN_LEVEL) << "WARNING: MoorDyn has no state variables."
+		LOGWRN << "WARNING: MoorDyn has no state variables."
 		                        << " (Is there a mooring sytem?)" << endl;
 	}
 
 	nXtra = nX + 6 * 2 * LineList.size();
-	Cout(MOORDYN_DBG_LEVEL) << "Creating state vectors of size "
+	LOGDBG << "Creating state vectors of size "
 	                        << nXtra << endl;
 	states = (double*) malloc(nXtra * sizeof(double));
 	xt = (double*) malloc(nXtra * sizeof(double));
@@ -169,13 +169,15 @@ moordyn::MoorDyn::~MoorDyn()
 	free(xt);
 	free(f0);
 	free(f1);
+
+	delete _log;
 }
 
 moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 {
 	if (NCoupedDOF() && !x)
 	{
-		Cout(MOORDYN_ERR_LEVEL) << "ERROR: "
+		LOGERR << "ERROR: "
 			<< "MoorDyn::Init received a Null position vector, "
 			<< "but " << NCoupedDOF() << "components are required" << endl;
 	}
@@ -192,7 +194,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 	// ------------------ do static bodies and lines ---------------------------
 
-	Cout(MOORDYN_MSG_LEVEL) << "Creating mooring system..." << endl;
+	LOGMSG << "Creating mooring system..." << endl;
 
 	// call ground body to update all the fixed things...
 	GroundBody->initializeUnfreeBody(NULL, NULL, 0.0);
@@ -202,7 +204,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 	for (auto l : CpldBodyIs)
 	{
-		Cout(MOORDYN_MSG_LEVEL) << "Initializing coupled Body " << l
+		LOGMSG << "Initializing coupled Body " << l
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
 		// this calls initiateStep and updateFairlead, then initializes
@@ -213,7 +215,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 	for (auto l : CpldRodIs)
 	{
-		Cout(MOORDYN_MSG_LEVEL) << "Initializing coupled Rod " << l
+		LOGMSG << "Initializing coupled Rod " << l
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
 		RodList[l]->initiateStep(x + ix, xd + ix, 0.0);
@@ -228,7 +230,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 	for (auto l : CpldConIs)
 	{
-		Cout(MOORDYN_MSG_LEVEL) << "Initializing coupled Connection " << l
+		LOGMSG << "Initializing coupled Connection " << l
 			<< " in " << x[ix] << ", " << x[ix + 1] << ", " << x[ix + 2]
 			<< "..." << endl;
 		ConnectionList[l]->initiateStep(x + ix, xd + ix, 0.0);
@@ -242,7 +244,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error initializing coupled connection"
+			LOGERR << "Error initializing coupled connection"
 				<< l << ": " << err_msg << endl;
 			return err;
 		}
@@ -275,7 +277,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error initializing free connection"
+			LOGERR << "Error initializing free connection"
 				<< FreeConIs[l] << ": " << err_msg << endl;
 			return err;
 		}
@@ -288,7 +290,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 	// ------------------ do dynamic relaxation IC gen --------------------
 	
-	Cout(MOORDYN_MSG_LEVEL) << "Finalizing ICs using dynamic relaxation ("
+	LOGMSG << "Finalizing ICs using dynamic relaxation ("
 	                        << ICDfac << "X normal drag)" << endl;
 	
 	// boost drag coefficients to speed static equilibrium convergence
@@ -330,7 +332,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 		{
 			if (isnan(states[i]))
 			{
-				Cout(MOORDYN_ERR_LEVEL) << "Error: NaN value detected "
+				LOGERR << "Error: NaN value detected "
 				    << "in MoorDyn state at dynamic relaxation time "
 					<< t << " s." << endl;
 				free2Darray(FairTensLast, LineList.size());
@@ -374,7 +376,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 				}
 				if (!converged)
 				{
-					Cout(MOORDYN_DBG_LEVEL) << "Dynamic relaxation t = "
+					LOGDBG << "Dynamic relaxation t = "
 						<< t << "s (time step " << iic << "), error = "
 						<< 100.0 * max_error << "%     \r";
 					break;
@@ -389,11 +391,11 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 	}
 
 	if (converged) {
-		Cout(MOORDYN_MSG_LEVEL) << "Fairlead tensions converged" << endl;
+		LOGMSG << "Fairlead tensions converged" << endl;
 	} else {
-		Cout(MOORDYN_WRN_LEVEL) << "Fairlead tensions did not converged" << endl;
+		LOGWRN << "Fairlead tensions did not converged" << endl;
 	}
-	Cout(MOORDYN_MSG_LEVEL) << "Remaining error after " << t << " s = "
+	LOGMSG << "Remaining error after " << t << " s = "
 	                        << 100.0 * max_error << "%" << endl;
 
 	free2Darray(FairTensLast, LineList.size());
@@ -440,7 +442,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 	outfileMain.open(oname.str());
 	if (!outfileMain.is_open())
 	{
-		Cout(MOORDYN_ERR_LEVEL) << "ERROR: Unable to write to main output file "
+		LOGERR << "ERROR: Unable to write to main output file "
 			<< oname.str() << endl;
 		return MOORDYN_INVALID_OUTPUT_FILE;
 	}
@@ -471,7 +473,7 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
                                          double &dt)
 {
 	// should check if wave kinematics have been set up if expected!
-	Cout(MOORDYN_DBG_LEVEL) << "t = " << t << "s     \r";
+	LOGDBG << "t = " << t << "s     \r";
 
 	if (dt <= 0)
 	{
@@ -481,7 +483,7 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 
 	if (NCoupedDOF() && (!x || !xd || !f))
 	{
-		Cout(MOORDYN_ERR_LEVEL) << "Null Pointer received in "
+		LOGERR << "Null Pointer received in "
 			<< __FUNC_NAME__
 			<< " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;
 	}
@@ -528,7 +530,7 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 	{
 		if (isnan(states[i]))
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: NaN value detected "
+			LOGERR << "Error: NaN value detected "
 			                        << "in MoorDyn state " << i
 			                        << " at time " << t << " s" << endl;
 			return MOORDYN_NAN_ERROR;
@@ -543,7 +545,7 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 			continue;
 		if (t >= FailList[l]->failTime)
 		{
-			Cout(MOORDYN_MSG_LEVEL) << "Failure number " << l + 1
+			LOGMSG << "Failure number " << l + 1
 				<< " triggered at time " << t << endl;
 			FailList[l]->failStatus = 1;
 			const moordyn::error_id err = detachLines(
@@ -572,6 +574,60 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 {
 	unsigned int i=0;
 
+	// We are really interested in looking for the writeLog option, to start
+	// logging as soon as possible
+	ifstream in_file(_filepath);
+	vector<string> in_txt;
+	string line;
+	if (!in_file.is_open())
+	{
+		LOGERR << "Error: unable to open file '"
+		                        << _filepath << "'" << endl;
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
+	while (in_file.good())
+	{
+		string line_txt;
+		getline(in_file, line_txt);
+		in_txt.push_back(line_txt);
+	}
+	in_file.close();
+	while (i < in_txt.size())
+	{
+		// Skip until we find the options header line
+		if ((in_txt[i].find("---") == string::npos) ||
+			!moordyn::str::has(moordyn::str::upper(in_txt[i]), {"OPTIONS"}))
+		{
+			i++;
+			continue;
+		}
+
+		i++;
+		// Look for writeLog option entries until the end of section or file
+		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size()))
+		{
+			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+			if (entries.size() < 2)
+			{
+				i++;
+				continue;
+			}
+			const string value = entries[0];
+			const string name = entries[1];
+			if (name != "writeLog")
+			{
+				i++;
+				continue;
+			}
+			env.writeLog = atoi(entries[0].c_str());
+			const moordyn::error_id err = SetupLog();
+			if (err != MOORDYN_SUCCESS)
+				return err;
+
+			i++;
+		}
+	}
+
 	// factor by which to boost drag coefficients during dynamic relaxation IC generation
 	ICDfac = 5.0;
 	// convergence analysis time step for IC generation
@@ -591,7 +647,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	vector<string> outchannels;
 
 	// make a "ground body" that will be the parent of all fixed objects (connections and rods)
-	Cout(MOORDYN_DBG_LEVEL) << "Creating the ground body of type "
+	LOGDBG << "Creating the ground body of type "
 		<< Body::TypeName(Body::FIXED) << "..." << endl;
 	GroundBody = new Body();
 	GroundBody->setup(0, Body::FIXED, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);
@@ -600,25 +656,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	// This will be conveniently incremented as each object is added
 	nX = 0;
 
-	// Load the mooring lines input file in lines of text
-	ifstream in_file(_filepath);
-	vector<string> in_txt;
-	string line;
-	if (!in_file.is_open())
-	{
-		Cout(MOORDYN_ERR_LEVEL) << "Error: unable to open file '"
-		                        << _filepath << "'" << endl;
-		return MOORDYN_INVALID_INPUT_FILE;
-	}
-	while (in_file.good())
-	{
-		string line_txt;
-		getline(in_file, line_txt);
-		in_txt.push_back(line_txt);
-	}
-	in_file.close();
-
-	// Parse the input file
+	// Now we can parse the whole input file
 	i=0;
 	while (i < in_txt.size())
 	{
@@ -632,7 +670,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"LINE DICTIONARY", "LINE TYPES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading line types:" << endl;
+			LOGDBG << "   Reading line types:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -642,7 +680,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 10)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "10 fields are required, but just "
@@ -683,20 +721,14 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				if (err)
 					return err;
 
-				Cout(MOORDYN_DBG_LEVEL) << "\t'" << obj->type << "'"
-					<< " - with id " << LinePropList.size() << endl;
-				if (env.writeLog > 1)
-				{
-					outfileLog << "  - LineType" << LinePropList.size() << ":"
-					          << endl
-					          << "    name: " << obj->type << endl
-					          << "    d   : " << obj->d    << endl
-					          << "    w   : " << obj->w    << endl
-					          << "    Cdn : " << obj->Cdn  << endl
-					          << "    Can : " << obj->Can  << endl
-					          << "    Cdt : " << obj->Cdt  << endl
-					          << "    Cat : " << obj->Cat  << endl;
-				}
+				LOGDBG << "\t'" << obj->type << "'"
+					<< " - with id " << LinePropList.size() << endl
+					<< "\t\td   : " << obj->d    << endl
+					<< "\t\tw   : " << obj->w    << endl
+					<< "\t\tCdn : " << obj->Cdn  << endl
+					<< "\t\tCan : " << obj->Can  << endl
+					<< "\t\tCdt : " << obj->Cdt  << endl
+					<< "\t\tCat : " << obj->Cat  << endl;
 
 				LinePropList.push_back(obj);
 				i++;
@@ -706,7 +738,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"ROD DICTIONARY", "ROD TYPES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading rod types:" << endl;
+			LOGDBG << "   Reading rod types:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -716,7 +748,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 7)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "7 fields are required, but just "
@@ -733,20 +765,14 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				obj->Cdt = atof(entries[5].c_str());
 				obj->Cat = atof(entries[6].c_str());
 
-				Cout(MOORDYN_DBG_LEVEL) << "\t'" << obj->type << "'"
-					<< " - with id " << RodPropList.size() << endl;
-				if (env.writeLog > 1)
-				{
-					outfileLog << "  - RodType" << RodPropList.size() << ":"
-					          << endl
-					          << "    name: " << obj->type << endl
-					          << "    d   : " << obj->d    << endl
-					          << "    w   : " << obj->w    << endl
-					          << "    Cdn : " << obj->Cdn  << endl
-					          << "    Can : " << obj->Can  << endl
-					          << "    Cdt : " << obj->Cdt  << endl
-					          << "    Cat : " << obj->Cat  << endl;
-				}
+				LOGDBG << "\t'" << obj->type << "'"
+					<< " - with id " << RodPropList.size() << endl
+					<< "\t\td   : " << obj->d    << endl
+					<< "\t\tw   : " << obj->w    << endl
+					<< "\t\tCdn : " << obj->Cdn  << endl
+					<< "\t\tCan : " << obj->Can  << endl
+					<< "\t\tCdt : " << obj->Cdt  << endl
+					<< "\t\tCat : " << obj->Cat  << endl;
 
 				RodPropList.push_back(obj);
 				i++;
@@ -756,7 +782,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"BODIES", "BODY LIST", "BODY PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading body list:" << endl;
+			LOGDBG << "   Reading body list:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -766,7 +792,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 14)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "14 fields are required, but just "
@@ -803,7 +829,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					rCG[2] = atof(entries_rCG[2].c_str());
 				}
 				else {
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "CG entry (col 10) must have 1 or 3 numbers" << endl;
@@ -826,7 +852,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					Inert[2] = atof(entries_I[2].c_str());
 				}
 				else {
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Inertia entry (col 11) must have 1 or 3 numbers" << endl;
@@ -849,7 +875,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					CdA[2] = atof(entries_CdA[2].c_str());
 				}
 				else {
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "CdA entry (col 13) must have 1 or 3 numbers" << endl;
@@ -872,7 +898,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					Ca[2] = atof(entries_Ca[2].c_str());
 				}
 				else {
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Ca entry (col 14) must have 1 or 3 numbers" << endl;
@@ -910,13 +936,13 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				outfiles.push_back(make_shared<ofstream>(oname.str()));
 				if (!outfiles.back()->is_open())
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Cannot create the output file '"
+					LOGERR << "Cannot create the output file '"
 						<< oname.str() << endl;
 					return MOORDYN_INVALID_OUTPUT_FILE;
 				}
 
 				Body *obj = new Body();
-				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
+				LOGDBG << "\t'" << number << "'"
 					<< " - of type " << Body::TypeName(type)
 					<< " with id " << BodyList.size() << endl;
 				obj->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca,
@@ -929,7 +955,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"RODS", "ROD LIST", "ROD PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading rod list:" << endl;
+			LOGDBG << "   Reading rod list:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -939,7 +965,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 8)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "8 fields are required, but just "
@@ -980,7 +1006,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				{
 					if (!strlen(num1))
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "no number provided for Rod " << number
@@ -990,7 +1016,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					unsigned int bodyID = atoi(num1);
 					if (!bodyID || (bodyID > BodyList.size()))
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "There is not " << bodyID << " bodies" << endl;
@@ -1034,7 +1060,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				}
 				else 
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Unrecognized connection type '" << let1 << "'"
@@ -1049,7 +1075,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				}
 				if (TypeNum == -1)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Unrecognized rod type " << RodType << endl;
@@ -1066,7 +1092,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					outfiles.push_back(make_shared<ofstream>(oname.str()));
 					if (!outfiles.back()->is_open())
 					{
-						Cout(MOORDYN_ERR_LEVEL)
+						LOGERR
 							<< "Cannot create the output file '"
 							<< oname.str() << endl;
 						return MOORDYN_INVALID_OUTPUT_FILE;
@@ -1075,7 +1101,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				else
 					outfiles.push_back(NULL);
 
-				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
+				LOGDBG << "\t'" << number << "'"
 					<< " - of class " << RodType << " (" << TypeNum << ")"
 					<< " and type " << Rod::TypeName(type)
 					<< " with id " << RodList.size() << endl;
@@ -1095,7 +1121,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					unsigned int bodyID = atoi(num1);
 					BodyList[bodyID - 1]->addRodToBody(obj, endCoords);
 				}
-				Cout(MOORDYN_DBG_LEVEL) << endl;
+				LOGDBG << endl;
 
 				i++;
 			}
@@ -1105,7 +1131,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		                      {"POINTS", "POINT LIST", "CONNECTION PROPERTIES",
 		                       "NODE PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading point list:" << endl;
+			LOGDBG << "   Reading point list:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -1115,7 +1141,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 9)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "9 fields are required, but just "
@@ -1167,7 +1193,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					type = Connection::FIXED;
 					if (!strlen(num1))
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "no number provided for Rod " << number
@@ -1177,7 +1203,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					unsigned int bodyID = atoi(num1);
 					if (!bodyID || (bodyID > BodyList.size()))
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "There is not " << bodyID << " bodies" << endl;
@@ -1200,7 +1226,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				}
 				else 
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Unrecognized connection type '" << let1 << "'"
@@ -1212,12 +1238,12 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				if (r0[2] < -env.WtrDpth)
 					env.WtrDpth = -r0[2];
 
-				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
+				LOGDBG << "\t'" << number << "'"
 					<< " - of type " << Connection::TypeName(type)
 					<< " with id " << ConnectionList.size() << endl;
 
 				// now make Connection object!
-				Connection *obj = new Connection(this);
+				Connection *obj = new Connection(_log);
 				obj->setup(number, type, r0, M, V, F, CdA, Ca);
 				ConnectionList.push_back(obj);
 
@@ -1229,7 +1255,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					int bodyID = atoi(num1);
 					BodyList[bodyID - 1]->addConnectionToBody(obj, r0);
 				}
-				Cout(MOORDYN_DBG_LEVEL) << endl;
+				LOGDBG << endl;
 
 				i++;
 			}
@@ -1238,17 +1264,17 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"LINES", "LINE LIST", "LINE PROPERTIES"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading line list: " << endl;
+			LOGDBG << "   Reading line list: " << endl;
 
 			if (!LinePropList.size())
 			{
-				Cout(MOORDYN_ERR_LEVEL)
+				LOGERR
 					<< "Reading lines without defined line types" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
 			if (!ConnectionList.size())
 			{
-				Cout(MOORDYN_ERR_LEVEL)
+				LOGERR
 					<< "Reading lines without defined connections" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
@@ -1261,7 +1287,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 7)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "7 fields are required, but just "
@@ -1282,7 +1308,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				}
 				if (TypeNum == -1)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Unrecognized line type " << type << endl;
@@ -1299,7 +1325,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					outfiles.push_back(make_shared<ofstream>(oname.str()));
 					if (!outfiles.back()->is_open())
 					{
-						Cout(MOORDYN_ERR_LEVEL)
+						LOGERR
 							<< "Cannot create the output file '"
 							<< oname.str() << endl;
 						return MOORDYN_INVALID_OUTPUT_FILE;
@@ -1308,7 +1334,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				else
 					outfiles.push_back(NULL);
 
-				Cout(MOORDYN_DBG_LEVEL) << "\t'" << number << "'"
+				LOGDBG << "\t'" << number << "'"
 					<< " - of class " << type << " (" << TypeNum << ")"
 					<< " with id " << LineList.size() << endl;
 
@@ -1330,7 +1356,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 
 					if (!strlen(num1))
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "No number provided for the 1st connection index"
@@ -1343,7 +1369,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					{
 						if (!id || id > RodList.size())
 						{
-							Cout(MOORDYN_ERR_LEVEL) << "Error in "
+							LOGERR << "Error in "
 								<< _filepath << ":" << i + 1 << "..." << endl
 								<< "'" << in_txt[i] << "'" << endl
 								<< "There are not " << id << " rods" << endl;
@@ -1355,7 +1381,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 							RodList[id - 1]->addLineToRodEndB(obj, I);
 						else
 						{
-							Cout(MOORDYN_ERR_LEVEL) << "Error in "
+							LOGERR << "Error in "
 								<< _filepath << ":" << i + 1 << "..." << endl
 								<< "'" << in_txt[i] << "'" << endl
 								<< "Rod end (A or B) must be specified" << endl;
@@ -1366,7 +1392,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					{
 						if (!id || id > ConnectionList.size())
 						{
-							Cout(MOORDYN_ERR_LEVEL) << "Error in "
+							LOGERR << "Error in "
 								<< _filepath << ":" << i + 1 << "..." << endl
 								<< "'" << in_txt[i] << "'" << endl
 								<< "There are not " << id << " connections" << endl;
@@ -1376,14 +1402,14 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					}
 					else 
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "Unrecognized connection type " << let1 << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
 				}
-				Cout(MOORDYN_DBG_LEVEL) << endl;
+				LOGDBG << endl;
 
 				i++;
 			}
@@ -1392,7 +1418,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"FAILURE"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading failure conditions:" << endl;
+			LOGDBG << "   Reading failure conditions:" << endl;
 
 			// skip following two lines (label line and unit line)
 			i += 3;
@@ -1402,7 +1428,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 				if (entries.size() < 4)
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "4 fields are required, but just "
@@ -1422,7 +1448,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 
 				if (!strlen(num1))
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "No number provided for Node Failure" << endl;
@@ -1435,7 +1461,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				{
 					if (!id || id > RodList.size())
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "There are not " << id << " rods" << endl;
@@ -1447,7 +1473,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 						obj->isRod = 2;
 					else
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "Failure end (A or B) must be specified" << endl;
@@ -1458,7 +1484,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				{
 					if (!id || id > ConnectionList.size())
 					{
-						Cout(MOORDYN_ERR_LEVEL) << "Error in "
+						LOGERR << "Error in "
 							<< _filepath << ":" << i + 1 << "..." << endl
 							<< "'" << in_txt[i] << "'" << endl
 							<< "There are not " << id << " connections" << endl;
@@ -1468,7 +1494,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				}
 				else 
 				{
-					Cout(MOORDYN_ERR_LEVEL) << "Error in "
+					LOGERR << "Error in "
 						<< _filepath << ":" << i + 1 << "..." << endl
 						<< "'" << in_txt[i] << "'" << endl
 						<< "Unrecognized connection type " << let1 << endl;
@@ -1483,7 +1509,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				obj->failTime = atof(entries[2].c_str());
 				obj->failTen  = atof(entries[3].c_str());
 
-				Cout(MOORDYN_DBG_LEVEL) << "failTime is "<< obj->failTime << endl;
+				LOGDBG << "failTime is "<< obj->failTime << endl;
 				// initialize as unfailed, of course
 				obj->failStatus  = 0;
 
@@ -1494,7 +1520,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"OPTIONS"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading options:" << endl;
+			LOGDBG << "   Reading options:" << endl;
 
 			i++;
 			// Parse options until the next header or the end of the file
@@ -1504,21 +1530,20 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				if (entries.size() < 2)
 				{
 					i++;
-					Cout(MOORDYN_WRN_LEVEL) << "Ignoring option line "
+					LOGWRN << "Ignoring option line "
 					                        << i << endl;
 					continue;
 				}
 
-				Cout(MOORDYN_DBG_LEVEL) << "\t"
+				LOGDBG << "\t"
 					<< entries[1] << " = " << entries[0] << endl;
 				const string value = entries[0];
 				const string name = entries[1];
 				if (name == "writeLog")
 				{
-					env.writeLog = atoi(entries[0].c_str());
-					const moordyn::error_id err = SetupLog();
-					if (err != MOORDYN_SUCCESS)
-						return err;
+					// Already registered
+					i++;
+					continue;
 				}
 				// DT is old way, should phase out
 				else if ((name == "dtM") || (name == "DT"))
@@ -1558,7 +1583,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					dtOut = atof(entries[0].c_str());
 				// >>>>>>>>>> add dtWave...
 				else
-					Cout(MOORDYN_WRN_LEVEL) << "Warning: Unrecognized option '"
+					LOGWRN << "Warning: Unrecognized option '"
 					                        << name << "'" << endl;
 
 				i++;
@@ -1568,7 +1593,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]),
 		                      {"OUTPUT"}))
 		{
-			Cout(MOORDYN_DBG_LEVEL) << "   Reading output options:" << endl;
+			LOGDBG << "   Reading output options:" << endl;
 
 			// parse until the next header or the end of the file
 			while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size()))
@@ -1641,7 +1666,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 						
 						else
 						{
-							Cout(MOORDYN_WRN_LEVEL) << "Warning in "
+							LOGWRN << "Warning in "
 								<< _filepath << ":" << i + 1 << "..." << endl
 								<< "'" << in_txt[i] << "'" << endl
 								<< "invalid output specifier: " << let1
@@ -1709,7 +1734,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 						}
 						else
 						{
-							Cout(MOORDYN_WRN_LEVEL) << "Warning in "
+							LOGWRN << "Warning in "
 								<< _filepath << ":" << i + 1 << "..." << endl
 								<< "'" << in_txt[i] << "'" << endl
 								<< "invalid quantity specifier: " << let3 << endl;
@@ -1749,7 +1774,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	// centric or fairlead centric)
 	// <<<<<<<<<<<<<<<< also do checks when time step function is called...
 
-	Cout(MOORDYN_MSG_LEVEL) << "Generated entities:" << endl
+	LOGMSG << "Generated entities:" << endl
 		<< "\tnLineTypes  = " << LinePropList.size() << endl
 		<< "\tnRodTypes   = " << RodPropList.size() << endl
 		<< "\tnPoints     = " << ConnectionList.size() << endl
@@ -1764,15 +1789,11 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 		<< "\tnCpldRods   = " << CpldRodIs.size() << endl
 		<< "\tnCpldPoints = " << CpldConIs.size() << endl;
 	
-	// write system description to log file
-	if (env.writeLog > 0)
-	{
-		outfileLog << "----- MoorDyn Model Summary (to be written) -----"
-		          << endl;
-	}
+	// write system description
+	LOGDBG << "----- MoorDyn Model Summary (to be written) -----" << endl;
 
 	// Setup the waves and populate them
-	waves = new Waves();
+	waves = new moordyn::Waves();
 	waves->setup(&env);
 
 	GroundBody->setEnv( &env, waves);
@@ -1817,7 +1838,7 @@ moordyn::error_id moordyn::MoorDyn::CalcStateDeriv(double *x,  double *xd,
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error updating connection: "
+			LOGERR << "Error updating connection: "
 				<< err_msg << endl;
 			return err;
 		}
@@ -1878,7 +1899,7 @@ moordyn::error_id moordyn::MoorDyn::CalcStateDeriv(double *x,  double *xd,
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Exception detected at " << t << " s: "
+			LOGERR << "Exception detected at " << t << " s: "
 			                        << err_msg << endl;
 			return err;
 		}
@@ -1919,10 +1940,6 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 {
 	moordyn::error_id err;
 
-	if (env.writeLog > 2)
-		outfileLog << "\n----- RK2 predictor call to CalcStateDeriv at time "
-		          << t << " s -----\n";
-
 	// get derivatives at t0. f0 = f(t0, x0);
 	err = CalcStateDeriv(x, f0, t, dt);
 	if (err != MOORDYN_SUCCESS)
@@ -1931,10 +1948,6 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
 	for (unsigned int i = 0; i < nX; i++)
 		xt[i] = x[i] + 0.5 * dt * f0[i];
-
-	if (env.writeLog > 2)
-		outfileLog << "\n----- RK2 corrector call to CalcStateDeriv at time "
-		          << t + 0.5 * dt << " s -----\n";
 
 	// get derivatives at t0 + dt/2. f1 = f(t1, x1);
 	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
@@ -1973,7 +1986,7 @@ moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 	// here
 	if (nX > nXtra)
 	{
-		Cout(MOORDYN_ERR_LEVEL) << "Error: nX = " << nX
+		LOGERR << "Error: nX = " << nX
 			<< " is bigger than nXtra = " << nXtra << endl;
 		return MOORDYN_MEM_ERROR;
 	}
@@ -1984,7 +1997,7 @@ moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 	ConnectStateIs.push_back(nX);
 
 	// now make Connection object!
-	Connection *obj = new Connection(this);
+	Connection *obj = new Connection(_log);
 	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
 	obj->setEnv(&env, waves);
 	ConnectionList.push_back(obj);
@@ -2027,7 +2040,7 @@ moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 
 		if (err != MOORDYN_SUCCESS)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error detaching line: "
+			LOGERR << "Error detaching line: "
 				<< err_msg << endl;
 			return err;
 		}
@@ -2057,7 +2070,7 @@ moordyn::error_id moordyn::MoorDyn::AllOutput(double t, double dt)
 	// write to master output file
 	if (!outfileMain.is_open())
 	{
-		Cout(MOORDYN_ERR_LEVEL) << "Error: Unable to write to main output file "
+		LOGERR << "Error: Unable to write to main output file "
 		                        << endl;
 		return MOORDYN_INVALID_OUTPUT_FILE;
 	}
@@ -2073,7 +2086,7 @@ moordyn::error_id moordyn::MoorDyn::AllOutput(double t, double dt)
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error handling an output channel:"
+			LOGERR << "Error handling an output channel:"
 				<< err_msg << endl;
 			return err;
 		}
@@ -2121,7 +2134,7 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 		cerr << "Error (" << err << ") during the Mooring System creation:"
 		      << endl << err_msg << endl;
 	}
-	return (void*)instance;
+	return (MoorDyn)instance;
 
 }
 
@@ -2137,7 +2150,28 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename)
 int DECLDIR MoorDyn_SetVerbosity(MoorDyn system, int verbosity)
 {
 	CHECK_SYSTEM(system);
-	((moordyn::MoorDyn*)system)->SetVerbosity(verbosity);
+	((moordyn::MoorDyn*)system)->GetLogger()->SetVerbosity(verbosity);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR MoorDyn_SetLogFile(MoorDyn system, const char* log_path)
+{
+	CHECK_SYSTEM(system);
+	((moordyn::MoorDyn*)system)->GetLogger()->SetFile(log_path);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR MoorDyn_SetLogLevel(MoorDyn system, int verbosity)
+{
+	CHECK_SYSTEM(system);
+	((moordyn::MoorDyn*)system)->GetLogger()->SetLogLevel(verbosity);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR MoorDyn_Log(MoorDyn system, int level, const char* msg)
+{
+	CHECK_SYSTEM(system);
+	((moordyn::MoorDyn*)system)->GetLogger()->Cout(level) << msg;
 	return MOORDYN_SUCCESS;
 }
 
@@ -2168,7 +2202,14 @@ int DECLDIR MoorDyn_Close(MoorDyn system)
 	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n)
+MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system)
+{
+	if (!system)
+		return NULL;
+	return (MoorDynWaves)(((moordyn::MoorDyn*)system)->GetWaves());
+}
+
+int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int *n)
 {
 	CHECK_SYSTEM(system);
 
@@ -2187,16 +2228,16 @@ int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n)
 	return err;
 }
 
-int DECLDIR MoorDyn_GetWavesCoords(MoorDyn system, double *r)
+int DECLDIR MoorDyn_GetWaveKinCoordinates(MoorDyn system, double *r)
 {
 	CHECK_SYSTEM(system);
 
 	return ((moordyn::MoorDyn*)system)->GetWaveKinCoordinates(r);
 }
 
-int DECLDIR MoorDyn_SetWaves(MoorDyn system, const double *U,
-                                             const double *Ud,
-                                             double t)
+int DECLDIR MoorDyn_SetWaveKin(MoorDyn system, const double *U,
+                                               const double *Ud,
+                                               double t)
 {
 	CHECK_SYSTEM(system);
 
@@ -2222,6 +2263,21 @@ unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system)
 	if (!system)
 		return 0;
 	return ((moordyn::MoorDyn*)system)->GetConnections().size();
+}
+
+MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
+                                                unsigned int l)
+{
+	if (!system)
+		return NULL;
+	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
+	if (!l || (l > conns.size()))
+	{
+		cerr << "Error: There is not such connection " << l << endl
+		     << "while calling " << __FUNC_NAME__ << "()" << endl;
+		return NULL;
+	}
+	return (MoorDynConnection)(conns[l - 1]);
 }
 
 unsigned int DECLDIR MoorDyn_GetNumberLines(MoorDyn system)
@@ -2281,40 +2337,6 @@ int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
 		lines[l]->getFASTtens(FairHTen + l, FairVTen + l,
 		                      AnchHTen + l, AnchVTen + l);
 
-	return MOORDYN_SUCCESS;
-}
-
-int DECLDIR MoorDyn_GetConnectPos(MoorDyn system, unsigned int l, double pos[3])
-{
-	CHECK_SYSTEM(system);
-
-	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
-	if (!l || (l > conns.size()))
-	{
-		cerr << "Error: There is not such connection " << l << endl
-		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return MOORDYN_INVALID_VALUE;
-	}
-	vector<double> rs(3);
-	vector<double> rds(3);
-	conns[l - 1]->getConnectState(rs, rds);
-	for (unsigned int i = 0; i < 3; i++)
-		pos[i] = rs[i];
-	return MOORDYN_SUCCESS;
-}
-
-int DECLDIR MoorDyn_GetConnectForce(MoorDyn system, unsigned int l, double f[3])
-{
-	CHECK_SYSTEM(system);
-
-	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
-	if (!l || (l > conns.size()))
-	{
-		cerr << "Error: There is not such connection " << l << endl
-		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return MOORDYN_INVALID_VALUE;
-	}
-	conns[l - 1]->getFnet(f);
 	return MOORDYN_SUCCESS;
 }
 

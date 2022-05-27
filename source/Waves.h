@@ -17,68 +17,50 @@
 #ifndef WAVES_H
 #define WAVES_H
 
-#include "Misc.h"
-
-using namespace std;
-
-
-
-class Waves
+#ifdef __cplusplus
+extern "C"
 {
-	int nx;           // number of grid points in x direction
-	int ny;           //
-	int nz;           //
-	int nt;           // number of time steps used in wave kinematics time series
-	double dtWave;      // time step for wave kinematics time series
-
-	double *px;      // grid coordinate arrays
-	double *py;
-	double *pz;
-	double  ***zeta;   // wave elevation [x,y,t]
-	double ****PDyn;   // dynamic pressure [x,y,z,t]
-	double ****ux;   // wave velocity [x,y,z,t]
-	double ****uy;   //
-	double ****uz;   //
-	double ****ax;   // wave acceleration
-	double ****ay;   //
-	double ****az;   //
-	
-	double g;
-	double rho_w;
-	
-	// ------------ from Line object... -----------
-	// new additions for handling waves in-object and precalculating them	(not necessarily used right now)
-//	int WaveMod;
-//	int WaveStMod;
-//	double Hs;
-//	double Tp;
-//	double gamma;
-//	float beta; 			// wave heading
-//
-//	vector< double > Ucurrent; // constant uniform current to add (three components)
-	
-	
-public:
-	
-	void makeGrid();
-	void allocateKinematicsArrays();
-	void setup(EnvCond *env);
-	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta, double* PDyn_out);
-	void getWaveKin(double x, double y, double z, double t, vec &U, vec &Ud, moordyn::real &zeta, moordyn::real &PDyn_out);
-	void fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h );
-	~Waves();
-};
-
-
-
-// other relevant functions being thrown into this file for now (should move to Misc?) <<<<
-
-int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray);
-
-void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out, doubleC *inputs, double *outputs);
-
-double WaveNumber( double Omega, double g, double h );
-
 #endif
 
+/** @addtogroup new_c_api
+ *  @{
+ */
 
+/// A mooring connection instance
+typedef struct __MoorDynWaves* MoorDynWaves;
+
+/** @brief Get the velocity, acceleration, wave height and dynamic pressure
+ * at a specific positon and time
+ * @param waves The Waves instance
+ * @param x The point x coordinate
+ * @param y The point y coordinate
+ * @param z The point z coordinate
+ * @param U The output velocity
+ * @param Ud The output acceleration
+ * @param zeta The output wave height
+ * @param PDyn_out The output dynamic pressure
+ * @return 0 If the data is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int MoorDyn_GetWavesKin(MoorDynWaves waves, double x, double y, double z,
+                        double t, double U[3], double Ud[3], double* zeta,
+                        double* PDyn);
+
+/** @brief Compute the wave number
+ * @param Omega The wave angular frequency
+ * @param g The gravity acceleration
+ * @param h The water depth
+ * @return The wave number
+ * @note credit: FAST source
+ */
+double WaveNumber( double Omega, double g, double h );
+
+/**
+ * @}
+ */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

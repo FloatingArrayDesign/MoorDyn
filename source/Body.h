@@ -18,12 +18,15 @@
 #define BODY_H
 
 #include "Misc.h"
+#include "Connection.hpp"
 
 using namespace std;
 
-class Connection;
 class Rod;
-class Waves;
+namespace moordyn {
+	// NOTE: The namespace will be extended to the class below in the future
+	class Waves;
+}
 
 class Body
 {
@@ -31,11 +34,11 @@ class Body
 	
 	// ENVIRONMENTAL STUFF	
 	EnvCond *env;  // pointer to global struct that holds environmental settings
-	Waves *waves;  // pointer to global Waves object
+	moordyn::Waves *waves;  // pointer to global Waves object
 	
 	
 	// unique to Body:
-	Connection* attachedC[30]; 	// pointers to connections attached to this body
+	moordyn::Connection* attachedC[30]; 	// pointers to connections attached to this body
 	int nAttachedC; 		// quantity of attached connections
 	
 	Rod* attachedR[30]; 	// pointers to Rods attached to this body
@@ -119,7 +122,7 @@ public:
 	void setup(int number_in, types type_in, double r6_in[6], double rCG_in[3], double M_in,
 	double V_in, double I_in[3], double CdA_in[3], double Ca_in[3], shared_ptr<ofstream> outfile_pointer);
 	
-	void addConnectionToBody(Connection *theConnection, double coords[3]);
+	void addConnectionToBody(moordyn::Connection *theConnection, double coords[3]);
 	
 	void addRodToBody(Rod *theRod, double endCoords[6]);
 	
@@ -127,7 +130,7 @@ public:
 	
 	void initializeBody( double* X );
 
-	void setEnv(EnvCond *env_in, Waves *waves_in);
+	void setEnv(EnvCond *env_in, moordyn::Waves *waves_in);
 
 	void setDependentStates();
 	

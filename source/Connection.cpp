@@ -14,12 +14,16 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Connection.hpp"
 #include "Connection.h"
 #include "Line.h"
-#include "Waves.h"
+#include "Waves.hpp"
+
+namespace moordyn
+{
 
 Connection::Connection(moordyn::Log *log)
-	: _log(log)
+	: LogUser(log)
 	, WaterKin(0)
 {
 }
@@ -30,8 +34,8 @@ Connection::~Connection()
 
 // connection member functions
 
-void Connection::setup(int number_in, types type_in, double r0_in[3], double M_in,
-	double V_in, double F_in[3], double CdA_in, double Ca_in) 
+void Connection::setup(int number_in, types type_in, const double r0_in[3], double M_in,
+	double V_in, const double F_in[3], double CdA_in, double Ca_in) 
 {
 	//props contains: Node      Type      X        Y         Z        M        V        FX       FY      FZ  CdA  Ca
 	
@@ -66,7 +70,7 @@ void Connection::setup(int number_in, types type_in, double r0_in[3], double M_i
 	//M.resize(3, vector< double >(3, 0.0)); // node mass + added mass matrix
 	//M_i.resize(3, vector< double >(3, 0.0));
 	
-	_log->Cout(MOORDYN_DBG_LEVEL) << "   Set up Connection " << number
+	LOGDBG << "   Set up Connection " << number
 	                              << ", type " << type << ". ";
 }
 
@@ -74,7 +78,7 @@ void Connection::setup(int number_in, types type_in, double r0_in[3], double M_i
 // this function handles assigning a line to a connection node
 void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
-	_log->Cout(MOORDYN_DBG_LEVEL) << "L" << theLine->number << "->P" << number << " ";
+	LOGDBG << "L" << theLine->number << "->P" << number << " ";
 
 	if (nAttached <10) // this is currently just a maximum imposed by a fixed array size.  could be improved.
 	{
@@ -113,14 +117,14 @@ void Connection::removeLineFromConnect(int lineID, int *TopOfLine, double rEnd[]
 			rdEnd[J] = rd[J];
 		}
 
-		_log->Cout(MOORDYN_MSG_LEVEL) << "Detached line " << lineID
+		LOGMSG << "Detached line " << lineID
 										<< " from Connection " << number
 										<< endl;
 		return;
 	}
 
 	// line not found
-	_log->Cout(MOORDYN_ERR_LEVEL)
+	LOGERR
 		<< "Error: failed to find line to remove during "
 		<< __PRETTY_FUNC_NAME__ << " call to connection " << number
 		<< ". Line " << lineID << endl;
@@ -199,7 +203,7 @@ void Connection::initializeAnchor()
 };
 */
 
-void Connection::initializeConnect(double* X)
+void Connection::initializeConnect(double X[6])
 {
 	// the default is for no water kinematics to be considered (or to be set externally on each node)
 	WaterKin = 0;
@@ -221,7 +225,7 @@ void Connection::initializeConnect(double* X)
 		}
 		
 		if (-env->WtrDpth > r[2]) {
-			_log->Cout(MOORDYN_ERR_LEVEL)
+			LOGERR
 				<< "Error: water depth is shallower than Point "
 				<< number << "." << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
@@ -235,7 +239,7 @@ void Connection::initializeConnect(double* X)
 
 	}
 	
-	_log->Cout(MOORDYN_DBG_LEVEL)
+	LOGDBG
 		<< "   Initialized Connection " << number << endl;
 			
 };
@@ -253,9 +257,10 @@ void Connection::getConnectState(vector<double> &r_out, vector<double> &rd_out)
 
 
 // function to return net force on connection (just to allow public reading of Fnet)
-void Connection::getFnet(double Fnet_out[])
+void Connection::getFnet(double Fnet_out[3])
 {
-	for (int I=0; I<3; I++) 	Fnet_out[I] = Fnet[I];
+	for (int I=0; I<3; I++)
+		Fnet_out[I] = Fnet[I];
 };
 
 
@@ -289,7 +294,7 @@ double Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 
-void Connection::setEnv(EnvCond *env_in, Waves *waves_in)
+void Connection::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 {
 	env = env_in;      // set pointer to environment settings object
 	waves = waves_in;  // set pointer to Waves  object
@@ -349,15 +354,13 @@ void Connection::sumNetForceAndMass()
 // function for boosting drag coefficients during IC generation	
 void Connection::scaleDrag(double scaler)
 {
-	conCdA = conCdA*scaler;
-	return;
+	conCdA *= scaler;
 }
 
 // function to reset time after IC generation
 void Connection::setTime(double time)
 {
 	t = time;
-	return;
 }
 
 
@@ -385,7 +388,7 @@ void Connection::updateFairlead(const double time)
 
 	if (type != COUPLED)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -409,7 +412,7 @@ void Connection::setKinematics(double *r_in, double *rd_in)
 {	
 	if (type != FIXED)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -434,7 +437,7 @@ moordyn::error_id Connection::setState(const double* X,
 	// the kinematics should only be set with this function of it's an independent/free connection
 	if (type != FREE) // "connect" type
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -449,19 +452,20 @@ moordyn::error_id Connection::setState(const double* X,
 	}
 
 	// pass kinematics to any attached lines (NEW)
-	for (int l=0; l < nAttached; l++) Attached[l]->setEndState(r, rd, Top[l]);
+	for (int l=0; l < nAttached; l++)
+		Attached[l]->setEndState(r, rd, Top[l]);
 
 	return MOORDYN_SUCCESS;
 }
 	
 	
 // calculate the forces and state derivatives of the connectoin	
-moordyn::error_id Connection::getStateDeriv(double* Xd)
+moordyn::error_id Connection::getStateDeriv(double Xd[6])
 {
 	// the RHS is only relevant (there are only states to worry about) if it is a Connect type of Connection
 	if (type != FREE)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "Error: " << __PRETTY_FUNC_NAME__
 			<< "called for wrong Connection type. Connection " << number
 			<< " type " << type << endl;
@@ -514,7 +518,7 @@ moordyn::error_id Connection::getStateDeriv(double* Xd)
 
 
 // calculate the force and mass contributions of the connect on the parent body (only for type 3 connects?)
-moordyn::error_id Connection::getNetForceAndMass(double rBody[3], double Fnet_out[6], double M_out[6][6])
+moordyn::error_id Connection::getNetForceAndMass(const double rBody[3], double Fnet_out[6], double M_out[6][6])
 {
 	doRHS();
 
@@ -533,7 +537,7 @@ moordyn::error_id Connection::getNetForceAndMass(double rBody[3], double Fnet_ou
 		for (int J=0; J<3; J++) rRel[J] = r[J] - rBody[J]; // vector from body reference point to node
 
 	// convert segment net force into 6dof force about body ref point
-	translateForce3to6DOF(rRel, Fnet, Fnet_out); 		
+	translateForce3to6DOF(rRel, Fnet, Fnet_out);
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	translateMass3to6DOF(rRel, M, M_out);
@@ -600,7 +604,7 @@ moordyn::error_id Connection::doRHS()
 	if (WaterKin == 1) // wave kinematics time series set internally for each node
 	{
 		// =========== obtain (precalculated) wave kinematics at current time instant ============
-		_log->Cout(MOORDYN_WRN_LEVEL)
+		LOGWRN
 			<< "unsupported connection kinematics option"
 			<< __PRETTY_FUNC_NAME__ << endl;
 		// TBD
@@ -614,7 +618,7 @@ moordyn::error_id Connection::doRHS()
 	}
 	else if (WaterKin != 0)
 	{
-		_log->Cout(MOORDYN_ERR_LEVEL)
+		LOGERR
 			<< "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
 		return MOORDYN_INVALID_VALUE;
 	}
@@ -658,3 +662,67 @@ void Connection::drawGL(void)
 	Sphere(r[0], r[1], r[2], radius);
 };
 #endif
+
+}  // ::moordyn
+
+// =============================================================================
+//
+//                     ||                     ||
+//                     ||        C API        ||
+//                    \  /                   \  /
+//                     \/                     \/
+//
+// =============================================================================
+
+/// Check that the provided system is not Null
+#define CHECK_CONNECTION(s)                                                     \
+	if (!s)                                                                     \
+	{                                                                           \
+		cerr << "Null system received in " << __FUNC_NAME__                     \
+		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
+		return MOORDYN_INVALID_VALUE;                                           \
+	}
+
+int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn)
+{
+	CHECK_CONNECTION(conn);
+	return ((moordyn::Connection*)conn)->number;
+}
+
+int DECLDIR MoorDyn_GetConnectType(MoorDynConnection conn)
+{
+	CHECK_CONNECTION(conn);
+	return ((moordyn::Connection*)conn)->type;
+}
+
+int DECLDIR MoorDyn_GetConnectPos(MoorDynConnection conn,
+                                  double pos[3])
+{
+	CHECK_CONNECTION(conn);
+	vector<double> r(3);
+	vector<double> rd(3);
+	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	for (unsigned int i = 0; i < 3; i++)
+		pos[i] = r[i];
+	return MOORDYN_SUCCESS;    
+}
+
+int DECLDIR MoorDyn_GetConnectVel(MoorDynConnection conn,
+                                  double v[3])
+{
+	CHECK_CONNECTION(conn);
+	vector<double> r(3);
+	vector<double> rd(3);
+	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	for (unsigned int i = 0; i < 3; i++)
+		v[i] = rd[i];
+	return MOORDYN_SUCCESS;    
+}
+
+int DECLDIR MoorDyn_GetConnectForce(MoorDynConnection conn,
+                                    double f[3])
+{
+	CHECK_CONNECTION(conn);
+	((moordyn::Connection*)conn)->getFnet(f);
+	return MOORDYN_SUCCESS;    
+}

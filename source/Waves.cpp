@@ -14,10 +14,13 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Waves.hpp"
 #include "Waves.h"
 
 using namespace std;
 
+namespace moordyn
+{
 
 // -------------------------------------------------------
 
@@ -74,13 +77,15 @@ int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray
 
 
 // function to set up the wave/current kinematics grid from file water_grid.txt
-void Waves::makeGrid()
+void Waves::makeGrid(const char* filepath)
 {
+	string WaveFilename = "Mooring/water_grid.txt";  // should set as overideable default later
+	if (filepath && (strlen(filepath) > 0))
+		WaveFilename = filepath;
 
 	// --------------------- read grid data from file ------------------------
 	vector<string> lines2;
 	string line2;
-	string WaveFilename = "Mooring/water_grid.txt";  // should set as overideable default later
 	
 	ifstream myfile2 (WaveFilename);     // open an input stream to the wave elevation time series file
 	if (myfile2.is_open())
@@ -210,15 +215,15 @@ void Waves::setup(EnvCond *env)
 		else                          cout << "ERROR in WaveKin input settings (must be 0-6)" << endl;
 	}
 	// grid approaches
-	else if ((env->WaveKin==2) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
-	else if ((env->WaveKin==2) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
-	else if ((env->WaveKin==3) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
-	else if ((env->WaveKin==3) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approahces" << endl;
+	else if ((env->WaveKin==2) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
+	else if ((env->WaveKin==2) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
+	else if ((env->WaveKin==3) && (env->Current==1)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
+	else if ((env->WaveKin==3) && (env->Current==2)) cout << "Waves and currents: options "<<env->WaveKin<<" & "<<env->Current<<" - grid approaches" << endl;
 	// node approaches
-	else if ((env->WaveKin==4) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
-	else if ((env->WaveKin==4) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
-	else if ((env->WaveKin==5) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
-	else if ((env->WaveKin==5) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approahces" << endl;
+	else if ((env->WaveKin==4) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
+	else if ((env->WaveKin==4) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
+	else if ((env->WaveKin==5) && (env->Current==3)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
+	else if ((env->WaveKin==5) && (env->Current==4)) cout << "Waves and currents: options TBD "<<env->WaveKin<<" & "<<env->Current<<" - node approaches" << endl;
 
 	else cout << "ERROR: Waves and currents settings are incompatible!" << endl;
 	
@@ -1169,6 +1174,20 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 	return;
 }
 
+Waves::Waves()
+	: px(NULL)
+	, py(NULL)
+	, pz(NULL)
+	, zeta(NULL)
+	, PDyn(NULL)
+	, ux(NULL)
+	, uy(NULL)
+	, uz(NULL)
+	, ax(NULL)
+	, ay(NULL)
+	, az(NULL)
+{
+}
 
 // function to clear any remaining data allocations in Waves
 Waves::~Waves()
@@ -1178,14 +1197,14 @@ Waves::~Waves()
 	free(py);
 	free(pz);
 	
-	free(zeta);
-	free(PDyn);
-	free(ux  );
-	free(uy  );
-	free(uz  );
-	free(ax  );
-	free(ay  );
-	free(az  );
+	if(zeta) free3Darray(zeta, nx, ny);
+	if(PDyn) free4Darray(PDyn, nx, ny, nz);
+	if(ux) free4Darray(ux, nx, ny, nz);
+	if(uy) free4Darray(uy, nx, ny, nz);
+	if(uz) free4Darray(uz, nx, ny, nz);
+	if(ax) free4Darray(ax, nx, ny, nz);
+	if(ay) free4Darray(ay, nx, ny, nz);
+	if(az) free4Darray(az, nx, ny, nz);
 }
 
 
@@ -1213,7 +1232,35 @@ void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar*
 	return;
 }
 
-// calculate wave number from frequency, g, and depth (credit: FAST source)
+}  // ::moordyn
+
+// =============================================================================
+//
+//                     ||                     ||
+//                     ||        C API        ||
+//                    \  /                   \  /
+//                     \/                     \/
+//
+// =============================================================================
+
+/// Check that the provided waves instance is not Null
+#define CHECK_WAVES(w)                                                          \
+	if (!w)                                                                     \
+	{                                                                           \
+		cerr << "Null waves instance received in " << __FUNC_NAME__             \
+		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
+		return MOORDYN_INVALID_VALUE;                                           \
+	}
+
+int MoorDyn_GetWavesKin(MoorDynWaves waves, double x, double y, double z,
+                        double t, double U[3], double Ud[3], double* zeta,
+                        double* PDyn)
+{
+	CHECK_WAVES(waves);
+	((moordyn::Waves*)waves)->getWaveKin(x, y, z, t, U, Ud, zeta, PDyn);
+	return MOORDYN_SUCCESS;
+}
+
 double WaveNumber( double Omega, double g, double h )
 {
 	// 
@@ -1276,6 +1323,3 @@ double WaveNumber( double Omega, double g, double h )
 
 	}
 }
-
-
-

@@ -15,7 +15,7 @@
  */
  
 #include "Line.h"
-#include "Waves.h"
+#include "Waves.hpp"
 #include "QSlines.h" // the c++ version of quasi-static model Catenary
 
 using namespace std;
@@ -122,7 +122,7 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 };
 
 
-void Line::setEnv(EnvCond *env_in, Waves *waves_in)
+void Line::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 {
 	env = env_in;      // set pointer to environment settings object
 	waves = waves_in;  // set pointer to Waves  object

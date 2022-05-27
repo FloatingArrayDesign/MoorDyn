@@ -20,10 +20,10 @@
 #include "Log.hpp"
 #include "Misc.h"
 
-#include "Waves.h"
+#include "Waves.hpp"
 #include "MoorDyn.h"
 #include "Line.h"
-#include "Connection.h" 
+#include "Connection.hpp" 
 #include "Rod.h" 
 #include "Body.h"
 
@@ -37,7 +37,7 @@ namespace moordyn
  * This class contains everything required to hold a whole mooring system,
  * making everything thread-friendly easier
  */
-class MoorDyn : public Log
+class MoorDyn : public LogUser
 {
 public:
 	/** @brief Constructor
@@ -46,10 +46,8 @@ public:
 	 *
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
-	 * @param verbosity The verbosity level (see @ref moordyn_log)
 	 */
-	MoorDyn(const char *infilename=NULL,
-            const int verbosity=MOORDYN_DBG_LEVEL);
+	MoorDyn(const char *infilename=NULL);
 
 	/** @brief Destuctor
 	 */    
@@ -123,9 +121,16 @@ public:
 		return n;
 	}
 
+	/** @brief Get the wave kinematics instance
+	 *
+	 * The wave kinematics instance is used just if env.WaveKin = 2
+	 * @return The wave knematics instance
+	 */
+	inline moordyn::Waves* GetWaves() const { return waves; }
+
 	/** @brief Initializes the external Wave kinetics
 	 *
-	 * This is only used if env.WaveKin > 0
+	 * This is only used if env.WaveKin = 1
 	 * @return The number of points where the wave kinematics shall be provided
 	 */
 	inline unsigned int ExternalWaveKinInit()
@@ -153,10 +158,14 @@ public:
 	}
 
 	/** @brief Get the points where the waves kinematics shall be provided
+	 *
+	 * The kinematics are provided in those points just if env.WaveKin is 1.
+	 * Otherwise moordyn::Waves is used
 	 * @param r The output coordinates
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise  (see @ref moordyn_errors)
 	 * @see MoorDyn::ExternalWaveKinInit()
+	 * @see MoorDyn::GetWaves()
 	 */
 	inline moordyn::error_id GetWaveKinCoordinates(double *r) const
 	{
@@ -171,7 +180,7 @@ public:
 
 	/** @brief Set the kinematics of the waves
 	*
-	* Use this function if WaveKin option is set in the input file
+	* Use this function if env.WaveKin = 1
 	* @param U The velocities at the points (3 components per point)
 	* @param Ud The accelerations at the points (3 components per point)
 	* @return MOORDYN_SUCCESS If the data is correctly set, an error code
@@ -185,7 +194,7 @@ public:
 	{
 		if (!U || !Ud)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Received a Null pointer in "
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Received a Null pointer in "
 				<< "MoorDyn::SetWaveKin()" << endl
 				<< "Both velocity and acceleration arrays are needed"
 				<< endl;
@@ -194,7 +203,7 @@ public:
 
 		if (!U_1 || !U_2 || !Ud_1 || !Ud_2)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Memory not allocated."
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Memory not allocated."
 				<< " Have you called MoorDyn::ExternalWaveKinInit()?"
 				<< endl;
 			return MOORDYN_MEM_ERROR;
@@ -239,14 +248,14 @@ protected:
 		if (!NCoupedDOF())
 		{
 			if (f)
-				Cout(MOORDYN_WRN_LEVEL) << "Warning: Forces have been asked on "
+				_log->Cout(MOORDYN_WRN_LEVEL) << "Warning: Forces have been asked on "
 					<< "the coupled entities, but there are no such entities"
 					<< endl;
 			return MOORDYN_SUCCESS;
 		}
 		if (NCoupedDOF() && !f)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: " << __PRETTY_FUNC_NAME__
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: " << __PRETTY_FUNC_NAME__
 				<< " called with a NULL forces pointer, but there are "
 				<< NCoupedDOF() << " coupled Degrees Of Freedom" << endl;
 			return MOORDYN_INVALID_VALUE;
@@ -395,26 +404,54 @@ private:
 	 */
 	inline moordyn::error_id SetupLog()
 	{
+		// env.writeLog = 0 -> MOORDYN_NO_OUTPUT
+		// env.writeLog = 1 -> MOORDYN_WRN_LEVEL
+		// env.writeLog = 2 -> MOORDYN_MSG_LEVEL
+		// env.writeLog >= 3 -> MOORDYN_DBG_LEVEL
+		int log_level = MOORDYN_ERR_LEVEL - env.writeLog;
+		if (log_level >= MOORDYN_ERR_LEVEL)
+			log_level = MOORDYN_NO_OUTPUT;
+		if (log_level < MOORDYN_DBG_LEVEL)
+			log_level = MOORDYN_DBG_LEVEL;
+		GetLogger()->SetLogLevel(log_level);
+
 		if (env.writeLog > 0)
 		{
+			// BUG: The legacy file shall be removed in the future, when all
+			// the API revamp is done. For the time being I am keeping it for
+			// simplicity
 			stringstream oname;
-			oname << _basepath << _basename << ".log";
-			Cout(MOORDYN_DBG_LEVEL) << "Creating a log file: '"
+			oname << _basepath << _basename << ".legacy.log";
+			LOGDBG << "Creating the legacy log file: '"
 				<< oname.str() << "'" << endl;
 			outfileLog.open(oname.str());
 			if (!outfileLog.is_open())
 			{
-				Cout(MOORDYN_ERR_LEVEL) << "Unable to create the log file '"
+				LOGERR << "Unable to create the legacy log file '"
 				                        << oname.str() << "'" << endl;
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
-			outfileLog << "MoorDyn v2 log file with output level "
-			          << env.writeLog << endl
-			          << "Note: options above the writeLog line in the input "
-					  << "file will not be recorded" << endl;
+			outfileLog << "MoorDyn v2 legacy log file with output level "
+			           << env.writeLog << endl;
 			// get pointer to outfile for MD objects to use
-			env.outfileLogPtr = & outfileLog;
-			return MOORDYN_SUCCESS;
+			env.outfileLogPtr = &outfileLog;
+
+			moordyn::error_id err = MOORDYN_SUCCESS;
+			string err_msg;
+			stringstream filepath;
+			filepath << _basepath << _basename << ".log";
+			try {
+				GetLogger()->SetFile(filepath.str().c_str());
+			} MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS)
+				LOGERR << "Unable to create the log at '"
+				       << filepath.str() << "': " << endl
+				       << err_msg << endl;
+			else
+				LOGMSG << "MoorDyn v2 log file with output level "
+			           << log_level_name(GetLogger()->GetLogLevel())
+			           << " at '" << filepath.str() << "'" << endl;
+			return err;
 		}
 
 		if (outfileLog.is_open())
@@ -452,12 +489,12 @@ private:
 		}
 
 		string fpath = _basepath + entry;
-		Cout(MOORDYN_MSG_LEVEL) << "Loading a curve from '"
+		_log->Cout(MOORDYN_MSG_LEVEL) << "Loading a curve from '"
 		                        << fpath << "'..." << endl;
 		ifstream f(fpath);
 		if (!f.is_open())
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Cannot read the file" << endl;
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Cannot read the file" << endl;
 			return MOORDYN_INVALID_INPUT_FILE;
 		}
 
@@ -475,7 +512,7 @@ private:
 			vector<string> entries = moordyn::str::split(fline, ' ');
 			if (entries.size() < 2)
 			{
-				Cout(MOORDYN_ERR_LEVEL) << "Error: Bad curve point" << endl
+				_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Bad curve point" << endl
 					<< "\t'" << fline << "'" << endl
 					<< "\t2 fields required, but just " << entries.size()
 					<< " are provided" << endl;
@@ -483,11 +520,11 @@ private:
 			}
 			x.push_back(atof(entries[0].c_str()));
 			y.push_back(atof(entries[0].c_str()));
-			Cout(MOORDYN_DBG_LEVEL) << "(" << x.back() << ", "
+			_log->Cout(MOORDYN_DBG_LEVEL) << "(" << x.back() << ", "
 				<< y.back() << ")" << endl;
 		}
 
-		Cout(MOORDYN_MSG_LEVEL) << "OK" << endl;
+		_log->Cout(MOORDYN_MSG_LEVEL) << "OK" << endl;
 		return MOORDYN_SUCCESS;
 	}
 
@@ -525,7 +562,7 @@ private:
 
 		if (xv.size() > nCoef)
 		{
-			Cout(MOORDYN_ERR_LEVEL) << "Error: Too much points in the curve"
+			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Too much points in the curve"
 				<< endl << "\t" << xv.size() << " points given, but just "
 				<< nCoef << " are accepted" << endl;
 			return MOORDYN_INVALID_INPUT;

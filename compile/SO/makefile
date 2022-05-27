@@ -60,7 +60,7 @@ kiss_fftr.o: ../../source/kiss_fftr.c ../../source/kiss_fftr.h
 Line.o: ../../source/Line.cpp ../../source/Line.h ../../source/QSlines.h
 	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
 
-Connection.o: ../../source/Connection.cpp ../../source/Connection.h
+Connection.o: ../../source/Connection.cpp ../../source/Connection.hpp ../../source/Connection.h
 	$(CXX) $(CPPFLAGS) ../../source/Connection.cpp
 
 Body.o: ../../source/Body.cpp ../../source/Body.h
@@ -69,7 +69,7 @@ Body.o: ../../source/Body.cpp ../../source/Body.h
 Rod.o: ../../source/Rod.cpp ../../source/Rod.h
 	$(CXX) $(CPPFLAGS) ../../source/Rod.cpp
 
-Waves.o: ../../source/Waves.cpp ../../source/Waves.h
+Waves.o: ../../source/Waves.cpp ../../source/Waves.hpp
 	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
 
 Log.o: ../../source/Log.cpp ../../source/Log.hpp

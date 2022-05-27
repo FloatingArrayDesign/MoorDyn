@@ -16,9 +16,8 @@
  */
 
 #include "Body.h"
-#include "Connection.h"
 #include "Rod.h"
-#include "Waves.h"
+#include "Waves.hpp"
 
 // connection member functions
 
@@ -91,7 +90,7 @@ void Body::setup(int number_in, types type_in, double r6_in[6], double rCG_in[3]
 
 
 // this function handles assigning a line to a connection node
-void Body::addConnectionToBody(Connection *theConnection, double coords[3])
+void Body::addConnectionToBody(moordyn::Connection *theConnection, double coords[3])
 {
 	if (wordy>0) cout << "C" << theConnection->number << "->B" << number << " ";	
 	
@@ -136,7 +135,7 @@ void Body::addRodToBody(Rod *theRod, double endCoords[6])
 };
 
 
-void Body::setEnv(EnvCond *env_in, Waves *waves_in)
+void Body::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 {
 	env = env_in;      // set pointer to environment settings object
 	waves = waves_in;  // set pointer to Waves  object

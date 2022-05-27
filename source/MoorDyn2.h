@@ -18,6 +18,8 @@
 #define __MOORDYN2_H__
 
 #include "MoorDynAPI.h"
+#include "Connection.h"
+#include "Waves.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -33,7 +35,7 @@ extern "C"
  */
 
 /// A mooring system instance
-typedef void* MoorDyn;
+typedef struct __MoorDyn* MoorDyn;
 
 
 /** @brief Creates a MoorDyn instance
@@ -57,18 +59,59 @@ MoorDyn DECLDIR MoorDyn_Create(const char *infilename);
 unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system);
 
 /** @brief Set the instance verbosity level
- *
  * @param system The Moordyn system
  * @param verbosity The verbosity level. It can take the following values
  *  - MOORDYN_DBG_LEVEL Every single message will be printed
  *  - MOORDYN_MSG_LEVEL Messages specially designed to help debugging the code
  *    will be omitted
  *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
- *  - MOORDYN_WRN_LEVEL Just errors will be reported
+ *  - MOORDYN_ERR_LEVEL Just errors will be reported
+ *  - MOORDYN_NO_OUTPUT No info will be reported
  * @return 0 If the verbosity level is correctly set, an error code otherwise
  * (see @ref moordyn_errors)
  */
 int DECLDIR MoorDyn_SetVerbosity(MoorDyn system, int verbosity);
+
+/** @brief Set the instance log file
+ * @param system The Moordyn system
+ * @param log_path The file path to print the log file
+ * @return 0 If the log file is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR MoorDyn_SetLogFile(MoorDyn system, const char* log_path);
+
+/** @brief Set the instance log file printing level
+ * @param system The Moordyn system
+ * @param verbosity The log file print level. It can take the following values
+ *  - MOORDYN_DBG_LEVEL Every single message will be printed
+ *  - MOORDYN_MSG_LEVEL Messages specially designed to help debugging the code
+ *    will be omitted
+ *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
+ *  - MOORDYN_ERR_LEVEL Just errors will be reported
+ *  - MOORDYN_NO_OUTPUT No info will be reported
+ * @return 0 If the printing level is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR MoorDyn_SetLogLevel(MoorDyn system, int verbosity);
+
+/** @brief Log a message
+ * @param system The Moordyn system
+ * @param level The message level. It can take the following values
+ *  - MOORDYN_DBG_LEVEL for debugging messages
+ *  - MOORDYN_MSG_LEVEL for regular information messages
+ *  - MOORDYN_WRN_LEVEL for warnings
+ *  - MOORDYN_ERR_LEVEL for errors
+ * @param msg The message to log
+ * @return 0 If the printing level is correctly set, an error code otherwise
+ * (see @ref moordyn_errors)
+ * @note This messages are subjected to the same rules than the inner messages,
+ * i.e. if @p level is lower than the threshold levels set with
+ * MoorDyn_SetVerbosity() and MoorDyn_SetLogLevel(), the message will not be
+ * logged in the terminal and the log file respectively
+ * @note This function will not log the file, line and function where it is
+ * called from, not even in case of warnings or errors
+ */
+int DECLDIR MoorDyn_Log(MoorDyn system, int level, const char* msg);
 
 /** @brief Compute the initial condition of a MoorDyn system
  * 
@@ -108,40 +151,52 @@ int DECLDIR MoorDyn_Step(MoorDyn system, const double *x, const double *xd,
  */
 int DECLDIR MoorDyn_Close(MoorDyn system);
 
+/** @brief Get the wave kinematics instance
+ *
+ * The wave kinematics instance is only useful if WaveKin option is set to 2 in
+ * the input file.
+ * @param system The Moordyn system
+ * @return The waves instance, NULL if errors happened
+ */
+MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system);
+
 /** @brief Initializes the external Wave kinetics
  *
- * This is useless unless WaveKin option is set in the input file. If that is
- * the case, remember calling this function after MoorDyn_Init()
+ * This is useless unless WaveKin option is set to 1 in the input file. If that
+ * is the case, remember calling this function after MoorDyn_Init()
  * @param system The Moordyn system
  * @param n The number of points where the wave kinematics shall be provided
  * @return 0 If the mooring system is correctly destroyed, an error code
  * otherwise (see @ref moordyn_errors)
  */
-int DECLDIR MoorDyn_InitExtWaves(MoorDyn system, unsigned int *n);
+int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int *n);
 
 /** @brief Get the points where the waves kinematics shall be provided
+ *
+ * The kinematics on those points shall be provided just if WaveKin is set to 1
+ * in the input file
  * @param system The Moordyn system
  * @param r The output coordinates (3 components per point)
  * @return 0 If the data is correctly set, an error code otherwise
  * (see @ref moordyn_errors)
- * @see MoorDyn_InitExtWaves()
+ * @see MoorDyn_ExternalWaveKinInit()
  */
-int DECLDIR MoorDyn_GetWavesCoords(MoorDyn system, double *r);
+int DECLDIR MoorDyn_GetWaveKinCoordinates(MoorDyn system, double *r);
 
 /** @brief Set the kinematics of the waves
  *
- * Use this function if WaveKin option is set in the input file
+ * Use this function if WaveKin option is set to 1 in the input file
  * @param system The Moordyn system
  * @param U The velocities at the points (3 components per point)
  * @param Ud The accelerations at the points (3 components per point)
  * @return 0 If the data is correctly set, an error code otherwise
  * (see @ref moordyn_errors)
- * @see MoorDyn_InitExtWaves()
- * @see MoorDyn_GetWavesCoords()
+ * @see MoorDyn_ExternalWaveKinInit()
+ * @see MoorDyn_GetWaveKinCoordinates()
  */
-int DECLDIR MoorDyn_SetWaves(MoorDyn system, const double *U,
-                                             const double *Ud,
-                                             double t);
+int DECLDIR MoorDyn_SetWaveKin(MoorDyn system, const double *U,
+                                               const double *Ud,
+                                               double t);
 
 /** @brief Get the number of bodies
  *
@@ -169,6 +224,14 @@ unsigned int DECLDIR MoorDyn_GetNumberRods(MoorDyn system);
  * (see @ref moordyn_errors)
  */
 unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system);
+
+/** @brief Get a connection
+ * @param system The Moordyn system
+ * @param l The connection
+ * @return The connection instance, NULL if errors happened
+ */
+MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
+                                                unsigned int l);
 
 /** @brief Get the number of lines
  *
@@ -214,28 +277,6 @@ double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line);
 int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
                                 float FairHTen[], float FairVTen[],
                                 float AnchHTen[], float AnchVTen[]);
-
-/** @brief Get the position of a connection
- * @param system The Moordyn system
- * @param l The connection
- * @param pos The output position
- * @return 0 If the data is correctly set, an error code otherwise
- * (see @ref moordyn_errors)
- */
-int DECLDIR MoorDyn_GetConnectPos(MoorDyn system,
-                                  unsigned int l,
-                                  double pos[3]);
-
-/** @brief Get the force at a connection
- * @param system The Moordyn system
- * @param l The connection
- * @param f The output force
- * @return 0 If the data is correctly set, an error code otherwise
- * (see @ref moordyn_errors)
- */
-int DECLDIR MoorDyn_GetConnectForce(MoorDyn system,
-                                    unsigned int l,
-                                    double f[3]);
 
 /** @brief Get a line node position
  * @param system The Moordyn system

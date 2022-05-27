@@ -72,6 +72,8 @@
 #define MOORDYN_MSG_LEVEL 1
 /// Debug message
 #define MOORDYN_DBG_LEVEL 0
+/// Disable the output since no output will never reach this level
+#define MOORDYN_NO_OUTPUT 4096
 
 /**
  * @}
