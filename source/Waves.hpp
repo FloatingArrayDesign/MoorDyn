@@ -115,6 +115,8 @@ public:
 	 */
 	void setup(EnvCond *env);
 
+	/// @{
+
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific positon and time
 	 * @param x The point x coordinate
@@ -127,6 +129,10 @@ public:
 	 */
 	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta, double* PDyn_out);
 
+	void getWaveKin(double x, double y, double z, double t, vec &U, vec &Ud, moordyn::real &zeta, moordyn::real &PDyn_out);
+
+	/// @}
+
 	/** @brief instantiator that takes discrete wave elevation fft data only
 	 * (MORE RECENT)
 	 * @param zetaC0 Amplitude of each frequency component
@@ -135,7 +141,7 @@ public:
 	 * @param g Gravity accelerations
 	 * @param h Water depth
 	 */
-	void fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h );
+	void fillWaveGrid(moordyn::complex *zetaC0, int nw, double dw, double g, double h );
 
 	/// Constructor
 	Waves();
@@ -160,6 +166,6 @@ public:
  */
 int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray);
 
-void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out, doubleC *inputs, double *outputs);
+void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out, moordyn::complex *inputs, double *outputs);
 
 }  // ::moordyn

@@ -293,7 +293,7 @@ void Waves::setup(EnvCond *env)
 		
 		//nFFT = ?
 		
-	//	doubleC *zetaC0 = (doubleC*) malloc(nFFT*sizeof(doubleC)); 
+	//	moordyn::complex *zetaC0 = (moordyn::complex*) malloc(nFFT*sizeof(moordyn::complex)); 
 	//
 	//	double zetaCRMS = 0.0;
 	//	
@@ -467,7 +467,7 @@ void Waves::setup(EnvCond *env)
 		// allocate stuff to get passed to line functions
 		
 		
-		doubleC *zetaC0 = (doubleC*) malloc(nFFT*sizeof(doubleC)); 
+		moordyn::complex *zetaC0 = (moordyn::complex*) malloc(nFFT*sizeof(moordyn::complex)); 
 		
 		
 		// copy frequencies over from FFT output (should try to bypass this copy operation too <<<)
@@ -902,7 +902,7 @@ void Waves::getWaveKin(double x, double y, double z, double t,
 
 
 // NEW - instantiator that takes discrete wave elevation fft data only (MORE RECENT)
-void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h )
+void Waves::fillWaveGrid(moordyn::complex *zetaC0, int nw, double dw, double g, double h )
 {
 	// go about converting inputted wave stuff into a more friendly form (unnecessary now)
 
@@ -914,14 +914,14 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 	vector< double > w(nw, 0.);
 	vector< double > k(nw, 0.);	
 	
-	doubleC *zetaC = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of wave elevation
-	doubleC *PDynC = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of dynamic pressure
-	doubleC *UCx   = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of wave velocities
-	doubleC *UCy   = (doubleC*) malloc(nw*sizeof(doubleC));
-	doubleC *UCz   = (doubleC*) malloc(nw*sizeof(doubleC));
-	doubleC *UdCx  = (doubleC*) malloc(nw*sizeof(doubleC));  // Fourier transform of wave accelerations
-	doubleC *UdCy  = (doubleC*) malloc(nw*sizeof(doubleC));
-	doubleC *UdCz  = (doubleC*) malloc(nw*sizeof(doubleC));
+	moordyn::complex *zetaC = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));  // Fourier transform of wave elevation
+	moordyn::complex *PDynC = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));  // Fourier transform of dynamic pressure
+	moordyn::complex *UCx   = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));  // Fourier transform of wave velocities
+	moordyn::complex *UCy   = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));
+	moordyn::complex *UCz   = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));
+	moordyn::complex *UdCx  = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));  // Fourier transform of wave accelerations
+	moordyn::complex *UdCy  = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));
+	moordyn::complex *UdCz  = (moordyn::complex*) malloc(nw*sizeof(moordyn::complex));
 	
 	
 	//dw = WaveDOmega_in;
@@ -1082,14 +1082,14 @@ void Waves::fillWaveGrid(doubleC *zetaC0, int nw, double dw, double g, double h 
 							outfileMain << w[i] << "\t";
 							outfileMain << k[i] << "\t";
 							
-							outfileMain << real(zetaC0[i]) << "\t";
-							outfileMain << imag(zetaC0[i]) << "\t";
+							outfileMain << std::real(zetaC0[i]) << "\t";
+							outfileMain << std::imag(zetaC0[i]) << "\t";
 							
-							outfileMain << real(zetaC[i]) << "\t";
-							outfileMain << imag(zetaC[i]) << "\t";
+							outfileMain << std::real(zetaC[i]) << "\t";
+							outfileMain << std::imag(zetaC[i]) << "\t";
 							
-							outfileMain << real(UCx[i]) << "\t";
-							outfileMain << imag(UCx[i]) << "\t";
+							outfileMain << std::real(UCx[i]) << "\t";
+							outfileMain << std::imag(UCx[i]) << "\t";
 							
 							outfileMain << endl;
 						}
@@ -1210,15 +1210,15 @@ Waves::~Waves()
 
 
 // perform a real-valued IFFT using kiss_fftr
-void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar* cx_out_t, doubleC *inputs, double *outputs)
+void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in_w, kiss_fft_scalar* cx_out_t, moordyn::complex *inputs, double *outputs)
 {
 	
 	int nw = nFFT/2 + 1;
 
 	for (int I=0; I<nw; I++)  
 	{	                                    // copy frequency-domain data into input vector (simpler way to do this, or bypass altogether? <<<)
-		cx_in_w[I].r = real(inputs[I]);       // real component - kiss_fft likes floats
-		cx_in_w[I].i = imag(inputs[I]);       // imaginary component
+		cx_in_w[I].r = std::real(inputs[I]);       // real component - kiss_fft likes floats
+		cx_in_w[I].i = std::imag(inputs[I]);       // imaginary component
 	}
 	
 	// do the IFFT
