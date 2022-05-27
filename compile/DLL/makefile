@@ -82,12 +82,16 @@ test_minimal.exe: ../../test/minimal.cpp libmoordyn2.dll ../../source/MoorDyn.h
 test_bodies_and_rods.exe: ../../test/bodies_and_rods.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_bodies_and_rods.exe ../../test/bodies_and_rods.cpp
 
+test_wavekin.exe: ../../test/wavekin.cpp libmoordyn2.dll ../../source/MoorDyn.h
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_wavekin.exe ../../test/wavekin.cpp
+
 test_quasi_static_chain.exe: ../../test/quasi_static_chain.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_quasi_static_chain.exe ../../test/quasi_static_chain.cpp
 
 test: test_minimal.exe test_bodies_and_rods.exe test_quasi_static_chain.exe
 	./test_minimal.exe
 	./test_bodies_and_rods.exe
+	./test_wavekin.exe
 	./test_quasi_static_chain.exe
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
