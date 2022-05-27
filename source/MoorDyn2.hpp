@@ -276,7 +276,9 @@ protected:
 		}
 		for (auto l : CpldConIs)
 		{
-			ConnectionList[l]->getFnet(f + ix);
+			vec fnet;
+			ConnectionList[l]->getFnet(fnet);
+			moordyn::vec2array(fnet, f + ix);
 			ix += 3;
 		}
 		return MOORDYN_SUCCESS;

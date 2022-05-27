@@ -1331,6 +1331,14 @@ void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6])
 	return;
 	
 }
+
+void translateMass3to6DOF(double r[3], mat &Min, double Mout[6][6])
+{
+	double min[3][3];
+	moordyn::mat2array(Min, min);
+	translateMass3to6DOF(r, min, Mout);
+}
+
 void translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6])
 {
 	

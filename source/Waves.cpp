@@ -887,7 +887,7 @@ void Waves::getWaveKin(double x, double y, double z, double PARAM_UNUSED t,
 
 // NOTE: For the time being this is just a wrapper to the original C-ish
 // function
-void Waves::getWaveKin(double x, double y, double z, double t,
+void Waves::getWaveKin(real x, real y, real z, real t,
                        vec &U, vec &Ud, moordyn::real &zeta,
 					   moordyn::real &PDyn_out)
 {

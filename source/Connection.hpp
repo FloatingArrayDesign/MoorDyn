@@ -59,76 +59,78 @@ private:
 	EnvCond *env;
 	/// global Waves object
 	moordyn::Waves *waves;
-	
-	// unique to Connection:
+
+	/// Attached lines to the connection
+	typedef struct _attachment {
+		/// The attached line
+		Line* line;
+		/// The attachment end point,
+		/// 1 = top/fairlead(end B)
+		/// 0 = bottom/anchor(end A)
+		int top;
+	} attachment;
 	/// Lines attached to this connection node
-	Line* Attached[10];
-	/// Which end of line are we attached to?
-	/// 1 = top/fairlead(end B)
-	/// 0 = bottom/anchor(end A)
-	int Top[10];
-	/// Number of attached lines
-	int nAttached;
+	std::vector<attachment> attached;
 
 	/** @defgroup conn_constants Constants set at startup from input file
-	*  @{
-	*/
+	 * @{
+	 */
 
-	double conX;
-	double conY;
-	double conZ;
-	double conM;
-	double conV;
-	double conFX;
-	double conFY;
-	double conFZ;
-	double conCdA;
-	double conCa;
+	/// Mass [kg]
+	real conM;
+	/// Volume [m3]
+	real conV;
+	/// Force [N]
+	vec conF;
+	/// Drag coefficient
+	real conCdA;
+	/// Added mass coefficient
+	real conCa;
 
 	/**
-	* @}
-	*/
+	 * @}
+	 */
 
 	/** @defgroup conn_common_line Common properties with line internal nodes
-	*  @{
-	*/
+	 * @{
+	 */
 
 	/// node position [x/y/z]
-	double r[3];
+	vec r;
 	/// node velocity[x/y/z]
-	double rd[3];
+	vec rd;
 
 	/**
-	* @}
-	*/
+	 * @}
+	 */
 
 	/// simulation time
-	double t;
+	real t;
 	/// simulation time current integration was started at (used for BC function)
-	double t0;
-	/// fairlead position for vessel node types [x/y/z]
-	double r_ves[3];
-	/// fairlead velocity for vessel node types [x/y/z]
-	double rd_ves[3];
+	real t0;
+	/// fairlead position for vessel/coupled node types [x/y/z]
+	vec r_ves;
+	/// fairlead velocity for vessel/coupled node types [x/y/z]
+	vec rd_ves;
 
 	/// total force on node
-	double Fnet[3];
+	vec Fnet;
 
 	/// node mass + added mass matrices
-	double M[3][3];
+	mat M;
 
 	/** @defgroup conn_wave Wave data
 	*  @{
 	*/
 
 	/// free surface elevation
-	double zeta;
+	real zeta;
 	/// dynamic pressure
-	double PDyn;
+	real PDyn;
 	/// wave velocities
-	double U [3];
+	vec U;
 	/// wave accelerations
-	double Ud[3];
+	vec Ud;
 
 	/**
 	* @}
@@ -197,8 +199,8 @@ public:
 	 * @param Ca_in Added mass coefficient used along with V to calculate added
 	 * mass on node
 	 */
-	void setup(int number_in, types type_in, const double r0_in[3], double M_in,
-	           double V_in, const double F_in[3], double CdA_in, double Ca_in);
+	void setup(int number_in, types type_in, const real r0_in[3], real M_in,
+	           real V_in, const real F_in[3], real CdA_in, real Ca_in);
 
 	/** @brief Attach a line endpoint to this connection
 	 * @param theLine The line to be attached
@@ -219,7 +221,7 @@ public:
 	 * with the provided @p lineID
 	 */
 	void removeLineFromConnect(int lineID, int *TopOfLine,
-	                           double rEnd[], double rdEnd[]);
+	                           real rEnd[], real rdEnd[]);
 
 	/** @brief Initialize the FREE connection state
 	 * @param X The output state variables, i.e. the velocity [x,y,z] and
@@ -232,17 +234,17 @@ public:
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
 	 */
-	void getConnectState(vector<double> &r_out, vector<double> &rd_out);
+	void getConnectState(vec &r_out, vec &rd_out);
 
 	/** @brief Get the force on the connection
 	 * @param Fnet_out The output force [x,y,z]
 	 */
-	void getFnet(double Fnet_out[3]);
+	void getFnet(vec &Fnet_out);
 
 	/** @brief Get the mass matrix
 	 * @param M_out The output mass matrix
 	 */
-	void getM(double M_out[3][3]);
+	void getM(mat &M_out);
 
 	/** @brief Get the output
 	 * @param outChan The query
@@ -257,14 +259,18 @@ public:
 	void setEnv(EnvCond *env_in, moordyn::Waves *waves_in);
 
 	/** @brief Multiply the drag by a factor
+	 *
+	 * function for boosting drag coefficients during IC generation
 	 * @param scaler Drag factor
 	 */
-	void scaleDrag(double scaler);
+	void scaleDrag(real scaler);
 
 	/** @brief Set the time stamp
+	 *
+	 * function to reset time after IC generation
 	 * @param time Simulation time
 	 */
-	void setTime(double time);
+	void setTime(real time);
 
 	/** @brief Initialize the time step integration
 	 *
@@ -276,7 +282,7 @@ public:
 	 */
 	void initiateStep(const double rFairIn[3],
 	                  const double rdFairIn[3],
-	                  double time);
+	                  real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
@@ -285,7 +291,7 @@ public:
 	 * @param time Simulation time
 	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
-	void updateFairlead(const double time);
+	void updateFairlead(const real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *

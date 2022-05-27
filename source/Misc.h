@@ -885,6 +885,8 @@ void translateMassInertia3to6DOF(double r[3], double Min[3][3], double Iin[3][3]
 //void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
 void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
 
+void translateMass3to6DOF(double r[3], mat &Min, double Mout[6][6]);
+
 void translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6]);
 void translateMass6to6DOF(double r[3], double Min[36], double Mout[36]);
 
