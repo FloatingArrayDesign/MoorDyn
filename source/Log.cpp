@@ -66,7 +66,6 @@ std::ostream& cnul = __cnul;
 
 MultiStream::MultiStream()
 	: _fpath("")
-	, _fout(NULL)
 	, _fout_enabled(false)
 	, _terminal(&cnul)
 {
