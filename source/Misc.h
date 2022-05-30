@@ -485,6 +485,11 @@ inline void interp(const vector<T> &xp,
                    const vector<T> &x,
                    vector<T> &y)
 {
+	if (yp.size() == 1) {
+		y[0] = yp[0];
+		return;
+	}
+
 	real f;
 	unsigned int j = 1;
 	for (unsigned int i = 0; i < x.size(); i++)
