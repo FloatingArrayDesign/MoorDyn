@@ -45,9 +45,11 @@ std::vector<real> gridAxisCoords(Waves::coordtypes coordtype,
 	// fill in coordinates
 	if (coordtype == Waves::GRID_SINGLE)   
 		coordarray.push_back(0.0);
-	else if (coordtype == Waves::GRID_LIST) 
-		for (unsigned int i = 0; i < n; i++)
+	else if (coordtype == Waves::GRID_LIST) { 
+		for (unsigned int i = 0; i < n; i++) {
 			coordarray.push_back(atof(entries[i].c_str()));
+		}
+	}
 	else if (coordtype == Waves::GRID_LATTICE)
 	{
 		real first = atof(entries[0].c_str()), last = atof(entries[1].c_str());
@@ -80,64 +82,62 @@ void Waves::makeGrid(const char* filepath)
 	vector<string> lines;
 	string line;
 	
-	ifstream myfile(filepath);
-	if (!myfile.is_open()) {
+	ifstream f(filepath);
+	if (!f.is_open()) {
 		LOGERR << "Cannot read the file '"
 		       << filepath << "'" << endl;
 		throw moordyn::input_file_error("Invalid file");
 	}
-	while (getline(myfile, line))
+	while (getline(f, line))
 		lines.push_back(line);
-	myfile.close();
+	f.close();
 
-	if (lines.size() >= 9)   // make sure enough lines
-	{
-		vector<string> entries;
-		coordtypes coordtype;
-
-		entries = split(lines[3]);                  // get the entry type
-		coordtype = (coordtypes)atoi(entries[0].c_str());
-		entries = split(lines[4]);                  // get entries
-		px = gridAxisCoords(coordtype, entries);
-		nx = px.size();
-		if (!nx) {
-			LOGERR << "Invalid entry for the grid x values in file '"
-			       << filepath << "'" << endl;
-			throw moordyn::invalid_value_error("Invalid line");
-		}
-
-		entries = split(lines[5]);                  // get the entry type	
-		coordtype = (coordtypes)atoi(entries[0].c_str());		
-		entries = split(lines[6]);                  // get entries
-		py = gridAxisCoords(coordtype, entries);
-		ny = py.size();
-		if (!ny) {
-			LOGERR << "Invalid entry for the grid y values in file '"
-			       << filepath << "'" << endl;
-			throw moordyn::invalid_value_error("Invalid line");
-		}
-
-		entries = split(lines[7]);                  // get the entry type		
-		coordtype = (coordtypes)atoi(entries[0].c_str());	
-		entries = split(lines[8]);                  // get entries
-		pz = gridAxisCoords(coordtype, entries);
-		nz = pz.size();
-		if (!nz) {
-			LOGERR << "Invalid entry for the grid z values in file '"
-			       << filepath << "'" << endl;
-			throw moordyn::invalid_value_error("Invalid line");
-		}
-
-		LOGDBG << "Setup the waves grid with " << nx << " x "
-		        << ny << " x " << nz << " points " << endl;
-	}
-	else
+	if (lines.size() < 9)
 	{
 		LOGERR << "The waves grid file '"
 		       << filepath << "' has only " << lines.size()
 		       << "lines, but at least 9 are required" << endl;
 		throw moordyn::input_file_error("Invalid file format");
 	}
+
+	vector<string> entries;
+	coordtypes coordtype;
+
+	entries = split(lines[3]);
+	coordtype = (coordtypes)atoi(entries[0].c_str());
+	entries = split(lines[4]);
+	px = gridAxisCoords(coordtype, entries);
+	nx = px.size();
+	if (!nx) {
+		LOGERR << "Invalid entry for the grid x values in file '"
+				<< filepath << "'" << endl;
+		throw moordyn::invalid_value_error("Invalid line");
+	}
+
+	entries = split(lines[5]);
+	coordtype = (coordtypes)atoi(entries[0].c_str());
+	entries = split(lines[6]);
+	py = gridAxisCoords(coordtype, entries);
+	ny = py.size();
+	if (!ny) {
+		LOGERR << "Invalid entry for the grid y values in file '"
+				<< filepath << "'" << endl;
+		throw moordyn::invalid_value_error("Invalid line");
+	}
+
+	entries = split(lines[7]);
+	coordtype = (coordtypes)atoi(entries[0].c_str());
+	entries = split(lines[8]);
+	pz = gridAxisCoords(coordtype, entries);
+	nz = pz.size();
+	if (!nz) {
+		LOGERR << "Invalid entry for the grid z values in file '"
+				<< filepath << "'" << endl;
+		throw moordyn::invalid_value_error("Invalid line");
+	}
+
+	LOGDBG << "Setup the waves grid with " << nx << " x "
+			<< ny << " x " << nz << " points " << endl;
 
 	LOGMSG << "'" << filepath << "' parsed" << endl;
 
@@ -296,8 +296,6 @@ void Waves::setup(EnvCond *env, const char* folder)
 	// NOTE: nodal settings should use storeWaterKin in objects
 
 	// now go through each applicable WaveKin option
-
-	// ===================== set from inputted wave elevation FFT, grid approach =====================
 	if (env->WaveKin == moordyn::WAVES_FFT_GRID)
 	{
 		const string WaveFilename = (string)folder + "/wave_frequencies.txt";
@@ -616,9 +614,9 @@ void Waves::setup(EnvCond *env, const char* folder)
 			// fill in output arrays
 			for (unsigned int i = 0; i < nz; i++)
 			{
-				ux  [0][0][i][0] = UProfileUx[i];
-				uy  [0][0][i][0] = UProfileUy[i];
-				uz  [0][0][i][0] = UProfileUz[i];
+				ux [0][0][i][0] = UProfileUx[i];
+				uy [0][0][i][0] = UProfileUy[i];
+				uz [0][0][i][0] = UProfileUz[i];
 			}
 		}
 		else
@@ -771,9 +769,9 @@ void Waves::setup(EnvCond *env, const char* folder)
 						UProfileUz[iz][iti - 1] * (1. - ft);
 					// TODO: approximate fluid accelerations using finite
 					//       differences
-					ax  [0][0][iz][it] = 0.0;
-					ay  [0][0][iz][it] = 0.0;
-					az  [0][0][iz][it] = 0.0;
+					ax [0][0][iz][it] = 0.0;
+					ay [0][0][iz][it] = 0.0;
+					az [0][0][iz][it] = 0.0;
 				}
 			}
 		}
@@ -799,9 +797,9 @@ void Waves::setup(EnvCond *env, const char* folder)
 								UProfileUz, izi, iti, fz, ft);
 							// TODO: approximate fluid accelerations using
 							//       finite differences
-							ax  [0][0][iz][it] = 0.0;
-							ay  [0][0][iz][it] = 0.0;
-							az  [0][0][iz][it] = 0.0;
+							ax [0][0][iz][it] = 0.0;
+							ay [0][0][iz][it] = 0.0;
+							az [0][0][iz][it] = 0.0;
 						}
 					}
 				}

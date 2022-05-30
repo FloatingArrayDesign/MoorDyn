@@ -61,7 +61,7 @@ void wave(double t, const double *r, double *u, double *du)
     du[1] = -zf * A * w * w * cos(k * r[0] - w * t);
 }
 
-/** @brief Runs a simulation with a constant underwater current
+/** @brief Runs a simulation
  *
  * The water kinematics is set using the API, i.e. MoorDyn_InitExtWaves(),
  * MoorDyn_GetWavesCoords() and MoorDyn_SetWaves()
@@ -155,6 +155,62 @@ bool api(void (*cb)(double, const double*, double*, double*))
     return true;
 }
 
+/** @brief Runs a simulation
+ *
+ * The water kinematics is set using the Waves instance, i.e. moordyn::Waves
+ * @return true if the test is passed, false if problems are detected
+ */
+bool grid()
+{
+    MoorDyn system = MoorDyn_Create("../../test/Mooring/wavekin_2/wavekin_2.txt");
+    if (!system)
+    {
+        cerr << "Failure Creating the Mooring system" << endl;
+        return false;
+    }
+
+    const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+    if (n_dof != 3) {
+        cerr << "3x1 = 3 DOFs were expected, but " << n_dof
+             << "were reported" << endl;
+        MoorDyn_Close(system);
+        return false;
+    }
+
+    int err;
+    double x[3], dx[3];
+    // Set the fairlead connections, as they are in the config file
+    std::fill(x, x + 3, 0.0);
+    std::fill(dx, dx + 3, 0.0);
+    err = MoorDyn_Init(system, x, dx);
+    if (err != MOORDYN_SUCCESS) {
+        MoorDyn_Close(system);
+        cerr << "Failure during the mooring initialization: " << err << endl;
+        return false;
+    }
+
+    // Integrate in time
+    const double t_max = 30.0;
+    double t = 0.0, dt = 0.1;
+    double f[3];
+    while(t < t_max) {
+        err = MoorDyn_Step(system, x, dx, f, &t, &dt);
+        if (err != MOORDYN_SUCCESS) {
+            MoorDyn_Close(system);
+            cerr << "Failure during the mooring step: " << err << endl;
+            return false;
+        }
+    }
+
+    err = MoorDyn_Close(system);
+    if (err != MOORDYN_SUCCESS) {
+        cerr << "Failure closing Moordyn: " << err << endl;
+        return false;
+    }
+
+    return true;
+}
+
 /** @brief Runs all the test
  * @return 0 if the tests have ran just fine, 1 otherwise
  */
@@ -164,6 +220,8 @@ int main(int, char**)
         return 1;
     if (!api(&wave))
         return 1;
+    if (!grid())
+        return 2;
 
     return 0;
 }

@@ -1,0 +1,31 @@
+--------------------- MoorDyn Input File ------------------------------------
+MoorDyn input file of the mooring system for FD validation cases
+----------------------- LINE TYPES ------------------------------------------
+TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
+(name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
+chain      0.252   390        1.674e9    -1.0        0          1.37   1.0    0.64    0.0
+---------------------- CONNECTION PROPERTIES --------------------------------
+ID    Type      X       Y       Z       Mass   Volume  CdA    Ca
+(#)   (-)       (m)     (m)     (m)     (kg)   (mˆ3)   (m^2)  (-)
+1     Fixed     400    0.0     -50.0    0      0       0      0
+2     Vessel    0.0     0.0     0.0     0      0       0      0
+---------------------- LINES ----------------------------------------
+ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+(#)   (name)     (#)      (#)       (m)       (-)     (-)
+1     chain      1        2         410       82      -
+---------------------- OPTIONS -----------------------------------------
+2             writeLog             Write a log file
+0.001         dtM                  time step to use in mooring integration (s)
+1.0e5         kBot                 bottom stiffness (Pa/m)
+1.0e4         cBot                 bottom damping (Pa-s/m)
+1025.0        WtrDnsty             water density (kg/m^3)
+50            WtrDpth              water depth (m)
+1.0           dtIC                 time interval for analyzing convergence during IC gen (s)
+200.0         TmaxIC               max time for ic gen (s)
+4.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
+1.0e-3        threshIC             threshold for IC convergence (-)
+0.5           FrictionCoefficient  general bottom friction coefficient, as a start (-)
+3             WaveKin              the wave elevations are provided in a grid (-)
+1.0           dtWave               the time step for the waves (s)
+1             Currents             the water currents are provided in a grid (-)
+------------------------- need this line -------------------------------------- 

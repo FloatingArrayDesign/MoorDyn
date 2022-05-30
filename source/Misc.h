@@ -421,6 +421,16 @@ inline unsigned int interp_factor(const vector<T> &xp,
                                   const T &x,
                                   T &f)
 {
+	if (xp.size() == 1) {
+		f = 0.0;
+		return 0;
+	}
+
+	if (i0 == 0)
+		i0++;
+	if (i0 > xp.size() - 1)
+		i0 = xp.size() - 1;
+
 	if (x <= xp[i0 - 1]) {
 		f = 0.0;
 		return i0;

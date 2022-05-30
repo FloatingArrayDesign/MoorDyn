@@ -425,6 +425,14 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
 	env.WaveKin = (moordyn::waves_settings)WaveKinTemp;
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		waves->setup(&env, _basepath.c_str());
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS)
+		return err;
 
 	// @mth: new approach to be implemented
 	// ------------------------- calculate wave time series if needed -------------------
@@ -1568,6 +1576,8 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					ICthresh = atof(entries[0].c_str());
 				else if (name == "WaveKin")
 					WaveKinTemp = atoi(entries[0].c_str());
+				else if (name == "dtWave")
+					env.dtWave = atoi(entries[0].c_str());
 				else if (name == "Currents")
 					env.Current = (moordyn::currents_settings)atoi(entries[0].c_str());
 				else if (name == "WriteUnits")
@@ -1581,7 +1591,6 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				// output writing period (0 for at every call)
 				else if (name == "dtOut")
 					dtOut = atof(entries[0].c_str());
-				// >>>>>>>>>> add dtWave...
 				else
 					LOGWRN << "Warning: Unrecognized option '"
 					                        << name << "'" << endl;
@@ -1794,7 +1803,14 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 
 	// Setup the waves and populate them
 	waves = new moordyn::Waves(_log);
-	waves->setup(&env);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		waves->setup(&env, _basepath.c_str());
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS)
+		return err;
 
 	GroundBody->setEnv( &env, waves);
 	for (auto obj : BodyList)
