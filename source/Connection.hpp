@@ -199,8 +199,8 @@ public:
 	 * @param Ca_in Added mass coefficient used along with V to calculate added
 	 * mass on node
 	 */
-	void setup(int number_in, types type_in, const real r0_in[3], real M_in,
-	           real V_in, const real F_in[3], real CdA_in, real Ca_in);
+	void setup(int number_in, types type_in, const double r0_in[3], double M_in,
+	           double V_in, const double F_in[3], double CdA_in, double Ca_in);
 
 	/** @brief Attach a line endpoint to this connection
 	 * @param theLine The line to be attached
@@ -221,7 +221,7 @@ public:
 	 * with the provided @p lineID
 	 */
 	void removeLineFromConnect(int lineID, int *TopOfLine,
-	                           real rEnd[], real rdEnd[]);
+	                           double rEnd[], double rdEnd[]);
 
 	/** @brief Initialize the FREE connection state
 	 * @param X The output state variables, i.e. the velocity [x,y,z] and

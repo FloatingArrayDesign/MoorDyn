@@ -32,9 +32,9 @@ Connection::~Connection()
 {
 }
 
-void Connection::setup(int number_in, types type_in, const real r0_in[3],
-                       real M_in, real V_in, const real F_in[3],
-                       real CdA_in, real Ca_in) 
+void Connection::setup(int number_in, types type_in, const double r0_in[3],
+                       double M_in, double V_in, const double F_in[3],
+                       double CdA_in, double Ca_in) 
 {
 	// props contains:
 	// Node, Type, X, Y, Z, M, V, FX, FY, FZ, CdA, Ca
@@ -75,7 +75,7 @@ void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 
 // this function handles removing a line from a connection node
 void Connection::removeLineFromConnect(int lineID, int *TopOfLine,
-                                       real rEnd[], real rdEnd[])
+                                       double rEnd[], double rdEnd[])
 {
 	// look through attached lines
 	for(auto it = std::begin(attached); it != std::end(attached); ++it)
@@ -124,14 +124,14 @@ void Connection::initializeConnect(double X[6])
 		// assign initial node kinematics to state vector
 		moordyn::vec2array(r, X + 3);
 		moordyn::vec2array(rd, X);
-		
+
 		if (-env->WtrDpth > r[2]) {
 			LOGERR
 				<< "Error: water depth is shallower than Point "
 				<< number << "." << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
 		}
-		
+
 		// set water kinematics flag based on global wave and current settings (for now)
 		if((env->WaveKin==2) || (env->WaveKin==3) || (env->WaveKin==6) || (env->Current==1) || (env->Current==2))
 			WaterKin = 2;   // water kinematics to be considered through precalculated global grid stored in Waves object
@@ -139,10 +139,8 @@ void Connection::initializeConnect(double X[6])
 			WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
 
 	}
-	
-	LOGDBG
-		<< "   Initialized Connection " << number << endl;
-			
+
+	LOGDBG << "   Initialized Connection " << number << endl;
 };
 
 
@@ -274,8 +272,8 @@ void Connection::setKinematics(double *r_in, double *rd_in)
 }
 
 // pass the latest states to the connection ()
-moordyn::error_id Connection::setState(const double* X,
-                                       const real PARAM_UNUSED time)
+moordyn::error_id Connection::setState(const double X[6],
+                                       const double PARAM_UNUSED time)
 {
 	// the kinematics should only be set with this function of it's an independent/free connection
 	if (type != FREE) // "connect" type
