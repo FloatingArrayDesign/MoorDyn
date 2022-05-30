@@ -98,8 +98,8 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 	env.rho_w = 1025.;
 	env.kb = 3.0e6;
 	env.cb = 3.0e5;
-	env.WaveKin = 0;                // 0=none
-	env.Current = 0;                // 0=none
+	env.WaveKin = moordyn::WAVES_NONE;
+	env.Current = moordyn::CURRENTS_NONE;
 	env.dtWave = 0.25;
 	env.WriteUnits = 1;             // by default, write units line
 	env.writeLog = 0;               // by default, don't write out a log file
@@ -424,7 +424,7 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
-	env.WaveKin = WaveKinTemp;
+	env.WaveKin = (moordyn::waves_settings)WaveKinTemp;
 
 	// @mth: new approach to be implemented
 	// ------------------------- calculate wave time series if needed -------------------
@@ -1569,7 +1569,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 				else if (name == "WaveKin")
 					WaveKinTemp = atoi(entries[0].c_str());
 				else if (name == "Currents")
-					env.Current = atoi(entries[0].c_str());
+					env.Current = (moordyn::currents_settings)atoi(entries[0].c_str());
 				else if (name == "WriteUnits")
 					env.WriteUnits = atoi(entries[0].c_str());
 				else if (name == "FrictionCoefficient")
@@ -1793,7 +1793,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 	LOGDBG << "----- MoorDyn Model Summary (to be written) -----" << endl;
 
 	// Setup the waves and populate them
-	waves = new moordyn::Waves();
+	waves = new moordyn::Waves(_log);
 	waves->setup(&env);
 
 	GroundBody->setEnv( &env, waves);

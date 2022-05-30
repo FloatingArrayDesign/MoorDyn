@@ -97,6 +97,8 @@
 #define MOORDYN_MEM_ERROR -5
 /// Invalid values
 #define MOORDYN_INVALID_VALUE -6
+/// Invalid values
+#define MOORDYN_NON_IMPLEMENTED -7
 /// Unhandled error
 #define MOORDYN_UNHANDLED_ERROR -255
 

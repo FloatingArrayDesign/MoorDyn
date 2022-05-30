@@ -17,8 +17,8 @@
 #pragma once
 
 #include "Misc.h"
-
-using namespace std;
+#include "Log.hpp"
+#include <vector>
 
 namespace moordyn
 {
@@ -32,46 +32,152 @@ namespace moordyn
  *
  * This system is used just if WaveKin is set to 2
  */
-class Waves
+class Waves : public LogUser
 {
+public:
+	/// Constructor
+	Waves(moordyn::Log *log);
+	/// Destructor
+	~Waves();
+
+private:
+	/** @brief Setup the grid
+	 *
+	 * The grid is defined in a tabulated file (separator=' '). That file has 3
+	 * head lines, which are ignored, and then 3 lines defining the grid points
+	 * in x, y, z.
+	 *
+	 * Each one can be defined in 3 ways:
+	 *   - Defining just a point in 0
+	 *   - Defining the list of coordinates
+	 *   - Defining the boundaries and the number of equispaced points
+	 *
+	 * @param filepath The definition file path
+	 * @throws moordyn::input_file_error If the input file cannot be read, or if
+	 * the fileis ill-formatted
+	 * @throws moordyn::invalid_value_error If invalid values for the grid
+	 * initialization are found
+	 */
+	void makeGrid(const char* filepath="Mooring/water_grid.txt");
+
+	/** @brief Allocate the needed memory for the kinematics storage
+	 * @param filepath The definition file path. If NULL or "" isprovided, then
+	 * "Mooring/water_grid.txt" is considered
+	 * @throws moordyn::invalid_value_error If either the grid, or the time
+	 * series has not been initialized yet
+	 */
+	void allocateKinematicsArrays();
+
+	/** @brief instantiator that takes discrete wave elevation fft data only
+	 * (MORE RECENT)
+	 * @param zetaC0 Amplitude of each frequency component
+	 * @param nw Number of wave components
+	 * @param dw The difference in frequency between consequtive modes
+	 * @param g Gravity accelerations
+	 * @param h Water depth
+	 * @param filepath The output file path
+	 * @throws moordyn::mem_error If there were roblems allocating memory
+	 */
+	void fillWaveGrid(const moordyn::complex *zetaC0, unsigned int nw,
+	                  real dw, real g, real h);
+
+	/** @brief Make a 2-D data grid
+	 * @param nx Number of components in the first dimension
+	 * @param ny Number of components in the second dimension
+	 * @param nz Number of components in the third dimension
+	 */
+	static inline std::vector<std::vector<real>> init2DArray(
+		unsigned int nx,
+		unsigned int ny)
+	{
+		return std::vector<std::vector<real>>(nx,
+			std::vector<real>(ny, 0.0));
+	}
+
+	/** @brief Make a 3-D data grid
+	 * @param nx Number of components in the first dimension
+	 * @param ny Number of components in the second dimension
+	 * @param nz Number of components in the third dimension
+	 */
+	static inline std::vector<std::vector<std::vector<real>>> init3DArray(
+		unsigned int nx,
+		unsigned int ny,
+		unsigned int nz)
+	{
+		return std::vector<std::vector<std::vector<real>>>(nx,
+			std::vector<std::vector<real>>(ny,
+				std::vector<real>(nz, 0.0)));
+	}
+
+	/** @brief Make a 4-D data grid
+	 * @param nx Number of components in the first dimension
+	 * @param ny Number of components in the second dimension
+	 * @param nz Number of components in the third dimension
+	 * @param nw Number of components in the third dimension
+	 */
+	static inline std::vector<std::vector<std::vector<std::vector<real>>>> init4DArray(
+		unsigned int nx,
+		unsigned int ny,
+		unsigned int nz,
+		unsigned int nw)
+	{
+		return std::vector<std::vector<std::vector<std::vector<real>>>>(nx,
+			std::vector<std::vector<std::vector<real>>>(ny,
+				std::vector<std::vector<real>>(nz,
+					std::vector<real>(nw, 0.0))));
+	}
+
+	/** @brief Carry out the inverse Fourier transform
+	 * @param cfg KISS FFT instance
+	 * @param nFFT Numer of fourier components
+	 * @param cx_in KISS FFT frequency-domain data
+	 * @param cx_out KISS FFT time-domain output
+	 * @param inputs Input FFT values
+	 * @param outputs Output time-domain values
+	 */
+	static void doIFFT(kiss_fftr_cfg cfg, unsigned int nFFT,
+	                   kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out,
+	                   const moordyn::complex *inputs,
+	                   std::vector<real> &outputs);
+
 	/// number of grid points in x direction
-	int nx;           
+	unsigned int nx;           
 	/// number of grid points in y direction
-	int ny;
+	unsigned int ny;
 	/// number of grid points in z direction
-	int nz;
+	unsigned int nz;
 	/// number of time steps used in wave kinematics time series
-	int nt;
+	unsigned int nt;
 	/// time step for wave kinematics time series
-	double dtWave;
+	real dtWave;
 
 	/// grid x coordinate arrays
-	double *px;
+	std::vector<real> px;
 	/// grid y coordinate arrays
-	double *py;
+	std::vector<real> py;
 	/// grid z coordinate arrays
-	double *pz;
+	std::vector<real> pz;
 	/// wave elevation [x,y,t]
-	double  ***zeta;
+	vector<vector<vector<real>>> zeta;
 	/// dynamic pressure [x,y,z,t]
-	double ****PDyn;
+	vector<vector<vector<vector<real>>>> PDyn;
 	/// wave velocity x component [x,y,z,t]
-	double ****ux;
+	vector<vector<vector<vector<real>>>> ux;
 	/// wave velocity y component [x,y,z,t]
-	double ****uy;
+	vector<vector<vector<vector<real>>>> uy;
 	/// wave velocity z component [x,y,z,t]
-	double ****uz;
+	vector<vector<vector<vector<real>>>> uz;
 	/// wave acceleration x component [x,y,z,t]
-	double ****ax;
+	vector<vector<vector<vector<real>>>> ax;
 	/// wave acceleration y component [x,y,z,t]
-	double ****ay;
+	vector<vector<vector<vector<real>>>> ay;
 	/// wave acceleration z component [x,y,z,t]
-	double ****az;
+	vector<vector<vector<vector<real>>>> az;
 	
 	/// gravity acceleration
-	double g;
+	real g;
 	/// water density
-	double rho_w;
+	real rho_w;
 	
 	// ------------ from Line object... -----------
 	// new additions for handling waves in-object and precalculating them	(not necessarily used right now)
@@ -86,34 +192,30 @@ class Waves
 	
 	
 public:
-	/** @brief Setup the grid
-	 *
-	 * The grid is defined in a tabulated file (separator=' '). That file has 3
-	 * head lines, which are ignored, and then 3 lines defining the grid points
-	 * in x, y, z.
-	 *
-	 * Each one can be defined in 3 ways:
-	 *   - Defining just a point in 0
-	 *   - Defining the list of coordinates
-	 *   - Defining the boundaries and the number of equispaced points
-	 *
-	 * @param filepath The definition file path. If NULL or "" isprovided, then
-	 * "Mooring/water_grid.txt" is considered
+	/** @brief Types of coordinates input on the grid file
 	 */
-	void makeGrid(const char* filepath=NULL);
-
-	/** @brief Allocate the needed memory for the kinematics storage
-	 * @param filepath The definition file path. If NULL or "" isprovided, then
-	 * "Mooring/water_grid.txt" is considered
-	 */
-	void allocateKinematicsArrays();
+	typedef enum {
+		/// Single point (0, 0, 0)
+		GRID_SINGLE = 0,
+		/// List of points
+		GRID_LIST = 1,
+		/// EQUISPACED POINTS
+		GRID_LATTICE = 2,
+	} coordtypes;
 
 	/** @brief Setup the wave kinematics
 	 *
 	 * Always call this function after the construtor
 	 * @param env The enviromental options
+	 * @param folder The root folder where the wave data can be found
+	 * @throws moordyn::input_file_error If an input file cannot be read, or if
+	 * a file is ill-formatted
+	 * @throws moordyn::invalid_value_error If invalid values are found
+	 * @throws moordyn::non_implemented_error If WaveKin=2
+	 * @throws moordyn::mem_error If there were roblems allocating memory
+	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
-	void setup(EnvCond *env);
+	void setup(EnvCond *env, const char* folder="Mooring/");
 
 	/// @{
 
@@ -125,28 +227,15 @@ public:
 	 * @param U The output velocity
 	 * @param Ud The output acceleration
 	 * @param zeta The output wave height
-	 * @param PDyn_out The output dynamic pressure
+	 * @param PDyn The output dynamic pressure
 	 */
-	void getWaveKin(double x, double y, double z, double t, double U[3], double Ud[3], double* zeta, double* PDyn_out);
+	void getWaveKin(double x, double y, double z, double t,
+	                double U[3], double Ud[3], double* zeta, double* PDyn);
 
-	void getWaveKin(real x, real y, real z, real t, vec &U, vec &Ud, moordyn::real &zeta, moordyn::real &PDyn_out);
+	void getWaveKin(real x, real y, real z, real t,
+	                vec &U, vec &Ud, real &zeta, real &PDyn);
 
 	/// @}
-
-	/** @brief instantiator that takes discrete wave elevation fft data only
-	 * (MORE RECENT)
-	 * @param zetaC0 Amplitude of each frequency component
-	 * @param nw Number of wave components
-	 * @param dw The difference in frequency between consequtive modes
-	 * @param g Gravity accelerations
-	 * @param h Water depth
-	 */
-	void fillWaveGrid(moordyn::complex *zetaC0, int nw, double dw, double g, double h );
-
-	/// Constructor
-	Waves();
-	/// Destructor
-	~Waves();
 };
 
 
@@ -154,8 +243,7 @@ public:
 // other relevant functions being thrown into this file for now (should move to Misc?) <<<<
 
 /** @brief Compute the coordinates from a grid definition entry line
- * @param coordtype 0 for a single point in zero, 1 for a list of coords, 2
- * for equispaced points between the provided boundaries
+ * @param coordtype The type of coordinates input
  * @param entries Nothing if @p coordtype is 0; the list of coordinates if
  * @p coordtype is 1 and minimum limit; the maximum limit and the number of
  * points if @p coordtype is 2
@@ -164,8 +252,7 @@ public:
  * @warning Memory will be allocated in coordarray. The user is responsible of
  * deallocating it afterwards
  */
-int gridAxisCoords(int coordtype, vector< string > &entries, double *&coordarray);
-
-void doIFFT(kiss_fftr_cfg cfg, int nFFT, kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out, moordyn::complex *inputs, double *outputs);
+std::vector<real> gridAxisCoords(Waves::coordtypes coordtype,
+                                 vector<string> &entries);
 
 }  // ::moordyn

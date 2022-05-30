@@ -53,7 +53,7 @@ int MoorDyn_GetWavesKin(MoorDynWaves waves, double x, double y, double z,
  * @return The wave number
  * @note credit: FAST source
  */
-double WaveNumber( double Omega, double g, double h );
+double WaveNumber(double Omega, double g, double h );
 
 /**
  * @}
