@@ -479,11 +479,11 @@ inline unsigned int interp_factor(const vector<T> &xp,
  * @param y The interpolated values. The vector shall be already initialized
  * with at least the same number of components than \p x
  */
-template <typename T>
-inline void interp(const vector<T> &xp,
-                   const vector<T> &yp,
-                   const vector<T> &x,
-                   vector<T> &y)
+template <typename Tx, typename Ty>
+inline void interp(const vector<Tx> &xp,
+                   const vector<Ty> &yp,
+                   const vector<Tx> &x,
+                   vector<Ty> &y)
 {
 	if (yp.size() == 1) {
 		y[0] = yp[0];

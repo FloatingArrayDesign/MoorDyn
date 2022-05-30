@@ -320,48 +320,61 @@ void Waves::setup(EnvCond *env, const char* folder)
 		}
 		f.close();
 
-		// should add error checking.  two columns of data, and time column must start at zero?
+		if (lines.size() < 2) {
+			LOGERR << "At least 2 frequency components shall be provided in '"
+			       << WaveFilename << "'" << endl;
+			throw moordyn::input_file_error("Invalid file format");
+		}
 
 		vector<real> wavefreqs;
-		vector<real> waveelevs;
+		vector<moordyn::complex> waveelevs;
 		
 		for (auto line : lines)
 		{
 			vector<string> entries = split(line);
-			if (entries.size() < 2) {
+			if (entries.size() < 3) {
 				LOGERR << "The file '"
-				       << WaveFilename << "' should have 2 columns" << endl;
+				       << WaveFilename << "' should have 3 columns" << endl;
 				throw moordyn::input_file_error("Invalid file format");
 			}
 			wavefreqs.push_back(atof(entries[0].c_str()));
-			waveelevs.push_back(atof(entries[1].c_str()));
+			waveelevs.push_back((real)atof(entries[1].c_str()) +
+			                    i1 * (real)atof(entries[2].c_str()));
 		}
 		LOGMSG << "'" << WaveFilename << "' parsed" << endl;
 
-		// Interpolate/check frequency data
-		
-		LOGERR << "WaveKin = 2 option is not implemented yet" << endl;
-		throw moordyn::non_implemented_error("WaveKin=2 not implemented yet");
+		if (wavefreqs[0] != 0.0) {
+			LOGERR << "The first shall be 0 rad/s" << endl;
+			throw moordyn::invalid_value_error("Invalid frequencies");
+		}
 
-		// nFFT = ?
-		
-		// moordyn::complex *zetaC0 = (moordyn::complex*) malloc(nFFT*sizeof(moordyn::complex)); 
-		//
-		// double zetaCRMS = 0.0;
-		//
-		// for (int i=0; i<nFFT; i++)  {
-		// 	zetaC0[i] = cx_out[i].r + i1*(cx_out[i].i);
-		// 	zetaCRMS += norm(zetaCglobal[i]);
-		// }
-		//
-		//
-		// dw = pi / dtWave;    // wave frequency interval (rad/s)  <<< make sure this calculates correctly!
+		// Interpolate/check frequency data
+		real dw = std::numeric_limits<real>::max();
+		for (unsigned int i = 1; i < wavefreqs.size(); i++)
+			if (wavefreqs[i] - wavefreqs[i - 1] < dw)
+				dw = wavefreqs[i] - wavefreqs[i-1];
+		if (dw <= 0) {
+			LOGERR << "Ascending frequencies are expected" << endl;
+			throw moordyn::invalid_value_error("Invalid frequencies");
+		}
+
+		unsigned int nw = floor(wavefreqs.back() / dw) + 1;
+		vector<real> freqs;
+		for (unsigned int i = 0; i < wavefreqs.size(); i++)
+			freqs.push_back(i * dw);
+		if (freqs.back() > 0.5 * 2.0 * pi) {
+			LOGERR << "The maximum frequency is " << freqs.back() / (2.0 * pi)
+			       << " Hz, which is bigger than the recommended 0.5 Hz value"
+			       << endl;
+		}
+
+		vector<moordyn::complex> zetaC0(nw);
+		interp(wavefreqs, waveelevs, freqs, zetaC0);
 
 		// calculate wave kinematics throughout the grid
 		try {
-			// make a grid for wave kinematics based on settings in water_grid.txt
 			makeGrid(((string)folder + "/water_grid.txt").c_str());
-			// fillWaveGrid(zetaC0, nFFT, dw, env.g, env.WtrDepth );
+			fillWaveGrid(zetaC0.data(), nw, dw, env->g, env->WtrDpth);
 		}
 		catch(...) {
 			throw;
@@ -394,9 +407,9 @@ void Waves::setup(EnvCond *env, const char* folder)
 		vector<real> wavetimes;
 		vector<real> waveelevs;
 		
-		for (auto sline : lines)
+		for (auto line : lines)
 		{
-			vector<string> entries = split(sline);
+			vector<string> entries = split(line);
 			if (entries.size() < 2) {
 				LOGERR << "The file '"
 				       << WaveFilename << "' should have 2 columns" << endl;
@@ -419,24 +432,6 @@ void Waves::setup(EnvCond *env, const char* folder)
 		for (unsigned int i = 0; i < nt; i++)
 			waveTime[i] = i * dtWave;
 		moordyn::interp(wavetimes, waveelevs, waveTime, waveElev);
-		
-		// // interpolate wave time series to match DTwave and Tend  with Nw = Tend/DTwave
-		// int ts0 = 0;
-		// vector<double> zeta(Nw, 0.0); // interpolated wave elevation time series
-		// for (int iw=0; iw<Nw; iw++)
-		// {
-		// 	double frac;
-		// 	for (int ts=ts0; ts<wavetimes.size()-1; ts++)
-		// 	{	
-		// 		if (wavetimes[ts+1] > iw*DTwave)
-		// 		{
-		// 			ts0 = ts;  //  ???
-		// 			frac = ( iw*DTwave - wavetimes[ts] )/( wavetimes[ts+1] - wavetimes[ts] );
-		// 			zeta[iw] = waveelevs[ts] + frac*(waveelevs[ts+1] - waveelevs[ts]);    // write interpolated wave time series entry
-		// 			break;
-		// 		}
-		// 	}
-		// }
 
 		// ensure N is even
 		if (nt % 2 != 0)
@@ -492,11 +487,11 @@ void Waves::setup(EnvCond *env, const char* folder)
 
 		// copy frequencies over from FFT output
 		moordyn::complex *zetaC0 = (moordyn::complex*)malloc(
-			nFFT * sizeof(moordyn::complex));
+			nw * sizeof(moordyn::complex));
 		if (!zetaC0) {
 			LOGERR
 				<< "Failure allocating "
-				<< nFFT * sizeof(moordyn::complex)
+				<< nw * sizeof(moordyn::complex)
 				<< "bytes for the FFT elevation" << endl;
 			throw moordyn::mem_error("Insufficient memory");
 		}
@@ -513,7 +508,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 		try {
 			// make a grid for wave kinematics based on settings in water_grid.txt
 			makeGrid(((string)folder + "/water_grid.txt").c_str());
-			fillWaveGrid(zetaC0, nw, dw, env->g, env->WtrDpth );
+			fillWaveGrid(zetaC0, nw, dw, env->g, env->WtrDpth);
 		}
 		catch(...) {
 			throw;
