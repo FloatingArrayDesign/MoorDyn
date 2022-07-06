@@ -35,10 +35,11 @@ class Waves;
  * how those points are moving. There are 3 basic types of connections:
  *
  *  - Fixed: The point is indeed fixed, either to a unmovable point (i.e. an
- *           anchor) or to another moving body
- *  - Free: The point freely moves, like the line endpoint is not attached to
- *          anything. This will be the connection generated when a line is
- *          failing
+ *           anchor) or to a Body
+ *  - Free: The point freely moves, with its own translation degrees of freedom,
+ *          to provide a connection point between multiple mooring lines or an
+ *          unconnected termination point of a Line, which could have a clump
+ *          weight or float via the point's mass and volume parameters 
  *  - Coupled: The connection position and velocity is externally imposed
  */
 class Connection : public LogUser

@@ -273,8 +273,11 @@ void Connection::setKinematics(double *r_in, double *rd_in)
 
 // pass the latest states to the connection ()
 moordyn::error_id Connection::setState(const double X[6],
-                                       const double PARAM_UNUSED time)
+                                       const double time)
 {
+	// store current time
+	t = time;
+	
 	// the kinematics should only be set with this function of it's an independent/free connection
 	if (type != FREE) // "connect" type
 	{

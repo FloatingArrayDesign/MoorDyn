@@ -485,8 +485,11 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 
 	if (dt <= 0)
 	{
-		// Nothing to do, just recover the forces
-		return GetForces(f);
+		// Nothing to do, just recover the forces if there are coupled DOFs
+		if (NCoupedDOF())
+			return GetForces(f);
+		else
+			return MOORDYN_SUCCESS;
 	}
 
 	if (NCoupedDOF() && (!x || !xd || !f))
@@ -575,7 +578,11 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 	if (err != MOORDYN_SUCCESS)
 		return err;
 
-	return GetForces(f);
+	// recover the forces if there are coupled DOFs
+	if (NCoupedDOF())
+		return GetForces(f);
+	else
+		return MOORDYN_SUCCESS;
 }
 
 moordyn::error_id moordyn::MoorDyn::ReadInFile()
