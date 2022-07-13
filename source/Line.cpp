@@ -14,62 +14,135 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
  
+#include "Line.hpp"
 #include "Line.h"
 #include "Waves.hpp"
-#include "QSlines.h" // the c++ version of quasi-static model Catenary
+#include "QSlines.hpp"
 
 using namespace std;
 
-// here is the new numbering scheme (N segments per line)
-
-//   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] --- ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
-
-
-
-
-// ================== Line member functions ===========================
-
-
-// set up line object
-void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSegs, 
-//	Connection &AnchConnect_in, Connection &FairConnect_in,
-	shared_ptr<ofstream> outfile_pointer, string channels_in) 
+namespace moordyn
 {
-	// ================== set up properties ===========	
-	number = number_in;	
-	UnstrLen = UnstrLen_in;    // Note, this is a temporary value that will be processed depending on sign during initializeLine 
-	N = NumSegs; // assign number of nodes to line
-	
-//	WaveKin = 0;  // start off with wave kinematics disabled.  Can be enabled after initial conditions are found and wave kinematics are calculated
-	
-//	AnchConnect = &AnchConnect_in;		// assign line end connections <<<<<<<<< no longer needed?? <<<<<
-//	FairConnect = &FairConnect_in;	
-		
-	// store passed line properties (and convert to numbers)
-	d   = props->d;
-	rho = props->w  /(pi/4.*d*d);
-	E   = props->EA /(pi/4.*d*d);
-	EI  = props->EI;
-	BAin = props->c;                 // Note, this is a temporary value that will be processed depending on sign during initializeLine 
-	Can = props->Can;
-	Cat = props->Cat;
-	Cdn = props->Cdn;
-	Cdt = props->Cdt;
-	
-	nEApoints = props->nEApoints;    // copy in nonlinear stress-strain data if applicable
-	for (int I=0; I<nEApoints; I++)
-	{	stiffXs[I] = props->stiffXs[I];
-		stiffYs[I] = props->stiffYs[I]/(pi/4.*d*d);
-	}	
-	
-	nCpoints = props->nCpoints;    // copy in nonlinear stress-strainrate data if applicable
-	for (int I=0; I<nCpoints; I++)
-	{	dampXs[I] = props->dampXs[I];
-		dampYs[I] = props->dampYs[I];  // should these divide by area too?
+
+Line::Line(moordyn::Log *log)
+	: LogUser(log)
+{
+}
+
+Line::~Line()
+{
+}
+
+real Line::getNonlinearE(real l_stretched, real l_unstretched)
+{
+	if (!nEApoints)
+		return EI;
+
+	real Xi = l_stretched/l_unstretched - 1.0;  // strain rate based on inputs
+	if (Xi < 0.0) {
+		// if negative strain (compression), zero stress
+		return 0.0;
 	}
+
+	real Yi = interp(stiffXs, stiffYs, Xi);
+
+	// calculate equivalent elasticity (since that's what MoorDyn works with)
+	return Yi / Xi;
+}
+
+real Line::getNonlinearEI(real curv)
+{
+	if (!nEIpoints)
+		return EI;
+
+	real Xi = curv;
+	real Yi = interp(bstiffXs, bstiffYs, Xi);
+
+	// calculate equivalent bending stiffness (since that's what MoorDyn works
+	// with)
+	return Yi / Xi;
+}
+
+real Line::getNonlinearC(real ld_stretched, real l_unstretched)
+{
+	if (!nCpoints)
+		return c;
+
+	real Xi = ld_stretched / l_unstretched;  // strain rate based on inputs
+	real Yi = 0.0;
 	
-	A = pi/4.*d*d;
-	
+	// find stress based on strain rate
+	if (dampXs[0] < 0)
+	{
+		// first check if lookup table includes compressing
+		Yi = interp(dampXs, dampYs, Xi);
+	}
+	else
+	{
+		// if no compressing data given, we'll flip-mirror so stretching and compressing are same
+		real Xsign = 1.0;
+		if (Xi < 0) {
+			Xsign = -1.0;
+			Xi = -Xi;
+		}
+		Yi = interp(dampXs, dampYs, Xi);
+		Yi *= Xsign;
+	}
+
+	// calculate equivalent damping coefficient (since that's what MoorDyn works
+	// with)
+	return Yi / Xi;
+}
+
+void Line::setup(int number_in, LineProps *props, real UnstrLen_in,
+                 unsigned int NumSegs, shared_ptr<ofstream> outfile_pointer,
+                 string channels_in)
+{
+	number = number_in;
+	// Note, this is a temporary value that will be processed depending on sign
+	// during initializeLine
+	UnstrLen = UnstrLen_in;
+	// assign number of nodes to line
+	N = NumSegs;
+
+	// store passed line properties (and convert to numbers)
+	d    = props->d;
+	A = pi / 4. * d * d;
+	rho  = props->w  / A;
+	E    = props->EA / A;
+	EI   = props->EI;
+	BAin = props->c;
+	Can  = props->Can;
+	Cat  = props->Cat;
+	Cdn  = props->Cdn;
+	Cdt  = props->Cdt;
+
+	// copy in nonlinear stress-strain data if applicable
+	stiffXs.clear();
+	stiffYs.clear();
+	nEApoints = props->nEApoints;
+	for (unsigned int I = 0; I < nEApoints; I++) {
+		stiffXs.push_back(props->stiffXs[I]);
+		stiffYs.push_back(props->stiffYs[I] / A);
+	}
+
+	// copy in nonlinear bent stiffness data if applicable
+	bstiffXs.clear();
+	bstiffYs.clear();
+	nEIpoints = props->nEIpoints;
+	for (unsigned int I = 0; I < nEIpoints; I++) {
+		bstiffXs.push_back(props->bstiffXs[I]);
+		bstiffYs.push_back(props->bstiffYs[I]);
+	}
+
+	// copy in nonlinear stress-strainrate data if applicable
+	dampXs.clear();
+	dampYs.clear();
+	nCpoints = props->nCpoints;
+	for (unsigned int I = 0; I < nCpoints; I++) {
+		dampXs.push_back(props->dampXs[I]);
+		dampYs.push_back(props->dampYs[I]);
+	}
 
 	// ------------------------- size vectors -------------------------
 		
@@ -118,437 +191,355 @@ void Line::setup(int number_in, LineProps *props, double UnstrLen_in, int NumSeg
 	
 	
 	if (wordy >0)
-		cout << "   Set up Line " << number << ". ";
+		cout << "   Set up Line " << number << ". " << endl;
 };
 
 
 void Line::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 {
-	env = env_in;      // set pointer to environment settings object
-	waves = waves_in;  // set pointer to Waves  object
+	env = env_in;
+	waves = waves_in;
 }
-
 
 // get ICs for line using quasi-static approach
 void Line::initializeLine(double* X)
 {
-	// write line information to log file
-	if (env->writeLog > 1)
-	{
-		*(env->outfileLogPtr) << "  - Line" << number << ":" << endl;
-		*(env->outfileLogPtr) << "    ID: " << number << endl;
-		*(env->outfileLogPtr) << "    UnstrLen: " << UnstrLen << endl;
-		*(env->outfileLogPtr) << "    N   : " << N << endl;		
-		*(env->outfileLogPtr) << "    d   : " << d    << endl;		
-		*(env->outfileLogPtr) << "    rho : " << rho  << endl;		
-		*(env->outfileLogPtr) << "    E   : " << E    << endl;		
-		*(env->outfileLogPtr) << "    EI  : " << EI   << endl;		
-		*(env->outfileLogPtr) << "    BAin: " << BAin << endl;		
-		*(env->outfileLogPtr) << "    Can : " << Can  << endl;		
-		*(env->outfileLogPtr) << "    Cat : " << Cat  << endl;		
-		*(env->outfileLogPtr) << "    Cdn : " << Cdn  << endl;		
-		*(env->outfileLogPtr) << "    Cdt : " << Cdt  << endl;		
-		*(env->outfileLogPtr) << "    ww_l: " << ( (rho - env->rho_w)*(pi/4.*d*d) )*9.81 << endl;		
-	}
-	
-	
-	// create output file for writing output (and write channel header and units lines) if applicable
+	LOGMSG << "  - Line" << number << ":" << endl
+	       << "    ID: " << number << endl
+	       << "    UnstrLen: " << UnstrLen << endl
+	       << "    N   : " << N << endl
+	       << "    d   : " << d    << endl
+	       << "    rho : " << rho  << endl
+	       << "    E   : " << E    << endl
+	       << "    EI  : " << EI   << endl
+	       << "    BAin: " << BAin << endl
+	       << "    Can : " << Can  << endl
+	       << "    Cat : " << Cat  << endl
+	       << "    Cdn : " << Cdn  << endl
+	       << "    Cdt : " << Cdt  << endl
+	       << "    ww_l: " << ( (rho - env->rho_w)*(pi/4.*d*d) )*9.81 << endl;
 
-	if (outfile) // check it's not null.  Null signals no individual line output files
+	if (outfile)
 	{
-		if (outfile->is_open())
-		{	
-			// ------------- write channel names line --------------------
-		
+		if (!outfile->is_open())
+		{
+			LOGERR << "Unable to write file Line" << number << ".out" << endl;
+			throw moordyn::output_file_error("Invalid line file");
+		}
+
+		// Write the header
+		// 1st line with the fields
+
+		// output time
+		*outfile << "Time" << "\t ";
+
+		// output positions
+		if (channels.find("p") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "px \t Node" <<  i
+				         << "py \t Node" <<  i << "pz \t ";
+			}
+		}
+		// output curvatures
+		if (channels.find("K") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "Ku \t ";
+			}
+		}
+		// output velocities
+		if (channels.find("v") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "vx \t Node" <<  i
+				         << "vy \t Node" <<  i << "vz \t ";
+			}
+		}
+		// output wave velocities
+		if (channels.find("U") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "Ux \t Node" <<  i
+				         << "Uy \t Node" <<  i << "Uz \t ";
+			}
+		}
+		// output hydro force
+		if (channels.find("D") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "Dx \t Node" <<  i
+				         << "Dy \t Node" <<  i << "Dz \t ";
+			}
+		}
+		// output internal damping force
+		if (channels.find("c") != string::npos) {
+			for (unsigned int i = 1; i <= N; i++)  {
+				*outfile << "Seg" << i << "cx \t Node" <<  i
+				         << "cy \t Node" <<  i << "cz \t ";
+			}
+		}
+		// output segment tensions
+		if (channels.find("t") != string::npos) {
+			for (unsigned int i = 1; i <= N; i++)  {
+				*outfile << "Seg" << i << "Te \t ";
+			}
+		}
+		// output segment strains
+		if (channels.find("s") != string::npos) {
+			for (unsigned int i = 1; i <= N; i++)  {
+				*outfile << "Seg" << i << "St \t ";
+			}
+		}
+		// output segment strain rates
+		if (channels.find("d") != string::npos) {
+			for (unsigned int i = 1; i <= N; i++)  {
+				*outfile << "Seg" << i << "dSt \t ";
+			}
+		}
+		// output seabed contact forces
+		if (channels.find("b") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "bx \t Node" <<  i
+				         << "by \t Node" <<  i << "bz \t ";
+			}
+		}
+
+		*outfile << "\n";
+
+		if (env->WriteUnits > 0)
+		{
+			// 2nd line with the units
+
 			// output time
-			*outfile << "Time" << "\t ";
+			*outfile << "(s)" << "\t ";
 			
-			// output positions?
-			//if (find(channels.begin(), channels.end(), "position") != channels.end())
-			if (channels.find("p") != string::npos)
-			{
-				for (int i=0; i<=N; i++)	//loop through nodes
-				{
-					*outfile << "Node" << i << "px \t Node" <<  i << "py \t Node" <<  i << "pz \t ";
-				}
+			// output positions
+			if (channels.find("p") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(m) \t";
 			}
 			// output curvatures?
 			if (channels.find("K") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Ku \t ";
+				for (unsigned int i = 0; i <= N; i++) {
+					*outfile << "(1/m) \t ";
 				}
 			}
 			// output velocities?
 			if (channels.find("v") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "vx \t Node" <<  i << "vy \t Node" <<  i << "vz \t ";
-				}
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(m/s) \t";
+				
 			}
 			// output wave velocities?
 			if (channels.find("U") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Ux \t Node" <<  i << "Uy \t Node" <<  i << "Uz \t ";
-				}
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(m/s) \t";
 			}
 			// output hydro force
 			if (channels.find("D") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Dx \t Node" <<  i << "Dy \t Node" <<  i << "Dz \t ";
-				}
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "cx \t Node" <<  i << "cy \t Node" <<  i << "cz \t ";
-				}
+				for (unsigned int i = 0; i < N; i++)
+					*outfile << "(N) \t";
 			}
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "Te \t ";
-				}
+				for (unsigned int i = 0; i < N; i++)
+					*outfile << "(N) \t";
 			}			
 			// output segment strains?
 			if (channels.find("s") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "St \t ";
-				}
+				for (unsigned int i = 0; i < N; i++)
+					*outfile << "(-) \t";
 			}	
 			// output segment strain rates?
 			if (channels.find("d") != string::npos) {
-				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "dSt \t ";
-				}
+				for (unsigned int i = 0; i < N; i++)
+					*outfile << "(-/s) \t";
 			}
-			// output seabed contact forces?
-			if (channels.find("b") != string::npos) {
-				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "bx \t Node" <<  i << "by \t Node" <<  i << "bz \t ";
-				}
+			// output seabed contact force?
+			if (channels.find("D") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
 			}
-			
-			*outfile << "\n";   
-			
-			
-			// ----------- write units line ---------------
 
-			if (env->WriteUnits > 0)
-			{
-				// output time
-				*outfile << "(s)" << "\t ";
-				
-				// output positions?
-				//if (find(channels.begin(), channels.end(), "position") != channels.end())
-				if (channels.find("p") != string::npos)
-				{
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(m) \t";
-				}
-				// output curvatures?
-				if (channels.find("K") != string::npos) {
-					for (int i=0; i<=N; i++)  {
-						*outfile << "(1/m) \t ";
-					}
-				}
-				// output velocities?
-				if (channels.find("v") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(m/s) \t";
-					
-				}
-				// output wave velocities?
-				if (channels.find("U") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(m/s) \t";
-				}
-				// output hydro force
-				if (channels.find("D") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}
-				// output internal damping force?
-				if (channels.find("c") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}
-				// output segment tensions?
-				if (channels.find("t") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}			
-				// output segment strains?
-				if (channels.find("s") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(-) \t";
-				}	
-				// output segment strain rates?
-				if (channels.find("d") != string::npos) {
-					for (int i=0; i<N; i++)	//loop through nodes
-						*outfile << "(-/s) \t";
-				}
-				// output seabed contact force?
-				if (channels.find("D") != string::npos) {
-					for (int i=0; i<=3*N+2; i++)	//loop through nodes
-						*outfile << "(N) \t";
-				}
-				
-				*outfile << "\n";   // should also write units at some point!
-			}
+			*outfile << "\n";
 		}
-		else cout << "   Error: unable to write file Line" << number << ".out" << endl;  //TODO: handle this!
 	}
-	
-	
-//	// set end node positions and velocities from connect objects  <<<<<<<< these are now set by connect/rod
-//	AnchConnect->getConnectState(r[0],rd[0]);
-//	FairConnect->getConnectState(r[N],rd[N]);
 
 	// The end node kinematics should already have been set by the 
 	// corresponding Connection or Rod objects calling "setEndState",
 	// so now we can proceed with figuring out the positions of the nodes along the line.
 
 	if (-env->WtrDpth > r[0][2]) {
-		cout << "   Error: water depth is shallower than Line " << number << " anchor." << endl;
-		return;
+		LOGERR << "Water depth is shallower than Line " << number << " anchor"
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid water depth");
 	}
-	
-	
-	// set water kinematics flag based on global wave and current settings (for now)
-	if((env->WaveKin==2) || (env->WaveKin==3) || (env->WaveKin==6) || (env->Current==1) || (env->Current==2))
-		WaterKin = 2;   // water kinematics to be considered through precalculated global grid stored in Waves object
-	else if((env->WaveKin==4) || (env->WaveKin==5) || (env->Current==3) || (env->Current==4))
-		WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
-	else
-	{	
-		WaterKin = 0;   // no water kinematics to be considered (or to be set externally on each node)
-	
-		for (int i=0; i<=N; i++)   // in this case make sure kinematics for each node start at zeroed
-		{
-			U[ i] = vec(0.0, 0.0, 0.0);
-			Ud[i] = vec(0.0, 0.0, 0.0);
-			F[i] = 1.0;   // set VOF variable to 1 for now (everything is submerged) <<<<<<<<
-		}
+
+	// set water kinematics flag based on global wave and current settings
+	// (for now)
+	if((env->WaveKin == WAVES_FFT_GRID) ||
+	   (env->WaveKin == WAVES_GRID) ||
+	   (env->WaveKin == WAVES_KIN) ||
+	   (env->Current == CURRENTS_STEADY_GRID) ||
+	   (env->Current == CURRENTS_DYNAMIC_GRID)) {
+		// water kinematics to be considered through precalculated global grid
+		// stored in Waves object
+		WaterKin = WAVES_GRID;
 	}
-	
-	
+	else if((env->WaveKin == WAVES_FFT_NODE) ||
+	        (env->WaveKin == WAVES_NODE) ||
+	        (env->Current == CURRENTS_STEADY_NODE) ||
+	        (env->Current == CURRENTS_DYNAMIC_NODE)) {
+		// water kinematics to be considered through precalculated time series
+		// for each node
+		WaterKin = WAVES_EXTERNAL;
+	}
+	else {
+		// no water kinematics to be considered (or to be set externally on each
+		// node)
+		WaterKin = WAVES_NONE;
+		U.assign(N + 1, vec(0.0, 0.0, 0.0));
+		Ud.assign(N + 1, vec(0.0, 0.0, 0.0));
+		F.assign(N + 1, 1.0);
+	}
+
 	// process unstretched line length input
 	vec dir = r[N] - r[0];
-	if (UnstrLen < 0)  // if a negative input, interpret as scaler relative to distance between initial line end points (which have now been set by the relevant Connection objects)
+	if (UnstrLen < 0)
 	{
-		UnstrLen = -UnstrLen*dir.norm();
-		cout << "   Line " << number << " unstretched length set to " << UnstrLen << " m." << endl;
+		// Interpret as scaler relative to distance between initial line end
+		// points (which have now been set by the relevant Connection objects)
+		UnstrLen = -UnstrLen * dir.norm();
+		LOGMSG << "Line " << number << " unstretched length set to "
+		       << UnstrLen << " m" << endl;
 	}
-	// otherwise just use the value provided (in m)
-	
+
 	// now that line length is known, assign length and volume properties
-	for (int i=0; i<N; i++)	
+	for (unsigned int i = 0; i < N; i++)	
 	{
-		l[i] = UnstrLen/double(N);	// distribute line length evenly over segments
-		V[i] = l[i]*0.25*pi*d*d;    // previously missing second d
+		// distribute line length evenly over segments
+		l[i] = UnstrLen / double(N);
+		V[i] = l[i] * A;
 	}
-		
-	if (nEApoints > 0)  // For the sake of the following initialization steps, if using a nonlinear stiffness model,
-		E = stiffYs[nEApoints-1]/stiffXs[nEApoints-1];   // set the stiffness based on the last entries in the lookup table
-	
+
+	if (nEApoints > 0) {
+		// For the sake of the following initialization steps, if using a
+		// nonlinear stiffness model, set the stiffness based on the last
+		// entries in the lookup table
+		E = stiffYs.back() / stiffXs.back();
+	}
+
 	// process internal damping input
-	// automatic internal damping option (if negative BA provided (stored as BAin), then -BAin indicates desired damping ratio)
 	if (BAin < 0) {
+		// automatic internal damping option (if negative BA provided (stored as
+		// BAin), then -BAin indicates desired damping ratio)
 		c = -BAin * UnstrLen/N * sqrt(E*rho);   // rho = w/A
-		if (wordy > 0) cout << "   Line " << number << " damping set to " << c << " Ns = " << c*(pi/4.*d*d) << " Pa-s based on input of " << BAin << endl;
+		LOGMSG << "Line " << number << " damping set to " << c
+		       << " Ns = " << c * A << " Pa-s, based on input of " << BAin
+		       << endl;
 	}
-	else 
-		c = BAin/(pi/4.*d*d);  // otherwise it's the regular internal damping coefficient, which should be divided by area to get a material coefficient
-			
-	
-	// initialize line node positions as distributed linearly between the endpoints
-	for (int i=1; i<N; i++)
+	else {
+		// otherwise it's the regular internal damping coefficient, which should
+		// be divided by area to get a material coefficient
+		c = BAin / A;
+	}
+
+	// initialize line node positions as distributed linearly between the
+	// endpoints
+	for (unsigned int i = 1; i < N; i++)
 	{
-		r[i] = r[0] + dir * (float(i)/float(N));
+		r[i] = r[0] + dir * (i / (real)N);
 	}
-	
-	// if conditions are ideal, try to calculate initial line profile using catenary routine (from FAST v.7)
+
+	// if conditions are ideal, try to calculate initial line profile using
+	// catenary routine (from FAST v.7)
 	if (-r[0][0] == env->WtrDpth)
 	{
-		double XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
-		double ZF = dir[2];	
-		double LW = ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81;
-		double CB = 0.;
-		double Tol = 0.00001;	
-		
+		real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
+		real ZF = dir[2];
+		real LW = ((rho - env->rho_w) * A) * env->g;
+		real CB = 0.;
+		real Tol = 0.00001;
+
 		if(( XF > 0.0) && (ZF > 0.0))   
 		{
-			// locations of line nodes along line length - evenly distributed here 
-			vector<double> snodes(N+1, 0.0);   					
-			for (int i=1; i<=N; i++)
-				snodes[i] = snodes[i-1] + l[i-1]; 
-			snodes[N] = UnstrLen; 								// double check to ensure the last node does not surpass the line length
-			
+			// locations of line nodes along line length - evenly distributed
+			// here 
+			vector<real> snodes(N+1, 0.0);
+			for (unsigned int i = 1; i <= N; i++)
+				snodes[i] = snodes[i-1] + l[i-1];
+			// double check to ensure the last node does not surpass the line
+			// length
+			snodes[N] = UnstrLen;
+
 			// output variables
-			double HF, VF, HA, VA, COSPhi, SINPhi;
-			vector<double> Xl(N+1, 0.0); // x location of line nodes
-			vector<double> Zl(N+1, 0.0);
-			vector<double> Te(N+1, 0.0);
-				
+			real HF, VF, HA, VA, COSPhi, SINPhi;
+			vector<real> Xl(N+1, 0.0);
+			vector<real> Zl(N+1, 0.0);
+			vector<real> Te(N+1, 0.0);
+
 			COSPhi = (r[N][0] - r[0][0]) / XF;
 			SINPhi = (r[N][1] - r[0][1]) / XF; 
-		
-			int success = Catenary(XF, ZF, UnstrLen, E * pi / 4. * d * d, LW, CB, Tol,
-							   &HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
 
-			if (success >= 0)   // if the catenary solve is successful, update the node positions <<< do we ever get here? <<<
-			{
-				cout << "   Catenary initial profile available for Line " << number << endl;
-				for (int i=1; i<N; i++)
+			int success = Catenary(XF, ZF, UnstrLen, E * A, LW, CB, Tol,
+				&HF, &VF, &HA, &VA, N, snodes, Xl, Zl, Te);
+
+			if (success >= 0) {
+				// the catenary solve is successful, update the node positions
+				LOGDBG << "Catenary initial profile available for Line "
+				       << number << endl;
+				for (unsigned int i = 1; i < N; i++)
 				{
 					vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
 					r[i] = r[0] + l;
 				}
+			} else {
+				LOGWRN << "Catenary initial profile failed for Line "
+				       << number << endl;
 			}
 		}
 	}
 
-		
-	// also assign the resulting internal node positions to the integrator initial state vector! (velocities leave at 0)
-	for (int i=1; i<N; i++) {
-		moordyn::vec2array(r[i],               &(X[3*N-3 + 3*i-3]));
-		moordyn::vec2array(vec(0.0, 0.0, 0.0), &(X[        3*i-3]));
+	// also assign the resulting internal node positions to the integrator
+	// initial state vector! (velocities leave at 0)
+	for (unsigned int i = 1; i < N; i++) {
+		moordyn::vec2array(r[i], &(X[3*N-3 + 3*i-3]));
+		moordyn::vec2array(vec(0.0, 0.0, 0.0), &(X[3*i-3]));
 	}
 	// now we need to return to the integrator for the dynamic relaxation stuff
-	cout << "Initialized Line " << number << endl;
+	LOGMSG << "Initialized Line " << number << endl;
 };
-
-
-// smart (selective) function to get tension at any node including fairlead or anchor (accounting for weight in these latter cases) (added Nov 15th)
-double Line::getNodeTen(int i)
-{
-	double NodeTen = 0.0;
-	if ((i==0) || (i==N))
-		NodeTen = (Fnet[i] + vec(0.0, 0.0, M[i](0, 0) * (-env->g))).norm();  // <<< update to use W
-	else 
-	{
-		// take average of tension in adjacent segments 
-		NodeTen = (0.5 * (T[i] + T[i-1])).norm();  	// 		previously used: NodeTen = 0.5*(Tmag[i-1]+Tmag[i]); // should add damping in here too <<<<<<<<<<<<<
-	}
-	return NodeTen;
-};
-
-
-// function to get position of any node along the line
-int Line::getNodePos(int NodeNum, double pos[3])
-{
-	if ((NodeNum >= 0 ) && (NodeNum <= N))
-	{
-		moordyn::vec2array(r[NodeNum], pos);
-		
-		return 0;
-	}
-	else
-		return -1;  // indicate an error
-}
-
-// function to return array of coordinates of all nodes along the line (size 3n+3)
-void Line::getNodeCoordinates(double r_out[])
-{
-	for (int i=0; i<=N; i++)
-		moordyn::vec2array(r[i], &(r_out[3*i]));
-	
-	return;
-}
-
-// function to set U and Ud of each node along the line (used when these are provided externally)
-void Line::setNodeWaveKin(double U_in[], double Ud_in[])
-{
-	for (int i=0; i<=N; i++)
-	{
-		moordyn::array2vec(&(U_in[ 3*i]), U[ i]);
-		moordyn::array2vec(&(Ud_in[3*i]), Ud[i]);
-	}
-	return;
-}
-
-
-// FASTv7 style line tension outputs
-void Line::getFASTtens(float* FairHTen, float* FairVTen, float* AnchHTen, float* AnchVTen)
-{		
-	*FairHTen = (float)(Fnet[N](Eigen::seqN(0, 2)).norm());
-	*FairVTen = (float)(Fnet[N][2] + M[N](0, 0)*(-env->g));
-	*AnchHTen = (float)(Fnet[0](Eigen::seqN(0, 2)).norm());
-	*AnchVTen = (float)(Fnet[0][2] + M[0](0, 0)*(-env->g));
-	
-	return;
-};
-	
-   
-   
-// replaces getFairStuff and getAnchStuff
-// void Line::getEndStuff(double Fnet_out[3], double M_out[3][3], int topOfLine)
-// {
-//    int i;
-//    if (topOfLine==1)
-//       i=N;
-//    else
-//       i=0;
-//    
-// 	for (int I=0; I<3; I++) 
-// 	{	Fnet_out[I] = Fnet[i][I];			
-// 		for (int J=0; J<3; J++) 	M_out[I][J] = M[i][I][J];
-// 	}
-// };
-// version that includes moments
-void Line::getEndStuff(double Fnet_out[3], double Moment_out[3], double M_out[3][3], int topOfLine)
-{
-   if (topOfLine==1)  // end B of line
-   {
-      moordyn::vec2array(Fnet[N], Fnet_out);
-      moordyn::vec2array(endMomentB, Moment_out);
-      moordyn::mat2array(M[N], M_out);
-   }
-   else               // end A of line
-   {
-      moordyn::vec2array(Fnet[0], Fnet_out);
-      moordyn::vec2array(endMomentA, Moment_out);
-      moordyn::mat2array(M[0], M_out);
-   }
-};
-
-   
-
-int Line::getN()
-{
-	return N;
-};
-
 
 double Line::GetLineOutput(OutChanProps outChan)
-{	
+{
 	if      (outChan.QType == PosX)  return  r[outChan.NodeID][0];
 	else if (outChan.QType == PosY)  return  r[outChan.NodeID][1];
 	else if (outChan.QType == PosZ)  return  r[outChan.NodeID][2];
 	else if (outChan.QType == VelX)  return  rd[outChan.NodeID][0];
 	else if (outChan.QType == VelY)  return  rd[outChan.NodeID][1];
 	else if (outChan.QType == VelZ)  return  rd[outChan.NodeID][2];
-	else if (outChan.QType == Ten )  return  getNodeTen(outChan.NodeID);
+	else if (outChan.QType == Ten )  return  getNodeTen(outChan.NodeID).norm();
 	else if (outChan.QType == FX)  return  Fnet[outChan.NodeID][0];
 	else if (outChan.QType == FY)  return  Fnet[outChan.NodeID][1];
 	else if (outChan.QType == FZ)  return  Fnet[outChan.NodeID][2];
-	else
-	{
-		//cout << "outChan.QType (value of " << outChan.QType << ") not recognized." << endl;
+	else {
+		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 		return 0.0;
-		//ErrStat = ErrID_Warn
-		//ErrMsg = ' Unsupported output quantity from Connect object requested.'
 	}	
 }
 
+void Line::storeWaterKin(unsigned int nt, real dt, const real **zeta_in,
+                         const real **f_in, const real ***u_in,
+                         const real ***ud_in)
+{
+	LOGDBG << "Setting up wave variables for Line " << number
+	       << "!  ---------------------" << endl
+	       << "   nt=" << nt << ", and WaveDT=" << dt
+	       << ", env->WtrDpth=" << env->WtrDpth << endl;
 
-// function to store wave/current kinematics time series for this line, if applicable <<<<<<<<<<<< work in progress!!!
-void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in, double ***u_in, double ***ud_in)
-{	
-	if (wordy>1) cout << "   Setting up wave variables for Line " << number << "!  ---------------------" << endl;
-	if (wordy>1) cout << "   nt=" << ntin << ", and WaveDT=" <<  dtin << ", env->WtrDpth=" << env->WtrDpth << endl;
-
-	ntWater = ntin;
-	dtWater = dtin;
+	ntWater = nt;
+	dtWater = dt;
 
 	// resize the new time series vectors
 	zetaTS.assign(N+1, std::vector<moordyn::real>(ntWater, 0.0));
@@ -556,9 +547,9 @@ void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in,
 	UTS.assign(N+1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
 	UdTS.assign(N+1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
 
-	for (int i=0; i<N+1; i++)
+	for (unsigned int i = 0; i < N + 1; i++)
 	{
-		for (int j=0; j<ntWater; j++)
+		for (unsigned int j = 0; j < ntWater; j++)
 		{
 			zetaTS[i][j] = zeta_in[i][j];
 			FTS[i][j] = f_in[i][j];
@@ -570,125 +561,19 @@ void Line::storeWaterKin(int ntin, double dtin, double **zeta_in, double **f_in,
 	return;
 };
 
-
-double Line::getNonlinearE(double l_stretched, double l_unstretched)
-{
-	
-	double Xi = l_stretched/l_unstretched - 1.0;  // strain rate based on inputs
-	double Yi = 0.0;
-	
-	// find stress based on strain
-	if (Xi < 0.0)               // if negative strain (compression), zero stress
-		Yi = 0.0;
-	else if (Xi < stiffXs[0])  // if strain below first data point, interpolate from zero
-		Yi = Xi * stiffYs[0]/stiffXs[0];
-	else if (Xi >= stiffXs[nEApoints-1])     // if strain exceeds last data point, use last data point
-		Yi = stiffYs[nEApoints-1];
-	else                              // otherwise we're in range of the table so interpolate!
-	{
-		for (int I=0; I < nEApoints-1; I++) // go through lookup table until next entry exceeds inputted strain rate
-		{   
-			if (stiffXs[I+1] > Xi)
-			{
-				Yi = stiffYs[I] + (Xi-stiffXs[I]) * (stiffYs[I+1]-stiffYs[I])/(stiffXs[I+1]-stiffXs[I]);
-				break;
-			}
-		}
-	}
-	
-	// calculate equivalent elasticity (since that's what MoorDyn works with)
-	return Yi/Xi;  // this is a young's modulus equivalent value based on stress/strain
-}
-
-
-double Line::getNonlinearC(double ld_stretched, double l_unstretched)
-{
-	
-	double Xi = ld_stretched/l_unstretched;  // strain rate based on inputs
-	double Yi = 0.0;
-	
-	// find stress based on strain rate
-	// first check if lookup table includes compressing 
-	if (dampXs[0] < 0)
-	{
-		if (Xi < dampXs[0])  // if strain below first data point, use first data point
-			Yi = dampYs[0];
-		else if (Xi >= dampXs[nCpoints-1])     // if strain exceeds last data point, use last data point
-			Yi = dampYs[nCpoints-1];
-		else                              // otherwise we're in range of the table so interpolate!
-		{
-			for (int I=0; I < nCpoints-1; I++) // go through lookup table until next entry exceeds inputted strain rate
-			{   if (dampXs[I+1] > Xi)
-				{	Yi = dampYs[I] + (Xi - dampXs[I]) * (dampYs[I+1]-dampYs[I])
-														   /(dampXs[I+1]-dampXs[I]);
-					break;
-				}
-			}
-		}
-	}
-	else   // if no compressing data given, we'll flip-mirror so stretching and compressing are same
-	{
-		double Xsign = 1.0;
-		if (Xi < 0)          // convert negative value to positive for interpolation
-		{	Xsign = -1.0;
-			Xi = -Xi;
-		}
-		
-		if (Xi < dampXs[0])  // if strain rate is below first data point, interpolate from zero
-			Yi = Xi * dampYs[0]/dampXs[0];
-		else if (Xi >= dampXs[nCpoints-1])     // if strain rate exceeds last data point, use last data point
-			Yi = dampYs[nCpoints-1];
-		else                              // otherwise we're in range of the table so interpolate!
-		{
-			for (int I=0; I < nCpoints-1; I++) // go through lookup table until next entry exceeds inputted strain rate
-			{   if (dampXs[I+1] > Xi)
-				{	Yi = dampYs[I] + (Xi - dampXs[I]) * (dampYs[I+1]-dampYs[I])
-														   /(dampXs[I+1]-dampXs[I]);
-					break;
-				}
-			}
-		}
-		Yi = Yi*Xsign; // flip sine if negative strain
-	}
-		
-	// calculate equivalent damping coefficient (since that's what MoorDyn works with)
-	return Yi/Xi;  // this is a coefficient value based on stress/strainrate
-}
-
-	
-// function for boosting drag coefficients during IC generation	
-void Line::scaleDrag(double scaler)
-{
-	Cdn = Cdn*scaler;
-	Cdt = Cdt*scaler;
-	return;
-}
-
-// function to reset time after IC generation
-void Line::setTime(double time)
-{
-	t = time;
-	return;
-}
-
-
-
-// set the line positions and velocities based on latest states
 void Line::setState(const double* X, const double time)
 {
 	// store current time
-	t = time;
-	
+	setTime(time);
+
 	// set interior node positions and velocities based on state vector
-	for (int i=1; i<N; i++)
+	for (unsigned int i = 1; i < N; i++)
 	{
 		moordyn::array2vec(&(X[3 * N - 3 + 3 * i - 3]), r[i]);
 		moordyn::array2vec(&(X[            3 * i - 3]), rd[i]);
 	}
 }
 
-
-// set position and velocity of one of the line end nodes  <<<<<<<<< should rename SetEndKinematics
 void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 {
 	int i;
@@ -696,38 +581,51 @@ void Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 	if (topOfLine==1)
 	{
 		i = N;        // fairlead case
-		endTypeB = 0; // indicate pinned
+		endTypeB = PINNED; // indicate pinned
 	}
 	else
 	{
 		i = 0;        // anchor case
-		endTypeA = 0; // indicate pinned
+		endTypeA = PINNED; // indicate pinned
 	}
 
 	moordyn::array2vec(r_in, r[i]);
 	moordyn::array2vec(rd_in, rd[i]);
 }
 
-void Line::setEndState(vector<double> &r_in, vector<double> &rd_in, int topOfLine)
+void Line::SetEndKinematics(vec pos, vec vel, EndPoints end_point)
 {
-	setEndState(r_in.data(), rd_in.data(), topOfLine);
+	switch (end_point) {
+		case ENDPOINT_TOP:
+			endTypeB = PINNED; // indicate pinned
+			r[N] = pos;
+			rd[N] = vel;
+			break;
+		case ENDPOINT_BOTTOM:
+			endTypeA = PINNED; // indicate pinned
+			r[0] = pos;
+			rd[0] = vel;
+			break;
+		default:
+			LOGERR << "Invalid end point qualifier: " << end_point << endl;
+			throw moordyn::invalid_value_error("Invalid end point");
+	}
 }
 
-// set end node unit vector of a line (this is called by an attached to a Rod, only applicable for bending stiffness)
 void Line::setEndOrientation(double *qin, int topOfLine, int rodEndB)
 {  	// Note: qin is the rod's position/orientation vector, r6, passed at index 3
 	// rodEndB=0 means the line is attached to Rod end A, =1 means attached to Rod end B (implication for unit vector sign)
 	
 	if (topOfLine==1)
 	{
-		endTypeB = 1;                    // indicate attached to Rod (at every time step, just in case line get detached)
+		endTypeB = CANTILEVERED;                    // indicate attached to Rod (at every time step, just in case line get detached)
 		moordyn::array2vec(qin, q[N]);   // -----line----->[A==ROD==>B]
 		if (rodEndB==1)
 			q[N] *= -1;                  // -----line----->[B<==ROD==A]
 	}
 	else
 	{	
-		endTypeA = 1;                    // indicate attached to Rod (at every time step, just in case line get detached)
+		endTypeA = CANTILEVERED;                    // indicate attached to Rod (at every time step, just in case line get detached)
 		moordyn::array2vec(qin, q[0]);   // [A==ROD==>B]-----line----->
 		if (rodEndB!=1)
 			q[0] *= -1;                  // [B<==ROD==A]-----line----->
@@ -735,6 +633,32 @@ void Line::setEndOrientation(double *qin, int topOfLine, int rodEndB)
 	return;
 }	
 
+void Line::setEndOrientation(vec qin, EndPoints end_point,
+                             EndPoints rod_end_point)
+{
+	if ((rod_end_point != ENDPOINT_A) && (rod_end_point != ENDPOINT_B)) {
+			LOGERR << "Invalid rod end point qualifier: " << rod_end_point
+			       << endl;
+			throw moordyn::invalid_value_error("Invalid end point");
+	}
+	switch (end_point) {
+		case ENDPOINT_TOP:
+			endTypeB = CANTILEVERED; // indicate pinned
+			q[N] = qin;              // -----line----->[A==ROD==>B]
+			if (rod_end_point == ENDPOINT_B)
+				q[N] *= -1.0;        // -----line----->[B<==ROD==A]
+			break;
+		case ENDPOINT_BOTTOM:
+			endTypeA = CANTILEVERED; // indicate pinned
+			q[0] = qin;              // [A==ROD==>B]-----line----->
+			if (rod_end_point == ENDPOINT_A)
+				q[0] *= -1.0;        // [B<==ROD==A]-----line----->
+			break;
+		default:
+			LOGERR << "Invalid end point qualifier: " << end_point << endl;
+			throw moordyn::invalid_value_error("Invalid end point");
+	}
+}
 
 void Line::getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB)
 {  	
@@ -760,59 +684,86 @@ void Line::getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB)
 	return;
 }	
 
-void Line::getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int topOfLine)
-{  	
+vec Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
+{
+	real dlEnd, EIEnd;
+	vec qEnd;
 
-	*EIout = EI;
-	
-	if (topOfLine==1)
-	{	
-		*dlout = unitvector(qEnd, r[N-1], r[N]);  // unit vector of last line segment
-		
+	if ((rod_end_point != ENDPOINT_A) && (rod_end_point != ENDPOINT_B)) {
+			LOGERR << "Invalid rod end point qualifier: " << rod_end_point
+			       << endl;
+			throw moordyn::invalid_value_error("Invalid end point");
 	}
-	else
-	{	
-		*dlout = unitvector(qEnd, r[0], r[1]);    // unit vector of first line segment
+	switch (end_point) {
+		case ENDPOINT_TOP:
+			// unit vector of last line segment
+			dlEnd = unitvector(qEnd, r[N-1], r[N]);
+			if (rod_end_point == ENDPOINT_A) {
+				// -----line----->[A==ROD==>B]
+				EIEnd =  EI;
+			}
+			else {
+				// -----line----->[B==ROD==>A]
+				EIEnd = -EI;
+			}
+			break;
+		case ENDPOINT_BOTTOM:
+			// unit vector of last line segment
+			dlEnd = unitvector(qEnd, r[N-1], r[N]);
+			if (rod_end_point == ENDPOINT_A) {
+				// <----line-----[A==ROD==>B]
+				EIEnd =  -EI;
+			}
+			else {
+				// <----line-----[B==ROD==>A]
+				EIEnd = EI;
+			}
+			break;
+		default:
+			LOGERR << "Invalid end point qualifier: " << end_point << endl;
+			throw moordyn::invalid_value_error("Invalid end point");
 	}
-	
-	return;
+
+	return qEnd * EIEnd / dlEnd;
 }
 
-
-// calculate forces and get the derivative of the line's states
 void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 {
+	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the
 	// whole library, just because it is called every single time substep and
 	// it shall makecomputations in every single line node. Thus it is worthy
 	// to invest effort on keeping it optimized.
 
-	//for (int i=0; i<=N; i++) cout << " " << r[i][0] << " " << r[i][1] << " " << r[i][2] << endl;
-	
 	// attempting error handling <<<<<<<<
-	for (int i=0; i<=N; i++)
+	for (unsigned int i = 0; i <= N; i++)
 	{
 		if (isnan(r[i].sum())) 
 		{
 			stringstream s;
 			s << "NaN detected" << endl
 			  << "Line " << number << " node positions:" << endl;
-			for (int j=0; j<=N; j++)
+			for (unsigned int j = 0; j <= N; j++)
 				s << j << " : " << r[j] << ";" << endl;
 			throw moordyn::nan_error(s.str().c_str());
 		}
 	}
-	
-	if (env->writeLog > 2)
+
+	// Traversing and printing to null buffer every single node can be
+	// wastefull, better checking before if we shall do that
+	if ((_log->GetVerbosity() <= MOORDYN_DBG_LEVEL) ||
+	    (_log->GetLogLevel() <= MOORDYN_DBG_LEVEL))
 	{
-		*(env->outfileLogPtr) << "Line " << number << " node positions at time " << t << ":\n";
-		for (int j=0; j<=N; j++) *(env->outfileLogPtr) << r[j][0] << "\t" << r[j][1] << "\t" << r[j][2] << "\n";
+		LOGDBG << "Line " << number << " node positions at time " << t << ":"
+		       << endl;
+		for (unsigned int j = 0; j <= N; j++)
+			LOGDBG << r[j][0] << "\t" << r[j][1] << "\t" << r[j][2] << endl;
 	}
 	
 	// dt is possibly used for stability tricks...
 	
 	// -------------------- calculate various kinematic quantities ---------------------------
-	for (int i=0; i<N; i++) 
+	for (unsigned int i = 0; i < N; i++) 
 	{
 		//calculate current (Stretched) segment lengths and unit tangent vectors (qs) for each segment (this is used for bending calculations)
 		lstr[i] = unitvector(qs[i], r[i], r[i+1]);
@@ -825,18 +776,18 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	}
 		
 	// calculate unit tangent vectors (q) for each internal node. note: I've reversed these from pointing toward 0 rather than N. Check sign of wave loads. <<<<
-	for (int i=1; i<N; i++) 
+	for (unsigned int i = 1; i < N; i++) 
 		unitvector(q[i], r[i-1], r[i+1]);    // compute unit vector q ... using adjacent two nodes!
 	
 	// calculate unit tangent vectors for either end node if the line has no bending stiffness of if either end is pinned (otherwise it's already been set via setEndStateFromRod)
-	if ((endTypeA == 0) || (EI==0)) unitvector(q[0], r[0  ], r[1]);  
-	if ((endTypeB == 0) || (EI==0)) unitvector(q[N], r[N-1], r[N]);
+	if ((endTypeA == PINNED) || (EI==0)) unitvector(q[0], r[0  ], r[1]);  
+	if ((endTypeB == PINNED) || (EI==0)) unitvector(q[N], r[N-1], r[N]);
 	
 		
 	//============================================================================================
 	// --------------------------------- apply wave kinematics -----------------------------
 	
-	if (WaterKin == 1) // wave kinematics time series set internally for each node
+	if (WaterKin == WAVES_EXTERNAL) // wave kinematics time series set internally for each node
 	{
 		// =========== obtain (precalculated) wave kinematics at current time instant ============
 		// get precalculated wave kinematics at previously-defined node positions for time instant t
@@ -846,7 +797,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		double frac = remainder(t,dtWater)/dtWater;
 				
 		// loop through nodes 
-		for (int i=0; i<=N; i++)
+		for (unsigned int i = 0; i <= N; i++)
 		{
 			zeta[i] = zetaTS[i][it] + frac*( zetaTS[i][it+1] - zetaTS[i][it] );			
 			F[i] = 1.0;   // FTS[i][it] + frac*(FTS[i][it+1] - FTS[i][it]);
@@ -855,27 +806,28 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			Ud[i] = UdTS[i][it] + frac*( UdTS[i][it+1] - UdTS[i][it] );
 		}	
 	}
-	else if (WaterKin == 2) // wave kinematics interpolated from global grid in Waves object
-	{		
-		for (int i=0; i<=N; i++)
+	else if (WaterKin == WAVES_GRID)
+	{
+		// wave kinematics interpolated from global grid in Waves object
+		for (unsigned int i = 0; i <= N; i++)
 		{
-			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], zeta[i], PDyn[i]); // call generic function to get water velocities
-			
+			// call generic function to get water velocities
+			waves->getWaveKin(r[i][0], r[i][1], r[i][2], t, U[i], Ud[i],
+			                  zeta[i], PDyn[i]);
+
 			F[i] = 1.0; // set VOF value to one for now (everything submerged - eventually this should be element-based!!!) <<<<
 		}
 	}
-	else if (WaterKin != 0) // Hopefully WaterKin is set to zero, meaning no waves or set externally, otherwise it's an error
+	else if (WaterKin != WAVES_NONE) // Hopefully WaterKin is set to zero, meaning no waves or set externally, otherwise it's an error
 		cout << "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
 
-	
 	//============================================================================================
-	
-	
-    // calculate mass matrix 
-	for (int i=0; i<=N; i++) 
+
+	// calculate mass matrix
+	for (unsigned int i=0; i<=N; i++)
 	{
-		double m_i; // node mass
-		double v_i; // node submerged volume 
+		real m_i; // node mass
+		real v_i; // node submerged volume
 		
 		if (i==0) 
 		{
@@ -901,26 +853,14 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	
 
 	// ============  CALCULATE FORCES ON EACH NODE ===============================
-	
+
 	// loop through the segments
-	for (int i=0; i<N; i++)
+	for (unsigned int i = 0; i < N; i++)
 	{
-		
-		/*
-		// attempting error handling <<<<<<<<
-		if (abs(lstr[i]/l[i] - 1) > 0.5) {
-			stringstream s;
-			s << "Line " << number << " segment strains:";
-			for (int j=0; j<N; j++) s << " " << (lstr[i]/l[i] - 1);
-			s << " at time " << t;
-			throw string(s.str()); //"Too great a strain in segment");
-		}
-		*/
-		
 		// line tension
 		if (nEApoints > 0)
 			E = getNonlinearE(lstr[i], l[i]);
-	
+
 		if (lstr[i] / l[i] > 1.0)
 		{
 			T[i] = E*A* ( 1./l[i] - 1./lstr[i] ) * (r[i+1]-r[i]);
@@ -931,25 +871,24 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			// or can it, if bending stiffness is nonzero? <<<<<<<<<
 			T[i] = vec(0.0, 0.0, 0.0);
 		}
-				
+
 		// line internal damping force
 		if (nCpoints > 0)
 			c = getNonlinearC(ldstr[i], l[i]);
-		
+
 		Td[i] = c*A* ( ldstr[i] / l[i] ) * (r[i+1]-r[i])/lstr[i]; 
 	}
-	
-	
+
 	// Bending loads
 	// first zero out the forces from last run
-	for (int i=0; i<=N; i++)
+	for (unsigned int i = 0; i <= N; i++)
 		Bs[i] = vec(0.0, 0.0, 0.0);
 
 	// and now compute them (if possible)
 	if (EI > 0)
 	{
 		// loop through all nodes to calculate bending forces
-		for (int i=0; i<=N; i++)
+		for (unsigned int i = 0; i <= N; i++)
 		{
 			moordyn::real Kurvi = 0.0;
 			vec pvec;
@@ -962,7 +901,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			// end node A case (only if attached to a Rod, i.e. a cantilever rather than pinned connection)
 			if (i==0)
 			{
-				if (endTypeA > 0) // if attached to Rod i.e. cantilever connection
+				if (endTypeA == CANTILEVERED) // if attached to Rod i.e. cantilever connection
 				{
 					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);  // curvature <<< check if this approximation works for an end (assuming rod angle is node angle which is middle of if there was a segment -1/2
 		
@@ -987,7 +926,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 			// end node A case (only if attached to a Rod, i.e. a cantilever rather than pinned connection)
 			else if (i==N)
 			{
-				if (endTypeB > 0) // if attached to Rod i.e. cantilever connection
+				if (endTypeB == CANTILEVERED) // if attached to Rod i.e. cantilever connection
 				{
 					Kurvi = GetCurvature(lstr[i-1], qs[i-1], q[i]); // curvature <<< check if this approximation works for an end (assuming rod angle is node angle which is middle of if there was a segment -1/2
 					
@@ -1046,14 +985,14 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				cout << Mforce_i << endl;
 				cout << Mforce_ip1 << endl;
 			}
-			
+
 			// record curvature at node!!
 			Kurv[i] = Kurvi;
-			
+
 			// any damping forces for bending? I hope not...
-			
+
 			// get normal component at each adjacent node
-		
+
 			// trace along line to find torsion at each segment
 			/*
 			if (torsion)
@@ -1089,10 +1028,8 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		}   // for i=0,N (looping through nodes)
 	}  // if EI > 0
 
-
-
 	// loop through the nodes
-	for (int i=0; i<=N; i++)
+	for (unsigned int i=0; i<=N; i++)
 	{
 		W[i][0] = W[i][1] = 0.0;
 		// submerged weight (including buoyancy)
@@ -1170,11 +1107,11 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				B[i][2] = ( (-env->WtrDpth-r[i][2])*env->kb - rd[i][2]*env->cb) * 0.5*d*( l[i-1] + l[i] );
 			
 			// new rough-draft addition of seabed friction
-			double FrictionMax = abs(B[i][2])*env->FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
+			real FrictionMax = abs(B[i][2])*env->FrictionCoefficient; // dynamic friction force saturation level based on bottom contact force
 			
 			// saturated damping approach to applying friction, for now
-			double BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
-			double FrictionForce = BottomVel * env->FrictionCoefficient*env->FricDamp; // some arbitrary damping scaling thing at end
+			real BottomVel = sqrt(rd[i][0]*rd[i][0] + rd[i][1]*rd[i][1]); // velocity of node along sea bed
+			real FrictionForce = BottomVel * env->FrictionCoefficient*env->FricDamp; // some arbitrary damping scaling thing at end
 			if (FrictionForce > env->StatDynFricScale*FrictionMax)  FrictionForce = FrictionMax;     // saturate (quickly) to static/dynamic friction force level 
 			
 			if (BottomVel == 0.0) { // check for zero velocity, in which case friction force is zero
@@ -1208,7 +1145,7 @@ void Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 
 
 	// loop through internal nodes and update their states
-	for (int i=1; i<N; i++)	
+	for (unsigned int i = 1; i < N; i++)	
 	{
 	//	double M_out[9];
 	//	double F_out[3];
@@ -1258,70 +1195,63 @@ void Line::Output(double time)
 			//if (find(channels.begin(), channels.end(), "position") != channels.end())
 			if (channels.find("p") != string::npos)
 			{
-				for (int i=0; i<=N; i++)	//loop through nodes
+				for (unsigned int i = 0; i <= N; i++)	//loop through nodes
 				{
-					for (int J=0; J<3; J++)  *outfile << r[i][J] << "\t ";
+					for (unsigned int J = 0; J < 3; J++)
+						*outfile << r[i][J] << "\t ";
 				}
 			}
 			// output curvatures?
 			if (channels.find("K") != string::npos) {
-				for (int i=0; i<=N; i++)  {
+				for (unsigned int i = 0; i <= N; i++) {
 					*outfile << Kurv[i] << "\t ";
 				}
 			}
 			// output velocities?
 			if (channels.find("v") != string::npos) {
-				for (int i=0; i<=N; i++)  {
+				for (unsigned int i = 0; i <= N; i++) {
 					for (int J=0; J<3; J++)  *outfile << rd[i][J] << "\t ";
 				}
 			}
 			// output wave velocities?
 			if (channels.find("U") != string::npos) {
-				for (int i=0; i<=N; i++)  {
+				for (unsigned int i = 0; i <= N; i++) {
 					for (int J=0; J<3; J++)  *outfile << U[i][J] << "\t ";
 				}
 			}
 			// output hydro drag force?
 			if (channels.find("D") != string::npos) {
-				for (int i=0; i<=N; i++)  {
+				for (unsigned int i = 0; i <= N; i++) {
 					for (int J=0; J<3; J++)  *outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J] << "\t ";
 				}
 			}
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (unsigned int i = 0; i < N; i++)  {
 					*outfile << T[i].norm() << "\t ";
-					// >>> preparation below for switching to outputs at nodes <<<
-					// note that tension of end nodes will need weight and buoyancy adjustment 
-					//if (i==0)
-					//      *outfile << (T[i] + W[i]).norm() << "\t ";
-					//else if (i==N)
-					//      *outfile << (T[i] - W[i]).norm() << "\t ";
-					//else
-					//	*outfile << T[i].norm() << "\t ";
 				}
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (unsigned int i = 0; i < N; i++)  {
 					for (int J=0; J<3; J++)  *outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
 				}
 			}
 			// output segment strains?
 			if (channels.find("s") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (unsigned int i = 0; i < N; i++)  {
 					*outfile << lstr[i]/l[i]-1.0 << "\t ";
 				}
 			}
 			// output segment strain rates?
 			if (channels.find("d") != string::npos) {
-				for (int i=0; i<N; i++)  {
+				for (unsigned int i = 0; i < N; i++)  {
 					*outfile << ldstr[i]/l[i] << "\t ";
 				}
 			}			
 			// output seabed contact forces?
 			if (channels.find("b") != string::npos) {
-				for (int i=0; i<=N; i++)  {
+				for (unsigned int i = 0; i <= N; i++) {
 					for (int J=0; J<3; J++)  *outfile << B[i][J] << "\t ";
 				}
 			}
@@ -1333,12 +1263,6 @@ void Line::Output(double time)
 	return;
 };
 
-
-Line::~Line()
-{
-}
-
-
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void Line::drawGL(void)
@@ -1348,7 +1272,7 @@ void Line::drawGL(void)
 	double rgb[3];
 	for (int i=0; i<=N; i++)	
 	{
-		double newTen = getNodeTen(i);
+		double newTen = getNodeTen(i).norm();
 		if (newTen > maxTen)
 			maxTen = newTen;
 	}
@@ -1359,7 +1283,7 @@ void Line::drawGL(void)
 	{
 		glVertex3d(r[i][0], r[i][1], r[i][2]);
 		if (i<N)  {
-			normTen = getNodeTen(i)/maxTen;
+			normTen = getNodeTen(i).norm()/maxTen;
 			ColorMap(normTen, rgb);
 			glColor3d(rgb[0],rgb[1],rgb[2]);
 		}
@@ -1376,15 +1300,15 @@ void Line::drawGL2(void)
 	double rgb[3];
 	for (int i=0; i<=N; i++)	
 	{
-		double newTen = getNodeTen(i);
+		double newTen = getNodeTen(i).norm();
 		if (newTen > maxTen)
 			maxTen = newTen;
 	}
 	
 	// line
-	for (int i=0; i<N; i++)	
+	for (unsigned int i = 0; i < N; i++)	
 	{
-		normTen = 0.2+0.8*pow(getNodeTen(i)/maxTen, 4.0);
+		normTen = 0.2+0.8*pow(getNodeTen(i).norm()/maxTen, 4.0);
 		ColorMap(normTen, rgb);
 		glColor3d(rgb[0],rgb[1],rgb[2]);
 
@@ -1400,3 +1324,101 @@ void Line::drawGL2(void)
 	}
 };
 #endif
+
+}  // ::moordyn
+
+// =============================================================================
+//
+//                     ||                     ||
+//                     ||        C API        ||
+//                    \  /                   \  /
+//                     \/                     \/
+//
+// =============================================================================
+
+/// Check that the provided system is not Null
+#define CHECK_LINE(s)                                                           \
+	if (!s)                                                                     \
+	{                                                                           \
+		cerr << "Null system received in " << __FUNC_NAME__                     \
+		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
+		return MOORDYN_INVALID_VALUE;                                           \
+	}
+
+int DECLDIR MoorDyn_GetLineID(MoorDynLine l)
+{
+	CHECK_LINE(l);
+	return ((moordyn::Line*)l)->number;
+}
+
+int DECLDIR MoorDyn_GetLineN(MoorDynLine l, unsigned int *n)
+{
+	CHECK_LINE(l);
+	*n = ((moordyn::Line*)l)->getN();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR MoorDyn_GetLineNumberNodes(MoorDynLine l, unsigned int *n)
+{
+	int err = MoorDyn_GetLineN(l, n);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+	*n += 1;
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR MoorDyn_GetNodePos(MoorDynLine l,
+                               unsigned int i,
+                               double pos[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try
+	{
+		const vec r = ((moordyn::Line*)l)->getNodePos(i);
+		moordyn::vec2array(r, pos);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR MoorDyn_GetNodeTen(MoorDynLine l,
+                               unsigned int i,
+                               double ten[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try
+	{
+		const vec t = ((moordyn::Line*)l)->getNodeTen(i);
+		moordyn::vec2array(t, ten);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR MoorDyn_GetNodeCurv(MoorDynLine l,
+                                unsigned int i,
+                                double *curv)
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try
+	{
+		const auto c = ((moordyn::Line*)l)->getNodeCurv(i);
+		*curv = c;
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR MoorDyn_GetFairTen(MoorDynLine l, double *t)
+{
+	CHECK_LINE(l);
+	*t = ((moordyn::Line*)l)->getNodeTen(((moordyn::Line*)l)->getN()).norm();
+	return MOORDYN_SUCCESS;
+}
+

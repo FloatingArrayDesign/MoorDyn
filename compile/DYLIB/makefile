@@ -52,7 +52,7 @@ kiss_fft.o: ../../source/kiss_fft.c ../../source/kiss_fft.h
 kiss_fftr.o: ../../source/kiss_fftr.c ../../source/kiss_fftr.h
 	$(CC) $(CFLAGS) ../../source/kiss_fftr.c
 
-Line.o: ../../source/Line.cpp ../../source/Line.h ../../source/QSlines.h
+Line.o: ../../source/Line.cpp ../../source/Line.h ../../source/QSlines.hpp
 	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
 
 Connection.o: ../../source/Connection.cpp ../../source/Connection.hpp ../../source/Connection.h

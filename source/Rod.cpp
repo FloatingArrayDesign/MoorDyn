@@ -15,7 +15,7 @@
  */
  
 #include "Rod.h"
-#include "Line.h"
+#include "Line.hpp"
 #include "Waves.hpp"
 
 using namespace std;
@@ -165,7 +165,7 @@ int Rod::setup(int number_in, types type_in, RodProps *props, double endCoords[6
 
 
 // this function handles assigning a line to a Rod end
-void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
+void Rod::addLineToRodEndA(moordyn::Line *theLine, int TopOfLine)
 {
 	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "A ";
 	
@@ -177,7 +177,7 @@ void Rod::addLineToRodEndA(Line *theLine, int TopOfLine)
 	}
 	return;
 };
-void Rod::addLineToRodEndB(Line *theLine, int TopOfLine)
+void Rod::addLineToRodEndB(moordyn::Line *theLine, int TopOfLine)
 {
 	if (wordy>0) cout << "L" << theLine->number << "->R" << number << "B ";
 	
@@ -1309,9 +1309,16 @@ void Rod::doRHS()
 	for (int l=0; l < nAttachedA; l++)
 	{
 		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
+		vec fneti, mneti;
+		mat mi;
 
 		// get quantities
-		AttachedA[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopA[l]);
+		AttachedA[l]->getEndStuff(fneti, mneti, mi, TopA[l] ? moordyn::ENDPOINT_B : moordyn::ENDPOINT_A);
+		// DEPRECATED: This convertions will not be needed anymore
+		moordyn::vec2array(fneti, Fnet_i);
+		moordyn::vec2array(mneti, Mnet_i);
+		moordyn::mat2array(mi, M_i);
+
 			
 		// Process outline for line failure, similar to as done for connections (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if failure time has elapsed for line
@@ -1334,10 +1341,16 @@ void Rod::doRHS()
 	// loop through lines attached to end B
 	for (int l=0; l < nAttachedB; l++)
 	{
-		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0}; double M_i[3][3] = {{0.0}};
+		double Fnet_i[3] = {0.0}; double Mnet_i[3] = {0.0};  double M_i[3][3] = {{0.0}};
+		vec fneti, mneti;
+		mat mi;
 
 		// get quantities
-		AttachedB[l]->getEndStuff(Fnet_i, Mnet_i, M_i, TopB[l]);
+		AttachedA[l]->getEndStuff(fneti, mneti, mi, TopA[l] ? moordyn::ENDPOINT_B : moordyn::ENDPOINT_A);
+		// DEPRECATED: This convertions will not be needed anymore
+		moordyn::vec2array(fneti, Fnet_i);
+		moordyn::vec2array(mneti, Mnet_i);
+		moordyn::mat2array(mi, M_i);
 
 		// sum quantitites
 		for (int I=0; I<3; I++) 

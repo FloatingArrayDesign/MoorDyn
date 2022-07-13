@@ -362,8 +362,9 @@ moordyn::real GetCurvature(moordyn::real length, const vec& q1, const vec& q2)
 	//	throw string("Error: the angle between two adjacent segments is greater than 90 degrees! (this could indicate instability)");
 	//	return 0.0;
 	//}
-	else                        // normal case
-		return 4.0/length * sqrt(0.5*(1.0 - q1_dot_q2));   // this is the normal curvature calculation
+
+	// this is the normal curvature calculation
+	return 4.0 / length * sqrt(0.5 * (1.0 - q1_dot_q2));
 }
 
 

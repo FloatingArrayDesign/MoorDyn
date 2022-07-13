@@ -24,10 +24,10 @@ using namespace std;
 // here is the numbering scheme (N segments per line):
 //   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] --- ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
 
-class Line;
 namespace moordyn {
 	// NOTE: The namespace will be extended to the class below in the future
 	class Waves;
+	class Line;
 }
 
 class Rod 
@@ -46,8 +46,8 @@ class Rod
 	
 
 	// unique to Rod (like a doubling of Connection):
-	Line* AttachedA[10]; 	// pointers to lines attached to this connection node
-	Line* AttachedB[10]; 	// pointers to lines attached to this connection node
+	moordyn::Line* AttachedA[10]; 	// pointers to lines attached to this connection node
+	moordyn::Line* AttachedB[10]; 	// pointers to lines attached to this connection node
 	int TopA[10]; 			// which end of line are we attached to? 1 = top/fairlead, 0 = bottom/anchor
 	int TopB[10]; 			// which end of line are we attached to? 1 = top/fairlead, 0 = bottom/anchor
 	int nAttachedA; 		// number of attached lines
@@ -195,8 +195,8 @@ public:
 	int setup(int number_in, types type_in, RodProps *props, double endCoords[6], int NumSegs, 
 	shared_ptr<ofstream> outfile_pointer, string channels_in);
 	
-	void addLineToRodEndA(Line *theLine, int TopOfLine);
-	void addLineToRodEndB(Line *theLine, int TopOfLine);
+	void addLineToRodEndA(moordyn::Line *theLine, int TopOfLine);
+	void addLineToRodEndB(moordyn::Line *theLine, int TopOfLine);
 	void removeLineFromRodEndA(int lineID, int *topOfLine, double rEnd[], double rdEnd[]);
 	void removeLineFromRodEndB(int lineID, int *topOfLine, double rEnd[], double rdEnd[]);
 	

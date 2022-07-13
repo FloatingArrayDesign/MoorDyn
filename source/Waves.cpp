@@ -218,7 +218,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 	if ((env->WaveKin == moordyn::WAVES_NONE) &&
 		(env->Current == moordyn::CURRENTS_NONE))
 	{
-		LOGMSG << "No Waves or Currents, or set externally";
+		LOGMSG << "No Waves or Currents, or set externally" << endl;
 		return;
 	}
 

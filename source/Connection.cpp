@@ -16,7 +16,7 @@
 
 #include "Connection.hpp"
 #include "Connection.h"
-#include "Line.h"
+#include "Line.hpp"
 #include "Waves.hpp"
 
 namespace moordyn
@@ -67,7 +67,7 @@ void Connection::addLineToConnect(Line *theLine, int TopOfLine)
 {
 	LOGDBG << "L" << theLine->number << "->P" << number << " ";
 
-	attachment a = {theLine, TopOfLine};
+	attachment a = {theLine, TopOfLine ? ENDPOINT_B : ENDPOINT_A};
 	attached.push_back(a);
 };
 
@@ -83,7 +83,7 @@ void Connection::removeLineFromConnect(int lineID, int *TopOfLine,
 		if ((*it).line->number != lineID)
 			continue;
 		// This is the line's entry in the attachment list
-		*TopOfLine = (*it).top;
+		*TopOfLine = (int)((*it).end_point);
 		attached.erase(it);
 
 		// also pass back the kinematics at the end
@@ -113,13 +113,8 @@ void Connection::initializeConnect(double X[6])
 	{
 		// pass kinematics to any attached lines so they have initial positions
 		// at this initialization stage
-		for (auto a : attached) {
-			// DEPRECATED: This conversion will not be necessary
-			double line_r[3], line_rd[3];
-			moordyn::vec2array(r, line_r);
-			moordyn::vec2array(rd, line_rd);
-			a.line->setEndState(line_r, line_rd, a.top);
-		}
+		for (auto a : attached)
+			a.line->SetEndKinematics(r, rd, a.end_point);
 
 		// assign initial node kinematics to state vector
 		moordyn::vec2array(r, X + 3);
@@ -235,13 +230,8 @@ void Connection::updateFairlead(const real time)
 	rd = rd_ves;
 
 	// pass latest kinematics to any attached lines
-	for (auto a : attached) {
-		// DEPRECATED: This connection will not be needed anymore
-		double line_r[3], line_rd[3];
-		moordyn::vec2array(r, line_r);
-		moordyn::vec2array(rd, line_rd);
-		a.line->setEndState(line_r, line_rd, a.top);
-	}
+	for (auto a : attached)
+		a.line->SetEndKinematics(r, rd, a.end_point);
 }
 
 
@@ -262,13 +252,8 @@ void Connection::setKinematics(double *r_in, double *rd_in)
 	moordyn::array2vec(rd_in, rd);
 
 	// pass latest kinematics to any attached lines
-	for (auto a : attached) {
-		// DEPRECATED: This connection will not be needed anymore
-		double line_r[3], line_rd[3];
-		moordyn::vec2array(r, line_r);
-		moordyn::vec2array(rd, line_rd);
-		a.line->setEndState(line_r, line_rd, a.top);
-	}
+	for (auto a : attached)
+		a.line->SetEndKinematics(r, rd, a.end_point);
 }
 
 // pass the latest states to the connection ()
@@ -293,13 +278,8 @@ moordyn::error_id Connection::setState(const double X[6],
 	moordyn::array2vec(X, rd);
 
 	// pass latest kinematics to any attached lines
-	for (auto a : attached) {
-		// DEPRECATED: This connection will not be needed anymore
-		double line_r[3], line_rd[3];
-		moordyn::vec2array(r, line_r);
-		moordyn::vec2array(rd, line_rd);
-		a.line->setEndState(line_r, line_rd, a.top);
-	}
+	for (auto a : attached)
+		a.line->SetEndKinematics(r, rd, a.end_point);
 
 	return MOORDYN_SUCCESS;
 }
@@ -383,10 +363,11 @@ moordyn::error_id Connection::doRHS()
 	// loop through attached lines, adding force and mass contributions
 	for (auto a : attached)
 	{
-		double Fnet_i[3] = {0.0}, Moment_dummy[3], M_i[3][3] = {{0.0}};
+		vec Fnet_i, Moment_dummy;
+		mat M_i;
 
 		// get quantities
-		a.line->getEndStuff(Fnet_i, Moment_dummy, M_i, a.top);
+		a.line->getEndStuff(Fnet_i, Moment_dummy, M_i, a.end_point);
 
 		// Process outline for line failure (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if failure time has elapsed for line
@@ -395,13 +376,8 @@ moordyn::error_id Connection::doRHS()
 		// The above may require rearrangement of connection indices, expansion of state vector, etc.
 
 		// sum quantitites
-		// DEPRECATED: This convertions will not be needed anymore
-		vec fi;
-		moordyn::array2vec(Fnet_i, fi);
-		mat mi;
-		moordyn::array2mat(M_i, mi);
-		Fnet += fi;
-		M += mi;
+		Fnet += Fnet_i;
+		M += M_i;
 	}
 
 	// --------------------------------- apply wave kinematics ------------------------------------

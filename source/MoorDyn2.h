@@ -18,8 +18,9 @@
 #define __MOORDYN2_H__
 
 #include "MoorDynAPI.h"
-#include "Connection.h"
 #include "Waves.h"
+#include "Connection.h"
+#include "Line.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -227,11 +228,11 @@ unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system);
 
 /** @brief Get a connection
  * @param system The Moordyn system
- * @param l The connection
+ * @param c The connection
  * @return The connection instance, NULL if errors happened
  */
 MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
-                                                unsigned int l);
+                                                unsigned int c);
 
 /** @brief Get the number of lines
  *
@@ -242,23 +243,12 @@ MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
  */
 unsigned int DECLDIR MoorDyn_GetNumberLines(MoorDyn system);
 
-/** @brief Get the number of line nodes
+/** @brief Get a line instance
  * @param system The Moordyn system
- * @param line The line
- * @return The number of nodes, which may be 0 if errors happened
- * (see @ref moordyn_errors)
- * @note The number of nodes is equal to the specified number in the input file
- * plus one extra node. This function returns such extra node.
+ * @param l The line identifier (from 1 to the number of lines)
+ * @return The line instance, NULL if errors happened
  */
-unsigned int DECLDIR MoorDyn_GetNumberLineNodes(MoorDyn system,
-                                                unsigned int line);
-
-/** @brief Get the fairlead tension of a specific line
- * @param system The Moordyn system
- * @param line The line
- * @return The tension, -1 if no such line can be found
- */
-double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line);
+MoorDynLine DECLDIR MoorDyn_GetLine(MoorDyn system, unsigned int l);
 
 /** @brief Function for providing FASTv7 customary line tension quantities
  * @param system The Moordyn system
@@ -277,21 +267,6 @@ double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line);
 int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
                                 float FairHTen[], float FairVTen[],
                                 float AnchHTen[], float AnchVTen[]);
-
-/** @brief Get a line node position
- * @param system The Moordyn system
- * @param LineNum The connection
- * @param NodeNum The connection
- * @param pos The output position
- * @return 0 If the data is correctly set, an error code otherwise
- * (see @ref moordyn_errors)
- * @warning The first node index is 0, while the last node index is
- * the result of MoorDyn_GetNumberLineNodes() minus 1.
- */
-int DECLDIR MoorDyn_GetNodePos(MoorDyn system,
-                               unsigned int LineNum,
-                               unsigned int NodeNum,
-                               double pos[3]);
 
 /** @brief Draw the lines and connections in the active OpenGL context
  *

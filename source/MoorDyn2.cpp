@@ -350,7 +350,8 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 
 		// go through connections to get fairlead forces 
 		for (unsigned int lf = 0; lf < LineList.size(); lf++)
-			FairTens[lf] = LineList[lf]->getNodeTen(LineList[lf]->getN());
+			FairTens[lf] = LineList[lf]->getNodeTen(
+				LineList[lf]->getN()).norm();
 
 		// check for convergence (compare current tension at each fairlead with
 		// previous convergence_iters-1 values)
@@ -1353,7 +1354,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					<< " - of class " << type << " (" << TypeNum << ")"
 					<< " with id " << LineList.size() << endl;
 
-				Line *obj = new Line();
+				Line *obj = new Line(_log);
 				obj->setup(number, LinePropList[TypeNum], UnstrLen, NumSegs,
 				           outfiles.back(), outchannels);
 				LineList.push_back(obj);
@@ -2310,36 +2311,18 @@ unsigned int DECLDIR MoorDyn_GetNumberLines(MoorDyn system)
 	return ((moordyn::MoorDyn*)system)->GetLines().size();
 }
 
-unsigned int DECLDIR MoorDyn_GetNumberLineNodes(MoorDyn system,
-                                                unsigned int line)
+MoorDynLine DECLDIR MoorDyn_GetLine(MoorDyn system, unsigned int l)
 {
 	if (!system)
-		return 0;
-
+		return NULL;
 	auto lines = ((moordyn::MoorDyn*)system)->GetLines();
-	if (!line || (line > lines.size()))
+	if (!l || (l > lines.size()))
 	{
-		cerr << "Error: There is not such line " << line << endl
+		cerr << "Error: There is not such line " << l << endl
 		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return 0;
+		return NULL;
 	}
-
-	return lines[line - 1]->getN() + 1;
-}
-
-double DECLDIR MoorDyn_GetFairTen(MoorDyn system, unsigned int line)
-{
-	CHECK_SYSTEM(system);
-
-	auto lines = ((moordyn::MoorDyn*)system)->GetLines();
-	if (!line || (line > lines.size()))
-	{
-		cerr << "Error: There is not such line " << line << endl
-		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return -1;
-	}
-
-	return lines[line - 1]->getNodeTen(lines[line - 1]->getN());
+	return (MoorDynLine)(lines[l - 1]);
 }
 
 int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
@@ -2360,25 +2343,6 @@ int DECLDIR MoorDyn_GetFASTtens(MoorDyn system, const int* numLines,
 		lines[l]->getFASTtens(FairHTen + l, FairVTen + l,
 		                      AnchHTen + l, AnchVTen + l);
 
-	return MOORDYN_SUCCESS;
-}
-
-int DECLDIR MoorDyn_GetNodePos(MoorDyn system,
-                               unsigned int LineNum,
-                               unsigned int NodeNum,
-                               double pos[3])
-{
-	CHECK_SYSTEM(system);
-
-	auto lines = ((moordyn::MoorDyn*)system)->GetLines();
-	if (!LineNum || (LineNum > lines.size()))
-	{
-		cerr << "Error: There is not such line " << LineNum << endl
-		     << "while calling " << __FUNC_NAME__ << "()" << endl;
-		return -1;
-	}
-	if (lines[LineNum - 1]->getNodePos(NodeNum, pos))
-		return MOORDYN_INVALID_VALUE;
 	return MOORDYN_SUCCESS;
 }
 

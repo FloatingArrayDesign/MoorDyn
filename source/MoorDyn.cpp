@@ -191,15 +191,15 @@ void DECLDIR setWaveKin(const double U_in[], const double Ud_in[], double t_in)
 	MoorDyn_SetWaveKin(md_singleton, U_in, Ud_in, t_in);
 }
 
-
 double DECLDIR GetFairTen(int l)
 {
 	if (!md_singleton)
 		return -1;
-	return MoorDyn_GetFairTen(md_singleton, l);
+	double t;
+	auto line = MoorDyn_GetLine(md_singleton, l);
+	MoorDyn_GetFairTen(line, &t);
+	return t;
 }
-
-
 
 int DECLDIR GetFASTtens(int* numLines, float FairHTen[], float FairVTen[], float AnchHTen[], float AnchVTen[] )
 {
@@ -229,8 +229,8 @@ int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	return MoorDyn_GetNodePos(
-		md_singleton, (unsigned int)LineNum, (unsigned int)NodeNum, pos);
+	auto line = MoorDyn_GetLine(md_singleton, LineNum);
+	return MoorDyn_GetNodePos(line, NodeNum, pos);
 }
 
 

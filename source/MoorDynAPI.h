@@ -37,6 +37,14 @@
 #define PARAM_UNUSED
 #endif
 
+#ifdef _MSC_VER
+#define DEPRECATED __declspec(deprecated)
+#elif defined(__GNUC__) | defined(__clang__)
+#define DEPRECATED __attribute__((__deprecated__))
+#else
+#define DEPRECATED
+#endif
+
 #ifndef __FUNC_NAME__
 #if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
 #define __FUNC_NAME__   __FUNCTION__  

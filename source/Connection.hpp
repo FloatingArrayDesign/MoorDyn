@@ -21,11 +21,10 @@
 
 using namespace std;
 
-class Line;
-
 namespace moordyn
 {
 
+class Line;
 class Waves;
 
 /** @class Connection Connection.hpp
@@ -65,10 +64,8 @@ private:
 	typedef struct _attachment {
 		/// The attached line
 		Line* line;
-		/// The attachment end point,
-		/// 1 = top/fairlead(end B)
-		/// 0 = bottom/anchor(end A)
-		int top;
+		/// The attachment end point
+		EndPoints end_point;
 	} attachment;
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
@@ -208,7 +205,7 @@ public:
 	 * @param TopOfLine 1 for attachments at the last node of the line (top).
 	 * 0 for attachments at the first node of the line (bottom)
 	 */
-	void addLineToConnect(Line *theLine, int TopOfLine);
+	void addLineToConnect(moordyn::Line *theLine, int TopOfLine);
 
 	/** @brief Dettach a line endpoint from this connection
 	 * @param lineID The line identifier

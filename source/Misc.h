@@ -161,6 +161,20 @@ inline void array2mat(const T a[3][3], mat &v)
 	v(2, 2) = (moordyn::real)a[2][2];
 }
 
+/** @brief End point qualifiers
+ *
+ * Used for both lines and rods
+ */
+typedef enum {
+	/// Bottom of the line
+	ENDPOINT_A = 0,
+	/// Top of the line
+	ENDPOINT_B = 1,
+	// Some aliases
+	ENDPOINT_BOTTOM = ENDPOINT_A,
+	ENDPOINT_TOP = ENDPOINT_B,
+} EndPoints;
+
 
 /** \addtogroup moordyn_errors
  *  @{
@@ -343,9 +357,9 @@ typedef enum {
 	/// dynamic current profile, grid approach
 	CURRENTS_DYNAMIC_GRID = 2,
 	/// steady current profile, node approach
-	CURRENTS_STEADY_NODE = 1,
+	CURRENTS_STEADY_NODE = 3,
 	/// dynamic current profile, node approach
-	CURRENTS_DYNAMIC_NODE = 2,
+	CURRENTS_DYNAMIC_NODE = 4,
 } currents_settings;
 
 /** @brief Are the waves settings grid based?
@@ -449,7 +463,7 @@ inline unsigned int interp_factor(const vector<T> &xp,
 		}
 	}
 
-	// Justto avoid the compiler warnings. This point is actually never reached
+	// Just to avoid the compiler warnings. This point is actually never reached
 	f = 1.0;
 	return xp.size() - 1;
 }
@@ -497,6 +511,26 @@ inline void interp(const vector<Tx> &xp,
 		j = interp_factor(xp, j, x[i], f);
 		y[i] = yp[j - 1] + f * (yp[j] - yp[j - 1]);
 	}
+}
+
+/** @brief One-dimensional linear interpolation
+ * @param xp The points where data is available
+ * @param yp The data values
+ * @param x The evaluation point
+ * @return The interpolated value
+ */
+template <typename Tx, typename Ty>
+inline Ty interp(const vector<Tx> &xp,
+                 const vector<Ty> &yp,
+                 Tx x)
+{
+	if (yp.size() == 1) {
+		return yp[0];
+	}
+
+	real f;
+	const auto j = interp_factor(xp, 1, x, f);
+	return yp[j - 1] + f * (yp[j] - yp[j - 1]);
 }
 
 /** @brief Bilinear filter
@@ -966,7 +1000,7 @@ inline T dotProd3(const T *a, const T *b)
 }
 
 template <typename T>
-inline moordyn::real __attribute__((deprecated)) dotProd3(const vec& a, const T *b)
+inline moordyn::real DEPRECATED dotProd3(const vec& a, const T *b)
 {
 	vec bb;
 	moordyn::array2vec(b, bb);
@@ -974,7 +1008,7 @@ inline moordyn::real __attribute__((deprecated)) dotProd3(const vec& a, const T 
 }
 
 template <typename T>
-inline moordyn::real __attribute__((deprecated)) dotProd3(const T *a, const vec& b)
+inline moordyn::real DEPRECATED dotProd3(const T *a, const vec& b)
 {
 	vec aa;
 	moordyn::array2vec(a, aa);
@@ -1063,10 +1097,10 @@ inline double crossProd(vector<T> &u, const T* v, T *out)
 void inverse3by3( vector< vector< double > > & minv, vector< vector< double > > & m);
 
 void Crout(int d,double*S,double*D);
-void __attribute__((deprecated)) solveCrout(int d,double*LU,double*b,double*x);
+void DEPRECATED solveCrout(int d,double*LU,double*b,double*x);
 
 template <typename TwoD1, typename TwoD2>
-void __attribute__((deprecated)) LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, double *y, double*x)
+void DEPRECATED LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, double *y, double*x)
 {
 	// Solves Ax=b for x
 	// LU contains LU matrices, y is a temporary vector
@@ -1108,8 +1142,8 @@ void __attribute__((deprecated)) LUsolve(int n, TwoD1& A, TwoD2& LU, double*b, d
 }
 
 // void LUsolve(int n, double **A,double **LU, double*b, double *y, double*x);
-void __attribute__((deprecated)) LUsolve3(double A[3][3], double x[3], double b[3]);
-void __attribute__((deprecated)) LUsolve6(const double A[6][6], double x[6], const double b[6]);
+void DEPRECATED LUsolve3(double A[3][3], double x[3], double b[3]);
+void DEPRECATED LUsolve6(const double A[6][6], double x[6], const double b[6]);
 
 /** @brief Compute 3x3 matrices determinant
  * @param m The matrix
@@ -1161,7 +1195,7 @@ inline double InvM3(T **m)
  * @note This function is way faster than any LU decomposition for 3x3 matrices
  */
 template <typename T>
-inline double __attribute__((deprecated)) Solve3(T **m, T *x, const T *b)
+inline double DEPRECATED Solve3(T **m, T *x, const T *b)
 {
 	const double det = InvM3(m);
 	x[0] = dotProd3((const T*)m[0], b);

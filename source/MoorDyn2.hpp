@@ -22,7 +22,7 @@
 
 #include "Waves.hpp"
 #include "MoorDyn.h"
-#include "Line.h"
+#include "Line.hpp"
 #include "Connection.hpp" 
 #include "Rod.h" 
 #include "Body.h"
@@ -172,7 +172,9 @@ public:
 		unsigned int i = 0;
 		for (auto line : LineList)
 		{
-			line->getNodeCoordinates(r + 3 * i);
+			std::vector<vec> rvec = line->getNodeCoordinates();
+			for (unsigned int i = 0; i <= rvec.size(); i++)
+				moordyn::vec2array(rvec[i], &(r[3 * i]));
 			i += line->getN() + 1;
 		}
 		return MOORDYN_SUCCESS;
@@ -326,9 +328,9 @@ private:
 	/// array of pointers to Rod objects
 	vector<Rod*> RodList;
 	/// array of pointers to connection objects (line joints or ends)
-	vector<Connection*> ConnectionList;
+	vector<moordyn::Connection*> ConnectionList;
 	/// array of pointers to line objects
-	vector<Line*> LineList;
+	vector<moordyn::Line*> LineList;
 
 	/// array of starting indices for Lines in "states" array
 	vector<int> LineStateIs;
