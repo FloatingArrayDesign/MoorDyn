@@ -23,7 +23,32 @@
 #include "MoorDyn2.h" 
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
+#include <cmath>
+
+#define TOL 1.0e-2
+#define POSX -203.22
+#define POSY 351.98
+#define POSZ -273.62
+#define TENX 367382.06
+#define TENY -636317.09
+#define TENZ 220304.04
+#define CURV 0.0
+
+bool compare(double v1, double v2)
+{
+    return fabs(v1 - v2) <= TOL;
+}
+
+#define CHECK_VALUE(name, v1, v2)                                               \
+    if (!compare(v1, v2)) {                                                     \
+        cerr << setprecision(8)                                                 \
+             << "Checking " << name << " failed. " << v1 << " was expected"     \
+             << " but " << v2 << " was computed" << endl;                       \
+        MoorDyn_Close(system);                                                  \
+        return false;                                                           \
+    }
 
 
 using namespace std;
@@ -144,7 +169,7 @@ bool minimal()
     for (unsigned int i = 0; i < 3; i++)
     {
         // 4 = first fairlead id
-        MoorDynConnection conn = MoorDyn_GetConnection(system, i + 4);
+        auto conn = MoorDyn_GetConnection(system, i + 4);
         err = MoorDyn_GetConnectPos(conn,
                                     x + 3 * i);
         if (err != MOORDYN_SUCCESS) {
@@ -168,6 +193,28 @@ bool minimal()
         cerr << "Failure during the mooring step: " << err << endl;
         return false;
     }
+
+    // Check a random node position, tension and curvature
+    auto line = MoorDyn_GetLine(system, 2);
+    unsigned int node;
+    err = MoorDyn_GetLineNumberNodes(line, &node);
+    if (err != MOORDYN_SUCCESS) {
+        cerr << "Failure getting the number of nodes: " << err << endl;
+        MoorDyn_Close(system);
+        return false;
+    }
+    node /= 2;
+    double pos[3], ten[3], curv;
+    err = MoorDyn_GetLineNodePos(line, node, pos);
+    CHECK_VALUE("POSX", POSX, pos[0]);
+    CHECK_VALUE("POSY", POSY, pos[1]);
+    CHECK_VALUE("POSZ", POSZ, pos[2]);
+    err = MoorDyn_GetLineNodeTen(line, node, ten);
+    CHECK_VALUE("TENX", TENX, ten[0]);
+    CHECK_VALUE("TENY", TENY, ten[1]);
+    CHECK_VALUE("TENZ", TENZ, ten[2]);
+    err = MoorDyn_GetLineNodeCurv(line, node, &curv);
+    CHECK_VALUE("CURV", CURV, curv);
 
     err = MoorDyn_Close(system);
     if (err != MOORDYN_SUCCESS) {
