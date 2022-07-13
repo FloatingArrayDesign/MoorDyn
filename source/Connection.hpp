@@ -261,14 +261,14 @@ public:
 	 * function for boosting drag coefficients during IC generation
 	 * @param scaler Drag factor
 	 */
-	void scaleDrag(real scaler);
+	inline void scaleDrag(real scaler) { conCdA *= scaler; }
 
 	/** @brief Set the time stamp
 	 *
 	 * function to reset time after IC generation
 	 * @param time Simulation time
 	 */
-	void setTime(real time);
+	inline void setTime(real time) { t = time; }
 
 	/** @brief Initialize the time step integration
 	 *

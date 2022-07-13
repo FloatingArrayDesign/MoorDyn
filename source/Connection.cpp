@@ -186,16 +186,6 @@ void Connection::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
 	waves = waves_in;  // set pointer to Waves  object
 }
 
-void Connection::scaleDrag(real scaler)
-{
-	conCdA *= scaler;
-}
-
-void Connection::setTime(real time)
-{
-	t = time;
-}
-
 void Connection::initiateStep(const double rFairIn[3], const double rdFairIn[3],
                               real time)
 {
@@ -261,7 +251,7 @@ moordyn::error_id Connection::setState(const double X[6],
                                        const double time)
 {
 	// store current time
-	t = time;
+	setTime(time);
 	
 	// the kinematics should only be set with this function of it's an independent/free connection
 	if (type != FREE) // "connect" type

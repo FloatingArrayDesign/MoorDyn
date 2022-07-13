@@ -1229,6 +1229,14 @@ void Line::Output(double time)
 			if (channels.find("t") != string::npos) {
 				for (unsigned int i = 0; i < N; i++)  {
 					*outfile << T[i].norm() << "\t ";
+					// >>> preparation below for switching to outputs at nodes <<<
+					// note that tension of end nodes will need weight and buoyancy adjustment
+					//if (i==0)
+					//      *outfile << (T[i] + W[i]).norm() << "\t ";
+					//else if (i==N)
+					//      *outfile << (T[i] - W[i]).norm() << "\t ";
+					//else
+					//	*outfile << T[i].norm() << "\t ";
 				}
 			}
 			// output internal damping force?
