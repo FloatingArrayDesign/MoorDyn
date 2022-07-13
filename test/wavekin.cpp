@@ -25,9 +25,7 @@
 #include <iostream>
 #include <algorithm>
 
-
 using namespace std;
-
 
 /** Constant underwater current
  * @param t Simulation time
@@ -35,12 +33,15 @@ using namespace std;
  * @param u Velocity
  * @param du Acceleration
  */
-void current(double PARAM_UNUSED t, const double PARAM_UNUSED *r,
-             double *u, double *du)
+void
+current(double PARAM_UNUSED t,
+        const double PARAM_UNUSED* r,
+        double* u,
+        double* du)
 {
-    memset(u, 0.0, 3 * sizeof(double));
-    memset(du, 0.0, 3 * sizeof(double));
-    u[0] = 1.0;
+	memset(u, 0.0, 3 * sizeof(double));
+	memset(du, 0.0, 3 * sizeof(double));
+	u[0] = 1.0;
 }
 
 /** Regular wave
@@ -49,16 +50,17 @@ void current(double PARAM_UNUSED t, const double PARAM_UNUSED *r,
  * @param u Velocity
  * @param du Acceleration
  */
-void wave(double t, const double *r, double *u, double *du)
+void
+wave(double t, const double* r, double* u, double* du)
 {
-    const double pi = 3.1416, g = 9.81, A = 1.5, L = 10.0, T = 15.0, H = 50.0;
-    memset(u, 0.0, 3 * sizeof(double));
-    memset(du, 0.0, 3 * sizeof(double));
-    const double k = 2.0 * L / pi, w = 2.0 * T / pi, zf = (1.0 + r[2] / H);
-    u[0] = zf * A * g * k / w * cos(k * r[0] - w * t);
-    u[1] = zf * A * w * sin(k * r[0] - w * t);
-    du[0] = zf * A * g * k * sin(k * r[0] - w * t);
-    du[1] = -zf * A * w * w * cos(k * r[0] - w * t);
+	const double pi = 3.1416, g = 9.81, A = 1.5, L = 10.0, T = 15.0, H = 50.0;
+	memset(u, 0.0, 3 * sizeof(double));
+	memset(du, 0.0, 3 * sizeof(double));
+	const double k = 2.0 * L / pi, w = 2.0 * T / pi, zf = (1.0 + r[2] / H);
+	u[0] = zf * A * g * k / w * cos(k * r[0] - w * t);
+	u[1] = zf * A * w * sin(k * r[0] - w * t);
+	du[0] = zf * A * g * k * sin(k * r[0] - w * t);
+	du[1] = -zf * A * w * w * cos(k * r[0] - w * t);
 }
 
 /** @brief Runs a simulation
@@ -69,90 +71,92 @@ void wave(double t, const double *r, double *u, double *du)
  *           certain position and time
  * @return true if the test is passed, false if problems are detected
  */
-bool api(void (*cb)(double, const double*, double*, double*))
+bool
+api(void (*cb)(double, const double*, double*, double*))
 {
-    MoorDyn system = MoorDyn_Create("../../test/Mooring/wavekin_1.txt");
-    if (!system)
-    {
-        cerr << "Failure Creating the Mooring system" << endl;
-        return false;
-    }
+	MoorDyn system = MoorDyn_Create("../../test/Mooring/wavekin_1.txt");
+	if (!system) {
+		cerr << "Failure Creating the Mooring system" << endl;
+		return false;
+	}
 
-    const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
-    if (n_dof != 3) {
-        cerr << "3x1 = 3 DOFs were expected, but " << n_dof
-             << "were reported" << endl;
-        MoorDyn_Close(system);
-        return false;
-    }
+	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	if (n_dof != 3) {
+		cerr << "3x1 = 3 DOFs were expected, but " << n_dof << "were reported"
+		     << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
 
-    int err;
-    double x[3], dx[3];
-    // Set the fairlead connections, as they are in the config file
-    std::fill(x, x + 3, 0.0);
-    std::fill(dx, dx + 3, 0.0);
-    err = MoorDyn_Init(system, x, dx);
-    if (err != MOORDYN_SUCCESS) {
-        MoorDyn_Close(system);
-        cerr << "Failure during the mooring initialization: " << err << endl;
-        return false;
-    }
+	int err;
+	double x[3], dx[3];
+	// Set the fairlead connections, as they are in the config file
+	std::fill(x, x + 3, 0.0);
+	std::fill(dx, dx + 3, 0.0);
+	err = MoorDyn_Init(system, x, dx);
+	if (err != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		cerr << "Failure during the mooring initialization: " << err << endl;
+		return false;
+	}
 
-    unsigned int nwp;
-    err = MoorDyn_ExternalWaveKinInit(system, &nwp);
-    if (err != MOORDYN_SUCCESS) {
-        MoorDyn_Close(system);
-        cerr << "Failure during the wave kinematics initialization: " << err << endl;
-        return false;
-    }
+	unsigned int nwp;
+	err = MoorDyn_ExternalWaveKinInit(system, &nwp);
+	if (err != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		cerr << "Failure during the wave kinematics initialization: " << err
+		     << endl;
+		return false;
+	}
 
-    double *r = new double[3 * nwp];
-    double *u = new double[3 * nwp];
-    double *du = new double[3 * nwp];
-    if (!r || !u || !du) {
-        MoorDyn_Close(system);
-        cerr << "Failure allocating " << 3 * 3 * nwp * sizeof(double)
-             << " bytes" << endl;
-        return false;
-    }
+	double* r = new double[3 * nwp];
+	double* u = new double[3 * nwp];
+	double* du = new double[3 * nwp];
+	if (!r || !u || !du) {
+		MoorDyn_Close(system);
+		cerr << "Failure allocating " << 3 * 3 * nwp * sizeof(double)
+		     << " bytes" << endl;
+		return false;
+	}
 
-    // Integrate in time
-    const double t_max = 30.0;
-    double t = 0.0, dt = 0.1;
-    double f[3];
-    while(t < t_max) {
-        err = MoorDyn_GetWaveKinCoordinates(system, r);
-        if (err != MOORDYN_SUCCESS) {
-            MoorDyn_Close(system);
-            cerr << "Failure getting the wave kinematics nodes: " << err << endl;
-            return false;
-        }
+	// Integrate in time
+	const double t_max = 30.0;
+	double t = 0.0, dt = 0.1;
+	double f[3];
+	while (t < t_max) {
+		err = MoorDyn_GetWaveKinCoordinates(system, r);
+		if (err != MOORDYN_SUCCESS) {
+			MoorDyn_Close(system);
+			cerr << "Failure getting the wave kinematics nodes: " << err
+			     << endl;
+			return false;
+		}
 
-        for (unsigned int i = 0; i < nwp; i++) {
-            (*cb)(t, r + 3 * i, u + 3 * i, du + 3 * i);
-        }
-        err = MoorDyn_SetWaveKin(system, u, du, t);
-        if (err != MOORDYN_SUCCESS) {
-            MoorDyn_Close(system);
-            cerr << "Failure setting the wave kinematics: " << err << endl;
-            return false;
-        }
+		for (unsigned int i = 0; i < nwp; i++) {
+			(*cb)(t, r + 3 * i, u + 3 * i, du + 3 * i);
+		}
+		err = MoorDyn_SetWaveKin(system, u, du, t);
+		if (err != MOORDYN_SUCCESS) {
+			MoorDyn_Close(system);
+			cerr << "Failure setting the wave kinematics: " << err << endl;
+			return false;
+		}
 
-        err = MoorDyn_Step(system, x, dx, f, &t, &dt);
-        if (err != MOORDYN_SUCCESS) {
-            MoorDyn_Close(system);
-            cerr << "Failure during the mooring step: " << err << endl;
-            return false;
-        }
-    }
+		err = MoorDyn_Step(system, x, dx, f, &t, &dt);
+		if (err != MOORDYN_SUCCESS) {
+			MoorDyn_Close(system);
+			cerr << "Failure during the mooring step: " << err << endl;
+			return false;
+		}
+	}
 
-    err = MoorDyn_Close(system);
-    if (err != MOORDYN_SUCCESS) {
-        cerr << "Failure closing Moordyn: " << err << endl;
-        return false;
-    }
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing Moordyn: " << err << endl;
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 /** @brief Runs a simulation
@@ -160,68 +164,70 @@ bool api(void (*cb)(double, const double*, double*, double*))
  * The water kinematics is set using the Waves instance, i.e. moordyn::Waves
  * @return true if the test is passed, false if problems are detected
  */
-bool grid()
+bool
+grid()
 {
-    MoorDyn system = MoorDyn_Create("../../test/Mooring/wavekin_2/wavekin_2.txt");
-    if (!system)
-    {
-        cerr << "Failure Creating the Mooring system" << endl;
-        return false;
-    }
+	MoorDyn system =
+	    MoorDyn_Create("../../test/Mooring/wavekin_2/wavekin_2.txt");
+	if (!system) {
+		cerr << "Failure Creating the Mooring system" << endl;
+		return false;
+	}
 
-    const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
-    if (n_dof != 3) {
-        cerr << "3x1 = 3 DOFs were expected, but " << n_dof
-             << "were reported" << endl;
-        MoorDyn_Close(system);
-        return false;
-    }
+	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	if (n_dof != 3) {
+		cerr << "3x1 = 3 DOFs were expected, but " << n_dof << "were reported"
+		     << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
 
-    int err;
-    double x[3], dx[3];
-    // Set the fairlead connections, as they are in the config file
-    std::fill(x, x + 3, 0.0);
-    std::fill(dx, dx + 3, 0.0);
-    err = MoorDyn_Init(system, x, dx);
-    if (err != MOORDYN_SUCCESS) {
-        MoorDyn_Close(system);
-        cerr << "Failure during the mooring initialization: " << err << endl;
-        return false;
-    }
+	int err;
+	double x[3], dx[3];
+	// Set the fairlead connections, as they are in the config file
+	std::fill(x, x + 3, 0.0);
+	std::fill(dx, dx + 3, 0.0);
+	err = MoorDyn_Init(system, x, dx);
+	if (err != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		cerr << "Failure during the mooring initialization: " << err << endl;
+		return false;
+	}
 
-    // Integrate in time
-    const double t_max = 30.0;
-    double t = 0.0, dt = 0.1;
-    double f[3];
-    while(t < t_max) {
-        err = MoorDyn_Step(system, x, dx, f, &t, &dt);
-        if (err != MOORDYN_SUCCESS) {
-            MoorDyn_Close(system);
-            cerr << "Failure during the mooring step: " << err << endl;
-            return false;
-        }
-    }
+	// Integrate in time
+	const double t_max = 30.0;
+	double t = 0.0, dt = 0.1;
+	double f[3];
+	while (t < t_max) {
+		err = MoorDyn_Step(system, x, dx, f, &t, &dt);
+		if (err != MOORDYN_SUCCESS) {
+			MoorDyn_Close(system);
+			cerr << "Failure during the mooring step: " << err << endl;
+			return false;
+		}
+	}
 
-    err = MoorDyn_Close(system);
-    if (err != MOORDYN_SUCCESS) {
-        cerr << "Failure closing Moordyn: " << err << endl;
-        return false;
-    }
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing Moordyn: " << err << endl;
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 /** @brief Runs all the test
  * @return 0 if the tests have ran just fine, 1 otherwise
  */
-int main(int, char**)
+int
+main(int, char**)
 {
-    if (!api(&current))
-        return 1;
-    if (!api(&wave))
-        return 1;
-    if (!grid())
-        return 2;
+	if (!api(&current))
+		return 1;
+	if (!api(&wave))
+		return 1;
+	if (!grid())
+		return 2;
 
-    return 0;
+	return 0;
 }

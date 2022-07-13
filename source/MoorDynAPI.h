@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
+ *
+ * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *
+ * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -17,18 +17,18 @@
 #ifndef __MOORDYNAPI_H__
 #define __MOORDYNAPI_H__
 
-#ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
-	#ifdef WIN32
-		#define DECLDIR __declspec(dllexport)
-	#else
-		#define DECLDIR 
-	#endif
+#ifdef MoorDyn_EXPORTS // this is set as a preprocessor definition!!!
+#ifdef WIN32
+#define DECLDIR __declspec(dllexport)
 #else
-	#ifdef WIN32
-		#define DECLDIR //__declspec(dllimport)
-	#else
-		#define DECLDIR 
-	#endif
+#define DECLDIR
+#endif
+#else
+#ifdef WIN32
+#define DECLDIR //__declspec(dllimport)
+#else
+#define DECLDIR
+#endif
 #endif
 
 #if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
@@ -47,17 +47,17 @@
 
 #ifndef __FUNC_NAME__
 #if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
-#define __FUNC_NAME__   __FUNCTION__  
+#define __FUNC_NAME__ __FUNCTION__
 #else
-#define __FUNC_NAME__   __func__ 
+#define __FUNC_NAME__ __func__
 #endif
 #endif
 
 #ifndef __PRETTY_FUNC_NAME__
 #if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
-#define __PRETTY_FUNC_NAME__   __FUNCSIG__
+#define __PRETTY_FUNC_NAME__ __FUNCSIG__
 #else
-#define __PRETTY_FUNC_NAME__   __PRETTY_FUNCTION__
+#define __PRETTY_FUNC_NAME__ __PRETTY_FUNCTION__
 #endif
 #endif
 
@@ -114,4 +114,4 @@
  * @}
  */
 
-#endif  // __MOORDYNAPI_H__
+#endif // __MOORDYNAPI_H__

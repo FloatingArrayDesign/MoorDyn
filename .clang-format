@@ -1,0 +1,10 @@
+﻿---
+BasedOnStyle: Mozilla
+ContinuationIndentWidth: '4'
+SortIncludes: false
+IndentWidth: '4'
+TabWidth: '4'
+UseTab: ForIndentation
+IndentExternBlock: NoIndent
+
+...

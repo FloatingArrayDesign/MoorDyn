@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2022 Jose Luis Cercos-Pita <jlc@core-marine.com>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
+ *
+ * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *
+ * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,13 +23,12 @@
 #include "Waves.hpp"
 #include "MoorDyn.h"
 #include "Line.hpp"
-#include "Connection.hpp" 
-#include "Rod.h" 
+#include "Connection.hpp"
+#include "Rod.h"
 #include "Body.h"
 
 /// MoorDyn2 C++ API namespace
-namespace moordyn
-{
+namespace moordyn {
 
 /** @class MoorDyn
  * @brief A Mooring system
@@ -39,7 +38,7 @@ namespace moordyn
  */
 class MoorDyn : public LogUser
 {
-public:
+  public:
 	/** @brief Constructor
 	 *
 	 * Remember to call Init() to initialize the mooring system
@@ -47,10 +46,10 @@ public:
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
 	 */
-	MoorDyn(const char *infilename=NULL);
+	MoorDyn(const char* infilename = NULL);
 
 	/** @brief Destuctor
-	 */    
+	 */
 	~MoorDyn();
 
 	/** @brief Initializes Moordyn, reading the input file and setting up the
@@ -62,7 +61,7 @@ public:
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 */
-	moordyn::error_id Init(const double *x, const double *xd);
+	moordyn::error_id Init(const double* x, const double* xd);
 
 	/** @brief Runs a time step of the MoorDyn system
 	 * @param x Position vector
@@ -73,8 +72,11 @@ public:
 	 * @note You can know the number of components required for \p x, \p xd and
 	 * \p f with the function MoorDyn::NCoupedDOF()
 	 */
-	moordyn::error_id Step(const double *x, const double *xd, double *f,
-	                       double &t, double &dt);
+	moordyn::error_id Step(const double* x,
+	                       const double* xd,
+	                       double* f,
+	                       double& t,
+	                       double& dt);
 
 	/** @brief Get the connections
 	 */
@@ -109,14 +111,12 @@ public:
 	 */
 	inline unsigned int NCoupedDOF() const
 	{
-		unsigned int n = 6 * CpldBodyIs.size() +
-		                 3 * CpldConIs.size();
-		for (auto rodi : CpldRodIs)
-		{
+		unsigned int n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
+		for (auto rodi : CpldRodIs) {
 			if (RodList[rodi]->type == -2)
-				n += 6;  // cantilevered rods
+				n += 6; // cantilevered rods
 			else
-				n += 3;  // pinned rods
+				n += 3; // pinned rods
 		}
 		return n;
 	}
@@ -136,15 +136,15 @@ public:
 	inline unsigned int ExternalWaveKinInit()
 	{
 		npW = 0;
-		
+
 		for (auto line : LineList)
 			npW += line->getN() + 1;
 
 		// allocate arrays to hold data that could be passed in
-		U_1      = make1Darray(3 * npW);
-		Ud_1     = make1Darray(3 * npW);
-		U_2      = make1Darray(3 * npW);
-		Ud_2     = make1Darray(3 * npW);
+		U_1 = make1Darray(3 * npW);
+		Ud_1 = make1Darray(3 * npW);
+		U_2 = make1Darray(3 * npW);
+		Ud_2 = make1Darray(3 * npW);
 
 		// initialize with zeros for safety
 		tW_1 = 0.0;
@@ -167,11 +167,10 @@ public:
 	 * @see MoorDyn::ExternalWaveKinInit()
 	 * @see MoorDyn::GetWaves()
 	 */
-	inline moordyn::error_id GetWaveKinCoordinates(double *r) const
+	inline moordyn::error_id GetWaveKinCoordinates(double* r) const
 	{
 		unsigned int i = 0;
-		for (auto line : LineList)
-		{
+		for (auto line : LineList) {
 			std::vector<vec> rvec = line->getNodeCoordinates();
 			for (unsigned int i = 0; i <= rvec.size(); i++)
 				moordyn::vec2array(rvec[i], &(r[3 * i]));
@@ -181,33 +180,31 @@ public:
 	}
 
 	/** @brief Set the kinematics of the waves
-	*
-	* Use this function if env.WaveKin = 1
-	* @param U The velocities at the points (3 components per point)
-	* @param Ud The accelerations at the points (3 components per point)
-	* @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	* otherwise (see @ref moordyn_errors)
-	* @see MoorDyn_InitExtWaves()
-	* @see MoorDyn_GetWavesCoords()
-	*/
-	inline moordyn::error_id SetWaveKin(const double *U,
-                                        const double *Ud,
-                                        double t)
+	 *
+	 * Use this function if env.WaveKin = 1
+	 * @param U The velocities at the points (3 components per point)
+	 * @param Ud The accelerations at the points (3 components per point)
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 * @see MoorDyn_InitExtWaves()
+	 * @see MoorDyn_GetWavesCoords()
+	 */
+	inline moordyn::error_id SetWaveKin(const double* U,
+	                                    const double* Ud,
+	                                    double t)
 	{
-		if (!U || !Ud)
-		{
-			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Received a Null pointer in "
-				<< "MoorDyn::SetWaveKin()" << endl
-				<< "Both velocity and acceleration arrays are needed"
-				<< endl;
+		if (!U || !Ud) {
+			_log->Cout(MOORDYN_ERR_LEVEL)
+			    << "Error: Received a Null pointer in "
+			    << "MoorDyn::SetWaveKin()" << endl
+			    << "Both velocity and acceleration arrays are needed" << endl;
 			return MOORDYN_INVALID_VALUE;
 		}
 
-		if (!U_1 || !U_2 || !Ud_1 || !Ud_2)
-		{
-			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Memory not allocated."
-				<< " Have you called MoorDyn::ExternalWaveKinInit()?"
-				<< endl;
+		if (!U_1 || !U_2 || !Ud_1 || !Ud_2) {
+			_log->Cout(MOORDYN_ERR_LEVEL)
+			    << "Error: Memory not allocated."
+			    << " Have you called MoorDyn::ExternalWaveKinInit()?" << endl;
 			return MOORDYN_MEM_ERROR;
 		}
 
@@ -215,8 +212,7 @@ public:
 		tW_2 = tW_1;
 		tW_1 = t;
 
-		for (unsigned int i = 0; i < 3 * npW; i++)
-		{
+		for (unsigned int i = 0; i < 3 * npW; i++) {
 			U_2[i] = U_1[i];
 			Ud_2[i] = Ud_1[i];
 			U_1[i] = U[i];
@@ -225,7 +221,7 @@ public:
 		return MOORDYN_SUCCESS;
 	}
 
-protected:
+  protected:
 	/** @brief Read the input file, setting up all the requird objects and their
 	 * relationships
 	 *
@@ -245,39 +241,36 @@ protected:
 	 * @note You can know the number of components required for \p f with the
 	 * function MoorDyn::NCoupedDOF()
 	 */
-	inline moordyn::error_id GetForces(double *f) const
+	inline moordyn::error_id GetForces(double* f) const
 	{
-		if (!NCoupedDOF())
-		{
+		if (!NCoupedDOF()) {
 			if (f)
-				_log->Cout(MOORDYN_WRN_LEVEL) << "Warning: Forces have been asked on "
-					<< "the coupled entities, but there are no such entities"
-					<< endl;
+				_log->Cout(MOORDYN_WRN_LEVEL)
+				    << "Warning: Forces have been asked on "
+				    << "the coupled entities, but there are no such entities"
+				    << endl;
 			return MOORDYN_SUCCESS;
 		}
-		if (NCoupedDOF() && !f)
-		{
-			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: " << __PRETTY_FUNC_NAME__
-				<< " called with a NULL forces pointer, but there are "
-				<< NCoupedDOF() << " coupled Degrees Of Freedom" << endl;
+		if (NCoupedDOF() && !f) {
+			_log->Cout(MOORDYN_ERR_LEVEL)
+			    << "Error: " << __PRETTY_FUNC_NAME__
+			    << " called with a NULL forces pointer, but there are "
+			    << NCoupedDOF() << " coupled Degrees Of Freedom" << endl;
 			return MOORDYN_INVALID_VALUE;
 		}
 		unsigned int ix = 0;
-		for (auto l : CpldBodyIs)
-		{
+		for (auto l : CpldBodyIs) {
 			BodyList[l]->getFnet(f + ix);
 			ix += 6;
 		}
-		for (auto l : CpldRodIs)
-		{
+		for (auto l : CpldRodIs) {
 			RodList[l]->getFnet(f + ix);
 			if (RodList[l]->type == -2)
-				ix += 6;  // for cantilevered rods 6 entries will be taken
+				ix += 6; // for cantilevered rods 6 entries will be taken
 			else
-				ix += 3;  // for pinned rods 3 entries will be taken
+				ix += 3; // for pinned rods 3 entries will be taken
 		}
-		for (auto l : CpldConIs)
-		{
+		for (auto l : CpldConIs) {
 			vec fnet;
 			ConnectionList[l]->getFnet(fnet);
 			moordyn::vec2array(fnet, f + ix);
@@ -286,7 +279,7 @@ protected:
 		return MOORDYN_SUCCESS;
 	}
 
-private:
+  private:
 	/// The input file
 	string _filepath;
 	/// The input file basename
@@ -294,7 +287,8 @@ private:
 	/// The input file directory
 	string _basepath;
 
-	// factor by which to boost drag coefficients during dynamic relaxation IC generation
+	// factor by which to boost drag coefficients during dynamic relaxation IC
+	// generation
 	double ICDfac;
 	// convergence analysis time step for IC generation
 	double ICdt;
@@ -302,7 +296,8 @@ private:
 	double ICTmax;
 	// threshold for relative change in tensions to call it converged
 	double ICthresh;
-	// temporary wave kinematics flag used to store input value while keeping env.WaveKin=0 for IC gen
+	// temporary wave kinematics flag used to store input value while keeping
+	// env.WaveKin=0 for IC gen
 	int WaveKinTemp;
 	/// (s) desired mooring line model time step
 	double dtM0;
@@ -315,7 +310,7 @@ private:
 	/// The ground body, which is unique
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
-	Waves *waves = NULL;
+	Waves* waves = NULL;
 
 	/// array of pointers to hold line library types
 	vector<LineProps*> LinePropList;
@@ -366,11 +361,11 @@ private:
 
 	/// Global state vector
 	double* states;
-	/// State vector at midpoint in the RK-2 integration scheme 
+	/// State vector at midpoint in the RK-2 integration scheme
 	double* xt;
-	/// Drivatives computed in the first step of the RK-2 integration scheme 
+	/// Drivatives computed in the first step of the RK-2 integration scheme
 	double* f0;
-	/// Drivatives computed in the second step of the RK-2 integration scheme 
+	/// Drivatives computed in the second step of the RK-2 integration scheme
 	double* f1;
 
 	/// number of points that wave kinematics are input at
@@ -419,20 +414,18 @@ private:
 			log_level = MOORDYN_DBG_LEVEL;
 		GetLogger()->SetLogLevel(log_level);
 
-		if (env.writeLog > 0)
-		{
+		if (env.writeLog > 0) {
 			// BUG: The legacy file shall be removed in the future, when all
 			// the API revamp is done. For the time being I am keeping it for
 			// simplicity
 			stringstream oname;
 			oname << _basepath << _basename << ".legacy.log";
-			LOGDBG << "Creating the legacy log file: '"
-				<< oname.str() << "'" << endl;
+			LOGDBG << "Creating the legacy log file: '" << oname.str() << "'"
+			       << endl;
 			outfileLog.open(oname.str());
-			if (!outfileLog.is_open())
-			{
+			if (!outfileLog.is_open()) {
 				LOGERR << "Unable to create the legacy log file '"
-				                        << oname.str() << "'" << endl;
+				       << oname.str() << "'" << endl;
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
 			outfileLog << "MoorDyn v2 legacy log file with output level "
@@ -446,20 +439,20 @@ private:
 			filepath << _basepath << _basename << ".log";
 			try {
 				GetLogger()->SetFile(filepath.str().c_str());
-			} MOORDYN_CATCHER(err, err_msg);
+			}
+			MOORDYN_CATCHER(err, err_msg);
 			if (err != MOORDYN_SUCCESS)
-				LOGERR << "Unable to create the log at '"
-				       << filepath.str() << "': " << endl
+				LOGERR << "Unable to create the log at '" << filepath.str()
+				       << "': " << endl
 				       << err_msg << endl;
 			else
 				LOGMSG << "MoorDyn v2 log file with output level "
-			           << log_level_name(GetLogger()->GetLogLevel())
-			           << " at '" << filepath.str() << "'" << endl;
+				       << log_level_name(GetLogger()->GetLogLevel()) << " at '"
+				       << filepath.str() << "'" << endl;
 			return err;
 		}
 
-		if (outfileLog.is_open())
-		{
+		if (outfileLog.is_open()) {
 			env.outfileLogPtr = NULL;
 			outfileLog.close();
 		}
@@ -478,14 +471,13 @@ private:
 	 * @return MOORDYN_SUCCESS if the value/curve is correctly read, an error
 	 * code otherwise
 	 */
-	moordyn::error_id read_curve(const char *entry,
-	                             vector<double> &x,
-	                             vector<double> &y)
+	moordyn::error_id read_curve(const char* entry,
+	                             vector<double>& x,
+	                             vector<double>& y)
 	{
-		if (strpbrk(
-				entry,
-				"abcdfghijklmnopqrstuvwxyzABCDFGHIJKLMNOPQRSTUVWXYZ") == NULL)
-		{
+		if (strpbrk(entry,
+		            "abcdfghijklmnopqrstuvwxyzABCDFGHIJKLMNOPQRSTUVWXYZ") ==
+		    NULL) {
 			// "eE" are exluded as they're used for scientific notation!
 			x.push_back(0.0);
 			y.push_back(atof(entry));
@@ -493,39 +485,37 @@ private:
 		}
 
 		string fpath = _basepath + entry;
-		_log->Cout(MOORDYN_MSG_LEVEL) << "Loading a curve from '"
-		                        << fpath << "'..." << endl;
+		_log->Cout(MOORDYN_MSG_LEVEL)
+		    << "Loading a curve from '" << fpath << "'..." << endl;
 		ifstream f(fpath);
-		if (!f.is_open())
-		{
-			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Cannot read the file" << endl;
+		if (!f.is_open()) {
+			_log->Cout(MOORDYN_ERR_LEVEL)
+			    << "Error: Cannot read the file" << endl;
 			return MOORDYN_INVALID_INPUT_FILE;
 		}
 
 		vector<string> flines;
-		while (f.good())
-		{
+		while (f.good()) {
 			string fline;
-			getline (f, fline);
+			getline(f, fline);
 			flines.push_back(fline);
 		}
 		f.close();
 
-		for (auto fline : flines)
-		{
+		for (auto fline : flines) {
 			vector<string> entries = moordyn::str::split(fline, ' ');
-			if (entries.size() < 2)
-			{
-				_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Bad curve point" << endl
-					<< "\t'" << fline << "'" << endl
-					<< "\t2 fields required, but just " << entries.size()
-					<< " are provided" << endl;
+			if (entries.size() < 2) {
+				_log->Cout(MOORDYN_ERR_LEVEL)
+				    << "Error: Bad curve point" << endl
+				    << "\t'" << fline << "'" << endl
+				    << "\t2 fields required, but just " << entries.size()
+				    << " are provided" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
 			x.push_back(atof(entries[0].c_str()));
 			y.push_back(atof(entries[0].c_str()));
-			_log->Cout(MOORDYN_DBG_LEVEL) << "(" << x.back() << ", "
-				<< y.back() << ")" << endl;
+			_log->Cout(MOORDYN_DBG_LEVEL)
+			    << "(" << x.back() << ", " << y.back() << ")" << endl;
 		}
 
 		_log->Cout(MOORDYN_MSG_LEVEL) << "OK" << endl;
@@ -546,29 +536,28 @@ private:
 	 * @return MOORDYN_SUCCESS if the value/curve is correctly read, an error
 	 * code otherwise
 	 */
-	moordyn::error_id read_curve(const char *entry,
-	                             double *c,
-	                             int *n,
-	                             double *x,
-	                             double *y)
+	moordyn::error_id read_curve(const char* entry,
+	                             double* c,
+	                             int* n,
+	                             double* x,
+	                             double* y)
 	{
 		vector<double> xv, yv;
 		const moordyn::error_id error = read_curve(entry, xv, yv);
 		if (error != MOORDYN_SUCCESS)
 			return error;
 
-		if (xv.size() == 1)
-		{
+		if (xv.size() == 1) {
 			*c = yv.back();
 			n = 0;
 			return MOORDYN_SUCCESS;
 		}
 
-		if (xv.size() > nCoef)
-		{
-			_log->Cout(MOORDYN_ERR_LEVEL) << "Error: Too much points in the curve"
-				<< endl << "\t" << xv.size() << " points given, but just "
-				<< nCoef << " are accepted" << endl;
+		if (xv.size() > nCoef) {
+			_log->Cout(MOORDYN_ERR_LEVEL)
+			    << "Error: Too much points in the curve" << endl
+			    << "\t" << xv.size() << " points given, but just " << nCoef
+			    << " are accepted" << endl;
 			return MOORDYN_INVALID_INPUT;
 		}
 
@@ -591,12 +580,13 @@ private:
 		if (channel.OType == 1)
 			return LineList[channel.ObjID - 1]->GetLineOutput(channel);
 		else if (channel.OType == 2)
-			return ConnectionList[channel.ObjID - 1]->GetConnectionOutput(channel);
+			return ConnectionList[channel.ObjID - 1]->GetConnectionOutput(
+			    channel);
 		else if (channel.OType == 3)
 			return RodList[channel.ObjID - 1]->GetRodOutput(channel);
 		stringstream s;
 		s << "Error: output type of " << channel.Name
-			<< " does not match a supported object type";
+		  << " does not match a supported object type";
 		MOORDYN_THROW(MOORDYN_INVALID_VALUE, s.str().c_str());
 		return 0.0;
 	}
@@ -609,8 +599,10 @@ private:
 	 * @return MOORDYN_SUCCESS if the system was correctly integrated, an error
 	 * code otherwise
 	 */
-	moordyn::error_id CalcStateDeriv(double *x,  double *xd,
-                                     const double t, const double dt);
+	moordyn::error_id CalcStateDeriv(double* x,
+	                                 double* xd,
+	                                 const double t,
+	                                 const double dt);
 
 	/** @brief Carry out an integration step
 	 *
@@ -621,7 +613,7 @@ private:
 	 * @return MOORDYN_SUCCESS if the system was correctly integrated, an error
 	 * code otherwise
 	 */
-	moordyn::error_id RK2(double *x, double &t, const double dt);
+	moordyn::error_id RK2(double* x, double& t, const double dt);
 
 	/** @brief Detach lines from a failed connection
 	 * @param attachID ID of connection or Rod the lines are attached to (index
@@ -633,9 +625,12 @@ private:
 	 * 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
 	 * @param nLinesToDetach how many lines to dettach
 	 */
-	moordyn::error_id detachLines(int attachID, int isRod,
-	                              const int* lineIDs, int* lineTops,
-	                              int nLinesToDetach, double time);
+	moordyn::error_id detachLines(int attachID,
+	                              int isRod,
+	                              const int* lineIDs,
+	                              int* lineTops,
+	                              int nLinesToDetach,
+	                              double time);
 
 	/** @brief Print the output files
 	 *
@@ -648,4 +643,4 @@ private:
 	moordyn::error_id AllOutput(double t, double dt);
 };
 
-}  // ::moordyn
+} // ::moordyn

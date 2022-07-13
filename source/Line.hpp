@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
+ *
+ * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *
+ * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -31,7 +31,7 @@ class Waves;
  *
  * Each mooring line is divided on a set of nodes connected by segments, with
  * two connections at the end points
- * 
+ *
  * [connect (node 0)] - seg 0 - [node 1] - ... - seg n-1 - [connect (node N)]
  *
  * Depending on the length of the line, \f$ l \f$, the number of segments,
@@ -45,17 +45,17 @@ class Waves;
  */
 class Line : public LogUser
 {
-public:
+  public:
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	Line(moordyn::Log *log);
+	Line(moordyn::Log* log);
 
 	/** @brief Destructor
 	 */
 	~Line();
 
-private:
+  private:
 	/** @brief Get the non-linear Young's modulus
 	 * @param l_stretched The actual length of the segment
 	 * @param l_unstretched The unstretched length of the segment
@@ -73,11 +73,11 @@ private:
 	 */
 	real getNonlinearEI(real curv);
 
-	// ENVIRONMENTAL STUFF	
+	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond *env;
+	EnvCond* env;
 	/// global Waves object
-	moordyn::Waves *waves;
+	moordyn::Waves* waves;
 
 	/// Number of line segments
 	unsigned int N;
@@ -159,7 +159,7 @@ private:
 	// line segment volumes
 	std::vector<moordyn::real> V;
 
-	// forces 
+	// forces
 	/// segment tensions
 	std::vector<vec> T;
 	/// segment damping forces
@@ -200,7 +200,8 @@ private:
 	// end conditions
 	/** @brief Types of end points
 	 */
-	typedef enum {
+	typedef enum
+	{
 		/// Pinned to Connection
 		PINNED = 0,
 		/// Cantilevered to Rod
@@ -210,9 +211,11 @@ private:
 		ROD = CANTILEVERED,
 	} endTypes;
 
-	/// type of connection at end A: 0=pinned to Connection, 1=cantilevered to Rod.
+	/// type of connection at end A: 0=pinned to Connection, 1=cantilevered to
+	/// Rod.
 	endTypes endTypeA;
-	/// type of connection at end B: 0=pinned to Connection, 1=cantilevered to Rod.
+	/// type of connection at end B: 0=pinned to Connection, 1=cantilevered to
+	/// Rod.
 	endTypes endTypeB;
 	/// moment at end A from bending, to be applied on attached Rod/Body
 	vec endMomentA;
@@ -221,10 +224,10 @@ private:
 
 	// file stuff
 	/// Pointer to moordyn::MoorDyn::outfileMain
-	ofstream * outfile;
+	ofstream* outfile;
 	/// A copy of moordyn::MoorDyn::outChans
 	string channels;
-	
+
 	/** data structures for precalculated nodal water kinematics if applicable
 	 * @{
 	 */
@@ -246,7 +249,7 @@ private:
 	 * @}
 	 */
 
-public:
+  public:
 	/// Line ID
 	int number;
 
@@ -265,14 +268,18 @@ public:
 	 * @param outfile The outfile where information shall be witten
 	 * @param channels The channels/fields that shall be printed in the file
 	 */
-	void setup(int number, LineProps *props, real l, unsigned int n, 
-		shared_ptr<ofstream> outfile, string channels);
+	void setup(int number,
+	           LineProps* props,
+	           real l,
+	           unsigned int n,
+	           shared_ptr<ofstream> outfile,
+	           string channels);
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond *env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param X The output states vector, with 3*(n-1) velocity components and
@@ -296,7 +303,8 @@ public:
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
 	 */
-	inline vec getNodePos(unsigned int i) const {
+	inline vec getNodePos(unsigned int i) const
+	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
@@ -313,18 +321,21 @@ public:
 	 * @return The tension
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
-	 */ 
-	inline vec getNodeTen(unsigned int i) const {
+	 */
+	inline vec getNodeTen(unsigned int i) const
+	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
-		if ((i==0) || (i==N))
-			return (Fnet[i] + vec(0.0, 0.0, M[i](0, 0) * (-env->g)));  // <<< update to use W
+		if ((i == 0) || (i == N))
+			return (
+			    Fnet[i] +
+			    vec(0.0, 0.0, M[i](0, 0) * (-env->g))); // <<< update to use W
 
-		// take average of tension in adjacent segments 
-		return (0.5 * (T[i] + T[i-1]));
+		// take average of tension in adjacent segments
+		return (0.5 * (T[i] + T[i - 1]));
 	};
 
 	/** @brief Get the line curvature at a node position
@@ -333,7 +344,8 @@ public:
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
 	 */
-	inline real getNodeCurv(unsigned int i) const {
+	inline real getNodeCurv(unsigned int i) const
+	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
@@ -355,7 +367,8 @@ public:
 	 * @param Ud_in Accelerations, should have (moordyn::Line::N + 1) * 3
 	 *              components
 	 */
-	inline void setNodeWaveKin(double U_in[], double Ud_in[]) {
+	inline void setNodeWaveKin(double U_in[], double Ud_in[])
+	{
 		for (unsigned int i = 0; i <= N; i++) {
 			moordyn::array2vec(&(U_in[3 * i]), U[i]);
 			moordyn::array2vec(&(Ud_in[3 * i]), Ud[i]);
@@ -369,13 +382,15 @@ public:
 	 * @param AnchHTen Horizontal tension on the anchor
 	 * @param AnchVTen Vertical tension on the anchor
 	 */
-	inline void getFASTtens(float* FairHTen, float* FairVTen,
-	                        float* AnchHTen, float* AnchVTen) const
+	inline void getFASTtens(float* FairHTen,
+	                        float* FairVTen,
+	                        float* AnchHTen,
+	                        float* AnchVTen) const
 	{
 		*FairHTen = (float)(Fnet[N](Eigen::seqN(0, 2)).norm());
-		*FairVTen = (float)(Fnet[N][2] + M[N](0, 0)*(-env->g));
+		*FairVTen = (float)(Fnet[N][2] + M[N](0, 0) * (-env->g));
 		*AnchHTen = (float)(Fnet[0](Eigen::seqN(0, 2)).norm());
-		*AnchVTen = (float)(Fnet[0][2] + M[0](0, 0)*(-env->g));
+		*AnchVTen = (float)(Fnet[0][2] + M[0](0, 0) * (-env->g));
 	}
 
 	/** @brief Get the force, moment and mass at the line endpoint
@@ -386,7 +401,9 @@ public:
 	 * @throws invalid_value_error If @p end_point is not a valid end point
 	 * qualifier
 	 */
-	inline void getEndStuff(vec &Fnet_out, vec &Moment_out, mat &M_out,
+	inline void getEndStuff(vec& Fnet_out,
+	                        vec& Moment_out,
+	                        mat& M_out,
 	                        EndPoints end_point) const
 	{
 		switch (end_point) {
@@ -422,20 +439,20 @@ public:
 	 *
 	 * @param nt Number of time steps
 	 * @param dt Time step
-	 * 
+	 *
 	 * @note Working in progress
 	 */
-	void storeWaterKin(unsigned int nt, real dt, const real **zeta_in,
-	                   const real **f_in, const real ***u_in,
-	                   const real ***ud_in);
+	void storeWaterKin(unsigned int nt,
+	                   real dt,
+	                   const real** zeta_in,
+	                   const real** f_in,
+	                   const real*** u_in,
+	                   const real*** ud_in);
 
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients
 	 */
-	inline std::pair<real, real> getDrag() const
-	{
-		return make_pair(Cdn, Cdt);
-	}
+	inline std::pair<real, real> getDrag() const { return make_pair(Cdn, Cdt); }
 
 	/** @brief Set the drag coefficients
 	 * @param cdn Normal (transversal) coefficient
@@ -476,8 +493,7 @@ public:
 	 * @deprecated This method is replaced by SetEndKinematics and will be
 	 * removed in the future
 	 */
-	void DEPRECATED setEndState(
-		double r_in[3], double rd_in[3], int topOfLine);
+	void DEPRECATED setEndState(double r_in[3], double rd_in[3], int topOfLine);
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r Position
@@ -499,7 +515,7 @@ public:
 	 * @deprecated This method is replaced to use moordyn::vec instead, and will
 	 * be removed in the future
 	 */
-	void DEPRECATED setEndOrientation(double *qin, int topOfLine, int rodEndB);
+	void DEPRECATED setEndOrientation(double* qin, int topOfLine, int rodEndB);
 
 	/** @brief set end node unit vector
 	 *
@@ -527,7 +543,9 @@ public:
 	 * @deprecated This method is replaced by getEndSegmentMoment and will
 	 * be removed in the future
 	 */
-	void DEPRECATED getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB);
+	void DEPRECATED getEndSegmentInfo(double q_EI_dl[3],
+	                                  int topOfLine,
+	                                  int rodEndB);
 
 	/** @brief Get the bending moment at the end point
 	 *
@@ -550,18 +568,18 @@ public:
 	 * @param dt The time step, unused
 	 */
 	void getStateDeriv(double* Xd, const double dt);
-	
-	void doRHS( const double* X,  double* Xd, const double time, const double dt);
 
-	//void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn, double time);
-		
-	void Output(double );
-	
+	void doRHS(const double* X, double* Xd, const double time, const double dt);
 
-#ifdef USEGL	
+	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
+	// double time);
+
+	void Output(double);
+
+#ifdef USEGL
 	void drawGL(void);
 	void drawGL2(void);
 #endif
 };
 
-}  // ::moordyn
+} // ::moordyn

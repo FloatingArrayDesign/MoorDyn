@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
+ *
+ * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *
+ * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,8 +21,7 @@
 
 using namespace std;
 
-namespace moordyn
-{
+namespace moordyn {
 
 class Line;
 class Waves;
@@ -38,30 +37,31 @@ class Waves;
  *  - Free: The point freely moves, with its own translation degrees of freedom,
  *          to provide a connection point between multiple mooring lines or an
  *          unconnected termination point of a Line, which could have a clump
- *          weight or float via the point's mass and volume parameters 
+ *          weight or float via the point's mass and volume parameters
  *  - Coupled: The connection position and velocity is externally imposed
  */
 class Connection : public LogUser
 {
-public:
+  public:
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	Connection(moordyn::Log *log);
+	Connection(moordyn::Log* log);
 
 	/** @brief Destructor
 	 */
 	~Connection();
 
-private:
+  private:
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond *env;
+	EnvCond* env;
 	/// global Waves object
-	moordyn::Waves *waves;
+	moordyn::Waves* waves;
 
 	/// Attached lines to the connection
-	typedef struct _attachment {
+	typedef struct _attachment
+	{
 		/// The attached line
 		Line* line;
 		/// The attachment end point
@@ -104,7 +104,8 @@ private:
 
 	/// simulation time
 	real t;
-	/// simulation time current integration was started at (used for BC function)
+	/// simulation time current integration was started at (used for BC
+	/// function)
 	real t0;
 	/// fairlead position for vessel/coupled node types [x/y/z]
 	vec r_ves;
@@ -118,8 +119,8 @@ private:
 	mat M;
 
 	/** @defgroup conn_wave Wave data
-	*  @{
-	*/
+	 *  @{
+	 */
 
 	/// free surface elevation
 	real zeta;
@@ -131,13 +132,14 @@ private:
 	vec Ud;
 
 	/**
-	* @}
-	*/
+	 * @}
+	 */
 
-public:
+  public:
 	/** @brief Types of connections
 	 */
-	typedef enum {
+	typedef enum
+	{
 		/// Is coupled, i.e. is controlled by the user
 		COUPLED = -1,
 		/// Is free to move, controlled by MoorDyn
@@ -157,14 +159,13 @@ public:
 	 */
 	static string TypeName(types t)
 	{
-		switch(t)
-		{
-		case COUPLED:
-			return "COUPLED";
-		case FREE:
-			return "FREE";
-		case FIXED:
-			return "FIXED";
+		switch (t) {
+			case COUPLED:
+				return "COUPLED";
+			case FREE:
+				return "FREE";
+			case FIXED:
+				return "FIXED";
 		}
 		return "UNKNOWN";
 	}
@@ -174,8 +175,8 @@ public:
 	/// Connection type
 	types type;
 
-	/** @brief flag indicating whether wave/current kinematics will be considered for
-	 * this linec
+	/** @brief flag indicating whether wave/current kinematics will be
+	 * considered for this linec
 	 *
 	 * - 0: none, or use value set externally for each node of the object
 	 * - 1: interpolate from stored
@@ -197,15 +198,21 @@ public:
 	 * @param Ca_in Added mass coefficient used along with V to calculate added
 	 * mass on node
 	 */
-	void setup(int number_in, types type_in, const double r0_in[3], double M_in,
-	           double V_in, const double F_in[3], double CdA_in, double Ca_in);
+	void setup(int number_in,
+	           types type_in,
+	           const double r0_in[3],
+	           double M_in,
+	           double V_in,
+	           const double F_in[3],
+	           double CdA_in,
+	           double Ca_in);
 
 	/** @brief Attach a line endpoint to this connection
 	 * @param theLine The line to be attached
 	 * @param TopOfLine 1 for attachments at the last node of the line (top).
 	 * 0 for attachments at the first node of the line (bottom)
 	 */
-	void addLineToConnect(moordyn::Line *theLine, int TopOfLine);
+	void addLineToConnect(moordyn::Line* theLine, int TopOfLine);
 
 	/** @brief Dettach a line endpoint from this connection
 	 * @param lineID The line identifier
@@ -218,8 +225,10 @@ public:
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
-	void removeLineFromConnect(int lineID, int *TopOfLine,
-	                           double rEnd[], double rdEnd[]);
+	void removeLineFromConnect(int lineID,
+	                           int* TopOfLine,
+	                           double rEnd[],
+	                           double rdEnd[]);
 
 	/** @brief Initialize the FREE connection state
 	 * @param X The output state variables, i.e. the velocity [x,y,z] and
@@ -232,17 +241,17 @@ public:
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
 	 */
-	void getConnectState(vec &r_out, vec &rd_out);
+	void getConnectState(vec& r_out, vec& rd_out);
 
 	/** @brief Get the force on the connection
 	 * @param Fnet_out The output force [x,y,z]
 	 */
-	void getFnet(vec &Fnet_out);
+	void getFnet(vec& Fnet_out);
 
 	/** @brief Get the mass matrix
 	 * @param M_out The output mass matrix
 	 */
-	void getM(mat &M_out);
+	void getM(mat& M_out);
 
 	/** @brief Get the output
 	 * @param outChan The query
@@ -254,7 +263,7 @@ public:
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond *env_in, moordyn::Waves *waves_in);
+	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
 
 	/** @brief Multiply the drag by a factor
 	 *
@@ -299,7 +308,7 @@ public:
 	 * @param rd_in Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
 	 */
-	void setKinematics(double *r_in, double *rd_in);
+	void setKinematics(double* r_in, double* rd_in);
 
 	/** @brief Set the state variables
 	 *
@@ -342,7 +351,6 @@ public:
 #ifdef USEGL
 	void drawGL(void);
 #endif
-
 };
 
-}  // ::moordyn
+} // ::moordyn

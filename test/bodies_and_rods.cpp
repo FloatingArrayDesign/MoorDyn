@@ -23,60 +23,56 @@
 #include <iostream>
 #include <algorithm>
 
-
 using namespace std;
 
 /** @brief Runs the test
  * @return 0 if the tests have ran just fine. The index of the failing test
  * otherwise
  */
-int main(int, char**)
+int
+main(int, char**)
 {
-    MoorDyn system = MoorDyn_Create("../../test/Mooring/BodiesAndRods.dat");
-    if (!system)
-    {
-        cerr << "Failure Creating the Mooring system" << endl;
-        return 1;
-    }
+	MoorDyn system = MoorDyn_Create("../../test/Mooring/BodiesAndRods.dat");
+	if (!system) {
+		cerr << "Failure Creating the Mooring system" << endl;
+		return 1;
+	}
 
-    const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
-    if (n_dof)
-    {
-        cerr << "No coupled Degrees Of Freedom were expected, but " << n_dof
-             << "were reported" << endl;
-        MoorDyn_Close(system);
-        return 2;
-    }
+	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	if (n_dof) {
+		cerr << "No coupled Degrees Of Freedom were expected, but " << n_dof
+		     << "were reported" << endl;
+		MoorDyn_Close(system);
+		return 2;
+	}
 
-    int err;
-    err = MoorDyn_Init(system, NULL, NULL);
-    if (err != MOORDYN_SUCCESS)
-    {
-        cerr << "Failure during the mooring initialization: " << err << endl;
-        MoorDyn_Close(system);
-        return 3;
-    }
+	int err;
+	err = MoorDyn_Init(system, NULL, NULL);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the mooring initialization: " << err << endl;
+		MoorDyn_Close(system);
+		return 3;
+	}
 
-    double dt = 0.1;
-    const unsigned int nts = 10;
-    for (unsigned int i = 0; i < nts; i++)
-    {
-        double t = i * dt;
+	double dt = 0.1;
+	const unsigned int nts = 10;
+	for (unsigned int i = 0; i < nts; i++) {
+		double t = i * dt;
 
-        err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
-        if (err != MOORDYN_SUCCESS) {
-            cerr << "Failure during the mooring step " << i << ": "
-                << err << endl;
-            MoorDyn_Close(system);
-            return 4;
-        }
-    }
+		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure during the mooring step " << i << ": " << err
+			     << endl;
+			MoorDyn_Close(system);
+			return 4;
+		}
+	}
 
-    err = MoorDyn_Close(system);
-    if (err != MOORDYN_SUCCESS) {
-        cerr << "Failure closing Moordyn: " << err << endl;
-        return false;
-    }
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing Moordyn: " << err << endl;
+		return false;
+	}
 
-    return 0;
+	return 0;
 }

@@ -1,39 +1,38 @@
 /*
  * Copyright (c) 2019 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
+ *
+ * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *
+ * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- // This is version 2.a5, 2021-03-16
- 
+// This is version 2.a5, 2021-03-16
+
 #include "Log.hpp"
 #include "Misc.h"
 
-namespace moordyn
-{
+namespace moordyn {
 
-std::string log_level_name(int level)
+std::string
+log_level_name(int level)
 {
-	switch(level)
-	{
-	case MOORDYN_DBG_LEVEL:
-		return "DBG";
-	case MOORDYN_MSG_LEVEL:
-		return "MSG";
-	case MOORDYN_WRN_LEVEL:
-		return "WRN";
-	case MOORDYN_ERR_LEVEL:
-		return "ERR";
+	switch (level) {
+		case MOORDYN_DBG_LEVEL:
+			return "DBG";
+		case MOORDYN_MSG_LEVEL:
+			return "MSG";
+		case MOORDYN_WRN_LEVEL:
+			return "WRN";
+		case MOORDYN_ERR_LEVEL:
+			return "ERR";
 	}
 	return "???";
 }
@@ -43,15 +42,13 @@ std::string log_level_name(int level)
  */
 class null_out_buf : public std::streambuf
 {
-public:
-	virtual std::streamsize xsputn(const char PARAM_UNUSED *s, std::streamsize n)
+  public:
+	virtual std::streamsize xsputn(const char PARAM_UNUSED* s,
+	                               std::streamsize n)
 	{
 		return n;
 	}
-	virtual int overflow (int c)
-	{
-		return c;
-	}
+	virtual int overflow(int c) { return c; }
 };
 
 /// The buffer to nowhere
@@ -65,11 +62,10 @@ std::ostream __cnul(&__cnul_buff);
 std::ostream& cnul = __cnul;
 
 MultiStream::MultiStream()
-	: _fpath("")
-	, _fout_enabled(false)
-	, _terminal(&cnul)
-{
-}
+  : _fpath("")
+  , _fout_enabled(false)
+  , _terminal(&cnul)
+{}
 
 MultiStream::~MultiStream()
 {
@@ -77,7 +73,8 @@ MultiStream::~MultiStream()
 		_fout.close();
 }
 
-void MultiStream::SetFile(const char* file_path)
+void
+MultiStream::SetFile(const char* file_path)
 {
 	if (_fout.is_open())
 		_fout.close();
@@ -88,9 +85,9 @@ void MultiStream::SetFile(const char* file_path)
 }
 
 Log::Log(const int verbosity, const int log_file_level)
-	: _verbosity(verbosity)
-	, _file_verbosity(log_file_level)
-	, _streamer(NULL)
+  : _verbosity(verbosity)
+  , _file_verbosity(log_file_level)
+  , _streamer(NULL)
 {
 	_streamer = new MultiStream();
 	if (!_streamer)
@@ -102,7 +99,8 @@ Log::~Log()
 	delete _streamer;
 }
 
-MultiStream& Log::Cout(const int level) const
+MultiStream&
+Log::Cout(const int level) const
 {
 	if (level < _verbosity)
 		_streamer->SetTerminal(moordyn::cnul);
@@ -119,22 +117,21 @@ MultiStream& Log::Cout(const int level) const
 	return *_streamer;
 }
 
-const char* Log::GetFile() const
+const char*
+Log::GetFile() const
 {
 	return _streamer->GetFile();
 }
 
-void Log::SetFile(const char* file_path)
+void
+Log::SetFile(const char* file_path)
 {
-	try
-	{
+	try {
 		_streamer->SetFile(file_path);
-	}
-	catch (moordyn::output_file_error &e)
-	{
+	} catch (moordyn::output_file_error& e) {
 		// Rethrow the exception to the caller
 		throw e;
 	}
 }
 
-}  // ::moordyn
+} // ::moordyn
