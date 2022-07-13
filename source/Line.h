@@ -61,9 +61,9 @@ int DECLDIR MoorDyn_GetLineNumberNodes(MoorDynLine l, unsigned int *n);
  * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node index
  * is bigger than the number of segments, MOORDYN_SUCCESS otherwise
  */
-int DECLDIR MoorDyn_GetNodePos(MoorDynLine l,
-                               unsigned int i,
-                               double pos[3]);
+int DECLDIR MoorDyn_GetLineNodePos(MoorDynLine l,
+                                   unsigned int i,
+                                   double pos[3]);
 
 /** @brief Get a line node tension
  * @param l The Moordyn line
@@ -72,9 +72,9 @@ int DECLDIR MoorDyn_GetNodePos(MoorDynLine l,
  * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node index
  * is bigger than the number of segments, MOORDYN_SUCCESS otherwise
  */
-int DECLDIR MoorDyn_GetNodeTen(MoorDynLine l,
-                               unsigned int i,
-                               double t[3]);
+int DECLDIR MoorDyn_GetLineNodeTen(MoorDynLine l,
+                                   unsigned int i,
+                                   double t[3]);
 
 /** @brief Get a line curvature at a node
  * @param l The Moordyn line
@@ -83,9 +83,9 @@ int DECLDIR MoorDyn_GetNodeTen(MoorDynLine l,
  * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node index
  * is bigger than the number of segments, MOORDYN_SUCCESS otherwise
  */
-int DECLDIR MoorDyn_GetNodeCurv(MoorDynLine l,
-                                unsigned int i,
-                                double *c);
+int DECLDIR MoorDyn_GetLineNodeCurv(MoorDynLine l,
+                                    unsigned int i,
+                                    double *c);
 
 /** @brief Get the tension module at the end point B (the fairlead)
  * @param l The Moordyn line
@@ -93,7 +93,7 @@ int DECLDIR MoorDyn_GetNodeCurv(MoorDynLine l,
  * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
  * otherwise
  */
-int DECLDIR MoorDyn_GetFairTen(MoorDynLine l, double *t);
+int DECLDIR MoorDyn_GetLineFairTen(MoorDynLine l, double *t);
 
 /**
  * @}

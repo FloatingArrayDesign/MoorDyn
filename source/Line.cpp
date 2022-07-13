@@ -1375,7 +1375,7 @@ int DECLDIR MoorDyn_GetLineNumberNodes(MoorDynLine l, unsigned int *n)
 	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_GetNodePos(MoorDynLine l,
+int DECLDIR MoorDyn_GetLineNodePos(MoorDynLine l,
                                unsigned int i,
                                double pos[3])
 {
@@ -1391,7 +1391,7 @@ int DECLDIR MoorDyn_GetNodePos(MoorDynLine l,
 	return err;
 }
 
-int DECLDIR MoorDyn_GetNodeTen(MoorDynLine l,
+int DECLDIR MoorDyn_GetLineNodeTen(MoorDynLine l,
                                unsigned int i,
                                double ten[3])
 {
@@ -1407,7 +1407,7 @@ int DECLDIR MoorDyn_GetNodeTen(MoorDynLine l,
 	return err;
 }
 
-int DECLDIR MoorDyn_GetNodeCurv(MoorDynLine l,
+int DECLDIR MoorDyn_GetLineNodeCurv(MoorDynLine l,
                                 unsigned int i,
                                 double *curv)
 {
@@ -1423,7 +1423,7 @@ int DECLDIR MoorDyn_GetNodeCurv(MoorDynLine l,
 	return err;
 }
 
-int DECLDIR MoorDyn_GetFairTen(MoorDynLine l, double *t)
+int DECLDIR MoorDyn_GetLineFairTen(MoorDynLine l, double *t)
 {
 	CHECK_LINE(l);
 	*t = ((moordyn::Line*)l)->getNodeTen(((moordyn::Line*)l)->getN()).norm();

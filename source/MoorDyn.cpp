@@ -197,7 +197,7 @@ double DECLDIR GetFairTen(int l)
 		return -1;
 	double t;
 	auto line = MoorDyn_GetLine(md_singleton, l);
-	MoorDyn_GetFairTen(line, &t);
+	MoorDyn_GetLineFairTen(line, &t);
 	return t;
 }
 
@@ -230,7 +230,7 @@ int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3])
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
 	auto line = MoorDyn_GetLine(md_singleton, LineNum);
-	return MoorDyn_GetNodePos(line, NodeNum, pos);
+	return MoorDyn_GetLineNodePos(line, NodeNum, pos);
 }
 
 
