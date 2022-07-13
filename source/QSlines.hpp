@@ -209,7 +209,7 @@ Catenary(T XF,
 		Lamda0 = sqrt(3.0 * ((L * L - ZF2) / XF2 - 1.0));
 	}
 	// ! As above, set the lower limit of the guess value of HF to the tolerance
-	HF = max(abs(0.5 * W * XF / Lamda0), Tol);
+	HF = max((T)abs(0.5 * W * XF / Lamda0), Tol);
 	VF = 0.5 * W * (ZF / tanh(Lamda0) + L);
 
 	/*
@@ -348,7 +348,7 @@ Catenary(T XF,
 		// than or equal to zero by having a lower limit of Tol*HF [NOTE: the
 		// value of dHF = ( Tol - 1.0 )*HF comes from: HF = HF + dHF = Tol*HF
 		// when dHF = ( Tol - 1.0 )*HF]
-		dHF = max(dHF, (Tol - 1.0) * HF);
+		dHF = max(dHF, (T)(Tol - 1.0) * HF);
 
 		// Check if we have converged on a solution, or restart the iteration,
 		// or abort if we cannot find a solution:
@@ -386,7 +386,7 @@ Catenary(T XF,
 
 			// ! As above, set the lower limit of the guess value of HF to the
 			// tolerance
-			HF = max(abs(0.5 * W * XF / Lamda0), Tol);
+			HF = max((T)abs(0.5 * W * XF / Lamda0), Tol);
 			VF = 0.5 * W * (ZF / tanh(Lamda0) + L);
 
 			// Restart Newton-Raphson iteration:

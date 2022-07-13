@@ -39,7 +39,11 @@
 bool
 compare(double v1, double v2)
 {
-	return fabs(v1 - v2) <= TOL;
+	auto err = fabs(v1 - v2);
+	if (!err)
+		return true;
+	auto renorm = v1 ? fabs(v1) : 1.0;
+	return err / renorm <= TOL;
 }
 
 #define CHECK_VALUE(name, v1, v2)                                              \
