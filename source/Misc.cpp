@@ -1654,11 +1654,6 @@ doIIR(double* in,
 	// filtering from out[0] to out[kernelSize-2]
 	for (i = 0; i < kernelSize - 1; ++i) {
 		out[i] = in[kernelSize - 1]; // maybe this hack will work...
-
-		//		out[i] = in[i]*b[0];                             // using just
-		// part of a filter kernel doesn't really work 		for(k = 1; k < i+1;
-		// k++) 			out[i] += in[i-k]*b[k] - out[i-k]*a[k]; 		out[i]
-		// = out[i]/a[0];
 	}
 
 	// filtering from out[kernelSize-1] to out[dataSize-1] (last)

@@ -922,20 +922,17 @@ Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				if (endTypeA == CANTILEVERED) // if attached to Rod i.e.
 				                              // cantilever connection
 				{
-					Kurvi = GetCurvature(
-					    lstr[i],
-					    q[i],
-					    qs[i]); // curvature <<< check if this approximation
-					            // works for an end (assuming rod angle is node
-					            // angle which is middle of if there was a
-					            // segment -1/2
+					// curvature <<< check if this approximation works for an
+					// end (assuming rod angle is node angle which is middle of
+					// if there was a segment -1/2
+					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);
 
-					pvec = q[0].cross(
-					    qs[i]); // get direction of bending radius axis
+					// get direction of bending radius axis
+					pvec = q[0].cross(qs[i]);
 
-					Mforce_ip1 =
-					    qs[i].cross(pvec); // get direction of resulting force
-					                       // from bending to apply on node i+1
+					// get direction of resulting force from bending to apply on
+					// node i+1
+					Mforce_ip1 = qs[i].cross(pvec);
 
 					// record bending moment at end for potential application to
 					// attached object   <<<< do double check this....
@@ -960,20 +957,18 @@ Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				if (endTypeB == CANTILEVERED) // if attached to Rod i.e.
 				                              // cantilever connection
 				{
-					Kurvi = GetCurvature(
-					    lstr[i - 1],
-					    qs[i - 1],
-					    q[i]); // curvature <<< check if this approximation
-					           // works for an end (assuming rod angle is node
-					           // angle which is middle of if there was a
-					           // segment -1/2
+					// curvature <<< check if this approximation
+					// works for an end (assuming rod angle is node
+					// angle which is middle of if there was a
+					// segment -1/2
+					Kurvi = GetCurvature(lstr[i - 1], qs[i - 1], q[i]);
 
-					pvec = qs[i - 1].cross(
-					    q[N]); // get direction of bending radius axis
+					// get direction of bending radius axis
+					pvec = qs[i - 1].cross(q[N]);
 
-					Mforce_im1 = qs[i - 1].cross(
-					    pvec); // get direction of resulting force from bending
-					           // to apply on node i-1
+					// get direction of resulting force from bending to apply on
+					// node i-1
+					Mforce_im1 = qs[i - 1].cross(pvec);
 
 					// record bending moment at end for potential application to
 					// attached object   <<<< do double check this....
@@ -997,20 +992,19 @@ Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 				}
 			} else // internal node
 			{
-				Kurvi = GetCurvature(lstr[i - 1] + lstr[i],
-				                     qs[i - 1],
-				                     qs[i]); // curvature <<< remember to check
-				                             // sign, or just take abs
+				// curvature <<< remember to check
+				// sign, or just take abs
+				Kurvi = GetCurvature(lstr[i - 1] + lstr[i], qs[i - 1], qs[i]);
 
-				pvec = qs[i - 1].cross(
-				    q[i]); // get direction of bending radius axis
+				// get direction of bending radius axis
+				pvec = qs[i - 1].cross(q[i]);
 
-				Mforce_im1 =
-				    qs[i - 1].cross(pvec); // get direction of resulting force
-				                           // from bending to apply on node i-1
-				Mforce_ip1 =
-				    qs[i].cross(pvec); // get direction of resulting force from
-				                       // bending to apply on node i+1
+				// get direction of resulting force from bending to apply on
+				// node i-1
+				Mforce_im1 = qs[i - 1].cross(pvec);
+				// get direction of resulting force from bending to apply on
+				// node i+1
+				Mforce_ip1 = qs[i].cross(pvec);
 
 				// scale force direction vectors by desired moment force
 				// magnitudes to get resulting forces on adjacent nodes
