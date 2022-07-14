@@ -132,6 +132,7 @@ class MoorDyn : public LogUser
 	 *
 	 * This is only used if env.WaveKin = 1
 	 * @return The number of points where the wave kinematics shall be provided
+	 * @throw mem_error If the required resources cannot be allocated
 	 */
 	inline unsigned int ExternalWaveKinInit()
 	{
@@ -141,10 +142,23 @@ class MoorDyn : public LogUser
 			npW += line->getN() + 1;
 
 		// allocate arrays to hold data that could be passed in
-		U_1 = make1Darray(3 * npW);
-		Ud_1 = make1Darray(3 * npW);
-		U_2 = make1Darray(3 * npW);
-		Ud_2 = make1Darray(3 * npW);
+		delete[] U_1;
+		U_1 = NULL;
+		delete[] Ud_1;
+		Ud_1 = NULL;
+		delete[] U_2;
+		U_2 = NULL;
+		delete[] Ud_2;
+		Ud_2 = NULL;
+		U_1 = new double[3 * npW];
+		Ud_1 = new double[3 * npW];
+		U_2 = new double[3 * npW];
+		Ud_2 = new double[3 * npW];
+		if (!U_1 || !Ud_1 || !U_2 || !Ud_2) {
+			LOGERR << "Failed allocating " << 4 * 3 * npW * sizeof(double)
+			       << " bytes" << endl;
+			throw moordyn::mem_error("Failure allocating resources");
+		}
 
 		// initialize with zeros for safety
 		tW_1 = 0.0;

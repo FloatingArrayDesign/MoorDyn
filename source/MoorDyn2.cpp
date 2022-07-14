@@ -171,6 +171,11 @@ moordyn::MoorDyn::~MoorDyn()
 	free(f0);
 	free(f1);
 
+	delete[] U_1;
+	delete[] Ud_1;
+	delete[] U_2;
+	delete[] Ud_2;
+
 	delete _log;
 }
 
