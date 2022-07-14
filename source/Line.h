@@ -83,6 +83,9 @@ extern "C"
 	 * @param c The output line curvature
 	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
 	 * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
+	 * @note The curvature is only computed if bending stiffness
+	 * (moordyn::Line::EI) is not zero. Otherwise the curvature of every single
+	 * node will be zero.
 	 */
 	int DECLDIR MoorDyn_GetLineNodeCurv(MoorDynLine l,
 	                                    unsigned int i,

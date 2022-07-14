@@ -343,6 +343,9 @@ class Line : public LogUser
 	 * @return The line curvature (1 / m)
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
+	 * @note The curvature is only computed if bending stiffness
+	 * (moordyn::Line::EI) is not zero. Otherwise the curvature of every single
+	 * node will be zero.
 	 */
 	inline real getNodeCurv(unsigned int i) const
 	{
