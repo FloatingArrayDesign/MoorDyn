@@ -150,6 +150,10 @@ api(void (*cb)(double, const double*, double*, double*))
 		}
 	}
 
+	delete[] r;
+	delete[] u;
+	delete[] du;
+
 	err = MoorDyn_Close(system);
 	if (err != MOORDYN_SUCCESS) {
 		cerr << "Failure closing Moordyn: " << err << endl;
