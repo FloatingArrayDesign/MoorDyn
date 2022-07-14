@@ -172,8 +172,8 @@ class MoorDyn : public LogUser
 		unsigned int i = 0;
 		for (auto line : LineList) {
 			std::vector<vec> rvec = line->getNodeCoordinates();
-			for (unsigned int i = 0; i <= rvec.size(); i++)
-				moordyn::vec2array(rvec[i], &(r[3 * i]));
+			for (unsigned int j = 0; j < rvec.size(); j++)
+				moordyn::vec2array(rvec[j], &(r[3 * (i + j)]));
 			i += line->getN() + 1;
 		}
 		return MOORDYN_SUCCESS;
