@@ -191,8 +191,7 @@ Line::setup(int number_in,
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 	channels = channels_in;          // copy string of output channels to object
 
-	if (wordy > 0)
-		cout << "   Set up Line " << number << ". " << endl;
+	LOGDBG << "   Set up Line " << number << ". " << endl;
 };
 
 void
@@ -1269,93 +1268,94 @@ Line::Output(double time)
 
 	if (outfile) // if not a null pointer (indicating no output)
 	{
-		if (outfile->is_open()) {
-			// output time
-			*outfile << time << "\t ";
+		if (!outfile->is_open()) {
+            LOGWRN << "Unable to write to output file " << endl;
+            return;
+        }
+        // output time
+        *outfile << time << "\t ";
 
-			// output positions?
-			// if (find(channels.begin(), channels.end(), "position") !=
-			// channels.end())
-			if (channels.find("p") != string::npos) {
-				for (unsigned int i = 0; i <= N; i++) // loop through nodes
-				{
-					for (unsigned int J = 0; J < 3; J++)
-						*outfile << r[i][J] << "\t ";
-				}
-			}
-			// output curvatures?
-			if (channels.find("K") != string::npos) {
-				for (unsigned int i = 0; i <= N; i++) {
-					*outfile << Kurv[i] << "\t ";
-				}
-			}
-			// output velocities?
-			if (channels.find("v") != string::npos) {
-				for (unsigned int i = 0; i <= N; i++) {
-					for (int J = 0; J < 3; J++)
-						*outfile << rd[i][J] << "\t ";
-				}
-			}
-			// output wave velocities?
-			if (channels.find("U") != string::npos) {
-				for (unsigned int i = 0; i <= N; i++) {
-					for (int J = 0; J < 3; J++)
-						*outfile << U[i][J] << "\t ";
-				}
-			}
-			// output hydro drag force?
-			if (channels.find("D") != string::npos) {
-				for (unsigned int i = 0; i <= N; i++) {
-					for (int J = 0; J < 3; J++)
-						*outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]
-						         << "\t ";
-				}
-			}
-			// output segment tensions?
-			if (channels.find("t") != string::npos) {
-				for (unsigned int i = 0; i < N; i++) {
-					*outfile << T[i].norm() << "\t ";
-					// >>> preparation below for switching to outputs at nodes
-					// <<< note that tension of end nodes will need weight and
-					// buoyancy adjustment
-					// if (i==0)
-					//      *outfile << (T[i] + W[i]).norm() << "\t ";
-					// else if (i==N)
-					//      *outfile << (T[i] - W[i]).norm() << "\t ";
-					// else
-					//	*outfile << T[i].norm() << "\t ";
-				}
-			}
-			// output internal damping force?
-			if (channels.find("c") != string::npos) {
-				for (unsigned int i = 0; i < N; i++) {
-					for (int J = 0; J < 3; J++)
-						*outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
-				}
-			}
-			// output segment strains?
-			if (channels.find("s") != string::npos) {
-				for (unsigned int i = 0; i < N; i++) {
-					*outfile << lstr[i] / l[i] - 1.0 << "\t ";
-				}
-			}
-			// output segment strain rates?
-			if (channels.find("d") != string::npos) {
-				for (unsigned int i = 0; i < N; i++) {
-					*outfile << ldstr[i] / l[i] << "\t ";
-				}
-			}
-			// output seabed contact forces?
-			if (channels.find("b") != string::npos) {
-				for (unsigned int i = 0; i <= N; i++) {
-					for (int J = 0; J < 3; J++)
-						*outfile << B[i][J] << "\t ";
-				}
-			}
+        // output positions?
+        // if (find(channels.begin(), channels.end(), "position") !=
+        // channels.end())
+        if (channels.find("p") != string::npos) {
+            for (unsigned int i = 0; i <= N; i++) // loop through nodes
+            {
+                for (unsigned int J = 0; J < 3; J++)
+                    *outfile << r[i][J] << "\t ";
+            }
+        }
+        // output curvatures?
+        if (channels.find("K") != string::npos) {
+            for (unsigned int i = 0; i <= N; i++) {
+                *outfile << Kurv[i] << "\t ";
+            }
+        }
+        // output velocities?
+        if (channels.find("v") != string::npos) {
+            for (unsigned int i = 0; i <= N; i++) {
+                for (int J = 0; J < 3; J++)
+                    *outfile << rd[i][J] << "\t ";
+            }
+        }
+        // output wave velocities?
+        if (channels.find("U") != string::npos) {
+            for (unsigned int i = 0; i <= N; i++) {
+                for (int J = 0; J < 3; J++)
+                    *outfile << U[i][J] << "\t ";
+            }
+        }
+        // output hydro drag force?
+        if (channels.find("D") != string::npos) {
+            for (unsigned int i = 0; i <= N; i++) {
+                for (int J = 0; J < 3; J++)
+                    *outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]
+                                << "\t ";
+            }
+        }
+        // output segment tensions?
+        if (channels.find("t") != string::npos) {
+            for (unsigned int i = 0; i < N; i++) {
+                *outfile << T[i].norm() << "\t ";
+                // >>> preparation below for switching to outputs at nodes
+                // <<< note that tension of end nodes will need weight and
+                // buoyancy adjustment
+                // if (i==0)
+                //      *outfile << (T[i] + W[i]).norm() << "\t ";
+                // else if (i==N)
+                //      *outfile << (T[i] - W[i]).norm() << "\t ";
+                // else
+                //	*outfile << T[i].norm() << "\t ";
+            }
+        }
+        // output internal damping force?
+        if (channels.find("c") != string::npos) {
+            for (unsigned int i = 0; i < N; i++) {
+                for (int J = 0; J < 3; J++)
+                    *outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
+            }
+        }
+        // output segment strains?
+        if (channels.find("s") != string::npos) {
+            for (unsigned int i = 0; i < N; i++) {
+                *outfile << lstr[i] / l[i] - 1.0 << "\t ";
+            }
+        }
+        // output segment strain rates?
+        if (channels.find("d") != string::npos) {
+            for (unsigned int i = 0; i < N; i++) {
+                *outfile << ldstr[i] / l[i] << "\t ";
+            }
+        }
+        // output seabed contact forces?
+        if (channels.find("b") != string::npos) {
+            for (unsigned int i = 0; i <= N; i++) {
+                for (int J = 0; J < 3; J++)
+                    *outfile << B[i][J] << "\t ";
+            }
+        }
 
-			*outfile << "\n";
-		} else
-			cout << "Unable to write to output file " << endl;
+        *outfile << "\n";
 	}
 	return;
 };
@@ -1442,10 +1442,10 @@ Line::drawGL2(void)
 //
 // =============================================================================
 
-/// Check that the provided system is not Null
+/// Check that the provided line is not Null
 #define CHECK_LINE(s)                                                          \
 	if (!s) {                                                                  \
-		cerr << "Null system received in " << __FUNC_NAME__ << " ("            \
+		cerr << "Null line received in " << __FUNC_NAME__ << " ("              \
 		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
 		return MOORDYN_INVALID_VALUE;                                          \
 	}

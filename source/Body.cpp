@@ -15,138 +15,197 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Body.hpp"
 #include "Body.h"
+#include "Connection.hpp"
 #include "Rod.h"
 #include "Waves.hpp"
 
-// connection member functions
+using namespace std;
+
+namespace moordyn {
+
+Body::Body(moordyn::Log* log)
+  : LogUser(log)
+{}
+
+Body::~Body() {}
 
 void
 Body::setup(int number_in,
-            types type_in,
-            double r6_in[6],
-            double rCG_in[3],
-            double M_in,
-            double V_in,
-            double I_in[3],
-            double CdA_in[3],
-            double Ca_in[3],
-            shared_ptr<ofstream> outfile_pointer)
+      types type_in,
+      vec6 r6_in,
+      vec rCG_in,
+      real M_in,
+      real V_in,
+      vec I_in,
+      vec6 CdA_in,
+      vec6 Ca_in,
+      shared_ptr<ofstream> outfile_pointer)
 {
-	// props contains: input file has	Name/ID      X0   Y0   Z0   Xcg   Ycg
-	// Zcg      M      V        IX       IY       IZ     CdA-x,y,z Ca-x,y,z
 	number = number_in;
 	type = type_in;
-
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 
 	if (type == FREE) {
 		bodyM = M_in;
 		bodyV = V_in;
 
-		for (int J = 0; J < 3; J++) {
-			body_r6[J] = r6_in[J];
-			body_r6[3 + J] = r6_in[3 + J];
-			body_rCG[J] = rCG_in[J];
-			bodyI[J] = I_in[J];
-			bodyCdA[J] = CdA_in[J];
-			bodyCa[J] = Ca_in[J];
-		}
+		body_r6 = r6_in;
+		body_rCG = rCG_in;
+		bodyI = I_in;
+		bodyCdA = CdA_in;
+		bodyCa = Ca_in;
 	} else // other types of bodies have no need for these variables...
 	{
 		bodyM = 0.0;
 		bodyV = 0.0;
 
-		for (int J = 0; J < 3; J++) {
-			body_r6[J] = 0.0;
-			body_r6[3 + J] = 0.0;
-			body_rCG[J] = 0.0;
-			bodyI[J] = 0.0;
-			bodyCdA[J] = 0.0;
-			bodyCa[J] = 0.0;
-		}
+		body_r6 = vec6::Zero();
+		body_rCG = vec::Zero();
+		bodyI = vec::Zero();
+		bodyCdA = vec6::Zero();
+		bodyCa = vec6::Zero();
 	}
 
-	nAttachedC = 0; // start off with zero connections
-	nAttachedR = 0; // start off with zero rods
+	attachedC.empty();
+	attachedR.empty();
+	rConnectRel.empty();
+	r6RodRel.empty();
 
 	// set up body initial mass matrix (excluding any rods or attachements)
-	double Mtemp[6][6] = { { 0 } };
-	for (int J = 0; J < 3; J++) {
-		Mtemp[J][J] = bodyM;            // fill in mass
-		Mtemp[3 + J][3 + J] = bodyI[J]; // fill in inertia
-	}
-	translateMass6to6DOF(
-	    body_rCG,
-	    Mtemp,
-	    M0); // account for potential CG offset <<< is the direction right? <<<
+	mat6 Mtemp;
+	Mtemp(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mat::Identity() * bodyM;
+	Mtemp(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = mat::Identity() * bodyI;
+	// account for potential CG offset <<< is the direction right? <<<
+	M0 = translateMass(body_rCG, Mtemp);
 
-	for (int J = 0; J < 6; J++)
-		M0[J][J] += bodyV * bodyCa[J]; // add added mass in each direction about
-		                               // ref point (so only diagonals)
+	// add added mass in each direction about ref point (so only diagonals)
+	M0 += mat6::Identity() * bodyV;
 
 	// --------------- if this is an independent body (not coupled) ----------
 	// set initial position and orientation of body from input file
-	for (int J = 0; J < 6; J++) {
-		r6[J] = body_r6[J];
-		v6[J] = 0.0;
-	}
+	r6 = body_r6;
+	v6 = vec6::Zero();
 
 	// calculate orientation matrix based on latest angles
-	RotMat(r6[3], r6[4], r6[5], OrMat);
+	OrMat = RotXYZ(r6(Eigen::seqN(3, 3)));
 
-	if (wordy > 0)
-		cout << "Set up Body " << number << ", type " << type << ". " << endl;
+	LOGDBG << "Set up Body " << number << ", type " << TypeName(type) << ". "
+	       << endl;
 };
 
-// this function handles assigning a line to a connection node
 void
-Body::addConnectionToBody(moordyn::Connection* theConnection, double coords[3])
+Body::addConnection(moordyn::Connection* conn, vec coords)
 {
-	if (wordy > 0)
-		cout << "C" << theConnection->number << "->B" << number << " ";
+	LOGDBG << "C" << conn->number << "->B" << number << " " << endl;
 
-	if (nAttachedC <
-	    30) // this is currently just a maximum imposed by a fixed array size.
-	{
-		// store Connection address
-		attachedC[nAttachedC] = theConnection;
+    // store Connection address
+    attachedC.push_back(conn);
 
-		// store Connection relative location
-		for (int I = 0; I < 3; I++)
-			rConnectRel[nAttachedC][I] = coords[I];
-
-		nAttachedC += 1;
-	}
-	// <<<<<<<< add error catch <<<<<<<<
+    // store Connection relative location
+    rConnectRel.push_back(coords);
 };
 
-// this function handles assigning a line to a connection node
 void
-Body::addRodToBody(Rod* theRod, double endCoords[6])
+Body::addRod(Rod* rod, vec6 coords)
 {
-	if (wordy > 0)
-		cout << "R" << theRod->number << "->B" << number << " ";
+	LOGDBG << "R" << rod->number << "->B" << number << " " << endl;
 
-	if (nAttachedR <
-	    30) // this is currently just a maximum imposed by a fixed array size.
+    // store Rod address
+    attachedR.push_back(rod);
+
+    // store Rod end A relative position and unit vector from end A to B
+    vec tempUnitVec;
+    unitvector(tempUnitVec, coords(Eigen::seqN(0, 3)), coords(Eigen::seqN(3, 3)));
+    vec6 r6Rod;
+    r6Rod(Eigen::seqN(0, 3)) = coords(Eigen::seqN(0, 3));
+    r6Rod(Eigen::seqN(3, 3)) = tempUnitVec;
+    r6RodRel.push_back(r6Rod);
+};
+
+void
+Body::initializeUnfreeBody(vec6 r6_in,
+                           vec6 v6_in,
+                           real time)
+{
+    if (type == FREE) {
+        LOGERR << "Invalid initializator for a FREE body" << endl;
+        throw moordyn::invalid_value_error("Invalid body type");
+    }
+	initiateStep(r6_in, v6_in, time);
+	updateFairlead(time);
+
+	// If any Rod is fixed to the body (not pinned), initialize it now because
+	// otherwise it won't be initialized
+	for (auto attached : attachedR)
+		if (attached->type == Rod::FIXED)
+			attached->initializeRod(NULL);
+	// If there's an attached Point, initialize it now because it won't be
+	// initialized otherwise
+	for (auto attached : attachedC)
+		attached->initializeConnect(NULL);
+}
+
+void
+Body::initializeBody(vec6 r, vec6 rd)
+{
+    if (type != FREE) {
+        LOGERR << "Invalid initializator for a non FREE body (" << TypeName(type) << ")" << endl;
+        throw moordyn::invalid_value_error("Invalid body type");
+    }
+	// assign initial body kinematics to state vector
+    r6 = r;
+    v6 = rd;
+
+	// set positions of any dependent connections and rods now (before they are
+	// initialized)
+	setDependentStates();
+
+	// If any Rod is fixed to the body (not pinned), initialize it now because
+	// otherwise it won't be initialized
+	for (auto attached : attachedR)
+		if (attached->type == Rod::FIXED)
+			attached->initializeRod(NULL);
+	// If there's an attached Point, initialize it now because it won't be
+	// initialized otherwise
+	for (auto attached : attachedC)
+		attached->initializeConnect(NULL);
+
+	// create output file for writing output (and write channel header and units
+	// lines) if applicable
+
+	if (outfile) // check it's not null.  Null signals no individual line output
+	             // files
 	{
-		// store Rod address
-		attachedR[nAttachedR] = theRod;
-
-		// store Rod end A relative position and unit vector from end A to B
-		double tempUnitVec[3];
-
-		unitvector(tempUnitVec, endCoords, endCoords + 3);
-
-		for (int I = 0; I < 3; I++) {
-			r6RodRel[nAttachedR][I] = endCoords[I];
-			r6RodRel[nAttachedR][3 + I] = tempUnitVec[I];
+		if (!outfile->is_open()) {
+			LOGERR << "Unable to write file Body" << number << ".out" << endl;
+			throw moordyn::output_file_error("Invalid line file");
 		}
+        // ------------- write channel names line --------------------
 
-		nAttachedR += 1;
+        // output time
+        *outfile << "Time"
+                    << "\t ";
+
+        *outfile << "x\ty\tz\troll\tpitch\tyaw";
+
+        *outfile << "\n";
+
+        // ----------- write units line ---------------
+
+        if (env->WriteUnits > 0) {
+            // output time
+            *outfile << "(s)"
+                        << "\t ";
+
+            *outfile << "(m)\t(m)\t(m)\t(deg)\t(deg)\t(deg)";
+
+            *outfile << "\n"; // should also write units at some point!
+        }
 	}
-	// <<<<<<<< add error catch <<<<<<<<
+
+	LOGDBG << "Initialized Body " << number << endl;
 };
 
 void
@@ -156,120 +215,70 @@ Body::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
 	waves = waves_in; // set pointer to Waves  object
 }
 
-// used to initialize bodies that aren't free i.e. don't have states
 void
-Body::initializeUnfreeBody(const double r6_in[6],
-                           const double v6_in[6],
-                           double time)
+Body::setDependentStates()
 {
-	initiateStep(r6_in, v6_in, time);
-	updateFairlead(time);
+	// set kinematics of any dependent connections (this is relevant for the
+	// dependent lines, yeah?)
+	for (unsigned int i = 0; i < attachedC.size(); i++) {
+        // this is making a "fake" state vector for the connect, describing its position and velocity
+		vec rConnect, rdConnect;
 
-	// If any Rod is fixed to the body (not pinned), initialize it now because
-	// otherwise it won't be initialized
-	for (int i = 0; i < nAttachedR; i++)
-		if (attachedR[i]->type == Rod::FIXED)
-			attachedR[i]->initializeRod(NULL);
-	// If there's an attached Point, initialize it now because it won't be
-	// initialized otherwise
-	for (int i = 0; i < nAttachedC; i++)
-		attachedC[i]->initializeConnect(NULL);
+		transformKinematics(rConnectRel[i],
+		                    OrMat,
+		                    r6(Eigen::seqN(0, 3)),
+		                    v6,
+		                    rConnect,
+		                    rdConnect); //<<< should double check this function
 
-	return;
+		// pass above to the connection and get it to calculate the forces
+		try {
+			attachedC[i]->setKinematics(rConnect, rdConnect);
+		}
+		catch(moordyn::invalid_value_error& exception) {
+            // Just rethrow the exception
+            throw;
+        }
+	}
+
+	// set kinematics of any dependent Rods
+	for (unsigned int i = 0; i < attachedC.size(); i++) {
+		// calculate displaced coordinates/orientation and velocities of each
+		// rod <<<<<<<<<<<<<
+        // this is making a "fake" state vector for the rod, describing its position and velocity
+		vec6 rRod, rdRod;
+
+		// do 3d details of Rod ref point
+        vec tmpr, tmprd;
+		transformKinematics(r6RodRel[i](Eigen::seqN(0, 3)),
+		                    OrMat,
+		                    r6(Eigen::seqN(0, 3)),
+		                    v6,
+		                    tmpr,
+		                    tmprd); // set first three entires (end A
+		                            // translation) of rRod and rdRod
+		// does the above function need to take in all 6 elements of r6RodRel??
+        rRod(Eigen::seqN(0, 3)) = tmpr;
+        rdRod(Eigen::seqN(0, 3)) = tmprd;
+
+        // rotate rod relative unit vector by OrMat to get unit vec in reference coords
+        rRod(Eigen::seqN(3, 3)) = OrMat * r6RodRel[i](Eigen::seqN(3, 3));
+
+		// do rotational stuff
+        // is this okay as is?
+        rdRod(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
+
+		// pass above to the rod and get it to calculate the forces
+        // BUG: These conversions will not be required in the future
+        double rRodArray[6], rdRodArray[6];
+        moordyn::vec2array(rRod, rRodArray);
+        moordyn::vec2array(rdRod, rdRodArray);
+		attachedR[i]->setKinematics(rRodArray, rdRodArray);
+	}
 }
 
-// this is only for independent bodies (not bodies that are coupling points)
-void
-Body::initializeBody(double* X)
-{
-	// assign initial body kinematics to state vector
-	for (int I = 0; I < 6; I++) {
-		X[6 + I] = r6[I];
-		X[I] = v6[I];
-	}
 
-	// set positions of any dependent connections and rods now (before they are
-	// initialized)
-	setDependentStates();
-
-	// If the Rod is fixed to the body (not pinned), initialize it now because
-	// it won't be initialized otherwise
-	for (int i = 0; i < nAttachedR; i++)
-		if (attachedR[i]->type == Rod::FIXED)
-			attachedR[i]->initializeRod(NULL);
-	// If there's an attached Point, initialize it now because it won't be
-	// initialized otherwise
-	for (int i = 0; i < nAttachedC; i++)
-		attachedC[i]->initializeConnect(NULL);
-
-	// create output file for writing output (and write channel header and units
-	// lines) if applicable
-
-	if (outfile) // check it's not null.  Null signals no individual line output
-	             // files
-	{
-		if (outfile->is_open()) {
-			// ------------- write channel names line --------------------
-
-			// output time
-			*outfile << "Time"
-			         << "\t ";
-
-			*outfile << "x\ty\tz\troll\tpitch\tyaw";
-
-			*outfile << "\n";
-
-			// ----------- write units line ---------------
-
-			if (env->WriteUnits > 0) {
-				// output time
-				*outfile << "(s)"
-				         << "\t ";
-
-				*outfile << "(m)\t(m)\t(m)\t(deg)\t(deg)\t(deg)";
-
-				*outfile << "\n"; // should also write units at some point!
-			}
-		} else
-			cout << "   Error: unable to write file Body" << number << ".out"
-			     << endl; // TODO: handle this!
-	}
-
-	if (wordy > 0)
-		cout << "Initialized Body " << number << endl;
-
-	return;
-};
-
-// function to return body position and velocity to Connection object
-void
-Body::getBodyState(double r_out[6], double rd_out[6])
-{
-	for (int J = 0; J < 6; J++) {
-		r_out[J] = r6[J];
-		rd_out[J] = v6[J];
-	}
-};
-
-// function to return net forces and moments on body (just to allow public
-// reading of Fnet)
-void
-Body::getFnet(double Fnet_out[]) const
-{
-	for (int I = 0; I < 6; I++)
-		Fnet_out[I] = F6net[I];
-};
-
-// function to return mass matrix of body
-void
-Body::getM(double M_out[6][6])
-{
-	for (int I = 0; I < 6; I++)
-		for (int J = 0; J < 6; J++)
-			M_out[I][J] = M[I][J];
-};
-
-double
+real
 Body::GetBodyOutput(OutChanProps outChan)
 {
 	if (outChan.QType == PosX)
@@ -293,218 +302,110 @@ Body::GetBodyOutput(OutChanProps outChan)
 	else if (outChan.QType == FZ)
 		return F6net[2];
 	else {
+		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 		return 0.0;
-		// ErrStat = ErrID_Warn
-		// ErrMsg = ' Unsupported output quantity from Connect object
-		// requested.'
 	}
-}
-
-// function for boosting drag coefficients during IC generation
-void
-Body::scaleDrag(double scaler)
-{
-	for (int I = 0; I < 6; I++)
-		bodyCdA[I] = bodyCdA[I] * scaler;
-	return;
-}
-
-// function to reset time after IC generation
-void
-Body::setTime(double time)
-{
-	t = time;
-	return;
 }
 
 // called at the beginning of each coupling step to update the boundary
 // conditions (body kinematics) for the proceeding time steps
 void
-Body::initiateStep(const double r_in[6], const double rd_in[6], double time)
+Body::initiateStep(vec6 r, vec6 rd, real time)
 {
-
 	t0 = time; // set start time for BC functions
 
 	if (type == COUPLED) // if coupled, update boundary conditions
 	{
-		for (int J = 0; J < 6; J++) {
-			r_ves[J] = r_in[J];
-			rd_ves[J] = rd_in[J];
-		}
-	} else if (type == FIXED) // if the ground body, set the BCs to stationary
+		r_ves = r;
+        rd_ves = rd;
+		return;
+	}
+	if (type == FIXED) // if the ground body, set the BCs to stationary
 	{
-		for (int J = 0; J < 6; J++) {
-			r_ves[J] = 0.0;
-			rd_ves[J] = 0.0;
-		}
-	} else
-		throw string("Error Body::initiateStep called for a body that isn't "
-		             "coupled/fixed!");
+			r_ves = vec6::Zero();
+			rd_ves = vec6::Zero();
+		return;
+	}
+    LOGERR << "The body is not a coupled/fixed one" << endl;
+    throw moordyn::invalid_value_error("Invalid body type");
 }
 
-// sets Body kinematics ONLY if this body is driven externally (otherwise
-// shouldn't be called)
 void
-Body::updateFairlead(const double time)
+Body::updateFairlead(real time)
 {
 	// store current time
-	t = time;
+	setTime(time);
 
 	if ((type == COUPLED) || (type == FIXED)) // if coupled OR GROUND BODY
 	{
 		// set Body kinematics based on BCs (linear model for now)
-		for (int J = 0; J < 6; J++) {
-			r6[J] = r_ves[J] + rd_ves[J] * (time - t0);
-			v6[J] = rd_ves[J];
-		}
+        r6 = r_ves + rd_ves * (time - t0);
+        v6 = rd_ves;
 
 		// calculate orientation matrix based on latest angles
-		RotMat(r6[3], r6[4], r6[5], OrMat);
+		OrMat = RotXYZ(r6[3], r6[4], r6[5]);
 
 		// set positions of any dependent connections and rods
 		setDependentStates();
-	} else
-		throw string("Error Body::updateFairlead called for body that isn't "
-		             "coupled/fixed!");
 
-	return;
+        return;
+	}
+    LOGERR << "The body is not a coupled/fixed one" << endl;
+    throw moordyn::invalid_value_error("Invalid body type");
 }
 
 // pass the latest states to the body if this body is NOT driven externally
 void
-Body::setState(const double* X, const double time)
+Body::setState(const double* X, real time)
 {
 	// store current time
-	t = time;
+	setTime(time);
 
 	// set position and velocity vectors from state vector
-	for (int J = 0; J < 6; J++) {
-		r6[J] = X[6 + J]; // get positions
-		v6[J] = X[J];     // get velocities
-	}
+    moordyn::array2vec(X + 6, r6);
+    moordyn::array2vec(X, v6);
 
 	// calculate orientation matrix based on latest angles
-	RotMat(r6[3], r6[4], r6[5], OrMat);
+	OrMat = RotXYZ(r6[3], r6[4], r6[5]);
 
 	// set positions of any dependent connections and rods
 	setDependentStates();
-
-	return;
-}
-
-// set the states (positions and velocities) of any connects or rods that are
-// part of this body
-void
-Body::setDependentStates()
-{
-	// set kinematics of any dependent connections (this is relevant for the
-	// dependent lines, yeah?)
-	for (int c = 0; c < nAttachedC; c++) {
-		double rConnect[3];
-		double rdConnect[3]; // this is making a "fake" state vector for the
-		                     // connect, describing its position and velocity
-
-		transformKinematics(rConnectRel[c],
-		                    r6,
-		                    OrMat,
-		                    v6,
-		                    rConnect,
-		                    rdConnect); //<<< should double check this function
-
-		// pass above to the connection and get it to calculate the forces
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
-		try {
-			attachedC[c]->setKinematics(rConnect, rdConnect);
-		}
-		MOORDYN_CATCHER(err, err_msg);
-		// BUG: HANDLE THE ERROR
-	}
-
-	// set kinematics of any dependent Rods
-	for (int i = 0; i < nAttachedR; i++) {
-		// calculate displaced coordinates/orientation and velocities of each
-		// rod <<<<<<<<<<<<<
-		double rRod[6]; // this is making a "fake" state vector for the rod,
-		                // describing its position and velocity
-		double rdRod[6];
-
-		// do 3d details of Rod ref point
-		transformKinematics(r6RodRel[i],
-		                    r6,
-		                    OrMat,
-		                    v6,
-		                    rRod,
-		                    rdRod); // set first three entires (end A
-		                            // translation) of rRod and rdRod
-		// does the above function need to take in all 6 elements of r6RodRel??
-
-		// double rodTempUnitVec[3];
-		rotateVector3(r6RodRel[i] + 3,
-		              OrMat,
-		              rRod + 3); // rotate rod relative unit vector by OrMat to
-		                         // get unit vec in reference coords
-
-		// do rotational stuff
-		for (int I = 0; I < 3; I++) {
-			//	rRod[ I+3] = rodTempUnitVec[I];  // set rod unit vector
-			rdRod[I + 3] = v6[I + 3]; // is this okay as is?
-		}
-
-		// pass above to the rod and get it to calculate the forces
-		attachedR[i]->setKinematics(rRod, rdRod);
-	}
-	return;
 }
 
 // calculate the forces and state derivatives of the body
-int
+void
 Body::getStateDeriv(double* Xd)
 {
+    if (type != FREE) {
+        LOGERR << "The body is not a free one" << endl;
+        throw moordyn::invalid_value_error("Invalid body type");
+    }
 
-	if (type == FREE) // this should ONLY be called for free bodies
-	{
-		// Get contributions from attached connections (and lines attached to
-		// them)
+    // Get contributions from attached connections (and lines attached to
+    // them)
 
-		// with current IC gen approach, we skip the first call to the line
-		// objects, because they're set AFTER the call to the connects
-		// above is no longer true!!! <<<
-		if (t == 0) {
-			for (int I = 0; I < 6; I++) {
-				Xd[6 + I] =
-				    v6[I];  // velocities - these are unused in integration
-				Xd[I] = 0.; // accelerations - these are unused in integration
-			}
-		} //<<<<<<<<<<<<<<<<<<<<
-		else {
-			doRHS();
+    // with current IC gen approach, we skip the first call to the line
+    // objects, because they're set AFTER the call to the connects
+    // above is no longer true!!! <<<
+    if (t == 0) {
+        moordyn::vec2array(v6, Xd + 6);
+        memset(Xd, 0.0, 6 * sizeof(real));
+    } //<<<<<<<<<<<<<<<<<<<<
+    else {
+        doRHS();
 
-			// solve for accelerations in [M]{a}={f} using LU decomposition
-			//	double M_tot[36];                     // serialize total mass
-			// matrix for easy processing 	for (int I=0; I<6; I++) for (int
-			// J=0; J<6; J++) M_tot[6*I+J]=M[I][J]; 	double LU[36]; //
-			// serialized matrix that will hold LU matrices combined 	Crout(6,
-			// M_tot, LU); // perform LU decomposition on mass matrix
-			double acc[6]; // acceleration vector to solve for
-			//	solveCrout(6, LU, F6net, acc);     // solve for acceleration
-			// vector
+        // solve for accelerations in [M]{a}={f}
+		// For small systems it is usually faster to compute the inverse
+		// of the matrix. See
+		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
+		const vec6 acc = M.inverse() * F6net;
 
-			LUsolve6(M, acc, F6net);
-
-			// fill in state derivatives
-			for (int I = 0; I < 6; I++) {
-				Xd[6 + I] = v6[I]; // dxdt = V    (velocities)
-				Xd[I] = acc[I];    // dVdt = RHS * A  (accelerations)
-			}
-			// is the above still valid even though it includes rotational DOFs?
-			// <<<<<<<
-		}
-	} else {
-		throw string(
-		    "Error, GetStateDeriv called for a body this is not free!");
-	}
-	return 0;
+        // fill in state derivatives
+        moordyn::vec2array(v6, Xd + 6);
+        moordyn::vec2array(acc, Xd);
+        // is the above still valid even though it includes rotational DOFs?
+        // <<<<<<<
+    }
 };
 
 //  this is the big function that calculates the forces on the body
@@ -516,32 +417,19 @@ Body::doRHS()
 	// angle assumptions <<<<<<
 
 	// clear before re-summing
-	for (int I = 0; I < 6; I++) {
-		F6net[I] = 0;
-		for (int J = 0; J < 6; J++)
-			M[I][J] = 0.0;
-	}
+    F6net = vec6::Zero();
+    M = mat6::Zero();
 
 	// First, the body's own mass matrix must be adjusted based on its
 	// orientation so that we have a mass matrix in the global orientation frame
-	double OrMat2[3][3];
-	for (int I = 0; I < 3; I++)
-		for (int J = 0; J < 3; J++)
-			OrMat2[I][J] = OrMat[3 * I + J];
-	rotateM6(M0, OrMat2, M);
+	M = rotateMass(OrMat, M0);
 
-	// gravity on core body
-	double body_rCGrotated[3];
-	double Fgrav[3] = { 0.0 };
-	Fgrav[2] =
-	    bodyV * env->rho_w * env->g - bodyM * env->g; // weight+buoyancy vector
-	rotateVector3(
-	    body_rCG,
-	    OrMat,
-	    body_rCGrotated); // relative vector to body CG in inertial orientation
-	translateForce3to6DOF(
-	    body_rCGrotated, Fgrav, F6net); // gravity forces and moments about body
-	                                    // ref point given CG location
+	// gravity forces and moments about body ref point given CG location
+	const vec body_rCGrotated = OrMat * body_rCG;
+    // weight+buoyancy vector
+	const vec Fgrav = vec(0.0, 0.0, bodyV * env->rho_w * env->g - bodyM * env->g);
+    F6net(Eigen::seqN(0, 3)) = Fgrav;
+    F6net(Eigen::seqN(3, 3)) = body_rCGrotated.cross(Fgrav);
 
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
@@ -549,72 +437,47 @@ Body::doRHS()
 	// env->waves->getU(r6, t, U); // call generic function to get water
 	// velocities <<<<<<<<< all needs updating
 
-	for (int J = 0; J < 3; J++)
-		Ud[J] = 0.0; // set water accelerations as zero for now
+    Ud = vec::Zero(); // set water accelerations as zero for now
 
 	// ------------------------------------------------------------------------------------------
 
 	// viscous drag calculation (on core body)
 
-	double vi[6]; // relative water velocity (last 3 terms are rotatonal and
-	              // will be set to zero
+    // relative water velocity
+    // for rotation, this is just the negative of the body's rotation for now
+    // (not allowing flow rotation)
+	vec6 vi = -v6;
+	vi(Eigen::seqN(0, 3)) += U;
 
-	for (int J = 0; J < 3; J++) {
-		vi[J] = U[J] - v6[J]; // relative flow velocity over body ref point
-		vi[3 + J] =
-		    -v6[3 + J]; // for rotation, this is just the negative of the body's
-		                // rotation for now (not allowing flow rotation)
-	}
-	for (int J = 0; J < 6; J++)
-		F6net[J] += 0.5 * env->rho_w * vi[J] * abs(vi[J]) * bodyCdA[J]; //<<<
-	// <<< NOTE, for body this should be fixed to account for orientation!! <<<
-	// what about drag in rotational DOFs??? <<<<<<<<<<<<<<
+    // NOTE:, for body this should be fixed to account for orientation!!
+	// what about drag in rotational DOFs???
+    vi.cwiseAbs();
+    F6net += 0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(bodyCdA);
 
 	// Get contributions from any connections attached to the body
-	for (int c = 0; c < nAttachedC; c++) {
-		// double Fnet_i[3];
-		// double M_i[3][3];
-
-		// get net force and mass from connection (global orientation)
-		// attachedC[c]->getFnet(Fnet_i);
-		// attachedC[c]->getM(M_i);
-
-		// calculate relative location of connection about body center in global
-		// orientation
-		// double rConnect_i[3];
-		// rotateVector3(rConnectRel[c], OrMat, rConnect_i)
-
-		// convert force into 6dof force based on connection position
-		double F6_i[6]; // 6dof force-moment from connection about body ref
-		                // point (but global orientation frame of course)
-		// translateForce3to6DOF(rConnect_i, Fnet_i, F6_i);
-
-		// transform mass matrix to 6dof one about body center
-		double M6_i[6][6];
-		// translateMass3to6DOF(rConnect_i, M_i, M6_i);
-
+	for (auto attached : attachedC) {
 		// get net force and mass from Connection on body ref point (global
 		// orientation)
-		attachedC[c]->getNetForceAndMass(r6, F6_i, M6_i);
+        vec6 F6_i;
+        mat6 M6_i;
+		attached->getNetForceAndMass(F6_i, M6_i, r6(Eigen::seqN(0, 3)));
 
 		// sum quantitites
-		for (int I = 0; I < 6; I++) {
-			F6net[I] += F6_i[I];
-
-			for (int J = 0; J < 6; J++)
-				M[I][J] += M6_i[I][J];
-		}
+        F6net += F6_i;
+        M += M6_i;
 	}
 
 	// Get contributions from any rods that are part of the body
-	for (int i = 0; i < nAttachedR; i++) {
-
+	for (auto attached : attachedR) {
+        // BUG: These conversions shall be removed in the future
+        double rRel[3];
+        moordyn::vec2array(r6(Eigen::seqN(0, 3)), rRel);
 		double F6_i[6];
 		double M6_i[6][6];
 
 		// get net force and mass from Rod on body ref point (global
 		// orientation)
-		attachedR[i]->getNetForceAndMass(r6, F6_i, M6_i);
+		attached->getNetForceAndMass(rRel, F6_i, M6_i);
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];
@@ -632,12 +495,13 @@ Body::doRHS()
 		//<<<<<<<<<
 
 		// sum quantitites
-		for (int I = 0; I < 6; I++) {
-			F6net[I] += F6_i[I];
+		vec6 f6_i;
+        moordyn::array2vec(F6_i, f6_i);
+		mat6 m6_i;
+        moordyn::array2mat(M6_i, m6_i);
+			F6net += f6_i;
 
-			for (int J = 0; J < 6; J++)
-				M[I][J] += M6_i[I][J];
-		}
+				M += m6_i;
 	}
 
 	return;
@@ -649,25 +513,21 @@ Body::Output(double time)
 {
 	if (outfile) // if not a null pointer (indicating no output)
 	{
-		if (outfile->is_open()) {
-			// output time
-			*outfile << time << "\t ";
+		if (!outfile->is_open()) {
+            LOGWRN << "Unable to write to output file " << endl;
+            return;
+        }
+        // output time
+        *outfile << time << "\t ";
 
-			for (int J = 0; J < 3; J++)
-				*outfile << r6[J] << "\t ";
+        for (int J = 0; J < 3; J++)
+            *outfile << r6[J] << "\t ";
 
-			*outfile << r6[3] * rad2deg << "\t " << r6[4] * rad2deg << "\t "
-			         << r6[5] * rad2deg << "\n";
-		}
-		// else cout << "Unable to write to output file " << endl;
+        *outfile << r6[3] * rad2deg << "\t " << r6[4] * rad2deg << "\t "
+                    << r6[5] * rad2deg << "\n";
 	}
 	return;
 };
-
-Body::~Body()
-{
-	// destructor (nothing to destroy!)
-}
 
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
@@ -678,3 +538,29 @@ Body::drawGL(void)
 	Sphere(r[0], r[1], r[2], radius);
 };
 #endif
+
+} // ::moordyn
+
+// =============================================================================
+//
+//                     ||                     ||
+//                     ||        C API        ||
+//                    \  /                   \  /
+//                     \/                     \/
+//
+// =============================================================================
+
+/// Check that the provided body is not Null
+#define CHECK_BODY(s)                                                          \
+	if (!s) {                                                                  \
+		cerr << "Null body received in " << __FUNC_NAME__ << " ("              \
+		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
+		return MOORDYN_INVALID_VALUE;                                          \
+	}
+
+int DECLDIR
+MoorDyn_GetBodyID(MoorDynBody b)
+{
+	CHECK_BODY(b);
+	return ((moordyn::Body*)b)->number;
+}

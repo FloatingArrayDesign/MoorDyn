@@ -200,10 +200,10 @@ class Connection : public LogUser
 	 */
 	void setup(int number_in,
 	           types type_in,
-	           const double r0_in[3],
+	           vec r0_in,
 	           double M_in,
 	           double V_in,
-	           const double F_in[3],
+	           vec F_in,
 	           double CdA_in,
 	           double Ca_in);
 
@@ -308,7 +308,17 @@ class Connection : public LogUser
 	 * @param rd_in Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
 	 */
-	void setKinematics(double* r_in, double* rd_in);
+	void DEPRECATED setKinematics(double* r_in, double* rd_in);
+
+	/** @brief Take the kinematics from the fairlead information
+	 *
+	 * sets Connection states and ends of attached lines ONLY if this Connection
+	 * is attached to a body, i.e. type = FIXED (otherwise shouldn't be called)
+	 * @param r_in Position
+	 * @param rd_in Velocity
+	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
+	 */
+	void setKinematics(vec r_in, vec rd_in);
 
 	/** @brief Set the state variables
 	 *
@@ -337,9 +347,20 @@ class Connection : public LogUser
 	 * @param M_out Output Mass matrix about body ref point
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
-	moordyn::error_id getNetForceAndMass(const double rBody[3],
+	moordyn::error_id DEPRECATED getNetForceAndMass(const double rBody[3],
 	                                     double Fnet_out[6],
 	                                     double M_out[6][6]);
+
+	/** @brief Calculate the force and mass contributions of the connect on the
+	 * parent body
+	 * @param Fnet_out Output Force about body ref point
+	 * @param M_out Output Mass matrix about body ref point
+	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
+	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
+	 */
+	moordyn::error_id getNetForceAndMass(vec6 &Fnet_out,
+	                                     mat6 &M_out,
+                                         vec rBody=vec::Zero());
 
 	/** @brief Calculates the forces and mass on the connection, including from
 	 * attached lines

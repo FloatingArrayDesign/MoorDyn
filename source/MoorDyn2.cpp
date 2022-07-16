@@ -19,9 +19,7 @@
 #include "Misc.h"
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
-#include "Line.h"
 #include "Rod.h"
-#include "Body.h"
 
 #ifdef LINUX
 #include <cmath>
@@ -203,7 +201,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	LOGMSG << "Creating mooring system..." << endl;
 
 	// call ground body to update all the fixed things...
-	GroundBody->initializeUnfreeBody(NULL, NULL, 0.0);
+	GroundBody->initializeUnfreeBody();
 
 	// initialize coupled objects based on passed kinematics
 	int ix = 0;
@@ -213,7 +211,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 		// this calls initiateStep and updateFairlead, then initializes
 		// dependent Rods
-		BodyList[l]->initializeUnfreeBody(x + ix, xd + ix, 0.0);
+        // BUG: These conversions will not be needed in the future
+        vec6 r, rd;
+        moordyn::array2vec(x + ix, r);
+        moordyn::array2vec(xd + ix, rd);
+		BodyList[l]->initializeUnfreeBody(r, rd, 0.0);
 		ix += 6;
 	}
 
@@ -257,8 +259,13 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	//  master state vector (states)
 
 	// Go through Bodys and write the coordinates to the state vector
-	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
-		BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
+	for (unsigned int l = 0; l < FreeBodyIs.size(); l++) {
+        // BUG: These conversions will not be needed in the future
+        vec6 r, rd;
+        moordyn::array2vec(states + BodyStateIs[l] + 6, r);
+        moordyn::array2vec(states + BodyStateIs[l], rd);
+		BodyList[FreeBodyIs[l]]->initializeBody(r, rd);
+    }
 
 	// Go through independent (including pinned) Rods and write the coordinates
 	// to the state vector
@@ -491,7 +498,11 @@ moordyn::MoorDyn::Step(const double* x,
 	// ... of any coupled bodies, rods, and connections at this instant, to be
 	// used later for extrapolating motions
 	for (auto l : CpldBodyIs) {
-		BodyList[l]->initiateStep(x + ix, xd + ix, t);
+        // BUG: These conversions will not be needed in the future
+        vec6 r, rd;
+        moordyn::array2vec(x + ix, r);
+        moordyn::array2vec(xd + ix, rd);
+		BodyList[l]->initiateStep(r, rd, t);
 		ix += 6;
 	}
 	for (auto l : CpldRodIs) {
@@ -640,9 +651,9 @@ moordyn::MoorDyn::ReadInFile()
 	// (connections and rods)
 	LOGDBG << "Creating the ground body of type " << Body::TypeName(Body::FIXED)
 	       << "..." << endl;
-	GroundBody = new Body();
+	GroundBody = new Body(_log);
 	GroundBody->setup(
-	    0, Body::FIXED, NULL, NULL, 0.0, 0.0, NULL, NULL, NULL, NULL);
+	    0, Body::FIXED, vec6::Zero(), vec::Zero(), 0.0, 0.0, vec::Zero(), vec6::Zero(), vec6::Zero(), NULL);
 
 	// Make sure the state vector counter starts at zero
 	// This will be conveniently incremented as each object is added
@@ -786,16 +797,15 @@ moordyn::MoorDyn::ReadInFile()
 
 				const int number = atoi(entries[0].c_str());
 				Body::types type;
-				double r6[6];
+				vec6 r6;
 				for (unsigned int I = 0; I < 6; I++)
 					r6[I] = atof(entries[2 + I].c_str());
 				double M = atof(entries[8].c_str());
 				double V = atof(entries[11].c_str());
 
-				double rCG[3];
-				double Inert[3];
-				double CdA[3];
-				double Ca[3];
+				vec rCG, Inert;
+				vec6 CdA = vec6::Zero();
+                vec6 Ca = vec6::Zero();
 
 				vector<string> entries_rCG =
 				    moordyn::str::split(entries[9], '|');
@@ -912,7 +922,7 @@ moordyn::MoorDyn::ReadInFile()
 					return MOORDYN_INVALID_OUTPUT_FILE;
 				}
 
-				Body* obj = new Body();
+				Body* obj = new Body(_log);
 				LOGDBG << "\t'" << number << "'"
 				       << " - of type " << Body::TypeName(type) << " with id "
 				       << BodyList.size() << endl;
@@ -1093,14 +1103,17 @@ moordyn::MoorDyn::ReadInFile()
 
 				// depending on type, assign the Rod to its respective parent
 				// body
+                // BUG: These conversions will not be needed in the future
+                vec6 coords_vec;
+                moordyn::array2vec(endCoords, coords_vec);
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX"))
-					GroundBody->addRodToBody(obj, endCoords);
+					GroundBody->addRod(obj, coords_vec);
 				else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN"))
-					GroundBody->addRodToBody(obj, endCoords);
+					GroundBody->addRod(obj, coords_vec);
 				else if (!strcmp(let1, "BODY")) {
 					unsigned int bodyID = atoi(num1);
-					BodyList[bodyID - 1]->addRodToBody(obj, endCoords);
+					BodyList[bodyID - 1]->addRod(obj, coords_vec);
 				}
 				LOGDBG << endl;
 
@@ -1135,8 +1148,8 @@ moordyn::MoorDyn::ReadInFile()
 				double V = atof(entries[6].c_str());
 				double CdA;
 				double Ca;
-				double r0[3];
-				double F[3] = { 0.0, 0.0, 0.0 };
+				vec r0;
+				vec F = vec::Zero();
 				if (entries.size() >=
 				    12) // case with optional force inputs (12 total entries)
 				{
@@ -1228,10 +1241,10 @@ moordyn::MoorDyn::ReadInFile()
 				// parent body
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX"))
-					GroundBody->addConnectionToBody(obj, r0);
+					GroundBody->addConnection(obj, r0);
 				else if (!strcmp(let1, "BODY")) {
 					int bodyID = atoi(num1);
-					BodyList[bodyID - 1]->addConnectionToBody(obj, r0);
+					BodyList[bodyID - 1]->addConnection(obj, r0);
 				}
 				LOGDBG << endl;
 
@@ -1950,8 +1963,8 @@ moordyn::MoorDyn::detachLines(int attachID,
 	// create new massless connection for detached end(s) of line(s)
 	double M = 0.0;
 	double V = 0.0;
-	double r0[3] = { 0.0, 0.0, 0.0 };
-	double F[3] = { 0.0, 0.0, 0.0 };
+	vec r0 = vec::Zero();
+	vec F = vec::Zero();
 	double CdA = 0.0;
 	double Ca = 0.0;
 	Connection::types type = Connection::FREE;

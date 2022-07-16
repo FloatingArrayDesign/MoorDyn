@@ -29,7 +29,7 @@ extern "C"
 	/// A mooring line instance
 	typedef struct __MoorDynLine* MoorDynLine;
 
-	/** @brief Get the connection identifier
+	/** @brief Get the line identifier
 	 * @param l The Moordyn line
 	 * @return The line identifier, MOORDYN_INVALID_VALUE if a NULL line is
 	 * provided

@@ -21,6 +21,7 @@
 #include "Waves.h"
 #include "Connection.h"
 #include "Line.h"
+#include "Body.h"
 
 #ifdef __cplusplus
 extern "C"

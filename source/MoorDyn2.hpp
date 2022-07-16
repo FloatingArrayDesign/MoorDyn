@@ -25,7 +25,7 @@
 #include "Line.hpp"
 #include "Connection.hpp"
 #include "Rod.h"
-#include "Body.h"
+#include "Body.hpp"
 
 /// MoorDyn2 C++ API namespace
 namespace moordyn {
@@ -274,7 +274,9 @@ class MoorDyn : public LogUser
 		}
 		unsigned int ix = 0;
 		for (auto l : CpldBodyIs) {
-			BodyList[l]->getFnet(f + ix);
+            // BUG: These conversions will not be needed in the future
+            const vec6 f_i = BodyList[l]->getFnet();
+            moordyn::vec2array(f_i, f + ix);
 			ix += 6;
 		}
 		for (auto l : CpldRodIs) {

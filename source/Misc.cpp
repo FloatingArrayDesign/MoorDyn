@@ -21,6 +21,48 @@ using namespace std;
 
 namespace moordyn {
 
+template<typename T>
+void
+vec2array(const vec& v, T* a)
+{
+	a[0] = (T)v[0];
+	a[1] = (T)v[1];
+	a[2] = (T)v[2];
+}
+
+template<typename T>
+void
+vec2array(const vec6& v, T* a)
+{
+	a[0] = (T)v[0];
+	a[1] = (T)v[1];
+	a[2] = (T)v[2];
+	a[3] = (T)v[3];
+	a[4] = (T)v[4];
+	a[5] = (T)v[5];
+}
+
+template<typename T>
+void
+array2vec(const T* a, vec& v)
+{
+	v[0] = (moordyn::real)a[0];
+	v[1] = (moordyn::real)a[1];
+	v[2] = (moordyn::real)a[2];
+}
+
+template<typename T>
+void
+array2vec(const T* a, vec6& v)
+{
+	v[0] = (moordyn::real)a[0];
+	v[1] = (moordyn::real)a[1];
+	v[2] = (moordyn::real)a[2];
+	v[3] = (moordyn::real)a[3];
+	v[4] = (moordyn::real)a[4];
+	v[5] = (moordyn::real)a[5];
+}
+
 namespace str {
 
 string
@@ -64,6 +106,111 @@ split(const string& str, const char sep)
 }
 
 } // ::moordyn::str
+
+mat6
+translateMass(vec r, mat M)
+{
+	// "anti-symmetric tensor components" from Sadeghi and Incecik
+	mat H = getH(r);
+
+	// break input matrix into 3x3 quadrants
+	mat6 Mout;
+	const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
+	Mout(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = m;
+
+	// product of inertia matrix  [J'] = [m][H] + [J]
+	const mat tempM1 = m * H;
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1;
+	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
+
+	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = H * m * H.transpose();
+
+	return Mout;
+}
+
+mat6
+translateMass(vec r, mat6 M)
+{
+	// "anti-symmetric tensor components" from Sadeghi and Incecik
+	mat H = getH(r);
+
+	// break input matrix into 3x3 quadrants
+	mat6 Mout;
+	const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
+	Mout(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = m;
+	const mat J = M(Eigen::seqN(3, 3), Eigen::seqN(0, 3));
+	const mat I = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+
+	// product of inertia matrix  [J'] = [m][H] + [J]
+	const mat tempM1 = m * H + J;
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1;
+	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
+
+	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
+	const mat tempM2 = H * m * H.transpose(); // [H][m][H]^T
+	const mat tempM3 = J.transpose() * H;     // [J]^T[H]
+	const mat tempM4 = H.transpose() * J;     // [H]^T[J]
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = tempM2 + tempM3 + tempM4 + I;
+
+	return Mout;
+}
+
+mat6
+rotateMass(mat R, mat6 M)
+{
+	// the process for each of the following is to
+	// 1. copy out the relevant 3x3 matrix section,
+	// 2. rotate it, and
+	// 3. paste it into the output 6x6 matrix
+
+    mat6 out;
+
+	// mass matrix
+    const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
+    const mat mrot = rotateMass(R, m);
+    out(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mrot;
+
+	// product of inertia matrix
+    const mat J = M(Eigen::seqN(3, 3), Eigen::seqN(0, 3));
+    const mat Jrot = rotateMass(R, J);
+    out(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = Jrot;
+    out(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = Jrot.transpose();
+
+	// moment of inertia matrix
+    const mat I = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+    const mat Irot = rotateMass(R, I);
+    out(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = Irot;
+
+	return out;
+}
+
+
+void
+transformKinematics(const vec &rRelBody,
+                    const mat &M,
+                    const vec &r,
+                    const vec6 &rd,
+                    vec &rOut,
+                    vec &rdOut)
+{
+	// rd_in should be in global orientation frame
+	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be
+	// written, and 4-6 will
+	//       already be correct or can be assigned seperately from r_in and
+	//       rd_in (assuming orientation frames are identical)
+
+	// locations (unrotated reference frame) about platform reference point
+	const vec rRel = M * rRelBody;
+
+	// absolute locations
+	rOut = rRel + r;
+
+	// absolute velocities
+    const vec v = rd(Eigen::seqN(0, 3));
+    const vec w = rd(Eigen::seqN(3, 3));
+    rdOut = v + w.cross(rRel);
+}
 
 } // ::moordyn
 

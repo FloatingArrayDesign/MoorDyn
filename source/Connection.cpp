@@ -31,10 +31,10 @@ Connection::~Connection() {}
 void
 Connection::setup(int number_in,
                   types type_in,
-                  const double r0_in[3],
+                  vec r0_in,
                   double M_in,
                   double V_in,
-                  const double F_in[3],
+                  vec F_in,
                   double CdA_in,
                   double Ca_in)
 {
@@ -47,7 +47,7 @@ Connection::setup(int number_in,
 	// store passed rod properties  >>>(and convert to numbers)<<<
 	conM = M_in;
 	conV = V_in;
-	moordyn::array2vec(F_in, conF);
+	conF = F_in;
 	conCdA = CdA_in;
 	conCa = Ca_in;
 
@@ -57,11 +57,11 @@ Connection::setup(int number_in,
 	// Start off at position specified in input file (will be overwritten for
 	// fairleads). This is the starting point for connects and the permanent
 	// location of anchors.
-	moordyn::array2vec(r0_in, r);
+	r = r0_in;
 	rd = { 0.0, 0.0, 0.0 };
 
 	LOGDBG << "   Set up Connection " << number << ", type '" << TypeName(type)
-	       << "'. ";
+	       << "'. " << endl;
 }
 
 // this function handles assigning a line to a connection node
@@ -242,8 +242,6 @@ Connection::updateFairlead(const real time)
 		a.line->SetEndKinematics(r, rd, a.end_point);
 }
 
-// sets Connection states and ends of attached lines ONLY if this Connection is
-// attached to a body (otherwise shouldn't be called)
 void
 Connection::setKinematics(double* r_in, double* rd_in)
 {
@@ -263,7 +261,25 @@ Connection::setKinematics(double* r_in, double* rd_in)
 		a.line->SetEndKinematics(r, rd, a.end_point);
 }
 
-// pass the latest states to the connection ()
+void
+Connection::setKinematics(vec r_in, vec rd_in)
+{
+	if (type != FIXED) {
+		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
+		       << "called for wrong Connection type. Connection " << number
+		       << " type " << type << endl;
+		throw moordyn::invalid_value_error("Wrong connection type");
+	}
+
+	// set position and velocity
+	r = r_in;
+	rd = rd_in;
+
+	// pass latest kinematics to any attached lines
+	for (auto a : attached)
+		a.line->SetEndKinematics(r, rd, a.end_point);
+}
+
 moordyn::error_id
 Connection::setState(const double X[6], const double time)
 {
@@ -359,6 +375,26 @@ Connection::getNetForceAndMass(const double rBody[3],
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	translateMass3to6DOF(rRel, M, M_out);
+
+	return MOORDYN_SUCCESS;
+}
+
+moordyn::error_id
+Connection::getNetForceAndMass(vec6 &Fnet_out,
+                               mat6 &M_out,
+                               vec rBody)
+{
+	doRHS();
+
+    // position of connection relative to the body reference point (global orientation frame)
+	const vec rRel = r - rBody;
+
+	// convert segment net force into 6dof force about body ref point
+    Fnet_out(Eigen::seqN(0, 3)) = Fnet;
+    Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
+
+	// convert segment mass matrix to 6by6 mass matrix about body ref point
+	M_out = translateMass(rRel, M);
 
 	return MOORDYN_SUCCESS;
 }

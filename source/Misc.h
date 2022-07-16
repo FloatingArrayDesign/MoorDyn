@@ -67,28 +67,43 @@ round(T val)
 
 using namespace std;
 
+namespace Eigen {
+    // Eigen does not provide 6 components objects
+    typedef Matrix<float, 6, 1> Vector6f;
+    typedef Matrix<float, 6, 6> Matrix6f;
+    typedef Matrix<double, 6, 1> Vector6d;
+    typedef Matrix<double, 6, 6> Matrix6d;
+    typedef Matrix<int, 6, 1> Vector6i;
+    typedef Matrix<int, 6, 6> Matrix6i;
+}
+
 #ifdef MOORDYN_SINGLEPRECISSION
 typedef Eigen::Vector2f vec2;
 typedef Eigen::Vector3f vec3;
 typedef Eigen::Vector4f vec4;
+typedef Eigen::Vector6f vec6;
 typedef vec3 vec;
 typedef Eigen::Matrix2f mat2;
 typedef Eigen::Matrix3f mat3;
 typedef Eigen::Matrix4f mat4;
+typedef Eigen::Matrix6f mat6;
 typedef mat3 mat;
 #else
 typedef Eigen::Vector2d vec2;
 typedef Eigen::Vector3d vec3;
 typedef Eigen::Vector4d vec4;
+typedef Eigen::Vector6d vec6;
 typedef vec3 vec;
 typedef Eigen::Matrix2d mat2;
 typedef Eigen::Matrix3d mat3;
 typedef Eigen::Matrix4d mat4;
+typedef Eigen::Matrix6d mat6;
 typedef mat3 mat;
 #endif
 typedef Eigen::Vector2i ivec2;
 typedef Eigen::Vector3i ivec3;
 typedef Eigen::Vector4i ivec4;
+typedef Eigen::Vector6i ivec6;
 typedef ivec3 ivec;
 
 namespace moordyn {
@@ -108,27 +123,17 @@ const complex i1(0., 1.);
  * @param v The input vector
  * @param a The output array
  */
-template<typename T>
-inline void
-vec2array(const vec& v, T* a)
-{
-	a[0] = (T)v[0];
-	a[1] = (T)v[1];
-	a[2] = (T)v[2];
-}
+template<typename Tvec, typename T>
+void
+vec2array(const Tvec& v, T* a);
 
 /** @brief Convert a C-ish array to a vector
  * @param a The input array
  * @param v The output vector
  */
-template<typename T>
-inline void
-array2vec(const T* a, vec& v)
-{
-	v[0] = (moordyn::real)a[0];
-	v[1] = (moordyn::real)a[1];
-	v[2] = (moordyn::real)a[2];
-}
+template<typename T, typename Tvec>
+void
+array2vec(const T* a, Tvec& v);
 
 /** @brief Convert a matrix to a C-ish array
  * @param v The input matrix
@@ -149,6 +154,34 @@ mat2array(const mat& v, T a[3][3])
 	a[2][2] = (T)v(2, 2);
 }
 
+/** @brief Convert a matrix to a C-ish array
+ * @param v The input matrix
+ * @param a The output array
+ */
+template<typename T>
+inline void
+mat2array(const mat6& v, T a[6][6])
+{
+	a[0][0] = (T)v(0, 0);
+	a[0][1] = (T)v(0, 1);
+	a[0][2] = (T)v(0, 2);
+	a[0][3] = (T)v(0, 3);
+	a[0][4] = (T)v(0, 4);
+	a[0][5] = (T)v(0, 5);
+	a[1][0] = (T)v(1, 0);
+	a[1][1] = (T)v(1, 1);
+	a[1][2] = (T)v(1, 2);
+	a[1][3] = (T)v(1, 3);
+	a[1][4] = (T)v(1, 4);
+	a[1][5] = (T)v(1, 5);
+	a[2][0] = (T)v(2, 0);
+	a[2][1] = (T)v(2, 1);
+	a[2][2] = (T)v(2, 2);
+	a[2][3] = (T)v(2, 3);
+	a[2][4] = (T)v(2, 4);
+	a[2][5] = (T)v(2, 5);
+}
+
 /** @brief Convert a C-ish array to a matrix
  * @param a The input array
  * @param v The output matrix
@@ -166,6 +199,34 @@ array2mat(const T a[3][3], mat& v)
 	v(2, 0) = (moordyn::real)a[2][0];
 	v(2, 1) = (moordyn::real)a[2][1];
 	v(2, 2) = (moordyn::real)a[2][2];
+}
+
+/** @brief Convert a C-ish array to a matrix
+ * @param a The input array
+ * @param v The output matrix
+ */
+template<typename T>
+inline void
+array2mat(const T a[6][6], mat6& v)
+{
+	v(0, 0) = (moordyn::real)a[0][0];
+	v(0, 1) = (moordyn::real)a[0][1];
+	v(0, 2) = (moordyn::real)a[0][2];
+	v(0, 3) = (moordyn::real)a[0][3];
+	v(0, 4) = (moordyn::real)a[0][4];
+	v(0, 5) = (moordyn::real)a[0][5];
+	v(1, 0) = (moordyn::real)a[1][0];
+	v(1, 1) = (moordyn::real)a[1][1];
+	v(1, 2) = (moordyn::real)a[1][2];
+	v(1, 3) = (moordyn::real)a[1][3];
+	v(1, 4) = (moordyn::real)a[1][4];
+	v(1, 5) = (moordyn::real)a[1][5];
+	v(2, 0) = (moordyn::real)a[2][0];
+	v(2, 1) = (moordyn::real)a[2][1];
+	v(2, 2) = (moordyn::real)a[2][2];
+	v(2, 3) = (moordyn::real)a[2][3];
+	v(2, 4) = (moordyn::real)a[2][4];
+	v(2, 5) = (moordyn::real)a[2][5];
 }
 
 /** @brief End point qualifiers
@@ -684,6 +745,147 @@ interp4(const vector<vector<vector<vector<T>>>>& values,
  * @}
  */
 
+/** \defgroup transformations 3D transformations
+ *  @{
+ */
+
+/** @brief Produce alternator matrix
+ *
+ * See "anti-symmetric tensor components" from Sadeghi and Incecik
+ * @param r Offset vector
+ * @return Alternator matrix
+ */
+inline mat
+getH(vec r)
+{
+	mat H;
+	H << 0, r[2], r[1], r[2], 0, r[0], r[1], r[0], 0;
+	return H;
+}
+
+/** @brief Compute the mass matrix on an offset point
+ * @param r Offset
+ * @param M Mass matrix
+ * @return Translated Mass & Inertia matrix
+ */
+mat6
+translateMass(vec r, mat M);
+
+
+/** @brief Compute the mass matrix on an offset point
+ * @param r Offset
+ * @param M Mass & Inertia matrix
+ * @return Translated Mass & Inertia matrix
+ */
+mat6
+translateMass(vec r, mat6 M);
+
+/** @brief rotation to a 3x3 mass matrix or any other second order tensor
+ *
+ * \f$ M^{*} = R \cdot M \cdot R^T \f$
+ * @param R Rotation matrix
+ * @param M Mass matrix
+ * @return Rotated mass
+ */
+inline mat
+rotateMass(mat R, mat M)
+{
+    return R * M * R.transpose();
+}
+
+/** @brief rotation to a 6x6 mass/inertia tensor
+ *
+ * see Sadeghi and Incecik 2005 for theory
+ * @param R Rotation matrix
+ * @param M Mass & Inertia matrix
+ * @return Rotated mass
+ */
+mat6
+rotateMass(mat R, mat6 M);
+
+/** @brief calculate position and velocity of point based on its position
+ * relative to moving 6DOF body
+ * @param rRelBody The point in the body local system of reference
+ * @param M The rotation matrix
+ * @param r The position of the local system origin
+ * @param rd The velocity of the local system origin
+ * @param rOut The output position with respect the global system of reference
+ * @param rdOut The output velocity with respect the global system of reference
+ */
+void
+transformKinematics(const vec &rRelBody,
+                    const mat &M,
+                    const vec &r,
+                    const vec6 &rd,
+                    vec &rOut,
+                    vec &rdOut);
+
+/** @brief Rotation matrix around x axis
+ * @param rads The angle in radians
+ * @return The rotation matrix
+ */
+inline mat
+RotX(real rads)
+{
+	const real s = sin(rads);
+	const real c = cos(rads);
+	mat R;
+	R << 1., 0., 0., 0., c, -s, 0., s, c;
+	return R;
+}
+
+/** @brief Rotation matrix around y axis
+ * @param rads The angle in radians
+ * @return The rotation matrix
+ */
+inline mat
+RotY(real rads)
+{
+	const real s = sin(rads);
+	const real c = cos(rads);
+	mat R;
+	R << c, 0., s, 0., 1., 0., -s, 0., c;
+	return R;
+}
+
+/** @brief Rotation matrix around z axis
+ * @param rads The angle in radians
+ * @return The rotation matrix
+ */
+inline mat
+RotZ(real rads)
+{
+	const real s = sin(rads);
+	const real c = cos(rads);
+	mat R;
+	R << c, -s, 0., s, c, 0., 0., 0., 1.;
+	return R;
+}
+
+/** @brief Rotation matrix around z axis
+ * @param rads The angle in radians
+ * @return The rotation matrix
+ */
+inline mat
+RotXYZ(real x, real y, real z)
+{
+	return RotX(x) * RotY(y) * RotZ(z);
+}
+
+/** @brief Euler XYZ rotation matrix
+ * @param rads The angles in radians
+ * @return The rotation matrix
+ */
+inline mat
+RotXYZ(vec rads)
+{
+	return RotXYZ(rads[0], rads[1], rads[2]);
+}
+
+/**
+ * @}
+ */
+
 } // ::moordyn
 
 const double pi = 3.14159265;
@@ -978,9 +1180,9 @@ eye(int I, int J)
 	return (double)(I == J);
 }
 
-void
+void DEPRECATED
 getH(double r[3], double H[3][3]);
-void
+void DEPRECATED
 getH(double r[3], double H[9]);
 
 /** @brief Get the length of a vector
@@ -1330,28 +1532,28 @@ CopyMat(int n, const T** src, T** dst)
 	}
 }
 
-void
+void DEPRECATED
 RotMat(double x1, double x2, double x3, double TransMat[]);
 
 void
 QuaternionToDCM(double q[4], double outMat[3][3]);
 
-void
+void DEPRECATED
 rotateM3(double Min[3][3], double rotMat[3][3], double outMat[3][3]);
-void
+void DEPRECATED
 rotateM3(double Min[9], double rotMat[9], double outMat[9]);
 
-void
+void DEPRECATED
 rotateM6(double Min[6][6], double rotMat[3][3], double outMat[6][6]);
-void
+void DEPRECATED
 rotateM6(double Min[36], double rotMat[9], double outMat[36]);
 
-void
+void DEPRECATED
 rotateVector3(double inVec[3], double rotMat[9], double outVec[3]);
-void
+void DEPRECATED
 rotateVector6(double inVec[6], double rotMat[9], double outVec[6]);
 
-void
+void DEPRECATED
 transformKinematics(const double rRelBody[3],
                     const double r_in[3],
                     const double TransMat[9],
@@ -1406,9 +1608,9 @@ translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
 void
 translateMass3to6DOF(double r[3], mat& Min, double Mout[6][6]);
 
-void
+void DEPRECATED
 translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6]);
-void
+void DEPRECATED
 translateMass6to6DOF(double r[3], double Min[36], double Mout[36]);
 
 vector<string>

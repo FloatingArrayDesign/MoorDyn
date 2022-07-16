@@ -47,6 +47,7 @@ HEADERS = ../../source/Body.h \
           ../../source/QSlines.h \
           ../../source/Rod.h \
           ../../source/Waves.h \
+          ../../source/Body.hpp \
           ../../source/Connection.hpp \
           ../../source/Line.hpp \
           ../../source/Log.hpp \
