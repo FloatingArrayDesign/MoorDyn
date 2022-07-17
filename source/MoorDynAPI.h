@@ -29,14 +29,8 @@
  * Many IDEs are able to use that file to automagically assist you in the code
  * editing.
  *
- * Please, if you plan to submit a pull request, execute the following command
- * before committing the changes:
- *
-\code
-clang-format -i source/*.cpp source/*.c source/*.hpp source/*.h test/*.cpp
-\endcode
- *
- * So it can be granted that the produced code follows the code styling
+ * Please, if you plan to submit a pull request execute clang-format over all
+ * the source files and headers before.
  */
 
 /** @file MoorDynAPI.h
