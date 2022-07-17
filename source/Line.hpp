@@ -572,8 +572,6 @@ class Line : public LogUser
 	 */
 	void getStateDeriv(double* Xd, const double dt);
 
-	void doRHS(const double* X, double* Xd, const double time, const double dt);
-
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);
 

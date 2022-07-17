@@ -27,7 +27,6 @@
 #include "Rod.h"
 #include "Body.hpp"
 
-/// MoorDyn2 C++ API namespace
 namespace moordyn {
 
 /** @class MoorDyn

@@ -106,6 +106,8 @@ typedef Eigen::Vector4i ivec4;
 typedef Eigen::Vector6i ivec6;
 typedef ivec3 ivec;
 
+/** @brief MoorDyn2 C++ API namespace
+ */
 namespace moordyn {
 
 #ifdef MOORDYN_SINGLEPRECISSION
@@ -904,7 +906,9 @@ RotZ(real rads)
 }
 
 /** @brief Rotation matrix around z axis
- * @param rads The angle in radians
+ * @param x The angle around x axis in radians
+ * @param y The angle around y axis in radians
+ * @param z The angle around z axis in radians
  * @return The rotation matrix
  */
 inline mat

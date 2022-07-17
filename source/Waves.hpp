@@ -261,8 +261,7 @@ class Waves : public LogUser
  * @param entries Nothing if @p coordtype is 0; the list of coordinates if
  * @p coordtype is 1 and minimum limit; the maximum limit and the number of
  * points if @p coordtype is 2
- * @param coordarray The output coordinates array
- * @return The number of points in coordarray
+ * @return The list of coordinates
  * @warning Memory will be allocated in coordarray. The user is responsible of
  * deallocating it afterwards
  */

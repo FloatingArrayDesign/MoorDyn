@@ -62,32 +62,27 @@ class Body : public LogUser
 	/// Rods attached to this body
 	std::vector<Rod*> attachedR;
 
-	/** Arrays to hold relative coordinates of attached Connections and Rods
-	 * @{
-	 */
-
+	/// Attachment points of each connection
 	std::vector<vec> rConnectRel;
+	/// Attachment points of each rod
 	std::vector<vec6> r6RodRel;
 
-	/**
-	 * @}
-	 */
+	// Constants set at startup from input file
 
-	/** Constants set at startup from input file
-	 * @{
-	 */
-
+	/// The reference point
 	vec6 body_r6;
+	/// The center of gravity
 	vec body_rCG;
+	/// The mass
 	real bodyM;
+	/// The volume
 	real bodyV;
+	/// The inertia diagonal components
 	vec bodyI;
+	/// The drag coefficients
 	vec6 bodyCdA;
+	/// The added mass coefficients
 	vec6 bodyCa;
-
-	/**
-	 * @}
-	 */
 
 	// degrees of freedom (or states)
 	/// body 6dof position [x/y/z]

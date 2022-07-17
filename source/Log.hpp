@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file Log.h
+/** @file Log.hpp
  * Utilities to log info on screen
  */
 

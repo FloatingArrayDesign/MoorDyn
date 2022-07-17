@@ -138,6 +138,8 @@ extern "C"
 	 * @param x Position vector
 	 * @param xd Velocity vector
 	 * @param f Output forces
+	 * @param t Simulation time
+	 * @param dt Time step
 	 * @return 0 if the mooring system has correctly evolved, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 * @note MoorDyn_NCoupledDOF() can be used to know the number of components
@@ -195,6 +197,7 @@ extern "C"
 	 * @param system The Moordyn system
 	 * @param U The velocities at the points (3 components per point)
 	 * @param Ud The accelerations at the points (3 components per point)
+	 * @param t Simulation time
 	 * @return 0 If the data is correctly set, an error code otherwise
 	 * (see @ref moordyn_errors)
 	 * @see MoorDyn_ExternalWaveKinInit()

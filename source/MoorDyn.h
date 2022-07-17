@@ -57,13 +57,14 @@ extern "C"
 	                        const char* infilename);
 
 	/** @brief Runs a time step of the MoorDyn system
-	 * @param system The Moordyn system
 	 * @param x Position vector (6 components per coupled body or cantilevered
 	 * rod and 3 components per pinned rod or coupled connection)
 	 * @param xd Velocity vector (6 components per coupled body or cantilevered
 	 * rod and 3 components per pinned rod or coupled connection)
 	 * @param f Output forces (6 components per coupled body or cantilevered rod
 	 * and 3 components per pinned rod or coupled connection)
+	 * @param t Simulation time
+	 * @param dt Time step
 	 * @return 0 if the mooring system has correctly evolved, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 * @see MoorDynInit
@@ -91,7 +92,7 @@ extern "C"
 	int DECLDIR externalWaveKinInit();
 
 	/** @brief Get the points where the waves kinematics shall be provided
-	 * @param r The output coordinates (3 components per point)
+	 * @param r_out The output coordinates (3 components per point)
 	 * @see externalWaveKinInit()
 	 */
 	void DECLDIR getWaveKinCoordinates(double r_out[]);
@@ -99,8 +100,9 @@ extern "C"
 	/** @brief Set the kinematics of the waves
 	 *
 	 * Use this function if WaveKin option is set in the input file
-	 * @param U The velocities at the points (3 components per point)
-	 * @param Ud The accelerations at the points (3 components per point)
+	 * @param U_in The velocities at the points (3 components per point)
+	 * @param Ud_in The accelerations at the points (3 components per point)
+	 * @param t_in Simulation time
 	 * @see externalWaveKinInit()
 	 * @see getWaveKinCoordinates()
 	 */

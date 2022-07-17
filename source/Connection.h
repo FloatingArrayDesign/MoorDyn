@@ -56,7 +56,7 @@ extern "C"
 
 	/** @brief Get the velocity of a connection
 	 * @param conn The Moordyn connection
-	 * @param pos The output velocity
+	 * @param v The output velocity
 	 * @return 0 If the data is correctly set, an error code otherwise
 	 * (see @ref moordyn_errors)
 	 */

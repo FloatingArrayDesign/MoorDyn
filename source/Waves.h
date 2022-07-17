@@ -38,7 +38,7 @@ extern "C"
 	 * @param U The output velocity
 	 * @param Ud The output acceleration
 	 * @param zeta The output wave height
-	 * @param PDyn_out The output dynamic pressure
+	 * @param PDyn The output dynamic pressure
 	 * @return 0 If the data is correctly set, an error code otherwise
 	 * (see @ref moordyn_errors)
 	 */
