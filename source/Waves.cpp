@@ -16,14 +16,12 @@
 
 #include "Waves.hpp"
 #include "Waves.h"
+#include "kiss_fftr.h"
 
 using namespace std;
 
 namespace moordyn {
 
-// -------------------------------------------------------
-
-// get grid axis coordinates, initialize/record in array, and return size
 std::vector<real>
 gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
 {
@@ -57,6 +55,42 @@ gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
 	}
 
 	return coordarray;
+}
+
+/** @brief Carry out the inverse Fourier transform
+ * @param cfg KISS FFT instance
+ * @param nFFT Numer of fourier components
+ * @param cx_in KISS FFT frequency-domain data
+ * @param cx_out KISS FFT time-domain output
+ * @param inputs Input FFT values
+ * @param outputs Output time-domain values
+ */
+void
+doIFFT(kiss_fftr_cfg cfg,
+              unsigned int nFFT,
+              kiss_fft_cpx* cx_w_in,
+              kiss_fft_scalar* cx_t_out,
+              const moordyn::complex* inputs,
+              std::vector<real>& outputs)
+{
+	unsigned int nw = nFFT / 2 + 1;
+
+	// copy frequency-domain data into input vector
+	// NOTE: (simpler way to do this, or bypass altogether?)
+	for (unsigned int i = 0; i < nw; i++) {
+		cx_w_in[i].r = std::real(inputs[i]);
+		cx_w_in[i].i = std::imag(inputs[i]);
+	}
+
+	kiss_fftri(cfg, cx_w_in, cx_t_out);
+
+	// copy out the IFFT data to the time series
+	for (unsigned int i = 0; i < nFFT; i++) {
+		// NOTE: is dividing by nFFT correct? (prevously was nw)
+		outputs[i] = cx_t_out[i] / (real)nFFT;
+	}
+
+	return;
 }
 
 Waves::Waves(moordyn::Log* log)
@@ -161,35 +195,6 @@ Waves::allocateKinematicsArrays()
 	az = init4DArray(nx, ny, nz, nt);
 
 	LOGDBG << "Allocated the waves data grid";
-}
-
-// perform a real-valued IFFT using kiss_fftr
-void
-Waves::doIFFT(kiss_fftr_cfg cfg,
-              unsigned int nFFT,
-              kiss_fft_cpx* cx_w_in,
-              kiss_fft_scalar* cx_t_out,
-              const moordyn::complex* inputs,
-              std::vector<real>& outputs)
-{
-	unsigned int nw = nFFT / 2 + 1;
-
-	// copy frequency-domain data into input vector
-	// NOTE: (simpler way to do this, or bypass altogether?)
-	for (unsigned int i = 0; i < nw; i++) {
-		cx_w_in[i].r = std::real(inputs[i]);
-		cx_w_in[i].i = std::imag(inputs[i]);
-	}
-
-	kiss_fftri(cfg, cx_w_in, cx_t_out);
-
-	// copy out the IFFT data to the time series
-	for (unsigned int i = 0; i < nFFT; i++) {
-		// NOTE: is dividing by nFFT correct? (prevously was nw)
-		outputs[i] = cx_t_out[i] / (real)nFFT;
-	}
-
-	return;
 }
 
 void

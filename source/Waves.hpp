@@ -128,21 +128,6 @@ class Waves : public LogUser
 		                                       std::vector<real>(nw, 0.0))));
 	}
 
-	/** @brief Carry out the inverse Fourier transform
-	 * @param cfg KISS FFT instance
-	 * @param nFFT Numer of fourier components
-	 * @param cx_in KISS FFT frequency-domain data
-	 * @param cx_out KISS FFT time-domain output
-	 * @param inputs Input FFT values
-	 * @param outputs Output time-domain values
-	 */
-	static void doIFFT(kiss_fftr_cfg cfg,
-	                   unsigned int nFFT,
-	                   kiss_fft_cpx* cx_in,
-	                   kiss_fft_scalar* cx_out,
-	                   const moordyn::complex* inputs,
-	                   std::vector<real>& outputs);
-
 	/// number of grid points in x direction
 	unsigned int nx;
 	/// number of grid points in y direction

@@ -38,8 +38,6 @@
 // #include <GL/glu.h> // used in arrow function
 //#endif
 
-#include "kiss_fftr.h" // used for any wave kinematics functions
-
 #ifdef OSX
 #include <sys/uio.h>
 #elif defined WIN32
