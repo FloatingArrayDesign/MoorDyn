@@ -21,48 +21,6 @@ using namespace std;
 
 namespace moordyn {
 
-template<typename T>
-void
-vec2array(const vec& v, T* a)
-{
-	a[0] = (T)v[0];
-	a[1] = (T)v[1];
-	a[2] = (T)v[2];
-}
-
-template<typename T>
-void
-vec2array(const vec6& v, T* a)
-{
-	a[0] = (T)v[0];
-	a[1] = (T)v[1];
-	a[2] = (T)v[2];
-	a[3] = (T)v[3];
-	a[4] = (T)v[4];
-	a[5] = (T)v[5];
-}
-
-template<typename T>
-void
-array2vec(const T* a, vec& v)
-{
-	v[0] = (moordyn::real)a[0];
-	v[1] = (moordyn::real)a[1];
-	v[2] = (moordyn::real)a[2];
-}
-
-template<typename T>
-void
-array2vec(const T* a, vec6& v)
-{
-	v[0] = (moordyn::real)a[0];
-	v[1] = (moordyn::real)a[1];
-	v[2] = (moordyn::real)a[2];
-	v[3] = (moordyn::real)a[3];
-	v[4] = (moordyn::real)a[4];
-	v[5] = (moordyn::real)a[5];
-}
-
 namespace str {
 
 string

@@ -68,7 +68,7 @@ round(T val)
 using namespace std;
 
 namespace Eigen {
-    // Eigen does not provide 6 components objects
+    // Eigen does not provide 6 components objects out of the box
     typedef Matrix<float, 6, 1> Vector6f;
     typedef Matrix<float, 6, 6> Matrix6f;
     typedef Matrix<double, 6, 1> Vector6d;
@@ -123,17 +123,59 @@ const complex i1(0., 1.);
  * @param v The input vector
  * @param a The output array
  */
-template<typename Tvec, typename T>
+template<typename T>
 void
-vec2array(const Tvec& v, T* a);
+vec2array(const vec& v, T* a)
+{
+	a[0] = (T)v[0];
+	a[1] = (T)v[1];
+	a[2] = (T)v[2];
+}
 
 /** @brief Convert a C-ish array to a vector
  * @param a The input array
  * @param v The output vector
  */
-template<typename T, typename Tvec>
+template<typename T>
+inline void
+array2vec(const T* a, vec& v)
+{
+	v[0] = (moordyn::real)a[0];
+	v[1] = (moordyn::real)a[1];
+	v[2] = (moordyn::real)a[2];
+}
+
+/** @brief Convert a vector to a C-ish array
+ * @param v The input vector
+ * @param a The output array
+ */
+template<typename T>
 void
-array2vec(const T* a, Tvec& v);
+vec62array(const vec6& v, T* a)
+{
+	a[0] = (T)v[0];
+	a[1] = (T)v[1];
+	a[2] = (T)v[2];
+	a[3] = (T)v[3];
+	a[4] = (T)v[4];
+	a[5] = (T)v[5];
+}
+
+/** @brief Convert a C-ish array to a vector
+ * @param a The input array
+ * @param v The output vector
+ */
+template<typename T>
+inline void
+array2vec6(const T* a, vec6& v)
+{
+	v[0] = (moordyn::real)a[0];
+	v[1] = (moordyn::real)a[1];
+	v[2] = (moordyn::real)a[2];
+	v[3] = (moordyn::real)a[3];
+	v[4] = (moordyn::real)a[4];
+	v[5] = (moordyn::real)a[5];
+}
 
 /** @brief Convert a matrix to a C-ish array
  * @param v The input matrix
@@ -154,13 +196,32 @@ mat2array(const mat& v, T a[3][3])
 	a[2][2] = (T)v(2, 2);
 }
 
+/** @brief Convert a C-ish array to a matrix
+ * @param a The input array
+ * @param v The output matrix
+ */
+template<typename T>
+inline void
+array2mat(const T a[3][3], mat& v)
+{
+	v(0, 0) = (moordyn::real)a[0][0];
+	v(0, 1) = (moordyn::real)a[0][1];
+	v(0, 2) = (moordyn::real)a[0][2];
+	v(1, 0) = (moordyn::real)a[1][0];
+	v(1, 1) = (moordyn::real)a[1][1];
+	v(1, 2) = (moordyn::real)a[1][2];
+	v(2, 0) = (moordyn::real)a[2][0];
+	v(2, 1) = (moordyn::real)a[2][1];
+	v(2, 2) = (moordyn::real)a[2][2];
+}
+
 /** @brief Convert a matrix to a C-ish array
  * @param v The input matrix
  * @param a The output array
  */
 template<typename T>
 inline void
-mat2array(const mat6& v, T a[6][6])
+mat62array(const mat6& v, T a[6][6])
 {
 	a[0][0] = (T)v(0, 0);
 	a[0][1] = (T)v(0, 1);
@@ -188,26 +249,7 @@ mat2array(const mat6& v, T a[6][6])
  */
 template<typename T>
 inline void
-array2mat(const T a[3][3], mat& v)
-{
-	v(0, 0) = (moordyn::real)a[0][0];
-	v(0, 1) = (moordyn::real)a[0][1];
-	v(0, 2) = (moordyn::real)a[0][2];
-	v(1, 0) = (moordyn::real)a[1][0];
-	v(1, 1) = (moordyn::real)a[1][1];
-	v(1, 2) = (moordyn::real)a[1][2];
-	v(2, 0) = (moordyn::real)a[2][0];
-	v(2, 1) = (moordyn::real)a[2][1];
-	v(2, 2) = (moordyn::real)a[2][2];
-}
-
-/** @brief Convert a C-ish array to a matrix
- * @param a The input array
- * @param v The output matrix
- */
-template<typename T>
-inline void
-array2mat(const T a[6][6], mat6& v)
+array2mat6(const T a[6][6], mat6& v)
 {
 	v(0, 0) = (moordyn::real)a[0][0];
 	v(0, 1) = (moordyn::real)a[0][1];

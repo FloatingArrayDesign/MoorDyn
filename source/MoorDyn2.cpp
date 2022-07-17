@@ -213,8 +213,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 		// dependent Rods
         // BUG: These conversions will not be needed in the future
         vec6 r, rd;
-        moordyn::array2vec(x + ix, r);
-        moordyn::array2vec(xd + ix, rd);
+        moordyn::array2vec6(x + ix, r);
+        moordyn::array2vec6(xd + ix, rd);
 		BodyList[l]->initializeUnfreeBody(r, rd, 0.0);
 		ix += 6;
 	}
@@ -262,8 +262,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	for (unsigned int l = 0; l < FreeBodyIs.size(); l++) {
         // BUG: These conversions will not be needed in the future
         vec6 r, rd;
-        moordyn::array2vec(states + BodyStateIs[l] + 6, r);
-        moordyn::array2vec(states + BodyStateIs[l], rd);
+        moordyn::array2vec6(states + BodyStateIs[l] + 6, r);
+        moordyn::array2vec6(states + BodyStateIs[l], rd);
 		BodyList[FreeBodyIs[l]]->initializeBody(r, rd);
     }
 
@@ -500,8 +500,8 @@ moordyn::MoorDyn::Step(const double* x,
 	for (auto l : CpldBodyIs) {
         // BUG: These conversions will not be needed in the future
         vec6 r, rd;
-        moordyn::array2vec(x + ix, r);
-        moordyn::array2vec(xd + ix, rd);
+        moordyn::array2vec6(x + ix, r);
+        moordyn::array2vec6(xd + ix, rd);
 		BodyList[l]->initiateStep(r, rd, t);
 		ix += 6;
 	}
@@ -1105,7 +1105,7 @@ moordyn::MoorDyn::ReadInFile()
 				// body
                 // BUG: These conversions will not be needed in the future
                 vec6 coords_vec;
-                moordyn::array2vec(endCoords, coords_vec);
+                moordyn::array2vec6(endCoords, coords_vec);
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX"))
 					GroundBody->addRod(obj, coords_vec);

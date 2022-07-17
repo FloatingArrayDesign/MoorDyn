@@ -76,7 +76,7 @@ Body::setup(int number_in,
 	// set up body initial mass matrix (excluding any rods or attachements)
 	mat6 Mtemp;
 	Mtemp(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mat::Identity() * bodyM;
-	Mtemp(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = mat::Identity() * bodyI;
+	Mtemp(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = bodyI.asDiagonal();
 	// account for potential CG offset <<< is the direction right? <<<
 	M0 = translateMass(body_rCG, Mtemp);
 
@@ -242,7 +242,7 @@ Body::setDependentStates()
 	}
 
 	// set kinematics of any dependent Rods
-	for (unsigned int i = 0; i < attachedC.size(); i++) {
+	for (unsigned int i = 0; i < attachedR.size(); i++) {
 		// calculate displaced coordinates/orientation and velocities of each
 		// rod <<<<<<<<<<<<<
         // this is making a "fake" state vector for the rod, describing its position and velocity
@@ -271,8 +271,8 @@ Body::setDependentStates()
 		// pass above to the rod and get it to calculate the forces
         // BUG: These conversions will not be required in the future
         double rRodArray[6], rdRodArray[6];
-        moordyn::vec2array(rRod, rRodArray);
-        moordyn::vec2array(rdRod, rdRodArray);
+        moordyn::vec62array(rRod, rRodArray);
+        moordyn::vec62array(rdRod, rdRodArray);
 		attachedR[i]->setKinematics(rRodArray, rdRodArray);
 	}
 }
@@ -362,8 +362,8 @@ Body::setState(const double* X, real time)
 	setTime(time);
 
 	// set position and velocity vectors from state vector
-    moordyn::array2vec(X + 6, r6);
-    moordyn::array2vec(X, v6);
+    moordyn::array2vec6(X + 6, r6);
+    moordyn::array2vec6(X, v6);
 
 	// calculate orientation matrix based on latest angles
 	OrMat = RotXYZ(r6[3], r6[4], r6[5]);
@@ -388,7 +388,7 @@ Body::getStateDeriv(double* Xd)
     // objects, because they're set AFTER the call to the connects
     // above is no longer true!!! <<<
     if (t == 0) {
-        moordyn::vec2array(v6, Xd + 6);
+        moordyn::vec62array(v6, Xd + 6);
         memset(Xd, 0.0, 6 * sizeof(real));
     } //<<<<<<<<<<<<<<<<<<<<
     else {
@@ -401,8 +401,8 @@ Body::getStateDeriv(double* Xd)
 		const vec6 acc = M.inverse() * F6net;
 
         // fill in state derivatives
-        moordyn::vec2array(v6, Xd + 6);
-        moordyn::vec2array(acc, Xd);
+        moordyn::vec62array(v6, Xd + 6);
+        moordyn::vec62array(acc, Xd);
         // is the above still valid even though it includes rotational DOFs?
         // <<<<<<<
     }
@@ -496,9 +496,9 @@ Body::doRHS()
 
 		// sum quantitites
 		vec6 f6_i;
-        moordyn::array2vec(F6_i, f6_i);
+        moordyn::array2vec6(F6_i, f6_i);
 		mat6 m6_i;
-        moordyn::array2mat(M6_i, m6_i);
+        moordyn::array2mat6(M6_i, m6_i);
 			F6net += f6_i;
 
 				M += m6_i;

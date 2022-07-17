@@ -276,7 +276,7 @@ class MoorDyn : public LogUser
 		for (auto l : CpldBodyIs) {
             // BUG: These conversions will not be needed in the future
             const vec6 f_i = BodyList[l]->getFnet();
-            moordyn::vec2array(f_i, f + ix);
+            moordyn::vec62array(f_i, f + ix);
 			ix += 6;
 		}
 		for (auto l : CpldRodIs) {
