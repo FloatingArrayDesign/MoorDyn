@@ -348,8 +348,8 @@ class Connection : public LogUser
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
 	moordyn::error_id DEPRECATED getNetForceAndMass(const double rBody[3],
-	                                     double Fnet_out[6],
-	                                     double M_out[6][6]);
+	                                                double Fnet_out[6],
+	                                                double M_out[6][6]);
 
 	/** @brief Calculate the force and mass contributions of the connect on the
 	 * parent body
@@ -358,9 +358,9 @@ class Connection : public LogUser
 	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
-	moordyn::error_id getNetForceAndMass(vec6 &Fnet_out,
-	                                     mat6 &M_out,
-                                         vec rBody=vec::Zero());
+	moordyn::error_id getNetForceAndMass(vec6& Fnet_out,
+	                                     mat6& M_out,
+	                                     vec rBody = vec::Zero());
 
 	/** @brief Calculates the forces and mass on the connection, including from
 	 * attached lines

@@ -211,7 +211,9 @@ class Body : public LogUser
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	void initializeUnfreeBody(vec6 r=vec6::Zero(), vec6 rd=vec6::Zero(), real time=0.0);
+	void initializeUnfreeBody(vec6 r = vec6::Zero(),
+	                          vec6 rd = vec6::Zero(),
+	                          real time = 0.0);
 
 	/** @brief Initialize the free body
 	 *
@@ -223,7 +225,7 @@ class Body : public LogUser
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 */
-	void initializeBody(vec6 r=vec6::Zero(), vec6 rd=vec6::Zero());
+	void initializeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero());
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
@@ -234,7 +236,7 @@ class Body : public LogUser
 	/** @brief set the states (positions and velocities) to all the attached
 	 * entities
 	 * @throws moordyn::invalid_value_error If a non FIXED connection is tried
-     * to be edited
+	 * to be edited
 	 */
 	void setDependentStates();
 

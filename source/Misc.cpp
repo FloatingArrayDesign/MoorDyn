@@ -122,35 +122,34 @@ rotateMass(mat R, mat6 M)
 	// 2. rotate it, and
 	// 3. paste it into the output 6x6 matrix
 
-    mat6 out;
+	mat6 out;
 
 	// mass matrix
-    const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
-    const mat mrot = rotateMass(R, m);
-    out(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mrot;
+	const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
+	const mat mrot = rotateMass(R, m);
+	out(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mrot;
 
 	// product of inertia matrix
-    const mat J = M(Eigen::seqN(3, 3), Eigen::seqN(0, 3));
-    const mat Jrot = rotateMass(R, J);
-    out(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = Jrot;
-    out(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = Jrot.transpose();
+	const mat J = M(Eigen::seqN(3, 3), Eigen::seqN(0, 3));
+	const mat Jrot = rotateMass(R, J);
+	out(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = Jrot;
+	out(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = Jrot.transpose();
 
 	// moment of inertia matrix
-    const mat I = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
-    const mat Irot = rotateMass(R, I);
-    out(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = Irot;
+	const mat I = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+	const mat Irot = rotateMass(R, I);
+	out(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = Irot;
 
 	return out;
 }
 
-
 void
-transformKinematics(const vec &rRelBody,
-                    const mat &M,
-                    const vec &r,
-                    const vec6 &rd,
-                    vec &rOut,
-                    vec &rdOut)
+transformKinematics(const vec& rRelBody,
+                    const mat& M,
+                    const vec& r,
+                    const vec6& rd,
+                    vec& rOut,
+                    vec& rdOut)
 {
 	// rd_in should be in global orientation frame
 	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be
@@ -165,9 +164,9 @@ transformKinematics(const vec &rRelBody,
 	rOut = rRel + r;
 
 	// absolute velocities
-    const vec v = rd(Eigen::seqN(0, 3));
-    const vec w = rd(Eigen::seqN(3, 3));
-    rdOut = v + w.cross(rRel);
+	const vec v = rd(Eigen::seqN(0, 3));
+	const vec w = rd(Eigen::seqN(3, 3));
+	rdOut = v + w.cross(rRel);
 }
 
 } // ::moordyn

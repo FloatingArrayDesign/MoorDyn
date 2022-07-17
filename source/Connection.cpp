@@ -380,18 +380,17 @@ Connection::getNetForceAndMass(const double rBody[3],
 }
 
 moordyn::error_id
-Connection::getNetForceAndMass(vec6 &Fnet_out,
-                               mat6 &M_out,
-                               vec rBody)
+Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 {
 	doRHS();
 
-    // position of connection relative to the body reference point (global orientation frame)
+	// position of connection relative to the body reference point (global
+	// orientation frame)
 	const vec rRel = r - rBody;
 
 	// convert segment net force into 6dof force about body ref point
-    Fnet_out(Eigen::seqN(0, 3)) = Fnet;
-    Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
+	Fnet_out(Eigen::seqN(0, 3)) = Fnet;
+	Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	M_out = translateMass(rRel, M);

@@ -68,13 +68,13 @@ round(T val)
 using namespace std;
 
 namespace Eigen {
-    // Eigen does not provide 6 components objects out of the box
-    typedef Matrix<float, 6, 1> Vector6f;
-    typedef Matrix<float, 6, 6> Matrix6f;
-    typedef Matrix<double, 6, 1> Vector6d;
-    typedef Matrix<double, 6, 6> Matrix6d;
-    typedef Matrix<int, 6, 1> Vector6i;
-    typedef Matrix<int, 6, 6> Matrix6i;
+// Eigen does not provide 6 components objects out of the box
+typedef Matrix<float, 6, 1> Vector6f;
+typedef Matrix<float, 6, 6> Matrix6f;
+typedef Matrix<double, 6, 1> Vector6d;
+typedef Matrix<double, 6, 6> Matrix6d;
+typedef Matrix<int, 6, 1> Vector6i;
+typedef Matrix<int, 6, 6> Matrix6i;
 }
 
 #ifdef MOORDYN_SINGLEPRECISSION
@@ -813,7 +813,6 @@ getH(vec r)
 mat6
 translateMass(vec r, mat M);
 
-
 /** @brief Compute the mass matrix on an offset point
  * @param r Offset
  * @param M Mass & Inertia matrix
@@ -832,7 +831,7 @@ translateMass(vec r, mat6 M);
 inline mat
 rotateMass(mat R, mat M)
 {
-    return R * M * R.transpose();
+	return R * M * R.transpose();
 }
 
 /** @brief rotation to a 6x6 mass/inertia tensor
@@ -855,12 +854,12 @@ rotateMass(mat R, mat6 M);
  * @param rdOut The output velocity with respect the global system of reference
  */
 void
-transformKinematics(const vec &rRelBody,
-                    const mat &M,
-                    const vec &r,
-                    const vec6 &rd,
-                    vec &rOut,
-                    vec &rdOut);
+transformKinematics(const vec& rRelBody,
+                    const mat& M,
+                    const vec& r,
+                    const vec6& rd,
+                    vec& rOut,
+                    vec& rdOut);
 
 /** @brief Rotation matrix around x axis
  * @param rads The angle in radians

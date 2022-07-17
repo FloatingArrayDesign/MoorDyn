@@ -33,15 +33,15 @@ Body::~Body() {}
 
 void
 Body::setup(int number_in,
-      types type_in,
-      vec6 r6_in,
-      vec rCG_in,
-      real M_in,
-      real V_in,
-      vec I_in,
-      vec6 CdA_in,
-      vec6 Ca_in,
-      shared_ptr<ofstream> outfile_pointer)
+            types type_in,
+            vec6 r6_in,
+            vec rCG_in,
+            real M_in,
+            real V_in,
+            vec I_in,
+            vec6 CdA_in,
+            vec6 Ca_in,
+            shared_ptr<ofstream> outfile_pointer)
 {
 	number = number_in;
 	type = type_in;
@@ -100,11 +100,11 @@ Body::addConnection(moordyn::Connection* conn, vec coords)
 {
 	LOGDBG << "C" << conn->number << "->B" << number << " " << endl;
 
-    // store Connection address
-    attachedC.push_back(conn);
+	// store Connection address
+	attachedC.push_back(conn);
 
-    // store Connection relative location
-    rConnectRel.push_back(coords);
+	// store Connection relative location
+	rConnectRel.push_back(coords);
 };
 
 void
@@ -112,27 +112,26 @@ Body::addRod(Rod* rod, vec6 coords)
 {
 	LOGDBG << "R" << rod->number << "->B" << number << " " << endl;
 
-    // store Rod address
-    attachedR.push_back(rod);
+	// store Rod address
+	attachedR.push_back(rod);
 
-    // store Rod end A relative position and unit vector from end A to B
-    vec tempUnitVec;
-    unitvector(tempUnitVec, coords(Eigen::seqN(0, 3)), coords(Eigen::seqN(3, 3)));
-    vec6 r6Rod;
-    r6Rod(Eigen::seqN(0, 3)) = coords(Eigen::seqN(0, 3));
-    r6Rod(Eigen::seqN(3, 3)) = tempUnitVec;
-    r6RodRel.push_back(r6Rod);
+	// store Rod end A relative position and unit vector from end A to B
+	vec tempUnitVec;
+	unitvector(
+	    tempUnitVec, coords(Eigen::seqN(0, 3)), coords(Eigen::seqN(3, 3)));
+	vec6 r6Rod;
+	r6Rod(Eigen::seqN(0, 3)) = coords(Eigen::seqN(0, 3));
+	r6Rod(Eigen::seqN(3, 3)) = tempUnitVec;
+	r6RodRel.push_back(r6Rod);
 };
 
 void
-Body::initializeUnfreeBody(vec6 r6_in,
-                           vec6 v6_in,
-                           real time)
+Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, real time)
 {
-    if (type == FREE) {
-        LOGERR << "Invalid initializator for a FREE body" << endl;
-        throw moordyn::invalid_value_error("Invalid body type");
-    }
+	if (type == FREE) {
+		LOGERR << "Invalid initializator for a FREE body" << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
+	}
 	initiateStep(r6_in, v6_in, time);
 	updateFairlead(time);
 
@@ -150,13 +149,14 @@ Body::initializeUnfreeBody(vec6 r6_in,
 void
 Body::initializeBody(vec6 r, vec6 rd)
 {
-    if (type != FREE) {
-        LOGERR << "Invalid initializator for a non FREE body (" << TypeName(type) << ")" << endl;
-        throw moordyn::invalid_value_error("Invalid body type");
-    }
+	if (type != FREE) {
+		LOGERR << "Invalid initializator for a non FREE body ("
+		       << TypeName(type) << ")" << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
+	}
 	// assign initial body kinematics to state vector
-    r6 = r;
-    v6 = rd;
+	r6 = r;
+	v6 = rd;
 
 	// set positions of any dependent connections and rods now (before they are
 	// initialized)
@@ -182,27 +182,27 @@ Body::initializeBody(vec6 r, vec6 rd)
 			LOGERR << "Unable to write file Body" << number << ".out" << endl;
 			throw moordyn::output_file_error("Invalid line file");
 		}
-        // ------------- write channel names line --------------------
+		// ------------- write channel names line --------------------
 
-        // output time
-        *outfile << "Time"
-                    << "\t ";
+		// output time
+		*outfile << "Time"
+		         << "\t ";
 
-        *outfile << "x\ty\tz\troll\tpitch\tyaw";
+		*outfile << "x\ty\tz\troll\tpitch\tyaw";
 
-        *outfile << "\n";
+		*outfile << "\n";
 
-        // ----------- write units line ---------------
+		// ----------- write units line ---------------
 
-        if (env->WriteUnits > 0) {
-            // output time
-            *outfile << "(s)"
-                        << "\t ";
+		if (env->WriteUnits > 0) {
+			// output time
+			*outfile << "(s)"
+			         << "\t ";
 
-            *outfile << "(m)\t(m)\t(m)\t(deg)\t(deg)\t(deg)";
+			*outfile << "(m)\t(m)\t(m)\t(deg)\t(deg)\t(deg)";
 
-            *outfile << "\n"; // should also write units at some point!
-        }
+			*outfile << "\n"; // should also write units at some point!
+		}
 	}
 
 	LOGDBG << "Initialized Body " << number << endl;
@@ -221,7 +221,8 @@ Body::setDependentStates()
 	// set kinematics of any dependent connections (this is relevant for the
 	// dependent lines, yeah?)
 	for (unsigned int i = 0; i < attachedC.size(); i++) {
-        // this is making a "fake" state vector for the connect, describing its position and velocity
+		// this is making a "fake" state vector for the connect, describing its
+		// position and velocity
 		vec rConnect, rdConnect;
 
 		transformKinematics(rConnectRel[i],
@@ -234,22 +235,22 @@ Body::setDependentStates()
 		// pass above to the connection and get it to calculate the forces
 		try {
 			attachedC[i]->setKinematics(rConnect, rdConnect);
+		} catch (moordyn::invalid_value_error& exception) {
+			// Just rethrow the exception
+			throw;
 		}
-		catch(moordyn::invalid_value_error& exception) {
-            // Just rethrow the exception
-            throw;
-        }
 	}
 
 	// set kinematics of any dependent Rods
 	for (unsigned int i = 0; i < attachedR.size(); i++) {
 		// calculate displaced coordinates/orientation and velocities of each
 		// rod <<<<<<<<<<<<<
-        // this is making a "fake" state vector for the rod, describing its position and velocity
+		// this is making a "fake" state vector for the rod, describing its
+		// position and velocity
 		vec6 rRod, rdRod;
 
 		// do 3d details of Rod ref point
-        vec tmpr, tmprd;
+		vec tmpr, tmprd;
 		transformKinematics(r6RodRel[i](Eigen::seqN(0, 3)),
 		                    OrMat,
 		                    r6(Eigen::seqN(0, 3)),
@@ -258,25 +259,25 @@ Body::setDependentStates()
 		                    tmprd); // set first three entires (end A
 		                            // translation) of rRod and rdRod
 		// does the above function need to take in all 6 elements of r6RodRel??
-        rRod(Eigen::seqN(0, 3)) = tmpr;
-        rdRod(Eigen::seqN(0, 3)) = tmprd;
+		rRod(Eigen::seqN(0, 3)) = tmpr;
+		rdRod(Eigen::seqN(0, 3)) = tmprd;
 
-        // rotate rod relative unit vector by OrMat to get unit vec in reference coords
-        rRod(Eigen::seqN(3, 3)) = OrMat * r6RodRel[i](Eigen::seqN(3, 3));
+		// rotate rod relative unit vector by OrMat to get unit vec in reference
+		// coords
+		rRod(Eigen::seqN(3, 3)) = OrMat * r6RodRel[i](Eigen::seqN(3, 3));
 
 		// do rotational stuff
-        // is this okay as is?
-        rdRod(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
+		// is this okay as is?
+		rdRod(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
 
 		// pass above to the rod and get it to calculate the forces
-        // BUG: These conversions will not be required in the future
-        double rRodArray[6], rdRodArray[6];
-        moordyn::vec62array(rRod, rRodArray);
-        moordyn::vec62array(rdRod, rdRodArray);
+		// BUG: These conversions will not be required in the future
+		double rRodArray[6], rdRodArray[6];
+		moordyn::vec62array(rRod, rRodArray);
+		moordyn::vec62array(rdRod, rdRodArray);
 		attachedR[i]->setKinematics(rRodArray, rdRodArray);
 	}
 }
-
 
 real
 Body::GetBodyOutput(OutChanProps outChan)
@@ -317,17 +318,17 @@ Body::initiateStep(vec6 r, vec6 rd, real time)
 	if (type == COUPLED) // if coupled, update boundary conditions
 	{
 		r_ves = r;
-        rd_ves = rd;
+		rd_ves = rd;
 		return;
 	}
 	if (type == FIXED) // if the ground body, set the BCs to stationary
 	{
-			r_ves = vec6::Zero();
-			rd_ves = vec6::Zero();
+		r_ves = vec6::Zero();
+		rd_ves = vec6::Zero();
 		return;
 	}
-    LOGERR << "The body is not a coupled/fixed one" << endl;
-    throw moordyn::invalid_value_error("Invalid body type");
+	LOGERR << "The body is not a coupled/fixed one" << endl;
+	throw moordyn::invalid_value_error("Invalid body type");
 }
 
 void
@@ -339,8 +340,8 @@ Body::updateFairlead(real time)
 	if ((type == COUPLED) || (type == FIXED)) // if coupled OR GROUND BODY
 	{
 		// set Body kinematics based on BCs (linear model for now)
-        r6 = r_ves + rd_ves * (time - t0);
-        v6 = rd_ves;
+		r6 = r_ves + rd_ves * (time - t0);
+		v6 = rd_ves;
 
 		// calculate orientation matrix based on latest angles
 		OrMat = RotXYZ(r6[3], r6[4], r6[5]);
@@ -348,10 +349,10 @@ Body::updateFairlead(real time)
 		// set positions of any dependent connections and rods
 		setDependentStates();
 
-        return;
+		return;
 	}
-    LOGERR << "The body is not a coupled/fixed one" << endl;
-    throw moordyn::invalid_value_error("Invalid body type");
+	LOGERR << "The body is not a coupled/fixed one" << endl;
+	throw moordyn::invalid_value_error("Invalid body type");
 }
 
 // pass the latest states to the body if this body is NOT driven externally
@@ -362,8 +363,8 @@ Body::setState(const double* X, real time)
 	setTime(time);
 
 	// set position and velocity vectors from state vector
-    moordyn::array2vec6(X + 6, r6);
-    moordyn::array2vec6(X, v6);
+	moordyn::array2vec6(X + 6, r6);
+	moordyn::array2vec6(X, v6);
 
 	// calculate orientation matrix based on latest angles
 	OrMat = RotXYZ(r6[3], r6[4], r6[5]);
@@ -376,36 +377,36 @@ Body::setState(const double* X, real time)
 void
 Body::getStateDeriv(double* Xd)
 {
-    if (type != FREE) {
-        LOGERR << "The body is not a free one" << endl;
-        throw moordyn::invalid_value_error("Invalid body type");
-    }
+	if (type != FREE) {
+		LOGERR << "The body is not a free one" << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
+	}
 
-    // Get contributions from attached connections (and lines attached to
-    // them)
+	// Get contributions from attached connections (and lines attached to
+	// them)
 
-    // with current IC gen approach, we skip the first call to the line
-    // objects, because they're set AFTER the call to the connects
-    // above is no longer true!!! <<<
-    if (t == 0) {
-        moordyn::vec62array(v6, Xd + 6);
-        memset(Xd, 0.0, 6 * sizeof(real));
-    } //<<<<<<<<<<<<<<<<<<<<
-    else {
-        doRHS();
+	// with current IC gen approach, we skip the first call to the line
+	// objects, because they're set AFTER the call to the connects
+	// above is no longer true!!! <<<
+	if (t == 0) {
+		moordyn::vec62array(v6, Xd + 6);
+		memset(Xd, 0.0, 6 * sizeof(real));
+	} //<<<<<<<<<<<<<<<<<<<<
+	else {
+		doRHS();
 
-        // solve for accelerations in [M]{a}={f}
+		// solve for accelerations in [M]{a}={f}
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 		const vec6 acc = M.inverse() * F6net;
 
-        // fill in state derivatives
-        moordyn::vec62array(v6, Xd + 6);
-        moordyn::vec62array(acc, Xd);
-        // is the above still valid even though it includes rotational DOFs?
-        // <<<<<<<
-    }
+		// fill in state derivatives
+		moordyn::vec62array(v6, Xd + 6);
+		moordyn::vec62array(acc, Xd);
+		// is the above still valid even though it includes rotational DOFs?
+		// <<<<<<<
+	}
 };
 
 //  this is the big function that calculates the forces on the body
@@ -417,8 +418,8 @@ Body::doRHS()
 	// angle assumptions <<<<<<
 
 	// clear before re-summing
-    F6net = vec6::Zero();
-    M = mat6::Zero();
+	F6net = vec6::Zero();
+	M = mat6::Zero();
 
 	// First, the body's own mass matrix must be adjusted based on its
 	// orientation so that we have a mass matrix in the global orientation frame
@@ -426,10 +427,11 @@ Body::doRHS()
 
 	// gravity forces and moments about body ref point given CG location
 	const vec body_rCGrotated = OrMat * body_rCG;
-    // weight+buoyancy vector
-	const vec Fgrav = vec(0.0, 0.0, bodyV * env->rho_w * env->g - bodyM * env->g);
-    F6net(Eigen::seqN(0, 3)) = Fgrav;
-    F6net(Eigen::seqN(3, 3)) = body_rCGrotated.cross(Fgrav);
+	// weight+buoyancy vector
+	const vec Fgrav =
+	    vec(0.0, 0.0, bodyV * env->rho_w * env->g - bodyM * env->g);
+	F6net(Eigen::seqN(0, 3)) = Fgrav;
+	F6net(Eigen::seqN(3, 3)) = body_rCGrotated.cross(Fgrav);
 
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
@@ -437,41 +439,42 @@ Body::doRHS()
 	// env->waves->getU(r6, t, U); // call generic function to get water
 	// velocities <<<<<<<<< all needs updating
 
-    Ud = vec::Zero(); // set water accelerations as zero for now
+	Ud = vec::Zero(); // set water accelerations as zero for now
 
 	// ------------------------------------------------------------------------------------------
 
 	// viscous drag calculation (on core body)
 
-    // relative water velocity
-    // for rotation, this is just the negative of the body's rotation for now
-    // (not allowing flow rotation)
+	// relative water velocity
+	// for rotation, this is just the negative of the body's rotation for now
+	// (not allowing flow rotation)
 	vec6 vi = -v6;
 	vi(Eigen::seqN(0, 3)) += U;
 
-    // NOTE:, for body this should be fixed to account for orientation!!
+	// NOTE:, for body this should be fixed to account for orientation!!
 	// what about drag in rotational DOFs???
-    vi.cwiseAbs();
-    F6net += 0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(bodyCdA);
+	vi.cwiseAbs();
+	F6net +=
+	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(bodyCdA);
 
 	// Get contributions from any connections attached to the body
 	for (auto attached : attachedC) {
 		// get net force and mass from Connection on body ref point (global
 		// orientation)
-        vec6 F6_i;
-        mat6 M6_i;
+		vec6 F6_i;
+		mat6 M6_i;
 		attached->getNetForceAndMass(F6_i, M6_i, r6(Eigen::seqN(0, 3)));
 
 		// sum quantitites
-        F6net += F6_i;
-        M += M6_i;
+		F6net += F6_i;
+		M += M6_i;
 	}
 
 	// Get contributions from any rods that are part of the body
 	for (auto attached : attachedR) {
-        // BUG: These conversions shall be removed in the future
-        double rRel[3];
-        moordyn::vec2array(r6(Eigen::seqN(0, 3)), rRel);
+		// BUG: These conversions shall be removed in the future
+		double rRel[3];
+		moordyn::vec2array(r6(Eigen::seqN(0, 3)), rRel);
 		double F6_i[6];
 		double M6_i[6][6];
 
@@ -496,12 +499,12 @@ Body::doRHS()
 
 		// sum quantitites
 		vec6 f6_i;
-        moordyn::array2vec6(F6_i, f6_i);
+		moordyn::array2vec6(F6_i, f6_i);
 		mat6 m6_i;
-        moordyn::array2mat6(M6_i, m6_i);
-			F6net += f6_i;
+		moordyn::array2mat6(M6_i, m6_i);
+		F6net += f6_i;
 
-				M += m6_i;
+		M += m6_i;
 	}
 
 	return;
@@ -514,17 +517,17 @@ Body::Output(double time)
 	if (outfile) // if not a null pointer (indicating no output)
 	{
 		if (!outfile->is_open()) {
-            LOGWRN << "Unable to write to output file " << endl;
-            return;
-        }
-        // output time
-        *outfile << time << "\t ";
+			LOGWRN << "Unable to write to output file " << endl;
+			return;
+		}
+		// output time
+		*outfile << time << "\t ";
 
-        for (int J = 0; J < 3; J++)
-            *outfile << r6[J] << "\t ";
+		for (int J = 0; J < 3; J++)
+			*outfile << r6[J] << "\t ";
 
-        *outfile << r6[3] * rad2deg << "\t " << r6[4] * rad2deg << "\t "
-                    << r6[5] * rad2deg << "\n";
+		*outfile << r6[3] * rad2deg << "\t " << r6[4] * rad2deg << "\t "
+		         << r6[5] * rad2deg << "\n";
 	}
 	return;
 };

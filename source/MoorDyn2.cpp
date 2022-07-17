@@ -211,10 +211,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 		// this calls initiateStep and updateFairlead, then initializes
 		// dependent Rods
-        // BUG: These conversions will not be needed in the future
-        vec6 r, rd;
-        moordyn::array2vec6(x + ix, r);
-        moordyn::array2vec6(xd + ix, rd);
+		// BUG: These conversions will not be needed in the future
+		vec6 r, rd;
+		moordyn::array2vec6(x + ix, r);
+		moordyn::array2vec6(xd + ix, rd);
 		BodyList[l]->initializeUnfreeBody(r, rd, 0.0);
 		ix += 6;
 	}
@@ -260,12 +260,12 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 
 	// Go through Bodys and write the coordinates to the state vector
 	for (unsigned int l = 0; l < FreeBodyIs.size(); l++) {
-        // BUG: These conversions will not be needed in the future
-        vec6 r, rd;
-        moordyn::array2vec6(states + BodyStateIs[l] + 6, r);
-        moordyn::array2vec6(states + BodyStateIs[l], rd);
+		// BUG: These conversions will not be needed in the future
+		vec6 r, rd;
+		moordyn::array2vec6(states + BodyStateIs[l] + 6, r);
+		moordyn::array2vec6(states + BodyStateIs[l], rd);
 		BodyList[FreeBodyIs[l]]->initializeBody(r, rd);
-    }
+	}
 
 	// Go through independent (including pinned) Rods and write the coordinates
 	// to the state vector
@@ -498,10 +498,10 @@ moordyn::MoorDyn::Step(const double* x,
 	// ... of any coupled bodies, rods, and connections at this instant, to be
 	// used later for extrapolating motions
 	for (auto l : CpldBodyIs) {
-        // BUG: These conversions will not be needed in the future
-        vec6 r, rd;
-        moordyn::array2vec6(x + ix, r);
-        moordyn::array2vec6(xd + ix, rd);
+		// BUG: These conversions will not be needed in the future
+		vec6 r, rd;
+		moordyn::array2vec6(x + ix, r);
+		moordyn::array2vec6(xd + ix, rd);
 		BodyList[l]->initiateStep(r, rd, t);
 		ix += 6;
 	}
@@ -652,8 +652,16 @@ moordyn::MoorDyn::ReadInFile()
 	LOGDBG << "Creating the ground body of type " << Body::TypeName(Body::FIXED)
 	       << "..." << endl;
 	GroundBody = new Body(_log);
-	GroundBody->setup(
-	    0, Body::FIXED, vec6::Zero(), vec::Zero(), 0.0, 0.0, vec::Zero(), vec6::Zero(), vec6::Zero(), NULL);
+	GroundBody->setup(0,
+	                  Body::FIXED,
+	                  vec6::Zero(),
+	                  vec::Zero(),
+	                  0.0,
+	                  0.0,
+	                  vec::Zero(),
+	                  vec6::Zero(),
+	                  vec6::Zero(),
+	                  NULL);
 
 	// Make sure the state vector counter starts at zero
 	// This will be conveniently incremented as each object is added
@@ -805,7 +813,7 @@ moordyn::MoorDyn::ReadInFile()
 
 				vec rCG, Inert;
 				vec6 CdA = vec6::Zero();
-                vec6 Ca = vec6::Zero();
+				vec6 Ca = vec6::Zero();
 
 				vector<string> entries_rCG =
 				    moordyn::str::split(entries[9], '|');
@@ -1103,9 +1111,9 @@ moordyn::MoorDyn::ReadInFile()
 
 				// depending on type, assign the Rod to its respective parent
 				// body
-                // BUG: These conversions will not be needed in the future
-                vec6 coords_vec;
-                moordyn::array2vec6(endCoords, coords_vec);
+				// BUG: These conversions will not be needed in the future
+				vec6 coords_vec;
+				moordyn::array2vec6(endCoords, coords_vec);
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX"))
 					GroundBody->addRod(obj, coords_vec);

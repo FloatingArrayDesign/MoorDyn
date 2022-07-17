@@ -274,9 +274,9 @@ class MoorDyn : public LogUser
 		}
 		unsigned int ix = 0;
 		for (auto l : CpldBodyIs) {
-            // BUG: These conversions will not be needed in the future
-            const vec6 f_i = BodyList[l]->getFnet();
-            moordyn::vec62array(f_i, f + ix);
+			// BUG: These conversions will not be needed in the future
+			const vec6 f_i = BodyList[l]->getFnet();
+			moordyn::vec62array(f_i, f + ix);
 			ix += 6;
 		}
 		for (auto l : CpldRodIs) {
