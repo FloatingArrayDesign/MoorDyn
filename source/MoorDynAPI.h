@@ -14,10 +14,39 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @mainpage Moordyn v2 developers documentation
+ *
+ * If you are looking for the users documentation, please visit
+ * moordyn.readthedocs.io
+ *
+ * Code styling
+ * ============
+ *
+ * Moordyn v2 is now based in clang-format to control the code styling, so you
+ * do not need to worry about the code styling.
+ *
+ * Along this line, a .clang-format file has been placed in the root folder.
+ * Many IDEs are able to use that file to automagically assist you in the code
+ * editing.
+ *
+ * Please, if you plan to submit a pull request, execute the following command
+ * before committing the changes:
+ *
+\code
+clang-format -i source/*.cpp source/*.c source/*.hpp source/*.h test/*.cpp
+\endcode
+ *
+ * So it can be granted that the produced code follows the code styling
+ */
+
+/** @file MoorDynAPI.h
+ * A set of handful definitions
+ */
+
 #ifndef __MOORDYNAPI_H__
 #define __MOORDYNAPI_H__
 
-#ifdef MoorDyn_EXPORTS // this is set as a preprocessor definition!!!
+#ifdef MoorDyn_EXPORTS
 #ifdef WIN32
 #define DECLDIR __declspec(dllexport)
 #else
@@ -25,7 +54,7 @@
 #endif
 #else
 #ifdef WIN32
-#define DECLDIR //__declspec(dllimport)
+#define DECLDIR __declspec(dllimport)
 #else
 #define DECLDIR
 #endif

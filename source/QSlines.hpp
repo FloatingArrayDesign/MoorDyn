@@ -14,16 +14,17 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * The following is a c/c++ translation and adaptation of the Fortran subroutine
- "Catenary" written by Jason Jonkman.
+/** @file QSlines.hpp
+ * C/C++ translation and adaptation of the Fortran subroutine "Catenary" written
+ * by Jason Jonkman.
+ *
  * The original function is contained in the National Renewable Energy
- Laboratory's FAST version 7 source code,
- * available at https://nwtc.nrel.gov/FAST7 and with a disclaimer at
- http://wind.nrel.gov/designcodes/disclaimer.html.
-
+ * Laboratory's FAST version 7 source code, available at
+ * https://nwtc.nrel.gov/FAST7 and with a disclaimer at
+ * http://wind.nrel.gov/designcodes/disclaimer.html.
+ *
  * This quasi-static analysis is used as a starting point for getting the
- initial line profiles.
+ * initial line profiles.
  */
 
 #include <stdio.h>
@@ -39,6 +40,9 @@ using namespace std;
 int longwinded = 0;
 
 /** @brief Positions and tensions of a single mooring line
+ *
+ * A quasi-static approach used as a starting point for getting the initial line
+ * profiles
  * @param XF Horizontal distance between anchor and fairlead (meters)
  * @param ZF Vertical distance between anchor and fairlead (meters)
  * @param L Unstretched length of line (meters)
@@ -48,10 +52,10 @@ int longwinded = 0;
  *           indicates no seabed) (-)
  * @param Tol Convergence tolerance within Newton-Raphson iteration specified as
  *            a fraction of tension (-)
- * @param HF Output effective horizontal tension in line at the fairlead (N)
- * @param VF Output effective vertical tension in line at the fairlead (N)
- * @param HA Output effective horizontal tension in line at the anchor (N)
- * @param VA Output effective vertical tension in line at the anchor (N)
+ * @param HFout Output effective horizontal tension in line at the fairlead (N)
+ * @param VFout Output effective vertical tension in line at the fairlead (N)
+ * @param HAout Output effective horizontal tension in line at the anchor (N)
+ * @param VAout Output effective vertical tension in line at the anchor (N)
  * @param Nnodes Number of nodes where the line position and tension can be
  *               output (-)
  * @param s Unstretched arc distance along line from anchor to each node where

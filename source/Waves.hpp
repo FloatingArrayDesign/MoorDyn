@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Waves.hpp
+ * C++ API for the moordyn::Waves object
+ */
+
 #pragma once
 
 #include "Misc.h"
@@ -74,7 +78,6 @@ class Waves : public LogUser
 	 * @param dw The difference in frequency between consequtive modes
 	 * @param g Gravity accelerations
 	 * @param h Water depth
-	 * @param filepath The output file path
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 */
 	void fillWaveGrid(const moordyn::complex* zetaC0,
@@ -86,7 +89,6 @@ class Waves : public LogUser
 	/** @brief Make a 2-D data grid
 	 * @param nx Number of components in the first dimension
 	 * @param ny Number of components in the second dimension
-	 * @param nz Number of components in the third dimension
 	 */
 	static inline std::vector<std::vector<real>> init2DArray(unsigned int nx,
 	                                                         unsigned int ny)
@@ -227,20 +229,32 @@ class Waves : public LogUser
 	 * @param x The point x coordinate
 	 * @param y The point y coordinate
 	 * @param z The point z coordinate
+	 * @param t The simulation time
 	 * @param U The output velocity
 	 * @param Ud The output acceleration
 	 * @param zeta The output wave height
 	 * @param PDyn The output dynamic pressure
 	 */
-	void getWaveKin(double x,
-	                double y,
-	                double z,
-	                double t,
-	                double U[3],
-	                double Ud[3],
-	                double* zeta,
-	                double* PDyn);
+	void DEPRECATED getWaveKin(double x,
+	                           double y,
+	                           double z,
+	                           double t,
+	                           double U[3],
+	                           double Ud[3],
+	                           double* zeta,
+	                           double* PDyn);
 
+	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
+	 * at a specific positon and time
+	 * @param x The point x coordinate
+	 * @param y The point y coordinate
+	 * @param z The point z coordinate
+	 * @param t The simulation time
+	 * @param U The output velocity
+	 * @param Ud The output acceleration
+	 * @param zeta The output wave height
+	 * @param PDyn The output dynamic pressure
+	 */
 	void getWaveKin(real x,
 	                real y,
 	                real z,

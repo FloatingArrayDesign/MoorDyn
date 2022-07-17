@@ -15,7 +15,9 @@
  */
 
 /** @file Log.hpp
- * Utilities to log info on screen
+ * Utilities to log info on screen. 2 main classes are provided, moordyn::Log
+ * which is the logging handler itself, and moordyn::LogUser which shall be
+ * inherited by all the objects which are intended to use the logging handler
  */
 
 #pragma once

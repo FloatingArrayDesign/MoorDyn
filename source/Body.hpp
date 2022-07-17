@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Body.hpp
+ * C++ API for the moordyn::Body object
+ */
+
 #pragma once
 
 #include "Misc.h"

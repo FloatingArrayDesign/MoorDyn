@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Moordyn2.hpp
+ * C++ API for the moordyn::MoorDyn object, which is the main simulation handler
+ */
+
 #pragma once
 
 #include "MoorDynAPI.h"
@@ -66,6 +70,8 @@ class MoorDyn : public LogUser
 	 * @param x Position vector
 	 * @param xd Velocity vector
 	 * @param f Output forces
+	 * @param t Simulation time
+	 * @param dt Time step
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly evolved,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 * @note You can know the number of components required for \p x, \p xd and
@@ -197,6 +203,7 @@ class MoorDyn : public LogUser
 	 * Use this function if env.WaveKin = 1
 	 * @param U The velocities at the points (3 components per point)
 	 * @param Ud The accelerations at the points (3 components per point)
+	 * @param t Simulation time
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 * @see MoorDyn_InitExtWaves()
@@ -639,6 +646,7 @@ class MoorDyn : public LogUser
 	 * each line was disconnected ...
 	 * 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
 	 * @param nLinesToDetach how many lines to dettach
+	 * @param time Simulation time
 	 */
 	moordyn::error_id detachLines(int attachID,
 	                              int isRod,

@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Body.h
+ * C API for the moordyn::Body object
+ */
+
 #ifndef MOORDYN_BODY_H
 #define MOORDYN_BODY_H
 

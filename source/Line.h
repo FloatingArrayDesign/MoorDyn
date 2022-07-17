@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Line.h
+ * C API for the moordyn::Line object
+ */
+
 #ifndef MOORDYN_LINE_H
 #define MOORDYN_LINE_H
 

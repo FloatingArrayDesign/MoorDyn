@@ -32,6 +32,7 @@ Many thanks to all the team of the
 [National Renewable Energy Laboratory (NREL)](https://www.nrel.gov/):
 
   - [Matt Hall](http://matt-hall.ca/moordyn.html)
+  - Jason Jonkman
 
 Thanks also to [CoreMarine](https://www.core-marine.com/) for the help with the
 version 2 development:

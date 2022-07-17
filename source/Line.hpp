@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Line.hpp
+ * C++ API for the moordyn::Line object
+ */
+
 #pragma once
 
 #include "Misc.h"
@@ -442,6 +446,10 @@ class Line : public LogUser
 	 *
 	 * @param nt Number of time steps
 	 * @param dt Time step
+	 * @param zeta_in The wave elevations
+	 * @param f_in The fluid fractions
+	 * @param u_in The flow velocity
+	 * @param ud_in The flow acceleration
 	 *
 	 * @note Working in progress
 	 */
@@ -484,6 +492,7 @@ class Line : public LogUser
 	/** @brief Set the line state
 	 * @param X State vector. It contains moordyn::Line::N - 1 velocities
 	 * followed by moordyn::Line::N - 1 positions
+	 * @param time Simulation time
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
 	 */
@@ -524,7 +533,7 @@ class Line : public LogUser
 	 *
 	 * This method is called by an eventually attached Rod, only applicable for
 	 * bending stiffness
-	 * @param qin The direction unit vector
+	 * @param q The direction unit vector
 	 * @param end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @param rod_end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @throws invalid_value_error If either @p end_point or @p end_point are

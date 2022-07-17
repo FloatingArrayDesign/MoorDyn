@@ -16,6 +16,12 @@
 
 /** @file MoorDyn.h
  * Old API for compatibility with the previous versions of MoorDyn
+ *
+ * Both the input files and some function names have been redesigned, so the
+ * code will not be totally backward compatible.
+ *
+ * The usage of this API is anyway strongly discouraged, please consider
+ * migrating to the v2 API in MoorDyn2.h
  */
 
 #ifndef __MOORDYN_H__

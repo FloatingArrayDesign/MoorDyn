@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Moordyn2.h
+ * C API for the moordyn::MoorDyn object, which is the main simulation handler
+ */
+
 #ifndef __MOORDYN2_H__
 #define __MOORDYN2_H__
 

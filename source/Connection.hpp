@@ -14,6 +14,10 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/** @file Connection.hpp
+ * C++ API for the moordyn::Connection object
+ */
+
 #pragma once
 
 #include "Misc.h"
