@@ -44,7 +44,6 @@ HEADERS = ../../source/Body.h \
           ../../source/Misc.h \
           ../../source/MoorDyn2.h \
           ../../source/MoorDynAPI.h \
-          ../../source/QSlines.h \
           ../../source/Rod.h \
           ../../source/Waves.h \
           ../../source/Body.hpp \
