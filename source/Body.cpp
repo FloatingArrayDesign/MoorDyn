@@ -27,6 +27,8 @@ namespace moordyn {
 
 Body::Body(moordyn::Log* log)
   : LogUser(log)
+  , U(vec::Zero())
+  , Ud(vec::Zero())
 {}
 
 Body::~Body() {}
@@ -74,7 +76,7 @@ Body::setup(int number_in,
 	r6RodRel.empty();
 
 	// set up body initial mass matrix (excluding any rods or attachements)
-	mat6 Mtemp;
+	mat6 Mtemp = mat6::Zero();
 	Mtemp(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mat::Identity() * bodyM;
 	Mtemp(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = bodyI.asDiagonal();
 	// account for potential CG offset <<< is the direction right? <<<
@@ -453,7 +455,6 @@ Body::doRHS()
 
 	// NOTE:, for body this should be fixed to account for orientation!!
 	// what about drag in rotational DOFs???
-	vi.cwiseAbs();
 	F6net +=
 	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(bodyCdA);
 
