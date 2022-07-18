@@ -32,7 +32,7 @@ using namespace std;
 int
 main(int, char**)
 {
-	MoorDyn system = MoorDyn_Create("../../test/Mooring/BodiesAndRods.dat");
+	MoorDyn system = MoorDyn_Create("Mooring/BodiesAndRods.dat");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return 1;

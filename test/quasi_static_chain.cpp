@@ -101,10 +101,10 @@ validation(const char* depth, const char* motion)
 	const unsigned int depth_i = (it - DEPTHS.begin());
 
 	stringstream lines_file, motion_file, ref_file;
-	lines_file << "../../test/Mooring/WD" << depth << "_Chain"
+	lines_file << "Mooring/WD" << depth << "_Chain"
 	           << ".txt";
-	motion_file << "../../test/Mooring/QuasiStatic/" << motion << ".txt";
-	ref_file << "../../test/Mooring/QuasiStatic/WD" << depth << "_Chain_"
+	motion_file << "Mooring/QuasiStatic/" << motion << ".txt";
+	ref_file << "Mooring/QuasiStatic/WD" << depth << "_Chain_"
 	         << motion << ".txt";
 	auto motion_data = read_tab_file(motion_file.str().c_str());
 	auto ref_data = read_tab_file(ref_file.str().c_str());

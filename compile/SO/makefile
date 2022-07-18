@@ -113,10 +113,14 @@ test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
 
 test: test_minimal test_bodies_and_rods test_wavekin test_quasi_static_chain
-	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_minimal
-	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_bodies_and_rods
-	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_wavekin
-	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/ ./test_quasi_static_chain
+	cd ../../test/; \
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_minimal
+	cd ../../test/; \
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_bodies_and_rods
+	cd ../../test/; \
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_wavekin
+	cd ../../test/; \
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_wavekin
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
 debug: CPPFLAGS += -O0 -g -DDEBUG=1

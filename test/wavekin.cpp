@@ -74,7 +74,7 @@ wave(double t, const double* r, double* u, double* du)
 bool
 api(void (*cb)(double, const double*, double*, double*))
 {
-	MoorDyn system = MoorDyn_Create("../../test/Mooring/wavekin_1.txt");
+	MoorDyn system = MoorDyn_Create("Mooring/wavekin_1.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;
@@ -172,7 +172,7 @@ bool
 grid()
 {
 	MoorDyn system =
-	    MoorDyn_Create("../../test/Mooring/wavekin_2/wavekin_2.txt");
+	    MoorDyn_Create("Mooring/wavekin_2/wavekin_2.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;

@@ -109,7 +109,7 @@ minimal()
 	x[7] = -4.5;
 	x[8] = -70.0;
 	std::fill(dx, dx + 9, 0.0);
-	err = MoorDynInit(x, dx, "../../test/Mooring/lines.txt");
+	err = MoorDynInit(x, dx, "Mooring/lines.txt");
 	if (err != MOORDYN_SUCCESS) {
 		cerr << "Failure during the mooring initialization: " << err << endl;
 		return false;
@@ -161,7 +161,7 @@ minimal()
 {
 	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
 
-	MoorDyn system = MoorDyn_Create("../../test/Mooring/lines.txt");
+	MoorDyn system = MoorDyn_Create("Mooring/lines.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;
