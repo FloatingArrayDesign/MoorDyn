@@ -180,9 +180,9 @@ class Line : public LogUser
 	std::vector<vec> Ap;
 	/// node added mass forcing (axial)
 	std::vector<vec> Aq;
-	// node bottom contact force
+	/// node bottom contact force
 	std::vector<vec> B;
-	// total force on node
+	/// total force on node
 	std::vector<vec> Fnet;
 
 	// wave things
@@ -268,7 +268,7 @@ class Line : public LogUser
 	 * @param number Line ID
 	 * @param props Line properties
 	 * @param l Unstretched line length
-	 * @param n Number of nodes
+	 * @param n Number of segments
 	 * @param outfile The outfile where information shall be witten
 	 * @param channels The channels/fields that shall be printed in the file
 	 */
@@ -297,7 +297,7 @@ class Line : public LogUser
 	/** @brief Number of segments
 	 *
 	 * The number of nodes can be computed as moordyn::Line::getN() + 1
-	 * @return The number of segments, moordyn::Line::N + 1
+	 * @return The number of segments, moordyn::Line::N
 	 */
 	inline unsigned int getN() const { return N; }
 
