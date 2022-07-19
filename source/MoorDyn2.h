@@ -221,6 +221,15 @@ extern "C"
 	 */
 	unsigned int DECLDIR MoorDyn_GetNumberBodies(MoorDyn system);
 
+	/** @brief Get a rigid body
+	 *
+	 * Remember that the first body index is 1
+	 * @param system The Moordyn system
+	 * @param b The body index
+	 * @return The body instance, NULL if errors happened
+	 */
+	MoorDynBody DECLDIR MoorDyn_GetBody(MoorDyn system, unsigned int b);
+
 	/** @brief Get the number of rods
 	 *
 	 * Remember that the first rod index is 1

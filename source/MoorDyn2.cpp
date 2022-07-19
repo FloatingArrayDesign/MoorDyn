@@ -2250,6 +2250,20 @@ MoorDyn_GetNumberBodies(MoorDyn system)
 	return ((moordyn::MoorDyn*)system)->GetBodies().size();
 }
 
+MoorDynBody DECLDIR
+MoorDyn_GetBody(MoorDyn system, unsigned int b)
+{
+	if (!system)
+		return NULL;
+	auto bodies = ((moordyn::MoorDyn*)system)->GetBodies();
+	if (!b || (b > bodies.size())) {
+		cerr << "Error: There is not such body " << b << endl
+		     << "while calling " << __FUNC_NAME__ << "()" << endl;
+		return NULL;
+	}
+	return (MoorDynBody)(bodies[b - 1]);
+}
+
 unsigned int DECLDIR
 MoorDyn_GetNumberRods(MoorDyn system)
 {
