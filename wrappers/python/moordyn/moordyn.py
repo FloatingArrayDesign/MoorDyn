@@ -25,10 +25,10 @@ def Create(filepath=""):
                     will be considered
 
     Returns:
-    MoorDyn: The MoorDyn instance
+    cmoordyn.MoorDyn: The MoorDyn instance
     """
     import cmoordyn
-    return moordyn.create(filepath)
+    return cmoordyn.create(filepath)
 
 
 def NCoupledDOF(instance):
@@ -41,7 +41,7 @@ def NCoupledDOF(instance):
     int: The number of DOFs
     """
     import cmoordyn
-    return moordyn.n_coupled_dof(instance)
+    return cmoordyn.n_coupled_dof(instance)
 
 
 def SetVerbosity(instance, verbosity):
@@ -60,7 +60,7 @@ def SetVerbosity(instance, verbosity):
     int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return moordyn.set_verbosity(instance, verbosity)
+    return cmoordyn.set_verbosity(instance, verbosity)
 
 
 def SetLogFile(instance, filepath):
@@ -74,7 +74,7 @@ def SetLogFile(instance, filepath):
     int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return moordyn.set_logfile(instance, filepath)
+    return cmoordyn.set_logfile(instance, filepath)
 
 
 def SetLogLevel(instance, verbosity):
@@ -93,7 +93,7 @@ def SetLogLevel(instance, verbosity):
     int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return moordyn.set_loglevel(instance, verbosity)
+    return cmoordyn.set_loglevel(instance, verbosity)
 
 
 def Log(instance, level, msg):
@@ -126,7 +126,7 @@ def Log(instance, level, msg):
     head = head + "{}:{} {}() : ".format(caller.filename,
                                          caller.lineno,
                                          caller.function)
-    return moordyn.log(instance, level, head + msg)
+    return cmoordyn.log(instance, level, head + msg)
 
 
 def Init(instance, x, v):
@@ -144,7 +144,7 @@ def Init(instance, x, v):
     int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return moordyn.init(instance, list(x), list(v))
+    return cmoordyn.init(instance, list(x), list(v))
 
 
 def Step(instance, x, v, t, dt):
@@ -161,7 +161,7 @@ def Step(instance, x, v, t, dt):
     list: The forces acting on the coupled connections
     """
     import cmoordyn
-    return moordyn.step(instance, list(x), list(v), t, dt)
+    return cmoordyn.step(instance, list(x), list(v), t, dt)
 
 
 def Close(instance):
@@ -170,6 +170,89 @@ def Close(instance):
     Parameters:
     instance (MoorDyn): The MoorDyn instance
 
+    Returns:
+    int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return moordyn.close(instance)
+    return cmoordyn.close(instance)
+
+
+def GetWaves(instance):
+    """Get the wave kinematics instance
+
+    The wave kinematics instance is only useful if WaveKin option is set to >= 2
+    in the input file.
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    cmoordyn.WavesMoorDyn: The waves manager
+    """
+    import cmoordyn
+    return cmoordyn.get_waves(instance)
+
+
+def ExternalWaveKinInit(instance):
+    """Initializes the external Wave kinetics
+
+    This is useless unless WaveKin option is set to 1 in the input file. If
+    that is the case, remember calling this function after moordyn.Init()
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.ext_wave_init(instance)
+
+
+def GetWaveKinCoordinates(instance):
+    """Get the points where the waves kinematics shall be provided
+
+    The kinematics on those points shall be provided just if WaveKin is set
+    to 1 in the input file
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    list (n, 3): The list of points
+    """
+    import cmoordyn
+
+    coords = cmoordyn.ext_wave_coords(instance)
+    n = len(coords) // 3
+    points = []
+    for i in range(n):
+        points.append([coords[3 * i], coords[3 * i + 1], coords[3 * i + 2]])
+    return points
+
+
+def MoorDyn_SetWaveKin(instance, u, a, t):
+    """Set the kinematics of the waves
+
+    Use this function if WaveKin option is set to 1 in the input file
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+    u (list (n, 3)): The list of velocities evaluated in the points provided
+                     by moordyn.GetWaveKinCoordinates()
+    a (list (n, 3)): The list of accelerations evaluated in the points provided
+                     by moordyn.GetWaveKinCoordinates()
+    t (float): The simulation time
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+
+    assert len(u) == len(a)
+    uu, aa = [], []
+    for i in range(len(u)):
+        assert len(u[i]) == 3 and len(a[i]) == 3
+        uu += u[i]
+        aa += a[i]
+    return cmoordyn.ext_wave_set(instance, uu, aa, t)
