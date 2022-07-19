@@ -1,0 +1,29 @@
+import os
+from setuptools import setup, find_packages, Extension
+import sysconfig
+
+
+cmoordyn = Extension(
+    'cmoordyn',
+    sources=['${CMAKE_CURRENT_BINARY_DIR}/cmoordyn.cpp'],
+    language='c++',
+    include_dirs=['${CMAKE_SOURCE_DIR}/source', ],
+    library_dirs=['${CMAKE_BINARY_DIR}/source', ],
+    extra_link_args=['-lmoordyn', ],
+)
+
+setup(
+    name='moordyn',
+    version='${MOORDYN_VERSION}',
+    package_dir={ '': '${CMAKE_CURRENT_BINARY_DIR}' },
+    description='Python wrapper for MoorDyn library',
+    author='Jose Luis Cercos-Pita',
+    author_email='jlc@core-marine.com',
+    ext_modules = [cmoordyn],
+    packages=find_packages(include=['moordyn', 'moordyn.*']),
+    install_requires=[
+        'numpy',
+    ],
+    setup_requires=['cython', 'pytest-runner'],
+    tests_require=['pytest', 'numpy'],
+)
