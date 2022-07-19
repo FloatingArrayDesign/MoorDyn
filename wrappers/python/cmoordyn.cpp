@@ -387,7 +387,7 @@ ext_wave_coords(PyObject*, PyObject* args)
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < nlines; i++) {
 		unsigned int nnodes;
-		MoorDynLine l = MoorDyn_GetLine(i + 1);
+		MoorDynLine l = MoorDyn_GetLine(system, i + 1);
 		MoorDyn_GetLineNumberNodes(l, &nnodes);
 		n += nnodes;
 	}
@@ -419,7 +419,7 @@ ext_wave_coords(PyObject*, PyObject* args)
 static PyObject*
 ext_wave_set(PyObject*, PyObject* args)
 {
-	PyObject *capsule, v_lst, a_lst;
+	PyObject *capsule, *v_lst, *a_lst;
 	double t;
 
 	if (!PyArg_ParseTuple(args, "OOOd", &capsule, &v_lst, &a_lst, &t))
@@ -435,12 +435,12 @@ ext_wave_set(PyObject*, PyObject* args)
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < nlines; i++) {
 		unsigned int nnodes;
-		MoorDynLine l = MoorDyn_GetLine(i + 1);
+		MoorDynLine l = MoorDyn_GetLine(system, i + 1);
 		MoorDyn_GetLineNumberNodes(l, &nnodes);
 		n += nnodes;
 		n *= 3;
 
-		v_lst = PySequence_Fast(x_lst, "1st argument must be iterable");
+		v_lst = PySequence_Fast(v_lst, "1st argument must be iterable");
 		if (!v_lst)
 			return NULL;
 		if (PySequence_Fast_GET_SIZE(v_lst) != n) {
@@ -450,12 +450,12 @@ ext_wave_set(PyObject*, PyObject* args)
 			return NULL;
 		}
 
-		a_lst = PySequence_Fast(v_lst, "2nd argument must be iterable");
+		a_lst = PySequence_Fast(a_lst, "2nd argument must be iterable");
 		if (!a_lst)
 			return NULL;
-		if (PySequence_Fast_GET_SIZE(a_lst) != a) {
+		if (PySequence_Fast_GET_SIZE(a_lst) != n) {
 			std::stringstream err;
-			err << "2nd argument must have " << a << " components";
+			err << "2nd argument must have " << n << " components";
 			PyErr_SetString(PyExc_ValueError, err.str().c_str());
 			return NULL;
 		}
@@ -475,312 +475,308 @@ ext_wave_set(PyObject*, PyObject* args)
 		free(a_arr);
 		return PyLong_FromLong(err);
 	}
+}
 
-	// /** @brief Wrapper to MoorDyn_GetNumberLines() function
-	//  * @param args Python passed arguments
-	//  * @return The number of mooring lines
-	//  */
-	// static PyObject* get_number_lines(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//
-	//     if (!PyArg_ParseTuple(args, "O", &capsule))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                     moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     return PyLong_FromLong(MoorDyn_GetNumberLines(system));
-	// }
-	//
-	// /** @brief Wrapper to MoorDyn_GetNumberLineNodes() function
-	//  * @param args Python passed arguments
-	//  * @return The number of line nodes
-	//  */
-	// static PyObject* get_number_line_nodes(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//     int line;
-	//
-	//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &line))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                     moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     return PyLong_FromLong(MoorDyn_GetNumberLineNodes(system, line));
-	// }
-	//
-	// /** @brief Wrapper to MoorDyn_GetFairTen() function
-	//  * @param args Python passed arguments
-	//  * @return The tension on the fairlead
-	//  */
-	// static PyObject* get_fair_ten(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//     int line;
-	//
-	//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &line))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                      moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     const double t = MoorDyn_GetFairTen(system, line);
-	//     return PyFloat_FromDouble(t);
-	// }
-	//
-	// /** @brief Wrapper to MoorDyn_GetConnectPos() function
-	//  * @param args Python passed arguments
-	//  * @return The position of the connection
-	//  */
-	// static PyObject* get_connect_pos(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//     int conn;
-	//
-	//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &conn))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                      moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     double pos[3];
-	//     const int err = MoorDyn_GetConnectPos(system, conn, pos);
-	//     if (err != 0) {
-	//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
-	//         return NULL;
-	//     }
-	//
-	//     PyObject* lst = PyTuple_New(3);
-	//     for (unsigned int i = 0; i < 3; i++) {
-	//         PyTuple_SET_ITEM(lst, i, PyFloat_FromDouble(pos[i]));
-	//     }
-	//     return lst;
-	// }
-	//
-	// /** @brief Wrapper to MoorDyn_GetConnectForce() function
-	//  * @param args Python passed arguments
-	//  * @return The force on the connection
-	//  */
-	// static PyObject* get_connect_force(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//     int conn;
-	//
-	//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &conn))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                      moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     double force[3];
-	//     const int err = MoorDyn_GetConnectForce(system, conn, force);
-	//     if (err != 0) {
-	//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
-	//         return NULL;
-	//     }
-	//
-	//     PyObject* lst = PyTuple_New(3);
-	//     for (unsigned int i = 0; i < 3; i++) {
-	//         PyTuple_SET_ITEM(lst, i, PyFloat_FromDouble(force[i]));
-	//     }
-	//     return lst;
-	// }
-	//
-	// /** @brief Wrapper to MoorDyn_GetNodePos() function
-	//  * @param args Python passed arguments
-	//  * @return The position of the node
-	//  */
-	// static PyObject* get_node_pos(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//     int line, node;
-	//
-	//     if (!PyArg_ParseTuple(args, "Oii", &capsule, &line, &node))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                      moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     double pos[3];
-	//     const int err = MoorDyn_GetNodePos(system, line, node, pos);
-	//     if (err != 0) {
-	//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
-	//         return NULL;
-	//     }
-	//
-	//     PyObject* lst = PyTuple_New(3);
-	//     for (int i = 0; i < 3; i++) {
-	//         PyTuple_SET_ITEM(lst, i, PyFloat_FromDouble(pos[i]));
-	//     }
-	//     return lst;
-	// }
-	//
-	// /** @brief Wrapper to MoorDyn_GetFASTtens() function
-	//  * @param args Python passed arguments
-	//  * @return The horizontal and vertical forces on the fairleads and
-	//  anchors
-	//  */
-	// static PyObject* get_fast_tens(PyObject*, PyObject* args)
-	// {
-	//     PyObject *capsule;
-	//     int num_lines;
-	//
-	//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &num_lines))
-	//         return NULL;
-	//
-	//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-	//                                                      moordyn_capsule_name);
-	//     if (!system)
-	//         return NULL;
-	//
-	//     float *fair_h_ten = (float*)malloc(num_lines * sizeof(float));
-	//     float *fair_v_ten = (float*)malloc(num_lines * sizeof(float));
-	//     float *anch_h_ten = (float*)malloc(num_lines * sizeof(float));
-	//     float *anch_v_ten = (float*)malloc(num_lines * sizeof(float));
-	//     if (!fair_h_ten || !fair_v_ten || !anch_h_ten || !anch_v_ten)
-	//     {
-	//         PyErr_SetString(PyExc_MemoryError, "Failure allocating memory");
-	//         return NULL;
-	//     }
-	//
-	//     const int err = MoorDyn_GetFASTtens(system,
-	//                                         &num_lines,
-	//                                         fair_h_ten,
-	//                                         fair_v_ten,
-	//                                         anch_h_ten,
-	//                                         anch_v_ten);
-	//     if (err != 0) {
-	//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
-	//         return NULL;
-	//     }
-	//
-	//     PyObject* fair_h_ten_lst = PyTuple_New(num_lines);
-	//     PyObject* fair_v_ten_lst = PyTuple_New(num_lines);
-	//     PyObject* anch_h_ten_lst = PyTuple_New(num_lines);
-	//     PyObject* anch_v_ten_lst = PyTuple_New(num_lines);
-	//     PyObject* lst = PyTuple_New(4);
-	//     if (!fair_h_ten_lst || !fair_v_ten_lst || !anch_h_ten_lst ||
-	//         !anch_v_ten_lst || !lst)
-	//     {
-	//         PyErr_SetString(PyExc_MemoryError, "Failure allocating memory");
-	//         return NULL;
-	//     }
-	//     for (int i = 0; i < num_lines; i++) {
-	//         PyTuple_SET_ITEM(fair_h_ten_lst, i,
-	//         PyFloat_FromDouble(fair_h_ten[i]));
-	//         PyTuple_SET_ITEM(fair_v_ten_lst, i,
-	//         PyFloat_FromDouble(fair_v_ten[i]));
-	//         PyTuple_SET_ITEM(anch_h_ten_lst, i,
-	//         PyFloat_FromDouble(anch_h_ten[i]));
-	//         PyTuple_SET_ITEM(anch_v_ten_lst, i,
-	//         PyFloat_FromDouble(anch_v_ten[i]));
-	//     }
-	//     free(fair_h_ten);
-	//     free(fair_v_ten);
-	//     free(anch_h_ten);
-	//     free(anch_v_ten);
-	//
-	//     PyTuple_SET_ITEM(lst, 0, fair_h_ten_lst);
-	//     PyTuple_SET_ITEM(lst, 1, fair_v_ten_lst);
-	//     PyTuple_SET_ITEM(lst, 2, anch_h_ten_lst);
-	//     PyTuple_SET_ITEM(lst, 3, anch_v_ten_lst);
-	//
-	//     return lst;
-	// }
+// /** @brief Wrapper to MoorDyn_GetNumberLines() function
+//  * @param args Python passed arguments
+//  * @return The number of mooring lines
+//  */
+// static PyObject* get_number_lines(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//
+//     if (!PyArg_ParseTuple(args, "O", &capsule))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                     moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     return PyLong_FromLong(MoorDyn_GetNumberLines(system));
+// }
+//
+// /** @brief Wrapper to MoorDyn_GetNumberLineNodes() function
+//  * @param args Python passed arguments
+//  * @return The number of line nodes
+//  */
+// static PyObject* get_number_line_nodes(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//     int line;
+//
+//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &line))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                     moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     return PyLong_FromLong(MoorDyn_GetNumberLineNodes(system, line));
+// }
+//
+// /** @brief Wrapper to MoorDyn_GetFairTen() function
+//  * @param args Python passed arguments
+//  * @return The tension on the fairlead
+//  */
+// static PyObject* get_fair_ten(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//     int line;
+//
+//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &line))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                      moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     const double t = MoorDyn_GetFairTen(system, line);
+//     return PyFloat_FromDouble(t);
+// }
+//
+// /** @brief Wrapper to MoorDyn_GetConnectPos() function
+//  * @param args Python passed arguments
+//  * @return The position of the connection
+//  */
+// static PyObject* get_connect_pos(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//     int conn;
+//
+//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &conn))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                      moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     double pos[3];
+//     const int err = MoorDyn_GetConnectPos(system, conn, pos);
+//     if (err != 0) {
+//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+//         return NULL;
+//     }
+//
+//     PyObject* lst = PyTuple_New(3);
+//     for (unsigned int i = 0; i < 3; i++) {
+//         PyTuple_SET_ITEM(lst, i, PyFloat_FromDouble(pos[i]));
+//     }
+//     return lst;
+// }
+//
+// /** @brief Wrapper to MoorDyn_GetConnectForce() function
+//  * @param args Python passed arguments
+//  * @return The force on the connection
+//  */
+// static PyObject* get_connect_force(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//     int conn;
+//
+//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &conn))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                      moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     double force[3];
+//     const int err = MoorDyn_GetConnectForce(system, conn, force);
+//     if (err != 0) {
+//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+//         return NULL;
+//     }
+//
+//     PyObject* lst = PyTuple_New(3);
+//     for (unsigned int i = 0; i < 3; i++) {
+//         PyTuple_SET_ITEM(lst, i, PyFloat_FromDouble(force[i]));
+//     }
+//     return lst;
+// }
+//
+// /** @brief Wrapper to MoorDyn_GetNodePos() function
+//  * @param args Python passed arguments
+//  * @return The position of the node
+//  */
+// static PyObject* get_node_pos(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//     int line, node;
+//
+//     if (!PyArg_ParseTuple(args, "Oii", &capsule, &line, &node))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                      moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     double pos[3];
+//     const int err = MoorDyn_GetNodePos(system, line, node, pos);
+//     if (err != 0) {
+//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+//         return NULL;
+//     }
+//
+//     PyObject* lst = PyTuple_New(3);
+//     for (int i = 0; i < 3; i++) {
+//         PyTuple_SET_ITEM(lst, i, PyFloat_FromDouble(pos[i]));
+//     }
+//     return lst;
+// }
+//
+// /** @brief Wrapper to MoorDyn_GetFASTtens() function
+//  * @param args Python passed arguments
+//  * @return The horizontal and vertical forces on the fairleads and
+//  anchors
+//  */
+// static PyObject* get_fast_tens(PyObject*, PyObject* args)
+// {
+//     PyObject *capsule;
+//     int num_lines;
+//
+//     if (!PyArg_ParseTuple(args, "Oi", &capsule, &num_lines))
+//         return NULL;
+//
+//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
+//                                                      moordyn_capsule_name);
+//     if (!system)
+//         return NULL;
+//
+//     float *fair_h_ten = (float*)malloc(num_lines * sizeof(float));
+//     float *fair_v_ten = (float*)malloc(num_lines * sizeof(float));
+//     float *anch_h_ten = (float*)malloc(num_lines * sizeof(float));
+//     float *anch_v_ten = (float*)malloc(num_lines * sizeof(float));
+//     if (!fair_h_ten || !fair_v_ten || !anch_h_ten || !anch_v_ten)
+//     {
+//         PyErr_SetString(PyExc_MemoryError, "Failure allocating memory");
+//         return NULL;
+//     }
+//
+//     const int err = MoorDyn_GetFASTtens(system,
+//                                         &num_lines,
+//                                         fair_h_ten,
+//                                         fair_v_ten,
+//                                         anch_h_ten,
+//                                         anch_v_ten);
+//     if (err != 0) {
+//         PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+//         return NULL;
+//     }
+//
+//     PyObject* fair_h_ten_lst = PyTuple_New(num_lines);
+//     PyObject* fair_v_ten_lst = PyTuple_New(num_lines);
+//     PyObject* anch_h_ten_lst = PyTuple_New(num_lines);
+//     PyObject* anch_v_ten_lst = PyTuple_New(num_lines);
+//     PyObject* lst = PyTuple_New(4);
+//     if (!fair_h_ten_lst || !fair_v_ten_lst || !anch_h_ten_lst ||
+//         !anch_v_ten_lst || !lst)
+//     {
+//         PyErr_SetString(PyExc_MemoryError, "Failure allocating memory");
+//         return NULL;
+//     }
+//     for (int i = 0; i < num_lines; i++) {
+//         PyTuple_SET_ITEM(fair_h_ten_lst, i,
+//         PyFloat_FromDouble(fair_h_ten[i]));
+//         PyTuple_SET_ITEM(fair_v_ten_lst, i,
+//         PyFloat_FromDouble(fair_v_ten[i]));
+//         PyTuple_SET_ITEM(anch_h_ten_lst, i,
+//         PyFloat_FromDouble(anch_h_ten[i]));
+//         PyTuple_SET_ITEM(anch_v_ten_lst, i,
+//         PyFloat_FromDouble(anch_v_ten[i]));
+//     }
+//     free(fair_h_ten);
+//     free(fair_v_ten);
+//     free(anch_h_ten);
+//     free(anch_v_ten);
+//
+//     PyTuple_SET_ITEM(lst, 0, fair_h_ten_lst);
+//     PyTuple_SET_ITEM(lst, 1, fair_v_ten_lst);
+//     PyTuple_SET_ITEM(lst, 2, anch_h_ten_lst);
+//     PyTuple_SET_ITEM(lst, 3, anch_v_ten_lst);
+//
+//     return lst;
+// }
 
-	static PyMethodDef moordyn_methods[] = {
-		{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
-		{ "n_coupled_dof",
-		  n_coupled_dof,
-		  METH_VARARGS,
-		  "Get the number of coupled Degrees Of Freedom" },
-		{ "set_verbosity",
-		  set_verbosity,
-		  METH_VARARGS,
-		  "Set the instance verbosity level" },
-		{ "set_logfile",
-		  set_logfile,
-		  METH_VARARGS,
-		  "Set the filepath of the output log file" },
-		{ "set_loglevel",
-		  set_loglevel,
-		  METH_VARARGS,
-		  "Set the instance log file verbosity" },
-		{ "log",
-		  log,
-		  METH_VARARGS,
-		  "Log a message to both the terminal screen and the log file" },
-		{ "init", init, METH_VARARGS, "Initializes MoorDyn" },
-		{ "step",
-		  step,
-		  METH_VARARGS,
-		  "simulates the mooring system starting at time t and ending at time "
-		  "t+d" },
-		{ "close",
-		  close,
-		  METH_VARARGS,
-		  "deallocates the variables used by MoorDyn" },
-		{ "get_waves",
-		  get_waves,
-		  METH_VARARGS,
-		  "Get the waves manager instance" },
-		{ "ext_wave_init",
-		  ext_wave_init,
-		  METH_VARARGS,
-		  "Initialize the externally handled waves" },
-		{ "ext_wave_coords",
-		  ext_wave_coords,
-		  METH_VARARGS,
-		  "Get the coordinates where the wave kinematics shall be provided" },
-		{ "ext_wave_set",
-		  ext_wave_set,
-		  METH_VARARGS,
-		  "Set the wave kinematics" },
+static PyMethodDef moordyn_methods[] = {
+	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
+	{ "n_coupled_dof",
+	  n_coupled_dof,
+	  METH_VARARGS,
+	  "Get the number of coupled Degrees Of Freedom" },
+	{ "set_verbosity",
+	  set_verbosity,
+	  METH_VARARGS,
+	  "Set the instance verbosity level" },
+	{ "set_logfile",
+	  set_logfile,
+	  METH_VARARGS,
+	  "Set the filepath of the output log file" },
+	{ "set_loglevel",
+	  set_loglevel,
+	  METH_VARARGS,
+	  "Set the instance log file verbosity" },
+	{ "log",
+	  log,
+	  METH_VARARGS,
+	  "Log a message to both the terminal screen and the log file" },
+	{ "init", init, METH_VARARGS, "Initializes MoorDyn" },
+	{ "step",
+	  step,
+	  METH_VARARGS,
+	  "simulates the mooring system starting at time t and ending at time "
+	  "t+d" },
+	{ "close",
+	  close,
+	  METH_VARARGS,
+	  "deallocates the variables used by MoorDyn" },
+	{ "get_waves", get_waves, METH_VARARGS, "Get the waves manager instance" },
+	{ "ext_wave_init",
+	  ext_wave_init,
+	  METH_VARARGS,
+	  "Initialize the externally handled waves" },
+	{ "ext_wave_coords",
+	  ext_wave_coords,
+	  METH_VARARGS,
+	  "Get the coordinates where the wave kinematics shall be provided" },
+	{ "ext_wave_set", ext_wave_set, METH_VARARGS, "Set the wave kinematics" },
 
-		/*
-		{"get_number_lines", get_number_lines, METH_VARARGS,
-		 "Get the number of mooring lines"},
-		{"get_number_line_nodes", get_number_line_nodes, METH_VARARGS,
-		 "Get the number of mooring line nodes"},
-		{"get_fair_ten", get_fair_ten, METH_VARARGS,
-		 "Get the tension of a line at the fairlead connection"},
-		{"get_connect_pos", get_connect_pos, METH_VARARGS,
-		 "Get a connection position"},
-		{"get_connect_force", get_connect_force, METH_VARARGS,
-		 "Get the force on a connection"},
-		{"get_node_pos", get_node_pos, METH_VARARGS,
-		 "Get the position of a line node"},
-		{"get_fast_tens", get_fast_tens, METH_VARARGS,
-		 "Get the horizontal and vertical tensions at the fairlead and anchor"},
-		*/
-		{ NULL, NULL, 0, NULL }
-	};
+	/*
+	{"get_number_lines", get_number_lines, METH_VARARGS,
+	 "Get the number of mooring lines"},
+	{"get_number_line_nodes", get_number_line_nodes, METH_VARARGS,
+	 "Get the number of mooring line nodes"},
+	{"get_fair_ten", get_fair_ten, METH_VARARGS,
+	 "Get the tension of a line at the fairlead connection"},
+	{"get_connect_pos", get_connect_pos, METH_VARARGS,
+	 "Get a connection position"},
+	{"get_connect_force", get_connect_force, METH_VARARGS,
+	 "Get the force on a connection"},
+	{"get_node_pos", get_node_pos, METH_VARARGS,
+	 "Get the position of a line node"},
+	{"get_fast_tens", get_fast_tens, METH_VARARGS,
+	 "Get the horizontal and vertical tensions at the fairlead and anchor"},
+	*/
+	{ NULL, NULL, 0, NULL }
+};
 
-	static struct PyModuleDef moordyn_module = { PyModuleDef_HEAD_INIT,
-		                                         "moordyn",
-		                                         "MoorDyn python wrapper",
-		                                         -1,
-		                                         moordyn_methods };
+static struct PyModuleDef moordyn_module = { PyModuleDef_HEAD_INIT,
+	                                         "moordyn",
+	                                         "MoorDyn python wrapper",
+	                                         -1,
+	                                         moordyn_methods };
 
-	PyMODINIT_FUNC PyInit_moordyn(void)
-	{
-		PyObject* m = PyModule_Create(&moordyn_module);
-		if (m == NULL) {
-			return NULL;
-		}
-		return m;
+PyMODINIT_FUNC
+PyInit_moordyn(void)
+{
+	PyObject* m = PyModule_Create(&moordyn_module);
+	if (m == NULL) {
+		return NULL;
 	}
+	return m;
+}
