@@ -67,11 +67,11 @@ gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
  */
 void
 doIFFT(kiss_fftr_cfg cfg,
-              unsigned int nFFT,
-              kiss_fft_cpx* cx_w_in,
-              kiss_fft_scalar* cx_t_out,
-              const moordyn::complex* inputs,
-              std::vector<real>& outputs)
+       unsigned int nFFT,
+       kiss_fft_cpx* cx_w_in,
+       kiss_fft_scalar* cx_t_out,
+       const moordyn::complex* inputs,
+       std::vector<real>& outputs)
 {
 	unsigned int nw = nFFT / 2 + 1;
 
