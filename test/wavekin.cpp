@@ -171,8 +171,7 @@ api(void (*cb)(double, const double*, double*, double*))
 bool
 grid()
 {
-	MoorDyn system =
-	    MoorDyn_Create("Mooring/wavekin_2/wavekin_2.txt");
+	MoorDyn system = MoorDyn_Create("Mooring/wavekin_2/wavekin_2.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;

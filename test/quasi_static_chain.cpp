@@ -104,8 +104,8 @@ validation(const char* depth, const char* motion)
 	lines_file << "Mooring/WD" << depth << "_Chain"
 	           << ".txt";
 	motion_file << "Mooring/QuasiStatic/" << motion << ".txt";
-	ref_file << "Mooring/QuasiStatic/WD" << depth << "_Chain_"
-	         << motion << ".txt";
+	ref_file << "Mooring/QuasiStatic/WD" << depth << "_Chain_" << motion
+	         << ".txt";
 	auto motion_data = read_tab_file(motion_file.str().c_str());
 	auto ref_data = read_tab_file(ref_file.str().c_str());
 
