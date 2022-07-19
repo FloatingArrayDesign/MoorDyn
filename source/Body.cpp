@@ -70,10 +70,10 @@ Body::setup(int number_in,
 		bodyCa = vec6::Zero();
 	}
 
-	attachedC.empty();
-	attachedR.empty();
-	rConnectRel.empty();
-	r6RodRel.empty();
+	attachedC.clear();
+	attachedR.clear();
+	rConnectRel.clear();
+	r6RodRel.clear();
 
 	// set up body initial mass matrix (excluding any rods or attachements)
 	mat6 Mtemp = mat6::Zero();
