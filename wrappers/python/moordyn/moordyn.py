@@ -187,7 +187,7 @@ def GetWaves(instance):
     instance (MoorDyn): The MoorDyn instance
 
     Returns:
-    cmoordyn.WavesMoorDyn: The waves manager
+    cmoordyn.MoorDynWaves: The waves manager
     """
     import cmoordyn
     return cmoordyn.get_waves(instance)
@@ -283,7 +283,118 @@ def GetBody(instance, body):
     body (int): The rigid body index, starting at 1
 
     Returns:
-    cmoordyn.BodyMoorDyn: The rigid body instance
+    cmoordyn.MoorDynBody: The rigid body instance
     """
     import cmoordyn
     return cmoordyn.get_body(instance, body)
+
+
+def GetNumberRods(instance):
+    """Get the number rods
+
+    Remember that the rod index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    int: The number of rods
+    """
+    import cmoordyn
+    return cmoordyn.get_number_rods(instance)
+
+
+def GetRod(instance, rod):
+    """ Get a rod
+
+    Remember that the first rod index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+    rod (int): The rod index, starting at 1
+
+    Returns:
+    cmoordyn.MoorDynRod: The rod instance
+    """
+    import cmoordyn
+    return cmoordyn.get_rod(instance, rod)
+
+
+def GetNumberConnections(instance):
+    """Get the number of connections
+
+    Remember that the first connection index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    int: The number of connections
+    """
+    import cmoordyn
+    return cmoordyn.get_number_connections(instance)
+
+
+def GetConnection(instance, conn):
+    """ Get a connection
+
+    Remember that the first connection index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+    conn (int): The connection index, starting at 1
+
+    Returns:
+    cmoordyn.MoorDynConnection: The connection instance
+    """
+    import cmoordyn
+    return cmoordyn.get_connection(instance, conn)
+
+
+def GetNumberLines(instance):
+    """Get the number of mooring lines
+
+    Remember that the first line index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    int: The number of mooring lines
+    """
+    import cmoordyn
+    return cmoordyn.get_number_lines(instance)
+
+
+def GetLine(instance, line):
+    """ Get a mooring line
+
+    Remember that the first line index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+    line (int): The line index, starting at 1
+
+    Returns:
+    cmoordyn.MoorDynLine: The line instance
+    """
+    import cmoordyn
+    return cmoordyn.get_line(instance, line)
+
+
+def GetFASTtens(instance, n_lines):
+    """Get the horizontal and vertical components of the fairlead and anchor
+    tensions
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+    n_lines (int): The number of lines
+
+    Returns:
+    list: The horizontal fairlead tension at each line
+    list: The vertical fairlead tension at each line
+    list: The horizontal anchor tension at each line
+    list: The vertical anchor tension at each line
+    """
+    data = moordyn.get_fast_tens(instance, n_lines)
+    return data[0], data[1], data[2], data[3]
