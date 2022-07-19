@@ -5,6 +5,7 @@
 
 const char moordyn_capsule_name[] = "MoorDyn";
 const char waves_capsule_name[] = "MoorDynWaves";
+const char body_capsule_name[] = "MoorDynBody";
 
 /** @brief Allocates and fill a C array with doubles
  * @param lst The iterable object
@@ -477,23 +478,71 @@ ext_wave_set(PyObject*, PyObject* args)
 	}
 }
 
+/** @brief Wrapper to MoorDyn_GetNumberBodies() function
+ * @param args Python passed arguments
+ * @return The number of rigid bodies
+ */
+static PyObject*
+get_number_bodies(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_GetNumberBodies(system));
+}
+
+/** @brief Wrapper to MoorDyn_GetBody() function
+ * @param args Python passed arguments
+ * @return A Python capsule
+ */
+static PyObject*
+get_body(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+    unsigned int i;
+
+	if (!PyArg_ParseTuple(args, "Oi", &capsule, &i))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	MoorDynBody body = MoorDyn_GetBody(system, i);
+	if (!body) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn_GetBody() failed");
+		return NULL;
+	}
+
+	return PyCapsule_New((void*)body, body_capsule_name, NULL);
+}
+
 // /** @brief Wrapper to MoorDyn_GetNumberLines() function
 //  * @param args Python passed arguments
 //  * @return The number of mooring lines
 //  */
-// static PyObject* get_number_lines(PyObject*, PyObject* args)
+// static PyObject*
+// get_number_lines(PyObject*, PyObject* args)
 // {
-//     PyObject *capsule;
+// 	PyObject* capsule;
 //
-//     if (!PyArg_ParseTuple(args, "O", &capsule))
-//         return NULL;
+// 	if (!PyArg_ParseTuple(args, "O", &capsule))
+// 		return NULL;
 //
-//     MoorDyn system = (MoorDyn)PyCapsule_GetPointer(capsule,
-//                                                     moordyn_capsule_name);
-//     if (!system)
-//         return NULL;
+// 	MoorDyn system =
+// 	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+// 	if (!system)
+// 		return NULL;
 //
-//     return PyLong_FromLong(MoorDyn_GetNumberLines(system));
+// 	return PyLong_FromLong(MoorDyn_GetNumberLines(system));
 // }
 //
 // /** @brief Wrapper to MoorDyn_GetNumberLineNodes() function
@@ -745,6 +794,14 @@ static PyMethodDef moordyn_methods[] = {
 	  METH_VARARGS,
 	  "Get the coordinates where the wave kinematics shall be provided" },
 	{ "ext_wave_set", ext_wave_set, METH_VARARGS, "Set the wave kinematics" },
+	{ "get_number_bodies",
+	  get_number_bodies,
+	  METH_VARARGS,
+	  "Get the number of rigid bodies" },
+	{ "get_body",
+	  get_body,
+	  METH_VARARGS,
+	  "Get a rigid body" },
 
 	/*
 	{"get_number_lines", get_number_lines, METH_VARARGS,

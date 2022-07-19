@@ -231,7 +231,7 @@ def GetWaveKinCoordinates(instance):
     return points
 
 
-def MoorDyn_SetWaveKin(instance, u, a, t):
+def SetWaveKin(instance, u, a, t):
     """Set the kinematics of the waves
 
     Use this function if WaveKin option is set to 1 in the input file
@@ -256,3 +256,34 @@ def MoorDyn_SetWaveKin(instance, u, a, t):
         uu += u[i]
         aa += a[i]
     return cmoordyn.ext_wave_set(instance, uu, aa, t)
+
+
+def GetNumberBodies(instance):
+    """Get the number of bodies
+
+    Remember that the first body index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    int: The number of bodies
+    """
+    import cmoordyn
+    return cmoordyn.get_number_bodies(instance)
+
+
+def GetBody(instance, body):
+    """ Get a rigid body
+
+    Remember that the first body index is 1
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+    body (int): The rigid body index, starting at 1
+
+    Returns:
+    cmoordyn.BodyMoorDyn: The rigid body instance
+    """
+    import cmoordyn
+    return cmoordyn.get_body(instance, body)
