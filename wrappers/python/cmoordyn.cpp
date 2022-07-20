@@ -566,8 +566,7 @@ get_rod(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	// MoorDynRod rod = MoorDyn_GetRod(system, i);
-    void *rod = NULL;
+	MoorDynRod rod = MoorDyn_GetRod(system, i);
 	if (!rod) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn_GetRod() failed");
 		return NULL;

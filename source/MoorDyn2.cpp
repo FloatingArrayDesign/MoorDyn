@@ -222,15 +222,23 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	for (auto l : CpldRodIs) {
 		LOGMSG << "Initializing coupled Rod " << l << " in " << x[ix] << ", "
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
-		RodList[l]->initiateStep(x + ix, xd + ix, 0.0);
-		RodList[l]->updateFairlead(0.0);
-		RodList[l]->initializeRod(
-		    NULL); // call this just to set up the output file header
-
-		if (RodList[l]->type == -2)
+		vec6 r, rd;
+		if (RodList[l]->type == Rod::COUPLED) {
+			moordyn::array2vec6(x + ix, r);
+			moordyn::array2vec6(xd + ix, rd);
 			ix += 6; // for cantilevered rods 6 entries will be taken
-		else
+		} else {
+			vec3 r3, rd3;
+			moordyn::array2vec(x + ix, r3);
+			r(Eigen::seqN(0, 3)) = r3;
+			moordyn::array2vec(xd + ix, rd3);
+			rd(Eigen::seqN(0, 3)) = rd3;
 			ix += 3; // for pinned rods 3 entries will be taken
+		}
+		RodList[l]->initiateStep(r, rd, 0.0);
+		RodList[l]->updateFairlead(0.0);
+		// call this just to set up the output file header
+		RodList[l]->initializeRod(NULL);
 	}
 
 	for (auto l : CpldConIs) {
@@ -506,11 +514,22 @@ moordyn::MoorDyn::Step(const double* x,
 		ix += 6;
 	}
 	for (auto l : CpldRodIs) {
-		RodList[l]->initiateStep(x + ix, xd + ix, t);
-		if (RodList[CpldRodIs[l]]->type == -2)
-			ix += 6; // for cantilevered rods 6 entries will be taken
-		else
-			ix += 3; // for pinned rods 3 entries will be taken
+		vec6 r, rd;
+		if (RodList[l]->type == Rod::COUPLED) {
+			// for cantilevered rods 6 entries will be taken
+			moordyn::array2vec6(x + ix, r);
+			moordyn::array2vec6(xd + ix, rd);
+			ix += 6;
+		} else {
+			// for pinned rods 3 entries will be taken
+			vec3 r3, rd3;
+			moordyn::array2vec(x + ix, r3);
+			r(Eigen::seqN(0, 3)) = r3;
+			moordyn::array2vec(xd + ix, rd3);
+			rd(Eigen::seqN(0, 3)) = rd3;
+			ix += 3;
+		}
+		RodList[l]->initiateStep(r, rd, t);
 	}
 	for (auto l : CpldConIs) {
 		ConnectionList[l]->initiateStep(x + ix, xd + ix, t);
@@ -970,7 +989,7 @@ moordyn::MoorDyn::ReadInFile()
 
 				int number = atoi(entries[0].c_str());
 				string RodType = entries[1];
-				double endCoords[6];
+				vec6 endCoords;
 				for (unsigned int I = 0; I < 6; I++)
 					endCoords[I] = atof(entries[3 + I].c_str());
 				int NumSegs = atoi(entries[9].c_str());
@@ -1099,7 +1118,7 @@ moordyn::MoorDyn::ReadInFile()
 				       << " and type " << Rod::TypeName(type) << " with id "
 				       << RodList.size() << endl;
 
-				Rod* obj = new Rod();
+				Rod* obj = new Rod(_log);
 				obj->setup(number,
 				           type,
 				           RodPropList[TypeNum],
@@ -1111,17 +1130,14 @@ moordyn::MoorDyn::ReadInFile()
 
 				// depending on type, assign the Rod to its respective parent
 				// body
-				// BUG: These conversions will not be needed in the future
-				vec6 coords_vec;
-				moordyn::array2vec6(endCoords, coords_vec);
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX"))
-					GroundBody->addRod(obj, coords_vec);
+					GroundBody->addRod(obj, endCoords);
 				else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN"))
-					GroundBody->addRod(obj, coords_vec);
+					GroundBody->addRod(obj, endCoords);
 				else if (!strcmp(let1, "BODY")) {
 					unsigned int bodyID = atoi(num1);
-					BodyList[bodyID - 1]->addRod(obj, coords_vec);
+					BodyList[bodyID - 1]->addRod(obj, endCoords);
 				}
 				LOGDBG << endl;
 
@@ -2270,6 +2286,20 @@ MoorDyn_GetNumberRods(MoorDyn system)
 	if (!system)
 		return 0;
 	return ((moordyn::MoorDyn*)system)->GetRods().size();
+}
+
+MoorDynRod DECLDIR
+MoorDyn_GetRod(MoorDyn system, unsigned int l)
+{
+	if (!system)
+		return NULL;
+	auto rods = ((moordyn::MoorDyn*)system)->GetRods();
+	if (!l || (l > rods.size())) {
+		cerr << "Error: There is not such rod " << l << endl
+		     << "while calling " << __FUNC_NAME__ << "()" << endl;
+		return NULL;
+	}
+	return (MoorDynRod)(rods[l - 1]);
 }
 
 unsigned int DECLDIR

@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <complex>
+#include <utility>
 
 #include <fstream>
 #include <sstream>
@@ -48,7 +49,6 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <iostream>
-#include <fstream>
 
 // note: this file contains the struct definitions for environmental and
 // line/connect properties
@@ -791,6 +791,21 @@ interp4(const vector<vector<vector<vector<T>>>>& values,
  *  @{
  */
 
+/** @brief Normalized direction vector
+ * @param u The output normalized direction vector
+ * @param r1 The orig point
+ * @param r2 The dest point
+ * @return The distance between the points
+ */
+inline moordyn::real
+unitvector(vec& u, const vec& r1, const vec& r2)
+{
+	vec v = r2 - r1;
+	const double l = v.norm();
+	u = v / l;
+	return l;
+}
+
 /** @brief Produce alternator matrix
  *
  * See "anti-symmetric tensor components" from Sadeghi and Incecik
@@ -819,7 +834,7 @@ translateMass(vec r, mat M);
  * @return Translated Mass & Inertia matrix
  */
 mat6
-translateMass(vec r, mat6 M);
+translateMass6(vec r, mat6 M);
 
 /** @brief rotation to a 3x3 mass matrix or any other second order tensor
  *
@@ -842,7 +857,7 @@ rotateMass(mat R, mat M)
  * @return Rotated mass
  */
 mat6
-rotateMass(mat R, mat6 M);
+rotateMass6(mat R, mat6 M);
 
 /** @brief calculate position and velocity of point based on its position
  * relative to moving 6DOF body
@@ -924,6 +939,14 @@ RotXYZ(vec rads)
 {
 	return RotXYZ(rads[0], rads[1], rads[2]);
 }
+
+/** @brief Get the spherical angles for a vector
+ * @param v The vector
+ * @return The orientation angles, i.e. inclination and heading (in radians)
+ * @throws nan_error If the provided vector is too small or null
+ */
+std::pair<real, real>
+orientationAngles(vec q);
 
 /**
  * @}
@@ -1258,15 +1281,6 @@ unitvector(T* u, const T* r1, const T* r2)
 	u[0] = v[0] / l;
 	u[1] = v[1] / l;
 	u[2] = v[2] / l;
-	return l;
-}
-
-inline double
-unitvector(vec& u, const vec& r1, const vec& r2)
-{
-	vec v = r2 - r1;
-	const double l = v.norm();
-	u = v / l;
 	return l;
 }
 

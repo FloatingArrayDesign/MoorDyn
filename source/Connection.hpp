@@ -362,9 +362,9 @@ class Connection : public LogUser
 	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
-	moordyn::error_id getNetForceAndMass(vec6& Fnet_out,
-	                                     mat6& M_out,
-	                                     vec rBody = vec::Zero());
+	void getNetForceAndMass(vec6& Fnet_out,
+	                        mat6& M_out,
+	                        vec rBody = vec::Zero());
 
 	/** @brief Calculates the forces and mass on the connection, including from
 	 * attached lines

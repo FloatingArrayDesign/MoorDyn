@@ -18,7 +18,7 @@
 #include "Body.hpp"
 #include "Body.h"
 #include "Connection.hpp"
-#include "Rod.h"
+#include "Rod.hpp"
 #include "Waves.hpp"
 
 using namespace std;
@@ -80,7 +80,7 @@ Body::setup(int number_in,
 	Mtemp(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mat::Identity() * bodyM;
 	Mtemp(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = bodyI.asDiagonal();
 	// account for potential CG offset <<< is the direction right? <<<
-	M0 = translateMass(body_rCG, Mtemp);
+	M0 = translateMass6(body_rCG, Mtemp);
 
 	// add added mass in each direction about ref point (so only diagonals)
 	M0 += mat6::Identity() * bodyV;
@@ -273,11 +273,12 @@ Body::setDependentStates()
 		rdRod(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
 
 		// pass above to the rod and get it to calculate the forces
-		// BUG: These conversions will not be required in the future
-		double rRodArray[6], rdRodArray[6];
-		moordyn::vec62array(rRod, rRodArray);
-		moordyn::vec62array(rdRod, rdRodArray);
-		attachedR[i]->setKinematics(rRodArray, rdRodArray);
+		try {
+			attachedR[i]->setKinematics(rRod, rdRod);
+		} catch (moordyn::invalid_value_error& exception) {
+			// Just rethrow the exception
+			throw;
+		}
 	}
 }
 
@@ -398,10 +399,13 @@ Body::getStateDeriv(double* Xd)
 		doRHS();
 
 		// solve for accelerations in [M]{a}={f}
-		// For small systems it is usually faster to compute the inverse
-		// of the matrix. See
+		// For small systems, which are anyway larger than 4x4, we can use the
+		// ColPivHouseholderQR algorithm, which is working with every single
+		// matrix, retaining a very good accuracy, and becoming yet faster
+		// See:
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		const vec6 acc = M.inverse() * F6net;
+		Eigen::ColPivHouseholderQR<mat6> solver(M);
+		const vec6 acc = solver.solve(F6net);
 
 		// fill in state derivatives
 		moordyn::vec62array(v6, Xd + 6);
@@ -425,7 +429,7 @@ Body::doRHS()
 
 	// First, the body's own mass matrix must be adjusted based on its
 	// orientation so that we have a mass matrix in the global orientation frame
-	M = rotateMass(OrMat, M0);
+	M = rotateMass6(OrMat, M0);
 
 	// gravity forces and moments about body ref point given CG location
 	const vec body_rCGrotated = OrMat * body_rCG;
@@ -473,15 +477,11 @@ Body::doRHS()
 
 	// Get contributions from any rods that are part of the body
 	for (auto attached : attachedR) {
-		// BUG: These conversions shall be removed in the future
-		double rRel[3];
-		moordyn::vec2array(r6(Eigen::seqN(0, 3)), rRel);
-		double F6_i[6];
-		double M6_i[6][6];
-
 		// get net force and mass from Rod on body ref point (global
 		// orientation)
-		attached->getNetForceAndMass(rRel, F6_i, M6_i);
+		vec6 F6_i;
+		mat6 M6_i;
+		attached->getNetForceAndMass(F6_i, M6_i, r6(Eigen::seqN(0, 3)));
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];
@@ -499,13 +499,8 @@ Body::doRHS()
 		//<<<<<<<<<
 
 		// sum quantitites
-		vec6 f6_i;
-		moordyn::array2vec6(F6_i, f6_i);
-		mat6 m6_i;
-		moordyn::array2mat6(M6_i, m6_i);
-		F6net += f6_i;
-
-		M += m6_i;
+		F6net += F6_i;
+		M += M6_i;
 	}
 
 	return;

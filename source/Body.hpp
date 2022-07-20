@@ -26,11 +26,11 @@
 
 using namespace std;
 
-class Rod;
 namespace moordyn {
 
 class Waves;
 class Connection;
+class Rod;
 
 /** @class Body Body.hpp
  * @brief A rigid body
@@ -334,8 +334,6 @@ class Body : public LogUser
 	void getStateDeriv(double* Xd);
 
 	/** @brief calculates the forces on the body
-	 * @param Xd The output states derivatives vector, i.e. an array with 6
-	 * components of acceleration and another 6 of velocity
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */

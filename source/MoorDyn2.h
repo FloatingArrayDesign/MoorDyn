@@ -24,6 +24,7 @@
 #include "MoorDynAPI.h"
 #include "Waves.h"
 #include "Connection.h"
+#include "Rod.h"
 #include "Line.h"
 #include "Body.h"
 
@@ -238,6 +239,13 @@ extern "C"
 	 * (see @ref moordyn_errors)
 	 */
 	unsigned int DECLDIR MoorDyn_GetNumberRods(MoorDyn system);
+
+	/** @brief Get a rod
+	 * @param system The Moordyn system
+	 * @param r The rod
+	 * @return The rod instance, NULL if errors happened
+	 */
+	MoorDynRod DECLDIR MoorDyn_GetRod(MoorDyn system, unsigned int r);
 
 	/** @brief Get the number of connections
 	 *

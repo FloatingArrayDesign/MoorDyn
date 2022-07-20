@@ -28,7 +28,7 @@
 #include "MoorDyn.h"
 #include "Line.hpp"
 #include "Connection.hpp"
-#include "Rod.h"
+#include "Rod.hpp"
 #include "Body.hpp"
 
 namespace moordyn {
@@ -118,7 +118,7 @@ class MoorDyn : public LogUser
 	{
 		unsigned int n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
 		for (auto rodi : CpldRodIs) {
-			if (RodList[rodi]->type == -2)
+			if (RodList[rodi]->type == Rod::COUPLED)
 				n += 6; // cantilevered rods
 			else
 				n += 3; // pinned rods
@@ -286,11 +286,14 @@ class MoorDyn : public LogUser
 			ix += 6;
 		}
 		for (auto l : CpldRodIs) {
-			RodList[l]->getFnet(f + ix);
-			if (RodList[l]->type == -2)
+			const vec6 f_i = RodList[l]->getFnet();
+			if (RodList[l]->type == Rod::COUPLED) {
+				moordyn::vec62array(f_i, f + ix);
 				ix += 6; // for cantilevered rods 6 entries will be taken
-			else
+			} else {
+				moordyn::vec2array(f_i(Eigen::seqN(0, 3)), f + ix);
 				ix += 3; // for pinned rods 3 entries will be taken
+			}
 		}
 		for (auto l : CpldConIs) {
 			vec fnet;

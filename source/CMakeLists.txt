@@ -19,6 +19,7 @@ set(MOORDYN_HEADERS
     Log.hpp
     MoorDyn2.hpp
     QSlines.hpp
+    Rod.hpp
     Waves.hpp
     Body.h
     Connection.h

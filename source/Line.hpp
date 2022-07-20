@@ -432,8 +432,7 @@ class Line : public LogUser
 
 	/** @brief Get line output
 	 *
-	 * This funtion is useful when outputs are set in the line properties,
-	 * LineProps
+	 * This funtion is useful when outputs are set in the line properties
 	 * @param outChan The output channel/field
 	 * @return The output value, 0.0 if a non-valid field is set
 	 */
@@ -515,7 +514,7 @@ class Line : public LogUser
 	 * qualifier
 	 * @note This method replaces the deprecated setEndState
 	 */
-	void SetEndKinematics(vec r, vec rd, EndPoints end_point);
+	void setEndKinematics(vec r, vec rd, EndPoints end_point);
 
 	/** @brief set end node unit vector
 	 *
@@ -578,6 +577,7 @@ class Line : public LogUser
 	/** @brief Calculate forces and get the derivative of the line's states
 	 * @param Xd The output line states
 	 * @param dt The time step, unused
+	 * @throws nan_error If nan values are detected in any node position
 	 */
 	void getStateDeriv(double* Xd, const double dt);
 

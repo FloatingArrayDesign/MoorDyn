@@ -118,7 +118,7 @@ Connection::initializeConnect(double X[6])
 		// pass kinematics to any attached lines so they have initial positions
 		// at this initialization stage
 		for (auto a : attached)
-			a.line->SetEndKinematics(r, rd, a.end_point);
+			a.line->setEndKinematics(r, rd, a.end_point);
 
 		// assign initial node kinematics to state vector
 		moordyn::vec2array(r, X + 3);
@@ -239,7 +239,7 @@ Connection::updateFairlead(const real time)
 
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
-		a.line->SetEndKinematics(r, rd, a.end_point);
+		a.line->setEndKinematics(r, rd, a.end_point);
 }
 
 void
@@ -258,7 +258,7 @@ Connection::setKinematics(double* r_in, double* rd_in)
 
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
-		a.line->SetEndKinematics(r, rd, a.end_point);
+		a.line->setEndKinematics(r, rd, a.end_point);
 }
 
 void
@@ -277,7 +277,7 @@ Connection::setKinematics(vec r_in, vec rd_in)
 
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
-		a.line->SetEndKinematics(r, rd, a.end_point);
+		a.line->setEndKinematics(r, rd, a.end_point);
 }
 
 moordyn::error_id
@@ -302,7 +302,7 @@ Connection::setState(const double X[6], const double time)
 
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
-		a.line->SetEndKinematics(r, rd, a.end_point);
+		a.line->setEndKinematics(r, rd, a.end_point);
 
 	return MOORDYN_SUCCESS;
 }
@@ -379,7 +379,7 @@ Connection::getNetForceAndMass(const double rBody[3],
 	return MOORDYN_SUCCESS;
 }
 
-moordyn::error_id
+void
 Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 {
 	doRHS();
@@ -394,8 +394,6 @@ Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	M_out = translateMass(rRel, M);
-
-	return MOORDYN_SUCCESS;
 }
 
 moordyn::error_id
@@ -501,9 +499,9 @@ Connection::drawGL(void)
 // =============================================================================
 
 /// Check that the provided system is not Null
-#define CHECK_CONNECTION(s)                                                    \
-	if (!s) {                                                                  \
-		cerr << "Null system received in " << __FUNC_NAME__ << " ("            \
+#define CHECK_CONNECTION(c)                                                    \
+	if (!c) {                                                                  \
+		cerr << "Null connection received in " << __FUNC_NAME__ << " ("        \
 		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
 		return MOORDYN_INVALID_VALUE;                                          \
 	}

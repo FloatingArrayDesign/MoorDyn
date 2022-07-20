@@ -88,7 +88,7 @@ translateMass(vec r, mat M)
 }
 
 mat6
-translateMass(vec r, mat6 M)
+translateMass6(vec r, mat6 M)
 {
 	// "anti-symmetric tensor components" from Sadeghi and Incecik
 	mat H = getH(r);
@@ -115,7 +115,7 @@ translateMass(vec r, mat6 M)
 }
 
 mat6
-rotateMass(mat R, mat6 M)
+rotateMass6(mat R, mat6 M)
 {
 	// the process for each of the following is to
 	// 1. copy out the relevant 3x3 matrix section,
@@ -167,6 +167,21 @@ transformKinematics(const vec& rRelBody,
 	const vec v = rd(Eigen::seqN(0, 3));
 	const vec w = rd(Eigen::seqN(3, 3));
 	rdOut = v + w.cross(rRel);
+}
+
+std::pair<real, real>
+orientationAngles(vec v)
+{
+	real l = v.norm();
+	if (l < 1.e-6)
+		throw nan_error("Supplied vector is near zero");
+
+	// incline angle
+	const real phi = atan2(l, v[2]);
+	// heading of incline
+	const real beta = (phi < 1.e-6) ? 0.0 : atan2(v[1], v[0]);
+
+	return make_pair(phi, beta);
 }
 
 } // ::moordyn

@@ -51,6 +51,7 @@ HEADERS = ../../source/Body.h \
           ../../source/Log.hpp \
           ../../source/MoorDyn2.hpp \
           ../../source/QSlines.hpp \
+          ../../source/Rod.hpp \
           ../../source/Waves.hpp
 
 all: libmoordyn2.dylib

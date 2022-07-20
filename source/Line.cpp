@@ -511,7 +511,7 @@ Line::initializeLine(double* X)
 		moordyn::vec2array(r[i], &(X[3 * N - 3 + 3 * i - 3]));
 		moordyn::vec2array(vec(0.0, 0.0, 0.0), &(X[3 * i - 3]));
 	}
-	// now we need to return to the integrator for the dynamic relaxation stuff
+
 	LOGMSG << "Initialized Line " << number << endl;
 };
 
@@ -538,10 +538,8 @@ Line::GetLineOutput(OutChanProps outChan)
 		return Fnet[outChan.NodeID][1];
 	else if (outChan.QType == FZ)
 		return Fnet[outChan.NodeID][2];
-	else {
-		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
-		return 0.0;
-	}
+	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
+	return 0.0;
 }
 
 void
@@ -609,7 +607,7 @@ Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
 }
 
 void
-Line::SetEndKinematics(vec pos, vec vel, EndPoints end_point)
+Line::setEndKinematics(vec pos, vec vel, EndPoints end_point)
 {
 	switch (end_point) {
 		case ENDPOINT_TOP:
