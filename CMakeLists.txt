@@ -17,6 +17,10 @@ set(PYTHON_WRAPPER ON CACHE BOOL
     "Build the Python wrapper")
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
+set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
+    "Use single precission (some performance can be win in exchange of accuracy)")
+mark_as_advanced(PYTHON_WRAPPER_USERINSTALL)
+mark_as_advanced(MOORDYN_SINGLEPRECISSION)
 
 # Look for the dependencies
 if(${EXTERNAL_EIGEN})
@@ -27,9 +31,13 @@ else()
 endif()
 
 if(${PYTHON_WRAPPER})
-    find_package (Python
-                  COMPONENTS Interpreter Development NumPy
-                  REQUIRED)
+    find_package(Python
+                 COMPONENTS Interpreter Development NumPy
+                 REQUIRED)
+endif()
+
+if(${MOORDYN_SINGLEPRECISSION})
+    add_definitions(MOORDYN_SINGLEPRECISSION)
 endif()
 
 # Compile the library

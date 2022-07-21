@@ -37,6 +37,8 @@ if(EXTERNAL_EIGEN)
     list(APPEND MOORDYN_PUBLIC_DEPS Eigen3::Eigen)
 endif()
 
+configure_file(Config.h.in ${CMAKE_BINARY_DIR}/Config.h)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
@@ -60,8 +62,9 @@ install(TARGETS moordyn EXPORT MoorDynTargets
 install(
   FILES
     ${MOORDYN_HEADERS}
+    ${CMAKE_BINARY_DIR}/Config.h
   DESTINATION
-    include
+    include/moordyn
   COMPONENT
     Devel
 )
