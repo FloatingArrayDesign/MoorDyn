@@ -23,6 +23,7 @@
 #include "Misc.h"
 #include "Log.hpp"
 #include <vector>
+#include <utility>
 
 using namespace std;
 
@@ -249,6 +250,15 @@ class Body : public LogUser
 		vel = v6;
 	}
 
+	/** @brief Get the body kinematics
+	 * @param pos The output position
+	 * @param vel The output velocity
+	 */
+	inline std::pair<vec6, vec6> getBodyState() const
+	{
+		return std::make_pair(r6, v6);
+	}
+
 	/** @brief Get the body position
 	 * @return The body position
 	 */
@@ -321,7 +331,14 @@ class Body : public LogUser
 	 * and another 6 of position
 	 * @param time The simulation time
 	 */
-	void setState(const double* X, real time);
+	void DEPRECATED setState(const double* X, real time);
+
+	/** @brief Set the latest states to the body
+	 * @param r The position
+	 * @param rd The velocity
+	 * @param time The simulation time
+	 */
+	void setState(vec6 r, vec6 rd, real time);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *
@@ -331,7 +348,17 @@ class Body : public LogUser
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	void getStateDeriv(double* Xd);
+	void DEPRECATED getStateDeriv(double* Xd);
+
+	/** @brief calculate the forces and state derivatives of the body
+	 *
+	 * This function is only meant for free bodies
+	 * @param return The states derivatives, i.e. the velocity (first) and the
+	 * acceleration (second)
+	 * @throw moordyn::invalid_value_error If the body is of type
+	 * moordyn::Body::FREE
+	 */
+	std::pair<vec6, vec6> getStateDeriv();
 
 	/** @brief calculates the forces on the body
 	 * @throw moordyn::invalid_value_error If the body is of type

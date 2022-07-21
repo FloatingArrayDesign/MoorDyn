@@ -292,7 +292,16 @@ class Line : public LogUser
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
 	 */
-	void initializeLine(double* X);
+	void DEPRECATED initializeLine(double* X);
+
+	/** @brief Compute the stationary Initial Condition (IC)
+	 * @param return The states, i.e. the positions of the internal nodes
+	 * (first) and the velocities of the internal nodes (second)
+	 * @throws moordyn::output_file_error If an outfile has been provided, but
+	 * it cannot be written
+	 * @throws invalid_value_error If there is no enough water depth
+	 */
+	std::pair<std::vector<vec>, std::vector<vec>> initializeLine();
 
 	/** @brief Number of segments
 	 *
@@ -374,12 +383,35 @@ class Line : public LogUser
 	 * @param Ud_in Accelerations, should have (moordyn::Line::N + 1) * 3
 	 *              components
 	 */
-	inline void setNodeWaveKin(double U_in[], double Ud_in[])
+	inline void DEPRECATED setNodeWaveKin(double U_in[], double Ud_in[])
 	{
 		for (unsigned int i = 0; i <= N; i++) {
 			moordyn::array2vec(&(U_in[3 * i]), U[i]);
 			moordyn::array2vec(&(Ud_in[3 * i]), Ud[i]);
 		}
+	}
+
+	/** @brief Set the water flow velocity and acceleration at the line nodes
+	 *
+	 * used just when these are provided externally, i.e. WaveKin=1
+	 * @param U_in Velocities, should have (moordyn::Line::N + 1)
+	 *             components
+	 * @param Ud_in Accelerations, should have (moordyn::Line::N + 1)
+	 *              components
+	 * @throws invalid_value_error If either @p U_in or @p Ud_in have wrong
+	 * sizes
+	 */
+	inline void setNodeWaveKin(const std::vector<vec>& U_in,
+	                           const std::vector<vec>& Ud_in)
+	{
+		if ((U_in.size() != N + 1) || (Ud_in.size() != N + 1)) {
+			LOGERR << "Invalid input size " << U_in.size() << " & "
+			       << Ud_in.size() << ". " << N + 1 << " was expected"
+			       << std::endl;
+			throw moordyn::invalid_value_error("Invalid size");
+		}
+		U = U_in;
+		Ud = Ud_in;
 	}
 
 	/** @brief Get the tensions at the fairlead and anchor in a FASTv7 friendly
@@ -440,9 +472,9 @@ class Line : public LogUser
 
 	/** @brief store wave/current kinematics time series for this line
 	 *
-	 * This is used when nodal approaches are selected, i.e. WaveKin = 4 or 5,
-	 * Currents = 3 or 4
-	 *
+	 * This is used when nodal approaches are selected, i.e.
+	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
+	 * or CURRENTS_DYNAMIC_NODE
 	 * @param nt Number of time steps
 	 * @param dt Time step
 	 * @param zeta_in The wave elevations
@@ -452,12 +484,35 @@ class Line : public LogUser
 	 *
 	 * @note Working in progress
 	 */
-	void storeWaterKin(unsigned int nt,
-	                   real dt,
-	                   const real** zeta_in,
-	                   const real** f_in,
-	                   const real*** u_in,
-	                   const real*** ud_in);
+	void DEPRECATED storeWaterKin(unsigned int nt,
+	                              real dt,
+	                              const real** zeta_in,
+	                              const real** f_in,
+	                              const real*** u_in,
+	                              const real*** ud_in);
+
+	/** @brief store wave/current kinematics time series for this line
+	 *
+	 * This is used when nodal approaches are selected, i.e.
+	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
+	 * or CURRENTS_DYNAMIC_NODE
+	 * @param nt Number of time steps
+	 * @param dt Time step
+	 * @param zeta The wave elevations
+	 * @param f The fluid fractions
+	 * @param u The flow velocity
+	 * @param ud The flow acceleration
+	 * @throws invalid_value_error If @p zeta, @p f, @p u and @p ud have not the
+	 * same size, in both dimensions.
+	 * @throws invalid_value_error If the length of @p zeta, @p f, @p u or @p ud
+	 * is not equal to moordyn::Line::getN() + 1
+	 * @note Working in progress
+	 */
+	void storeWaterKin(real dt,
+	                   std::vector<std::vector<moordyn::real>> zeta,
+	                   std::vector<std::vector<moordyn::real>> f,
+	                   std::vector<std::vector<vec>> u,
+	                   std::vector<std::vector<vec>> ud);
 
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients
@@ -489,13 +544,23 @@ class Line : public LogUser
 	inline void setTime(real time) { t = time; }
 
 	/** @brief Set the line state
-	 * @param X State vector. It contains moordyn::Line::N - 1 velocities
-	 * followed by moordyn::Line::N - 1 positions
+	 * @param X State vector. It contains moordyn::Line::getN() - 1 velocities
+	 * followed by moordyn::Line::getN() - 1 positions
 	 * @param time Simulation time
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
 	 */
-	void setState(const double* X, const double time);
+	void DEPRECATED setState(const double* X, const double time);
+
+	/** @brief Set the line state
+	 * @param r The moordyn::Line::getN() - 1 positions
+	 * @param u The moordyn::Line::getN() - 1 velocities
+	 * @param time Simulation time
+	 * @note This method is not affecting the line end points
+	 * @see moordyn::Line::setEndState
+	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
+	 */
+	void setState(std::vector<vec> r, std::vector<vec> u, double time);
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r_in Position
@@ -579,12 +644,20 @@ class Line : public LogUser
 	 * @param dt The time step, unused
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	void getStateDeriv(double* Xd, const double dt);
+	void DEPRECATED getStateDeriv(double* Xd, const double dt);
+
+	/** @brief Calculate forces and get the derivative of the line's states
+	 * @param dt The time step, unused
+	 * @return The velocties of the internal nodes (first) and the accelerations
+	 * of the internal nodes (second)
+	 * @throws nan_error If nan values are detected in any node position
+	 */
+	std::pair<std::vector<vec>, std::vector<vec>> getStateDeriv(double dt);
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);
 
-	void Output(double);
+	void Output(real);
 
 #ifdef USEGL
 	void drawGL(void);

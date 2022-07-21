@@ -22,6 +22,7 @@
 
 #include "Misc.h"
 #include "Log.hpp"
+#include <utility>
 
 using namespace std;
 
@@ -261,7 +262,7 @@ class Connection : public LogUser
 	 * @param outChan The query
 	 * @return The data, 0.0 if no such data can be found
 	 */
-	double GetConnectionOutput(OutChanProps outChan);
+	real GetConnectionOutput(OutChanProps outChan);
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
@@ -291,9 +292,20 @@ class Connection : public LogUser
 	 * @param rdFairIn Fairlead velocity, used only if type = COUPLED
 	 * @param time Simulation time
 	 */
-	void initiateStep(const double rFairIn[3],
-	                  const double rdFairIn[3],
-	                  real time);
+	void DEPRECATED initiateStep(const double rFairIn[3],
+	                             const double rdFairIn[3],
+	                             real time);
+
+	/** @brief Initialize the time step integration
+	 *
+	 * Called at the beginning of each coupling step to update the boundary
+	 * conditions (fairlead kinematics) for the proceeding line time steps
+	 * @param rFairIn Fairlead position
+	 * @param rdFairIn Fairlead velocity
+	 * @param time Simulation time
+	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
+	 */
+	void initiateStep(vec rFairIn, vec rdFairIn, real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
@@ -302,7 +314,7 @@ class Connection : public LogUser
 	 * @param time Simulation time
 	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
-	void updateFairlead(const real time);
+	void updateFairlead(real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
@@ -334,7 +346,18 @@ class Connection : public LogUser
 	 * @return MOORDYN_SUCCESS upon success, MOORDYN_INVALID_VALUE if it is not
 	 * a FREE connection
 	 */
-	moordyn::error_id setState(const double X[6], const double time);
+	moordyn::error_id DEPRECATED setState(const double X[6], const double time);
+
+	/** @brief Set the state variables
+	 *
+	 * sets Connection states and ends of attached lines ONLY if this Connection
+	 * is free, i.e. type = FREE (otherwise shouldn't be called)
+	 * @param pos Position
+	 * @param vel Velocity
+	 * @param time Simulation time
+	 * @throws moordyn::invalid_value_error If it is not a FREE connection
+	 */
+	void setState(vec pos, vec vel, real time);
 
 	/** @brief Calculate the forces and state derivatives of the connection
 	 * @param Xd Output state variables derivatives, i.e. the acceleration
@@ -342,7 +365,14 @@ class Connection : public LogUser
 	 * @return MOORDYN_SUCCESS upon success, MOORDYN_INVALID_VALUE if it is not
 	 * a FREE connection
 	 */
-	moordyn::error_id getStateDeriv(double Xd[6]);
+	moordyn::error_id DEPRECATED getStateDeriv(double Xd[6]);
+
+	/** @brief Calculate the forces and state derivatives of the connection
+	 * @param return The states derivatives, i.e. the velocity (first) and the
+	 * acceleration (second)
+	 * @throws moordyn::invalid_value_error If it is not a FREE connection
+	 */
+	std::pair<vec, vec> getStateDeriv();
 
 	/** @brief Calculate the force and mass contributions of the connect on the
 	 * parent body

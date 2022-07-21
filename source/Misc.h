@@ -271,6 +271,34 @@ array2mat6(const T a[6][6], mat6& v)
 	v(2, 5) = (moordyn::real)a[2][5];
 }
 
+/** Slice a C++ vector
+ * @param v The vector to slice
+ * @param m The first element to consider
+ * @param n The number of elements
+ * @return The sliced vector
+ */
+template<typename T>
+std::vector<T>
+vector_slice(std::vector<T> const& v, unsigned int m, unsigned int n)
+{
+	auto first = v.begin() + m;
+	auto last = v.begin() + n + 1;
+	std::vector<T> v2(first, last);
+	return v2;
+}
+
+/** Slice a C++ vector
+ * @param v The vector to slice
+ * @param n The number of elements
+ * @return The sliced vector
+ */
+template<typename T>
+std::vector<T>
+vector_slice(std::vector<T> const& v, unsigned int n)
+{
+	return vector_slice(v, 0, n);
+}
+
 /** @brief End point qualifiers
  *
  * Used for both lines and rods
@@ -285,6 +313,20 @@ typedef enum
 	ENDPOINT_BOTTOM = ENDPOINT_A,
 	ENDPOINT_TOP = ENDPOINT_B,
 } EndPoints;
+
+#ifndef ASCII_A
+/// The ASCII value of the A character
+#define ASCII_A 10
+#endif
+
+/** @brief Gives an character representation of the end point
+ * @return The endpoint char
+ */
+inline char
+end_point_name(EndPoints p)
+{
+	return char(ASCII_A + (int)p);
+}
 
 /** \addtogroup moordyn_errors
  *  @{

@@ -20,6 +20,7 @@
 #include "Connection.hpp"
 #include "Rod.hpp"
 #include "Waves.hpp"
+#include <tuple>
 
 using namespace std;
 
@@ -358,16 +359,25 @@ Body::updateFairlead(real time)
 	throw moordyn::invalid_value_error("Invalid body type");
 }
 
-// pass the latest states to the body if this body is NOT driven externally
 void
 Body::setState(const double* X, real time)
+{
+	vec6 pos, vel;
+	moordyn::array2vec6(X + 6, pos);
+	moordyn::array2vec6(X, vel);
+
+	setState(pos, vel, time);
+}
+
+void
+Body::setState(vec6 pos, vec6 vel, real time)
 {
 	// store current time
 	setTime(time);
 
 	// set position and velocity vectors from state vector
-	moordyn::array2vec6(X + 6, r6);
-	moordyn::array2vec6(X, v6);
+	r6 = pos;
+	v6 = vel;
 
 	// calculate orientation matrix based on latest angles
 	OrMat = RotXYZ(r6[3], r6[4], r6[5]);
@@ -376,9 +386,17 @@ Body::setState(const double* X, real time)
 	setDependentStates();
 }
 
-// calculate the forces and state derivatives of the body
 void
 Body::getStateDeriv(double* Xd)
+{
+	vec6 v, a;
+	std::tie(v, a) = getStateDeriv();
+	moordyn::vec62array(v, Xd + 6);
+	moordyn::vec62array(a, Xd);
+}
+
+std::pair<vec6, vec6>
+Body::getStateDeriv()
 {
 	if (type != FREE) {
 		LOGERR << "The body is not a free one" << endl;
@@ -390,29 +408,23 @@ Body::getStateDeriv(double* Xd)
 
 	// with current IC gen approach, we skip the first call to the line
 	// objects, because they're set AFTER the call to the connects
-	// above is no longer true!!! <<<
-	if (t == 0) {
-		moordyn::vec62array(v6, Xd + 6);
-		memset(Xd, 0.0, 6 * sizeof(real));
-	} //<<<<<<<<<<<<<<<<<<<<
-	else {
-		doRHS();
+	// BUG: above is no longer true!!! <<<
+	if (t == 0)
+		return std::make_pair(v6, vec6::Zero());
 
-		// solve for accelerations in [M]{a}={f}
-		// For small systems, which are anyway larger than 4x4, we can use the
-		// ColPivHouseholderQR algorithm, which is working with every single
-		// matrix, retaining a very good accuracy, and becoming yet faster
-		// See:
-		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		Eigen::ColPivHouseholderQR<mat6> solver(M);
-		const vec6 acc = solver.solve(F6net);
+	doRHS();
 
-		// fill in state derivatives
-		moordyn::vec62array(v6, Xd + 6);
-		moordyn::vec62array(acc, Xd);
-		// is the above still valid even though it includes rotational DOFs?
-		// <<<<<<<
-	}
+	// solve for accelerations in [M]{a}={f}
+	// For small systems, which are anyway larger than 4x4, we can use the
+	// ColPivHouseholderQR algorithm, which is working with every single
+	// matrix, retaining a very good accuracy, and becoming yet faster
+	// See:
+	// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
+	Eigen::ColPivHouseholderQR<mat6> solver(M);
+	const vec6 acc = solver.solve(F6net);
+
+	// NOTE; is the above still valid even though it includes rotational DOFs?
+	return std::make_pair(v6, acc);
 };
 
 //  this is the big function that calculates the forces on the body

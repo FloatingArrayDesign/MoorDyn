@@ -18,6 +18,7 @@
 #include "Line.h"
 #include "Waves.hpp"
 #include "QSlines.hpp"
+#include <tuple>
 
 using namespace std;
 
@@ -201,9 +202,26 @@ Line::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
 	waves = waves_in;
 }
 
-// get ICs for line using quasi-static approach
 void
 Line::initializeLine(double* X)
+{
+	std::vector<vec> pos, vel;
+	try {
+		std::tie(pos, vel) = initializeLine();
+	} catch (...) {
+		throw;
+	}
+
+	// also assign the resulting internal node positions to the integrator
+	// initial state vector! (velocities leave at 0)
+	for (unsigned int i = 1; i < N; i++) {
+		moordyn::vec2array(pos[i], &(X[3 * (N - -1 + i - 1)]));
+		moordyn::vec2array(vel[i], &(X[3 * (i - 1)]));
+	}
+}
+
+std::pair<std::vector<vec>, std::vector<vec>>
+Line::initializeLine()
 {
 	LOGMSG << "  - Line" << number << ":" << endl
 	       << "    ID: " << number << endl
@@ -505,14 +523,12 @@ Line::initializeLine(double* X)
 		}
 	}
 
+	LOGMSG << "Initialized Line " << number << endl;
+
 	// also assign the resulting internal node positions to the integrator
 	// initial state vector! (velocities leave at 0)
-	for (unsigned int i = 1; i < N; i++) {
-		moordyn::vec2array(r[i], &(X[3 * N - 3 + 3 * i - 3]));
-		moordyn::vec2array(vec(0.0, 0.0, 0.0), &(X[3 * i - 3]));
-	}
-
-	LOGMSG << "Initialized Line " << number << endl;
+	std::vector<vec> vel(N - 1, vec::Zero());
+	return std::make_pair(vector_slice(r, 1, N - 1), vel);
 };
 
 real
@@ -577,6 +593,46 @@ Line::storeWaterKin(unsigned int nt,
 };
 
 void
+Line::storeWaterKin(real dt,
+                    std::vector<std::vector<moordyn::real>> zeta_in,
+                    std::vector<std::vector<moordyn::real>> f_in,
+                    std::vector<std::vector<vec>> u_in,
+                    std::vector<std::vector<vec>> ud_in)
+{
+	if ((zeta_in.size() != N + 1) || (f_in.size() != N + 1) ||
+	    (u_in.size() != N + 1) || (ud_in.size() != N + 1)) {
+		LOGERR << "Invalid input length" << endl;
+		throw moordyn::invalid_value_error("Invalid input size");
+	}
+
+	ntWater = zeta_in[0].size();
+	dtWater = dt;
+
+	LOGDBG << "Setting up wave variables for Line " << number
+	       << "!  ---------------------" << endl
+	       << "   nt=" << ntWater << ", and WaveDT=" << dtWater
+	       << ", env->WtrDpth=" << env->WtrDpth << endl;
+
+	// resize the new time series vectors
+	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
+	FTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
+	UTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
+	UdTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
+
+	for (unsigned int i = 0; i < N + 1; i++) {
+		if ((zeta_in[i].size() != N + 1) || (f_in[i].size() != N + 1) ||
+		    (u_in[i].size() != N + 1) || (ud_in[i].size() != N + 1)) {
+			LOGERR << "Invalid input length" << endl;
+			throw moordyn::invalid_value_error("Invalid input size");
+		}
+		zetaTS[i] = zeta_in[i];
+		FTS[i] = f_in[i];
+		u_in[i], UTS[i];
+		ud_in[i], UdTS[i];
+	}
+};
+
+void
 Line::setState(const double* X, const double time)
 {
 	// store current time
@@ -586,6 +642,23 @@ Line::setState(const double* X, const double time)
 	for (unsigned int i = 1; i < N; i++) {
 		moordyn::array2vec(&(X[3 * N - 3 + 3 * i - 3]), r[i]);
 		moordyn::array2vec(&(X[3 * i - 3]), rd[i]);
+	}
+}
+
+void
+Line::setState(std::vector<vec> pos, std::vector<vec> vel, const double time)
+{
+	if ((pos.size() != N - 1) || (vel.size() != N - 1)) {
+		LOGERR << "Invalid input size" << endl;
+		throw moordyn::invalid_value_error("Invalid input size");
+	}
+	// store current time
+	setTime(time);
+
+	// set interior node positions and velocities based on state vector
+	for (unsigned int i = 1; i < N; i++) {
+		r[i] = pos[i - 1];
+		rd[i] = vel[i - 1];
 	}
 }
 
@@ -744,7 +817,19 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 }
 
 void
-Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
+Line::getStateDeriv(double* Xd, double dt)
+{
+	std::vector<vec> u, a;
+	std::tie(u, a) = getStateDeriv(dt);
+
+	for (unsigned int i = 1; i < N; i++) {
+		moordyn::vec2array(a[i - 1], &Xd[3 * (i - 1)]);
+		moordyn::vec2array(u[i - 1], &Xd[3 * (N - 1 + i - 1)]);
+	}
+}
+
+std::pair<std::vector<vec>, std::vector<vec>>
+Line::getStateDeriv(double dt)
 {
 	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the
@@ -1219,7 +1304,10 @@ Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 	//		B[0][0] = 0.001; // meaningless
 	//	}
 
-	// loop through internal nodes and update their states
+	// loop through internal nodes and compute the accelerations
+	std::vector<vec> u, a;
+	u.reserve(N - 1);
+	a.reserve(N - 1);
 	for (unsigned int i = 1; i < N; i++) {
 		//	double M_out[9];
 		//	double F_out[3];
@@ -1242,22 +1330,17 @@ Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		const vec acc = M[i].inverse() * Fnet[i];
-
-		// fill in state derivatives
-		moordyn::vec2array(
-		    acc,
-		    &Xd[3 * i - 3]); // RHSiI;         dVdt = RHS * A  (accelerations)
-		moordyn::vec2array(
-		    rd[i],
-		    &Xd[3 * N - 3 + 3 * i - 3]); // X[3*i-3 + I];  dxdt = V (velocities)
+		a.push_back(M[i].inverse() * Fnet[i]);
+		u.push_back(rd[i]);
 	}
+
+	return make_pair(u, a);
 };
 
 // write output file for line  (accepts time parameter since retained time value
 // (t) will be behind by one line time step
 void
-Line::Output(double time)
+Line::Output(real time)
 {
 	// run through output flags
 	// if channel is flagged for output, write to file.

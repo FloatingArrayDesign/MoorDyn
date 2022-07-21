@@ -18,6 +18,7 @@
 #include "Rod.h"
 #include "Line.hpp"
 #include "Waves.hpp"
+#include <tuple>
 
 using namespace std;
 
@@ -155,7 +156,6 @@ Rod::setup(int number_in,
 	       << "'. " << endl;
 };
 
-// this function handles assigning a line to a Rod end
 void
 Rod::addLineToRodEndA(Line* theLine, int TopOfLine)
 {
@@ -174,7 +174,25 @@ Rod::addLineToRodEndB(moordyn::Line* theLine, int TopOfLine)
 	attachedB.push_back(a);
 };
 
-// this function handles removing a line from a Rod end
+void
+Rod::addLine(Line* l, EndPoints l_end_point, EndPoints end_point)
+{
+	LOGDBG << "L" << l->number << end_point_name(l_end_point) << "->R" << number
+	       << end_point_name(end_point);
+	const attachment a = { l, l_end_point };
+	switch (end_point) {
+		case ENDPOINT_A:
+			attachedA.push_back(a);
+			break;
+		case ENDPOINT_B:
+			attachedB.push_back(a);
+			break;
+		default:
+			LOGERR << "Rod only has end points 'A' or 'B'" << endl;
+			throw moordyn::invalid_value_error("Invalid end point");
+	}
+}
+
 void
 Rod::removeLineFromRodEndA(int lineID,
                            int* topOfLine,
@@ -203,6 +221,7 @@ Rod::removeLineFromRodEndA(int lineID,
 	       << " to remove from rod " << number << "A" << endl;
 	throw moordyn::invalid_value_error("Invalid line");
 };
+
 void
 Rod::removeLineFromRodEndB(int lineID,
                            int* topOfLine,
@@ -232,15 +251,48 @@ Rod::removeLineFromRodEndB(int lineID,
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
-void
-Rod::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
+EndPoints
+Rod::removeLine(EndPoints end_point, int lineID)
 {
-	env = env_in;
-	waves = waves_in;
-}
+	EndPoints line_end_point;
+	std::vector<attachment>* lines =
+	    (end_point == ENDPOINT_A) ? &attachedA : &attachedB;
+	// look through attached lines
+	for (auto it = std::begin(*lines); it != std::end(*lines); ++it) {
+		if ((*it).line->number != lineID)
+			continue;
+		// This is the line's entry in the attachment list
+		line_end_point = it->end_point;
+		lines->erase(it);
+
+		LOGMSG << "Detached line " << lineID << " from rod " << number
+		       << end_point_name(end_point) << endl;
+		return line_end_point;
+	}
+
+	// line not found
+	LOGERR << "Error: failed to find the line " << lineID
+	       << " to remove from rod " << number << end_point_name(end_point)
+	       << endl;
+	throw moordyn::invalid_value_error("Invalid line");
+};
 
 void
 Rod::initializeRod(double* X)
+{
+	vec6 pos, vel;
+	std::tie(pos, vel) = initialize();
+	if (type == FREE) {
+		moordyn::vec62array(vel, X);
+		moordyn::vec62array(pos, X + 6);
+	} else if ((type == PINNED) || (type == CPLDPIN)) {
+		moordyn::vec2array(vel(Eigen::seqN(3, 3)), X);
+		moordyn::vec2array(pos(Eigen::seqN(3, 3)), X + 3);
+	}
+}
+
+std::pair<vec6, vec6>
+Rod::initialize()
 {
 	LOGDBG << "Initializing Rod " << number << " (type '" << TypeName(type)
 	       << "') now." << endl;
@@ -352,23 +404,17 @@ Rod::initializeRod(double* X)
 	// matters if it's an independent Rod)
 
 	// copy over state values for potential use during derivative calculations
-	if (type == FREE) {
-		// zero velocities for initialization
-		memset(X, 0.0, 6 * sizeof(double));
-		// end A position
-		moordyn::vec2array(r[0], X + 6);
-		// rod direction unit vector
-		moordyn::vec2array(q, X + 9);
-	} else if ((type == PINNED) || (type == CPLDPIN)) {
-		// zero rotational velocities for initialization
-		memset(X, 0.0, 6 * sizeof(double));
-		// rod direction unit vector
-		moordyn::vec2array(q, X + 3);
-	}
+	vec6 pos = vec6::Zero();
+	vec6 vel = vec6::Zero();
+	if (type == FREE)
+		pos(Eigen::seqN(0, 3)) = r[0];
+	pos(Eigen::seqN(3, 3)) = q;
+
 	// otherwise this was only called to make the rod an output file and set its
 	// dependent line end kinematics...
 
 	LOGMSG << "Initialized Rod " << number << endl;
+	return std::make_pair(pos, vel);
 };
 
 real
@@ -410,7 +456,7 @@ Rod::storeWaterKin(unsigned int nt,
                    const real*** u_in,
                    const real*** ud_in)
 {
-	LOGDBG << "Setting up wave variables for Line " << number
+	LOGDBG << "Setting up wave variables for Rod " << number
 	       << "!  ---------------------" << endl
 	       << "   nt=" << nt << ", and WaveDT=" << dt
 	       << ", env->WtrDpth=" << env->WtrDpth << endl;
@@ -437,38 +483,92 @@ Rod::storeWaterKin(unsigned int nt,
 };
 
 void
+Rod::storeWaterKin(real dt,
+                   std::vector<std::vector<moordyn::real>> zeta_in,
+                   std::vector<std::vector<moordyn::real>> f_in,
+                   std::vector<std::vector<vec>> u_in,
+                   std::vector<std::vector<vec>> ud_in)
+{
+	if ((zeta_in.size() != N + 1) || (f_in.size() != N + 1) ||
+	    (u_in.size() != N + 1) || (ud_in.size() != N + 1)) {
+		LOGERR << "Invalid input length" << endl;
+		throw moordyn::invalid_value_error("Invalid input size");
+	}
+
+	ntWater = zeta_in[0].size();
+	dtWater = dt;
+
+	LOGDBG << "Setting up wave variables for Rod " << number
+	       << "!  ---------------------" << endl
+	       << "   nt=" << ntWater << ", and WaveDT=" << dtWater
+	       << ", env->WtrDpth=" << env->WtrDpth << endl;
+
+	// resize the new time series vectors
+	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
+	FTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
+	UTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
+	UdTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
+
+	for (unsigned int i = 0; i < N + 1; i++) {
+		if ((zeta_in[i].size() != N + 1) || (f_in[i].size() != N + 1) ||
+		    (u_in[i].size() != N + 1) || (ud_in[i].size() != N + 1)) {
+			LOGERR << "Invalid input length" << endl;
+			throw moordyn::invalid_value_error("Invalid input size");
+		}
+		zetaTS[i] = zeta_in[i];
+		FTS[i] = f_in[i];
+		u_in[i], UTS[i];
+		ud_in[i], UdTS[i];
+	}
+};
+
+void
 Rod::setState(double* X, const double time)
+{
+	vec6 pos, vel;
+	if (type == FREE) {
+		// enforce direction vector to be a unit vector
+		scalevector(X + 9, 1.0, X + 9);
+		// end A coordinates & Rod direction unit vector
+		moordyn::array2vec6(X + 6, pos);
+		// end A velocityes & rotational velocities about unrotated axes
+		moordyn::array2vec6(X, vel);
+	} else if ((type == CPLDPIN) || (type == PINNED)) {
+		// enforce direction vector to be a unit vector
+		scalevector(X + 3, 1.0, X + 3);
+		vec q_X;
+		moordyn::array2vec(X + 3, q_X);
+		pos(Eigen::seqN(3, 3)) = vec::Zero();
+		pos(Eigen::seqN(3, 3)) = q_X;
+		// (rotational velocities about unrotated axes)
+		vec w_X;
+		moordyn::array2vec(X, w_X);
+		vel(Eigen::seqN(3, 3)) = vec::Zero();
+		vel(Eigen::seqN(3, 3)) = w_X;
+	}
+}
+
+void
+Rod::setState(vec6 pos, vec6 vel, double time)
 {
 	// store current time
 	setTime(time);
 
 	// copy over state values for potential use during derivative calculations
 	if (type == FREE) {
-		// enforce direction vector to be a unit vector
-		scalevector(X + 9, 1.0, X + 9);
-
 		// end A coordinates & Rod direction unit vector
-		moordyn::array2vec6(X + 6, r6);
+		r6(Eigen::seqN(0, 3)) = pos(Eigen::seqN(0, 3));
+		r6(Eigen::seqN(3, 3)) = pos(Eigen::seqN(3, 3)).normalized();
 		// end A velocityes & rotational velocities about unrotated axes
-		moordyn::array2vec6(X, v6);
-		setDependentStates();
+		v6 = vel;
 	} else if ((type == CPLDPIN) || (type == PINNED)) {
-		// enforce direction vector to be a unit vector
-		scalevector(X + 3, 1.0, X + 3);
-
-		// (Rod direction unit vector)
-		vec q_X;
-		moordyn::array2vec(X + 3, q_X);
-		r6(Eigen::seqN(3, 3)) = q_X;
-		// (rotational velocities about unrotated axes)
-		vec w_X;
-		moordyn::array2vec(X, w_X);
-		v6(Eigen::seqN(3, 3)) = w_X;
-		setDependentStates();
+		r6(Eigen::seqN(3, 3)) = pos(Eigen::seqN(3, 3)).normalized();
+		v6(Eigen::seqN(3, 3)) = vel(Eigen::seqN(3, 3));
 	} else {
 		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
 		throw moordyn::invalid_value_error("Invalid rod type");
 	}
+	setDependentStates();
 
 	if (N == 0) {
 		// for zero-length Rod case, set orientation stuff to zero
@@ -628,6 +728,20 @@ Rod::setDependentStates()
 void
 Rod::getStateDeriv(double* Xd)
 {
+	vec6 vel, acc;
+	std::tie(vel, acc) = getStateDeriv();
+	if (type == FREE) {
+		moordyn::vec62array(vel, Xd + 6);
+		moordyn::vec62array(acc, Xd);
+	} else {
+		moordyn::vec2array(vel(Eigen::seqN(3, 3)), Xd + 6);
+		moordyn::vec2array(acc(Eigen::seqN(3, 3)), Xd);
+	}
+}
+
+std::pair<vec6, vec6>
+Rod::getStateDeriv()
+{
 	// attempting error handling <<<<<<<<
 	for (unsigned int i = 0; i <= N; i++) {
 		if (isnan(r[i].sum())) {
@@ -659,6 +773,7 @@ Rod::getStateDeriv(double* Xd)
 	    rho * d * d * d * d / 64.0 * q2.asDiagonal();
 
 	// solve for accelerations in [M]{a}={f}, then fill in state derivatives
+	vec6 vel6, acc6;
 	if (type == FREE) {
 		if (N == 0) {
 			// special zero-length Rod case, orientation is not an actual state
@@ -671,11 +786,11 @@ Rod::getStateDeriv(double* Xd)
 			const vec acc = M_out3.inverse() * Fnet_out3;
 
 			// dxdt = V   (velocities)
-			moordyn::vec2array(v6(Eigen::seqN(0, 3)), Xd + 6);
-			memset(Xd + 9, 0.0, 3 * sizeof(double));
+			vel6(Eigen::seqN(0, 3)) = v6(Eigen::seqN(0, 3));
+			vel6(Eigen::seqN(3, 3)) = vec::Zero();
 			// dVdt = a   (accelerations)
-			moordyn::vec2array(acc, Xd);
-			memset(Xd + 3, 0.0, 3 * sizeof(double));
+			acc6(Eigen::seqN(0, 3)) = acc;
+			acc6(Eigen::seqN(3, 3)) = vec::Zero();
 		} else {
 			// For small systems, which are anyway larger than 4x4, we can use
 			// the ColPivHouseholderQR algorithm, which is working with every
@@ -683,18 +798,14 @@ Rod::getStateDeriv(double* Xd)
 			// faster See:
 			// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 			Eigen::ColPivHouseholderQR<mat6> solver(M_out6);
-			const vec6 acc = solver.solve(Fnet_out);
-
-			// dVdt = a   (accelerations)
-			moordyn::vec62array(acc, Xd);
+			acc6 = solver.solve(Fnet_out);
 
 			// dxdt = V   (velocities)
-			moordyn::vec2array(v6(Eigen::seqN(0, 3)), Xd + 6);
+			vel6(Eigen::seqN(0, 3)) = v6(Eigen::seqN(0, 3));
 			// rate of change of unit vector components!!  CHECK!   <<<<<
 			const vec v3 = v6(Eigen::seqN(3, 3));
 			const vec r3 = r6(Eigen::seqN(3, 3));
-			const vec w = v3.cross(r3);
-			moordyn::vec2array(w, Xd + 9);
+			vel6(Eigen::seqN(3, 3)) = v3.cross(r3);
 		}
 	} else {
 		// For small systems, which are anyway larger than 4x4, we can use the
@@ -703,16 +814,16 @@ Rod::getStateDeriv(double* Xd)
 		// See:
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 		Eigen::ColPivHouseholderQR<mat6> solver(M_out6);
-		const vec6 acc = solver.solve(Fnet_out);
+		acc6 = solver.solve(Fnet_out);
 
+		// dxdt = V   (velocities)
+		vel6(Eigen::seqN(0, 3)) = vec::Zero();
+		vel6(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
 		// dVdt = a   (accelerations)
-		moordyn::vec2array(acc(Eigen::seqN(3, 3)), Xd);
-		// rate of change of unit vector components!!  CHECK!   <<<<<
-		const vec v3 = v6(Eigen::seqN(3, 3));
-		const vec r3 = r6(Eigen::seqN(3, 3));
-		const vec w = v3.cross(r3);
-		moordyn::vec2array(w, Xd + 3);
+		acc6(Eigen::seqN(0, 3)) = vec::Zero();
 	}
+
+	return std::make_pair(vel6, acc6);
 }
 
 vec6
@@ -1292,7 +1403,7 @@ Rod::doRHS()
 // write output file for line  (accepts time parameter since retained time value
 // (t) will be behind by one line time step
 void
-Rod::Output(double time)
+Rod::Output(real time)
 {
 	// run through output flags
 	// if channel is flagged for output, write to file.

@@ -282,14 +282,22 @@ class Rod : public LogUser
 	 * @param TopOfLine 1 for attachments at the last node of the line (top).
 	 * 0 for attachments at the first node of the line (bottom)
 	 */
-	void addLineToRodEndA(Line* theLine, int TopOfLine);
+	void DEPRECATED addLineToRodEndA(Line* theLine, int TopOfLine);
 
 	/** @brief Attach a line endpoint to the rod end point B
 	 * @param theLine The line to be attached
 	 * @param TopOfLine 1 for attachments at the last node of the line (top).
 	 * 0 for attachments at the first node of the line (bottom)
 	 */
-	void addLineToRodEndB(Line* theLine, int TopOfLine);
+	void DEPRECATED addLineToRodEndB(Line* theLine, int TopOfLine);
+
+	/** @brief Attach a line endpoint to the rod end point A
+	 * @param line The line to be attached
+	 * @param line_end_point The line endpoint
+	 * @param rod_end_point The rod endpoint
+	 * @throws moordyn::invalid_value_error If the end points are not valid
+	 */
+	void addLine(Line* line, EndPoints line_end_point, EndPoints rod_end_point);
 
 	/** @brief Dettach a line endpoint from the end point A
 	 * @param lineID The line identifier
@@ -302,10 +310,10 @@ class Rod : public LogUser
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
-	void removeLineFromRodEndA(int lineID,
-	                           int* topOfLine,
-	                           double rEnd[],
-	                           double rdEnd[]);
+	void DEPRECATED removeLineFromRodEndA(int lineID,
+	                                      int* topOfLine,
+	                                      double rEnd[],
+	                                      double rdEnd[]);
 
 	/** @brief Dettach a line endpoint from the end point B
 	 * @param lineID The line identifier
@@ -318,16 +326,29 @@ class Rod : public LogUser
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
-	void removeLineFromRodEndB(int lineID,
-	                           int* topOfLine,
-	                           double rEnd[],
-	                           double rdEnd[]);
+	void DEPRECATED removeLineFromRodEndB(int lineID,
+	                                      int* topOfLine,
+	                                      double rEnd[],
+	                                      double rdEnd[]);
+
+	/** @brief Dettach a line
+	 * @param end_point The rod end point where the line is attached
+	 * @param lineID The line ID
+	 * @return The line end point that was attached to the rod
+	 * @throws moordyn::invalid_value_error If there is no an attached line
+	 * with the provided @p lineID
+	 */
+	EndPoints removeLine(EndPoints end_point, int lineID);
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	inline void setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
+	{
+		env = env_in;
+		waves = waves_in;
+	}
 
 	/** @brief Initialize the rod state
 	 * @param X The output state variables, i.e. the velocity [x,y,z] and
@@ -336,7 +357,18 @@ class Rod : public LogUser
 	 * @note ground- or body-pinned rods have already had
 	 * moordyn::Rod::setKinematics() called
 	 */
-	void initializeRod(double* X);
+	void DEPRECATED initializeRod(double* X);
+
+	/** @brief Initialize the rod state
+	 * @return The position and direction (first) and the linear and angular
+	 * velocity (second)
+	 * @note moordyn::Rod::r6 and moordyn::Rod::v6 must already be set
+	 * @note ground- or body-pinned rods have already had
+	 * moordyn::Rod::setKinematics() called
+	 * @note In the case of pinned rods, just the rod directions and angular
+	 * velocites shall be considered
+	 */
+	std::pair<vec6, vec6> initialize();
 
 	/** @brief Number of segments
 	 *
@@ -371,9 +403,9 @@ class Rod : public LogUser
 
 	/** @brief store wave/current kinematics time series for this line
 	 *
-	 * This is used when nodal approaches are selected, i.e. WaveKin = 4 or 5,
-	 * Currents = 3 or 4
-	 *
+	 * This is used when nodal approaches are selected, i.e.
+	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
+	 * or CURRENTS_DYNAMIC_NODE
 	 * @param nt Number of time steps
 	 * @param dt Time step
 	 * @param zeta_in The wave elevations
@@ -383,12 +415,35 @@ class Rod : public LogUser
 	 *
 	 * @note Working in progress
 	 */
-	void storeWaterKin(unsigned int nt,
-	                   real dt,
-	                   const real** zeta_in,
-	                   const real** f_in,
-	                   const real*** u_in,
-	                   const real*** ud_in);
+	void DEPRECATED storeWaterKin(unsigned int nt,
+	                              real dt,
+	                              const real** zeta_in,
+	                              const real** f_in,
+	                              const real*** u_in,
+	                              const real*** ud_in);
+
+	/** @brief store wave/current kinematics time series for this line
+	 *
+	 * This is used when nodal approaches are selected, i.e.
+	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
+	 * or CURRENTS_DYNAMIC_NODE
+	 * @param nt Number of time steps
+	 * @param dt Time step
+	 * @param zeta The wave elevations
+	 * @param f The fluid fractions
+	 * @param u The flow velocity
+	 * @param ud The flow acceleration
+	 * @throws invalid_value_error If @p zeta, @p f, @p u and @p ud have not the
+	 * same size, in both dimensions.
+	 * @throws invalid_value_error If the length of @p zeta, @p f, @p u or @p ud
+	 * is not equal to moordyn::Line::getN() + 1
+	 * @note Working in progress
+	 */
+	void storeWaterKin(real dt,
+	                   std::vector<std::vector<moordyn::real>> zeta,
+	                   std::vector<std::vector<moordyn::real>> f,
+	                   std::vector<std::vector<vec>> u,
+	                   std::vector<std::vector<vec>> ud);
 
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients
@@ -436,7 +491,28 @@ class Rod : public LogUser
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
 	 */
-	void setState(double* X, const double time);
+	void DEPRECATED setState(double* X, const double time);
+
+	/** @brief Set the rod state
+	 *
+	 * for a free Rod, there are 12 states:
+	 * [x, y, z velocity of end A, then rate of change of u/v/w coordinates of
+	 * unit vector pointing toward end B, then x, y, z coordinate of end A,
+	 * u/v/w coordinates of unit vector pointing toward end B]
+	 *
+	 * for a pinned Rod, there are 6 states (rotational only):
+	 * [rate of change of u/v/w coordinates of unit vector pointing toward end
+	 * B, then u/v/w coordinates of unit vector pointing toward end B]
+	 *
+	 * @param pos The position and direction (position is ignored in pinned
+	 * rods)
+	 * @param vel The linear and angular velocity (linear one is ignored in
+	 * pinned rods)
+	 * @param time Simulation time
+	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
+	 * PINNED
+	 */
+	void setState(vec6 pos, vec6 vel, double time);
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps
@@ -480,10 +556,19 @@ class Rod : public LogUser
 	void setDependentStates();
 
 	/** @brief calculate the forces and state derivatives of the rod
-	 * @param Xd The output line states
+	 * @param Xd The output rod states
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	void getStateDeriv(double* Xd);
+	void DEPRECATED getStateDeriv(double* Xd);
+
+	/** @brief calculate the forces and state derivatives of the rod
+	 * @return The linear and angular velocity (first), and the linear and
+	 * angular accelerations (second)
+	 * @throws nan_error If nan values are detected in any node position
+	 * @note The returned linear velocity and accelerations for pinned rods
+	 * should be ignored
+	 */
+	std::pair<vec6, vec6> getStateDeriv();
 
 	/** @brief function to return net force on rod (and possibly moment at end A
 	 * if it's not pinned)
@@ -516,7 +601,7 @@ class Rod : public LogUser
 	 */
 	void doRHS();
 
-	void Output(double);
+	void Output(real);
 
 #ifdef USEGL
 	void drawGL(void);

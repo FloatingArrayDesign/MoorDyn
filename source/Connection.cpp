@@ -18,6 +18,7 @@
 #include "Connection.h"
 #include "Line.hpp"
 #include "Waves.hpp"
+#include <tuple>
 
 namespace moordyn {
 
@@ -168,7 +169,7 @@ Connection::getM(mat& M_out)
 	M_out = M;
 };
 
-double
+real
 Connection::GetConnectionOutput(OutChanProps outChan)
 {
 	if (outChan.QType == PosX)
@@ -208,29 +209,45 @@ Connection::initiateStep(const double rFairIn[3],
                          const double rdFairIn[3],
                          real time)
 {
+	vec pos, vel;
+	moordyn::array2vec(rFairIn, pos);
+	moordyn::array2vec(rdFairIn, vel);
+	try {
+		initiateStep(pos, vel, time);
+	} catch (moordyn::invalid_value_error& e) {
+		throw;
+	}
+}
+
+void
+Connection::initiateStep(vec rFairIn, vec rdFairIn, real time)
+{
 	t0 = time; // set start time for BC functions
 
-	if (type == COUPLED) { // if vessel type
-		// update values to fairlead position and velocity functions
-		// (function of time)
-		moordyn::array2vec(rFairIn, r_ves);
-		moordyn::array2vec(rdFairIn, rd_ves);
+	if (type != COUPLED) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
+
+	// update values to fairlead position and velocity functions
+	// (function of time)
+	r_ves = rFairIn;
+	rd_ves = rdFairIn;
 
 	// do I want to get precalculated values here at each FAST time step or at
 	// each line time step?
 };
 
 void
-Connection::updateFairlead(const real time)
+Connection::updateFairlead(real time)
 {
-	t = time;
+	setTime(time);
 
 	if (type != COUPLED) {
-		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
-		       << "called for wrong Connection type. Connection " << number
-		       << " type " << TypeName(type) << endl;
-		throw moordyn::invalid_value_error("Wrong connection type");
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// set fairlead position and velocity based on BCs (linear model for now)
@@ -246,10 +263,9 @@ void
 Connection::setKinematics(double* r_in, double* rd_in)
 {
 	if (type != FIXED) {
-		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
-		       << "called for wrong Connection type. Connection " << number
-		       << " type " << type << endl;
-		throw moordyn::invalid_value_error("Wrong connection type");
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// set position and velocity
@@ -265,10 +281,9 @@ void
 Connection::setKinematics(vec r_in, vec rd_in)
 {
 	if (type != FIXED) {
-		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
-		       << "called for wrong Connection type. Connection " << number
-		       << " type " << type << endl;
-		throw moordyn::invalid_value_error("Wrong connection type");
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// set position and velocity
@@ -283,63 +298,77 @@ Connection::setKinematics(vec r_in, vec rd_in)
 moordyn::error_id
 Connection::setState(const double X[6], const double time)
 {
+	vec pos, vel;
+	moordyn::array2vec(X + 3, pos);
+	moordyn::array2vec(X, vel);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		setState(pos, vel, time);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+void
+Connection::setState(vec pos, vec vel, real time)
+{
 	// store current time
 	setTime(time);
 
 	// the kinematics should only be set with this function of it's an
 	// independent/free connection
-	if (type != FREE) // "connect" type
-	{
-		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
-		       << "called for wrong Connection type. Connection " << number
-		       << " type " << type << endl;
-		return MOORDYN_INVALID_VALUE;
+	if (type != FREE) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// from state values, get r and rdot values
-	moordyn::array2vec(X + 3, r);
-	moordyn::array2vec(X, rd);
+	r = pos;
+	rd = vel;
 
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
 		a.line->setEndKinematics(r, rd, a.end_point);
-
-	return MOORDYN_SUCCESS;
 }
 
 // calculate the forces and state derivatives of the connectoin
 moordyn::error_id
 Connection::getStateDeriv(double Xd[6])
 {
+	vec v, a;
+	std::tie(v, a) = getStateDeriv();
+	moordyn::vec2array(v, Xd + 3);
+	moordyn::vec2array(a, Xd);
+}
+
+std::pair<vec, vec>
+Connection::getStateDeriv()
+{
 	// the RHS is only relevant (there are only states to worry about) if it is
 	// a Connect type of Connection
 	if (type != FREE) {
-		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
-		       << "called for wrong Connection type. Connection " << number
-		       << " type " << type << endl;
-		return MOORDYN_INVALID_VALUE;
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
-	if (t ==
-	    0) // with current IC gen approach, we skip the first call to the line
-	       // objects, because they're set AFTER the call to the connects
-	{      // above is no longer true!!! <<<
-		moordyn::vec2array(rd, Xd + 3);
-		memset(Xd, 0.0, 3 * sizeof(double));
-	} else {
-		// cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " <<
-		// Fnet[1] << " " << Fnet[2] << endl;
-		doRHS();
+	// with current IC gen approach, we skip the first call to the line objects,
+	// because they're set AFTER the call to the connects BUG: above is no
+	// longer true!!! <<<
+	if (t == 0)
+		return std::make_pair(rd, vec::Zero());
 
-		// solve for accelerations in [M]{a}={f}
-		const vec acc = M.inverse() * Fnet;
+	// cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " <<
+	// Fnet[1] << " " << Fnet[2] << endl;
+	doRHS();
 
-		// update states
-		moordyn::vec2array(rd, Xd + 3);
-		moordyn::vec2array(acc, Xd);
-	}
+	// solve for accelerations in [M]{a}={f}
+	const vec acc = M.inverse() * Fnet;
 
-	return MOORDYN_SUCCESS;
+	// update states
+	return std::make_pair(rd, acc);
 };
 
 moordyn::error_id
