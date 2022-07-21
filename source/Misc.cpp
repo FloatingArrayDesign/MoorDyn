@@ -14,7 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Misc.h"
+#include "Misc.hpp"
 #include <algorithm>
 
 using namespace std;

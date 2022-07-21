@@ -41,15 +41,16 @@ HEADERS = ../../source/Body.h \
           ../../source/kiss_fft.h \
           ../../source/kiss_fftr.h \
           ../../source/Line.h \
-          ../../source/Misc.h \
           ../../source/MoorDyn2.h \
           ../../source/MoorDynAPI.h \
+          ../../source/MoorDyn.h \
           ../../source/Rod.h \
           ../../source/Waves.h \
           ../../source/Body.hpp \
           ../../source/Connection.hpp \
           ../../source/Line.hpp \
           ../../source/Log.hpp \
+          ../../source/Misc.hpp \
           ../../source/MoorDyn2.hpp \
           ../../source/QSlines.hpp \
           ../../source/Rod.hpp \

@@ -22,7 +22,7 @@
 
 #include "MoorDynAPI.h"
 #include "Log.hpp"
-#include "Misc.h"
+#include "Misc.hpp"
 
 #include "Waves.hpp"
 #include "MoorDyn.h"

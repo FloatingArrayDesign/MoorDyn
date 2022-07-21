@@ -16,10 +16,9 @@
 
 // This is version 2.a5, 2021-03-16
 
-#include "Misc.h"
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
-#include "Rod.h"
+#include "Rod.hpp"
 
 #ifdef LINUX
 #include <cmath>
