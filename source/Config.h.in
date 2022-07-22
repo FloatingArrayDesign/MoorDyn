@@ -9,12 +9,14 @@
 #ifndef __MOORDYN_PLATFORM_H__
 #define __MOORDYN_PLATFORM_H__
 
-#define MOORDYN_MAJOR_VERSION ${MOORDYN_MAJOR_VERSION}
-#define MOORDYN_MINOR_VERSION ${MOORDYN_MINOR_VERSION}
-#define MOORDYN_VERSION ${MOORDYN_VERSION}
+#define MOORDYN_MAJOR_VERSION                                                  \
+	$ { MOORDYN_MAJOR_VERSION }
+#define MOORDYN_MINOR_VERSION                                                  \
+	$ { MOORDYN_MINOR_VERSION }
+#define MOORDYN_VERSION                                                        \
+	$ { MOORDYN_VERSION }
 #define MOORDYN_VERSION_STRING "${MOORDYN_VERSION}"
 
 #cmakedefine MOORDYN_SINGLEPRECISSION
 
 #endif // __MOORDYN_PLATFORM_H__
-
