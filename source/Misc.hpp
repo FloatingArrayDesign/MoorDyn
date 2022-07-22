@@ -281,7 +281,7 @@ std::vector<T>
 vector_slice(std::vector<T> const& v, unsigned int m, unsigned int n)
 {
 	auto first = v.begin() + m;
-	auto last = v.begin() + n + 1;
+	auto last = first + n;
 	std::vector<T> v2(first, last);
 	return v2;
 }
