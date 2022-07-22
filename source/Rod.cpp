@@ -282,12 +282,14 @@ Rod::initializeRod(double* X)
 {
 	vec6 pos, vel;
 	std::tie(pos, vel) = initialize();
-	if (type == FREE) {
-		moordyn::vec62array(vel, X);
-		moordyn::vec62array(pos, X + 6);
-	} else if ((type == PINNED) || (type == CPLDPIN)) {
-		moordyn::vec2array(vel(Eigen::seqN(3, 3)), X);
-		moordyn::vec2array(pos(Eigen::seqN(3, 3)), X + 3);
+	if (X) {
+		if (type == FREE) {
+			moordyn::vec62array(vel, X);
+			moordyn::vec62array(pos, X + 6);
+		} else if ((type == PINNED) || (type == CPLDPIN)) {
+			moordyn::vec2array(vel(Eigen::seqN(3, 3)), X);
+			moordyn::vec2array(pos(Eigen::seqN(3, 3)), X + 3);
+		}
 	}
 }
 

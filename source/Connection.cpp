@@ -111,8 +111,10 @@ Connection::initializeConnect(double X[6])
 {
 	vec pos, vel;
 	std::tie(pos, vel) = initialize();
-	vec2array(vel, X);
-	vec2array(pos, X + 3);
+	if (X) {
+		vec2array(vel, X);
+		vec2array(pos, X + 3);
+	}
 }
 
 std::pair<vec, vec>
