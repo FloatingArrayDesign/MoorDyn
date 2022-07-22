@@ -159,7 +159,7 @@ class Body : public LogUser
 		return "UNKNOWN";
 	}
 
-	/// Line ID
+	/// Body ID
 	int number;
 	/// Type of body
 	types type;
@@ -372,5 +372,6 @@ class Body : public LogUser
 	void drawGL(void);
 #endif
 };
+
 
 } // ::moordyn
