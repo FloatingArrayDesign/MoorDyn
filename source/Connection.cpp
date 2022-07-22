@@ -401,35 +401,13 @@ Connection::getNetForceAndMass(const double rBody[3],
                                double Fnet_out[6],
                                double M_out[6][6])
 {
-	doRHS();
-
-	// make sure Fnet_out and M_out are zeroed first <<<<<<<<< can delete this
-	// <<<<<<<
-	for (int J = 0; J < 6; J++) {
-		Fnet_out[J] = 0.0;
-		for (int K = 0; K < 6; K++)
-			M_out[J][K] = 0.0;
-	}
-
-	double rRel[3]; // position of connection relative to the body reference
-	                // point (global orientation frame)
-
-	if (rBody == NULL)
-		moordyn::vec2array(r, rRel);
-	else
-		for (int J = 0; J < 3; J++)
-			rRel[J] =
-			    r[J] - rBody[J]; // vector from body reference point to node
-
-	// convert segment net force into 6dof force about body ref point
-	// DEPRECATED: This conversion will not be necessary
-	double fnet[3];
-	moordyn::vec2array(Fnet, fnet);
-	translateForce3to6DOF(rRel, fnet, Fnet_out);
-
-	// convert segment mass matrix to 6by6 mass matrix about body ref point
-	translateMass3to6DOF(rRel, M, M_out);
-
+	vec pos;
+	array2vec(rBody, pos);
+	vec6 fnet;
+	mat6 mass;
+	getNetForceAndMass(fnet, mass, pos);
+	vec62array(fnet, Fnet_out);
+	mat62array(mass, M_out);
 	return MOORDYN_SUCCESS;
 }
 

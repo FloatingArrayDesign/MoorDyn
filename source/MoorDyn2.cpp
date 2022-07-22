@@ -909,7 +909,7 @@ moordyn::MoorDyn::ReadInFile()
 				strncpy(typeWord, entries[1].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
-				decomposeString(typeWord, let1, num1, let2, num2, let3);
+				str::decomposeString(typeWord, let1, num1, let2, num2, let3);
 
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX")) {
@@ -990,7 +990,7 @@ moordyn::MoorDyn::ReadInFile()
 				strncpy(typeWord, entries[2].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
-				decomposeString(typeWord, let1, num1, let2, num2, let3);
+				str::decomposeString(typeWord, let1, num1, let2, num2, let3);
 
 				Rod::types type;
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
@@ -1188,7 +1188,7 @@ moordyn::MoorDyn::ReadInFile()
 				strncpy(typeWord, entries[1].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
-				decomposeString(typeWord, let1, num1, let2, num2, let3);
+				str::decomposeString(typeWord, let1, num1, let2, num2, let3);
 
 				if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
 				    !strcmp(let1, "FIX")) {
@@ -1353,7 +1353,8 @@ moordyn::MoorDyn::ReadInFile()
 					strncpy(typeWord, entries[2 + I].c_str(), 9);
 					typeWord[9] = '\0';
 					// divided outWord into letters and numbers
-					decomposeString(typeWord, let1, num1, let2, num2, let3);
+					str::decomposeString(
+					    typeWord, let1, num1, let2, num2, let3);
 
 					if (!strlen(num1)) {
 						LOGERR
@@ -1438,7 +1439,7 @@ moordyn::MoorDyn::ReadInFile()
 				strncpy(typeWord, entries[0].c_str(), 9);
 				typeWord[9] = '\0';
 				// divided outWord into letters and numbers
-				decomposeString(typeWord, let1, num1, let2, num2, let3);
+				str::decomposeString(typeWord, let1, num1, let2, num2, let3);
 
 				if (!strlen(num1)) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1591,7 +1592,8 @@ moordyn::MoorDyn::ReadInFile()
 					typeWord[9] = '\0';
 					strncpy(typeWord, entries[j].c_str(), 9);
 					// divided outWord into letters and numbers
-					decomposeString(typeWord, let1, num1, let2, num2, let3);
+					str::decomposeString(
+					    typeWord, let1, num1, let2, num2, let3);
 
 					// declare dummy struct to be copied onto end of vector (and
 					// filled in later);

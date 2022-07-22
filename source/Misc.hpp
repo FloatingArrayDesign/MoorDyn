@@ -14,8 +14,7 @@
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MISC_H
-#define MISC_H
+#pragma once
 
 #include "MoorDynAPI.h"
 #include "Eigen/Dense"
@@ -483,9 +482,32 @@ has(const string& str, const vector<string> terms);
 /** @brief Split a string in a list of substrings
  * @param str String to split
  * @param sep Separator
+ * @return The list of substrings
  */
 vector<string>
 split(const string& str, const char sep);
+
+/** @brief Split a string in a list of substrings
+ *
+ * The space is used as separator
+ * @param str String to split
+ * @return The list of substrings
+ */
+inline vector<string>
+split(const string& s)
+{
+	return split(s, ' ');
+}
+
+/** @brief Split a string into separate letter strings and integers
+ */
+int
+decomposeString(char outWord[10],
+                char let1[10],
+                char num1[10],
+                char let2[10],
+                char num2[10],
+                char let3[10]);
 
 } // ::moordyn::str
 
@@ -860,6 +882,43 @@ unitvector(vec& u, const vec& r1, const vec& r2)
 	return l;
 }
 
+/** @brief Compute a vector with the same direction but different length
+ * @param u The input vector
+ * @param newlength The new length of the output vector
+ * @param y The output vector
+ * @note If the input vector has null length, the output vector will as well,
+ * no matter @p newlength is provided
+ */
+template<typename T>
+inline void
+scalevector(const vec& u, T newlength, vec& y)
+{
+	const moordyn::real l2 = u.squaredNorm();
+	if (l2 == 0.0) {
+		y = u;
+		return;
+	}
+	const moordyn::real scaler = (moordyn::real)newlength / sqrt(l2);
+	y = scaler * u;
+}
+
+/** @brief Compute a vector with the same direction but different length
+ * @param u The input vector
+ * @param newlength The new length of the output vector
+ * @param y The output vector
+ * @note If the input vector has null length, the output vector will as well,
+ * no matter @p newlength is provided
+ */
+template<typename T>
+inline void DEPRECATED
+scalevector(const T* u, T newlength, T* y)
+{
+	vec v1, v2;
+	array2vec(u, v1);
+	scalevector(v1, newlength, v2);
+	vec2array(v2, y);
+}
+
 /** @brief Produce alternator matrix
  *
  * See "anti-symmetric tensor components" from Sadeghi and Incecik
@@ -1002,6 +1061,16 @@ RotXYZ(vec rads)
 std::pair<real, real>
 orientationAngles(vec q);
 
+/** @brief Convenience function to calculate curvature based on adjacent
+ * segments' direction vectors and their combined length
+ * @param length The length of the 2 segments
+ * @param q1 First direction vector
+ * @param q2 Second direction vector
+ * @return The curvature
+ */
+moordyn::real
+GetCurvature(moordyn::real length, const vec& q1, const vec& q2);
+
 /**
  * @}
  */
@@ -1010,9 +1079,6 @@ orientationAngles(vec q);
 
 const double pi = 3.14159265;
 const double rad2deg = 57.29577951;
-
-const int wordy =
-    1; // flag to enable excessive output (if > 0) for troubleshooting
 
 const int nCoef = 30; // maximum number of entries to allow in nonlinear
                       // coefficient lookup tables
@@ -1221,550 +1287,17 @@ const int FZ = 13;
 //	  char FZ  [10]    = "(N)      ";
 // };
 
-// below are function prototypes for misc functions
-
-// TODO: replace duplicates for different data types with templated functions
-// <<< (or remove vector types)
-
-void
-interpArray(int ndata,
-            int n,
-            double* xdata,
-            double* ydata,
-            double* xin,
-            double* yout);
-void
-interpArray(int ndata,
-            int n,
-            vector<double> xdata,
-            vector<double> ydata,
-            vector<double> xin,
-            vector<double>& yout);
-
-double
-calculate4Dinterpolation(double**** f,
-                         int ix0,
-                         int iy0,
-                         int iz0,
-                         int it0,
-                         double fx,
-                         double fy,
-                         double fz,
-                         double ft);
-double
-calculate3Dinterpolation(double*** f,
-                         int ix0,
-                         int iy0,
-                         int iz0,
-                         double fx,
-                         double fy,
-                         double fz);
-double
-calculate2Dinterpolation(double** f, int ix0, int iy0, double fx, double fy);
-int
-getInterpNums(double* xlist, int nx, double xin, double* fout);
-void
-getInterpNums(double* xlist, int nx, double xin, double fout[2], int iout[2]);
-
-moordyn::real
-GetCurvature(moordyn::real length, const vec& q1, const vec& q2);
-
-void
-GetOrientationAngles(double q[3],
-                     double* phi,
-                     double* sinPhi,
-                     double* cosPhi,
-                     double* tanPhi,
-                     double* beta,
-                     double* sinBeta,
-                     double* cosBeta);
-
-int
-decomposeString(char outWord[10],
-                char let1[10],
-                char num1[10],
-                char let2[10],
-                char num2[10],
-                char let3[10]);
-
-/** @brief Eye matrix component
- *
- * Simply returns 1.0 if both component indexes matches, 0 otherwise
- * @param I Row
- * @param J Column
- * @return The eye matrix component
- */
-inline double
-eye(int I, int J)
-{
-	return (double)(I == J);
-}
-
-void DEPRECATED
-getH(double r[3], double H[3][3]);
-void DEPRECATED
-getH(double r[3], double H[9]);
-
-/** @brief Get the length of a vector
- * @param v The vector
- * @return The vector length
- */
-template<typename T>
-inline double
-vectorLength(T* v)
-{
-	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-}
-
-/**
- * @{
- */
-
-/** @brief Normalized direction vector
- * @param u The output normalized direction vector
- * @param r1 The orig point
- * @param r2 The dest point
- * @return The distance between the points
- */
-template<typename T>
-inline double
-unitvector(T* u, const T* r1, const T* r2)
-{
-	const T v[3] = { r2[0] - r1[0], r2[1] - r1[1], r2[2] - r1[2] };
-	const double l = vectorLength(v);
-	u[0] = v[0] / l;
-	u[1] = v[1] / l;
-	u[2] = v[2] / l;
-	return l;
-}
-
-inline double
-unitvector(double* u, const vec& r1, const vec& r2)
-{
-	vec v = r2 - r1;
-	const double l = v.norm();
-	moordyn::vec2array(v / l, u);
-	return l;
-}
-
-template<typename T>
-inline double
-unitvector(vector<T>& u, vector<T>& r1, vector<T>& r2)
-{
-	return unitvector(u.data(), r1.data(), r2.data());
-}
-
-template<typename T>
-inline double
-unitvector(T* u, vector<T>& r1, vector<T>& r2)
-{
-	return unitvector(u, r1.data(), r2.data());
-}
-
-/**
- * @}
- */
-
-void
-transposeM3(double A[3][3], double Atrans[3][3]);
-void
-transposeM3(double A[9], double Atrans[9]);
-
-void
-addM6(double Min1[6][6], double Min2[6][6], double Mout[6][6]);
-
-void
-multiplyM3(double A[3][3], double B[3][3], double C[3][3]);
-void
-multiplyM3(double A[9], double B[9], double C[9]);
-
-void
-multiplyM3AtransB(double A[3][3], double B[3][3], double C[3][3]);
-void
-multiplyM3AtransB(double A[9], double B[9], double C[9]);
-
-void
-multiplyM3ABtrans(double A[3][3], double B[3][3], double C[3][3]);
-void
-multiplyM3ABtrans(double A[9], double B[9], double C[9]);
-
-double
-distance3d(double* r1, double* r2);
-
-double
-dotProd(vector<double>& A, vector<double>& B);
-double
-dotProd(double A[], vector<double>& B);
-double
-dotProd(double A[], double B[]);
-
-/**
- * @{
- */
-
-/** @brief Inner product of 3D vectors
- * @param a First vector
- * @param b Second vector
- * @return the inner product result
- * @note This function is way faster than any other general solution
- */
-template<typename T>
-inline T
-dotProd3(const T* a, const T* b)
-{
-	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-template<typename T>
-inline moordyn::real DEPRECATED
-dotProd3(const vec& a, const T* b)
-{
-	vec bb;
-	moordyn::array2vec(b, bb);
-	return a.dot(bb);
-}
-
-template<typename T>
-inline moordyn::real DEPRECATED
-dotProd3(const T* a, const vec& b)
-{
-	vec aa;
-	moordyn::array2vec(a, aa);
-	return aa.dot(b);
-}
-
-/**
- * @}
- */
-
-/**
- * @{
- */
-
-/** @brief Compute a nw vector with the same direction of the provided one, but
- * a new length
- * @param u The vector to set the direction
- * @param newlength The new length
- * @param y The output vector
- * @not If the input vector has null length, the output vector will as well,
- * no matter @p newlength is provided
- */
-template<typename T>
-inline void
-scalevector(const T* u, T newlength, T* y)
-{
-	const double l2 = dotProd3(u, u);
-	if (l2 == 0.0) {
-		memcpy(y, u, 3 * sizeof(double));
-		return;
-	}
-	const double scaler = newlength / sqrt(l2);
-	y[0] = scaler * u[0];
-	y[1] = scaler * u[1];
-	y[2] = scaler * u[2];
-}
-
-template<typename T>
-inline void
-scalevector(const vec& u, T newlength, vec& y)
-{
-	const moordyn::real l2 = u.squaredNorm();
-	if (l2 == 0.0) {
-		y = u;
-		return;
-	}
-	const moordyn::real scaler = (moordyn::real)newlength / sqrt(l2);
-	y = scaler * u;
-}
-
-template<typename T>
-inline void
-scalevector(vector<T>& u, T newlength, vector<T>& y)
-{
-	scalevector(u.data(), newlength, y.data());
-}
-
-/**
- * @}
- */
-
-/** @brief 3D cross vector product
- * @param u First vector
- * @param v Second vector
- * @param out The result
- */
-template<typename T>
-inline void
-crossProd(const T* u, const T* v, T* out)
-{
-	out[0] = u[1] * v[2] - u[2] * v[1];
-	out[1] = u[2] * v[0] - u[0] * v[2];
-	out[2] = u[0] * v[1] - u[1] * v[0];
-}
-
-template<typename T>
-inline double
-crossProd(vector<T>& u, vector<T>& v, T* out)
-{
-	return crossProd(u.data(), v.data(), out);
-}
-
-template<typename T>
-inline double
-crossProd(vector<T>& u, const T* v, T* out)
-{
-	return crossProd(u.data(), v, out);
-}
-
-void
-inverse3by3(vector<vector<double>>& minv, vector<vector<double>>& m);
-
-void
-Crout(int d, double* S, double* D);
-void DEPRECATED
-solveCrout(int d, double* LU, double* b, double* x);
-
-template<typename TwoD1, typename TwoD2>
-void DEPRECATED
-LUsolve(int n, TwoD1& A, TwoD2& LU, double* b, double* y, double* x)
-{
-	// Solves Ax=b for x
-	// LU contains LU matrices, y is a temporary vector
-	// all dimensions are n
-
-	for (int k = 0; k < n; ++k) {
-		for (int i = k; i < n; ++i) {
-			double sum = 0.;
-
-			for (int p = 0; p < k; ++p)
-				sum += LU[i][p] * LU[p][k];
-			LU[i][k] = A[i][k] - sum; // not dividing by diagonals
-		}
-		for (int j = k + 1; j < n; ++j) {
-			double sum = 0.;
-			for (int p = 0; p < k; ++p)
-				sum += LU[k][p] * LU[p][j];
-			LU[k][j] = (A[k][j] - sum) / LU[k][k];
-		}
-	}
-
-	for (int i = 0; i < n; ++i) {
-		double sum = 0.;
-		for (int k = 0; k < i; ++k)
-			sum += LU[i][k] * y[k];
-		y[i] = (b[i] - sum) / LU[i][i];
-	}
-	for (int i = n - 1; i >= 0; --i) {
-		double sum = 0.;
-		for (int k = i + 1; k < n; ++k)
-			sum += LU[i][k] * x[k];
-		x[i] = (y[i] - sum); // not dividing by diagonals
-	}
-}
-
-// void LUsolve(int n, double **A,double **LU, double*b, double *y, double*x);
-void DEPRECATED
-LUsolve3(double A[3][3], double x[3], double b[3]);
-void DEPRECATED
-LUsolve6(const double A[6][6], double x[6], const double b[6]);
-
-/** @brief Compute 3x3 matrices determinant
- * @param m The matrix
- */
-template<typename T>
-inline double
-DetM3(const T** m)
-{
-	return m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) -
-	       m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
-	       m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-}
-
-/** @brief Invert a 3x3 matrix
- * @param m The matrix to invert
- * @return The matrix determinant
- * @warning This function is overwriting the matrix
- * @note This function computes the invert without checking for non-null
- * determinants
- * @note This function is way faster than any LU decomposition for 3x3 matrices
- */
-template<typename T>
-inline double
-InvM3(T** m)
-{
-	T minv[3][3];
-	const double det = DetM3((const T**)m);
-	const double idet = 1.0 / det;
-
-	minv[0][0] = (m[1][1] * m[2][2] - m[2][1] * m[1][2]) * idet;
-	minv[0][1] = (m[0][2] * m[2][1] - m[0][1] * m[2][2]) * idet;
-	minv[0][2] = (m[0][1] * m[1][2] - m[0][2] * m[1][1]) * idet;
-	minv[1][0] = (m[1][2] * m[2][0] - m[1][0] * m[2][2]) * idet;
-	minv[1][1] = (m[0][0] * m[2][2] - m[0][2] * m[2][0]) * idet;
-	minv[1][2] = (m[1][0] * m[0][2] - m[0][0] * m[1][2]) * idet;
-	minv[2][0] = (m[1][0] * m[2][1] - m[2][0] * m[1][1]) * idet;
-	minv[2][1] = (m[2][0] * m[0][1] - m[0][0] * m[2][1]) * idet;
-	minv[2][2] = (m[0][0] * m[1][1] - m[1][0] * m[0][1]) * idet;
-
-	memcpy(m[0], minv[0], 3 * sizeof(T));
-	memcpy(m[1], minv[1], 3 * sizeof(T));
-	memcpy(m[2], minv[2], 3 * sizeof(T));
-	return det;
-}
-
-/** @brief Solve a 3x3 linear system
- * @param m The matrix to invert
- * @return The matrix determinant
- * @warning This function is overwriting the matrix
- * @note This function does not check if the matrix is actually invertible
- * @note This function is way faster than any LU decomposition for 3x3 matrices
- */
-template<typename T>
-inline double DEPRECATED
-Solve3(T** m, T* x, const T* b)
-{
-	const double det = InvM3(m);
-	x[0] = dotProd3((const T*)m[0], b);
-	x[1] = dotProd3((const T*)m[1], b);
-	x[2] = dotProd3((const T*)m[2], b);
-	return det;
-}
-
-/** @brief Duplicate a matrix
- * @param src The original matrix
- * @param dst The duplicate
- */
-template<typename T>
-inline void
-CopyMat(int n, const T** src, T** dst)
-{
-	for (int i = 0; i < n; ++i) {
-		memcpy(dst[i], src[i], n * sizeof(T));
-	}
-}
-
-void DEPRECATED
-RotMat(double x1, double x2, double x3, double TransMat[]);
-
-void
-QuaternionToDCM(double q[4], double outMat[3][3]);
-
-void DEPRECATED
-rotateM3(double Min[3][3], double rotMat[3][3], double outMat[3][3]);
-void DEPRECATED
-rotateM3(double Min[9], double rotMat[9], double outMat[9]);
-
-void DEPRECATED
-rotateM6(double Min[6][6], double rotMat[3][3], double outMat[6][6]);
-void DEPRECATED
-rotateM6(double Min[36], double rotMat[9], double outMat[36]);
-
-void DEPRECATED
-rotateVector3(double inVec[3], double rotMat[9], double outVec[3]);
-void DEPRECATED
-rotateVector6(double inVec[6], double rotMat[9], double outVec[6]);
-
-void DEPRECATED
-transformKinematics(const double rRelBody[3],
-                    const double r_in[3],
-                    const double TransMat[9],
-                    const double rd_in[6],
-                    double rOut[3],
-                    double rdOut[3]);
-void
-transformKinematicsAtoB(double rA[3],
-                        double u[3],
-                        double L,
-                        double rd_in[6],
-                        vector<double>& rOut,
-                        vector<double>& rdOut);
-void
-transformKinematicsAtoB(double rA[3],
-                        double u[3],
-                        double L,
-                        double rd_in[6],
-                        double rOut[3],
-                        double rdOut[3]);
-
-void
-translateForce6DOF(double dx[3], double F[6], double Fout[6]);
-
-void
-translateForce3to6DOF(double dx[3], double F[3], double Fout[6]);
-
-void
-transformMass3to6DOF(double r[3],
-                     double TransMat[9],
-                     double Min[3][3],
-                     double Iin[3][3],
-                     double Mout[6][6]);
-
-void
-transformMass3to6DOF(double r[3],
-                     double TransMat[9],
-                     double Min[3][3],
-                     double Iin[3][3],
-                     double Mout[6][6]);
-
-void
-translateMassInertia3to6DOF(double r[3],
-                            double Min[3][3],
-                            double Iin[3][3],
-                            double Mout[6][6]);
-
-// void translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
-void
-translateMass3to6DOF(double r[3], double Min[3][3], double Mout[6][6]);
-
-void
-translateMass3to6DOF(double r[3], mat& Min, double Mout[6][6]);
-
-void DEPRECATED
-translateMass6to6DOF(double r[3], double Min[6][6], double Mout[6][6]);
-void DEPRECATED
-translateMass6to6DOF(double r[3], double Min[36], double Mout[36]);
-
-vector<string>
-split(const string& s);
-vector<string>
-splitBar(const string& s);
-vector<string>
-splitComma(const string& s);
-
-void
-reverse(double* data, int datasize);
-void
-doIIR(double* in,
-      double* out,
-      int dataSize,
-      double* a,
-      double* b,
-      int kernelSize);
-void
-doSSfilter(double* in,
-           double* out,
-           int dataSize,
-           double* a,
-           double* beta,
-           double b0,
-           int kernelSize);
-
-void
-free2Dmem(void** theArray, int n1);
-
-double*
+double* DEPRECATED
 make1Darray(int n1);
-double**
+double** DEPRECATED
 make2Darray(int n1, int n2);
-double***
+double*** DEPRECATED
 make3Darray(int n1, int n2, int n3);
-double****
+double**** DEPRECATED
 make4Darray(int n1, int n2, int n3, int n4);
-void
+void DEPRECATED
 free2Darray(double** theArray, int n1);
-void
+void DEPRECATED
 free3Darray(double*** theArray, int n1, int n2);
-void
+void DEPRECATED
 free4Darray(double**** theArray, int n1, int n2, int n3);
-
-#endif

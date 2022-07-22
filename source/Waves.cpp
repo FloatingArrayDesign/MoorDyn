@@ -128,9 +128,9 @@ Waves::makeGrid(const char* filepath)
 	vector<string> entries;
 	coordtypes coordtype;
 
-	entries = split(lines[3]);
+	entries = moordyn::str::split(lines[3]);
 	coordtype = (coordtypes)atoi(entries[0].c_str());
-	entries = split(lines[4]);
+	entries = moordyn::str::split(lines[4]);
 	px = gridAxisCoords(coordtype, entries);
 	nx = px.size();
 	if (!nx) {
@@ -139,9 +139,9 @@ Waves::makeGrid(const char* filepath)
 		throw moordyn::invalid_value_error("Invalid line");
 	}
 
-	entries = split(lines[5]);
+	entries = moordyn::str::split(lines[5]);
 	coordtype = (coordtypes)atoi(entries[0].c_str());
-	entries = split(lines[6]);
+	entries = moordyn::str::split(lines[6]);
 	py = gridAxisCoords(coordtype, entries);
 	ny = py.size();
 	if (!ny) {
@@ -150,9 +150,9 @@ Waves::makeGrid(const char* filepath)
 		throw moordyn::invalid_value_error("Invalid line");
 	}
 
-	entries = split(lines[7]);
+	entries = moordyn::str::split(lines[7]);
 	coordtype = (coordtypes)atoi(entries[0].c_str());
-	entries = split(lines[8]);
+	entries = moordyn::str::split(lines[8]);
 	pz = gridAxisCoords(coordtype, entries);
 	nz = pz.size();
 	if (!nz) {
@@ -318,7 +318,7 @@ Waves::setup(EnvCond* env, const char* folder)
 		vector<moordyn::complex> waveelevs;
 
 		for (auto line : lines) {
-			vector<string> entries = split(line);
+			vector<string> entries = moordyn::str::split(line);
 			if (entries.size() < 3) {
 				LOGERR << "The file '" << WaveFilename
 				       << "' should have 3 columns" << endl;
@@ -392,7 +392,7 @@ Waves::setup(EnvCond* env, const char* folder)
 		vector<real> waveelevs;
 
 		for (auto line : lines) {
-			vector<string> entries = split(line);
+			vector<string> entries = moordyn::str::split(line);
 			if (entries.size() < 2) {
 				LOGERR << "The file '" << WaveFilename
 				       << "' should have 2 columns" << endl;
@@ -531,7 +531,7 @@ Waves::setup(EnvCond* env, const char* folder)
 		vector<real> UProfileUz;
 
 		for (unsigned int i = 3; i < lines.size(); i++) {
-			vector<string> entries = split(lines[i]);
+			vector<string> entries = moordyn::str::split(lines[i]);
 			if (entries.size() < 2) {
 				LOGERR << "The file '" << CurrentsFilename
 				       << "' should have at least 2 columns" << endl;
@@ -639,7 +639,7 @@ Waves::setup(EnvCond* env, const char* folder)
 		vector<vector<real>> UProfileUz;
 
 		// this is the depths row
-		vector<string> entries = split(lines[4]);
+		vector<string> entries = moordyn::str::split(lines[4]);
 		const unsigned int nzin = entries.size();
 		for (unsigned int i = 0; i < nzin; i++)
 			UProfileZ[i] = atof(entries[i].c_str());
@@ -650,7 +650,7 @@ Waves::setup(EnvCond* env, const char* folder)
 		UProfileUy = init2DArray(nzin, ntin);
 		UProfileUz = init2DArray(nzin, ntin);
 		for (unsigned int i = 6; i < lines.size(); i++) {
-			entries = split(lines[i]);
+			entries = moordyn::str::split(lines[i]);
 			const unsigned int it = i - 6;
 			if (entries.size() <= nzin) {
 				LOGERR << "The file '" << CurrentsFilename
