@@ -142,11 +142,11 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, real time)
 	// otherwise it won't be initialized
 	for (auto attached : attachedR)
 		if (attached->type == Rod::FIXED)
-			attached->initializeRod(NULL);
+			attached->initialize();
 	// If there's an attached Point, initialize it now because it won't be
 	// initialized otherwise
 	for (auto attached : attachedC)
-		attached->initializeConnect(NULL);
+		attached->initialize();
 }
 
 void
@@ -169,11 +169,11 @@ Body::initializeBody(vec6 r, vec6 rd)
 	// otherwise it won't be initialized
 	for (auto attached : attachedR)
 		if (attached->type == Rod::FIXED)
-			attached->initializeRod(NULL);
+			attached->initialize();
 	// If there's an attached Point, initialize it now because it won't be
 	// initialized otherwise
 	for (auto attached : attachedC)
-		attached->initializeConnect(NULL);
+		attached->initialize();
 
 	// create output file for writing output (and write channel header and units
 	// lines) if applicable

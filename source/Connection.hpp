@@ -240,7 +240,13 @@ class Connection : public LogUser
 	 * position [x,y,z]
 	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
-	void initializeConnect(double X[6]);
+	void DEPRECATED initializeConnect(double X[6]);
+
+	/** @brief Initialize the FREE connection state
+	 * @return The position (first) and the velocity (second)
+	 * @throws moordyn::invalid_value_error If it is not a FREE connection
+	 */
+	std::pair<vec, vec> initialize();
 
 	/** @brief Get the connection state
 	 * @param r_out The output position [x,y,z]

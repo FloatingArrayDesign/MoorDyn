@@ -109,11 +109,23 @@ Connection::removeLineFromConnect(int lineID,
 void
 Connection::initializeConnect(double X[6])
 {
+	vec pos, vel;
+	std::tie(pos, vel) = initialize();
+	vec2array(vel, X);
+	vec2array(pos, X + 3);
+}
+
+std::pair<vec, vec>
+Connection::initialize()
+{
 	// the default is for no water kinematics to be considered (or to be set
 	// externally on each node)
 	WaterKin = 0;
-	U = { 0.0, 0.0, 0.0 };
-	Ud = { 0.0, 0.0, 0.0 };
+	U = vec::Zero();
+	Ud = vec::Zero();
+
+	vec pos = vec::Zero();
+	vec vel = vec::Zero();
 
 	if (type == FREE) {
 		// pass kinematics to any attached lines so they have initial positions
@@ -122,8 +134,8 @@ Connection::initializeConnect(double X[6])
 			a.line->setEndKinematics(r, rd, a.end_point);
 
 		// assign initial node kinematics to state vector
-		moordyn::vec2array(r, X + 3);
-		moordyn::vec2array(rd, X);
+		pos = r;
+		vel = rd;
 
 		if (-env->WtrDpth > r[2]) {
 			LOGERR << "Error: water depth is shallower than Point " << number
@@ -144,6 +156,8 @@ Connection::initializeConnect(double X[6])
 	}
 
 	LOGDBG << "   Initialized Connection " << number << endl;
+
+	return std::make_pair(pos, vel);
 };
 
 // function to return connection position and velocity to Line object

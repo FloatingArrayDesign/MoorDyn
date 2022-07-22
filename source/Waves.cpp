@@ -1048,7 +1048,13 @@ MoorDyn_GetWavesKin(MoorDynWaves waves,
                     double* PDyn)
 {
 	CHECK_WAVES(waves);
-	((moordyn::Waves*)waves)->getWaveKin(x, y, z, t, U, Ud, zeta, PDyn);
+	vec u, ud;
+	moordyn::real h, p;
+	((moordyn::Waves*)waves)->getWaveKin(x, y, z, t, u, ud, h, p);
+	moordyn::vec2array(u, U);
+	moordyn::vec2array(ud, Ud);
+	*zeta = h;
+	*PDyn = p;
 	return MOORDYN_SUCCESS;
 }
 
