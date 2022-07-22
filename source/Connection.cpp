@@ -338,9 +338,18 @@ moordyn::error_id
 Connection::getStateDeriv(double Xd[6])
 {
 	vec v, a;
-	std::tie(v, a) = getStateDeriv();
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		std::tie(v, a) = getStateDeriv();
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
 	moordyn::vec2array(v, Xd + 3);
 	moordyn::vec2array(a, Xd);
+	return MOORDYN_SUCCESS;
 }
 
 std::pair<vec, vec>
