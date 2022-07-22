@@ -1551,18 +1551,21 @@ moordyn::MoorDyn::ReadInFile()
 				else if ((name == "threshIC") || (name == "ICthresh"))
 					ICthresh = atof(entries[0].c_str());
 				else if (name == "WaveKin") {
-					WaveKinTemp = (moordyn::waves_settings)atoi(entries[0].c_str());
-                    if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
-                        LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
-                }
-				else if (name == "dtWave")
+					WaveKinTemp =
+					    (moordyn::waves_settings)atoi(entries[0].c_str());
+					if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
+						LOGWRN << "Unknown WaveKin option value " << WaveKinTemp
+						       << endl;
+				} else if (name == "dtWave")
 					env.dtWave = atoi(entries[0].c_str());
-				else if (name == "Currents")
+				else if (name == "Currents") {
 					env.Current =
 					    (moordyn::currents_settings)atoi(entries[0].c_str());
-                    if ((env.Current < CURRENTS_NONE) || (env.Current > CURRENTS_DYNAMIC_NODE))
-                        LOGWRN << "Unknown Currents option value " << env.Current << endl;
-				else if (name == "WriteUnits")
+					if ((env.Current < CURRENTS_NONE) ||
+					    (env.Current > CURRENTS_DYNAMIC_NODE))
+						LOGWRN << "Unknown Currents option value "
+						       << env.Current << endl;
+				} else if (name == "WriteUnits")
 					env.WriteUnits = atoi(entries[0].c_str());
 				else if (name == "FrictionCoefficient")
 					env.FrictionCoefficient = atof(entries[0].c_str());

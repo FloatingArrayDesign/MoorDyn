@@ -373,5 +373,4 @@ class Body : public LogUser
 #endif
 };
 
-
 } // ::moordyn
