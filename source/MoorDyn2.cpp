@@ -47,7 +47,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , ICdt(1.0)
   , ICTmax(120.0)
   , ICthresh(0.001)
-  , WaveKinTemp(0)
+  , WaveKinTemp(WAVES_NONE)
   , dtM0(0.001)
   , dtOut(0.0)
   , GroundBody(NULL)
@@ -415,7 +415,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
-	env.WaveKin = (moordyn::waves_settings)WaveKinTemp;
+	env.WaveKin = WaveKinTemp;
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
@@ -646,7 +646,7 @@ moordyn::MoorDyn::ReadInFile()
 	ICthresh = 0.001;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
-	WaveKinTemp = 0;
+	WaveKinTemp = WAVES_NONE;
 	// assume no wave kinematics points are passed in externally, unless
 	// ExernalWaveKinInit is called later
 	npW = 0;
@@ -1550,13 +1550,18 @@ moordyn::MoorDyn::ReadInFile()
 					ICDfac = atof(entries[0].c_str());
 				else if ((name == "threshIC") || (name == "ICthresh"))
 					ICthresh = atof(entries[0].c_str());
-				else if (name == "WaveKin")
-					WaveKinTemp = atoi(entries[0].c_str());
+				else if (name == "WaveKin") {
+					WaveKinTemp = (moordyn::waves_settings)atoi(entries[0].c_str());
+                    if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
+                        LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
+                }
 				else if (name == "dtWave")
 					env.dtWave = atoi(entries[0].c_str());
 				else if (name == "Currents")
 					env.Current =
 					    (moordyn::currents_settings)atoi(entries[0].c_str());
+                    if ((env.Current < CURRENTS_NONE) || (env.Current > CURRENTS_DYNAMIC_NODE))
+                        LOGWRN << "Unknown Currents option value " << env.Current << endl;
 				else if (name == "WriteUnits")
 					env.WriteUnits = atoi(entries[0].c_str());
 				else if (name == "FrictionCoefficient")

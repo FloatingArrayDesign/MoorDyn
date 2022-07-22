@@ -337,21 +337,21 @@ class MoorDyn : public LogUser
 
 	// factor by which to boost drag coefficients during dynamic relaxation IC
 	// generation
-	double ICDfac;
+	real ICDfac;
 	// convergence analysis time step for IC generation
-	double ICdt;
+	real ICdt;
 	// max time for IC generation
-	double ICTmax;
+	real ICTmax;
 	// threshold for relative change in tensions to call it converged
-	double ICthresh;
+	real ICthresh;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
-	int WaveKinTemp;
+	moordyn::waves_settings WaveKinTemp;
 	/// (s) desired mooring line model time step
-	double dtM0;
+	real dtM0;
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
-	double dtOut;
+	real dtOut;
 
 	/// General options of the Mooryng system
 	EnvCond env;
@@ -376,29 +376,29 @@ class MoorDyn : public LogUser
 	vector<moordyn::Line*> LineList;
 
 	/// array of starting indices for Lines in "states" array
-	vector<int> LineStateIs;
+	vector<unsigned int> LineStateIs;
 	/// array of starting indices for indendent Connections in "states" array
-	vector<int> ConnectStateIs;
+	vector<unsigned int> ConnectStateIs;
 	/// array of starting indices for independent Rods in "states" array
-	vector<int> RodStateIs;
+	vector<unsigned int> RodStateIs;
 	/// array of starting indices for Bodies in "states" array
-	vector<int> BodyStateIs;
+	vector<unsigned int> BodyStateIs;
 
 	/// vector of free body indices in BodyList vector
-	vector<int> FreeBodyIs;
+	vector<unsigned int> FreeBodyIs;
 	/// vector of coupled/fairlead body indices in BodyList vector
-	vector<int> CpldBodyIs;
+	vector<unsigned int> CpldBodyIs;
 
 	/// vector of free rod indices in RodList vector (this includes pinned rods
 	/// because they are partially free and have states)
-	vector<int> FreeRodIs;
+	vector<unsigned int> FreeRodIs;
 	/// vector of coupled/fairlead rod indices in RodList vector
-	vector<int> CpldRodIs;
+	vector<unsigned int> CpldRodIs;
 
 	/// vector of free connection indices in ConnectionList vector
-	vector<int> FreeConIs;
+	vector<unsigned int> FreeConIs;
 	/// vector of coupled/fairlead connection indices in ConnectionList vector
-	vector<int> CpldConIs;
+	vector<unsigned int> CpldConIs;
 
 	/// Number of used state vector components
 	unsigned int nX;
