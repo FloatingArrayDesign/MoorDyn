@@ -211,7 +211,26 @@ extern "C"
 	 * (see @ref moordyn_errors)
 	 * @see MoorDyn_ExternalWaveKinInit()
 	 */
-	int DECLDIR MoorDyn_GetWaveKinCoordinates(MoorDyn system, double* r);
+	int DECLDIR MoorDyn_ExternalWaveKinGetCoordinates(MoorDyn system,
+	                                                  double* r);
+
+	/** @brief Get the points where the waves kinematics shall be provided
+	 *
+	 * The kinematics on those points shall be provided just if WaveKin is set
+	 * to 1 in the input file
+	 * @param system The Moordyn system
+	 * @param r The output coordinates (3 components per point)
+	 * @return 0 If the data is correctly set, an error code otherwise
+	 * (see @ref moordyn_errors)
+	 * @deprecated This function has been renamed as
+	 * MoorDyn_ExternalWaveKinGetCoordinates()
+	 * @see MoorDyn_ExternalWaveKinInit()
+	 */
+	inline int DECLDIR DEPRECATED MoorDyn_GetWaveKinCoordinates(MoorDyn system,
+	                                                            double* r)
+	{
+		return MoorDyn_ExternalWaveKinGetCoordinates(system, r);
+	}
 
 	/** @brief Set the kinematics of the waves
 	 *
@@ -223,12 +242,34 @@ extern "C"
 	 * @return 0 If the data is correctly set, an error code otherwise
 	 * (see @ref moordyn_errors)
 	 * @see MoorDyn_ExternalWaveKinInit()
-	 * @see MoorDyn_GetWaveKinCoordinates()
+	 * @see MoorDyn_ExternalWaveKinGetCoordinates()
 	 */
-	int DECLDIR MoorDyn_SetWaveKin(MoorDyn system,
-	                               const double* U,
-	                               const double* Ud,
-	                               double t);
+	int DECLDIR MoorDyn_ExternalWaveKinSet(MoorDyn system,
+	                                       const double* U,
+	                                       const double* Ud,
+	                                       double t);
+
+	/** @brief Set the kinematics of the waves
+	 *
+	 * Use this function if WaveKin option is set to 1 in the input file
+	 * @param system The Moordyn system
+	 * @param U The velocities at the points (3 components per point)
+	 * @param Ud The accelerations at the points (3 components per point)
+	 * @param t Simulation time
+	 * @return 0 If the data is correctly set, an error code otherwise
+	 * (see @ref moordyn_errors)
+	 * @deprecated This function has been renamed as
+	 * MoorDyn_ExternalWaveKinSet()
+	 * @see MoorDyn_ExternalWaveKinInit()
+	 * @see MoorDyn_ExternalWaveKinGetCoordinates()
+	 */
+	inline int DECLDIR DEPRECATED MoorDyn_SetWaveKin(MoorDyn system,
+	                                                 const double* U,
+	                                                 const double* Ud,
+	                                                 double t)
+	{
+		return MoorDyn_ExternalWaveKinSet(system, U, Ud, t);
+	}
 
 	/** @brief Get the number of bodies
 	 *

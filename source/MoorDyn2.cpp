@@ -2244,7 +2244,7 @@ MoorDyn_ExternalWaveKinGetN(MoorDyn system)
 }
 
 int DECLDIR
-MoorDyn_GetWaveKinCoordinates(MoorDyn system, double* r)
+MoorDyn_ExternalWaveKinGetCoordinates(MoorDyn system, double* r)
 {
 	CHECK_SYSTEM(system);
 
@@ -2260,7 +2260,10 @@ MoorDyn_GetWaveKinCoordinates(MoorDyn system, double* r)
 }
 
 int DECLDIR
-MoorDyn_SetWaveKin(MoorDyn system, const double* U, const double* Ud, double t)
+MoorDyn_ExternalWaveKinSet(MoorDyn system,
+                           const double* U,
+                           const double* Ud,
+                           double t)
 {
 	CHECK_SYSTEM(system);
 

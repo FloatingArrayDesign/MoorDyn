@@ -421,7 +421,7 @@ ext_wave_coords(PyObject*, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "Failure allocating memory");
 		return NULL;
 	}
-	const int err = MoorDyn_GetWaveKinCoordinates(system, coords);
+	const int err = MoorDyn_ExternalWaveKinGetCoordinates(system, coords);
 	if (err != 0) {
 		free(coords);
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
@@ -495,7 +495,7 @@ ext_wave_set(PyObject*, PyObject* args)
 	}
 
 	// Now we can call MoorDyn
-	const int err = MoorDyn_SetWaveKin(system, v_arr, a_arr, t);
+	const int err = MoorDyn_ExternalWaveKinSet(system, v_arr, a_arr, t);
 	free(v_arr);
 	free(a_arr);
 	return PyLong_FromLong(err);

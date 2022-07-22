@@ -193,7 +193,7 @@ getWaveKinCoordinates(double r_out[])
 {
 	if (!md_singleton)
 		return;
-	MoorDyn_GetWaveKinCoordinates(md_singleton, r_out);
+	MoorDyn_ExternalWaveKinGetCoordinates(md_singleton, r_out);
 }
 
 // receives arrays containing U and Ud for each point at which wave kinematics
@@ -203,7 +203,7 @@ setWaveKin(const double U_in[], const double Ud_in[], double t_in)
 {
 	if (!md_singleton)
 		return;
-	MoorDyn_SetWaveKin(md_singleton, U_in, Ud_in, t_in);
+	MoorDyn_ExternalWaveKinSet(md_singleton, U_in, Ud_in, t_in);
 }
 
 double DECLDIR

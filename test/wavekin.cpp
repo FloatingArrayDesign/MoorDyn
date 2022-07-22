@@ -124,7 +124,7 @@ api(void (*cb)(double, const double*, double*, double*))
 	double t = 0.0, dt = 0.1;
 	double f[3];
 	while (t < t_max) {
-		err = MoorDyn_GetWaveKinCoordinates(system, r);
+		err = MoorDyn_ExternalWaveKinGetCoordinates(system, r);
 		if (err != MOORDYN_SUCCESS) {
 			MoorDyn_Close(system);
 			cerr << "Failure getting the wave kinematics nodes: " << err
@@ -135,7 +135,7 @@ api(void (*cb)(double, const double*, double*, double*))
 		for (unsigned int i = 0; i < nwp; i++) {
 			(*cb)(t, r + 3 * i, u + 3 * i, du + 3 * i);
 		}
-		err = MoorDyn_SetWaveKin(system, u, du, t);
+		err = MoorDyn_ExternalWaveKinSet(system, u, du, t);
 		if (err != MOORDYN_SUCCESS) {
 			MoorDyn_Close(system);
 			cerr << "Failure setting the wave kinematics: " << err << endl;
