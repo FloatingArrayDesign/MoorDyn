@@ -299,6 +299,18 @@ vector_slice(std::vector<T> const& v, unsigned int n)
 	return vector_slice(v, 0, n);
 }
 
+/** Extend a C++ vector
+ * @param v The vector to slice
+ * @param v_prime The vector to be concatenated
+ */
+template<typename T>
+void
+vector_extend(std::vector<T>& v, std::vector<T> const& v_prime)
+{
+	v.reserve(v.size() + distance(v_prime.begin(), v_prime.end()));
+	v.insert(v.end(), v_prime.begin(), v_prime.end());
+}
+
 /** @brief End point qualifiers
  *
  * Used for both lines and rods

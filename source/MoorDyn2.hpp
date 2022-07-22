@@ -128,16 +128,17 @@ class MoorDyn : public LogUser
 
 	/** @brief Get the wave kinematics instance
 	 *
-	 * The wave kinematics instance is used just if env.WaveKin = 2
+	 * The wave kinematics instance is used if env.WaveKin is one of
+	 * WAVES_FFT_GRID, WAVES_GRID, WAVES_FFT_NODE, WAVES_NODE or if
+	 * env.Currents is not CURRENTS_NONE
 	 * @return The wave knematics instance
 	 */
 	inline moordyn::Waves* GetWaves() const { return waves; }
 
 	/** @brief Initializes the external Wave kinetics
 	 *
-	 * This is only used if env.WaveKin = 1
+	 * This is only used if env.WaveKin = WAVES_EXTERNAL
 	 * @return The number of points where the wave kinematics shall be provided
-	 * @throw mem_error If the required resources cannot be allocated
 	 */
 	inline unsigned int ExternalWaveKinInit()
 	{
@@ -147,46 +148,42 @@ class MoorDyn : public LogUser
 			npW += line->getN() + 1;
 
 		// allocate arrays to hold data that could be passed in
-		delete[] U_1;
-		U_1 = NULL;
-		delete[] Ud_1;
-		Ud_1 = NULL;
-		delete[] U_2;
-		U_2 = NULL;
-		delete[] Ud_2;
-		Ud_2 = NULL;
-		U_1 = new double[3 * npW];
-		Ud_1 = new double[3 * npW];
-		U_2 = new double[3 * npW];
-		Ud_2 = new double[3 * npW];
-		if (!U_1 || !Ud_1 || !U_2 || !Ud_2) {
-			LOGERR << "Failed allocating " << 4 * 3 * npW * sizeof(double)
-			       << " bytes" << endl;
-			throw moordyn::mem_error("Failure allocating resources");
-		}
-
-		// initialize with zeros for safety
+		U_1.clear();
+		Ud_1.clear();
+		U_2.clear();
+		Ud_2.clear();
+		U_1.assign(npW, vec::Zero());
+		U_1.assign(npW, vec::Zero());
+		U_1.assign(npW, vec::Zero());
+		U_1.assign(npW, vec::Zero());
 		tW_1 = 0.0;
 		tW_2 = 0.0;
-		memset(U_1, 0.0, 3 * npW * sizeof(double));
-		memset(Ud_1, 0.0, 3 * npW * sizeof(double));
-		memset(U_2, 0.0, 3 * npW * sizeof(double));
-		memset(Ud_2, 0.0, 3 * npW * sizeof(double));
 
 		return npW;
 	}
 
-	/** @brief Get the points where the waves kinematics shall be provided
+	/** @brief Get the number of points where the waves kinematics shall be
+	 * provided
 	 *
-	 * The kinematics are provided in those points just if env.WaveKin is 1.
-	 * Otherwise moordyn::Waves is used
-	 * @param r The output coordinates
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise  (see @ref moordyn_errors)
+	 * If env.WaveKin is not WAVES_EXTERNAL, this will return 0
+	 * @return The number of evaluation points
 	 * @see MoorDyn::ExternalWaveKinInit()
 	 * @see MoorDyn::GetWaves()
 	 */
-	inline moordyn::error_id GetWaveKinCoordinates(double* r) const
+	inline unsigned int ExternalWaveKinGetN() const { return npW; }
+
+	/** @brief Get the points where the waves kinematics shall be provided
+	 *
+	 * The kinematics are provided in those points just if env.WaveKin is
+	 * WAVES_EXTERNAL. Otherwise moordyn::Waves is used
+	 * @param r The output coordinates
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise  (see @ref moordyn_errors)
+	 * @deprecated Use MoorDyn::GetWaveKinPoints() instead
+	 * @see MoorDyn::ExternalWaveKinInit()
+	 * @see MoorDyn::GetWaves()
+	 */
+	inline moordyn::error_id DEPRECATED GetWaveKinCoordinates(double* r) const
 	{
 		unsigned int i = 0;
 		for (auto line : LineList) {
@@ -198,47 +195,73 @@ class MoorDyn : public LogUser
 		return MOORDYN_SUCCESS;
 	}
 
+	/** @brief Get the points where the waves kinematics shall be provided
+	 *
+	 * The kinematics are provided in those points just if env.WaveKin is
+	 * WAVES_EXTERNAL. Otherwise moordyn::Waves is used
+	 * @return The points where the wave kinematics shall be evaluated
+	 * @see MoorDyn::ExternalWaveKinInit()
+	 * @see MoorDyn::GetWaves()
+	 */
+	inline std::vector<vec> ExternalWaveKinGetPoints() const
+	{
+		std::vector<vec> rout;
+		for (auto line : LineList) {
+			std::vector<vec> rline = line->getNodeCoordinates();
+			vector_extend(rout, rline);
+		}
+		return rout;
+	}
+
 	/** @brief Set the kinematics of the waves
 	 *
 	 * Use this function if env.WaveKin = 1
-	 * @param U The velocities at the points (3 components per point)
-	 * @param Ud The accelerations at the points (3 components per point)
+	 * @param U The velocities at the points
+	 * @param Ud The accelerations at the points
 	 * @param t Simulation time
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise (see @ref moordyn_errors)
+	 * @throw moordyn::invalid_value_error If the size of @p U and @p Ud is not
+	 * the same than the one reported by MoorDyn::ExternalWaveKinInit()
 	 * @see MoorDyn_InitExtWaves()
 	 * @see MoorDyn_GetWavesCoords()
 	 */
-	inline moordyn::error_id SetWaveKin(const double* U,
-	                                    const double* Ud,
-	                                    double t)
+	inline void DEPRECATED SetWaveKin(std::vector<vec> const& U,
+	                                  std::vector<vec> const& Ud,
+	                                  double t)
 	{
-		if (!U || !Ud) {
-			_log->Cout(MOORDYN_ERR_LEVEL)
-			    << "Error: Received a Null pointer in "
-			    << "MoorDyn::SetWaveKin()" << endl
-			    << "Both velocity and acceleration arrays are needed" << endl;
-			return MOORDYN_INVALID_VALUE;
+		ExternalWaveKinSet(U, Ud, t);
+	}
+
+	/** @brief Set the kinematics of the waves
+	 *
+	 * Use this function if env.WaveKin = 1
+	 * @param U The velocities at the points
+	 * @param Ud The accelerations at the points
+	 * @param t Simulation time
+	 * @throw moordyn::invalid_value_error If the size of @p U and @p Ud is not
+	 * the same than the one reported by MoorDyn::ExternalWaveKinInit()
+	 * @see MoorDyn_InitExtWaves()
+	 * @see MoorDyn_GetWavesCoords()
+	 */
+	inline void ExternalWaveKinSet(std::vector<vec> const& U,
+	                               std::vector<vec> const& Ud,
+	                               double t)
+
+	{
+		if ((U.size() != Ud.size()) || (U.size() != U_1.size())) {
+			LOGERR << "Invalid input size."
+			       << "Have you called MoorDyn::ExternalWaveKinInit()?" << endl;
+			throw moordyn::invalid_value_error("Invalid input size");
 		}
 
-		if (!U_1 || !U_2 || !Ud_1 || !Ud_2) {
-			_log->Cout(MOORDYN_ERR_LEVEL)
-			    << "Error: Memory not allocated."
-			    << " Have you called MoorDyn::ExternalWaveKinInit()?" << endl;
-			return MOORDYN_MEM_ERROR;
-		}
-
-		// set time stamp
+		// shift the data
 		tW_2 = tW_1;
-		tW_1 = t;
+		U_2 = U_1;
+		Ud_2 = Ud_1;
 
-		for (unsigned int i = 0; i < 3 * npW; i++) {
-			U_2[i] = U_1[i];
-			Ud_2[i] = Ud_1[i];
-			U_1[i] = U[i];
-			Ud_1[i] = Ud[i];
-		}
-		return MOORDYN_SUCCESS;
+		// Set the new info
+		tW_1 = t;
+		U_1 = U;
+		Ud_1 = Ud;
 	}
 
   protected:
@@ -397,17 +420,17 @@ class MoorDyn : public LogUser
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
 	/// time corresponding to the wave kinematics data
-	double tW_1;
+	real tW_1;
 	/// array of wave velocity at each of the npW points at time tW_1
-	double* U_1;
+	std::vector<vec> U_1;
 	/// array of wave acceleration at each of the npW points
-	double* Ud_1;
+	std::vector<vec> Ud_1;
 	/// time corresponding to the wave kinematics data
-	double tW_2;
+	real tW_2;
 	/// array of wave velocity at each of the npW points at time tW_2
-	double* U_2;
+	std::vector<vec> U_2;
 	/// array of wave acceleration at each of the npW points
-	double* Ud_2;
+	std::vector<vec> Ud_2;
 
 	/// log output file
 	ofstream outfileLog;

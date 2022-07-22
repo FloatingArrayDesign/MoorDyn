@@ -368,6 +368,26 @@ ext_wave_init(PyObject*, PyObject* args)
 	return PyLong_FromLong(err);
 }
 
+/** @brief Wrapper to MoorDyn_ExternalWaveKinGetN() function
+ * @param args Python passed arguments
+ * @return The number of points
+ */
+static PyObject*
+ext_wave_n(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_ExternalWaveKinGetN(system));
+}
+
 /** @brief Wrapper to MoorDyn_GetWaveKinCoordinates() function
  * @param args Python passed arguments
  * @return The list of coordinates where the wave kinematics shall be provided
@@ -770,6 +790,10 @@ static PyMethodDef moordyn_methods[] = {
 	  ext_wave_init,
 	  METH_VARARGS,
 	  "Initialize the externally handled waves" },
+	{ "ext_wave_n",
+	  ext_wave_n,
+	  METH_VARARGS,
+	  "Get the number of points where the wave kinematics shall be provided" },
 	{ "ext_wave_coords",
 	  ext_wave_coords,
 	  METH_VARARGS,

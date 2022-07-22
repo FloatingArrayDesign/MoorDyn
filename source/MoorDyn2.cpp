@@ -60,11 +60,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , f1(NULL)
   , npW(0)
   , tW_1(0.0)
-  , U_1(NULL)
-  , Ud_1(NULL)
   , tW_2(0.0)
-  , U_2(NULL)
-  , Ud_2(NULL)
 {
 	SetLogger(new Log());
 
@@ -167,11 +163,6 @@ moordyn::MoorDyn::~MoorDyn()
 	free(xt);
 	free(f0);
 	free(f1);
-
-	delete[] U_1;
-	delete[] Ud_1;
-	delete[] U_2;
-	delete[] Ud_2;
 
 	delete _log;
 }
@@ -1851,22 +1842,25 @@ moordyn::MoorDyn::CalcStateDeriv(double* x,
 	}
 
 	// update wave kinematics if applicable
-	if (env.WaveKin == 1) {
+	if (env.WaveKin == WAVES_EXTERNAL) {
 		// extrapolate velocities from accelerations
 		// (in future could extrapolote from most recent two points,
 		// (U_1 and U_2)
 
-		double t_delta = t - tW_1;
+		real t_delta = t - tW_1;
 
-		vector<double> U_extrap;
-		for (unsigned int i = 0; i < npW * 3; i++)
+		std::vector<vec> U_extrap;
+		U_extrap.reserve(npW);
+		for (unsigned int i = 0; i < npW; i++)
 			U_extrap.push_back(U_1[i] + Ud_1[i] * t_delta);
 
 		// distribute to the appropriate objects
 		unsigned int i = 0;
 		for (auto line : LineList) {
-			line->setNodeWaveKin(U_extrap.data() + 3 * i, Ud_1 + 3 * i);
-			i += 3 * line->getN() + 3;
+			const unsigned int n_line = line->getN() + 1;
+			line->setNodeWaveKin(vector_slice(U_extrap, i, n_line),
+			                     vector_slice(Ud_1, i, n_line));
+			i += n_line;
 		}
 	}
 
@@ -2241,12 +2235,28 @@ MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int* n)
 	return err;
 }
 
+unsigned int DECLDIR
+MoorDyn_ExternalWaveKinGetN(MoorDyn system)
+{
+	if (!system)
+		return 0;
+	return ((moordyn::MoorDyn*)system)->ExternalWaveKinGetN();
+}
+
 int DECLDIR
 MoorDyn_GetWaveKinCoordinates(MoorDyn system, double* r)
 {
 	CHECK_SYSTEM(system);
 
-	return ((moordyn::MoorDyn*)system)->GetWaveKinCoordinates(r);
+	auto r_list = ((moordyn::MoorDyn*)system)->ExternalWaveKinGetPoints();
+	for (unsigned int i = 0; i < r_list.size(); i++) {
+		const auto r_i = r_list[i];
+		for (unsigned int j = 0; j < 3; j++) {
+			r[3 * i + j] = r_i[j];
+		}
+	}
+
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
@@ -2254,7 +2264,22 @@ MoorDyn_SetWaveKin(MoorDyn system, const double* U, const double* Ud, double t)
 {
 	CHECK_SYSTEM(system);
 
-	return ((moordyn::MoorDyn*)system)->SetWaveKin(U, Ud, t);
+	std::vector<vec> u, ud;
+	const unsigned int n = MoorDyn_ExternalWaveKinGetN(system);
+	if (!n) {
+		cerr << "Error: There is not wave kinematics to set "
+		     << "while calling " << __FUNC_NAME__ << "()" << endl;
+		return MOORDYN_INVALID_VALUE;
+	}
+	u.reserve(n);
+	ud.reserve(n);
+	for (unsigned int i = 0; i < n; i++) {
+		u.push_back(vec(U[3 * i], U[3 * i + 1], U[3 * i + 2]));
+		ud.push_back(vec(Ud[3 * i], Ud[3 * i + 1], Ud[3 * i + 2]));
+	}
+
+	((moordyn::MoorDyn*)system)->ExternalWaveKinSet(u, ud, t);
+	return MOORDYN_SUCCESS;
 }
 
 unsigned int DECLDIR

@@ -209,6 +209,21 @@ def ExternalWaveKinInit(instance):
     return cmoordyn.ext_wave_init(instance)
 
 
+def ExternalWaveKinGetN(instance):
+    """Get the number of points where the waves kinematics shall be provided
+
+    This is useless unless WaveKin option is set to 1 in the input file.
+
+    Parameters:
+    instance (MoorDyn): The MoorDyn instance
+
+    Returns:
+    int: The number of points
+    """
+    import cmoordyn
+    return cmoordyn.ext_wave_init(instance)
+
+
 def GetWaveKinCoordinates(instance):
     """Get the points where the waves kinematics shall be provided
 

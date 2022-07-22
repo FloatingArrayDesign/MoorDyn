@@ -184,6 +184,23 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int* n);
 
+	/** @brief Get the number of points where the waves kinematics shall be
+	 * provided
+	 *
+	 * If env.WaveKin is not WAVES_EXTERNAL, this will return 0
+	 * @return The number of evaluation points
+	 * @see MoorDyn::ExternalWaveKinInit()
+	 * @see MoorDyn::GetWaves()
+	 */
+	/** @brief Get the number of points where the waves kinematics shall be
+	 * provided
+	 *
+	 * This is useless unless WaveKin option is set to 1 in the input file
+	 * @param system The Moordyn system
+	 * @return The number of points where the wave kinematics shall be provided
+	 */
+	unsigned int DECLDIR MoorDyn_ExternalWaveKinGetN(MoorDyn system);
+
 	/** @brief Get the points where the waves kinematics shall be provided
 	 *
 	 * The kinematics on those points shall be provided just if WaveKin is set
