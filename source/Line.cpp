@@ -215,8 +215,8 @@ Line::initializeLine(double* X)
 	// also assign the resulting internal node positions to the integrator
 	// initial state vector! (velocities leave at 0)
 	for (unsigned int i = 1; i < N; i++) {
-		moordyn::vec2array(pos[i], &(X[3 * (N - -1 + i - 1)]));
-		moordyn::vec2array(vel[i], &(X[3 * (i - 1)]));
+		moordyn::vec2array(pos[i - 1], &(X[3 * (N - -1 + i - 1)]));
+		moordyn::vec2array(vel[i - 1], &(X[3 * (i - 1)]));
 	}
 }
 
