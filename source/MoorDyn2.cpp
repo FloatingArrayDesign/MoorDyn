@@ -50,6 +50,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , WaveKinTemp(WAVES_NONE)
   , dtM0(0.001)
   , dtOut(0.0)
+  , _t_integrator(NULL)
   , GroundBody(NULL)
   , waves(NULL)
   , nX(0)
@@ -142,6 +143,8 @@ moordyn::MoorDyn::~MoorDyn()
 		if (outfile && outfile->is_open())
 			outfile->close();
 
+	delete _t_integrator;
+
 	delete GroundBody;
 	delete waves;
 	for (auto obj : LinePropList)
@@ -181,10 +184,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	// Allocate past line fairlead tension array, which is used for convergence
 	// test during IC gen
 	const unsigned int convergence_iters = 10;
-	double** FairTensLast = make2Darray(LineList.size(), convergence_iters);
-	for (unsigned int i = 0; i < LineList.size(); i++)
-		for (unsigned int j = 0; j < convergence_iters; j++)
-			FairTensLast[i][j] = 1.0 * j;
+	vector<real> FairTensLast_col(convergence_iters, 0.0);
+	for (unsigned int i = 0; i < convergence_iters; i++)
+		FairTensLast_col[i] = 1.0 * i;
+	vector<vector<real>> FairTensLast(LineList.size(), FairTensLast_col);
 
 	// ------------------ do static bodies and lines ---------------------------
 
@@ -253,39 +256,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 		ix += 3;
 	}
 
-	// initialize objects with states, writing their initial states to the
-	//  master state vector (states)
-
-	// Go through Bodys and write the coordinates to the state vector
-	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
-		BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
-
-	// Go through independent (including pinned) Rods and write the coordinates
-	// to the state vector
-	for (unsigned int l = 0; l < FreeRodIs.size(); l++)
-		RodList[FreeRodIs[l]]->initializeRod(states + RodStateIs[l]);
-
-	// Go through independent connections (Connects) and write the coordinates
-	// to the state vector and set positions of attached line ends
-	for (unsigned int l = 0; l < FreeConIs.size(); l++) {
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
-		try {
-			ConnectionList[FreeConIs[l]]->initializeConnect(states +
-			                                                ConnectStateIs[l]);
-		}
-		MOORDYN_CATCHER(err, err_msg);
-		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Error initializing free connection" << FreeConIs[l]
-			       << ": " << err_msg << endl;
-			return err;
-		}
-	}
-
-	// Lastly, go through lines and initialize internal node positions using
-	// quasi-static model
-	for (unsigned int l = 0; l < LineList.size(); l++)
-		LineList[l]->initializeLine(states + LineStateIs[l]);
+	// Initialize the system state
+	_t_integrator->init();
 
 	// ------------------ do dynamic relaxation IC gen --------------------
 
@@ -303,22 +275,28 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 		obj->scaleDrag(ICDfac);
 
 	// vector to store tensions for analyzing convergence
-	vector<double> FairTens(LineList.size(), 0.0);
+	vector<real> FairTens(LineList.size(), 0.0);
 
 	unsigned int iic = 0;
-	double t = 0;
+	real t = 0;
 	bool converged = true;
-	double max_error = 0.0;
+	real max_error = 0.0;
 	while (t < ICTmax) {
 		// Integrate one ICD timestep (ICdt)
-		double t_target = t + ICdt;
-		double dt;
+		real t_target = t + ICdt;
+		real dt;
 		while ((dt = t_target - t) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
-			const moordyn::error_id err = RK2(states, t, dt);
+			moordyn::error_id err = MOORDYN_SUCCESS;
+			string err_msg;
+			try {
+				_t_integrator->Step(dt);
+				t = _t_integrator->GetTime();
+			}
+			MOORDYN_CATCHER(err, err_msg);
 			if (err != MOORDYN_SUCCESS) {
-				free2Darray(FairTensLast, LineList.size());
+				LOGERR << "t = " << t << " s" << endl;
 				return err;
 			}
 		}
@@ -329,7 +307,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 				LOGERR << "Error: NaN value detected "
 				       << "in MoorDyn state at dynamic relaxation time " << t
 				       << " s." << endl;
-				free2Darray(FairTensLast, LineList.size());
 				return MOORDYN_NAN_ERROR;
 			}
 		}
@@ -355,7 +332,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 			max_error = 0.0;
 			for (unsigned int lf = 0; lf < LineList.size(); lf++) {
 				for (unsigned int pt = 0; pt < convergence_iters; pt++) {
-					const double error =
+					const real error =
 					    abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
 					if (error > max_error)
 						max_error = error;
@@ -386,8 +363,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	}
 	LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
 	       << "%" << endl;
-
-	free2Darray(FairTensLast, LineList.size());
 
 	// restore drag coefficients to normal values and restart time counter of
 	// each object
@@ -522,14 +497,28 @@ moordyn::MoorDyn::Step(const double* x,
 	}
 
 	// -------------------- do time stepping -----------------------
-	double t_target = t + dt;
-	double dt_step;
+	if (env.WaveKin == WAVES_EXTERNAL) {
+		// extrapolate velocities from accelerations
+		// (in future could extrapolote from most recent two points,
+		// (U_1 and U_2)
+		_t_integrator->SetExtWaves(tW_1, U_1, Ud_1);
+	}
+	real t_target = t + dt;
+	real dt_step;
 	while ((dt_step = t_target - t) > 0.0) {
 		if (dtM0 < dt_step)
 			dt_step = dtM0;
-		const moordyn::error_id err = RK2(states, t, dt_step);
-		if (err != MOORDYN_SUCCESS)
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try {
+			_t_integrator->Step(dt);
+			t = _t_integrator->GetTime();
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS) {
+			LOGERR << "t = " << t << " s" << endl;
 			return err;
+		}
 	}
 	t = t_target;
 
@@ -647,6 +636,8 @@ moordyn::MoorDyn::ReadInFile()
 	npW = 0;
 	// default value for desired mooring model time step
 	dtM0 = 0.001;
+	// default time integration scheme
+	string t_integrator_name = "RK2";
 
 	// string containing which channels to write to output
 	vector<string> outchannels;
@@ -1526,6 +1517,8 @@ moordyn::MoorDyn::ReadInFile()
 				// DT is old way, should phase out
 				else if ((name == "dtM") || (name == "DT"))
 					dtM0 = atof(entries[0].c_str());
+				else if (name == "tScheme")
+					t_integrator_name = entries[0];
 				else if ((name == "g") || (name == "gravity"))
 					env.g = atof(entries[0].c_str());
 				else if ((name == "Rho") || (name == "rho") ||
@@ -1787,10 +1780,30 @@ moordyn::MoorDyn::ReadInFile()
 	// write system description
 	LOGDBG << "----- MoorDyn Model Summary (to be written) -----" << endl;
 
-	// Setup the waves and populate them
-	waves = new moordyn::Waves(_log);
+	// Setup the time integrator
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
+	try {
+		_t_integrator = create_time_scheme(t_integrator_name, _log);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << err_msg << endl;
+		return err;
+	}
+	LOGMSG << "Time integrator = " << _t_integrator->GetName() << endl;
+	_t_integrator->SetGround(GroundBody);
+	for (auto obj : BodyList)
+		_t_integrator->AddBody(obj);
+	for (auto obj : RodList)
+		_t_integrator->AddRod(obj);
+	for (auto obj : ConnectionList)
+		_t_integrator->AddConnection(obj);
+	for (auto obj : LineList)
+		_t_integrator->AddLine(obj);
+
+	// Setup the waves and populate them
+	waves = new moordyn::Waves(_log);
 	try {
 		waves->setup(&env, _basepath.c_str());
 	}
@@ -1902,11 +1915,8 @@ moordyn::MoorDyn::CalcStateDeriv(double* x,
 			LineList[l]->getStateDeriv((xd + LineStateIs[l]), dt);
 		}
 		MOORDYN_CATCHER(err, err_msg);
-		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Exception detected at " << t << " s: " << err_msg
-			       << endl;
+		if (err != MOORDYN_SUCCESS)
 			return err;
-		}
 	}
 
 	// calculate connect dynamics (including contributions from attached lines

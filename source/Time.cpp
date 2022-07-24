@@ -30,6 +30,7 @@ EulerScheme::EulerScheme(moordyn::Log* log)
 void
 EulerScheme::Step(real& dt)
 {
+	Update(t, 0);
 	CalcStateDeriv(0);
 	r[0] = r[0] + rd[0] * dt;
 	t += dt;
@@ -45,6 +46,8 @@ HeunScheme::HeunScheme(moordyn::Log* log)
 void
 HeunScheme::Step(real& dt)
 {
+	Update(t, 0);
+
 	// Apply the latest knew derivative, as a predictor
 	r[0] = r[0] + rd[1] * dt;
 	rd[1] = rd[0];
@@ -60,12 +63,14 @@ HeunScheme::Step(real& dt)
 RK2Scheme::RK2Scheme(moordyn::Log* log)
   : TimeSchemeBase(log)
 {
-	name = "2nd order RUnge-Kutta";
+	name = "2nd order Runge-Kutta";
 }
 
 void
 RK2Scheme::Step(real& dt)
 {
+	Update(t, 0);
+
 	// Compute the intermediate state
 	CalcStateDeriv(0);
 	r[1] = r[0] + rd[0] * (0.5 * dt);
@@ -81,12 +86,14 @@ RK2Scheme::Step(real& dt)
 RK4Scheme::RK4Scheme(moordyn::Log* log)
   : TimeSchemeBase(log)
 {
-	name = "4th order RUnge-Kutta";
+	name = "4th order Runge-Kutta";
 }
 
 void
 RK4Scheme::Step(real& dt)
 {
+	Update(t, 0);
+
 	// k1
 	CalcStateDeriv(0);
 
@@ -117,9 +124,9 @@ ABScheme<order>::ABScheme(moordyn::Log* log)
   : TimeSchemeBase(log)
   , n_steps(0)
 {
-	stringstream ss;
-	ss << order << "th order Adam-Bashforth";
-	name = ss.str();
+	stringstream s;
+	s << order << "th order Adam-Bashforth";
+	name = s.str();
 	if (order > 4) {
 		LOGWRN << name
 		       << " scheme queried, but 4th order is the maximum implemented"
@@ -131,6 +138,7 @@ template<unsigned int order>
 void
 ABScheme<order>::Step(real& dt)
 {
+	Update(t, 0);
 	shift();
 
 	// Get the new derivative
@@ -153,12 +161,14 @@ ABScheme<order>::Step(real& dt)
 			       rd[1] * (dt * 59.0 / 24.0) + rd[2] * (dt * 37.0 / 24.0) -
 			       rd[3] * (dt * 3.0 / 8.0);
 			break;
-		case 4:
+		default:
 			r[0] = r[0] + rd[0] * (dt * 1901.0 / 720.0) -
 			       rd[1] * (dt * 1387.0 / 360.0) + rd[2] * (dt * 109.0 / 30.0) -
 			       rd[3] * (dt * 637.0 / 360.0) + rd[4] * (dt * 251.0 / 720.0);
-			break;
 	}
+
+	t += dt;
+	Update(t, 0);
 }
 
 TimeScheme*
@@ -178,7 +188,9 @@ create_time_scheme(const std::string& name, moordyn::Log* log)
 	} else if (str::lower(name) == "ab4") {
 		out = new ABScheme<4>(log);
 	} else {
-		throw moordyn::invalid_value_error("Unknown time scheme");
+		stringstream s;
+		s << "Unknown time scheme '" << name << "'";
+		throw moordyn::invalid_value_error(s.str().c_str());
 	}
 	if (!out)
 		throw moordyn::mem_error("Failure allocating the time scheme");

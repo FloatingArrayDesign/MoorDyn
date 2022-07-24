@@ -21,6 +21,42 @@ using namespace std;
 namespace moordyn {
 
 template<>
+string
+StateVar<vec>::AsString() const
+{
+	stringstream s;
+	s << "pos = [" << pos.transpose() << "]; ";
+	s << "vel = [" << vel.transpose() << "]" << endl;
+	return s.str();
+}
+
+template<>
+string
+StateVar<vec6>::AsString() const
+{
+	stringstream s;
+	s << "pos = [" << pos.transpose() << "]; ";
+	s << "vel = [" << vel.transpose() << "]" << endl;
+	return s.str();
+}
+
+template<>
+string
+StateVar<std::vector<vec>>::AsString() const
+{
+	stringstream s;
+	s << "pos = [";
+	for (auto v : pos)
+		s << "[" << v.transpose() << "], ";
+	s << "]" << endl;
+	s << "vel = [";
+	for (auto v : vel)
+		s << "[" << v.transpose() << "], ";
+	s << "]" << endl;
+	return s.str();
+}
+
+template<>
 StateVar<vec>
 StateVar<vec>::operator+(const StateVar<vec>& rhs)
 {
@@ -94,6 +130,42 @@ StateVar<std::vector<vec>>::operator-(const StateVar<std::vector<vec>>& rhs)
 		out.vel.push_back(vel[i] - rhs.vel[i]);
 	}
 	return out;
+}
+
+template<>
+string
+StateVarDeriv<vec>::AsString() const
+{
+	stringstream s;
+	s << "vel = [" << vel.transpose() << "]; ";
+	s << "acc = [" << acc.transpose() << "]" << endl;
+	return s.str();
+}
+
+template<>
+string
+StateVarDeriv<vec6>::AsString() const
+{
+	stringstream s;
+	s << "vel = [" << vel.transpose() << "]; ";
+	s << "acc = [" << acc.transpose() << "]" << endl;
+	return s.str();
+}
+
+template<>
+string
+StateVarDeriv<std::vector<vec>>::AsString() const
+{
+	stringstream s;
+	s << "vel = [";
+	for (auto v : vel)
+		s << "[" << v.transpose() << "], ";
+	s << "]" << endl;
+	s << "acc = [";
+	for (auto v : acc)
+		s << "[" << v.transpose() << "], ";
+	s << "]" << endl;
+	return s.str();
 }
 
 template<>
@@ -210,6 +282,30 @@ StateVarDeriv<std::vector<vec>>::operator-(
 	return out;
 }
 
+string
+MoorDynState::AsString() const
+{
+	stringstream s;
+	for (unsigned int i = 0; i < lines.size(); i++) {
+		s << "Line " << i << ":" << endl;
+		s << lines[i].AsString();
+	}
+	for (unsigned int i = 0; i < conns.size(); i++) {
+		s << "Conn " << i << ":" << endl;
+		s << conns[i].AsString();
+	}
+	for (unsigned int i = 0; i < rods.size(); i++) {
+		s << "Rod " << i << ":" << endl;
+		s << rods[i].AsString();
+	}
+	for (unsigned int i = 0; i < bodies.size(); i++) {
+		s << "Body " << i << ":" << endl;
+		s << bodies[i].AsString();
+	}
+	s << endl;
+	return s.str();
+}
+
 MoorDynState&
 MoorDynState::operator=(const MoorDynState& rhs)
 {
@@ -289,6 +385,30 @@ MoorDynState::operator-(const MoorDynState& rhs)
 		out.bodies.push_back(bodies[i] - rhs.bodies[i]);
 
 	return out;
+}
+
+string
+DMoorDynStateDt::AsString() const
+{
+	stringstream s;
+	for (unsigned int i = 0; i < lines.size(); i++) {
+		s << "Line " << i << ":" << endl;
+		s << lines[i].AsString();
+	}
+	for (unsigned int i = 0; i < conns.size(); i++) {
+		s << "Conn " << i << ":" << endl;
+		s << conns[i].AsString();
+	}
+	for (unsigned int i = 0; i < rods.size(); i++) {
+		s << "Rod " << i << ":" << endl;
+		s << rods[i].AsString();
+	}
+	for (unsigned int i = 0; i < bodies.size(); i++) {
+		s << "Body " << i << ":" << endl;
+		s << bodies[i].AsString();
+	}
+	s << endl;
+	return s.str();
 }
 
 DMoorDynStateDt&

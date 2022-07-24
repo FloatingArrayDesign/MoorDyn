@@ -24,6 +24,7 @@
 #include "Log.hpp"
 #include "Misc.hpp"
 
+#include "Time.hpp"
 #include "Waves.hpp"
 #include "MoorDyn.h"
 #include "Line.hpp"
@@ -352,6 +353,9 @@ class MoorDyn : public LogUser
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
 	real dtOut;
+
+	/// The time integration scheme
+	TimeScheme* _t_integrator;
 
 	/// General options of the Mooryng system
 	EnvCond env;

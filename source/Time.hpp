@@ -572,11 +572,6 @@ class TimeSchemeBase : public TimeScheme
 			}
 		}
 
-		for (unsigned int i = 0; i < lines.size(); i++) {
-			lines[i]->setState(
-			    r[substep].lines[i].pos, r[substep].lines[i].vel, t);
-		}
-
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if (bodies[i]->type != Body::FREE)
 				continue;
@@ -585,7 +580,8 @@ class TimeSchemeBase : public TimeScheme
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
-			if (rods[i]->type != Rod::FREE)
+			if ((rods[i]->type != Rod::PINNED) &&
+			    (rods[i]->type != Rod::CPLDPIN) && (rods[i]->type != Rod::FREE))
 				continue;
 			rods[i]->setState(
 			    r[substep].rods[i].pos, r[substep].rods[i].vel, t);
@@ -596,6 +592,11 @@ class TimeSchemeBase : public TimeScheme
 				continue;
 			conns[i]->setState(
 			    r[substep].conns[i].pos, r[substep].conns[i].vel, t);
+		}
+
+		for (unsigned int i = 0; i < lines.size(); i++) {
+			lines[i]->setState(
+			    r[substep].lines[i].pos, r[substep].lines[i].vel, t);
 		}
 	}
 
@@ -618,7 +619,8 @@ class TimeSchemeBase : public TimeScheme
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
-			if (rods[i]->type != Rod::FREE)
+			if ((rods[i]->type != Rod::PINNED) &&
+			    (rods[i]->type != Rod::CPLDPIN) && (rods[i]->type != Rod::FREE))
 				continue;
 			std::tie(rd[substep].rods[i].vel, rd[substep].rods[i].acc) =
 			    rods[i]->getStateDeriv();

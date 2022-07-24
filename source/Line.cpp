@@ -841,11 +841,11 @@ Line::getStateDeriv()
 	for (unsigned int i = 0; i <= N; i++) {
 		if (isnan(r[i].sum())) {
 			stringstream s;
-			s << "NaN detected" << endl
-			  << "Line " << number << " node positions:" << endl;
+			LOGERR << "NaN detected" << endl << "Line " << number << endl;
+			LOGMSG << "node positions:" << endl;
 			for (unsigned int j = 0; j <= N; j++)
-				s << j << " : " << r[j] << ";" << endl;
-			throw moordyn::nan_error(s.str().c_str());
+				LOGMSG << j << " : [" << r[j].transpose() << "]" << endl;
+			throw moordyn::nan_error("NaN in node positions");
 		}
 	}
 

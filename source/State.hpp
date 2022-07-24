@@ -22,6 +22,8 @@
 
 #include "Misc.hpp"
 #include <vector>
+#include <string>
+#include <sstream>
 
 namespace moordyn {
 
@@ -44,6 +46,13 @@ class StateVar
 	T pos;
 	/// The velocity
 	T vel;
+
+	/** @brief Give a string representation of the state variables
+	 *
+	 * Useful for debugging purposes
+	 * @return A string representation
+	 */
+	string AsString() const;
 
 	/** @brief Copy operator
 	 * @param visitor The entity to copy
@@ -85,6 +94,13 @@ class StateVarDeriv
 	T vel;
 	/// The acceleration
 	T acc;
+
+	/** @brief Give a string representation of the state variables
+	 *
+	 * Useful for debugging purposes
+	 * @return A string representation
+	 */
+	string AsString() const;
 
 	/** @brief Copy operator
 	 * @param visitor The entity to copy
@@ -161,6 +177,13 @@ class MoorDynState
 	/// The states of the bodies
 	std::vector<BodyState> bodies;
 
+	/** @brief Give a string representation of the state variables
+	 *
+	 * Useful for debugging purposes
+	 * @return A string representation
+	 */
+	string AsString() const;
+
 	/** @brief Copy operator
 	 * @param visitor The entity to copy
 	 */
@@ -200,6 +223,13 @@ class DMoorDynStateDt
 
 	/// The state derivatives of the bodies
 	std::vector<DBodyStateDt> bodies;
+
+	/** @brief Give a string representation of the state variables
+	 *
+	 * Useful for debugging purposes
+	 * @return A string representation
+	 */
+	string AsString() const;
 
 	/** @brief Copy operator
 	 * @param visitor The entity to copy
