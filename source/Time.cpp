@@ -67,11 +67,45 @@ RK2Scheme::Step(real& dt)
 {
 	// Compute the intermediate state
 	CalcStateDeriv(0);
-	r[1] = r[0] + rd[1] * (0.5 * dt);
+	r[1] = r[0] + rd[0] * (0.5 * dt);
 	Update(t + 0.5 * dt, 1);
 	// And so we can compute the new derivative and apply it
 	CalcStateDeriv(0);
 	r[0] = r[0] + rd[0] * dt;
+
+	t += dt;
+	Update(t, 0);
+}
+
+RK4Scheme::RK4Scheme(moordyn::Log* log)
+  : TimeSchemeBase(log)
+{
+	name = "4th order RUnge-Kutta";
+}
+
+void
+RK4Scheme::Step(real& dt)
+{
+	// k1
+	CalcStateDeriv(0);
+
+	// k2
+	r[1] = r[0] + rd[0] * (0.5 * dt);
+	Update(t + 0.5 * dt, 1);
+	CalcStateDeriv(1);
+
+	// k3
+	r[1] = r[0] + rd[1] * (0.5 * dt);
+	Update(t + 0.5 * dt, 1);
+	CalcStateDeriv(2);
+
+	// k4
+	r[2] = r[0] + rd[2] * dt;
+	Update(t + dt, 2);
+	CalcStateDeriv(3);
+
+	// Apply
+	r[0] = r[0] + (rd[0] + rd[3]) * (dt / 6.0) + (rd[1] + rd[2]) * (dt / 3.0);
 
 	t += dt;
 	Update(t, 0);
@@ -87,6 +121,8 @@ create_time_scheme(const std::string& name, moordyn::Log* log)
 		out = new HeunScheme(log);
 	} else if (str::lower(name) == "rk2") {
 		out = new RK2Scheme(log);
+	} else if (str::lower(name) == "rk4") {
+		out = new RK4Scheme(log);
 	} else {
 		throw moordyn::invalid_value_error("Unknown time scheme");
 	}

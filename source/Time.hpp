@@ -733,9 +733,36 @@ class RK2Scheme : public TimeSchemeBase<2, 1>
 	virtual void Step(real& dt);
 };
 
+/** @class RK4Scheme Time.hpp
+ * @brief 4th order Runge-Kutta time scheme
+ *
+ * A very popular time integration scheme, it is however computationally
+ * expensive, requiring 4 computations of the derivative per time step. On the
+ * other hand, it might be possible to increase the time step size, compensating
+ * such a drawback
+ */
+class RK4Scheme : public TimeSchemeBase<5, 4>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 */
+	RK4Scheme(moordyn::Log* log);
+
+	/// @brief Destructor
+	~RK4Scheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+};
+
 /** @brief Create a time scheme
  * @param name The time scheme name, one of the following:
- * "Euler", "Heun", "RK2"
+ * "Euler", "Heun", "RK2", "RK4"
  * @param log The log handler
  * @return The time scheme
  * @throw moordyn::invalid_value_error If there is not a time scheme named after
