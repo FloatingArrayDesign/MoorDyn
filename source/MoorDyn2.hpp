@@ -411,15 +411,6 @@ class MoorDyn : public LogUser
 	/// (nXtra = nX + 6 * 2 * LineList.size())
 	unsigned int nXtra;
 
-	/// Global state vector
-	double* states;
-	/// State vector at midpoint in the RK-2 integration scheme
-	double* xt;
-	/// Drivatives computed in the first step of the RK-2 integration scheme
-	double* f0;
-	/// Drivatives computed in the second step of the RK-2 integration scheme
-	double* f1;
-
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
@@ -642,30 +633,6 @@ class MoorDyn : public LogUser
 		MOORDYN_THROW(MOORDYN_INVALID_VALUE, s.str().c_str());
 		return 0.0;
 	}
-
-	/** @brief Compute the state derivatives
-	 * @param x Array of states (input)
-	 * @param xd Array of state derivatives (output)
-	 * @param t The time instant
-	 * @param dt Desired time step
-	 * @return MOORDYN_SUCCESS if the system was correctly integrated, an error
-	 * code otherwise
-	 */
-	moordyn::error_id CalcStateDeriv(double* x,
-	                                 double* xd,
-	                                 const double t,
-	                                 const double dt);
-
-	/** @brief Carry out an integration step
-	 *
-	 * 2nd order Runge-Kutta time integrator is considered
-	 * @param x Array of states which will be integrated
-	 * @param t The time instant. It will be modified
-	 * @param dt Desired time step
-	 * @return MOORDYN_SUCCESS if the system was correctly integrated, an error
-	 * code otherwise
-	 */
-	moordyn::error_id RK2(double* x, double& t, const double dt);
 
 	/** @brief Detach lines from a failed connection
 	 * @param attachID ID of connection or Rod the lines are attached to (index

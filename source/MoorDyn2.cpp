@@ -55,10 +55,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , waves(NULL)
   , nX(0)
   , nXtra(0)
-  , states(NULL)
-  , xt(NULL)
-  , f0(NULL)
-  , f1(NULL)
   , npW(0)
   , tW_1(0.0)
   , tW_2(0.0)
@@ -117,20 +113,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 	}
 
 	nXtra = nX + 6 * 2 * LineList.size();
-	LOGDBG << "Creating state vectors of size " << nXtra << endl;
-	states = (double*)malloc(nXtra * sizeof(double));
-	xt = (double*)malloc(nXtra * sizeof(double));
-	f0 = (double*)malloc(nXtra * sizeof(double));
-	f1 = (double*)malloc(nXtra * sizeof(double));
-	if (!states || !f0 || !f1 || !xt) {
-		MOORDYN_THROW(MOORDYN_MEM_ERROR,
-		              "Error allocating memory for state variables");
-	}
-
-	memset(states, 0.0, nXtra * sizeof(double));
-	memset(xt, 0.0, nXtra * sizeof(double));
-	memset(f0, 0.0, nXtra * sizeof(double));
-	memset(f1, 0.0, nXtra * sizeof(double));
 }
 
 moordyn::MoorDyn::~MoorDyn()
@@ -161,11 +143,6 @@ moordyn::MoorDyn::~MoorDyn()
 		delete obj;
 	for (auto obj : LineList)
 		delete obj;
-
-	free(states);
-	free(xt);
-	free(f0);
-	free(f1);
 
 	delete _log;
 }
@@ -301,16 +278,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 			}
 		}
 
-		// check for NaNs (actually it was already done in RK2)
-		for (unsigned int i = 0; i < nX; i++) {
-			if (isnan(states[i])) {
-				LOGERR << "Error: NaN value detected "
-				       << "in MoorDyn state at dynamic relaxation time " << t
-				       << " s." << endl;
-				return MOORDYN_NAN_ERROR;
-			}
-		}
-
 		// Roll previous fairlead tensions for comparison
 		for (unsigned int lf = 0; lf < LineList.size(); lf++) {
 			for (int pt = convergence_iters - 1; pt > 0; pt--)
@@ -366,6 +333,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 
 	// restore drag coefficients to normal values and restart time counter of
 	// each object
+	_t_integrator->SetTime(0.0);
 	for (auto obj : LineList) {
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
@@ -511,7 +479,7 @@ moordyn::MoorDyn::Step(const double* x,
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			_t_integrator->Step(dt);
+			_t_integrator->Step(dt_step);
 			t = _t_integrator->GetTime();
 		}
 		MOORDYN_CATCHER(err, err_msg);
@@ -521,16 +489,6 @@ moordyn::MoorDyn::Step(const double* x,
 		}
 	}
 	t = t_target;
-
-	// check for NaNs (actually it was already done in RK2)
-	for (unsigned int i = 0; i < nX; i++) {
-		if (isnan(states[i])) {
-			LOGERR << "Error: NaN value detected "
-			       << "in MoorDyn state " << i << " at time " << t << " s"
-			       << endl;
-			return MOORDYN_NAN_ERROR;
-		}
-	}
 
 	// --------------- check for line failures (detachments!) ----------------
 	// step 1: check for time-triggered failures
@@ -1825,166 +1783,6 @@ moordyn::MoorDyn::ReadInFile()
 }
 
 moordyn::error_id
-moordyn::MoorDyn::CalcStateDeriv(double* x,
-                                 double* xd,
-                                 const double t,
-                                 const double dt)
-{
-	// call ground body to update all the fixed things...
-	GroundBody->updateFairlead(t);
-
-	// couple things...
-
-	// extrapolate instantaneous positions of any coupled bodies (type -1)
-	for (auto l : CpldBodyIs)
-		BodyList[l]->updateFairlead(t);
-
-	// extrapolate instantaneous positions of any coupled or fixed rods (type -1
-	// or -2)
-	for (auto l : CpldRodIs)
-		RodList[l]->updateFairlead(t);
-
-	// extrapolate instantaneous positions of any coupled or fixed connections
-	// (type -1)
-	for (auto l : CpldConIs) {
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
-		try {
-			ConnectionList[l]->updateFairlead(t);
-		}
-		MOORDYN_CATCHER(err, err_msg);
-		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Error updating connection: " << err_msg << endl;
-			return err;
-		}
-	}
-
-	// update wave kinematics if applicable
-	if (env.WaveKin == WAVES_EXTERNAL) {
-		// extrapolate velocities from accelerations
-		// (in future could extrapolote from most recent two points,
-		// (U_1 and U_2)
-
-		real t_delta = t - tW_1;
-
-		std::vector<vec> U_extrap;
-		U_extrap.reserve(npW);
-		for (unsigned int i = 0; i < npW; i++)
-			U_extrap.push_back(U_1[i] + Ud_1[i] * t_delta);
-
-		// distribute to the appropriate objects
-		unsigned int i = 0;
-		for (auto line : LineList) {
-			const unsigned int n_line = line->getN() + 1;
-			line->setNodeWaveKin(vector_slice(U_extrap, i, n_line),
-			                     vector_slice(Ud_1, i, n_line));
-			i += n_line;
-		}
-	}
-
-	// independent or semi-independent things with their own states...
-
-	// give Bodies latest state variables (kinematics will also be assigned to
-	// dependent connections and rods, and thus line ends)
-	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
-		BodyList[FreeBodyIs[l]]->setState((x + BodyStateIs[l]), t);
-
-	// give independent or pinned rods' latest state variables (kinematics will
-	// also be assigned to attached line ends)
-	for (unsigned int l = 0; l < FreeRodIs.size(); l++)
-		RodList[FreeRodIs[l]]->setState((x + RodStateIs[l]), t);
-
-	// give Connects (independent connections) latest state variable values
-	// (kinematics will also be assigned to attached line ends)
-	for (unsigned int l = 0; l < FreeConIs.size(); l++)
-		ConnectionList[FreeConIs[l]]->setState((x + ConnectStateIs[l]), t);
-
-	// give Lines latest state variable values for internal nodes
-	for (unsigned int l = 0; l < LineList.size(); l++)
-		LineList[l]->setState((x + LineStateIs[l]), t);
-
-	// calculate dynamics of free objects (will also calculate forces (doRHS())
-	// from any child/dependent objects)...
-
-	// calculate line dynamics (and calculate line forces and masses attributed
-	// to connections)
-	for (unsigned int l = 0; l < LineList.size(); l++) {
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
-		try {
-			LineList[l]->getStateDeriv((xd + LineStateIs[l]), dt);
-		}
-		MOORDYN_CATCHER(err, err_msg);
-		if (err != MOORDYN_SUCCESS)
-			return err;
-	}
-
-	// calculate connect dynamics (including contributions from attached lines
-	// as well as hydrodynamic forces etc. on connect object itself if
-	// applicable)
-	for (unsigned int l = 0; l < FreeConIs.size(); l++)
-		ConnectionList[FreeConIs[l]]->getStateDeriv((xd + ConnectStateIs[l]));
-
-	// calculate dynamics of independent Rods
-	for (unsigned int l = 0; l < FreeRodIs.size(); l++)
-		RodList[FreeRodIs[l]]->getStateDeriv((xd + RodStateIs[l]));
-
-	// calculate dynamics of Bodies
-	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
-		BodyList[FreeBodyIs[l]]->getStateDeriv((xd + BodyStateIs[l]));
-
-	// get dynamics/forces (doRHS()) of coupled objects, which weren't addressed
-	// in above calls
-
-	for (unsigned int l = 0; l < CpldConIs.size(); l++)
-		ConnectionList[CpldConIs[l]]->doRHS();
-
-	for (unsigned int l = 0; l < CpldRodIs.size(); l++)
-		RodList[CpldRodIs[l]]->doRHS();
-
-	for (unsigned int l = 0; l < CpldBodyIs.size(); l++)
-		BodyList[CpldBodyIs[l]]->doRHS();
-
-	// call ground body to update all the fixed things
-	// GroundBody->doRHS();
-	GroundBody->setDependentStates(); // (not likely needed) <<<
-
-	return MOORDYN_SUCCESS;
-}
-
-moordyn::error_id
-moordyn::MoorDyn::RK2(double* x, double& t, const double dt)
-{
-	moordyn::error_id err;
-
-	// get derivatives at t0. f0 = f(t0, x0);
-	err = CalcStateDeriv(x, f0, t, dt);
-	if (err != MOORDYN_SUCCESS)
-		return err;
-
-	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
-	for (unsigned int i = 0; i < nX; i++)
-		xt[i] = x[i] + 0.5 * dt * f0[i];
-
-	// get derivatives at t0 + dt/2. f1 = f(t1, x1);
-	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
-	if (err != MOORDYN_SUCCESS)
-		return err;
-
-	// integrate states to t0 + dt
-	for (unsigned int i = 0; i < nX; i++)
-		x[i] = x[i] + dt * f1[i];
-
-	// update time
-	t = t + dt;
-
-	// <<<<<<<<< maybe should check/force all rod unit vectors to be unit
-	// vectors here?
-
-	return MOORDYN_SUCCESS;
-}
-
-moordyn::error_id
 moordyn::MoorDyn::detachLines(int attachID,
                               int isRod,
                               const int* lineIDs,
@@ -1992,6 +1790,8 @@ moordyn::MoorDyn::detachLines(int attachID,
                               int nLinesToDetach,
                               double time)
 {
+	// BUG: Addapt this to the new time integrators
+
 	// create new massless connection for detached end(s) of line(s)
 	double M = 0.0;
 	double V = 0.0;
@@ -2072,8 +1872,8 @@ moordyn::MoorDyn::detachLines(int attachID,
 	obj->setState(dummyConnectState, time);
 
 	// now make the state vector up to date!
-	for (unsigned int J = 0; J < 6; J++)
-		states[ConnectStateIs.back() + J] = dummyConnectState[J];
+	// for (unsigned int J = 0; J < 6; J++)
+	//    states[ConnectStateIs.back() + J] = dummyConnectState[J];
 
 	return MOORDYN_SUCCESS;
 }
