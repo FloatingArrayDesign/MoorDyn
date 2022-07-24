@@ -760,9 +760,51 @@ class RK4Scheme : public TimeSchemeBase<5, 4>
 	virtual void Step(real& dt);
 };
 
+/** @class ABScheme Time.hpp
+ * @brief Adam-Bashforth time schemes collection
+ *
+ * The Adam-Bashforth method tries to increase the order of the integrator by
+ * using former derivatives. Thus it is requiring just a single derivative
+ * computation per time step
+ *
+ * Actually, the 1st order and the 2nd order are the same schemes than the
+ * Euler's and Heun's ones
+ */
+template<unsigned int order>
+class ABScheme : public TimeSchemeBase<5, 1>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 */
+	ABScheme(moordyn::Log* log);
+
+	/// @brief Destructor
+	~ABScheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+
+  private:
+	/// The number of derivatives already available
+	unsigned int n_steps;
+
+	/** @brief Shift the derivatives
+	 */
+	inline void shift()
+	{
+		for (unsigned int i = 0; i < rd.size() - 1; i++)
+			rd[i + 1] = rd[i];
+	}
+};
+
 /** @brief Create a time scheme
  * @param name The time scheme name, one of the following:
- * "Euler", "Heun", "RK2", "RK4"
+ * "Euler", "Heun", "RK2", "RK4", "AB3", "AB4"
  * @param log The log handler
  * @return The time scheme
  * @throw moordyn::invalid_value_error If there is not a time scheme named after

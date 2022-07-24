@@ -15,6 +15,7 @@
  */
 
 #include "Time.hpp"
+#include <sstream>
 
 using namespace std;
 
@@ -111,6 +112,55 @@ RK4Scheme::Step(real& dt)
 	Update(t, 0);
 }
 
+template<unsigned int order>
+ABScheme<order>::ABScheme(moordyn::Log* log)
+  : TimeSchemeBase(log)
+  , n_steps(0)
+{
+	stringstream ss;
+	ss << order << "th order Adam-Bashforth";
+	name = ss.str();
+	if (order > 4) {
+		LOGWRN << name
+		       << " scheme queried, but 4th order is the maximum implemented"
+		       << endl;
+	}
+}
+
+template<unsigned int order>
+void
+ABScheme<order>::Step(real& dt)
+{
+	shift();
+
+	// Get the new derivative
+	CalcStateDeriv(0);
+
+	// Apply different formulas depending on the number of derivatives available
+	switch (n_steps) {
+		case 0:
+			r[0] = r[0] + rd[0] * dt;
+			break;
+		case 1:
+			r[0] = r[0] + rd[0] * (dt * 1.5) - rd[1] * (dt * 0.5);
+			break;
+		case 2:
+			r[0] = r[0] + rd[0] * (dt * 23.0 / 12.0) -
+			       rd[1] * (dt * 4.0 / 3.0) + rd[2] * (dt * 5.0 / 12.0);
+			break;
+		case 3:
+			r[0] = r[0] + rd[0] * (dt * 55.0 / 24.0) -
+			       rd[1] * (dt * 59.0 / 24.0) + rd[2] * (dt * 37.0 / 24.0) -
+			       rd[3] * (dt * 3.0 / 8.0);
+			break;
+		case 4:
+			r[0] = r[0] + rd[0] * (dt * 1901.0 / 720.0) -
+			       rd[1] * (dt * 1387.0 / 360.0) + rd[2] * (dt * 109.0 / 30.0) -
+			       rd[3] * (dt * 637.0 / 360.0) + rd[4] * (dt * 251.0 / 720.0);
+			break;
+	}
+}
+
 TimeScheme*
 create_time_scheme(const std::string& name, moordyn::Log* log)
 {
@@ -123,6 +173,10 @@ create_time_scheme(const std::string& name, moordyn::Log* log)
 		out = new RK2Scheme(log);
 	} else if (str::lower(name) == "rk4") {
 		out = new RK4Scheme(log);
+	} else if (str::lower(name) == "ab3") {
+		out = new ABScheme<3>(log);
+	} else if (str::lower(name) == "ab4") {
+		out = new ABScheme<4>(log);
 	} else {
 		throw moordyn::invalid_value_error("Unknown time scheme");
 	}
