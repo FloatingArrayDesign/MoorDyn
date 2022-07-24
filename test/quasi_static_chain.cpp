@@ -171,8 +171,10 @@ validation(const char* depth, const char* motion)
 	double ea_ref = 0.0;
 	unsigned int i_ref = 0; // To track the line in the ref values file
 	double f[3];
+	double t_ref0 = motion_data[0][0];
 	for (unsigned int i = 0; i < motion_data.size() - 1; i++) {
-		double t = motion_data[i][0];
+		double t_ref = motion_data[i][0];
+		double t = t_ref - t_ref0;
 		double dt = DT;
 		for (unsigned int j = 0; j < 3; j++) {
 			x[j] = motion_data[i][j + 1];
@@ -185,7 +187,7 @@ validation(const char* depth, const char* motion)
 			return false;
 		}
 
-		if (t < 0.0)
+		if (t_ref < 0.0)
 			continue;
 
 		err = MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av);
