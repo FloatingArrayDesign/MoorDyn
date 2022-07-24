@@ -257,13 +257,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	//  master state vector (states)
 
 	// Go through Bodys and write the coordinates to the state vector
-	for (unsigned int l = 0; l < FreeBodyIs.size(); l++) {
-		// BUG: These conversions will not be needed in the future
-		vec6 r, rd;
-		moordyn::array2vec6(states + BodyStateIs[l] + 6, r);
-		moordyn::array2vec6(states + BodyStateIs[l], rd);
-		BodyList[FreeBodyIs[l]]->initializeBody(r, rd);
-	}
+	for (unsigned int l = 0; l < FreeBodyIs.size(); l++)
+		BodyList[FreeBodyIs[l]]->initializeBody(states + BodyStateIs[l]);
 
 	// Go through independent (including pinned) Rods and write the coordinates
 	// to the state vector

@@ -150,16 +150,28 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, real time)
 }
 
 void
-Body::initializeBody(vec6 r, vec6 rd)
+Body::initializeBody(double X[12])
+{
+	vec6 pos, vel;
+	try {
+		std::tie(pos, vel) = initialize();
+	} catch (...) {
+		throw;
+	}
+	if (X) {
+		vec62array(vel, X);
+		vec62array(pos, X + 6);
+	}
+}
+
+std::pair<vec6, vec6>
+Body::initialize()
 {
 	if (type != FREE) {
 		LOGERR << "Invalid initializator for a non FREE body ("
 		       << TypeName(type) << ")" << endl;
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
-	// assign initial body kinematics to state vector
-	r6 = r;
-	v6 = rd;
 
 	// set positions of any dependent connections and rods now (before they are
 	// initialized)
@@ -209,6 +221,8 @@ Body::initializeBody(vec6 r, vec6 rd)
 	}
 
 	LOGDBG << "Initialized Body " << number << endl;
+
+	return std::make_pair(r6, v6);
 };
 
 void

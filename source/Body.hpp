@@ -215,6 +215,25 @@ class Body : public LogUser
 	                          vec6 rd = vec6::Zero(),
 	                          real time = 0.0);
 
+	/** @brief Initialize the FREE body state
+	 * @param X The output state variables, i.e. the velocity (6 dof) and the
+	 * position (6 dof)
+	 * @throw moordyn::invalid_value_error If the body is not of type
+	 * moordyn::Body::FREE
+	 * @throws moordyn::output_file_error If an outfile has been provided, but
+	 * it cannot be written
+	 */
+	void DEPRECATED initializeBody(double X[12]);
+
+	/** @brief Initialize the FREE connection state
+	 * @return The 6-dof position (first) and the 6-dof velocity (second)
+	 * @throw moordyn::invalid_value_error If the body is not of type
+	 * moordyn::Body::FREE
+	 * @throws moordyn::output_file_error If an outfile has been provided, but
+	 * it cannot be written
+	 */
+	std::pair<vec6, vec6> initialize();
+
 	/** @brief Initialize the free body
 	 *
 	 * Those are the bodies with type moordyn::Body::FREE
