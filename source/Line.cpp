@@ -207,7 +207,7 @@ Line::initializeLine(double* X)
 {
 	std::vector<vec> pos, vel;
 	try {
-		std::tie(pos, vel) = initializeLine();
+		std::tie(pos, vel) = initialize();
 	} catch (...) {
 		throw;
 	}
@@ -221,7 +221,7 @@ Line::initializeLine(double* X)
 }
 
 std::pair<std::vector<vec>, std::vector<vec>>
-Line::initializeLine()
+Line::initialize()
 {
 	LOGMSG << "  - Line" << number << ":" << endl
 	       << "    ID: " << number << endl
@@ -817,10 +817,10 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 }
 
 void
-Line::getStateDeriv(double* Xd, double dt)
+Line::getStateDeriv(double* Xd, double PARAM_UNUSED dt)
 {
 	std::vector<vec> u, a;
-	std::tie(u, a) = getStateDeriv(dt);
+	std::tie(u, a) = getStateDeriv();
 
 	for (unsigned int i = 1; i < N; i++) {
 		moordyn::vec2array(a[i - 1], &Xd[3 * (i - 1)]);
@@ -829,7 +829,7 @@ Line::getStateDeriv(double* Xd, double dt)
 }
 
 std::pair<std::vector<vec>, std::vector<vec>>
-Line::getStateDeriv(double dt)
+Line::getStateDeriv()
 {
 	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the

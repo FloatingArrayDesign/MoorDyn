@@ -301,7 +301,7 @@ class Line : public LogUser
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
 	 */
-	std::pair<std::vector<vec>, std::vector<vec>> initializeLine();
+	std::pair<std::vector<vec>, std::vector<vec>> initialize();
 
 	/** @brief Number of segments
 	 *
@@ -647,12 +647,11 @@ class Line : public LogUser
 	void DEPRECATED getStateDeriv(double* Xd, const double dt);
 
 	/** @brief Calculate forces and get the derivative of the line's states
-	 * @param dt The time step, unused
 	 * @return The velocties of the internal nodes (first) and the accelerations
 	 * of the internal nodes (second)
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	std::pair<std::vector<vec>, std::vector<vec>> getStateDeriv(double dt);
+	std::pair<std::vector<vec>, std::vector<vec>> getStateDeriv();
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);

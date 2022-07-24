@@ -7,6 +7,8 @@ set(MOORDYN_SRCS
     MoorDyn2.cpp
     MoorDyn.cpp
     Rod.cpp
+    State.cpp
+    Time.cpp
     Waves.cpp
     kiss_fft.c
     kiss_fftr.c
@@ -21,6 +23,8 @@ set(MOORDYN_HEADERS
     MoorDyn2.hpp
     QSlines.hpp
     Rod.hpp
+    State.hpp
+    Time.hpp
     Waves.hpp
     Body.h
     Connection.h

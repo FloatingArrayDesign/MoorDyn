@@ -53,12 +53,14 @@ HEADERS = ../../source/Body.h \
           ../../source/MoorDyn2.hpp \
           ../../source/QSlines.hpp \
           ../../source/Rod.hpp \
+          ../../source/State.hpp \
+          ../../source/Time.hpp \
           ../../source/Waves.hpp
 
 all: libmoordyn2.dylib
 
-libmoordyn2.dylib: MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
-	$(CXX) $(LFLAGS) -o libmoordyn2.dylib MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
+libmoordyn2.dylib: MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
+	$(CXX) $(LFLAGS) -o libmoordyn2.dylib MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
 
 MoorDyn.o: ../../source/MoorDyn.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn.cpp
@@ -83,6 +85,12 @@ Body.o: ../../source/Body.cpp $(HEADERS)
 
 Rod.o: ../../source/Rod.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Rod.cpp
+
+State.o: ../../source/State.cpp $(HEADERS)
+	$(CXX) $(CPPFLAGS) ../../source/State.cpp
+
+Time.o: ../../source/Time.cpp $(HEADERS)
+	$(CXX) $(CPPFLAGS) ../../source/Time.cpp
 
 Waves.o: ../../source/Waves.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
