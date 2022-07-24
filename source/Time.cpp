@@ -21,7 +21,7 @@ using namespace std;
 namespace moordyn {
 
 EulerScheme::EulerScheme(moordyn::Log* log)
-  : TimeScheme(log)
+  : TimeSchemeBase(log)
 {
 	name = "1st order Euler";
 }
@@ -36,7 +36,7 @@ EulerScheme::Step(real& dt)
 }
 
 HeunScheme::HeunScheme(moordyn::Log* log)
-  : TimeScheme(log)
+  : TimeSchemeBase(log)
 {
 	name = "2nd order Heun";
 }
@@ -57,7 +57,7 @@ HeunScheme::Step(real& dt)
 }
 
 RK2Scheme::RK2Scheme(moordyn::Log* log)
-  : TimeScheme(log)
+  : TimeSchemeBase(log)
 {
 	name = "2nd order RUnge-Kutta";
 }
@@ -75,6 +75,24 @@ RK2Scheme::Step(real& dt)
 
 	t += dt;
 	Update(t, 0);
+}
+
+TimeScheme*
+create_time_scheme(const std::string& name, moordyn::Log* log)
+{
+	TimeScheme* out = NULL;
+	if (str::lower(name) == "euler") {
+		out = new EulerScheme(log);
+	} else if (str::lower(name) == "heun") {
+		out = new HeunScheme(log);
+	} else if (str::lower(name) == "rk2") {
+		out = new RK2Scheme(log);
+	} else {
+		throw moordyn::invalid_value_error("Unknown time scheme");
+	}
+	if (!out)
+		throw moordyn::mem_error("Failure allocating the time scheme");
+	return out;
 }
 
 } // ::moordyn

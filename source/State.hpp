@@ -92,7 +92,7 @@ class StateVarDeriv
 	StateVarDeriv<T>& operator=(const StateVarDeriv<T>& visitor)
 	{
 		vel = visitor.vel;
-		acc = visitor.ac;
+		acc = visitor.acc;
 		return *this;
 	}
 

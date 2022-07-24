@@ -33,11 +33,11 @@
 namespace moordyn {
 
 /** @class TimeScheme Time.hpp
- * @brief A generic abstract integration scheme
+ * @brief Time scheme abstraction
  *
- * This class can be later overloaded to implement a plethora of time schemes
+ * This class is helping mooring::MoorDyn to can consider every single time
+ * scheme in the very same way
  */
-template<unsigned int NSTATE, unsigned int NDERIV>
 class TimeScheme : public LogUser
 {
   public:
@@ -47,13 +47,13 @@ class TimeScheme : public LogUser
 	/** @brief Set the ground body
 	 * @param obj The ground body
 	 */
-	void SetGround(Body* obj) { ground = obj; }
+	inline void SetGround(Body* obj) { ground = obj; }
 
 	/** @brief Add a line
 	 * @param obj The line
 	 * @throw moordyn::invalid_value_error If it has been already registered
 	 */
-	void AddLine(Line* obj)
+	virtual void AddLine(Line* obj)
 	{
 		if (std::find(lines.begin(), lines.end(), obj) != lines.end()) {
 			LOGERR << "The line " << obj->number << " was already registered"
@@ -61,28 +61,15 @@ class TimeScheme : public LogUser
 			throw moordyn::invalid_value_error("Repeated object");
 		}
 		lines.push_back(obj);
-		// Build up the states and states derivatives
-		unsigned int n = obj->getN() - 1;
-		LineState state;
-		state.pos.assign(n, vec::Zero());
-		state.vel.assign(n, vec::Zero());
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].lines.push_back(state);
-		}
-		DLineStateDt dstate;
-		dstate.vel.assign(n, vec::Zero());
-		dstate.acc.assign(n, vec::Zero());
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			r[i].lines.push_back(dstate);
-		}
 	}
 
 	/** @brief Remove a line
 	 * @param obj The line
+	 * @return The index of the removed entity
 	 * @throw moordyn::invalid_value_error If the line has not been registered,
 	 * or it was already removed
 	 */
-	void RemoveLine(Line* obj)
+	virtual unsigned int RemoveLine(Line* obj)
 	{
 		auto it = std::find(lines.begin(), lines.end(), obj);
 		if (it == lines.end()) {
@@ -92,17 +79,14 @@ class TimeScheme : public LogUser
 		}
 		const unsigned int i = std::distance(lines.begin(), it);
 		lines.erase(it);
-		for (unsigned int i = 0; i < r.size(); i++)
-			r.erase(r.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd.erase(r.begin() + i);
+		return i;
 	}
 
 	/** @brief Add a connection
 	 * @param obj The connection
 	 * @throw moordyn::invalid_value_error If it has been already registered
 	 */
-	void AddConnection(Connection* obj)
+	virtual void AddConnection(Connection* obj)
 	{
 		if (std::find(conns.begin(), conns.end(), obj) != conns.end()) {
 			LOGERR << "The connection " << obj->number
@@ -110,27 +94,15 @@ class TimeScheme : public LogUser
 			throw moordyn::invalid_value_error("Repeated object");
 		}
 		conns.push_back(obj);
-		// Build up the states and states derivatives
-		ConnState state;
-		state.pos = vec::Zero();
-		state.vel = vec::Zero();
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].conns.push_back(state);
-		}
-		DConnStateDt dstate;
-		dstate.vel = vec::Zero();
-		dstate.acc = vec::Zero();
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			r[i].conns.push_back(dstate);
-		}
 	}
 
 	/** @brief Remove a connection
 	 * @param obj The connection
+	 * @return The index of the removed entity
 	 * @throw moordyn::invalid_value_error If the connection has not been
 	 * registered, or it was already removed
 	 */
-	void RemoveConnection(Connection* obj)
+	virtual unsigned int RemoveConnection(Connection* obj)
 	{
 		auto it = std::find(conns.begin(), conns.end(), obj);
 		if (it == conns.end()) {
@@ -140,17 +112,14 @@ class TimeScheme : public LogUser
 		}
 		const unsigned int i = std::distance(conns.begin(), it);
 		conns.erase(it);
-		for (unsigned int i = 0; i < r.size(); i++)
-			r.erase(r.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd.erase(r.begin() + i);
+		return i;
 	}
 
 	/** @brief Add a rod
 	 * @param obj The rod
 	 * @throw moordyn::invalid_value_error If it has been already registered
 	 */
-	void AddRod(Rod* obj)
+	virtual void AddRod(Rod* obj)
 	{
 		if (std::find(rods.begin(), rods.end(), obj) != rods.end()) {
 			LOGERR << "The rod " << obj->number << " was already registered"
@@ -158,27 +127,15 @@ class TimeScheme : public LogUser
 			throw moordyn::invalid_value_error("Repeated object");
 		}
 		rods.push_back(obj);
-		// Build up the states and states derivatives
-		RodState state;
-		state.pos = vec6::Zero();
-		state.vel = vec6::Zero();
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].rods.push_back(state);
-		}
-		DRodStateDt dstate;
-		dstate.vel = vec6::Zero();
-		dstate.acc = vec6::Zero();
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			r[i].rods.push_back(dstate);
-		}
 	}
 
 	/** @brief Remove a rod
 	 * @param obj The rod
+	 * @return The index of the removed entity
 	 * @throw moordyn::invalid_value_error If the rod has not been registered,
 	 * or it was already removed
 	 */
-	void RemoveRod(Rod* obj)
+	virtual unsigned int RemoveRod(Rod* obj)
 	{
 		auto it = std::find(rods.begin(), rods.end(), obj);
 		if (it == rods.end()) {
@@ -188,17 +145,14 @@ class TimeScheme : public LogUser
 		}
 		const unsigned int i = std::distance(rods.begin(), it);
 		rods.erase(it);
-		for (unsigned int i = 0; i < r.size(); i++)
-			r.erase(r.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd.erase(r.begin() + i);
+		return i;
 	}
 
 	/** @brief Add a body
 	 * @param obj The body
 	 * @throw moordyn::invalid_value_error If it has been already registered
 	 */
-	void AddBody(Body* obj)
+	virtual void AddBody(Body* obj)
 	{
 		if (std::find(bodies.begin(), bodies.end(), obj) != bodies.end()) {
 			LOGERR << "The body " << obj->number << " was already registered"
@@ -206,27 +160,15 @@ class TimeScheme : public LogUser
 			throw moordyn::invalid_value_error("Repeated object");
 		}
 		bodies.push_back(obj);
-		// Build up the states and states derivatives
-		BodyState state;
-		state.pos = vec6::Zero();
-		state.vel = vec6::Zero();
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].bodies.push_back(state);
-		}
-		DBodyStateDt dstate;
-		dstate.vel = vec6::Zero();
-		dstate.acc = vec6::Zero();
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			r[i].bodies.push_back(dstate);
-		}
 	}
 
 	/** @brief Remove a body
 	 * @param obj The body
+	 * @return The index of the removed entity
 	 * @throw moordyn::invalid_value_error If the body has not been registered,
 	 * or it was already removed
 	 */
-	void RemoveBody(Body* obj)
+	virtual unsigned int RemoveBody(Body* obj)
 	{
 		auto it = std::find(bodies.begin(), bodies.end(), obj);
 		if (it == bodies.end()) {
@@ -236,10 +178,7 @@ class TimeScheme : public LogUser
 		}
 		const unsigned int i = std::distance(bodies.begin(), it);
 		bodies.erase(it);
-		for (unsigned int i = 0; i < r.size(); i++)
-			r.erase(r.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd.erase(r.begin() + i);
+		return i;
 	}
 
 	/** @brief Set the external wave kinematics
@@ -281,7 +220,264 @@ class TimeScheme : public LogUser
 	 * the derivatives are initialized in any way.
 	 * @note It is assumed that the coupled entities were already initialized
 	 */
-	void init()
+	virtual void init() = 0;
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt) = 0;
+
+  protected:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 */
+	TimeScheme(moordyn::Log* log)
+	  : LogUser(log)
+	  , has_ext_waves(false)
+	  , name("None")
+	  , t(0.0)
+	{}
+
+	/// The ground body
+	Body* ground;
+
+	/// The lines
+	std::vector<Line*> lines;
+
+	/// The connections
+	std::vector<Connection*> conns;
+
+	/// The rods
+	std::vector<Rod*> rods;
+
+	/// The bodies
+	std::vector<Body*> bodies;
+
+	/// External waves
+	bool has_ext_waves;
+	/// time corresponding to the wave kinematics data
+	real t_w;
+	/// array of wave velocity at each of the npW points at time tW
+	std::vector<vec> u_w;
+	/// array of wave acceleration at each of the npW points at time tW
+	std::vector<vec> ud_w;
+
+	/// The scheme name
+	std::string name;
+
+	/// The simulation time
+	real t;
+};
+
+/** @class TimeSchemeBase Time.hpp
+ * @brief A generic abstract integration scheme
+ *
+ * This class can be later overloaded to implement a plethora of time schemes
+ */
+template<unsigned int NSTATE, unsigned int NDERIV>
+class TimeSchemeBase : public TimeScheme
+{
+  public:
+	/// @brief Destructor
+	virtual ~TimeSchemeBase() {}
+
+	/** @brief Add a line
+	 * @param obj The line
+	 * @throw moordyn::invalid_value_error If it has been already registered
+	 */
+	virtual void AddLine(Line* obj)
+	{
+		try {
+			TimeScheme::AddLine(obj);
+		} catch (...) {
+			throw;
+		}
+		// Build up the states and states derivatives
+		unsigned int n = obj->getN() - 1;
+		LineState state;
+		state.pos.assign(n, vec::Zero());
+		state.vel.assign(n, vec::Zero());
+		for (unsigned int i = 0; i < r.size(); i++) {
+			r[i].lines.push_back(state);
+		}
+		DLineStateDt dstate;
+		dstate.vel.assign(n, vec::Zero());
+		dstate.acc.assign(n, vec::Zero());
+		for (unsigned int i = 0; i < rd.size(); i++) {
+			rd[i].lines.push_back(dstate);
+		}
+	}
+
+	/** @brief Remove a line
+	 * @param obj The line
+	 * @return The index of the removed entity
+	 * @throw moordyn::invalid_value_error If the line has not been registered,
+	 * or it was already removed
+	 */
+	virtual unsigned int RemoveLine(Line* obj)
+	{
+		unsigned int i;
+		try {
+			i = TimeScheme::RemoveLine(obj);
+		} catch (...) {
+			throw;
+		}
+		for (unsigned int i = 0; i < r.size(); i++)
+			r[i].lines.erase(r[i].lines.begin() + i);
+		for (unsigned int i = 0; i < rd.size(); i++)
+			rd[i].lines.erase(rd[i].lines.begin() + i);
+		return i;
+	}
+
+	/** @brief Add a connection
+	 * @param obj The connection
+	 * @throw moordyn::invalid_value_error If it has been already registered
+	 */
+	virtual void AddConnection(Connection* obj)
+	{
+		try {
+			TimeScheme::AddConnection(obj);
+		} catch (...) {
+			throw;
+		}
+		// Build up the states and states derivatives
+		ConnState state;
+		state.pos = vec::Zero();
+		state.vel = vec::Zero();
+		for (unsigned int i = 0; i < r.size(); i++) {
+			r[i].conns.push_back(state);
+		}
+		DConnStateDt dstate;
+		dstate.vel = vec::Zero();
+		dstate.acc = vec::Zero();
+		for (unsigned int i = 0; i < rd.size(); i++) {
+			rd[i].conns.push_back(dstate);
+		}
+	}
+
+	/** @brief Remove a connection
+	 * @param obj The connection
+	 * @return The index of the removed entity
+	 * @throw moordyn::invalid_value_error If the connection has not been
+	 * registered, or it was already removed
+	 */
+	virtual unsigned int RemoveConnection(Connection* obj)
+	{
+		unsigned int i;
+		try {
+			i = TimeScheme::RemoveConnection(obj);
+		} catch (...) {
+			throw;
+		}
+		for (unsigned int i = 0; i < r.size(); i++)
+			r[i].conns.erase(r[i].conns.begin() + i);
+		for (unsigned int i = 0; i < rd.size(); i++)
+			rd[i].conns.erase(rd[i].conns.begin() + i);
+		return i;
+	}
+
+	/** @brief Add a rod
+	 * @param obj The rod
+	 * @throw moordyn::invalid_value_error If it has been already registered
+	 */
+	virtual void AddRod(Rod* obj)
+	{
+		try {
+			TimeScheme::AddRod(obj);
+		} catch (...) {
+			throw;
+		}
+		// Build up the states and states derivatives
+		RodState state;
+		state.pos = vec6::Zero();
+		state.vel = vec6::Zero();
+		for (unsigned int i = 0; i < r.size(); i++) {
+			r[i].rods.push_back(state);
+		}
+		DRodStateDt dstate;
+		dstate.vel = vec6::Zero();
+		dstate.acc = vec6::Zero();
+		for (unsigned int i = 0; i < rd.size(); i++) {
+			rd[i].rods.push_back(dstate);
+		}
+	}
+
+	/** @brief Remove a rod
+	 * @param obj The rod
+	 * @return The index of the removed entity
+	 * @throw moordyn::invalid_value_error If the rod has not been registered,
+	 * or it was already removed
+	 */
+	virtual unsigned int RemoveRod(Rod* obj)
+	{
+		unsigned int i;
+		try {
+			i = TimeScheme::RemoveRod(obj);
+		} catch (...) {
+			throw;
+		}
+		for (unsigned int i = 0; i < r.size(); i++)
+			r[i].rods.erase(r[i].rods.begin() + i);
+		for (unsigned int i = 0; i < rd.size(); i++)
+			rd[i].rods.erase(rd[i].rods.begin() + i);
+		return i;
+	}
+
+	/** @brief Add a body
+	 * @param obj The body
+	 * @throw moordyn::invalid_value_error If it has been already registered
+	 */
+	virtual void AddBody(Body* obj)
+	{
+		try {
+			TimeScheme::AddBody(obj);
+		} catch (...) {
+			throw;
+		}
+		// Build up the states and states derivatives
+		BodyState state;
+		state.pos = vec6::Zero();
+		state.vel = vec6::Zero();
+		for (unsigned int i = 0; i < r.size(); i++) {
+			r[i].bodies.push_back(state);
+		}
+		DBodyStateDt dstate;
+		dstate.vel = vec6::Zero();
+		dstate.acc = vec6::Zero();
+		for (unsigned int i = 0; i < rd.size(); i++) {
+			rd[i].bodies.push_back(dstate);
+		}
+	}
+
+	/** @brief Remove a body
+	 * @param obj The body
+	 * @return The index of the removed entity
+	 * @throw moordyn::invalid_value_error If the body has not been registered,
+	 * or it was already removed
+	 */
+	virtual unsigned int RemoveBody(Body* obj)
+	{
+		unsigned int i;
+		try {
+			i = TimeScheme::RemoveBody(obj);
+		} catch (...) {
+			throw;
+		}
+		for (unsigned int i = 0; i < r.size(); i++)
+			r[i].bodies.erase(r[i].bodies.begin() + i);
+		for (unsigned int i = 0; i < rd.size(); i++)
+			rd[i].bodies.erase(rd[i].bodies.begin() + i);
+		return i;
+	}
+
+	/** @brief Create an initial state for all the entities
+	 * @note Just the first state is written. None of the following states, nor
+	 * the derivatives are initialized in any way.
+	 * @note It is assumed that the coupled entities were already initialized
+	 */
+	virtual void init()
 	{
 		// NOTE: Probably is best to populate all the entities to the time
 		// integrator, no matter if they are free or not. Thus they can change
@@ -324,15 +520,12 @@ class TimeScheme : public LogUser
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	TimeScheme(moordyn::Log* log)
-	  : LogUser(log)
-	  , has_ext_waves(false)
-	  , name("None")
-	  , t(0.0)
+	TimeSchemeBase(moordyn::Log* log)
+	  : TimeScheme(log)
 	{}
 
 	/** @brief Update all the entities to set the state
-	 * @param substep The index within moordyn::TimeScheme::r that will be
+	 * @param substep The index within moordyn::TimeSchemeBase::r that will be
 	 * applied to set the states
 	 * @param t The simulation time
 	 * @note This is only affecting to the free entities
@@ -407,8 +600,8 @@ class TimeScheme : public LogUser
 	}
 
 	/** @brief Compute the time derivatives and store them
-	 * @param substep The index within moordyn::TimeScheme::rd where the info
-	 * will be saved
+	 * @param substep The index within moordyn::TimeSchemeBase::rd where the
+	 * info will be saved
 	 */
 	void CalcStateDeriv(unsigned int substep = 0)
 	{
@@ -458,41 +651,11 @@ class TimeScheme : public LogUser
 		ground->setDependentStates(); // NOTE: (not likely needed)
 	}
 
-	/// The ground body
-	Body* ground;
-
-	/// The lines
-	std::vector<Line*> lines;
-
-	/// The connections
-	std::vector<Connection*> conns;
-
-	/// The rods
-	std::vector<Rod*> rods;
-
-	/// The bodies
-	std::vector<Body*> bodies;
-
-	/// External waves
-	bool has_ext_waves;
-	/// time corresponding to the wave kinematics data
-	real t_w;
-	/// array of wave velocity at each of the npW points at time tW
-	std::vector<vec> u_w;
-	/// array of wave acceleration at each of the npW points at time tW
-	std::vector<vec> ud_w;
-
 	/// The list of states
 	std::array<MoorDynState, NSTATE> r;
 
 	/// The list of state derivatives
 	std::array<DMoorDynStateDt, NDERIV> rd;
-
-	/// The scheme name
-	std::string name;
-
-	/// The simulation time
-	real t;
 };
 
 /** @class EulerScheme Time.hpp
@@ -501,7 +664,7 @@ class TimeScheme : public LogUser
  * This time scheme is strongly discourage, and use only for testing/debugging
  * puposes
  */
-class EulerScheme : public TimeScheme<1, 1>
+class EulerScheme : public TimeSchemeBase<1, 1>
 {
   public:
 	/** @brief Costructor
@@ -517,7 +680,7 @@ class EulerScheme : public TimeScheme<1, 1>
 	 * This function is the one that must be specialized on each time scheme
 	 * @param dt Time step
 	 */
-	void Step(real& dt);
+	virtual void Step(real& dt);
 };
 
 /** @class HeunScheme Time.hpp
@@ -527,7 +690,7 @@ class EulerScheme : public TimeScheme<1, 1>
  * performance, since it is only requiring a single derivative per time step,
  * while rendering similar results to other 2nd order schemes
  */
-class HeunScheme : public TimeScheme<1, 2>
+class HeunScheme : public TimeSchemeBase<1, 2>
 {
   public:
 	/** @brief Costructor
@@ -543,7 +706,7 @@ class HeunScheme : public TimeScheme<1, 2>
 	 * This function is the one that must be specialized on each time scheme
 	 * @param dt Time step
 	 */
-	void Step(real& dt);
+	virtual void Step(real& dt);
 };
 
 /** @class RK2Scheme Time.hpp
@@ -551,7 +714,7 @@ class HeunScheme : public TimeScheme<1, 2>
  *
  * This was the traditionally applied time scheme in MoorDyn v1
  */
-class RK2Scheme : public TimeScheme<2, 1>
+class RK2Scheme : public TimeSchemeBase<2, 1>
 {
   public:
 	/** @brief Costructor
@@ -567,7 +730,20 @@ class RK2Scheme : public TimeScheme<2, 1>
 	 * This function is the one that must be specialized on each time scheme
 	 * @param dt Time step
 	 */
-	void Step(real& dt);
+	virtual void Step(real& dt);
 };
+
+/** @brief Create a time scheme
+ * @param name The time scheme name, one of the following:
+ * "Euler", "Heun", "RK2"
+ * @param log The log handler
+ * @return The time scheme
+ * @throw moordyn::invalid_value_error If there is not a time scheme named after
+ * @p name
+ * @throw moordyn::mem_error If the time scheme memory cannot be allocated
+ * @note Remember to delete the returned time scheme at some point
+ */
+TimeScheme*
+create_time_scheme(const std::string& name, moordyn::Log* log);
 
 } // ::moordyn
