@@ -19,9 +19,9 @@ set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
 set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
     "Use single precission (enhances performance at the cost of accuracy)")
-set(MOORDYN_SSE "SSE2" CACHE STRING "Use enhanced instructions set")
-set(MOORDYN_FASTMATH OFF CACHE BOOL "Enhances performance at the cost of accuracy")
+set(MOORDYN_SSE "OFF" CACHE STRING "Use enhanced instructions set")
 set_property(CACHE MOORDYN_SSE PROPERTY STRINGS OFF SSE SSE2 SSE4 AVX AVX2 AVX512)
+set(MOORDYN_FASTMATH OFF CACHE BOOL "Enhances performance at the cost of accuracy")
 mark_as_advanced(PYTHON_WRAPPER_USERINSTALL)
 mark_as_advanced(MOORDYN_SINGLEPRECISSION)
 mark_as_advanced(MOORDYN_SSE)
