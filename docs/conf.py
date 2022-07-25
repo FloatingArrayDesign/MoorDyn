@@ -12,8 +12,8 @@
 #
 import subprocess
 import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import sys
+sys.path.insert(0, os.path.abspath('../wrappers/python/moordyn/'))
 
 
 # -- Doxygen and breathe steps -----------------------------------------------------------
