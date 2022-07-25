@@ -18,9 +18,14 @@ set(PYTHON_WRAPPER ON CACHE BOOL
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
 set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
-    "Use single precission (some performance can be win in exchange of accuracy)")
+    "Use single precission (enhances performance at the cost of accuracy)")
+set(MOORDYN_SSE "SSE2" CACHE STRING "Use enhanced instructions set")
+set(MOORDYN_FASTMATH OFF CACHE BOOL "Enhances performance at the cost of accuracy")
+set_property(CACHE MOORDYN_SSE PROPERTY STRINGS OFF SSE SSE2 SSE4 AVX AVX2 AVX512)
 mark_as_advanced(PYTHON_WRAPPER_USERINSTALL)
 mark_as_advanced(MOORDYN_SINGLEPRECISSION)
+mark_as_advanced(MOORDYN_SSE)
+mark_as_advanced(MOORDYN_FASTMATH)
 
 # Look for the dependencies
 if(${EXTERNAL_EIGEN})
@@ -37,7 +42,31 @@ if(${PYTHON_WRAPPER})
 endif()
 
 if(${MOORDYN_SINGLEPRECISSION})
-    add_definitions(MOORDYN_SINGLEPRECISSION)
+    add_definitions(-DMOORDYN_SINGLEPRECISSION)
+endif()
+
+if(NOT ${MOORDYN_SSE} STREQUAL "OFF")
+    if(MSVC)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:${MOORDYN_SSE}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:${MOORDYN_SSE}")
+    else()
+        string(TOLOWER ${MOORDYN_SSE} sse_value)
+        if(${MOORDYN_SSE} STREQUAL "AVX512")
+            set(sse_value "${sse_value}fp16")
+        endif()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m${sse_value}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m${sse_value}")
+    endif()
+endif()
+
+if(${MOORDYN_FASTMATH})
+    if(MSVC)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fp:fast")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast")
+    else()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
+    endif()
 endif()
 
 # Compile the library

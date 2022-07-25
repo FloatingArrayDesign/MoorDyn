@@ -534,7 +534,7 @@ Body::doRHS()
 
 // write output file for body
 void
-Body::Output(double time)
+Body::Output(real time)
 {
 	if (outfile) // if not a null pointer (indicating no output)
 	{

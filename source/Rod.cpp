@@ -598,7 +598,7 @@ Rod::setState(vec6 pos, vec6 vel, double time)
 }
 
 void
-Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn, double time)
+Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn, real time)
 {
 	t0 = time; // set start time for BC functions
 
@@ -623,7 +623,7 @@ Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn, double time)
 // updates kinematics for Rods ONLY if they are driven externally (otherwise
 // shouldn't be called)
 void
-Rod::updateFairlead(const double time)
+Rod::updateFairlead(real time)
 {
 	setTime(time);
 

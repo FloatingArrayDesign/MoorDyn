@@ -546,7 +546,7 @@ class Rod : public LogUser
 	 * @throw moordyn::invalid_value_error If the rod is not of type
 	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
 	 */
-	void updateFairlead(const double time);
+	void updateFairlead(real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
