@@ -109,7 +109,8 @@ doIFFT(kiss_fftr_cfg cfg,
 
 Waves::Waves(moordyn::Log* log)
   : LogUser(log)
-{}
+{
+}
 
 // function to clear any remaining data allocations in Waves
 Waves::~Waves() {}
@@ -1062,7 +1063,7 @@ MoorDyn_GetWavesKin(MoorDynWaves waves,
                     double* PDyn)
 {
 	CHECK_WAVES(waves);
-	vec u, ud;
+	moordyn::vec u, ud;
 	moordyn::real h, p;
 	((moordyn::Waves*)waves)->getWaveKin(x, y, z, t, u, ud, h, p);
 	moordyn::vec2array(u, U);

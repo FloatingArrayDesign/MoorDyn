@@ -40,7 +40,8 @@ namespace moordyn {
 
 Line::Line(moordyn::Log* log)
   : LogUser(log)
-{}
+{
+}
 
 Line::~Line() {}
 
@@ -1577,7 +1578,7 @@ MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		const vec r = ((moordyn::Line*)l)->getNodePos(i);
+		const moordyn::vec r = ((moordyn::Line*)l)->getNodePos(i);
 		moordyn::vec2array(r, pos);
 	}
 	MOORDYN_CATCHER(err, err_msg);
@@ -1591,7 +1592,7 @@ MoorDyn_GetLineNodeTen(MoorDynLine l, unsigned int i, double ten[3])
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		const vec t = ((moordyn::Line*)l)->getNodeTen(i);
+		const moordyn::vec t = ((moordyn::Line*)l)->getNodeTen(i);
 		moordyn::vec2array(t, ten);
 	}
 	MOORDYN_CATCHER(err, err_msg);

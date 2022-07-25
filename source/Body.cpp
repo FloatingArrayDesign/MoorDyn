@@ -30,7 +30,8 @@ Body::Body(moordyn::Log* log)
   : LogUser(log)
   , U(vec::Zero())
   , Ud(vec::Zero())
-{}
+{
+}
 
 Body::~Body() {}
 
@@ -594,7 +595,7 @@ int DECLDIR
 MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6])
 {
 	CHECK_BODY(b);
-	vec6 pos, vel;
+	moordyn::vec6 pos, vel;
 	std::tie(pos, vel) = ((moordyn::Body*)b)->getState();
 	moordyn::vec62array(pos, r);
 	moordyn::vec62array(vel, rd);

@@ -230,7 +230,8 @@ class LogUser
 	 */
 	LogUser(Log* log = NULL)
 	  : _log(log)
-	{}
+	{
+	}
 
 	/** @brief Destuctor
 	 */

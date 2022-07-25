@@ -30,6 +30,9 @@
 
 #pragma once
 
+// Visual studio still uses this
+#define _USE_MATH_DEFINES
+
 #include "MoorDynAPI.h"
 #include "Eigen/Dense"
 
@@ -88,7 +91,12 @@ typedef Matrix<int, 6, 1> Vector6i;
 typedef Matrix<int, 6, 6> Matrix6i;
 }
 
+/** @brief MoorDyn2 C++ API namespace
+ */
+namespace moordyn {
+
 #ifdef MOORDYN_SINGLEPRECISSION
+typedef float real;
 typedef Eigen::Vector2f vec2;
 typedef Eigen::Vector3f vec3;
 typedef Eigen::Vector4f vec4;
@@ -100,6 +108,7 @@ typedef Eigen::Matrix4f mat4;
 typedef Eigen::Matrix6f mat6;
 typedef mat3 mat;
 #else
+typedef double real;
 typedef Eigen::Vector2d vec2;
 typedef Eigen::Vector3d vec3;
 typedef Eigen::Vector4d vec4;
@@ -116,16 +125,6 @@ typedef Eigen::Vector3i ivec3;
 typedef Eigen::Vector4i ivec4;
 typedef Eigen::Vector6i ivec6;
 typedef ivec3 ivec;
-
-/** @brief MoorDyn2 C++ API namespace
- */
-namespace moordyn {
-
-#ifdef MOORDYN_SINGLEPRECISSION
-typedef float real;
-#else
-typedef double real;
-#endif
 
 typedef std::complex<real> complex;
 
@@ -367,7 +366,8 @@ typedef int error_id;
 	  public:                                                                  \
 		name(const char* msg)                                                  \
 		  : std::runtime_error(msg)                                            \
-		{}                                                                     \
+		{                                                                      \
+		}                                                                      \
 	};
 
 /// Exception thrown for invalid input files
@@ -1089,10 +1089,10 @@ GetCurvature(moordyn::real length, const vec& q1, const vec& q2);
  * @}
  */
 
-} // ::moordyn
-
 const double pi = 3.14159265;
 const double rad2deg = 57.29577951;
+
+} // ::moordyn
 
 const int nCoef = 30; // maximum number of entries to allow in nonlinear
                       // coefficient lookup tables

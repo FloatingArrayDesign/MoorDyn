@@ -39,7 +39,8 @@ namespace moordyn {
 Connection::Connection(moordyn::Log* log)
   : LogUser(log)
   , WaterKin(0)
-{}
+{
+}
 
 Connection::~Connection() {}
 
@@ -570,7 +571,7 @@ int DECLDIR
 MoorDyn_GetConnectPos(MoorDynConnection conn, double pos[3])
 {
 	CHECK_CONNECTION(conn);
-	vec r, rd;
+	moordyn::vec r, rd;
 	((moordyn::Connection*)conn)->getConnectState(r, rd);
 	moordyn::vec2array(r, pos);
 	return MOORDYN_SUCCESS;
@@ -580,7 +581,7 @@ int DECLDIR
 MoorDyn_GetConnectVel(MoorDynConnection conn, double v[3])
 {
 	CHECK_CONNECTION(conn);
-	vec r, rd;
+	moordyn::vec r, rd;
 	((moordyn::Connection*)conn)->getConnectState(r, rd);
 	moordyn::vec2array(rd, v);
 	return MOORDYN_SUCCESS;
@@ -590,7 +591,7 @@ int DECLDIR
 MoorDyn_GetConnectForce(MoorDynConnection conn, double f[3])
 {
 	CHECK_CONNECTION(conn);
-	vec fnet;
+	moordyn::vec fnet;
 	((moordyn::Connection*)conn)->getFnet(fnet);
 	moordyn::vec2array(fnet, f);
 	return MOORDYN_SUCCESS;

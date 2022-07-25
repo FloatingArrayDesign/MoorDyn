@@ -79,7 +79,8 @@ MultiStream::MultiStream()
   : _fpath("")
   , _fout_enabled(false)
   , _terminal(&cnul)
-{}
+{
+}
 
 MultiStream::~MultiStream()
 {

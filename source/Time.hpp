@@ -252,7 +252,8 @@ class TimeScheme : public LogUser
 	  , has_ext_waves(false)
 	  , name("None")
 	  , t(0.0)
-	{}
+	{
+	}
 
 	/// The ground body
 	Body* ground;
@@ -536,7 +537,8 @@ class TimeSchemeBase : public TimeScheme
 	 */
 	TimeSchemeBase(moordyn::Log* log)
 	  : TimeScheme(log)
-	{}
+	{
+	}
 
 	/** @brief Update all the entities to set the state
 	 * @param substep The index within moordyn::TimeSchemeBase::r that will be

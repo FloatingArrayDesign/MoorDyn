@@ -2096,7 +2096,7 @@ MoorDyn_ExternalWaveKinSet(MoorDyn system,
 {
 	CHECK_SYSTEM(system);
 
-	std::vector<vec> u, ud;
+	std::vector<moordyn::vec> u, ud;
 	const unsigned int n = MoorDyn_ExternalWaveKinGetN(system);
 	if (!n) {
 		cerr << "Error: There is not wave kinematics to set "
@@ -2106,8 +2106,8 @@ MoorDyn_ExternalWaveKinSet(MoorDyn system,
 	u.reserve(n);
 	ud.reserve(n);
 	for (unsigned int i = 0; i < n; i++) {
-		u.push_back(vec(U[3 * i], U[3 * i + 1], U[3 * i + 2]));
-		ud.push_back(vec(Ud[3 * i], Ud[3 * i + 1], Ud[3 * i + 2]));
+		u.push_back(moordyn::vec(U[3 * i], U[3 * i + 1], U[3 * i + 2]));
+		ud.push_back(moordyn::vec(Ud[3 * i], Ud[3 * i + 1], Ud[3 * i + 2]));
 	}
 
 	((moordyn::MoorDyn*)system)->ExternalWaveKinSet(u, ud, t);

@@ -45,7 +45,8 @@ namespace moordyn {
 
 Rod::Rod(moordyn::Log* log)
   : LogUser(log)
-{}
+{
+}
 
 Rod::~Rod() {}
 
@@ -1592,7 +1593,7 @@ MoorDyn_GetLineNodePos(MoorDynRod rod, unsigned int i, double pos[3])
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		const vec r = ((moordyn::Rod*)rod)->getNodePos(i);
+		const moordyn::vec r = ((moordyn::Rod*)rod)->getNodePos(i);
 		moordyn::vec2array(r, pos);
 	}
 	MOORDYN_CATCHER(err, err_msg);
