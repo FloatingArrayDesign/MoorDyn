@@ -828,6 +828,66 @@ waves_getkin(PyObject*, PyObject* args)
 	return lst;
 }
 
+//                                 Body.h
+// =============================================================================
+
+/** @brief Wrapper to MoorDyn_GetBodyID() function
+ * @param args Python passed arguments
+ * @return The body id, or a negative number (error code)
+ */
+static PyObject*
+body_get_id(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_GetBodyID(instance));
+}
+
+/** @brief Wrapper to MoorDyn_GetBodyState() function
+ * @param args Python passed arguments
+ * @return The velocity and the acceleration
+ */
+static PyObject*
+body_get_state(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double r[6], rd[6];
+	const int err = MoorDyn_GetBodyState(instance, r, rd);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* lst = PyTuple_New(4);
+	PyObject* pyr = PyTuple_New(3);
+	PyObject* pyrd = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++) {
+		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
+		PyTuple_SET_ITEM(pyrd, i, PyFloat_FromDouble(rd[i]));
+	}
+	PyTuple_SET_ITEM(lst, 0, pyr);
+	PyTuple_SET_ITEM(lst, 1, pyrd);
+
+	return lst;
+}
+
 static PyMethodDef moordyn_methods[] = {
 	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
 	{ "n_coupled_dof",
@@ -899,6 +959,8 @@ static PyMethodDef moordyn_methods[] = {
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
 	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
+	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
+	{ "body_get_state", body_get_state, METH_VARARGS, "Get the body state" },
 	{ NULL, NULL, 0, NULL }
 };
 

@@ -445,7 +445,7 @@ def GetFASTtens(instance, n_lines):
     return data[0], data[1], data[2], data[3]
 
 
-#                                  MoorDyn2.h
+#                                  Waves.h
 #  =============================================================================
 
 
@@ -467,3 +467,34 @@ def GetWavesKin(instance, x, y, z, t):
     """
     import cmoordyn
     return cmoordyn.waves_getkin(instance, x, y, z, t)
+
+
+#                                  Waves.h
+#  =============================================================================
+
+
+def GetBodyID(instance):
+    """ Get the body id
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    i: The body id
+    """
+    import cmoordyn
+    return cmoordyn.body_get_id(instance)
+
+
+def GetBodyState(instance):
+    """ Get the body state
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    r: The position (a tuple with 3 components)
+    u: The velocity (a tuple with 3 components)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_state(instance)

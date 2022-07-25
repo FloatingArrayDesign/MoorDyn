@@ -589,3 +589,14 @@ MoorDyn_GetBodyID(MoorDynBody b)
 	CHECK_BODY(b);
 	return ((moordyn::Body*)b)->number;
 }
+
+int DECLDIR
+MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6])
+{
+	CHECK_BODY(b);
+	vec6 pos, vel;
+	std::tie(pos, vel) = ((moordyn::Body*)b)->getState();
+	moordyn::vec62array(pos, r);
+	moordyn::vec62array(vel, rd);
+	return MOORDYN_SUCCESS;
+}

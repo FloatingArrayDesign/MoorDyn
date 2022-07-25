@@ -54,6 +54,14 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetBodyID(MoorDynBody b);
 
+	/** @brief Get the body state
+	 * @param r The output position (6dof)
+	 * @param rd The output velocity (6dof)
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6]);
+
 	/**
 	 * @}
 	 */

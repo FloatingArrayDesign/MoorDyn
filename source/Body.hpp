@@ -277,7 +277,7 @@ class Body : public LogUser
 	 * @param pos The output position
 	 * @param vel The output velocity
 	 */
-	inline void getBodyState(vec6& pos, vec6& vel) const
+	inline void getState(vec6& pos, vec6& vel) const
 	{
 		pos = r6;
 		vel = v6;
@@ -287,7 +287,7 @@ class Body : public LogUser
 	 * @param pos The output position
 	 * @param vel The output velocity
 	 */
-	inline std::pair<vec6, vec6> getBodyState() const
+	inline std::pair<vec6, vec6> getState() const
 	{
 		return std::make_pair(r6, v6);
 	}
