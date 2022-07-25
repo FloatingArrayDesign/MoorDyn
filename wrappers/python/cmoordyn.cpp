@@ -4,8 +4,8 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
@@ -17,14 +17,15 @@
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <string>
@@ -782,6 +783,51 @@ get_fast_tens(PyObject*, PyObject* args)
 	return lst;
 }
 
+//                                 Waves.h
+// =============================================================================
+
+/** @brief Wrapper to MoorDyn_GetWavesKin() function
+ * @param args Python passed arguments
+ * @return The velocity, the acceleration, the wave height and the dynamic
+ * pressure
+ */
+static PyObject*
+waves_getkin(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	double x, y, z, t;
+
+	if (!PyArg_ParseTuple(args, "Odddd", &capsule, &x, &y, &z, &t))
+		return NULL;
+
+	MoorDynWaves instance =
+	    (MoorDynWaves)PyCapsule_GetPointer(capsule, waves_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double u[3], ud[3], zeta, pdyn;
+	const int err =
+	    MoorDyn_GetWavesKin(instance, x, y, z, t, u, ud, &zeta, &pdyn);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* lst = PyTuple_New(4);
+	PyObject* pyu = PyTuple_New(3);
+	PyObject* pyud = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++) {
+		PyTuple_SET_ITEM(pyu, i, PyFloat_FromDouble(u[i]));
+		PyTuple_SET_ITEM(pyud, i, PyFloat_FromDouble(ud[i]));
+	}
+	PyTuple_SET_ITEM(lst, 0, pyu);
+	PyTuple_SET_ITEM(lst, 1, pyud);
+	PyTuple_SET_ITEM(lst, 2, PyFloat_FromDouble(zeta));
+	PyTuple_SET_ITEM(lst, 3, PyFloat_FromDouble(pdyn));
+
+	return lst;
+}
+
 static PyMethodDef moordyn_methods[] = {
 	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
 	{ "n_coupled_dof",
@@ -852,6 +898,7 @@ static PyMethodDef moordyn_methods[] = {
 	  get_fast_tens,
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
 	{ NULL, NULL, 0, NULL }
 };
 

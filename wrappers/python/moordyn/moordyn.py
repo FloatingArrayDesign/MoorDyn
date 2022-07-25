@@ -44,7 +44,8 @@ ERRCODE_INVALID_VALUE = -6
 ERRCODE_NON_IMPLEMENTED = -7
 ERRCODE_UNHANDLED_ERROR = -255
 
-
+#                                  MoorDyn2.h
+#  =============================================================================
 
 def Create(filepath=""):
     """Creates the MoorDyn system, loading the MoorDyn input file
@@ -64,7 +65,7 @@ def NCoupledDOF(instance):
     """Get the number of coupled Degrees Of Freedom (DOF)
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: The number of DOFs
@@ -77,7 +78,7 @@ def SetVerbosity(instance, verbosity):
     """Set the verbosity level of the MoorDyn instance
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     verbosity (int): The Verbosity level. One of:
                      - moordyn.LEVEL_NONE
                      - moordyn.LEVEL_ERR
@@ -96,7 +97,7 @@ def SetLogFile(instance, filepath):
     """Set the verbosity level of the MoorDyn instance
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     filepath (str): The log file path
 
     Returns:
@@ -110,7 +111,7 @@ def SetLogLevel(instance, verbosity):
     """Set the log file verbosity level of the MoorDyn instance
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     verbosity (int): The Verbosity level. One of:
                      - moordyn.LEVEL_NONE
                      - moordyn.LEVEL_ERR
@@ -129,7 +130,7 @@ def Log(instance, level, msg):
     """Set the log file verbosity level of the MoorDyn instance
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     level (int): The Verbosity level. One of:
                      - moordyn.LEVEL_NONE
                      - moordyn.LEVEL_ERR
@@ -163,7 +164,7 @@ def Init(instance, x, v):
     connection positions specified by array x and their velocities in array v
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Keyword arguments:
     x (list): Position of the coupled connections
@@ -180,7 +181,7 @@ def Step(instance, x, v, t, dt):
     """Compute a time step
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     x (list): Position of the coupled connections
     v (list): Velocity of the coupled connections
     t (float): The time instant
@@ -197,7 +198,7 @@ def Close(instance):
     """This function deallocates the variables used by MoorDyn
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: 0 uppon success, an error code otherwise
@@ -213,7 +214,7 @@ def GetWaves(instance):
     in the input file.
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     cmoordyn.MoorDynWaves: The waves manager
@@ -229,7 +230,7 @@ def ExternalWaveKinInit(instance):
     that is the case, remember calling this function after moordyn.Init()
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: 0 uppon success, an error code otherwise
@@ -244,7 +245,7 @@ def ExternalWaveKinGetN(instance):
     This is useless unless WaveKin option is set to 1 in the input file.
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: The number of points
@@ -260,7 +261,7 @@ def GetWaveKinCoordinates(instance):
     to 1 in the input file
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     list (n, 3): The list of points
@@ -281,7 +282,7 @@ def SetWaveKin(instance, u, a, t):
     Use this function if WaveKin option is set to 1 in the input file
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     u (list (n, 3)): The list of velocities evaluated in the points provided
                      by moordyn.GetWaveKinCoordinates()
     a (list (n, 3)): The list of accelerations evaluated in the points provided
@@ -308,7 +309,7 @@ def GetNumberBodies(instance):
     Remember that the first body index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: The number of bodies
@@ -323,7 +324,7 @@ def GetBody(instance, body):
     Remember that the first body index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     body (int): The rigid body index, starting at 1
 
     Returns:
@@ -339,7 +340,7 @@ def GetNumberRods(instance):
     Remember that the rod index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: The number of rods
@@ -354,7 +355,7 @@ def GetRod(instance, rod):
     Remember that the first rod index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     rod (int): The rod index, starting at 1
 
     Returns:
@@ -370,7 +371,7 @@ def GetNumberConnections(instance):
     Remember that the first connection index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: The number of connections
@@ -385,7 +386,7 @@ def GetConnection(instance, conn):
     Remember that the first connection index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     conn (int): The connection index, starting at 1
 
     Returns:
@@ -401,7 +402,7 @@ def GetNumberLines(instance):
     Remember that the first line index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
     int: The number of mooring lines
@@ -416,7 +417,7 @@ def GetLine(instance, line):
     Remember that the first line index is 1
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     line (int): The line index, starting at 1
 
     Returns:
@@ -431,7 +432,7 @@ def GetFASTtens(instance, n_lines):
     tensions
 
     Parameters:
-    instance (MoorDyn): The MoorDyn instance
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
     n_lines (int): The number of lines
 
     Returns:
@@ -442,3 +443,27 @@ def GetFASTtens(instance, n_lines):
     """
     data = moordyn.get_fast_tens(instance, n_lines)
     return data[0], data[1], data[2], data[3]
+
+
+#                                  MoorDyn2.h
+#  =============================================================================
+
+
+def GetWavesKin(instance, x, y, z, t):
+    """ Get the wave kinematics
+
+    Parameters:
+    instance (cmoordyn.MoorDynWaves): The waves instance
+    x (float): The x coordinate
+    y (float): The y coordinate
+    z (float): The z coordinate
+    t (float): The simulation time
+
+    Returns:
+    u: The velocity (a tuple with 3 components)
+    ud: The acceleration (a tuple with 3 components)
+    zeta: The wave height
+    pdyn: The dynamic pressure
+    """
+    import cmoordyn
+    return cmoordyn.waves_getkin(instance, x, y, z, t)
