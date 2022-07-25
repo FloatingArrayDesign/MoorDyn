@@ -228,26 +228,17 @@ class Connection : public LogUser
 
 	/** @brief Attach a line endpoint to this connection
 	 * @param theLine The line to be attached
-	 * @param TopOfLine 1 for attachments at the last node of the line (top).
-	 * 0 for attachments at the first node of the line (bottom)
+	 * @param line_end_point The line endpoint
 	 */
-	void addLineToConnect(moordyn::Line* theLine, int TopOfLine);
+	void addLine(moordyn::Line* theLine, EndPoints end_point);
 
-	/** @brief Dettach a line endpoint from this connection
-	 * @param lineID The line identifier
-	 * @param TopOfLine Output flag to indicate whether the line was connected
-	 * at the top end or at the bottom end. 1 for attachments at the last node
-	 * of the line (top). 0 for attachments at the first node of the line
-	 * (bottom)
-	 * @param rEnd Output position of the node
-	 * @param rdEnd Output velocity of the node
+	/** @brief Dettach a line
+	 * @param line The line
+	 * @return The line end point that was attached to the connection
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
-	void removeLineFromConnect(int lineID,
-	                           int* TopOfLine,
-	                           double rEnd[],
-	                           double rdEnd[]);
+	EndPoints removeLine(Line* line);
 
 	/** @brief Initialize the FREE connection state
 	 * @param X The output state variables, i.e. the velocity [x,y,z] and
@@ -266,7 +257,17 @@ class Connection : public LogUser
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
 	 */
-	void getConnectState(vec& r_out, vec& rd_out);
+	inline void getState(vec& r_out, vec& rd_out)
+	{
+		r_out = r;
+		rd_out = rd;
+	};
+
+	/** @brief Get the connection state
+	 * @param r_out The output position [x,y,z]
+	 * @param rd_out The output velocity [x,y,z]
+	 */
+	inline std::pair<vec, vec> getState() { return std::make_pair(r, rd); }
 
 	/** @brief Get the force on the connection
 	 * @param Fnet_out The output force [x,y,z]

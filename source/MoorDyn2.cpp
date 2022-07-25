@@ -507,22 +507,19 @@ moordyn::MoorDyn::Step(const double* x,
 	// --------------- check for line failures (detachments!) ----------------
 	// step 1: check for time-triggered failures
 	for (unsigned int l = 0; l < FailList.size(); l++) {
-		if (FailList[l]->failStatus)
+		auto failure = FailList[l];
+		if (failure->status || (failure->time < _t_integrator->GetTime()))
 			continue;
-		if (t >= FailList[l]->failTime) {
-			LOGMSG << "Failure number " << l + 1 << " triggered at time " << t
-			       << endl;
-			FailList[l]->failStatus = 1;
-			const moordyn::error_id err =
-			    detachLines(FailList[l]->attachID,
-			                FailList[l]->isRod,
-			                FailList[l]->lineIDs,
-			                FailList[l]->lineTops,
-			                FailList[l]->nLinesToDetach,
-			                t);
-			if (err)
-				return err;
+		LOGMSG << "Failure number " << l + 1 << " triggered at time " << t
+		       << " s" << endl;
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try {
+			detachLines(failure);
 		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
 	}
 
 	// step 2: check for tension-triggered failures (this will require
@@ -1306,6 +1303,8 @@ moordyn::MoorDyn::ReadInFile()
 				                         // internal node of this line
 
 				for (unsigned int I = 0; I < 2; I++) {
+					const EndPoints end_point =
+					    I == 0 ? ENDPOINT_A : ENDPOINT_B;
 					char let1[10], num1[10], let2[10], num2[10], let3[10];
 					char typeWord[10];
 					strncpy(typeWord, entries[2 + I].c_str(), 9);
@@ -1355,7 +1354,7 @@ moordyn::MoorDyn::ReadInFile()
 							       << endl;
 							return MOORDYN_INVALID_INPUT;
 						}
-						ConnectionList[id - 1]->addLineToConnect(obj, I);
+						ConnectionList[id - 1]->addLine(obj, end_point);
 					} else {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
 						       << "..." << endl
@@ -1390,6 +1389,9 @@ moordyn::MoorDyn::ReadInFile()
 				}
 
 				FailProps* obj = new FailProps();
+				obj->rod = NULL;
+				obj->conn = NULL;
+				obj->status = false;
 				FailList.push_back(obj);
 
 				char let1[10], num1[10], let2[10], num2[10], let3[10];
@@ -1407,8 +1409,7 @@ moordyn::MoorDyn::ReadInFile()
 					return MOORDYN_INVALID_INPUT;
 				}
 
-				unsigned int id = atoi(num1);
-				obj->attachID = id;
+				const unsigned int id = atoi(num1);
 				if (!strcmp(let1, "R") || !strcmp(let1, "ROD")) {
 					if (!id || id > RodList.size()) {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
@@ -1417,10 +1418,11 @@ moordyn::MoorDyn::ReadInFile()
 						       << "There are not " << id << " rods" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
+					obj->rod = RodList[id - 1];
 					if (!strcmp(let2, "A"))
-						obj->isRod = 1;
+						obj->rod_end_point = ENDPOINT_A;
 					else if (!strcmp(let2, "B"))
-						obj->isRod = 2;
+						obj->rod_end_point = ENDPOINT_B;
 					else {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
 						       << "..." << endl
@@ -1439,7 +1441,8 @@ moordyn::MoorDyn::ReadInFile()
 						       << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
-					obj->isRod = 0;
+					obj->conn = ConnectionList[id - 1];
+					;
 				} else {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
@@ -1449,16 +1452,27 @@ moordyn::MoorDyn::ReadInFile()
 				}
 
 				vector<string> lineNums = moordyn::str::split(entries[1], ',');
-				obj->nLinesToDetach = lineNums.size();
-				for (unsigned int il = 0; il < lineNums.size(); il++)
-					obj->lineIDs[il] = atoi(lineNums[il].c_str());
+				obj->lines.reserve(lineNums.size());
+				obj->line_end_points.reserve(lineNums.size());
+				for (unsigned int il = 0; il < lineNums.size(); il++) {
+					const unsigned int line_id = atoi(lineNums[il].c_str());
+					if (!line_id || line_id > LineList.size()) {
+						LOGERR << "Error in " << _filepath << ":" << i + 1
+						       << "..." << endl
+						       << "'" << in_txt[i] << "'" << endl
+						       << "There are not " << line_id << " lines"
+						       << endl;
+						return MOORDYN_INVALID_INPUT;
+					}
+					obj->lines.push_back(LineList[line_id - 1]);
+					obj->line_end_points.push_back(ENDPOINT_A);
+				}
 
-				obj->failTime = atof(entries[2].c_str());
-				obj->failTen = atof(entries[3].c_str());
+				obj->time = atof(entries[2].c_str());
+				obj->ten = atof(entries[3].c_str());
 
-				LOGDBG << "failTime is " << obj->failTime << endl;
-				// initialize as unfailed, of course
-				obj->failStatus = 0;
+				LOGDBG << "fail time is " << obj->time << " s" << endl;
+				LOGDBG << "fail ten is " << obj->ten << " N" << endl;
 
 				i++;
 			}
@@ -1796,35 +1810,30 @@ moordyn::MoorDyn::ReadInFile()
 	return MOORDYN_SUCCESS;
 }
 
-moordyn::error_id
-moordyn::MoorDyn::detachLines(int attachID,
-                              int isRod,
-                              const int* lineIDs,
-                              int* lineTops,
-                              int nLinesToDetach,
-                              double time)
+void
+moordyn::MoorDyn::detachLines(FailProps* failure)
 {
-	// BUG: Addapt this to the new time integrators
+	failure->status = true;
+	if (failure->rod && failure->conn) {
+		LOGERR << "The failure criteria considers both a rod and a connection"
+		       << endl;
+		throw moordyn::unhandled_error("Invalid failure data");
+	} else if (!failure->rod && !failure->conn) {
+		LOGERR << "The failure criteria is missing either a rod or a connection"
+		       << endl;
+		throw moordyn::unhandled_error("Invalid failure data");
+	}
 
 	// create new massless connection for detached end(s) of line(s)
-	double M = 0.0;
-	double V = 0.0;
-	vec r0 = vec::Zero();
-	vec F = vec::Zero();
-	double CdA = 0.0;
-	double Ca = 0.0;
-	Connection::types type = Connection::FREE;
+	const real M = 0.0;
+	const real V = 0.0;
+	const vec r0 = vec::Zero();
+	const vec F = vec::Zero();
+	const real CdA = 0.0;
+	const real Ca = 0.0;
+	const Connection::types type = Connection::FREE;
 
 	nX += 6; // add 6 state variables for each connect
-
-	// check to make sure we haven't gone beyond the extra size allotted to the
-	// state arrays or the connections list <<<< really should throw an error
-	// here
-	if (nX > nXtra) {
-		LOGERR << "Error: nX = " << nX << " is bigger than nXtra = " << nXtra
-		       << endl;
-		return MOORDYN_MEM_ERROR;
-	}
 
 	// add connect to list of free ones and add states for it
 	FreeConIs.push_back(ConnectionList.size());
@@ -1837,59 +1846,33 @@ moordyn::MoorDyn::detachLines(int attachID,
 	obj->setEnv(&env, waves);
 	ConnectionList.push_back(obj);
 
-	// dummy state array to hold kinematics of old attachment point (format in
-	// terms of part of connection state vector:
-	// r[J]  = X[3 + J]; rd[J] = X[J]; )
-	double dummyConnectState[6];
+	// Kinematics of old attachment point
+	vec pos, vel;
+	if (failure->rod) {
+		const unsigned int node =
+		    (failure->rod_end_point == ENDPOINT_A) ? 0 : failure->rod->getN();
+		pos = failure->rod->getNodePos(node);
+		vel = failure->rod->getNodeVel(node);
+	} else {
+		std::tie(pos, vel) = failure->conn->getState();
+	}
 
 	// detach lines from old Rod or Connection, and get kinematics of the old
 	// attachment point
-	for (int l = 0; l < nLinesToDetach; l++) {
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
-		if (isRod == 1)
-			RodList[attachID - 1]->removeLineFromRodEndA(lineIDs[l],
-			                                             lineTops + l,
-			                                             dummyConnectState + 3,
-			                                             dummyConnectState);
-		else if (isRod == 2)
-			RodList[attachID - 1]->removeLineFromRodEndB(lineIDs[l],
-			                                             lineTops + l,
-			                                             dummyConnectState + 3,
-			                                             dummyConnectState);
-		else if (isRod == 0) {
-			try {
-				ConnectionList[attachID - 1]->removeLineFromConnect(
-				    lineIDs[l],
-				    lineTops + l,
-				    dummyConnectState + 3,
-				    dummyConnectState);
-			}
-			MOORDYN_CATCHER(err, err_msg);
-		} else {
-			err_msg = "Error: Failure does not have a valid isRod value";
-			err = MOORDYN_INVALID_VALUE;
-		}
+	for (unsigned int i = 0; i < failure->lines.size(); i++) {
+		if (failure->rod)
+			failure->line_end_points[i] = failure->rod->removeLine(
+			    failure->rod_end_point, failure->lines[i]);
+		else
+			failure->line_end_points[i] =
+			    failure->conn->removeLine(failure->lines[i]);
 
-		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Error detaching line: " << err_msg << endl;
-			return err;
-		}
+		obj->addLine(failure->lines[i], failure->line_end_points[i]);
 	}
-
-	// attach lines to new connection
-	for (int l = 0; l < nLinesToDetach; l++)
-		obj->addLineToConnect(LineList[lineIDs[l] - 1], lineTops[l]);
 
 	// update connection kinematics to match old line attachment point
 	// kinematics and set positions of attached line ends
-	obj->setState(dummyConnectState, time);
-
-	// now make the state vector up to date!
-	// for (unsigned int J = 0; J < 6; J++)
-	//    states[ConnectStateIs.back() + J] = dummyConnectState[J];
-
-	return MOORDYN_SUCCESS;
+	obj->setState(pos, vel, _t_integrator->GetTime());
 }
 
 moordyn::error_id

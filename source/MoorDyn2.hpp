@@ -649,22 +649,9 @@ class MoorDyn : public LogUser
 	}
 
 	/** @brief Detach lines from a failed connection
-	 * @param attachID ID of connection or Rod the lines are attached to (index
-	 * is -1 this value)
-	 * @param isRod 1 Rod end A, 2 Rod end B, 0 if connection
-	 * @param lineIDs Array of one or more lines to detach (starting from 1...)
-	 * @param lineTops An array that will be FILLED IN to return which end of
-	 * each line was disconnected ...
-	 * 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
-	 * @param nLinesToDetach how many lines to dettach
-	 * @param time Simulation time
+	 * @param failure The failure structure
 	 */
-	moordyn::error_id detachLines(int attachID,
-	                              int isRod,
-	                              const int* lineIDs,
-	                              int* lineTops,
-	                              int nLinesToDetach,
-	                              double time);
+	void detachLines(FailProps* failure);
 
 	/** @brief Print the output files
 	 *

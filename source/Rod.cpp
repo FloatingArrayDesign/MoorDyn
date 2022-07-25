@@ -267,26 +267,26 @@ Rod::removeLineFromRodEndB(int lineID,
 };
 
 EndPoints
-Rod::removeLine(EndPoints end_point, int lineID)
+Rod::removeLine(EndPoints end_point, Line* line)
 {
 	EndPoints line_end_point;
 	std::vector<attachment>* lines =
 	    (end_point == ENDPOINT_A) ? &attachedA : &attachedB;
 	// look through attached lines
 	for (auto it = std::begin(*lines); it != std::end(*lines); ++it) {
-		if ((*it).line->number != lineID)
+		if (it->line != line)
 			continue;
 		// This is the line's entry in the attachment list
 		line_end_point = it->end_point;
 		lines->erase(it);
 
-		LOGMSG << "Detached line " << lineID << " from rod " << number
+		LOGMSG << "Detached line " << line->number << " from rod " << number
 		       << end_point_name(end_point) << endl;
 		return line_end_point;
 	}
 
 	// line not found
-	LOGERR << "Error: failed to find the line " << lineID
+	LOGERR << "Error: failed to find the line " << line->number
 	       << " to remove from rod " << number << end_point_name(end_point)
 	       << endl;
 	throw moordyn::invalid_value_error("Invalid line");

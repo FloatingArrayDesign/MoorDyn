@@ -1089,8 +1089,51 @@ GetCurvature(moordyn::real length, const vec& q1, const vec& q2);
  * @}
  */
 
-const double pi = 3.14159265;
-const double rad2deg = 57.29577951;
+#if !defined(MOORDYN_SINGLEPRECISSION) && defined(M_PIl)
+/// Pi constant
+const real pi = M_PIl;
+#else
+/// Pi constant
+const real pi = M_PI;
+#endif
+/// Constant to convert radians into degrees
+const real rad2deg = 180.0 / pi;
+
+/** \defgroup entities_properties Properties readed from the input file, used
+ * to define the entities handled during the simulation
+ *  @{
+ */
+
+class Rod;
+class Connection;
+class Line;
+
+/** @brief Failure conditions
+ */
+typedef struct _FailProps
+{
+	/// The rod the lines are attached to, if any. Otherwise it is NULL
+	Rod* rod;
+	/// The rod attachment end point, useless if rod is NULL
+	EndPoints rod_end_point;
+	/// The connection the lines are attached to, if any. Otherwise it is NULL
+	Connection* conn;
+	/// The attached lines
+	std::vector<Line*> lines;
+	/// The attached line end points. This is actually an array to be filled
+	/// with the end points where each line is dettached
+	std::vector<EndPoints> line_end_points;
+	/// Failure criteria based on simulation time (s)
+	real time;
+	/// Failure criteria based on tension (N)
+	real ten;
+	/// false until the line fails
+	bool status;
+} FailProps;
+
+/**
+ * @}
+ */
 
 } // ::moordyn
 
@@ -1210,22 +1253,6 @@ typedef struct _BodyProps // matching body input stuff
 	double CdA;
 	double Ca;
 } BodyProps;
-
-typedef struct _FailProps // for failure conditions
-{
-	int attachID; // ID of connection or Rod the lines are attached to (index is
-	              // -1 this value)
-	int isRod;    // 1 Rod end A, 2 Rod end B, 0 if connection
-	int lineIDs[30];  // array of one or more lines to detach (starting
-	                  // from 1...)
-	int lineTops[30]; // an array that will be FILLED IN to return which end of
-	                  // each line was disconnected ... 1 = top/fairlead(end B),
-	                  // 0 = bottom/anchor(end A)
-	int nLinesToDetach; // how many lines to dettach
-	double failTime;
-	double failTen; // N
-	int failStatus; // 0 not failed yet, 1 failed
-} FailProps;
 
 typedef struct _OutChanProps
 { // this is C version of MDOutParmType - a less literal alternative of the NWTC

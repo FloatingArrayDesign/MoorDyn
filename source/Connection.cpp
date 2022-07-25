@@ -82,42 +82,36 @@ Connection::setup(int number_in,
 
 // this function handles assigning a line to a connection node
 void
-Connection::addLineToConnect(Line* theLine, int TopOfLine)
+Connection::addLine(Line* theLine, EndPoints end_point)
 {
-	LOGDBG << "L" << theLine->number << "->P" << number << " ";
+	LOGDBG << "L" << theLine->number << end_point_name(end_point) << "->P"
+	       << number << " ";
 
-	attachment a = { theLine, TopOfLine ? ENDPOINT_B : ENDPOINT_A };
+	attachment a = { theLine, end_point };
 	attached.push_back(a);
 };
 
-// this function handles removing a line from a connection node
-void
-Connection::removeLineFromConnect(int lineID,
-                                  int* TopOfLine,
-                                  double rEnd[],
-                                  double rdEnd[])
+EndPoints
+Connection::removeLine(Line* line)
 {
+	EndPoints end_point;
 	// look through attached lines
 	for (auto it = std::begin(attached); it != std::end(attached); ++it) {
-		if ((*it).line->number != lineID)
+		if (it->line != line)
 			continue;
 		// This is the line's entry in the attachment list
-		*TopOfLine = (int)((*it).end_point);
+		end_point = it->end_point;
 		attached.erase(it);
 
-		// also pass back the kinematics at the end
-		moordyn::vec2array(r, rEnd);
-		moordyn::vec2array(rd, rdEnd);
-
-		LOGMSG << "Detached line " << lineID << " from Connection " << number
-		       << endl;
-		return;
+		LOGMSG << "Detached line " << line->number << " from Connection "
+		       << number << endl;
+		return end_point;
 	}
 
 	// line not found
 	LOGERR << "Error: failed to find line to remove during "
 	       << __PRETTY_FUNC_NAME__ << " call to connection " << number
-	       << ". Line " << lineID << endl;
+	       << ". Line " << line->number << endl;
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
@@ -175,14 +169,6 @@ Connection::initialize()
 	LOGDBG << "   Initialized Connection " << number << endl;
 
 	return std::make_pair(pos, vel);
-};
-
-// function to return connection position and velocity to Line object
-void
-Connection::getConnectState(vec& r_out, vec& rd_out)
-{
-	r_out = r;
-	rd_out = rd;
 };
 
 // function to return net force on connection (just to allow public reading of
@@ -572,7 +558,7 @@ MoorDyn_GetConnectPos(MoorDynConnection conn, double pos[3])
 {
 	CHECK_CONNECTION(conn);
 	moordyn::vec r, rd;
-	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	((moordyn::Connection*)conn)->getState(r, rd);
 	moordyn::vec2array(r, pos);
 	return MOORDYN_SUCCESS;
 }
@@ -582,7 +568,7 @@ MoorDyn_GetConnectVel(MoorDynConnection conn, double v[3])
 {
 	CHECK_CONNECTION(conn);
 	moordyn::vec r, rd;
-	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	((moordyn::Connection*)conn)->getState(r, rd);
 	moordyn::vec2array(rd, v);
 	return MOORDYN_SUCCESS;
 }

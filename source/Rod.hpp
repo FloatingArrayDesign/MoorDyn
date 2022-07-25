@@ -347,12 +347,12 @@ class Rod : public LogUser
 
 	/** @brief Dettach a line
 	 * @param end_point The rod end point where the line is attached
-	 * @param lineID The line ID
+	 * @param line The line
 	 * @return The line end point that was attached to the rod
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
-	EndPoints removeLine(EndPoints end_point, int lineID);
+	EndPoints removeLine(EndPoints end_point, Line* line);
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
@@ -405,6 +405,22 @@ class Rod : public LogUser
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
 		return r[i];
+	}
+
+	/** @brief Get the velocity of a node
+	 * @param i The line node index
+	 * @return The velocity
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline vec getNodeVel(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of rod " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return rd[i];
 	}
 
 	/** @brief Get rod output
