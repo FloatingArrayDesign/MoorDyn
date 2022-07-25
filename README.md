@@ -11,6 +11,7 @@ More information about MoorDyn is now available at moordyn.readthedocs.io
 
 The version 2 is currently under development:
 
+ [X] BSD-3 license
  [X] Rigid bodies
  [X] Rigid cylindrical Rod objects, with surface-piercing capabilities
  [ ] Wave kinematics
@@ -19,7 +20,7 @@ The version 2 is currently under development:
  [ ] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
  [ ] New API (C & C++)
  [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
- [ ] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
+ [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
  [ ] FORTRAN wrappers
  [ ] Python wrappers
  [ ] Rust wrappers
