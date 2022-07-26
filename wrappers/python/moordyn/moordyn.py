@@ -469,7 +469,7 @@ def GetWavesKin(instance, x, y, z, t):
     return cmoordyn.waves_getkin(instance, x, y, z, t)
 
 
-#                                  Waves.h
+#                                  Body.h
 #  =============================================================================
 
 
@@ -498,3 +498,47 @@ def GetBodyState(instance):
     """
     import cmoordyn
     return cmoordyn.body_get_state(instance)
+
+
+#                                  Rod.h
+#  =============================================================================
+
+
+def GetRodID(instance):
+    """ Get the rod id
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    i: The rod id
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_id(instance)
+
+
+def GetRodN(instance):
+    """ Get the rod number of segments
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    n: The number of segments
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_n(instance)
+
+
+def MoorDyn_GetRodNodePos(instance, i):
+    """ Get the rod number of segments
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+    i (int): The node index
+
+    Returns:
+    r: The node pos
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_n(instance)
