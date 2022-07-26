@@ -7,10 +7,14 @@ project(Moordyn VERSION ${MOORDYN_VERSION})
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 # The regular folder where the Moordyn headers are located
 list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/Source")
 
 # The user options
+set(BUILD_DOCS OFF CACHE BOOL
+    "Build the documentation for users and developers")
 set(EXTERNAL_EIGEN ON CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(PYTHON_WRAPPER ON CACHE BOOL
@@ -28,17 +32,31 @@ mark_as_advanced(MOORDYN_SSE)
 mark_as_advanced(MOORDYN_FASTMATH)
 
 # Look for the dependencies
+if(${PYTHON_WRAPPER})
+    find_package(Python
+                 COMPONENTS Interpreter Development NumPy
+                 REQUIRED)
+endif()
+
+if(${BUILD_DOCS})
+    if(NOT ${PYTHON_WRAPPER})
+        find_package(Python
+                     COMPONENTS Interpreter
+                     REQUIRED)
+    endif()
+    find_package(Doxygen REQUIRED)
+    find_package(Sphinx REQUIRED breathe)
+
+    if(NOT Sphinx_FOUND)
+        message(FATAL_ERROR "Sphinx not found. Documentation cannot be built.")
+    endif()
+endif()
+
 if(${EXTERNAL_EIGEN})
     find_package(Eigen3 3.3 REQUIRED NO_MODULE)
     mark_as_advanced(Eigen3_DIR)
 else()
     list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/Source/Eigen")
-endif()
-
-if(${PYTHON_WRAPPER})
-    find_package(Python
-                 COMPONENTS Interpreter Development NumPy
-                 REQUIRED)
 endif()
 
 if(${MOORDYN_SINGLEPRECISSION})
@@ -73,6 +91,11 @@ endif()
 add_subdirectory(source)
 # And the eventual wrappers
 add_subdirectory(wrappers)
+
+# The documentation
+if(${BUILD_DOCS})
+    add_subdirectory(docs)
+endif()
 
 # Testing
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)

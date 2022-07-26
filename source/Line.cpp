@@ -832,7 +832,7 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 }
 
 void
-Line::getStateDeriv(double* Xd, double PARAM_UNUSED dt)
+Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
 {
 	std::vector<vec> u, a;
 	std::tie(u, a) = getStateDeriv();
