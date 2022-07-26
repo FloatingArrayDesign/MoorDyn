@@ -129,7 +129,7 @@ as it is further discussed in the :ref:`coupling documentation <coupling>`.
 
 .. code-block:: c
 
-   #include <MoorDyn2.h>
+   #include <moordyn/MoorDyn2.h>
 
    int main(int, char**)
    {
@@ -146,8 +146,8 @@ the main header, i.e.
 
 .. code-block:: cpp
 
-   #include <MoorDynConfig.h>
-   #include <MoorDyn2.hpp>
+   #include <moordyn/Config.h>
+   #include <moordyn/MoorDyn2.hpp>
 
    int main(int, char**)
    {
