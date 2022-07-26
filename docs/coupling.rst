@@ -1,3 +1,5 @@
+.. _coupling:
+
 Couplings and the API
 =====================
 

@@ -16,7 +16,9 @@ MoorDyn v2 - Lumped-Mass Mooring Dynamics
    theory
    coupling
    api_c
+   api_cpp
    wrappers
+   troubleshooting
 
 
 Welcome to MoorDyn's (UNDER CONSTRUCTION) online documentation.

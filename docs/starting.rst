@@ -1,3 +1,5 @@
+.. _starting:
+
 Getting Started
 ===============
 
@@ -94,7 +96,74 @@ configuring CMake. You also want to ask the Python wrapper get installed in the
 user space with the option -DPYTHON_WRAPPER_USERINSTALL=ON.
 You would need to edit the LD_LIBRARY_PATH environment variable afterwards.
 
-Use MoorDyn
------------
+Use MoorDyn in your project
+---------------------------
 
-WIP
+The way you can use MoorDyn in your project depends of course on the language.
+Below it is documented the way you can integrate MoorDyn in your project in
+different languages. The details on the system definition file are provided
+:ref:`here <usage>`, while the code is further documented
+:ref:`here <coupling>`. If you have any problem try to give a look to the
+:ref:`troubleshooting documentation <troubleshooting>`
+
+C
+^^^^^^
+
+The easiest way to link MoorDyn to your C project is using CMake. Following
+a code snippet where MoorDyn is integrated in a project with only a C source
+code file named example.c:
+
+.. code-block:: cmake
+
+   cmake_minimum_required (VERSION 3.10)
+   project (myproject)
+
+   find_package (MoorDyn REQUIRED)
+
+   add_executable (example example.c)
+   target_link_libraries (example MoorDyn::moordyn)
+
+CMake itself will already take care on everything. In the example.c you only
+need to include the MoorDyn2.h header and start using the :ref:`C API <api_c>`,
+as it is further discussed in the :ref:`coupling documentation <coupling>`.
+
+.. code-block:: c
+
+   #include <MoorDyn2.h>
+
+   int main(int, char**)
+   {
+      MoorDyn system = MoorDyn_Create("Mooring/lines.txt");
+      MoorDyn_Close(system);
+   }
+
+C++
+^^^^^^
+
+The same CMake code snippet show above is equally valid for C++. In your C++
+code you must remember start including the MoorDyn configuration header and then
+the main header, i.e.
+
+.. code-block:: cpp
+
+   #include <MoorDynConfig.h>
+   #include <MoorDyn2.hpp>
+
+   int main(int, char**)
+   {
+      auto system = new moordyn::MoorDyn("Mooring/lines.txt");
+      delete system;
+   }
+
+Python
+^^^^^^
+
+If you have installed the MoorDyn Python wrapper you are just ready to go! Open
+a Python console and give it a shot!
+
+.. code-block:: python
+
+   import moordyn
+
+   system = moordyn.Create("Mooring/lines.txt")
+   moordyn.CLose(system)
