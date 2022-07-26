@@ -23,13 +23,14 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 breathe_projects = {}
 
+os.makedirs("_build/doxygen", exist_ok=True)
 if read_the_docs_build:
     subprocess.call('doxygen', shell=True)
 else:
     subprocess.call('make clean', shell=True)
     subprocess.call('doxygen', shell=True)
 
-breathe_projects['MoorDyn'] = "_build/xml"
+breathe_projects['MoorDyn'] = "_build/doxygen/xml"
 breathe_default_project = "MoorDyn"
 
 #breathe_projects = { "trianglelib": "../../doxygen/build/xml/" }
