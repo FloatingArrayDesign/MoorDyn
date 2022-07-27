@@ -44,7 +44,7 @@ learn more on how to install MoorDyn with support for each language.
 C
 ^^^^^^
 
-This is the primary language to use MoorDyn, and it is always provided "out
+This is the primary language to use MoorDyn and it is always provided "out
 of the box" when you install it. It is strongly recommended to use CMake to link
 MoorDyn into your project (see :ref:`"Getting Started" <starting>`), although it
 is not strictly required. For instance, if you installed it in the default
@@ -110,7 +110,7 @@ controlling:
         for (unsigned int i = 0; i < n_lines; i++) {
             const unsigned int line_id = i + 1;
             printf("Line %u\n", line_id);
-            printf("=======\n", line_id);
+            printf("=======\n");
             MoorDynLine line = MoorDyn_GetLine(system, line_id);
             if (!line) {
                 MoorDyn_Close(system);
@@ -202,7 +202,78 @@ so the allocated resources are released:
 Python
 ^^^^^^
 
-MoorDyn can be called from Python scripts.
+You love Python! Who doesn't! Well, today it is your lucky day because MoorDyn
+v2 is deploying its own Python wrapper. You can read :ref:`here <starting>` how
+to install MoorDyn to have Python support.
+
+Following you can find the equivalent example discussed above for C language,
+this time developed in Python:
+
+.. code-block:: c
+
+    import moordyn
+
+    system = moordyn.Create("Mooring/lines.txt")
+
+    # 3 coupled connections x 3 components per connection = 9 DoF
+    dx = [0] * 9
+    # Get the initial positions from the system itself
+    x = []
+    for i in range(3):
+        // 4 = first fairlead id
+        conn = moordyn.GetConnection(system, i + 4)
+        x = x + moordyn.GetConnectPos(conn)
+
+    # Setup the initial condition
+    moordyn.Init(system, x, dx)
+
+    # Make the connections move at 0.5 m/s to the positive x direction
+    for i in range(3):
+        dx[3 * i] = 0.5
+    t, dt = 0.0, 0.5
+    f = moordyn.Step(system, x, dx, t, dt)
+
+    # Print the position and tension of the line nodes
+    n_lines = moordyn.GetNumberLines(system)
+    for line_id in range(1, n_lines + 1):
+        print("Line {}".format(line_id))
+        print("=======")
+        line = moordyn.GetLine(system, line_id)
+        n_nodes = moordyn.GetLineNumberNodes(line)
+        for node_id in range(n_nodes):
+            print("  node {}:".format(node_id))
+            pos = moordyn.GetLineNodePos(line, node_id)
+            printf("  pos = {}".format(pos))
+            ten = moordyn.GetLineNodeTen(line, node_id)
+            printf("  ten = {}".format(ten))
+        }
+    }
+
+    # Alright, time to finish!
+    moordyn.Close(system)
+
+That's all! You probably noticed that there are some differences with the C
+code shown above, which makes it a bit simpler.
+First, you obviously do not need to worry much about the variables typing.
+Second, in Python the functions are not returning error codes. Instead, they are
+triggering exceptions if errors are detected. Thus you can let Python to
+stop the execution when an error is detected, but it is even better if you
+enclose your code in a function within a try:
+
+.. code-block:: c
+
+    import moordyn
+
+    system = moordyn.Create("Mooring/lines.txt")
+    try:
+        your_coupling_code(system)
+    except Exception:
+        raise
+    finally:
+        moordyn.Close(system)
+
+So you can assert that the resources are always correctly released, no matter
+if the code worked properly or exceptions were triggered.
 
 Matlab
 ^^^^^^
@@ -212,35 +283,9 @@ MoorDyn can be called from Matlab scripts.
 Simulink
 ^^^^^^^^
 
-MoorDyn can be used with Simulink (and SimMechanics) models. The challenge is in supporting MoorDyn's loose-coupling approach 
-where it expects to be called for sequential time steps and never for correction steps that might repeat a time step. 
-A pulse/time-triggering block can be used in Simulink to ensure MoorDyn is called correctly. An example of this can 
-be seen in WEC-Sim.
-
-
-
-Calling MoorDyn - the API
--------------------------
-
-(THIS PAGE IN PROGRESS)
-
-C++ Functions
-^^^^^^^^^^^^^
-
-.. doxygenfunction:: LinesInit
-
-.. doxygenfunction:: LinesCalc
-
-.. doxygenfunction:: Line::doRHS
-
-
-
-C++ Classes
-^^^^^^^^^^^
-
-.. doxygenclass:: Line
-
-.. doxygenclass:: Connection
-
-
-
+MoorDyn can be used with Simulink (and SimMechanics) models. The challenge is in
+supporting MoorDyn's loose-coupling approach where it expects to be called for
+sequential time steps and never for correction steps that might repeat a time
+step.
+A pulse/time-triggering block can be used in Simulink to ensure MoorDyn is
+called correctly. An example of this can be seen in WEC-Sim.
