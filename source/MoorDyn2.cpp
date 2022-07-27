@@ -1986,12 +1986,12 @@ MoorDyn_Log(MoorDyn system, int level, const char* msg)
 	return MOORDYN_SUCCESS;
 }
 
-unsigned int DECLDIR
-MoorDyn_NCoupledDOF(MoorDyn system)
+int DECLDIR
+MoorDyn_NCoupledDOF(MoorDyn system, unsigned int* n)
 {
-	if (!system)
-		return 0;
-	return ((moordyn::MoorDyn*)system)->NCoupedDOF();
+	CHECK_SYSTEM(system);
+	*n = ((moordyn::MoorDyn*)system)->NCoupedDOF();
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
@@ -2047,12 +2047,12 @@ MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int* n)
 	return err;
 }
 
-unsigned int DECLDIR
-MoorDyn_ExternalWaveKinGetN(MoorDyn system)
+int DECLDIR
+MoorDyn_ExternalWaveKinGetN(MoorDyn system, unsigned int* n)
 {
-	if (!system)
-		return 0;
-	return ((moordyn::MoorDyn*)system)->ExternalWaveKinGetN();
+	CHECK_SYSTEM(system);
+	*n = ((moordyn::MoorDyn*)system)->ExternalWaveKinGetN();
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
@@ -2080,7 +2080,8 @@ MoorDyn_ExternalWaveKinSet(MoorDyn system,
 	CHECK_SYSTEM(system);
 
 	std::vector<moordyn::vec> u, ud;
-	const unsigned int n = MoorDyn_ExternalWaveKinGetN(system);
+	unsigned int n;
+	MoorDyn_ExternalWaveKinGetN(system, &n);
 	if (!n) {
 		cerr << "Error: There is not wave kinematics to set "
 		     << "while calling " << __FUNC_NAME__ << "()" << endl;
@@ -2097,12 +2098,12 @@ MoorDyn_ExternalWaveKinSet(MoorDyn system,
 	return MOORDYN_SUCCESS;
 }
 
-unsigned int DECLDIR
-MoorDyn_GetNumberBodies(MoorDyn system)
+int DECLDIR
+MoorDyn_GetNumberBodies(MoorDyn system, unsigned int* n)
 {
-	if (!system)
-		return 0;
-	return ((moordyn::MoorDyn*)system)->GetBodies().size();
+	CHECK_SYSTEM(system);
+	*n = ((moordyn::MoorDyn*)system)->GetBodies().size();
+	return MOORDYN_SUCCESS;
 }
 
 MoorDynBody DECLDIR
@@ -2119,12 +2120,12 @@ MoorDyn_GetBody(MoorDyn system, unsigned int b)
 	return (MoorDynBody)(bodies[b - 1]);
 }
 
-unsigned int DECLDIR
-MoorDyn_GetNumberRods(MoorDyn system)
+int DECLDIR
+MoorDyn_GetNumberRods(MoorDyn system, unsigned int* n)
 {
-	if (!system)
-		return 0;
-	return ((moordyn::MoorDyn*)system)->GetRods().size();
+	CHECK_SYSTEM(system);
+	*n = ((moordyn::MoorDyn*)system)->GetRods().size();
+	return MOORDYN_SUCCESS;
 }
 
 MoorDynRod DECLDIR
@@ -2141,12 +2142,12 @@ MoorDyn_GetRod(MoorDyn system, unsigned int l)
 	return (MoorDynRod)(rods[l - 1]);
 }
 
-unsigned int DECLDIR
-MoorDyn_GetNumberConnections(MoorDyn system)
+int DECLDIR
+MoorDyn_GetNumberConnections(MoorDyn system, unsigned int* n)
 {
-	if (!system)
-		return 0;
-	return ((moordyn::MoorDyn*)system)->GetConnections().size();
+	CHECK_SYSTEM(system);
+	*n = ((moordyn::MoorDyn*)system)->GetConnections().size();
+	return MOORDYN_SUCCESS;
 }
 
 MoorDynConnection DECLDIR
@@ -2163,12 +2164,12 @@ MoorDyn_GetConnection(MoorDyn system, unsigned int l)
 	return (MoorDynConnection)(conns[l - 1]);
 }
 
-unsigned int DECLDIR
-MoorDyn_GetNumberLines(MoorDyn system)
+int DECLDIR
+MoorDyn_GetNumberLines(MoorDyn system, unsigned int* n)
 {
-	if (!system)
-		return 0;
-	return ((moordyn::MoorDyn*)system)->GetLines().size();
+	CHECK_SYSTEM(system);
+	*n = ((moordyn::MoorDyn*)system)->GetLines().size();
+	return MOORDYN_SUCCESS;
 }
 
 MoorDynLine DECLDIR

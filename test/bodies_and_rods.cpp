@@ -52,7 +52,11 @@ main(int, char**)
 		return 1;
 	}
 
-	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	unsigned int n_dof;
+	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		return false;
+	}
 	if (n_dof) {
 		cerr << "No coupled Degrees Of Freedom were expected, but " << n_dof
 		     << "were reported" << endl;

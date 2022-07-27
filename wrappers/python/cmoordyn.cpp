@@ -114,7 +114,14 @@ n_coupled_dof(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_NCoupledDOF(system));
+	unsigned int n;
+	const int err = MoorDyn_NCoupledDOF(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_SetVerbosity() function
@@ -220,7 +227,8 @@ init(PyObject*, PyObject* args)
 		return NULL;
 
 	// Get the expected number of DOFs in the provided arrays
-	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	unsigned int n_dof;
+	MoorDyn_NCoupledDOF(system, &n_dof);
 
 	x_lst = PySequence_Fast(x_lst, "1st argument must be iterable");
 	if (!x_lst)
@@ -278,7 +286,8 @@ step(PyObject*, PyObject* args)
 		return NULL;
 
 	// Get the expected number of DOFs in the provided arrays
-	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	unsigned int n_dof;
+	MoorDyn_NCoupledDOF(system, &n_dof);
 
 	x_lst = PySequence_Fast(x_lst, "1st argument must be iterable");
 	if (!x_lst)
@@ -395,6 +404,10 @@ ext_wave_init(PyObject*, PyObject* args)
 
 	unsigned int n;
 	const int err = MoorDyn_ExternalWaveKinInit(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
 	return PyLong_FromLong(err);
 }
 
@@ -415,7 +428,13 @@ ext_wave_n(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_ExternalWaveKinGetN(system));
+	unsigned int n;
+	const int err = MoorDyn_ExternalWaveKinGetN(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetWaveKinCoordinates() function
@@ -437,7 +456,8 @@ ext_wave_coords(PyObject*, PyObject* args)
 		return NULL;
 
 	// We need to know the number of coordinates to allocate
-	const unsigned int nlines = MoorDyn_GetNumberLines(system);
+	unsigned int nlines;
+	MoorDyn_GetNumberLines(system, &nlines);
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < nlines; i++) {
 		unsigned int nnodes;
@@ -485,7 +505,8 @@ ext_wave_set(PyObject*, PyObject* args)
 		return NULL;
 
 	// We need to know the number of coordinates to avoid errors
-	const unsigned int nlines = MoorDyn_GetNumberLines(system);
+	unsigned int nlines;
+	MoorDyn_GetNumberLines(system, &nlines);
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < nlines; i++) {
 		unsigned int nnodes;
@@ -548,7 +569,13 @@ get_number_bodies(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetNumberBodies(system));
+	unsigned int n;
+	const int err = MoorDyn_GetNumberBodies(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetBody() function
@@ -595,7 +622,13 @@ get_number_rods(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetNumberRods(system));
+	unsigned int n;
+	const int err = MoorDyn_GetNumberRods(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetRod() function
@@ -642,7 +675,13 @@ get_number_connections(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetNumberConnections(system));
+	unsigned int n;
+	const int err = MoorDyn_GetNumberConnections(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetConnection() function
@@ -689,7 +728,13 @@ get_number_lines(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetNumberLines(system));
+	unsigned int n;
+	const int err = MoorDyn_GetNumberLines(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetLine() function

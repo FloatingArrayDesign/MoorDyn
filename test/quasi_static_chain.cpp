@@ -129,7 +129,11 @@ validation(const char* depth, const char* motion)
 		return false;
 	}
 
-	const unsigned int n_dof = MoorDyn_NCoupledDOF(system);
+	unsigned int n_dof;
+	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		return false;
+	}
 	if (n_dof != 3) {
 		cerr << "3x1 = 3 DOFs were expected, but " << n_dof << "were reported"
 		     << endl;

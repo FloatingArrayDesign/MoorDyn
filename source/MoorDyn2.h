@@ -74,9 +74,10 @@ extern "C"
 	 *
 	 * The number of components for some parameters in MoorDyn_Init() and
 	 * MoorDyn_Step() can be known using this function
-	 * @return The number of coupled DOF, 0 if errors are detected
+	 * @return MOORDYN_INVALID_VALUE if @p system is NULL, MOORDYN_SUCESS
+	 * otherwise
 	 */
-	unsigned int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system);
+	int DECLDIR MoorDyn_NCoupledDOF(MoorDyn system, unsigned int* n);
 
 	/** @brief Set the instance verbosity level
 	 * @param system The Moordyn system
@@ -87,16 +88,16 @@ extern "C"
 	 *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
 	 *  - MOORDYN_ERR_LEVEL Just errors will be reported
 	 *  - MOORDYN_NO_OUTPUT No info will be reported
-	 * @return 0 If the verbosity level is correctly set, an error code
-	 * otherwise (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the verbosity level is correctly set, an error
+	 * code otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_SetVerbosity(MoorDyn system, int verbosity);
 
 	/** @brief Set the instance log file
 	 * @param system The Moordyn system
 	 * @param log_path The file path to print the log file
-	 * @return 0 If the log file is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the log file is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_SetLogFile(MoorDyn system, const char* log_path);
 
@@ -110,8 +111,8 @@ extern "C"
 	 *  - MOORDYN_WRN_LEVEL Just errors and warnings will be reported
 	 *  - MOORDYN_ERR_LEVEL Just errors will be reported
 	 *  - MOORDYN_NO_OUTPUT No info will be reported
-	 * @return 0 If the printing level is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the printing level is correctly set, an error
+	 * code otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_SetLogLevel(MoorDyn system, int verbosity);
 
@@ -123,8 +124,8 @@ extern "C"
 	 *  - MOORDYN_WRN_LEVEL for warnings
 	 *  - MOORDYN_ERR_LEVEL for errors
 	 * @param msg The message to log
-	 * @return 0 If the printing level is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the printing level is correctly set, an error
+	 * code otherwise (see @ref moordyn_errors)
 	 * @note This messages are subjected to the same rules than the inner
 	 * messages, i.e. if @p level is lower than the threshold levels set with
 	 * MoorDyn_SetVerbosity() and MoorDyn_SetLogLevel(), the message will not be
@@ -145,8 +146,8 @@ extern "C"
 	 * rod and 3 components per pinned rod or coupled connection)
 	 * @param xd Velocity vector (6 components per coupled body or cantilevered
 	 * rod and 3 components per pinned rod or coupled connection)
-	 * @return 0 If the mooring system is correctly initialized, an error code
-	 * otherwise (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the mooring system is correctly initialized,
+	 * an error code otherwise (see @ref moordyn_errors)
 	 * @note MoorDyn_NCoupledDOF() can be used to know the number of components
 	 * required for \p x and \p xd
 	 */
@@ -159,8 +160,8 @@ extern "C"
 	 * @param f Output forces
 	 * @param t Simulation time
 	 * @param dt Time step
-	 * @return 0 if the mooring system has correctly evolved, an error code
-	 * otherwise (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS if the mooring system has correctly evolved, an
+	 * error code otherwise (see @ref moordyn_errors)
 	 * @note MoorDyn_NCoupledDOF() can be used to know the number of components
 	 * required for \p x, \p xd and \p f
 	 */
@@ -173,8 +174,8 @@ extern "C"
 
 	/** @brief Releases MoorDyn allocated resources
 	 * @param system The Moordyn system
-	 * @return 0 If the mooring system is correctly destroyed, an error code
-	 * otherwise (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the mooring system is correctly destroyed, an
+	 * error code otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_Close(MoorDyn system);
 
@@ -193,8 +194,8 @@ extern "C"
 	 * that is the case, remember calling this function after MoorDyn_Init()
 	 * @param system The Moordyn system
 	 * @param n The number of points where the wave kinematics shall be provided
-	 * @return 0 If the mooring system is correctly destroyed, an error code
-	 * otherwise (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the external waves are correctly initialized,
+	 * an error code otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int* n);
 
@@ -211,9 +212,11 @@ extern "C"
 	 *
 	 * This is useless unless WaveKin option is set to 1 in the input file
 	 * @param system The Moordyn system
-	 * @return The number of points where the wave kinematics shall be provided
+	 * @param n The output number of points where the wave kinematics shall be
+	 * provided
+	 * @return MOORDYN_SUCESS
 	 */
-	unsigned int DECLDIR MoorDyn_ExternalWaveKinGetN(MoorDyn system);
+	int DECLDIR MoorDyn_ExternalWaveKinGetN(MoorDyn system, unsigned int* n);
 
 	/** @brief Get the points where the waves kinematics shall be provided
 	 *
@@ -221,8 +224,8 @@ extern "C"
 	 * to 1 in the input file
 	 * @param system The Moordyn system
 	 * @param r The output coordinates (3 components per point)
-	 * @return 0 If the data is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 * @see MoorDyn_ExternalWaveKinInit()
 	 */
 	int DECLDIR MoorDyn_ExternalWaveKinGetCoordinates(MoorDyn system,
@@ -234,8 +237,8 @@ extern "C"
 	 * to 1 in the input file
 	 * @param system The Moordyn system
 	 * @param r The output coordinates (3 components per point)
-	 * @return 0 If the data is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 * @deprecated This function has been renamed as
 	 * MoorDyn_ExternalWaveKinGetCoordinates()
 	 * @see MoorDyn_ExternalWaveKinInit()
@@ -253,8 +256,8 @@ extern "C"
 	 * @param U The velocities at the points (3 components per point)
 	 * @param Ud The accelerations at the points (3 components per point)
 	 * @param t Simulation time
-	 * @return 0 If the data is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 * @see MoorDyn_ExternalWaveKinInit()
 	 * @see MoorDyn_ExternalWaveKinGetCoordinates()
 	 */
@@ -270,8 +273,8 @@ extern "C"
 	 * @param U The velocities at the points (3 components per point)
 	 * @param Ud The accelerations at the points (3 components per point)
 	 * @param t Simulation time
-	 * @return 0 If the data is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 * @deprecated This function has been renamed as
 	 * MoorDyn_ExternalWaveKinSet()
 	 * @see MoorDyn_ExternalWaveKinInit()
@@ -289,10 +292,11 @@ extern "C"
 	 *
 	 * Remember that the first body index is 1
 	 * @param system The Moordyn system
-	 * @return The number of bodies, which may be 0 if errors happened
-	 * (see @ref moordyn_errors)
+	 * @param n The output number of bodies
+	 * @return MOORDYN_SUCESS If the number is successfully got, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
-	unsigned int DECLDIR MoorDyn_GetNumberBodies(MoorDyn system);
+	int DECLDIR MoorDyn_GetNumberBodies(MoorDyn system, unsigned int* n);
 
 	/** @brief Get a rigid body
 	 *
@@ -307,10 +311,11 @@ extern "C"
 	 *
 	 * Remember that the first rod index is 1
 	 * @param system The Moordyn system
-	 * @return The number of rods, which may be 0 if errors happened
-	 * (see @ref moordyn_errors)
+	 * @param n The output number of rods
+	 * @return MOORDYN_SUCESS If the number is successfully got, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
-	unsigned int DECLDIR MoorDyn_GetNumberRods(MoorDyn system);
+	int DECLDIR MoorDyn_GetNumberRods(MoorDyn system, unsigned int* n);
 
 	/** @brief Get a rod
 	 * @param system The Moordyn system
@@ -323,10 +328,11 @@ extern "C"
 	 *
 	 * Remember that the first connection index is 1
 	 * @param system The Moordyn system
-	 * @return The number of connections, which may be 0 if errors happened
-	 * (see @ref moordyn_errors)
+	 * @param n The output number of connections
+	 * @return MOORDYN_SUCESS If the number is successfully got, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
-	unsigned int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system);
+	int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system, unsigned int* n);
 
 	/** @brief Get a connection
 	 * @param system The Moordyn system
@@ -340,10 +346,11 @@ extern "C"
 	 *
 	 * Remember that the first line index is 1
 	 * @param system The Moordyn system
-	 * @return The number of lines, which may be 0 if errors happened
-	 * (see @ref moordyn_errors)
+	 * @param n The output number of lines
+	 * @return MOORDYN_SUCESS If the number is successfully got, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
-	unsigned int DECLDIR MoorDyn_GetNumberLines(MoorDyn system);
+	int DECLDIR MoorDyn_GetNumberLines(MoorDyn system, unsigned int* n);
 
 	/** @brief Get a line instance
 	 * @param system The Moordyn system
@@ -363,8 +370,8 @@ extern "C"
 	 * the anchor
 	 * @param AnchVTen Allocated memory for the \p numLines vertical forces at
 	 * the anchor
-	 * @return 0 If the data is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_GetFASTtens(MoorDyn system,
 	                                const int* numLines,
@@ -378,8 +385,8 @@ extern "C"
 	 * The OpenGL context is assumed to be created by the caller before calling
 	 * this function
 	 * @param system The Moordyn system
-	 * @return 0 If the data is correctly set, an error code otherwise
-	 * (see @ref moordyn_errors)
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_DrawWithGL(MoorDyn system);
 
