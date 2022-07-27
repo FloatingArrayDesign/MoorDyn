@@ -1577,7 +1577,7 @@ MoorDyn_GetRodN(MoorDynRod rod, unsigned int* n)
 }
 
 int DECLDIR
-MoorDyn_GetLineNumberNodes(MoorDynRod rod, unsigned int* n)
+MoorDyn_GetRodNumberNodes(MoorDynRod rod, unsigned int* n)
 {
 	int err = MoorDyn_GetRodN(rod, n);
 	if (err != MOORDYN_SUCCESS)
@@ -1587,7 +1587,7 @@ MoorDyn_GetLineNumberNodes(MoorDynRod rod, unsigned int* n)
 }
 
 int DECLDIR
-MoorDyn_GetLineNodePos(MoorDynRod rod, unsigned int i, double pos[3])
+MoorDyn_GetRodNodePos(MoorDynRod rod, unsigned int i, double pos[3])
 {
 	CHECK_ROD(rod);
 	moordyn::error_id err = MOORDYN_SUCCESS;

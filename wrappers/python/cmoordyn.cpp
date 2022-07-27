@@ -1446,13 +1446,13 @@ static PyMethodDef moordyn_methods[] = {
 };
 
 static struct PyModuleDef moordyn_module = { PyModuleDef_HEAD_INIT,
-	                                         "moordyn",
+	                                         "cmoordyn",
 	                                         "MoorDyn python wrapper",
 	                                         -1,
 	                                         moordyn_methods };
 
 PyMODINIT_FUNC
-PyInit_moordyn(void)
+PyInit_cmoordyn(void)
 {
 	PyObject* m = PyModule_Create(&moordyn_module);
 	if (m == NULL) {
