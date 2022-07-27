@@ -124,7 +124,11 @@
  * @}
  */
 
-/** \addtogroup moordyn_errors
+/** \defgroup moordyn_errors Errors reported by MoorDyn
+ *  @{
+ */
+
+/** \defgroup moordyn_errors_c The list of error codes returned by the C API
  *  @{
  */
 
@@ -146,6 +150,10 @@
 #define MOORDYN_NON_IMPLEMENTED -7
 /// Unhandled error
 #define MOORDYN_UNHANDLED_ERROR -255
+
+/**
+ * @}
+ */
 
 /**
  * @}
