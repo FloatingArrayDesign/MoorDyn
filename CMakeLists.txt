@@ -19,6 +19,8 @@ set(EXTERNAL_EIGEN ON CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(PYTHON_WRAPPER ON CACHE BOOL
     "Build the Python wrapper")
+set(FORTRAN_WRAPPER OFF CACHE BOOL
+    "Build the Fortran module")
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
 set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
@@ -36,6 +38,10 @@ if(${PYTHON_WRAPPER})
     find_package(Python
                  COMPONENTS Interpreter Development NumPy
                  REQUIRED)
+endif()
+
+if(${FORTRAN_WRAPPER})
+    enable_language(Fortran)
 endif()
 
 if(${BUILD_DOCS})

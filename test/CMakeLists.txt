@@ -15,3 +15,12 @@ foreach(TEST ${TESTS})
     add_test(NAME ${TEST}
              COMMAND ${TEST})
 endforeach()
+
+if(${FORTRAN_WRAPPER})
+    add_executable(fortran_bindings fortran_bindings.f90)
+    target_link_libraries(fortran_bindings moordynf)
+    target_include_directories(fortran_bindings PUBLIC $<TARGET_PROPERTY:moordynf,Fortran_MODULE_DIRECTORY>)
+    add_dependencies(fortran_bindings Test_MooringConfigFiles)
+    add_test(NAME fortran_bindings
+             COMMAND fortran_bindings)
+endif()
