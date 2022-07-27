@@ -542,3 +542,72 @@ def MoorDyn_GetRodNodePos(instance, i):
     """
     import cmoordyn
     return cmoordyn.rod_get_n(instance)
+
+
+#                                Connection.h
+#  =============================================================================
+
+
+def GetConnectID(instance):
+    """ Get the connection id
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+
+    Returns:
+    i: The connection id
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_id(instance)
+
+
+def GetConnectType(instance):
+    """ Get the connection type
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+
+    Returns:
+    t: The connection type
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_type(instance)
+
+
+def GetConnectPos(instance):
+    """ Get the connection position
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+
+    Returns:
+    v: The connection position
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_pos(instance)
+
+
+def GetConnectVel(instance):
+    """ Get the connection velocity
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+
+    Returns:
+    v: The connection velocity
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_vel(instance)
+
+
+def GetConnectForce(instance):
+    """ Get the connection force
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+
+    Returns:
+    v: The connection force
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_force(instance)

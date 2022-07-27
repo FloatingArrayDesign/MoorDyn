@@ -56,13 +56,12 @@ extern "C"
 
 	/** @brief Get the connection type
 	 * @param conn The Moordyn connection
-	 * @return The connection type, MOORDYN_INVALID_VALUE if a NULL connection
-	 * is provided
+	 * @param t The output type
+	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * MOORDYN_SUCCESS otherwise
 	 * @see Connection::types
-	 * @warning MOORDYN_INVALID_VALUE matchs the value of Connection::COUPLED,
-	 * i.e. the returned value cannot be reliably used as error handling
 	 */
-	int DECLDIR MoorDyn_GetConnectType(MoorDynConnection conn);
+	int DECLDIR MoorDyn_GetConnectType(MoorDynConnection conn, int* t);
 
 	/** @brief Get the position of a connection
 	 * @param conn The Moordyn connection

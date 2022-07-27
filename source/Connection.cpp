@@ -547,10 +547,11 @@ MoorDyn_GetConnectID(MoorDynConnection conn)
 }
 
 int DECLDIR
-MoorDyn_GetConnectType(MoorDynConnection conn)
+MoorDyn_GetConnectType(MoorDynConnection conn, int* t)
 {
 	CHECK_CONNECTION(conn);
-	return ((moordyn::Connection*)conn)->type;
+	*t = ((moordyn::Connection*)conn)->type;
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR

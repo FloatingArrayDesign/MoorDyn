@@ -935,7 +935,7 @@ rod_get_n(PyObject*, PyObject* args)
 		return NULL;
 	}
 
-	return PyLong_FromLong(MoorDyn_GetRodID(n));
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetRodNodePos() function
@@ -948,7 +948,7 @@ rod_get_node_pos(PyObject*, PyObject* args)
 	PyObject* capsule;
 	int node;
 
-	if (!PyArg_ParseTuple(args, "Oi", &capsule, node))
+	if (!PyArg_ParseTuple(args, "Oi", &capsule, &node))
 		return NULL;
 
 	MoorDynRod instance =
@@ -964,118 +964,264 @@ rod_get_node_pos(PyObject*, PyObject* args)
 	}
 
 	PyObject* pyr = PyTuple_New(3);
-	for (unsigned int i = 0; i < 3; i++) {
+	for (unsigned int i = 0; i < 3; i++)
 		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
 
-		return pyr;
+	return pyr;
+}
+
+//                                 Rod.h
+// =============================================================================
+
+/** @brief Wrapper to MoorDyn_GetConnectID() function
+ * @param args Python passed arguments
+ * @return The connection id
+ */
+static PyObject*
+conn_get_id(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_GetConnectID(instance));
+}
+
+/** @brief Wrapper to MoorDyn_GetConnectType() function
+ * @param args Python passed arguments
+ * @return The connection type
+ */
+static PyObject*
+conn_get_type(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	int t;
+	const int err = MoorDyn_GetConnectType(instance, &t);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
 	}
 
-	static PyMethodDef moordyn_methods[] = {
-		{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
-		{ "n_coupled_dof",
-		  n_coupled_dof,
-		  METH_VARARGS,
-		  "Get the number of coupled Degrees Of Freedom" },
-		{ "set_verbosity",
-		  set_verbosity,
-		  METH_VARARGS,
-		  "Set the instance verbosity level" },
-		{ "set_logfile",
-		  set_logfile,
-		  METH_VARARGS,
-		  "Set the filepath of the output log file" },
-		{ "set_loglevel",
-		  set_loglevel,
-		  METH_VARARGS,
-		  "Set the instance log file verbosity" },
-		{ "log",
-		  log,
-		  METH_VARARGS,
-		  "Log a message to both the terminal screen and the log file" },
-		{ "init", init, METH_VARARGS, "Initializes MoorDyn" },
-		{ "step",
-		  step,
-		  METH_VARARGS,
-		  "simulates the mooring system starting at time t and ending at time "
-		  "t+d" },
-		{ "close",
-		  close,
-		  METH_VARARGS,
-		  "deallocates the variables used by MoorDyn" },
-		{ "get_waves",
-		  get_waves,
-		  METH_VARARGS,
-		  "Get the waves manager instance" },
-		{ "ext_wave_init",
-		  ext_wave_init,
-		  METH_VARARGS,
-		  "Initialize the externally handled waves" },
-		{ "ext_wave_n",
-		  ext_wave_n,
-		  METH_VARARGS,
-		  "Get the number of points where the wave kinematics shall be "
-		  "provided" },
-		{ "ext_wave_coords",
-		  ext_wave_coords,
-		  METH_VARARGS,
-		  "Get the coordinates where the wave kinematics shall be provided" },
-		{ "ext_wave_set",
-		  ext_wave_set,
-		  METH_VARARGS,
-		  "Set the wave kinematics" },
-		{ "get_number_bodies",
-		  get_number_bodies,
-		  METH_VARARGS,
-		  "Get the number of rigid bodies" },
-		{ "get_body", get_body, METH_VARARGS, "Get a rigid body" },
-		{ "get_number_rods",
-		  get_number_rods,
-		  METH_VARARGS,
-		  "Get the number of rods" },
-		{ "get_rod", get_rod, METH_VARARGS, "Get a rod" },
-		{ "get_number_connections",
-		  get_number_connections,
-		  METH_VARARGS,
-		  "Get the number of rigid bodies" },
-		{ "get_connection", get_connection, METH_VARARGS, "Get a connection" },
-		{ "get_number_lines",
-		  get_number_lines,
-		  METH_VARARGS,
-		  "Get the number of mooring lines" },
-		{ "get_line", get_line, METH_VARARGS, "Get a mooring line" },
-		{ "get_fast_tens",
-		  get_fast_tens,
-		  METH_VARARGS,
-		  "Get vertical and horizontal forces in the mooring lines" },
-		{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
-		{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
-		{ "body_get_state",
-		  body_get_state,
-		  METH_VARARGS,
-		  "Get the body state" },
-		{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
-		{ "rod_get_n",
-		  rod_get_n,
-		  METH_VARARGS,
-		  "Get the rod number of segments" },
-		{ "rod_get_node_pos",
-		  rod_get_node_pos,
-		  METH_VARARGS,
-		  "Get a rod node position" },
-		{ NULL, NULL, 0, NULL }
-	};
+	return PyLong_FromLong(t);
+}
 
-	static struct PyModuleDef moordyn_module = { PyModuleDef_HEAD_INIT,
-		                                         "moordyn",
-		                                         "MoorDyn python wrapper",
-		                                         -1,
-		                                         moordyn_methods };
+/** @brief Wrapper to MoorDyn_GetConnectPos() function
+ * @param args Python passed arguments
+ * @return The position
+ */
+static PyObject*
+conn_get_pos(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
 
-	PyMODINIT_FUNC PyInit_moordyn(void)
-	{
-		PyObject* m = PyModule_Create(&moordyn_module);
-		if (m == NULL) {
-			return NULL;
-		}
-		return m;
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double r[3];
+	const int err = MoorDyn_GetConnectPos(instance, r);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
 	}
+
+	PyObject* pyr = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++)
+		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
+
+	return pyr;
+}
+
+/** @brief Wrapper to MoorDyn_GetConnectVel() function
+ * @param args Python passed arguments
+ * @return The velocity
+ */
+static PyObject*
+conn_get_vel(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double r[3];
+	const int err = MoorDyn_GetConnectVel(instance, r);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* pyr = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++)
+		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
+
+	return pyr;
+}
+
+/** @brief Wrapper to MoorDyn_GetConnectForce() function
+ * @param args Python passed arguments
+ * @return The velocity
+ */
+static PyObject*
+conn_get_force(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double r[3];
+	const int err = MoorDyn_GetConnectForce(instance, r);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* pyr = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++)
+		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
+
+	return pyr;
+}
+
+static PyMethodDef moordyn_methods[] = {
+	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
+	{ "n_coupled_dof",
+	  n_coupled_dof,
+	  METH_VARARGS,
+	  "Get the number of coupled Degrees Of Freedom" },
+	{ "set_verbosity",
+	  set_verbosity,
+	  METH_VARARGS,
+	  "Set the instance verbosity level" },
+	{ "set_logfile",
+	  set_logfile,
+	  METH_VARARGS,
+	  "Set the filepath of the output log file" },
+	{ "set_loglevel",
+	  set_loglevel,
+	  METH_VARARGS,
+	  "Set the instance log file verbosity" },
+	{ "log",
+	  log,
+	  METH_VARARGS,
+	  "Log a message to both the terminal screen and the log file" },
+	{ "init", init, METH_VARARGS, "Initializes MoorDyn" },
+	{ "step",
+	  step,
+	  METH_VARARGS,
+	  "simulates the mooring system starting at time t and ending at time "
+	  "t+d" },
+	{ "close",
+	  close,
+	  METH_VARARGS,
+	  "deallocates the variables used by MoorDyn" },
+	{ "get_waves", get_waves, METH_VARARGS, "Get the waves manager instance" },
+	{ "ext_wave_init",
+	  ext_wave_init,
+	  METH_VARARGS,
+	  "Initialize the externally handled waves" },
+	{ "ext_wave_n",
+	  ext_wave_n,
+	  METH_VARARGS,
+	  "Get the number of points where the wave kinematics shall be "
+	  "provided" },
+	{ "ext_wave_coords",
+	  ext_wave_coords,
+	  METH_VARARGS,
+	  "Get the coordinates where the wave kinematics shall be provided" },
+	{ "ext_wave_set", ext_wave_set, METH_VARARGS, "Set the wave kinematics" },
+	{ "get_number_bodies",
+	  get_number_bodies,
+	  METH_VARARGS,
+	  "Get the number of rigid bodies" },
+	{ "get_body", get_body, METH_VARARGS, "Get a rigid body" },
+	{ "get_number_rods",
+	  get_number_rods,
+	  METH_VARARGS,
+	  "Get the number of rods" },
+	{ "get_rod", get_rod, METH_VARARGS, "Get a rod" },
+	{ "get_number_connections",
+	  get_number_connections,
+	  METH_VARARGS,
+	  "Get the number of rigid bodies" },
+	{ "get_connection", get_connection, METH_VARARGS, "Get a connection" },
+	{ "get_number_lines",
+	  get_number_lines,
+	  METH_VARARGS,
+	  "Get the number of mooring lines" },
+	{ "get_line", get_line, METH_VARARGS, "Get a mooring line" },
+	{ "get_fast_tens",
+	  get_fast_tens,
+	  METH_VARARGS,
+	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
+	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
+	{ "body_get_state", body_get_state, METH_VARARGS, "Get the body state" },
+	{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
+	{ "rod_get_n", rod_get_n, METH_VARARGS, "Get the rod number of segments" },
+	{ "rod_get_node_pos",
+	  rod_get_node_pos,
+	  METH_VARARGS,
+	  "Get a rod node position" },
+	{ "conn_get_id", conn_get_id, METH_VARARGS, "Get the connection id" },
+	{ "conn_get_type", conn_get_type, METH_VARARGS, "Get the connection type" },
+	{ "conn_get_pos",
+	  conn_get_pos,
+	  METH_VARARGS,
+	  "Get the connection position" },
+	{ "conn_get_vel",
+	  conn_get_vel,
+	  METH_VARARGS,
+	  "Get the connection velocity" },
+	{ "conn_get_force",
+	  conn_get_force,
+	  METH_VARARGS,
+	  "Get the connection force" },
+	{ NULL, NULL, 0, NULL }
+};
+
+static struct PyModuleDef moordyn_module = { PyModuleDef_HEAD_INIT,
+	                                         "moordyn",
+	                                         "MoorDyn python wrapper",
+	                                         -1,
+	                                         moordyn_methods };
+
+PyMODINIT_FUNC
+PyInit_moordyn(void)
+{
+	PyObject* m = PyModule_Create(&moordyn_module);
+	if (m == NULL) {
+		return NULL;
+	}
+	return m;
+}
