@@ -530,8 +530,8 @@ def GetRodN(instance):
     return cmoordyn.rod_get_n(instance)
 
 
-def MoorDyn_GetRodNodePos(instance, i):
-    """ Get the rod number of segments
+def GetRodNodePos(instance, i):
+    """ Get a rod node position
 
     Parameters:
     instance (cmoordyn.MoorDynRod): The rod instance
@@ -541,7 +541,7 @@ def MoorDyn_GetRodNodePos(instance, i):
     r: The node pos
     """
     import cmoordyn
-    return cmoordyn.rod_get_n(instance)
+    return cmoordyn.rod_get_node_pos(instance, i)
 
 
 #                                Connection.h
@@ -611,3 +611,88 @@ def GetConnectForce(instance):
     """
     import cmoordyn
     return cmoordyn.conn_get_force(instance)
+
+
+#                                  Line.h
+#  =============================================================================
+
+
+def GetLineID(instance):
+    """ Get the line id
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    i: The line id
+    """
+    import cmoordyn
+    return cmoordyn.line_get_id(instance)
+
+
+def GetLineN(instance):
+    """ Get the line number of segments
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    n: The number of segments
+    """
+    import cmoordyn
+    return cmoordyn.line_get_n(instance)
+
+
+def GetLineNodePos(instance, i):
+    """ Get a line node position
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    r: The node position
+    """
+    import cmoordyn
+    return cmoordyn.line_get_pos(instance, i)
+
+
+def GetLineNodeTen(instance, i):
+    """ Get a line node tension
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    t: The node tension
+    """
+    import cmoordyn
+    return cmoordyn.line_get_force(instance, i)
+
+
+def GetLineNodeCurv(instance, i):
+    """ Get a line node curvature
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    r: The node curvature
+    """
+    import cmoordyn
+    return cmoordyn.line_get_curv(instance, i)
+
+
+def GetLineGetLineFairTen(instance):
+    """ Get the tension magnitude at the fairlead of a line
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    t: The tension magnitude
+    """
+    import cmoordyn
+    return cmoordyn.line_get_fairlead_tension(instance)

@@ -940,7 +940,7 @@ rod_get_n(PyObject*, PyObject* args)
 
 /** @brief Wrapper to MoorDyn_GetRodNodePos() function
  * @param args Python passed arguments
- * @return The number of segments
+ * @return The position
  */
 static PyObject*
 rod_get_node_pos(PyObject*, PyObject* args)
@@ -970,7 +970,7 @@ rod_get_node_pos(PyObject*, PyObject* args)
 	return pyr;
 }
 
-//                                 Rod.h
+//                              Connection.h
 // =============================================================================
 
 /** @brief Wrapper to MoorDyn_GetConnectID() function
@@ -1113,6 +1113,175 @@ conn_get_force(PyObject*, PyObject* args)
 	return pyr;
 }
 
+//                                 Line.h
+// =============================================================================
+
+/** @brief Wrapper to MoorDyn_GetLineID() function
+ * @param args Python passed arguments
+ * @return The line id
+ */
+static PyObject*
+line_get_id(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_GetLineID(instance));
+}
+
+/** @brief Wrapper to MoorDyn_GetLineN() function
+ * @param args Python passed arguments
+ * @return The number of segments
+ */
+static PyObject*
+line_get_n(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	unsigned int n;
+	const int err = MoorDyn_GetLineN(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
+}
+
+/** @brief Wrapper to MoorDyn_GetLineNodePos() function
+ * @param args Python passed arguments
+ * @return The position
+ */
+static PyObject*
+line_get_node_pos(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	int node;
+
+	if (!PyArg_ParseTuple(args, "Oi", &capsule, &node))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double r[3];
+	const int err = MoorDyn_GetLineNodePos(instance, node, r);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* pyr = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++)
+		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
+
+	return pyr;
+}
+
+/** @brief Wrapper to MoorDyn_GetLineNodeTen() function
+ * @param args Python passed arguments
+ * @return The tension
+ */
+static PyObject*
+line_get_node_force(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	int node;
+
+	if (!PyArg_ParseTuple(args, "Oi", &capsule, &node))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double r[3];
+	const int err = MoorDyn_GetLineNodeTen(instance, node, r);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* pyr = PyTuple_New(3);
+	for (unsigned int i = 0; i < 3; i++)
+		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
+
+	return pyr;
+}
+
+/** @brief Wrapper to MoorDyn_GetLineNodeCurv() function
+ * @param args Python passed arguments
+ * @return The curvature
+ */
+static PyObject*
+line_get_node_curv(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	int node;
+
+	if (!PyArg_ParseTuple(args, "Oi", &capsule, &node))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double t;
+	const int err = MoorDyn_GetLineNodeCurv(instance, node, &t);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyFloat_FromDouble(t);
+}
+
+/** @brief Wrapper to MoorDyn_GetLineFairTen() function
+ * @param args Python passed arguments
+ * @return The tension magnitude
+ */
+static PyObject*
+line_get_fairlead_tension(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double t;
+	const int err = MoorDyn_GetLineFairTen(instance, &t);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyFloat_FromDouble(t);
+}
+
 static PyMethodDef moordyn_methods[] = {
 	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
 	{ "n_coupled_dof",
@@ -1207,6 +1376,27 @@ static PyMethodDef moordyn_methods[] = {
 	  conn_get_force,
 	  METH_VARARGS,
 	  "Get the connection force" },
+	{ "line_get_id", line_get_id, METH_VARARGS, "Get the line id" },
+	{ "line_get_n",
+	  line_get_n,
+	  METH_VARARGS,
+	  "Get the line number of segments" },
+	{ "line_get_node_pos",
+	  line_get_node_pos,
+	  METH_VARARGS,
+	  "Get a line node position" },
+	{ "line_get_node_force",
+	  line_get_node_force,
+	  METH_VARARGS,
+	  "Get a line node tension" },
+	{ "line_get_node_curv",
+	  line_get_node_curv,
+	  METH_VARARGS,
+	  "Get a line node curvature" },
+	{ "line_get_fairlead_tension",
+	  line_get_fairlead_tension,
+	  METH_VARARGS,
+	  "Get the line fairlead tension magnitude" },
 	{ NULL, NULL, 0, NULL }
 };
 
