@@ -22,7 +22,7 @@ The version 2 is currently under development:
  [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
  [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
  [ ] FORTRAN wrappers
- [ ] Python wrappers
+ [X] Python wrappers
  [ ] Rust wrappers
  [ ] Documentation for users
  [ ] Documentation for developers
