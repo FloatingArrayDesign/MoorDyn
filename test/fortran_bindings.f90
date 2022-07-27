@@ -1,5 +1,6 @@
 program main
     use, intrinsic :: iso_fortran_env, only: real64
+    use, intrinsic :: iso_c_binding, only: c_ptr
     use moordyn
 
     character(len=28) :: infile
@@ -8,6 +9,7 @@ program main
     real(real64), allocatable, target :: f(:)
     real(real64) :: t, dt
     integer :: err
+    type(c_ptr) :: system
 
     infile = 'Mooring/lines.txt'
     allocate ( x(0:8) )
@@ -25,6 +27,13 @@ program main
     x(6) = -2.6
     x(7) = -4.5
     x(8) = -70.0
+
+    system = MD_Create(infile)
+    err = MD_Close(system)
+    if ( err /= 0 ) then
+      print *,"Failure closing the moordyn simulation: ", err
+      stop 1
+    end if
 
     err = MD_Init(x, xd, infile)
     if ( err /= 0 ) then

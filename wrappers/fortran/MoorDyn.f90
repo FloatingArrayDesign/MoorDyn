@@ -9,9 +9,21 @@ module moordyn
 
   private
 
-  public :: MD_Init, MD_Step, MD_End
+  public :: MD_Create, MD_Close, MD_Init, MD_Step, MD_End
 
   interface
+
+    function MoorDyn_Create(f) bind(c, name='MoorDyn_Create') result(rc)
+      import :: c_char, c_ptr
+      character(kind=c_char), intent(in) :: f(*)
+      type(c_ptr) :: rc
+    end function MoorDyn_Create
+
+    function MoorDyn_Close(instance) bind(c, name='MoorDyn_Close') result(rc)
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int) :: rc
+    end function MoorDyn_Close
 
     function MoorDynInit(x, xd, f) bind(c, name='MoorDynInit') result(rc)
       import :: c_char, c_ptr, c_int
@@ -40,6 +52,18 @@ module moordyn
 
 
 contains
+
+  type(c_ptr) function MD_Create(f)
+    use iso_c_binding
+    character(*), intent(in) :: f
+    MD_Create = MoorDyn_Create(trim(f) // c_null_char)
+  end function MD_Create
+
+  integer function MD_Close(instance)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    MD_Close = MoorDyn_Close(instance)
+  end function MD_Close
 
   integer function MD_Init(x, xd, f)
     use iso_c_binding
