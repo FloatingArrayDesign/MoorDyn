@@ -49,10 +49,11 @@ extern "C"
 
 	/** @brief Get the line identifier
 	 * @param l The Moordyn line
-	 * @return The line identifier, MOORDYN_INVALID_VALUE if a NULL line is
-	 * provided
+	 * @param id The output id
+	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * MOORDYN_SUCCESS otherwise
 	 */
-	int DECLDIR MoorDyn_GetLineID(MoorDynLine l);
+	int DECLDIR MoorDyn_GetLineID(MoorDynLine l, int* id);
 
 	/** @brief Get the line number of segments
 	 *

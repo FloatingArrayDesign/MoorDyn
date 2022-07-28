@@ -375,9 +375,9 @@ again, this time in Fortran:
         do i_node = 0, n_nodes - 1
           print *,"  node ", i_node, ":"
           err = MD_GetLineNodePos(line, i_node, r)
-          printf *,"  pos = ", r
+          print *,"  pos = ", r
           err = MD_GetLineNodeTen(line, i_node, r)
-          printf *,"  ten = ", r
+          print *,"  ten = ", r
         end do
       end do
 

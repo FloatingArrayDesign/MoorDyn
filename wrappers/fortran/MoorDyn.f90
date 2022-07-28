@@ -30,7 +30,8 @@ module moordyn
              MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
              MoorDyn_GetBodyState, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
-             MoorDyn_GetConnectForce
+             MoorDyn_GetConnectForce, &
+             MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
             MD_SetLogLevel, MD_Log, MD_Init, MD_Step, MD_Close, &
@@ -41,7 +42,10 @@ module moordyn
             MD_GetLine, MD_GetFASTtens, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
-            MD_GetConnectVel, MD_GetConnectForce
+            MD_GetConnectVel, MD_GetConnectForce, &
+            MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
+            MD_GetLineNodePos, MD_GetLineNodeTen, MD_GetLineNodeCurv, &
+            MD_GetLineFairTen
 
   interface
 
@@ -153,7 +157,7 @@ module moordyn
     type(c_ptr) function MD_GetBody(instance, n) bind(c, name='MoorDyn_GetBody')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
-      integer(c_int), intent(in) :: n
+      integer(c_int), value, intent(in) :: n
     end function MD_GetBody
 
     integer(c_int) function MD_GetNumberRods(instance, n) bind(c, name='MoorDyn_GetNumberRods')
@@ -165,7 +169,7 @@ module moordyn
     type(c_ptr) function MD_GetRod(instance, n) bind(c, name='MoorDyn_GetRod')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
-      integer(c_int), intent(in) :: n
+      integer(c_int), value, intent(in) :: n
     end function MD_GetRod
 
     integer(c_int) function MD_GetNumberConnections(instance, n) bind(c, name='MoorDyn_GetNumberConnections')
@@ -189,7 +193,7 @@ module moordyn
     type(c_ptr) function MD_GetLine(instance, n) bind(c, name='MoorDyn_GetLine')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
-      integer(c_int), intent(in) :: n
+      integer(c_int), value, intent(in) :: n
     end function MD_GetLine
 
     function MoorDyn_GetFASTtens(instance, n, fht, fvt, aht, avt) bind(c, name='MoorDyn_GetFASTtens') result(rc)
@@ -261,6 +265,56 @@ module moordyn
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
     end function MoorDyn_GetConnectForce
+
+    !                                Line.h
+    ! ==========================================================================
+
+    integer(c_int) function MD_GetLineID(instance, n) bind(c, name='MoorDyn_GetLineID')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetLineID
+
+    integer(c_int) function MD_GetLineN(instance, n) bind(c, name='MoorDyn_GetLineN')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetLineN
+
+    integer(c_int) function MD_GetLineNumberNodes(instance, n) bind(c, name='MoorDyn_GetLineNumberNodes')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetLineNumberNodes
+
+    function MoorDyn_GetLineNodePos(instance, n, r) bind(c, name='MoorDyn_GetLineNodePos') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodePos
+
+    function MoorDyn_GetLineNodeTen(instance, n, r) bind(c, name='MoorDyn_GetLineNodeTen') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeTen
+
+    integer(c_int) function MD_GetLineNodeCurv(instance, n, r) bind(c, name='MoorDyn_GetLineNodeCurv') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      real(c_double), intent(out) :: r
+    end function MD_GetLineNodeCurv
+
+    integer(c_int) function MD_GetLineFairTen(instance, r) bind(c, name='MoorDyn_GetLineFairTen') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: r
+    end function MD_GetLineFairTen
 
 end interface
 
@@ -371,5 +425,24 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetConnectForce = MoorDyn_GetConnectForce(instance, c_loc(r))
   end function MD_GetConnectForce
+
+  !                                Line.h
+  ! ============================================================================
+
+  integer function MD_GetLineNodePos(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodePos = MoorDyn_GetLineNodePos(instance, n, c_loc(r))
+  end function MD_GetLineNodePos
+
+  integer function MD_GetLineNodeTen(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeTen = MoorDyn_GetLineNodeTen(instance, n, c_loc(r))
+  end function MD_GetLineNodeTen
 
 end module moordyn

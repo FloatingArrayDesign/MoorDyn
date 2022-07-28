@@ -1547,10 +1547,11 @@ Line::drawGL2(void)
 	}
 
 int DECLDIR
-MoorDyn_GetLineID(MoorDynLine l)
+MoorDyn_GetLineID(MoorDynLine l, int* id)
 {
 	CHECK_LINE(l);
-	return ((moordyn::Line*)l)->number;
+	*id = ((moordyn::Line*)l)->number;
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
