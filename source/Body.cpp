@@ -585,10 +585,19 @@ Body::drawGL(void)
 	}
 
 int DECLDIR
-MoorDyn_GetBodyID(MoorDynBody b)
+MoorDyn_GetBodyID(MoorDynBody b, int* id)
 {
 	CHECK_BODY(b);
-	return ((moordyn::Body*)b)->number;
+	*id = ((moordyn::Body*)b)->number;
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyType(MoorDynBody b, int* t)
+{
+	CHECK_BODY(b);
+	*t = ((moordyn::Body*)b)->type;
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR

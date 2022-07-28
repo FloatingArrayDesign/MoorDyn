@@ -486,6 +486,19 @@ def GetBodyID(instance):
     return cmoordyn.body_get_id(instance)
 
 
+def GetBodyType(instance):
+    """ Get the body type
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    t: The body type
+    """
+    import cmoordyn
+    return cmoordyn.body_get_type(instance)
+
+
 def GetBodyState(instance):
     """ Get the body state
 

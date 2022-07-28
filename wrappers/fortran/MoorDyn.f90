@@ -28,6 +28,7 @@ module moordyn
   private :: MoorDyn_Create, MoorDyn_SetLogFile, MoorDyn_Log, MoorDyn_Init, &
              MoorDyn_Step, MoorDyn_ExternalWaveKinGetCoordinates, &
              MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
+             MoorDyn_GetBodyState, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
              MoorDyn_GetConnectForce
 
@@ -38,6 +39,7 @@ module moordyn
             MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
             MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
             MD_GetLine, MD_GetFASTtens, &
+            MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
             MD_GetConnectVel, MD_GetConnectForce
 
@@ -201,6 +203,29 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
 
+    !                                Body.h
+    ! ==========================================================================
+
+    integer(c_int) function MD_GetBodyID(instance, n) bind(c, name='MoorDyn_GetBodyID')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetBodyID
+
+    integer(c_int) function MD_GetBodyType(instance, n) bind(c, name='MoorDyn_GetBodyType')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetBodyType
+
+    function MoorDyn_GetBodyState(instance, r, rd) bind(c, name='MoorDyn_GetBodyState') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      type(c_ptr), value, intent(in) :: rd
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyState
+
     !                                Connection.h
     ! ==========================================================================
 
@@ -311,6 +336,17 @@ contains
     real(c_double), intent(in), target :: avt(:)
     MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
   end function MD_GetFASTtens
+
+  !                                Body.h
+  ! ============================================================================
+
+  integer function MD_GetBodyState(instance, r, rd)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    real(c_double), intent(in), target :: rd(:)
+    MD_GetBodyState = MoorDyn_GetBodyState(instance, c_loc(r), c_loc(rd))
+  end function MD_GetBodyState
 
   !                                Connection.h
   ! ============================================================================

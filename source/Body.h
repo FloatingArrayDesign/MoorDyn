@@ -49,10 +49,20 @@ extern "C"
 
 	/** @brief Get the body identifier
 	 * @param b The Moordyn body
-	 * @return The body identifier, MOORDYN_INVALID_VALUE if a NULL body is
-	 * provided
+	 * @param id The output id
+	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * MOORDYN_SUCCESS otherwise
 	 */
-	int DECLDIR MoorDyn_GetBodyID(MoorDynBody b);
+	int DECLDIR MoorDyn_GetBodyID(MoorDynBody b, int* id);
+
+	/** @brief Get the connection type
+	 * @param conn The Moordyn connection
+	 * @param t The output type
+	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * MOORDYN_SUCCESS otherwise
+	 * @see Connection::types
+	 */
+	int DECLDIR MoorDyn_GetBodyType(MoorDynBody b, int* t);
 
 	/** @brief Get the body state
 	 * @param r The output position (6dof)

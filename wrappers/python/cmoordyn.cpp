@@ -878,7 +878,7 @@ waves_getkin(PyObject*, PyObject* args)
 
 /** @brief Wrapper to MoorDyn_GetBodyID() function
  * @param args Python passed arguments
- * @return The body id, or a negative number (error code)
+ * @return The body id
  */
 static PyObject*
 body_get_id(PyObject*, PyObject* args)
@@ -893,7 +893,41 @@ body_get_id(PyObject*, PyObject* args)
 	if (!instance)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetBodyID(instance));
+	int n;
+	const int err = MoorDyn_GetBodyID(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
+}
+
+/** @brief Wrapper to MoorDyn_GetBodyType() function
+ * @param args Python passed arguments
+ * @return The body type
+ */
+static PyObject*
+body_get_type(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	int n;
+	const int err = MoorDyn_GetBodyType(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetBodyState() function
@@ -1394,7 +1428,7 @@ static PyMethodDef moordyn_methods[] = {
 	{ "get_number_connections",
 	  get_number_connections,
 	  METH_VARARGS,
-	  "Get the number of rigid bodies" },
+	  "Get the number of connections" },
 	{ "get_connection", get_connection, METH_VARARGS, "Get a connection" },
 	{ "get_number_lines",
 	  get_number_lines,
@@ -1407,6 +1441,7 @@ static PyMethodDef moordyn_methods[] = {
 	  "Get vertical and horizontal forces in the mooring lines" },
 	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
 	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
+	{ "body_get_type", body_get_type, METH_VARARGS, "Get the body type" },
 	{ "body_get_state", body_get_state, METH_VARARGS, "Get the body state" },
 	{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
 	{ "rod_get_n", rod_get_n, METH_VARARGS, "Get the rod number of segments" },
