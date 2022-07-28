@@ -30,16 +30,23 @@ MoorDyn v2 should on the other hand provide all the functionality required by
 DUalSphysics, so DualSPHysics team will be queried to merge back on the
 upstream.
 
-Using from different languages
-------------------------------
+Basic coupling with MoorDyn
+---------------------------
 
-MoorDyn v2 can be used at a high level of abstraction in several languages. It
-is also a possibility to micromanage MoorDyn in a much lower level in C++.
+MoorDyn v2 can be used in several languages,  at a high level of abstraction. It
+is even possible to micromanage MoorDyn in a much lower level, using the
+:ref:`C++ API <api_cpp>`.
 
-Below you can find documumentation on how handle MoorDyn in each language.
+Thus we are first discussing how to make the most basic coupling operations
+with MoorDyn in each language. That will illustrate the similarities and
+differences between languages.
 
-Note: Check out the :ref:`"Getting Started" <starting>` documentation to
-learn more on how to install MoorDyn with support for each language.
+Afterwards, you can visit the :ref:`C API <api_c>` documentation to figure out
+how to carry out more complex couplings.
+
+Note: You would probably read first the :ref:`"Getting Started" <starting>`
+documentation to learn more about how to install MoorDyn with support for each
+language.
 
 C
 ^^^^^^
@@ -209,7 +216,7 @@ to install MoorDyn to have Python support.
 Following you can find the equivalent example discussed above for C language,
 this time developed in Python:
 
-.. code-block:: c
+.. code-block:: python
 
     import moordyn
 
@@ -260,7 +267,7 @@ triggering exceptions if errors are detected. Thus you can let Python to
 stop the execution when an error is detected, but it is even better if you
 enclose your code in a function within a try:
 
-.. code-block:: c
+.. code-block:: python
 
     import moordyn
 
@@ -274,6 +281,122 @@ enclose your code in a function within a try:
 
 So you can assert that the resources are always correctly released, no matter
 if the code worked properly or exceptions were triggered.
+
+Fortran
+^^^^^^^
+
+If you are used to program in ancient languages, you are also welcome! Again,
+you probably would check out :ref:`here <starting>` how to install MoorDyn
+with Fortran support, which is disable by default.
+
+The same example discussed above, for C and Python languages, can be considered
+again, this time in Fortran:
+
+.. code-block:: fortran
+
+    program main
+      use, intrinsic :: iso_fortran_env, only: real64
+      use, intrinsic :: iso_c_binding, only: c_ptr, c_associated
+      use moordyn
+
+      character(len=28) :: infile
+      real(real64), allocatable, target :: x(:)
+      real(real64), allocatable, target :: xd(:)
+      real(real64), allocatable, target :: f(:)
+      real(real64), allocatable, target :: r(:)
+      real(real64) :: t, dt
+      integer :: err, n_dof, n_conns, i_conn. n_lines, i_line, n_nodes, i_node
+      type(c_ptr) :: system, conn, line
+
+      infile = 'Mooring/lines.txt'
+
+      system = MD_Create(infile)
+      if ( .not.c_associated(system) ) then
+        stop 1
+      end if
+
+      err = MD_NCoupledDOF( system, n_dof )
+      if ( err /= MD_SUCESS ) then
+        stop 1
+      elseif ( n_dof /= 9 ) then
+        print *,"3x3 = 9 DOFs were expected, not ", n_dof
+      end if
+
+      allocate ( x(0:8) )
+      allocate ( xd(0:8) )
+      allocate ( f(0:8) )
+      allocate ( r(0:2) )
+      xd = 0.0
+      f = 0.0
+
+      ! Get the positions from the connections
+      err = MD_GetNumberConnections( system, n_conns )
+      if ( err /= MD_SUCESS ) then
+        stop 1
+      elseif ( n_conns /= 6 ) then
+        print *,"6 connections were expected, not ", n_conns
+      end if
+      do i_conn = 1, 3
+        conn = MD_GetConnection( system, i_conn + 3 )
+        if ( .not.c_associated(conn) ) then
+          stop 1
+        end if
+        err = MD_GetConnectPos( conn, r )
+        if ( err /= MD_SUCESS ) then
+          stop 1
+        end if
+        do j = 1, 3
+          x(3 * i + j) = r(j)
+        end do
+      end do
+
+      err = MD_Init(system, x, xd)
+      if ( err /= MD_SUCESS ) then
+        stop 1
+      end if
+
+      t = 0
+      dt = 0.5
+      err = MD_Step(system, x, xd, f, t, dt)
+      if ( err /= MD_SUCESS ) then
+        stop 1
+      end if
+
+      ! Print the position and tension of the line nodes
+      err = MD_GetNumberLines(system, n_lines)
+      if ( err /= MD_SUCESS ) then
+        stop 1
+      end if
+      do i_line = 1, n_lines
+        print *,"Line ", i_line
+        print *, "======="
+        line = MD_GetLine(system, i_line)
+        err = MD_GetLineNumberNodes(line, n_nodes)
+        do i_node = 0, n_nodes - 1
+          print *,"  node ", i_node, ":"
+          err = MD_GetLineNodePos(line, i_node, r)
+          printf *,"  pos = ", r
+          err = MD_GetLineNodeTen(line, i_node, r)
+          printf *,"  ten = ", r
+        end do
+      end do
+
+      err = MD_Close(system)
+      if ( err /= MD_SUCESS ) then
+        stop 1
+      end if
+
+      deallocate ( x )
+      deallocate ( xd )
+      deallocate ( f )
+      deallocate ( r )
+
+    end program main
+
+It is again very similar to the C code, although the functions have a different
+prefix. On top of that, all the objects (the simulator, the connections, the
+lines...) take the type type(c_ptr), from the iso_c_binding module. The rest of
+differences are just caused by the language.
 
 Matlab
 ^^^^^^

@@ -96,6 +96,10 @@ configuring CMake. You also want to ask the Python wrapper get installed in the
 user space with the option -DPYTHON_WRAPPER_USERINSTALL=ON.
 You would need to edit the LD_LIBRARY_PATH environment variable afterwards.
 
+If you have also installed the Fortran compiler, which is usually the case in
+most Linux distributions, you can also compile and install the Fortran wrapper,
+just setting the option -DFORTRAN_WRAPPER=ON.
+
 Use MoorDyn in your project
 ---------------------------
 
@@ -167,3 +171,41 @@ a Python console and give it a shot!
 
    system = moordyn.Create("Mooring/lines.txt")
    moordyn.CLose(system)
+
+Fortran
+^^^^^^^
+
+Linking the MoorDyn Fortran wrapper is almost the same than linking the C
+library. For instance, if you have a Fortran project consisting in a single
+source code file, example.f90, then you can integrate MoorDyn with the
+following CMake code:
+
+.. code-block:: cmake
+
+   cmake_minimum_required (VERSION 3.10)
+   project (myproject)
+
+   find_package (MoorDyn REQUIRED)
+
+   add_executable (example example.f90)
+   target_link_libraries (example MoorDyn::moordynf)
+
+Please, note that now you are linking against MoorDyn::moordynf. The usage
+is also very similar to the C one:
+
+.. code-block:: fortran
+
+   program main
+     use, intrinsic :: iso_c_binding, only: c_ptr
+     use moordyn
+
+     character(len=28) :: infile
+     type(c_ptr) :: system
+     integer :: err
+
+     infile = 'Mooring/lines.txt'
+     system = MD_Create(infile)
+     err = MD_Close(system)
+
+   end program main
+
