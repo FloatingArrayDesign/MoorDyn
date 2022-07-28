@@ -25,12 +25,22 @@ module moordyn
   integer, parameter :: MD_DBG_LEVEL = 0
   integer, parameter :: MD_NO_OUTPUT = 4096
 
-  private
+  private :: MoorDyn_Create, MoorDyn_SetLogFile, MoorDyn_Log, MoorDyn_Init, &
+             MoorDyn_Step, MoorDyn_ExternalWaveKinGetCoordinates, &
+             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
-            MD_SetLogLevel, MD_Log, MD_Init, MD_Step, MD_Close
+            MD_SetLogLevel, MD_Log, MD_Init, MD_Step, MD_Close, &
+            MD_GetWaves, MD_ExternalWaveKinInit, MD_ExternalWaveKinGetN, &
+            MD_ExternalWaveKinGetCoordinates, MD_ExternalWaveKinSet, &
+            MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
+            MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
+            MD_GetLine, MD_GetFASTtens
 
   interface
+
+    !                                MoorDyn2.h
+    ! ==========================================================================
 
     function MoorDyn_Create(f) bind(c, name='MoorDyn_Create') result(rc)
       import :: c_char, c_ptr
@@ -38,19 +48,17 @@ module moordyn
       type(c_ptr) :: rc
     end function MoorDyn_Create
 
-    function MoorDyn_NCoupledDOF(instance, n) bind(c, name='MoorDyn_NCoupledDOF') result(rc)
+    integer(c_int) function MD_NCoupledDOF(instance, n) bind(c, name='MoorDyn_NCoupledDOF')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-      integer(c_int) :: rc
-    end function MoorDyn_NCoupledDOF
+    end function MD_NCoupledDOF
 
-    function MoorDyn_SetVerbosity(instance, n) bind(c, name='MoorDyn_SetVerbosity') result(rc)
+    integer(c_int) function MD_SetVerbosity(instance, n) bind(c, name='MD_SetVerbosity')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-      integer(c_int) :: rc
-    end function MoorDyn_SetVerbosity
+    end function MD_SetVerbosity
 
     function MoorDyn_SetLogFile(instance, f) bind(c, name='MoorDyn_SetLogFile') result(rc)
       import :: c_ptr, c_char, c_int
@@ -59,12 +67,11 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_SetLogFile
 
-    function MoorDyn_SetLogLevel(instance, n) bind(c, name='MoorDyn_SetLogLevel') result(rc)
+    integer(c_int) function MD_SetLogLevel(instance, n) bind(c, name='MoorDyn_SetLogLevel')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-      integer(c_int) :: rc
-    end function MoorDyn_SetLogLevel
+    end function MD_SetLogLevel
 
     function MoorDyn_Log(instance, n, f) bind(c, name='MoorDyn_Log') result(rc)
       import :: c_ptr, c_int, c_char
@@ -93,16 +100,110 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_Step
 
-    function MoorDyn_Close(instance) bind(c, name='MoorDyn_Close') result(rc)
+    integer(c_int) function MD_Close(instance) bind(c, name='MoorDyn_Close')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
-      integer(c_int) :: rc
-    end function MoorDyn_Close
+    end function MD_Close
 
-  end interface
+    type(c_ptr) function MD_GetWaves(instance) bind(c, name='MoorDyn_GetWaves')
+      import :: c_ptr
+      type(c_ptr), value, intent(in) :: instance
+    end function MD_GetWaves
+
+    integer(c_int) function MD_ExternalWaveKinInit(instance, n) bind(c, name='MoorDyn_ExternalWaveKinInit')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_ExternalWaveKinInit
+
+    integer(c_int) function MD_ExternalWaveKinGetN(instance, n) bind(c, name='MoorDyn_ExternalWaveKinGetN')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_ExternalWaveKinGetN
+
+    function MoorDyn_ExternalWaveKinGetCoordinates(instance, r) bind(c, name='MoorDyn_ExternalWaveKinGetCoordinates') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_ExternalWaveKinGetCoordinates
+
+    function MoorDyn_ExternalWaveKinSet(instance, u, ud, t) bind(c, name='MoorDyn_ExternalWaveKinSet') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: u
+      type(c_ptr), value, intent(in) :: ud
+      real(c_double), intent(in) :: t
+      integer(c_int) :: rc
+    end function MoorDyn_ExternalWaveKinSet
+
+    integer(c_int) function MD_GetNumberBodies(instance, n) bind(c, name='MoorDyn_GetNumberBodies')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetNumberBodies
+
+    type(c_ptr) function MD_GetBody(instance, n) bind(c, name='MoorDyn_GetBody')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(in) :: n
+    end function MD_GetBody
+
+    integer(c_int) function MD_GetNumberRods(instance, n) bind(c, name='MoorDyn_GetNumberRods')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetNumberRods
+
+    type(c_ptr) function MD_GetRod(instance, n) bind(c, name='MoorDyn_GetRod')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(in) :: n
+    end function MD_GetRod
+
+    integer(c_int) function MD_GetNumberConnections(instance, n) bind(c, name='MoorDyn_GetNumberConnections')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetNumberConnections
+
+    type(c_ptr) function MD_GetConnection(instance, n) bind(c, name='MoorDyn_GetConnection')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+    end function MD_GetConnection
+
+    integer(c_int) function MD_GetNumberLines(instance, n) bind(c, name='MoorDyn_GetNumberLines')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetNumberLines
+
+    type(c_ptr) function MD_GetLine(instance, n) bind(c, name='MoorDyn_GetLine')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(in) :: n
+    end function MD_GetLine
+
+    function MoorDyn_GetFASTtens(instance, n, fht, fvt, aht, avt) bind(c, name='MoorDyn_GetFASTtens') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(inout) :: n
+      type(c_ptr), value, intent(in) :: fht
+      type(c_ptr), value, intent(in) :: fvt
+      type(c_ptr), value, intent(in) :: aht
+      type(c_ptr), value, intent(in) :: avt
+      integer(c_int) :: rc
+    end function MoorDyn_GetFASTtens
+
+end interface
 
 
 contains
+
+  !                                MoorDyn2.h
+  ! ============================================================================
 
   type(c_ptr) function MD_Create(f)
     use iso_c_binding
@@ -110,36 +211,12 @@ contains
     MD_Create = MoorDyn_Create(trim(f) // c_null_char)
   end function MD_Create
 
-  integer function MD_NCoupledDOF(instance, n)
-    use iso_c_binding
-    type(c_ptr), intent(in) :: instance
-    integer(c_int), intent(out) :: n
-    integer err
-    MD_NCoupledDOF = MoorDyn_NCoupledDOF(instance, n)
-  end function MD_NCoupledDOF
-
-  integer function MD_SetVerbosity(instance, n)
-    use iso_c_binding
-    type(c_ptr), intent(in) :: instance
-    integer(c_int), intent(out) :: n
-    integer err
-    MD_SetVerbosity = MoorDyn_SetVerbosity(instance, n)
-  end function MD_SetVerbosity
-
   integer function MD_SetLogFile(instance, f)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
     character(*), intent(in) :: f
     MD_SetLogFile = MoorDyn_SetLogFile(instance, trim(f) // c_null_char)
   end function MD_SetLogFile
-
-  integer function MD_SetLogLevel(instance, n)
-    use iso_c_binding
-    type(c_ptr), intent(in) :: instance
-    integer(c_int), intent(out) :: n
-    integer err
-    MD_SetLogLevel = MoorDyn_SetLogLevel(instance, n)
-  end function MD_SetLogLevel
 
   integer function MD_Log(instance, n, f)
     use iso_c_binding
@@ -168,10 +245,31 @@ contains
     MD_Step = MoorDyn_Step(instance, c_loc(x), c_loc(xd), c_loc(f), t, dt)
   end function MD_Step
 
-  integer function MD_Close(instance)
+  integer function MD_ExternalWaveKinGetCoordinates(instance, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
-    MD_Close = MoorDyn_Close(instance)
-  end function MD_Close
+    real(c_double), intent(in), target :: r(:)
+    MD_ExternalWaveKinGetCoordinates = MoorDyn_ExternalWaveKinGetCoordinates(instance, c_loc(r))
+  end function MD_ExternalWaveKinGetCoordinates
+
+  integer function MD_ExternalWaveKinSet(instance, u, ud, t)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: u(:)
+    real(c_double), intent(in), target :: ud(:)
+    real(c_double), intent(in) :: t
+    MD_ExternalWaveKinSet = MoorDyn_ExternalWaveKinSet(instance, c_loc(u), c_loc(ud), t)
+  end function MD_ExternalWaveKinSet
+
+  integer function MD_GetFASTtens(instance, n, fht, fvt, aht, avt)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), intent(inout) :: n
+    real(c_double), intent(in), target :: fht(:)
+    real(c_double), intent(in), target :: fvt(:)
+    real(c_double), intent(in), target :: aht(:)
+    real(c_double), intent(in), target :: avt(:)
+    MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
+  end function MD_GetFASTtens
 
 end module moordyn
