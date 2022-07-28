@@ -86,4 +86,4 @@ html_theme = 'sphinx_rtd_theme' # need to run pip install sphinx_rtd_theme to us
 cpp_id_attributes = ['DECLDIR']
 
 # Keep the doxygen documentaion in readthedocs
-html_extra_path = ['_build/doxygen/html']
+# html_extra_path = ['_build/doxygen/html']
