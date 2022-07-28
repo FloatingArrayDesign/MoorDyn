@@ -74,8 +74,8 @@ gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
 /** @brief Carry out the inverse Fourier transform
  * @param cfg KISS FFT instance
  * @param nFFT Numer of fourier components
- * @param cx_in KISS FFT frequency-domain data
- * @param cx_out KISS FFT time-domain output
+ * @param cx_w_in KISS FFT frequency-domain data
+ * @param cx_t_out KISS FFT time-domain output
  * @param inputs Input FFT values
  * @param outputs Output time-domain values
  */

@@ -41,7 +41,7 @@
 
 namespace moordyn {
 
-/** @class State Time.hpp
+/** @class StateVar Time.hpp
  * @brief Generic state variables
  *
  * This is holding the position and velocitites
@@ -89,7 +89,7 @@ class StateVar
 	StateVar<T> operator-(const StateVar<T>& visitor);
 };
 
-/** @class StateDeriv Time.hpp
+/** @class StateVarDeriv Time.hpp
  * @brief Generic state variables derivative
  *
  * This is holding the velocitites and accelerations

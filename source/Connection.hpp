@@ -228,7 +228,7 @@ class Connection : public LogUser
 
 	/** @brief Attach a line endpoint to this connection
 	 * @param theLine The line to be attached
-	 * @param line_end_point The line endpoint
+	 * @param end_point The line endpoint
 	 */
 	void addLine(moordyn::Line* theLine, EndPoints end_point);
 
@@ -351,7 +351,6 @@ class Connection : public LogUser
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
 	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
-	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
 	void getNetForceAndMass(vec6& Fnet_out,
 	                        mat6& M_out,

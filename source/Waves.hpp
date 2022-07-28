@@ -227,19 +227,19 @@ class Waves : public LogUser
 	 * @param y The point y coordinate
 	 * @param z The point z coordinate
 	 * @param t The simulation time
-	 * @param U The output velocity
-	 * @param Ud The output acceleration
-	 * @param zeta The output wave height
-	 * @param PDyn The output dynamic pressure
+	 * @param U_out The output velocity
+	 * @param Ud_out The output acceleration
+	 * @param zeta_out The output wave height
+	 * @param PDyn_out The output dynamic pressure
 	 */
 	void getWaveKin(real x,
 	                real y,
 	                real z,
 	                real t,
-	                vec& U,
-	                vec& Ud,
-	                real& zeta,
-	                real& PDyn);
+	                vec& U_out,
+	                vec& Ud_out,
+	                real& zeta_out,
+	                real& PDyn_out);
 };
 
 // other relevant functions being thrown into this file for now (should move to

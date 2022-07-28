@@ -56,7 +56,7 @@ extern "C"
 	int DECLDIR MoorDyn_GetBodyID(MoorDynBody b, int* id);
 
 	/** @brief Get the connection type
-	 * @param conn The Moordyn connection
+	 * @param b The Moordyn body
 	 * @param t The output type
 	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
 	 * MOORDYN_SUCCESS otherwise
@@ -65,6 +65,7 @@ extern "C"
 	int DECLDIR MoorDyn_GetBodyType(MoorDynBody b, int* t);
 
 	/** @brief Get the body state
+	 * @param b The Moordyn body
 	 * @param r The output position (6dof)
 	 * @param rd The output velocity (6dof)
 	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS

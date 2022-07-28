@@ -98,7 +98,7 @@ class MultiStream
 	void SetFile(const char* file_path);
 
 	/** @brief Enable/disable the file printing
-	 * @param stream The terminal stream
+	 * @param enable true to enable the file printing, false to disable it
 	 */
 	inline void SetFile(bool enable = true) { _fout_enabled = enable; };
 

@@ -46,6 +46,15 @@ namespace moordyn {
 class Waves;
 class Line;
 
+/** @class Rod Rod.hpp
+ * @brief A cylindrical rod
+ *
+ * Rod are cylindrical structures with much more complete dynamics than
+ * moordyn::Body.
+ *
+ * Each end point of the rod can be fixed or pinned to another object, let free
+ * or control it externally
+ */
 class Rod : public LogUser
 {
   public:
@@ -381,7 +390,6 @@ class Rod : public LogUser
 	 * This is used when nodal approaches are selected, i.e.
 	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
 	 * or CURRENTS_DYNAMIC_NODE
-	 * @param nt Number of time steps
 	 * @param dt Time step
 	 * @param zeta The wave elevations
 	 * @param f The fluid fractions

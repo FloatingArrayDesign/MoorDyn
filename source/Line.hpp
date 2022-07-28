@@ -464,7 +464,6 @@ class Line : public LogUser
 	 * This is used when nodal approaches are selected, i.e.
 	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
 	 * or CURRENTS_DYNAMIC_NODE
-	 * @param nt Number of time steps
 	 * @param dt Time step
 	 * @param zeta The wave elevations
 	 * @param f The fluid fractions

@@ -504,7 +504,7 @@ split(const string& str, const char sep);
 /** @brief Split a string in a list of substrings
  *
  * The space is used as separator
- * @param str String to split
+ * @param s String to split
  * @return The list of substrings
  */
 inline vector<string>
@@ -1051,7 +1051,7 @@ RotXYZ(vec rads)
 }
 
 /** @brief Get the spherical angles for a vector
- * @param v The vector
+ * @param q The vector
  * @return The orientation angles, i.e. inclination and heading (in radians)
  * @throws nan_error If the provided vector is too small or null
  */
