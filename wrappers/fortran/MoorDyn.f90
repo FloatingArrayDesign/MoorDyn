@@ -31,6 +31,7 @@ module moordyn
              MoorDyn_GetBodyState, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
              MoorDyn_GetConnectForce, &
+             MoorDyn_GetRodNodePos, &
              MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
@@ -43,6 +44,8 @@ module moordyn
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
             MD_GetConnectVel, MD_GetConnectForce, &
+            MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
+            MD_GetRodNodePos, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
             MD_GetLineNodePos, MD_GetLineNodeTen, MD_GetLineNodeCurv, &
             MD_GetLineFairTen
@@ -230,6 +233,41 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetBodyState
 
+    !                                Rod.h
+    ! ==========================================================================
+
+    integer(c_int) function MD_GetRodID(instance, n) bind(c, name='MoorDyn_GetRodID')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetRodID
+
+    integer(c_int) function MD_GetRodType(instance, n) bind(c, name='MoorDyn_GetRodType')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetRodType
+
+    integer(c_int) function MD_GetRodN(instance, n) bind(c, name='MoorDyn_GetRodN')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetRodN
+
+    integer(c_int) function MD_GetRodNumberNodes(instance, n) bind(c, name='MoorDyn_GetRodNumberNodes')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetRodNumberNodes
+
+    function MoorDyn_GetRodNodePos(instance, n, r) bind(c, name='MoorDyn_GetRodNodePos') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetRodNodePos
+
     !                                Connection.h
     ! ==========================================================================
 
@@ -401,6 +439,17 @@ contains
     real(c_double), intent(in), target :: rd(:)
     MD_GetBodyState = MoorDyn_GetBodyState(instance, c_loc(r), c_loc(rd))
   end function MD_GetBodyState
+
+  !                                Rod.h
+  ! ============================================================================
+
+  integer function MD_GetRodNodePos(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetRodNodePos = MoorDyn_GetRodNodePos(instance, n, c_loc(r))
+  end function MD_GetRodNodePos
 
   !                                Connection.h
   ! ============================================================================

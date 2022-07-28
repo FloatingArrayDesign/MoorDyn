@@ -530,6 +530,19 @@ def GetRodID(instance):
     return cmoordyn.rod_get_id(instance)
 
 
+def GetRodType(instance):
+    """ Get the rod id
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    i: The rod type
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_type(instance)
+
+
 def GetRodN(instance):
     """ Get the rod number of segments
 

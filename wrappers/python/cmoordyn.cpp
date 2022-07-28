@@ -972,7 +972,7 @@ body_get_state(PyObject*, PyObject* args)
 
 /** @brief Wrapper to MoorDyn_GetRodID() function
  * @param args Python passed arguments
- * @return The rod id, or a negative number (error code)
+ * @return The rod id
  */
 static PyObject*
 rod_get_id(PyObject*, PyObject* args)
@@ -987,7 +987,41 @@ rod_get_id(PyObject*, PyObject* args)
 	if (!instance)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetRodID(instance));
+	int n;
+	const int err = MoorDyn_GetRodID(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
+}
+
+/** @brief Wrapper to MoorDyn_GetRodType() function
+ * @param args Python passed arguments
+ * @return The rod type
+ */
+static PyObject*
+rod_get_type(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynRod instance =
+	    (MoorDynRod)PyCapsule_GetPointer(capsule, rod_capsule_name);
+	if (!instance)
+		return NULL;
+
+	int n;
+	const int err = MoorDyn_GetRodType(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetRodN() function
@@ -1451,6 +1485,7 @@ static PyMethodDef moordyn_methods[] = {
 	{ "body_get_type", body_get_type, METH_VARARGS, "Get the body type" },
 	{ "body_get_state", body_get_state, METH_VARARGS, "Get the body state" },
 	{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
+	{ "rod_get_type", rod_get_type, METH_VARARGS, "Get the rod type" },
 	{ "rod_get_n", rod_get_n, METH_VARARGS, "Get the rod number of segments" },
 	{ "rod_get_node_pos",
 	  rod_get_node_pos,

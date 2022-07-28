@@ -1555,17 +1555,19 @@ Rod::drawGL2(void)
 	}
 
 int DECLDIR
-MoorDyn_GetRodID(MoorDynRod rod)
+MoorDyn_GetRodID(MoorDynRod rod, int* id)
 {
 	CHECK_ROD(rod);
-	return ((moordyn::Rod*)rod)->number;
+	*id = ((moordyn::Rod*)rod)->number;
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetRodType(MoorDynRod rod)
+MoorDyn_GetRodType(MoorDynRod rod, int* t)
 {
 	CHECK_ROD(rod);
-	return ((moordyn::Rod*)rod)->type;
+	*t = ((moordyn::Rod*)rod)->type;
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
