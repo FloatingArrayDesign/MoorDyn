@@ -29,6 +29,7 @@ program main
   allocate ( x(0:8) )
   allocate ( xd(0:8) )
   allocate ( f(0:8) )
+  allocate ( r(0:2) )
   xd = 0.0
   f = 0.0
 
@@ -39,13 +40,12 @@ program main
   elseif ( n_conns /= 6 ) then
     print *,"6 connections were expected, not ", n_conns
   end if
-  allocate ( r(0:2) )
   do i_conn = 1, 3
     conn = MD_GetConnection( system, i_conn + 3 )
     if ( .not.c_associated(conn) ) then
       stop 1
     end if
-    err = MD_GetConnectPos( conn, r )    
+    err = MD_GetConnectPos( conn, r )
     if ( err /= MD_SUCESS ) then
       stop 1
     end if
@@ -70,5 +70,10 @@ program main
   if ( err /= MD_SUCESS ) then
     stop 1
   end if
+
+  deallocate ( x )
+  deallocate ( xd )
+  deallocate ( f )
+  deallocate ( r )
 
 end program main
