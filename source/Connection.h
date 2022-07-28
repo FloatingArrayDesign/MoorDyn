@@ -53,7 +53,7 @@ extern "C"
 	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
 	 * MOORDYN_SUCCESS otherwise
 	 */
-	int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn, int *id);
+	int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn, int* id);
 
 	/** @brief Get the connection type
 	 * @param conn The Moordyn connection
