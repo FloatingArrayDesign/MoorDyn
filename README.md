@@ -28,6 +28,7 @@ The version 2 is currently under development:
  [ ] MATLAB mex file
  [ ] Documentation for users
  [X] Documentation for developers
+ [ ] Tests
 
 ## Aknowledgments
 
