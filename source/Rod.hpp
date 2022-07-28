@@ -292,58 +292,12 @@ class Rod : public LogUser
 	           string channels);
 
 	/** @brief Attach a line endpoint to the rod end point A
-	 * @param theLine The line to be attached
-	 * @param TopOfLine 1 for attachments at the last node of the line (top).
-	 * 0 for attachments at the first node of the line (bottom)
-	 */
-	void DEPRECATED addLineToRodEndA(Line* theLine, int TopOfLine);
-
-	/** @brief Attach a line endpoint to the rod end point B
-	 * @param theLine The line to be attached
-	 * @param TopOfLine 1 for attachments at the last node of the line (top).
-	 * 0 for attachments at the first node of the line (bottom)
-	 */
-	void DEPRECATED addLineToRodEndB(Line* theLine, int TopOfLine);
-
-	/** @brief Attach a line endpoint to the rod end point A
 	 * @param line The line to be attached
 	 * @param line_end_point The line endpoint
 	 * @param rod_end_point The rod endpoint
 	 * @throws moordyn::invalid_value_error If the end points are not valid
 	 */
 	void addLine(Line* line, EndPoints line_end_point, EndPoints rod_end_point);
-
-	/** @brief Dettach a line endpoint from the end point A
-	 * @param lineID The line identifier
-	 * @param TopOfLine Output flag to indicate whether the line was connected
-	 * at the top end or at the bottom end. 1 for attachments at the last node
-	 * of the line (top). 0 for attachments at the first node of the line
-	 * (bottom)
-	 * @param rEnd Output position of the node
-	 * @param rdEnd Output velocity of the node
-	 * @throws moordyn::invalid_value_error If there is no an attached line
-	 * with the provided @p lineID
-	 */
-	void DEPRECATED removeLineFromRodEndA(int lineID,
-	                                      int* topOfLine,
-	                                      double rEnd[],
-	                                      double rdEnd[]);
-
-	/** @brief Dettach a line endpoint from the end point B
-	 * @param lineID The line identifier
-	 * @param TopOfLine Output flag to indicate whether the line was connected
-	 * at the top end or at the bottom end. 1 for attachments at the last node
-	 * of the line (top). 0 for attachments at the first node of the line
-	 * (bottom)
-	 * @param rEnd Output position of the node
-	 * @param rdEnd Output velocity of the node
-	 * @throws moordyn::invalid_value_error If there is no an attached line
-	 * with the provided @p lineID
-	 */
-	void DEPRECATED removeLineFromRodEndB(int lineID,
-	                                      int* topOfLine,
-	                                      double rEnd[],
-	                                      double rdEnd[]);
 
 	/** @brief Dettach a line
 	 * @param end_point The rod end point where the line is attached
@@ -363,15 +317,6 @@ class Rod : public LogUser
 		env = env_in;
 		waves = waves_in;
 	}
-
-	/** @brief Initialize the rod state
-	 * @param X The output state variables, i.e. the velocity [x,y,z] and
-	 * position [x,y,z]
-	 * @note moordyn::Rod::r6 and moordyn::Rod::v6 must already be set
-	 * @note ground- or body-pinned rods have already had
-	 * moordyn::Rod::setKinematics() called
-	 */
-	void DEPRECATED initializeRod(double* X);
 
 	/** @brief Initialize the rod state
 	 * @return The position and direction (first) and the linear and angular
@@ -438,27 +383,6 @@ class Rod : public LogUser
 	 * or CURRENTS_DYNAMIC_NODE
 	 * @param nt Number of time steps
 	 * @param dt Time step
-	 * @param zeta_in The wave elevations
-	 * @param f_in The fluid fractions
-	 * @param u_in The flow velocity
-	 * @param ud_in The flow acceleration
-	 *
-	 * @note Working in progress
-	 */
-	void DEPRECATED storeWaterKin(unsigned int nt,
-	                              real dt,
-	                              const real** zeta_in,
-	                              const real** f_in,
-	                              const real*** u_in,
-	                              const real*** ud_in);
-
-	/** @brief store wave/current kinematics time series for this line
-	 *
-	 * This is used when nodal approaches are selected, i.e.
-	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
-	 * or CURRENTS_DYNAMIC_NODE
-	 * @param nt Number of time steps
-	 * @param dt Time step
 	 * @param zeta The wave elevations
 	 * @param f The fluid fractions
 	 * @param u The flow velocity
@@ -503,25 +427,6 @@ class Rod : public LogUser
 	 * @param time Simulation time
 	 */
 	inline void setTime(real time) { t = time; }
-
-	/** @brief Set the rod state
-	 *
-	 * for a free Rod, there are 12 states:
-	 * [x, y, z velocity of end A, then rate of change of u/v/w coordinates of
-	 * unit vector pointing toward end B, then x, y, z coordinate of end A,
-	 * u/v/w coordinates of unit vector pointing toward end B]
-	 *
-	 * for a pinned Rod, there are 6 states (rotational only):
-	 * [rate of change of u/v/w coordinates of unit vector pointing toward end
-	 * B, then u/v/w coordinates of unit vector pointing toward end B]
-	 *
-	 * @param X State vector, with 12 components for free rods and 6 for pinned
-	 * ones
-	 * @param time Simulation time
-	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
-	 * PINNED
-	 */
-	void DEPRECATED setState(double* X, const double time);
 
 	/** @brief Set the rod state
 	 *
@@ -584,12 +489,6 @@ class Rod : public LogUser
 	 * This also determines the orientation of zero-length rods.
 	 */
 	void setDependentStates();
-
-	/** @brief calculate the forces and state derivatives of the rod
-	 * @param Xd The output rod states
-	 * @throws nan_error If nan values are detected in any node position
-	 */
-	void DEPRECATED getStateDeriv(double* Xd);
 
 	/** @brief calculate the forces and state derivatives of the rod
 	 * @return The linear and angular velocity (first), and the linear and

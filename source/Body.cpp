@@ -150,21 +150,6 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, real time)
 		attached->initialize();
 }
 
-void
-Body::initializeBody(double X[12])
-{
-	vec6 pos, vel;
-	try {
-		std::tie(pos, vel) = initialize();
-	} catch (...) {
-		throw;
-	}
-	if (X) {
-		vec62array(vel, X);
-		vec62array(pos, X + 6);
-	}
-}
-
 std::pair<vec6, vec6>
 Body::initialize()
 {
@@ -375,16 +360,6 @@ Body::updateFairlead(real time)
 }
 
 void
-Body::setState(const double* X, real time)
-{
-	vec6 pos, vel;
-	moordyn::array2vec6(X + 6, pos);
-	moordyn::array2vec6(X, vel);
-
-	setState(pos, vel, time);
-}
-
-void
 Body::setState(vec6 pos, vec6 vel, real time)
 {
 	// store current time
@@ -399,15 +374,6 @@ Body::setState(vec6 pos, vec6 vel, real time)
 
 	// set positions of any dependent connections and rods
 	setDependentStates();
-}
-
-void
-Body::getStateDeriv(double* Xd)
-{
-	vec6 v, a;
-	std::tie(v, a) = getStateDeriv();
-	moordyn::vec62array(v, Xd + 6);
-	moordyn::vec62array(a, Xd);
 }
 
 std::pair<vec6, vec6>

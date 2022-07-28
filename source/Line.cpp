@@ -217,24 +217,6 @@ Line::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
 	waves = waves_in;
 }
 
-void
-Line::initializeLine(double* X)
-{
-	std::vector<vec> pos, vel;
-	try {
-		std::tie(pos, vel) = initialize();
-	} catch (...) {
-		throw;
-	}
-
-	// also assign the resulting internal node positions to the integrator
-	// initial state vector! (velocities leave at 0)
-	for (unsigned int i = 1; i < N; i++) {
-		moordyn::vec2array(pos[i - 1], &(X[3 * (N - 1 + i - 1)]));
-		moordyn::vec2array(vel[i - 1], &(X[3 * (i - 1)]));
-	}
-}
-
 std::pair<std::vector<vec>, std::vector<vec>>
 Line::initialize()
 {
@@ -574,40 +556,6 @@ Line::GetLineOutput(OutChanProps outChan)
 }
 
 void
-Line::storeWaterKin(unsigned int nt,
-                    real dt,
-                    const real** zeta_in,
-                    const real** f_in,
-                    const real*** u_in,
-                    const real*** ud_in)
-{
-	LOGDBG << "Setting up wave variables for Line " << number
-	       << "!  ---------------------" << endl
-	       << "   nt=" << nt << ", and WaveDT=" << dt
-	       << ", env->WtrDpth=" << env->WtrDpth << endl;
-
-	ntWater = nt;
-	dtWater = dt;
-
-	// resize the new time series vectors
-	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
-	FTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
-	UTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
-	UdTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
-
-	for (unsigned int i = 0; i < N + 1; i++) {
-		for (unsigned int j = 0; j < ntWater; j++) {
-			zetaTS[i][j] = zeta_in[i][j];
-			FTS[i][j] = f_in[i][j];
-			moordyn::array2vec(u_in[i][j], UTS[i][j]);
-			moordyn::array2vec(ud_in[i][j], UdTS[i][j]);
-		}
-	}
-
-	return;
-};
-
-void
 Line::storeWaterKin(real dt,
                     std::vector<std::vector<moordyn::real>> zeta_in,
                     std::vector<std::vector<moordyn::real>> f_in,
@@ -648,19 +596,6 @@ Line::storeWaterKin(real dt,
 };
 
 void
-Line::setState(const double* X, const double time)
-{
-	// store current time
-	setTime(time);
-
-	// set interior node positions and velocities based on state vector
-	for (unsigned int i = 1; i < N; i++) {
-		moordyn::array2vec(&(X[3 * (N - 1 + i - 1)]), r[i]);
-		moordyn::array2vec(&(X[3 * (i - 1)]), rd[i]);
-	}
-}
-
-void
 Line::setState(std::vector<vec> pos, std::vector<vec> vel, const double time)
 {
 	if ((pos.size() != N - 1) || (vel.size() != N - 1)) {
@@ -675,23 +610,6 @@ Line::setState(std::vector<vec> pos, std::vector<vec> vel, const double time)
 		r[i] = pos[i - 1];
 		rd[i] = vel[i - 1];
 	}
-}
-
-void
-Line::setEndState(double r_in[3], double rd_in[3], int topOfLine)
-{
-	int i;
-
-	if (topOfLine == 1) {
-		i = N;             // fairlead case
-		endTypeB = PINNED; // indicate pinned
-	} else {
-		i = 0;             // anchor case
-		endTypeA = PINNED; // indicate pinned
-	}
-
-	moordyn::array2vec(r_in, r[i]);
-	moordyn::array2vec(rd_in, rd[i]);
 }
 
 void
@@ -712,28 +630,6 @@ Line::setEndKinematics(vec pos, vec vel, EndPoints end_point)
 			LOGERR << "Invalid end point qualifier: " << end_point << endl;
 			throw moordyn::invalid_value_error("Invalid end point");
 	}
-}
-
-void
-Line::setEndOrientation(double* qin, int topOfLine, int rodEndB)
-{ // Note: qin is the rod's position/orientation vector, r6, passed at index 3
-	// rodEndB=0 means the line is attached to Rod end A, =1 means attached to
-	// Rod end B (implication for unit vector sign)
-
-	if (topOfLine == 1) {
-		endTypeB = CANTILEVERED; // indicate attached to Rod (at every time
-		                         // step, just in case line get detached)
-		moordyn::array2vec(qin, q[N]); // -----line----->[A==ROD==>B]
-		if (rodEndB == 1)
-			q[N] *= -1; // -----line----->[B<==ROD==A]
-	} else {
-		endTypeA = CANTILEVERED; // indicate attached to Rod (at every time
-		                         // step, just in case line get detached)
-		moordyn::array2vec(qin, q[0]); // [A==ROD==>B]-----line----->
-		if (rodEndB != 1)
-			q[0] *= -1; // [B<==ROD==A]-----line----->
-	}
-	return;
 }
 
 void
@@ -760,34 +656,6 @@ Line::setEndOrientation(vec qin, EndPoints end_point, EndPoints rod_end_point)
 			LOGERR << "Invalid end point qualifier: " << end_point << endl;
 			throw moordyn::invalid_value_error("Invalid end point");
 	}
-}
-
-void
-Line::getEndSegmentInfo(double q_EI_dl[3], int topOfLine, int rodEndB)
-{
-	double dlEnd;
-	double EIend;
-	vec qEnd;
-
-	if (topOfLine == 1) {
-		dlEnd = unitvector(
-		    qEnd, r[N - 1], r[N]); // unit vector of last line segment
-		if (rodEndB == 0)
-			EIend = EI; // -----line----->[A==ROD==>B]
-		else
-			EIend = -EI; // -----line----->[B==ROD==>A]
-	} else {
-		dlEnd =
-		    unitvector(qEnd, r[0], r[1]); // unit vector of first line segment
-		if (rodEndB == 0)
-			EIend = -EI; // <----line-----[A==ROD==>B]
-		else
-			EIend = EI; // <----line-----[B==ROD==>A]
-	}
-
-	moordyn::vec2array(qEnd * EIend / dlEnd, q_EI_dl);
-
-	return;
 }
 
 vec
@@ -829,18 +697,6 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 	}
 
 	return qEnd * EIEnd / dlEnd;
-}
-
-void
-Line::getStateDeriv(double* Xd, const double PARAM_UNUSED dt)
-{
-	std::vector<vec> u, a;
-	std::tie(u, a) = getStateDeriv();
-
-	for (unsigned int i = 1; i < N; i++) {
-		moordyn::vec2array(a[i - 1], &Xd[3 * (i - 1)]);
-		moordyn::vec2array(u[i - 1], &Xd[3 * (N - 1 + i - 1)]);
-	}
 }
 
 std::pair<std::vector<vec>, std::vector<vec>>

@@ -779,27 +779,6 @@ Waves::setup(EnvCond* env, const char* folder)
 	}
 }
 
-// NOTE: This is just a wrapper to the new C++ version
-void
-Waves::getWaveKin(double x,
-                  double y,
-                  double z,
-                  double t,
-                  double U[3],
-                  double Ud[3],
-                  double* zeta_out,
-                  double* PDyn_out)
-{
-	vec U_vec, Ud_vec;
-	real zeta_vec, PDyn_vec;
-
-	getWaveKin(x, y, z, t, U_vec, Ud_vec, zeta_vec, PDyn_vec);
-	moordyn::vec2array(U_vec, U);
-	moordyn::vec2array(Ud_vec, Ud);
-	*zeta_out = zeta_vec;
-	*PDyn_out = PDyn_vec;
-}
-
 void
 Waves::getWaveKin(real x,
                   real y,

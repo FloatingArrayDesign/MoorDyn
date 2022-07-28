@@ -916,23 +916,6 @@ scalevector(const vec& u, T newlength, vec& y)
 	y = scaler * u;
 }
 
-/** @brief Compute a vector with the same direction but different length
- * @param u The input vector
- * @param newlength The new length of the output vector
- * @param y The output vector
- * @note If the input vector has null length, the output vector will as well,
- * no matter @p newlength is provided
- */
-template<typename T>
-inline void DEPRECATED
-scalevector(const T* u, T newlength, T* y)
-{
-	vec v1, v2;
-	array2vec(u, v1);
-	scalevector(v1, newlength, v2);
-	vec2array(v2, y);
-}
-
 /** @brief Produce alternator matrix
  *
  * See "anti-symmetric tensor components" from Sadeghi and Incecik
@@ -1327,18 +1310,3 @@ const int FZ = 13;
 //	  char FY  [10]    = "(N)      ";
 //	  char FZ  [10]    = "(N)      ";
 // };
-
-double* DEPRECATED
-make1Darray(int n1);
-double** DEPRECATED
-make2Darray(int n1, int n2);
-double*** DEPRECATED
-make3Darray(int n1, int n2, int n3);
-double**** DEPRECATED
-make4Darray(int n1, int n2, int n3, int n4);
-void DEPRECATED
-free2Darray(double** theArray, int n1);
-void DEPRECATED
-free3Darray(double*** theArray, int n1, int n2);
-void DEPRECATED
-free4Darray(double**** theArray, int n1, int n2, int n3);

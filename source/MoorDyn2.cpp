@@ -222,13 +222,16 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 		RodList[l]->initiateStep(r, rd, 0.0);
 		RodList[l]->updateFairlead(0.0);
 		// call this just to set up the output file header
-		RodList[l]->initializeRod(NULL);
+		RodList[l]->initialize();
 	}
 
 	for (auto l : CpldConIs) {
 		LOGMSG << "Initializing coupled Connection " << l << " in " << x[ix]
 		       << ", " << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
-		ConnectionList[l]->initiateStep(x + ix, xd + ix, 0.0);
+		vec r, rd;
+		moordyn::array2vec(x + ix, r);
+		moordyn::array2vec(xd + ix, rd);
+		ConnectionList[l]->initiateStep(r, rd, 0.0);
 
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
@@ -241,9 +244,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 			       << err_msg << endl;
 			return err;
 		}
-		ConnectionList[l]->initializeConnect(
-		    NULL); // call this just to set WaterKin (may also set up output
-		           // file in future)
+		// call this just to set WaterKin (may also set up output file in
+		// future)
+		ConnectionList[l]->initialize();
 		ix += 3;
 	}
 
@@ -474,7 +477,10 @@ moordyn::MoorDyn::Step(const double* x,
 		RodList[l]->initiateStep(r, rd, t);
 	}
 	for (auto l : CpldConIs) {
-		ConnectionList[l]->initiateStep(x + ix, xd + ix, t);
+		vec r, rd;
+		moordyn::array2vec(x + ix, r);
+		moordyn::array2vec(xd + ix, rd);
+		ConnectionList[l]->initiateStep(r, rd, t);
 		ix += 3;
 	}
 
@@ -1333,9 +1339,11 @@ moordyn::MoorDyn::ReadInFile()
 							return MOORDYN_INVALID_INPUT;
 						}
 						if (!strcmp(let2, "A"))
-							RodList[id - 1]->addLineToRodEndA(obj, I);
+							RodList[id - 1]->addLine(
+							    obj, end_point, ENDPOINT_A);
 						else if (!strcmp(let2, "B"))
-							RodList[id - 1]->addLineToRodEndB(obj, I);
+							RodList[id - 1]->addLine(
+							    obj, end_point, ENDPOINT_B);
 						else {
 							LOGERR << "Error in " << _filepath << ":" << i + 1
 							       << "..." << endl

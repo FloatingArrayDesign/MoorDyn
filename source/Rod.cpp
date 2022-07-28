@@ -172,24 +172,6 @@ Rod::setup(int number_in,
 };
 
 void
-Rod::addLineToRodEndA(Line* theLine, int TopOfLine)
-{
-	LOGDBG << "L" << theLine->number << "->R" << number << "A ";
-
-	attachment a = { theLine, TopOfLine ? ENDPOINT_B : ENDPOINT_A };
-	attachedA.push_back(a);
-};
-
-void
-Rod::addLineToRodEndB(moordyn::Line* theLine, int TopOfLine)
-{
-	LOGDBG << "L" << theLine->number << "->R" << number << "B ";
-
-	attachment a = { theLine, TopOfLine ? ENDPOINT_B : ENDPOINT_A };
-	attachedB.push_back(a);
-};
-
-void
 Rod::addLine(Line* l, EndPoints l_end_point, EndPoints end_point)
 {
 	LOGDBG << "L" << l->number << end_point_name(l_end_point) << "->R" << number
@@ -207,64 +189,6 @@ Rod::addLine(Line* l, EndPoints l_end_point, EndPoints end_point)
 			throw moordyn::invalid_value_error("Invalid end point");
 	}
 }
-
-void
-Rod::removeLineFromRodEndA(int lineID,
-                           int* topOfLine,
-                           double rEnd[],
-                           double rdEnd[])
-{
-	// look through attached lines
-	for (auto it = std::begin(attachedA); it != std::end(attachedA); ++it) {
-		if ((*it).line->number != lineID)
-			continue;
-		// This is the line's entry in the attachment list
-		*topOfLine = (int)((*it).end_point);
-		attachedA.erase(it);
-
-		// also pass back the kinematics at the end
-		moordyn::vec2array(r[0], rEnd);
-		moordyn::vec2array(rd[0], rdEnd);
-
-		LOGMSG << "Detached line " << lineID << " from Rod " << number << "A"
-		       << endl;
-		return;
-	}
-
-	// line not found
-	LOGERR << "Error: failed to find the line " << lineID
-	       << " to remove from rod " << number << "A" << endl;
-	throw moordyn::invalid_value_error("Invalid line");
-};
-
-void
-Rod::removeLineFromRodEndB(int lineID,
-                           int* topOfLine,
-                           double rEnd[],
-                           double rdEnd[])
-{
-	// look through attached lines
-	for (auto it = std::begin(attachedB); it != std::end(attachedB); ++it) {
-		if ((*it).line->number != lineID)
-			continue;
-		// This is the line's entry in the attachment list
-		*topOfLine = (int)((*it).end_point);
-		attachedB.erase(it);
-
-		// also pass back the kinematics at the end
-		moordyn::vec2array(r[N], rEnd);
-		moordyn::vec2array(rd[N], rdEnd);
-
-		LOGMSG << "Detached line " << lineID << " from Rod " << number << "B"
-		       << endl;
-		return;
-	}
-
-	// line not found
-	LOGERR << "Error: failed to find the line " << lineID
-	       << " to remove from rod " << number << "B" << endl;
-	throw moordyn::invalid_value_error("Invalid line");
-};
 
 EndPoints
 Rod::removeLine(EndPoints end_point, Line* line)
@@ -291,22 +215,6 @@ Rod::removeLine(EndPoints end_point, Line* line)
 	       << endl;
 	throw moordyn::invalid_value_error("Invalid line");
 };
-
-void
-Rod::initializeRod(double* X)
-{
-	vec6 pos, vel;
-	std::tie(pos, vel) = initialize();
-	if (X) {
-		if (type == FREE) {
-			moordyn::vec62array(vel, X);
-			moordyn::vec62array(pos, X + 6);
-		} else if ((type == PINNED) || (type == CPLDPIN)) {
-			moordyn::vec2array(vel(Eigen::seqN(3, 3)), X);
-			moordyn::vec2array(pos(Eigen::seqN(3, 3)), X + 3);
-		}
-	}
-}
 
 std::pair<vec6, vec6>
 Rod::initialize()
@@ -466,40 +374,6 @@ Rod::GetRodOutput(OutChanProps outChan)
 }
 
 void
-Rod::storeWaterKin(unsigned int nt,
-                   real dt,
-                   const real** zeta_in,
-                   const real** f_in,
-                   const real*** u_in,
-                   const real*** ud_in)
-{
-	LOGDBG << "Setting up wave variables for Rod " << number
-	       << "!  ---------------------" << endl
-	       << "   nt=" << nt << ", and WaveDT=" << dt
-	       << ", env->WtrDpth=" << env->WtrDpth << endl;
-
-	ntWater = nt;
-	dtWater = dt;
-
-	// resize the new time series vectors
-	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
-	FTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
-	UTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
-	UdTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
-
-	for (unsigned int i = 0; i < N + 1; i++) {
-		for (unsigned int j = 0; j < ntWater; j++) {
-			zetaTS[i][j] = zeta_in[i][j];
-			FTS[i][j] = f_in[i][j];
-			moordyn::array2vec(u_in[i][j], UTS[i][j]);
-			moordyn::array2vec(ud_in[i][j], UdTS[i][j]);
-		}
-	}
-
-	return;
-};
-
-void
 Rod::storeWaterKin(real dt,
                    std::vector<std::vector<moordyn::real>> zeta_in,
                    std::vector<std::vector<moordyn::real>> f_in,
@@ -538,32 +412,6 @@ Rod::storeWaterKin(real dt,
 		ud_in[i], UdTS[i];
 	}
 };
-
-void
-Rod::setState(double* X, const double time)
-{
-	vec6 pos, vel;
-	if (type == FREE) {
-		// enforce direction vector to be a unit vector
-		scalevector(X + 9, 1.0, X + 9);
-		// end A coordinates & Rod direction unit vector
-		moordyn::array2vec6(X + 6, pos);
-		// end A velocityes & rotational velocities about unrotated axes
-		moordyn::array2vec6(X, vel);
-	} else if ((type == CPLDPIN) || (type == PINNED)) {
-		// enforce direction vector to be a unit vector
-		scalevector(X + 3, 1.0, X + 3);
-		vec q_X;
-		moordyn::array2vec(X + 3, q_X);
-		pos(Eigen::seqN(3, 3)) = vec::Zero();
-		pos(Eigen::seqN(3, 3)) = q_X;
-		// (rotational velocities about unrotated axes)
-		vec w_X;
-		moordyn::array2vec(X, w_X);
-		vel(Eigen::seqN(3, 3)) = vec::Zero();
-		vel(Eigen::seqN(3, 3)) = w_X;
-	}
-}
 
 void
 Rod::setState(vec6 pos, vec6 vel, double time)
@@ -740,20 +588,6 @@ Rod::setDependentStates()
 		attached.line->setEndOrientation(q, attached.end_point, ENDPOINT_A);
 	for (auto attached : attachedB)
 		attached.line->setEndOrientation(q, attached.end_point, ENDPOINT_B);
-}
-
-void
-Rod::getStateDeriv(double* Xd)
-{
-	vec6 vel, acc;
-	std::tie(vel, acc) = getStateDeriv();
-	if (type == FREE) {
-		moordyn::vec62array(vel, Xd + 6);
-		moordyn::vec62array(acc, Xd);
-	} else {
-		moordyn::vec2array(vel(Eigen::seqN(3, 3)), Xd + 6);
-		moordyn::vec2array(acc(Eigen::seqN(3, 3)), Xd);
-	}
 }
 
 std::pair<vec6, vec6>

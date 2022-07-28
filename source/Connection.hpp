@@ -241,13 +241,6 @@ class Connection : public LogUser
 	EndPoints removeLine(Line* line);
 
 	/** @brief Initialize the FREE connection state
-	 * @param X The output state variables, i.e. the velocity [x,y,z] and
-	 * position [x,y,z]
-	 * @throws moordyn::invalid_value_error If it is not a FREE connection
-	 */
-	void DEPRECATED initializeConnect(double X[6]);
-
-	/** @brief Initialize the FREE connection state
 	 * @return The position (first) and the velocity (second)
 	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
@@ -309,18 +302,6 @@ class Connection : public LogUser
 	 *
 	 * Called at the beginning of each coupling step to update the boundary
 	 * conditions (fairlead kinematics) for the proceeding line time steps
-	 * @param rFairIn Fairlead position, used only if type = COUPLED
-	 * @param rdFairIn Fairlead velocity, used only if type = COUPLED
-	 * @param time Simulation time
-	 */
-	void DEPRECATED initiateStep(const double rFairIn[3],
-	                             const double rdFairIn[3],
-	                             real time);
-
-	/** @brief Initialize the time step integration
-	 *
-	 * Called at the beginning of each coupling step to update the boundary
-	 * conditions (fairlead kinematics) for the proceeding line time steps
 	 * @param rFairIn Fairlead position
 	 * @param rdFairIn Fairlead velocity
 	 * @param time Simulation time
@@ -345,29 +326,7 @@ class Connection : public LogUser
 	 * @param rd_in Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
 	 */
-	void DEPRECATED setKinematics(double* r_in, double* rd_in);
-
-	/** @brief Take the kinematics from the fairlead information
-	 *
-	 * sets Connection states and ends of attached lines ONLY if this Connection
-	 * is attached to a body, i.e. type = FIXED (otherwise shouldn't be called)
-	 * @param r_in Position
-	 * @param rd_in Velocity
-	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
-	 */
 	void setKinematics(vec r_in, vec rd_in);
-
-	/** @brief Set the state variables
-	 *
-	 * sets Connection states and ends of attached lines ONLY if this Connection
-	 * is free, i.e. type = FREE (otherwise shouldn't be called)
-	 * @param X State variables, containing the velocity [x,y,z] and position
-	 * [x,y,z]
-	 * @param time Simulation time
-	 * @return MOORDYN_SUCCESS upon success, MOORDYN_INVALID_VALUE if it is not
-	 * a FREE connection
-	 */
-	moordyn::error_id DEPRECATED setState(const double X[6], const double time);
 
 	/** @brief Set the state variables
 	 *
@@ -381,30 +340,11 @@ class Connection : public LogUser
 	void setState(vec pos, vec vel, real time);
 
 	/** @brief Calculate the forces and state derivatives of the connection
-	 * @param Xd Output state variables derivatives, i.e. the acceleration
-	 * [x,y,z] and the velocity [x,y,z]
-	 * @return MOORDYN_SUCCESS upon success, MOORDYN_INVALID_VALUE if it is not
-	 * a FREE connection
-	 */
-	moordyn::error_id DEPRECATED getStateDeriv(double Xd[6]);
-
-	/** @brief Calculate the forces and state derivatives of the connection
 	 * @param return The states derivatives, i.e. the velocity (first) and the
 	 * acceleration (second)
 	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
 	std::pair<vec, vec> getStateDeriv();
-
-	/** @brief Calculate the force and mass contributions of the connect on the
-	 * parent body
-	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
-	 * @param Fnet_out Output Force about body ref point
-	 * @param M_out Output Mass matrix about body ref point
-	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
-	 */
-	moordyn::error_id DEPRECATED getNetForceAndMass(const double rBody[3],
-	                                                double Fnet_out[6],
-	                                                double M_out[6][6]);
 
 	/** @brief Calculate the force and mass contributions of the connect on the
 	 * parent body

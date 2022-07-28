@@ -321,87 +321,6 @@ GetCurvature(moordyn::real length, const vec& q1, const vec& q2)
 
 } // ::moordyn
 
-// 2D,3D,4D double array creation and destruction functions (these could easily
-// be nested) <<< should  inittialize all with zeros!
-double**
-make2Darray(int n1, int n2)
-{
-	double** theArray;
-	theArray = (double**)malloc(n1 * sizeof(double*));
-	for (int i1 = 0; i1 < n1; i1++)
-		theArray[i1] = (double*)malloc(n2 * sizeof(double));
-	return theArray;
-}
-double***
-make3Darray(int n1, int n2, int n3)
-{
-	double*** theArray;
-	theArray = (double***)malloc(n1 * sizeof(double**));
-	for (int i1 = 0; i1 < n1; i1++) {
-		theArray[i1] = (double**)malloc(n2 * sizeof(double*));
-		for (int i2 = 0; i2 < n2; i2++)
-			theArray[i1][i2] = (double*)malloc(n3 * sizeof(double));
-	}
-	return theArray;
-}
-double****
-make4Darray(int n1, int n2, int n3, int n4)
-{
-	double**** theArray;
-	theArray = (double****)malloc(n1 * sizeof(double***));
-	for (int i1 = 0; i1 < n1; i1++) {
-		theArray[i1] = (double***)malloc(n2 * sizeof(double**));
-		for (int i2 = 0; i2 < n2; i2++) {
-			theArray[i1][i2] = (double**)malloc(n3 * sizeof(double*));
-			for (int i3 = 0; i3 < n3; i3++)
-				theArray[i1][i2][i3] = (double*)malloc(n4 * sizeof(double));
-		}
-	}
-	return theArray;
-}
-double*
-make1Darray(
-    int n1) // because I'm forgetful and this is easier than remembering malloc
-{
-	double* theArray = (double*)malloc(n1 * sizeof(double));
-	return theArray;
-}
-
-void
-free2Darray(double** theArray, int n1)
-{
-	if (!theArray)
-		return;
-	for (int i1 = 0; i1 < n1; i1++)
-		free(theArray[i1]);
-	free(theArray);
-}
-void
-free3Darray(double*** theArray, int n1, int n2)
-{
-	for (int i1 = 0; i1 < n1; i1++) {
-		for (int i2 = 0; i2 < n2; i2++) {
-			free(theArray[i1][i2]);
-		}
-		free(theArray[i1]);
-	}
-	free(theArray);
-}
-void
-free4Darray(double**** theArray, int n1, int n2, int n3)
-{
-	for (int i1 = 0; i1 < n1; i1++) {
-		for (int i2 = 0; i2 < n2; i2++) {
-			for (int i3 = 0; i3 < n3; i3++) {
-				free(theArray[i1][i2][i3]);
-			}
-			free(theArray[i1][i2]);
-		}
-		free(theArray[i1]);
-	}
-	free(theArray);
-}
-
 /*
 
 References
@@ -409,6 +328,5 @@ References
 [1] K. Sadeghi and A. Incecik, “Tensor Properties of Added-mass and Damping
 Coefficients,” Journal of Engineering Mathematics, vol. 52, no. 4, pp. 379–387,
 Aug. 2005.
-
 
 */

@@ -115,17 +115,6 @@ Connection::removeLine(Line* line)
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
-void
-Connection::initializeConnect(double X[6])
-{
-	vec pos, vel;
-	std::tie(pos, vel) = initialize();
-	if (X) {
-		vec2array(vel, X);
-		vec2array(pos, X + 3);
-	}
-}
-
 std::pair<vec, vec>
 Connection::initialize()
 {
@@ -222,21 +211,6 @@ Connection::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
 }
 
 void
-Connection::initiateStep(const double rFairIn[3],
-                         const double rdFairIn[3],
-                         real time)
-{
-	vec pos, vel;
-	moordyn::array2vec(rFairIn, pos);
-	moordyn::array2vec(rdFairIn, vel);
-	try {
-		initiateStep(pos, vel, time);
-	} catch (moordyn::invalid_value_error& e) {
-		throw;
-	}
-}
-
-void
 Connection::initiateStep(vec rFairIn, vec rdFairIn, real time)
 {
 	t0 = time; // set start time for BC functions
@@ -277,24 +251,6 @@ Connection::updateFairlead(real time)
 }
 
 void
-Connection::setKinematics(double* r_in, double* rd_in)
-{
-	if (type != FIXED) {
-		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
-		       << endl;
-		throw moordyn::invalid_value_error("Invalid connection type");
-	}
-
-	// set position and velocity
-	moordyn::array2vec(r_in, r);
-	moordyn::array2vec(rd_in, rd);
-
-	// pass latest kinematics to any attached lines
-	for (auto a : attached)
-		a.line->setEndKinematics(r, rd, a.end_point);
-}
-
-void
 Connection::setKinematics(vec r_in, vec rd_in)
 {
 	if (type != FIXED) {
@@ -310,21 +266,6 @@ Connection::setKinematics(vec r_in, vec rd_in)
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
 		a.line->setEndKinematics(r, rd, a.end_point);
-}
-
-moordyn::error_id
-Connection::setState(const double X[6], const double time)
-{
-	vec pos, vel;
-	moordyn::array2vec(X + 3, pos);
-	moordyn::array2vec(X, vel);
-	moordyn::error_id err = MOORDYN_SUCCESS;
-	string err_msg;
-	try {
-		setState(pos, vel, time);
-	}
-	MOORDYN_CATCHER(err, err_msg);
-	return err;
 }
 
 void
@@ -348,25 +289,6 @@ Connection::setState(vec pos, vec vel, real time)
 	// pass latest kinematics to any attached lines
 	for (auto a : attached)
 		a.line->setEndKinematics(r, rd, a.end_point);
-}
-
-// calculate the forces and state derivatives of the connectoin
-moordyn::error_id
-Connection::getStateDeriv(double Xd[6])
-{
-	vec v, a;
-	moordyn::error_id err = MOORDYN_SUCCESS;
-	string err_msg;
-	try {
-		std::tie(v, a) = getStateDeriv();
-	}
-	MOORDYN_CATCHER(err, err_msg);
-	if (err != MOORDYN_SUCCESS)
-		return err;
-
-	moordyn::vec2array(v, Xd + 3);
-	moordyn::vec2array(a, Xd);
-	return MOORDYN_SUCCESS;
 }
 
 std::pair<vec, vec>
@@ -396,21 +318,6 @@ Connection::getStateDeriv()
 	// update states
 	return std::make_pair(rd, acc);
 };
-
-moordyn::error_id
-Connection::getNetForceAndMass(const double rBody[3],
-                               double Fnet_out[6],
-                               double M_out[6][6])
-{
-	vec pos;
-	array2vec(rBody, pos);
-	vec6 fnet;
-	mat6 mass;
-	getNetForceAndMass(fnet, mass, pos);
-	vec62array(fnet, Fnet_out);
-	mat62array(mass, M_out);
-	return MOORDYN_SUCCESS;
-}
 
 void
 Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)

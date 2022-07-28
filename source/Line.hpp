@@ -300,15 +300,6 @@ class Line : public LogUser
 	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
-	 * @param X The output states vector, with 3*(n-1) velocity components and
-	 * 3*(n-1) position components. It cannot be NULL
-	 * @throws moordyn::output_file_error If an outfile has been provided, but
-	 * it cannot be written
-	 * @throws invalid_value_error If there is no enough water depth
-	 */
-	void DEPRECATED initializeLine(double* X);
-
-	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes
 	 * (first) and the velocities of the internal nodes (second)
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
@@ -388,22 +379,6 @@ class Line : public LogUser
 	 * @return The positions array
 	 */
 	inline std::vector<vec> getNodeCoordinates() const { return r; }
-
-	/** @brief Set the water flow velocity and acceleration at the line nodes
-	 *
-	 * used just when these are provided externally, i.e. WaveKin=1
-	 * @param U_in Velocities, should have (moordyn::Line::N + 1) * 3
-	 *             components
-	 * @param Ud_in Accelerations, should have (moordyn::Line::N + 1) * 3
-	 *              components
-	 */
-	inline void DEPRECATED setNodeWaveKin(double U_in[], double Ud_in[])
-	{
-		for (unsigned int i = 0; i <= N; i++) {
-			moordyn::array2vec(&(U_in[3 * i]), U[i]);
-			moordyn::array2vec(&(Ud_in[3 * i]), Ud[i]);
-		}
-	}
 
 	/** @brief Set the water flow velocity and acceleration at the line nodes
 	 *
@@ -491,27 +466,6 @@ class Line : public LogUser
 	 * or CURRENTS_DYNAMIC_NODE
 	 * @param nt Number of time steps
 	 * @param dt Time step
-	 * @param zeta_in The wave elevations
-	 * @param f_in The fluid fractions
-	 * @param u_in The flow velocity
-	 * @param ud_in The flow acceleration
-	 *
-	 * @note Working in progress
-	 */
-	void DEPRECATED storeWaterKin(unsigned int nt,
-	                              real dt,
-	                              const real** zeta_in,
-	                              const real** f_in,
-	                              const real*** u_in,
-	                              const real*** ud_in);
-
-	/** @brief store wave/current kinematics time series for this line
-	 *
-	 * This is used when nodal approaches are selected, i.e.
-	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
-	 * or CURRENTS_DYNAMIC_NODE
-	 * @param nt Number of time steps
-	 * @param dt Time step
 	 * @param zeta The wave elevations
 	 * @param f The fluid fractions
 	 * @param u The flow velocity
@@ -558,15 +512,6 @@ class Line : public LogUser
 	inline void setTime(real time) { t = time; }
 
 	/** @brief Set the line state
-	 * @param X State vector. It contains moordyn::Line::getN() - 1 velocities
-	 * followed by moordyn::Line::getN() - 1 positions
-	 * @param time Simulation time
-	 * @note This method is not affecting the line end points
-	 * @see moordyn::Line::setEndState
-	 */
-	void DEPRECATED setState(const double* X, const double time);
-
-	/** @brief Set the line state
 	 * @param r The moordyn::Line::getN() - 1 positions
 	 * @param u The moordyn::Line::getN() - 1 velocities
 	 * @param time Simulation time
@@ -577,35 +522,13 @@ class Line : public LogUser
 	void setState(std::vector<vec> r, std::vector<vec> u, double time);
 
 	/** @brief Set the position and velocity of an end point
-	 * @param r_in Position
-	 * @param rd_in Velocity
-	 * @param topOfLine 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
-	 * @deprecated This method is replaced by SetEndKinematics and will be
-	 * removed in the future
-	 */
-	void DEPRECATED setEndState(double r_in[3], double rd_in[3], int topOfLine);
-
-	/** @brief Set the position and velocity of an end point
 	 * @param r Position
 	 * @param rd Velocity
 	 * @param end_point Either ENDPOINT_TOP or ENDPOINT_BOTTOM
 	 * @throws invalid_value_error If @p end_point is not a valid end point
 	 * qualifier
-	 * @note This method replaces the deprecated setEndState
 	 */
 	void setEndKinematics(vec r, vec rd, EndPoints end_point);
-
-	/** @brief set end node unit vector
-	 *
-	 * This method is called by an eventually attached Rod, only applicable for
-	 * bending stiffness
-	 * @param qin The direction unit vector
-	 * @param topOfLine 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
-	 * @param rodEndB 1 = end B, 0 = end A
-	 * @deprecated This method is replaced to use moordyn::vec instead, and will
-	 * be removed in the future
-	 */
-	void DEPRECATED setEndOrientation(double* qin, int topOfLine, int rodEndB);
 
 	/** @brief set end node unit vector
 	 *
@@ -627,24 +550,6 @@ class Line : public LogUser
 	 *
 	 * This method is already taking into account the line and rod end points
 	 * to appropriately set the sign of the resulting moment
-	 * @param q_EI_dl The output moment vector
-	 * @param topOfLine 1 = top/fairlead(end B), 0 = bottom/anchor(end A)
-	 * @param rodEndB 1 = end B, 0 = end A
-	 * @deprecated This method is replaced by getEndSegmentMoment and will
-	 * be removed in the future
-	 */
-	void DEPRECATED getEndSegmentInfo(double q_EI_dl[3],
-	                                  int topOfLine,
-	                                  int rodEndB);
-
-	/** @brief Get the bending moment at the end point
-	 *
-	 * The bending moment is defined as
-	 * \f$\bar{r} \frac{E I}{\vert \bar{r} \vert^2}\f$, with \f$\bar{r}\f$ the
-	 * vector joining the endpoint and the next line node
-	 *
-	 * This method is already taking into account the line and rod end points
-	 * to appropriately set the sign of the resulting moment
 	 * @param end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @param rod_end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @return The moment vector
@@ -652,13 +557,6 @@ class Line : public LogUser
 	 * not valid end point qualifiers
 	 */
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
-
-	/** @brief Calculate forces and get the derivative of the line's states
-	 * @param Xd The output line states
-	 * @param dt The time step, unused
-	 * @throws nan_error If nan values are detected in any node position
-	 */
-	void DEPRECATED getStateDeriv(double* Xd, const double dt);
 
 	/** @brief Calculate forces and get the derivative of the line's states
 	 * @return The velocties of the internal nodes (first) and the accelerations

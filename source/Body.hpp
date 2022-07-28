@@ -229,16 +229,6 @@ class Body : public LogUser
 	                          vec6 rd = vec6::Zero(),
 	                          real time = 0.0);
 
-	/** @brief Initialize the FREE body state
-	 * @param X The output state variables, i.e. the velocity (6 dof) and the
-	 * position (6 dof)
-	 * @throw moordyn::invalid_value_error If the body is not of type
-	 * moordyn::Body::FREE
-	 * @throws moordyn::output_file_error If an outfile has been provided, but
-	 * it cannot be written
-	 */
-	void DEPRECATED initializeBody(double X[12]);
-
 	/** @brief Initialize the FREE connection state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
 	 * @throw moordyn::invalid_value_error If the body is not of type
@@ -360,28 +350,11 @@ class Body : public LogUser
 	void updateFairlead(real time);
 
 	/** @brief Set the latest states to the body
-	 * @param X The states vector, i.e. an array with 6 components of velocity
-	 * and another 6 of position
-	 * @param time The simulation time
-	 */
-	void DEPRECATED setState(const double* X, real time);
-
-	/** @brief Set the latest states to the body
 	 * @param r The position
 	 * @param rd The velocity
 	 * @param time The simulation time
 	 */
 	void setState(vec6 r, vec6 rd, real time);
-
-	/** @brief calculate the forces and state derivatives of the body
-	 *
-	 * This function is only meant for free bodies
-	 * @param Xd The output states derivatives vector, i.e. an array with 6
-	 * components of acceleration and another 6 of velocity
-	 * @throw moordyn::invalid_value_error If the body is of type
-	 * moordyn::Body::FREE
-	 */
-	void DEPRECATED getStateDeriv(double* Xd);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *
