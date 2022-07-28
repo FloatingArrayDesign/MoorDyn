@@ -19,16 +19,16 @@ The version 2 is currently under development:
  [X] pinned (3 DOF) and rigid (6 DOF) coupling options
  [X] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
  [X] Different time integrators
- [ ] New C API
+ [X] New C API
  [ ] New C++ API
  [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
  [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
- [ ] FORTRAN wrappers
+ [X] FORTRAN wrappers
  [X] Python wrappers
  [ ] Rust wrappers
  [ ] MATLAB mex file
  [ ] Documentation for users
- [ ] Documentation for developers
+ [X] Documentation for developers
 
 ## Aknowledgments
 
