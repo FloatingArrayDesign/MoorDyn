@@ -28,6 +28,7 @@ module moordyn
   private :: MoorDyn_Create, MoorDyn_SetLogFile, MoorDyn_Log, MoorDyn_Init, &
              MoorDyn_Step, MoorDyn_ExternalWaveKinGetCoordinates, &
              MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
+             MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
              MoorDyn_GetConnectForce, &
@@ -41,6 +42,7 @@ module moordyn
             MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
             MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
             MD_GetLine, MD_GetFASTtens, &
+            MD_GetWavesKin, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
             MD_GetConnectVel, MD_GetConnectForce, &
@@ -209,6 +211,23 @@ module moordyn
       type(c_ptr), value, intent(in) :: avt
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
+
+    !                                Waves.h
+    ! ==========================================================================
+
+    function MoorDyn_GetWavesKin(instance, x, y, z, t, u, ud, zeta, pdyn) bind(c, name='MoorDyn_GetWavesKin') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), value, intent(in) :: x
+      real(c_double), value, intent(in) :: y
+      real(c_double), value, intent(in) :: z
+      real(c_double), value, intent(in) :: t
+      type(c_ptr), value, intent(in) :: u
+      type(c_ptr), value, intent(in) :: ud
+      real(c_double), intent(out) :: zeta
+      real(c_double), intent(out) :: pdyn
+      integer(c_int) :: rc
+    end function MoorDyn_GetWavesKin
 
     !                                Body.h
     ! ==========================================================================
@@ -428,6 +447,23 @@ contains
     real(c_double), intent(in), target :: avt(:)
     MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
   end function MD_GetFASTtens
+
+  !                                Waves.h
+  ! ============================================================================
+
+  integer function MD_GetWavesKin(instance, x, y, z, t, u, ud, zeta, pdyn)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), value, intent(in) :: x
+    real(c_double), value, intent(in) :: y
+    real(c_double), value, intent(in) :: z
+    real(c_double), value, intent(in) :: t
+    real(c_double), intent(in), target :: u(:)
+    real(c_double), intent(in), target :: ud(:)
+    real(c_double), intent(out) :: zeta
+    real(c_double), intent(out) :: pdyn
+    MD_GetWavesKin = MoorDyn_GetWavesKin(instance, x, y, z, t, c_loc(u), c_loc(ud), zeta, pdyn)
+  end function MD_GetWavesKin
 
   !                                Body.h
   ! ============================================================================
