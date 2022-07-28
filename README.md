@@ -25,7 +25,6 @@ The version 2 is currently under development:
  [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
  [X] FORTRAN wrappers
  [X] Python wrappers
- [ ] Rust wrappers
  [ ] MATLAB mex file
  [ ] Documentation for users
  [X] Documentation for developers
