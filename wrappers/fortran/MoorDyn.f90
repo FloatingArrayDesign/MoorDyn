@@ -27,7 +27,9 @@ module moordyn
 
   private :: MoorDyn_Create, MoorDyn_SetLogFile, MoorDyn_Log, MoorDyn_Init, &
              MoorDyn_Step, MoorDyn_ExternalWaveKinGetCoordinates, &
-             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens
+             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
+             MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
+             MoorDyn_GetConnectForce
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
             MD_SetLogLevel, MD_Log, MD_Init, MD_Step, MD_Close, &
@@ -35,7 +37,9 @@ module moordyn
             MD_ExternalWaveKinGetCoordinates, MD_ExternalWaveKinSet, &
             MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
             MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
-            MD_GetLine, MD_GetFASTtens
+            MD_GetLine, MD_GetFASTtens, &
+            MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
+            MD_GetConnectVel, MD_GetConnectForce
 
   interface
 
@@ -197,6 +201,42 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
 
+    !                                Connection.h
+    ! ==========================================================================
+
+    integer(c_int) function MD_GetConnectID(instance, n) bind(c, name='MoorDyn_GetConnectID')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetConnectID
+
+    integer(c_int) function MD_GetConnectType(instance, n) bind(c, name='MoorDyn_GetConnectType')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetConnectType
+
+    function MoorDyn_GetConnectPos(instance, r) bind(c, name='MoorDyn_GetConnectPos') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetConnectPos
+
+    function MoorDyn_GetConnectVel(instance, r) bind(c, name='MoorDyn_GetConnectVel') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetConnectVel
+
+    function MoorDyn_GetConnectForce(instance, r) bind(c, name='MoorDyn_GetConnectForce') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetConnectForce
+
 end interface
 
 
@@ -271,5 +311,29 @@ contains
     real(c_double), intent(in), target :: avt(:)
     MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
   end function MD_GetFASTtens
+
+  !                                Connection.h
+  ! ============================================================================
+
+  integer function MD_GetConnectPos(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetConnectPos = MoorDyn_GetConnectPos(instance, c_loc(r))
+  end function MD_GetConnectPos
+
+  integer function MD_GetConnectVel(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetConnectVel = MoorDyn_GetConnectVel(instance, c_loc(r))
+  end function MD_GetConnectVel
+
+  integer function MD_GetConnectForce(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetConnectForce = MoorDyn_GetConnectForce(instance, c_loc(r))
+  end function MD_GetConnectForce
 
 end module moordyn

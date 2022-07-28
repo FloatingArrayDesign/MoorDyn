@@ -49,10 +49,11 @@ extern "C"
 
 	/** @brief Get the connection identifier
 	 * @param conn The Moordyn connection
-	 * @return The connection identifier, MOORDYN_INVALID_VALUE if a NULL
-	 * connection is provided
+	 * @param id The output id
+	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * MOORDYN_SUCCESS otherwise
 	 */
-	int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn);
+	int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn, int *id);
 
 	/** @brief Get the connection type
 	 * @param conn The Moordyn connection

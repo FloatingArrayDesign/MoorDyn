@@ -29,18 +29,6 @@ program main
   allocate ( x(0:8) )
   allocate ( xd(0:8) )
   allocate ( f(0:8) )
-
-  x(0) = 5.2
-  x(1) = 0.0
-  x(2) = -70.0
-
-  x(3) = -2.6
-  x(4) = 4.5
-  x(5) = -70.0
-
-  x(6) = -2.6
-  x(7) = -4.5
-  x(8) = -70.0
   xd = 0.0
   f = 0.0
 
@@ -57,11 +45,17 @@ program main
     if ( .not.c_associated(conn) ) then
       stop 1
     end if
+    err = MD_GetConnectPos( conn, r )    
+    if ( err /= MD_SUCESS ) then
+      stop 1
+    end if
+    do j = 1, 3
+      x(3 * i + j) = r(j)
+    end do
   end do
 
   err = MD_Init(system, x, xd)
   if ( err /= MD_SUCESS ) then
-    print *,"Failure during the mooring initialization: ", err
     stop 1
   end if
 
@@ -69,13 +63,11 @@ program main
   dt = 0.5
   err = MD_Step(system, x, xd, f, t, dt)
   if ( err /= MD_SUCESS ) then
-    print *,"Failure during the mooring step: ", err
     stop 1
   end if
 
   err = MD_Close(system)
   if ( err /= MD_SUCESS ) then
-    print *,"Failure closing the moordyn simulation: ", err
     stop 1
   end if
 

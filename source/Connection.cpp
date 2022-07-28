@@ -540,10 +540,11 @@ Connection::drawGL(void)
 	}
 
 int DECLDIR
-MoorDyn_GetConnectID(MoorDynConnection conn)
+MoorDyn_GetConnectID(MoorDynConnection conn, int* id)
 {
 	CHECK_CONNECTION(conn);
-	return ((moordyn::Connection*)conn)->number;
+	*id = ((moordyn::Connection*)conn)->number;
+	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR

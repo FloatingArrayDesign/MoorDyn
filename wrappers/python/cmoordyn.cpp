@@ -1035,7 +1035,14 @@ conn_get_id(PyObject*, PyObject* args)
 	if (!instance)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_GetConnectID(instance));
+	int n;
+	const int err = MoorDyn_GetConnectID(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
 }
 
 /** @brief Wrapper to MoorDyn_GetConnectType() function
