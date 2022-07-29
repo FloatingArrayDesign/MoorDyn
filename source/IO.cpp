@@ -206,7 +206,7 @@ IO::IO(moordyn::Log* log)
 IO::~IO() {}
 
 void
-IO::save(const std::string filepath)
+IO::Save(const std::string filepath)
 {
 	ofstream f(filepath, ios::out | ios::binary);
 	if (!f) {
@@ -220,7 +220,7 @@ IO::save(const std::string filepath)
 	f.write((char*)&major, sizeof(uint8_t));
 	f.write((char*)&minor, sizeof(uint8_t));
 	// Produce the data
-	std::vector<uint64_t> data = save();
+	std::vector<uint64_t> data = Serialize();
 	// Save the total size, which is simplifying the reading process
 	const uint64_t size = data.size();
 	f.write((char*)&size, sizeof(uint64_t));
@@ -231,7 +231,7 @@ IO::save(const std::string filepath)
 }
 
 void
-IO::load(const std::string filepath)
+IO::Load(const std::string filepath)
 {
 	ifstream f(filepath, ios::in | ios::binary);
 	if (!f) {
@@ -288,7 +288,7 @@ IO::load(const std::string filepath)
 	f.close();
 
 	// So do the unpacking job
-	const uint64_t* end = load(data);
+	const uint64_t* end = Deserialize(data);
 	if (data + length != end) {
 		const uint64_t l = end - data;
 		LOGERR << l * sizeof(uint64_t) << " bytes (vs. " << size
@@ -300,7 +300,7 @@ IO::load(const std::string filepath)
 }
 
 uint64_t
-IO::save(const uint64_t& i)
+IO::Serialize(const uint64_t& i)
 {
 	// Almost everyone uses little endian nowadays
 	if (_is_big_endian)
@@ -309,54 +309,131 @@ IO::save(const uint64_t& i)
 }
 
 uint64_t
-IO::save(const int64_t& i)
+IO::Serialize(const int64_t& i)
 {
 	uint64_t* ui = (uint64_t*)&i;
-	return save((uint64_t)(*ui));
+	return Serialize((uint64_t)(*ui));
 }
 
 uint64_t
-IO::save(const real& f)
+IO::Serialize(const real& f)
 {
-	return save((int64_t)pack754_64((double)f));
+	return Serialize((int64_t)pack754_64((double)f));
 }
 
-template<int R, int C>
+template<>
 std::vector<uint64_t>
-IO::save(const Eigen::Matrix<real, R, C>& m)
+IO::Serialize(const vec& m)
 {
 	std::vector<uint64_t> data;
 	data.reserve(m.size());
-	const unsigned int nx = m.rows();
-	const unsigned int ny = m.cols();
-	for (unsigned int i = 0; i < nx; i++)
-		for (unsigned int j = 0; j < ny; i++)
-			data.push_back(save(m(i, j)));
+	for (unsigned int i = 0; i < 3; i++)
+		data.push_back(Serialize(m(i)));
+	return data;
+}
+
+template<>
+std::vector<uint64_t>
+IO::Serialize(const vec6& m)
+{
+	std::vector<uint64_t> data;
+	data.reserve(m.size());
+	for (unsigned int i = 0; i < 6; i++)
+		data.push_back(Serialize(m(i)));
+	return data;
+}
+
+template<>
+std::vector<uint64_t>
+IO::Serialize(const mat& m)
+{
+	std::vector<uint64_t> data;
+	data.reserve(m.size());
+	for (unsigned int i = 0; i < 3; i++)
+		for (unsigned int j = 0; j < 3; j++)
+			data.push_back(Serialize(m(i, j)));
+	return data;
+}
+
+template<>
+std::vector<uint64_t>
+IO::Serialize(const mat6& m)
+{
+	std::vector<uint64_t> data;
+	data.reserve(m.size());
+	for (unsigned int i = 0; i < 6; i++)
+		for (unsigned int j = 0; j < 6; j++)
+			data.push_back(Serialize(m(i, j)));
 	return data;
 }
 
 std::vector<uint64_t>
-IO::save(const std::vector<real>& l)
+IO::Serialize(const std::vector<real>& l)
 {
 	std::vector<uint64_t> data;
 	auto n = l.size();
 	data.reserve(1 + l.size());
-	data.push_back(save(n));
+	data.push_back(Serialize(n));
 	for (auto v : l)
-		data.push_back(save(v));
+		data.push_back(Serialize(v));
 	return data;
 }
 
-template<int R, int C>
+template<>
 std::vector<uint64_t>
-IO::save(const std::vector<Eigen::Matrix<real, R, C>>& l)
+IO::Serialize(const std::vector<vec>& l)
 {
 	std::vector<uint64_t> data;
 	const uint64_t n = l.size();
 	data.reserve(1 + 3 * l.size());
-	data.push_back(save(n));
+	data.push_back(Serialize(n));
 	for (auto v : l) {
-		auto subdata = save(v);
+		auto subdata = Serialize(v);
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	return data;
+}
+
+template<>
+std::vector<uint64_t>
+IO::Serialize(const std::vector<vec6>& l)
+{
+	std::vector<uint64_t> data;
+	const uint64_t n = l.size();
+	data.reserve(1 + 6 * l.size());
+	data.push_back(Serialize(n));
+	for (auto v : l) {
+		auto subdata = Serialize(v);
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	return data;
+}
+
+template<>
+std::vector<uint64_t>
+IO::Serialize(const std::vector<mat>& l)
+{
+	std::vector<uint64_t> data;
+	const uint64_t n = l.size();
+	data.reserve(1 + 9 * l.size());
+	data.push_back(Serialize(n));
+	for (auto v : l) {
+		auto subdata = Serialize(v);
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	return data;
+}
+
+template<>
+std::vector<uint64_t>
+IO::Serialize(const std::vector<mat6>& l)
+{
+	std::vector<uint64_t> data;
+	const uint64_t n = l.size();
+	data.reserve(1 + 36 * l.size());
+	data.push_back(Serialize(n));
+	for (auto v : l) {
+		auto subdata = Serialize(v);
 		data.insert(data.end(), subdata.begin(), subdata.end());
 	}
 	return data;
@@ -364,20 +441,20 @@ IO::save(const std::vector<Eigen::Matrix<real, R, C>>& l)
 
 template<typename T>
 std::vector<uint64_t>
-IO::save(const std::vector<std::vector<T>>& l)
+IO::Serialize(const std::vector<std::vector<T>>& l)
 {
 	std::vector<uint64_t> data;
 	const uint64_t n = l.size();
-	data.push_back(save(n));
+	data.push_back(Serialize(n));
 	for (auto v : l) {
-		auto subdata = save(v);
+		auto subdata = Serialize(v);
 		data.insert(data.end(), subdata.begin(), subdata.end());
 	}
 	return data;
 }
 
 uint64_t*
-IO::load(const uint64_t* in, uint64_t& out)
+IO::Deserialize(const uint64_t* in, uint64_t& out)
 {
 	if (_is_big_endian)
 		out = swap_endian(*in);
@@ -387,60 +464,152 @@ IO::load(const uint64_t* in, uint64_t& out)
 }
 
 uint64_t*
-IO::load(const uint64_t* in, int64_t& out)
+IO::Deserialize(const uint64_t* in, int64_t& out)
 {
 	uint64_t uout;
-	uint64_t* remaining = load(in, uout);
+	uint64_t* remaining = Deserialize(in, uout);
 	out = *((int64_t*)(&uout));
 	return remaining;
 }
 
 uint64_t*
-IO::load(const uint64_t* in, real& out)
+IO::Deserialize(const uint64_t* in, real& out)
 {
 	uint64_t uout;
-	uint64_t* remaining = load(in, uout);
+	uint64_t* remaining = Deserialize(in, uout);
 	out = (real)unpack754_64(uout);
 	return remaining;
 }
 
 template<int R, int C>
 uint64_t*
-IO::load(const uint64_t* in, Eigen::Matrix<real, R, C>& out)
+IO::Deserialize(const uint64_t* in, Eigen::Matrix<real, R, C>& out)
 {
 	uint64_t* remaining = (uint64_t*)in;
 	const unsigned int nx = out.rows();
 	const unsigned int ny = out.cols();
 	for (unsigned int i = 0; i < nx; i++)
 		for (unsigned int j = 0; j < ny; i++)
-			remaining = load(remaining, out(i, j));
+			remaining = Deserialize(remaining, out(i, j));
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, vec& out)
+{
+	uint64_t* remaining = (uint64_t*)in;
+	for (unsigned int i = 0; i < 3; i++)
+		remaining = Deserialize(remaining, out(i));
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, vec6& out)
+{
+	uint64_t* remaining = (uint64_t*)in;
+	for (unsigned int i = 0; i < 6; i++)
+		remaining = Deserialize(remaining, out(i));
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, mat& out)
+{
+	uint64_t* remaining = (uint64_t*)in;
+	for (unsigned int i = 0; i < 3; i++)
+		for (unsigned int j = 0; j < 3; j++)
+			remaining = Deserialize(remaining, out(i, j));
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, mat6& out)
+{
+	uint64_t* remaining = (uint64_t*)in;
+	for (unsigned int i = 0; i < 6; i++)
+		for (unsigned int j = 0; j < 6; j++)
+			remaining = Deserialize(remaining, out(i, j));
 	return remaining;
 }
 
 uint64_t*
-IO::load(const uint64_t* in, std::vector<real>& out)
+IO::Deserialize(const uint64_t* in, std::vector<real>& out)
 {
 	uint64_t n;
-	uint64_t* remaining = load(in, n);
+	uint64_t* remaining = Deserialize(in, n);
+	out.clear();
 	out.reserve(n);
 	for (unsigned int i = 0; i < n; i++) {
 		real v;
-		remaining = load(remaining, v);
+		remaining = Deserialize(remaining, v);
 		out.push_back(v);
 	}
 	return remaining;
 }
 
-template<int R, int C>
+template<>
 uint64_t*
-IO::load(const uint64_t* in, std::vector<Eigen::Matrix<real, R, C>>& out)
+IO::Deserialize(const uint64_t* in, std::vector<vec>& out)
 {
 	uint64_t n;
-	uint64_t* remaining = load(in, n);
+	uint64_t* remaining = Deserialize(in, n);
+	out.clear();
 	out.reserve(n);
 	for (unsigned int i = 0; i < n; i++) {
-		Eigen::Matrix<real, R, C> v;
-		remaining = load(remaining, v);
+		vec v;
+		remaining = Deserialize(remaining, v);
+		out.push_back(v);
+	}
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, std::vector<vec6>& out)
+{
+	uint64_t n;
+	uint64_t* remaining = Deserialize(in, n);
+	out.clear();
+	out.reserve(n);
+	for (unsigned int i = 0; i < n; i++) {
+		vec6 v;
+		remaining = Deserialize(remaining, v);
+		out.push_back(v);
+	}
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, std::vector<mat>& out)
+{
+	uint64_t n;
+	uint64_t* remaining = Deserialize(in, n);
+	out.clear();
+	out.reserve(n);
+	for (unsigned int i = 0; i < n; i++) {
+		mat v;
+		remaining = Deserialize(remaining, v);
+		out.push_back(v);
+	}
+	return remaining;
+}
+
+template<>
+uint64_t*
+IO::Deserialize(const uint64_t* in, std::vector<mat6>& out)
+{
+	uint64_t n;
+	uint64_t* remaining = Deserialize(in, n);
+	out.clear();
+	out.reserve(n);
+	for (unsigned int i = 0; i < n; i++) {
+		mat6 v;
+		remaining = Deserialize(remaining, v);
 		out.push_back(v);
 	}
 	return remaining;
@@ -448,14 +617,15 @@ IO::load(const uint64_t* in, std::vector<Eigen::Matrix<real, R, C>>& out)
 
 template<typename T>
 uint64_t*
-IO::load(const uint64_t* in, std::vector<std::vector<T>>& out)
+IO::Deserialize(const uint64_t* in, std::vector<std::vector<T>>& out)
 {
 	uint64_t n;
-	uint64_t* remaining = load(in, n);
+	uint64_t* remaining = Deserialize(in, n);
+	out.clear();
 	out.reserve(n);
 	for (unsigned int i = 0; i < n; i++) {
 		std::vector<T> v;
-		remaining = load(remaining, v);
+		remaining = Deserialize(remaining, v);
 		out.push_back(v);
 	}
 	return remaining;

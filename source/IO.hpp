@@ -42,6 +42,8 @@
 
 namespace moordyn {
 
+/** @namespace io Input/Output
+ */
 namespace io {
 
 /** @class IO IO.hpp
@@ -68,72 +70,73 @@ class IO : public LogUser
 	 * can be saved in the same file
 	 * @param filepath The output file path
 	 */
-	void save(const std::string filepath);
+	void Save(const std::string filepath);
 
 	/** @brief Loads the entity from a file
 	 *
-	 * It is the inverse of save(filepath)
+	 * It is the inverse of Save(filepath)
 	 * @param filepath The output file path
 	 */
-	void load(const std::string filepath);
+	void Load(const std::string filepath);
 
 	/** @brief Produce the packed data to be saved
 	 *
 	 * The produced data can be used afterwards to restore the saved information
-	 * afterwards calling load().
+	 * afterwards calling Deserialize(void).
 	 *
 	 * This is the function that each inherited class must implement
 	 * @return The packed data
 	 */
-	virtual std::vector<uint64_t> save(void) = 0;
+	virtual std::vector<uint64_t> Serialize(void) = 0;
 
-	/** @brief Unpack the data to restore the saved information
+	/** @brief Unpack the data to restore the Serialized information
 	 *
 	 * This is the function that each inherited class must implement, and should
-	 * be the inverse of save(void)
+	 * be the inverse of Serialize(void)
 	 * @param data The packed data
 	 * @return A pointer to the end of the file, for debugging purposes
 	 */
-	virtual uint64_t* load(uint64_t* data) = 0;
+	virtual uint64_t* Deserialize(const uint64_t* data) = 0;
 
   protected:
 	/** @brief Pack an unsigned integer to make it writtable
 	 * @param i The unsigned integer number
 	 * @return The packed number
 	 */
-	uint64_t save(const uint64_t& i);
+	uint64_t Serialize(const uint64_t& i);
 
 	/** @brief Pack an integer to make it writtable
 	 * @param i The integer number
 	 * @return The packed number
 	 */
-	uint64_t save(const int64_t& i);
+	uint64_t Serialize(const int64_t& i);
 
 	/** @brief Pack a float to make it writtable
 	 * @param f The float number
 	 * @return The packed number
 	 */
-	uint64_t save(const real& f);
+	uint64_t Serialize(const real& f);
 
 	/** @brief Pack a generic matrix to make it writtable
 	 * @param m The matrix
 	 * @return The packed matrix
 	 */
 	template<int R, int C>
-	std::vector<uint64_t> save(const Eigen::Matrix<real, R, C>& m);
+	std::vector<uint64_t> Serialize(const Eigen::Matrix<real, R, C>& m);
 
 	/** @brief Pack a list of floating point numbers to make it writtable
 	 * @param l The list
 	 * @return The packed list
 	 */
-	std::vector<uint64_t> save(const std::vector<real>& l);
+	std::vector<uint64_t> Serialize(const std::vector<real>& l);
 
 	/** @brief Pack a list of matrices to make it writtable
 	 * @param l The list
 	 * @return The packed list
 	 */
 	template<int R, int C>
-	std::vector<uint64_t> save(const std::vector<Eigen::Matrix<real, R, C>>& l);
+	std::vector<uint64_t> Serialize(
+	    const std::vector<Eigen::Matrix<real, R, C>>& l);
 
 	/** @brief Pack a list of lists to make it writtable
 	 * This function might act recursively
@@ -141,28 +144,28 @@ class IO : public LogUser
 	 * @return The packed list
 	 */
 	template<typename T>
-	std::vector<uint64_t> save(const std::vector<std::vector<T>>& l);
+	std::vector<uint64_t> Serialize(const std::vector<std::vector<T>>& l);
 
 	/** @brief Unpack a loaded unsigned integer
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
 	 * @return The new pointer to the remaining data to be read
 	 */
-	uint64_t* load(const uint64_t* in, uint64_t& out);
+	uint64_t* Deserialize(const uint64_t* in, uint64_t& out);
 
 	/** @brief Unpack a loaded integer
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
 	 * @return The new pointer to the remaining data to be read
 	 */
-	uint64_t* load(const uint64_t* in, int64_t& out);
+	uint64_t* Deserialize(const uint64_t* in, int64_t& out);
 
 	/** @brief Unpack a loaded floating point number
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
 	 * @return The new pointer to the remaining data to be read
 	 */
-	uint64_t* load(const uint64_t* in, real& out);
+	uint64_t* Deserialize(const uint64_t* in, real& out);
 
 	/** @brief Unpack a loaded generic matrix
 	 * @param in The pointer to the next unread value
@@ -170,14 +173,14 @@ class IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	template<int R, int C>
-	uint64_t* load(const uint64_t* in, Eigen::Matrix<real, R, C>& out);
+	uint64_t* Deserialize(const uint64_t* in, Eigen::Matrix<real, R, C>& out);
 
 	/** @brief Unpack a loaded list of floating point numbers
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
 	 * @return The new pointer to the remaining data to be read
 	 */
-	uint64_t* load(const uint64_t* in, std::vector<real>& out);
+	uint64_t* Deserialize(const uint64_t* in, std::vector<real>& out);
 
 	/** @brief Unpack a loaded list of generic matrices
 	 * @param in The pointer to the next unread value
@@ -185,8 +188,8 @@ class IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	template<int R, int C>
-	uint64_t* load(const uint64_t* in,
-	               std::vector<Eigen::Matrix<real, R, C>>& out);
+	uint64_t* Deserialize(const uint64_t* in,
+	                      std::vector<Eigen::Matrix<real, R, C>>& out);
 
 	/** @brief Unpack a loaded list of lists
 	 *
@@ -196,7 +199,7 @@ class IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	template<typename T>
-	uint64_t* load(const uint64_t* in, std::vector<std::vector<T>>& out);
+	uint64_t* Deserialize(const uint64_t* in, std::vector<std::vector<T>>& out);
 
   private:
 	/// endianess of the system

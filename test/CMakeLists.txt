@@ -7,7 +7,7 @@ add_custom_command(TARGET Test_MooringConfigFiles PRE_BUILD
                     COMMAND ${CMAKE_COMMAND} -E
                         copy_directory ${CMAKE_SOURCE_DIR}/test/Mooring ${CMAKE_CURRENT_BINARY_DIR}/Mooring)
 
-set(TESTS "minimal;bodies_and_rods;wavekin;quasi_static_chain")
+set(TESTS "minimal;io;bodies_and_rods;wavekin;quasi_static_chain")
 foreach(TEST ${TESTS})
     add_executable(${TEST} ${TEST}.cpp)
     target_link_libraries(${TEST} moordyn)
