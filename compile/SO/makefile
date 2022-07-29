@@ -48,6 +48,7 @@ HEADERS = ../../source/Body.h \
           ../../source/Waves.h \
           ../../source/Body.hpp \
           ../../source/Connection.hpp \
+          ../../source/IO.hpp \
           ../../source/Line.hpp \
           ../../source/Log.hpp \
           ../../source/Misc.hpp \
@@ -64,8 +65,8 @@ libmoordyn.so: libmoordyn.so.2.0.0
 	rm -f libmoordyn.so
 	ln -s libmoordyn.so.2.0.0 libmoordyn.so
 
-libmoordyn.so.2.0.0: MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
-	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Log.o Misc.o kiss_fft.o kiss_fftr.o
+libmoordyn.so.2.0.0: MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Log.o IO.o Misc.o kiss_fft.o kiss_fftr.o
+	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Log.o IO.o Misc.o kiss_fft.o kiss_fftr.o
 
 MoorDyn.o: ../../source/MoorDyn.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn.cpp
@@ -102,6 +103,9 @@ Waves.o: ../../source/Waves.cpp $(HEADERS)
 
 Log.o: ../../source/Log.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Log.cpp
+
+IO.o: ../../source/IO.cpp $(HEADERS)
+	$(CXX) $(CPPFLAGS) ../../source/IO.cpp
 
 Misc.o: ../../source/Misc.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Misc.cpp

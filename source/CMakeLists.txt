@@ -1,6 +1,7 @@
 set(MOORDYN_SRCS
     Body.cpp
     Connection.cpp
+    IO.cpp
     Line.cpp
     Log.cpp
     Misc.cpp
@@ -17,6 +18,7 @@ set(MOORDYN_SRCS
 set(MOORDYN_HEADERS
     Body.hpp
     Connection.hpp
+    IO.hpp
     Line.hpp
     Log.hpp
     Misc.hpp
