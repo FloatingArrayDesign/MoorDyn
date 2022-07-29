@@ -19,6 +19,8 @@ The version 2 is currently under development:
  [X] pinned (3 DOF) and rigid (6 DOF) coupling options
  [X] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
  [X] Different time integrators
+ [ ] Save/load
+ [ ] VTK exporter
  [X] New C API
  [ ] New C++ API
  [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
