@@ -590,8 +590,8 @@ Line::storeWaterKin(real dt,
 		}
 		zetaTS[i] = zeta_in[i];
 		FTS[i] = f_in[i];
-		u_in[i], UTS[i];
-		ud_in[i], UdTS[i];
+		u_in[i] = UTS[i];
+		ud_in[i] = UdTS[i];
 	}
 };
 
