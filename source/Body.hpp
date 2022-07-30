@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "Log.hpp"
+#include "IO.hpp"
 #include <vector>
 #include <utility>
 
@@ -57,7 +57,7 @@ class Rod;
  *
  * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
  */
-class Body : public LogUser
+class Body : public io::IO
 {
   public:
 	/** @brief Costructor
@@ -140,7 +140,6 @@ class Body : public LogUser
 	/// Pointer to moordyn::MoorDyn::outfileMain
 	ofstream* outfile;
 
-  public:
 	/** @brief Types of bodies
 	 */
 	typedef enum
@@ -373,6 +372,25 @@ class Body : public LogUser
 	void doRHS();
 
 	void Output(real time);
+
+	/** @brief Produce the packed data to be saved
+	 *
+	 * The produced data can be used afterwards to restore the saved information
+	 * afterwards calling Deserialize(void).
+	 *
+	 * Thus, this function is not processing the information that is extracted
+	 * from the definition file
+	 * @return The packed data
+	 */
+	virtual std::vector<uint64_t> Serialize(void);
+
+	/** @brief Unpack the data to restore the Serialized information
+	 *
+	 * This is the inverse of Serialize(void)
+	 * @param data The packed data
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	virtual uint64_t* Deserialize(const uint64_t* data);
 
 #ifdef USEGL
 	void drawGL(void);

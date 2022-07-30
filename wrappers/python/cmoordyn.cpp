@@ -217,8 +217,9 @@ static PyObject*
 init(PyObject*, PyObject* args)
 {
 	PyObject *capsule, *x_lst, *v_lst;
+	int skip_ic = 0;
 
-	if (!PyArg_ParseTuple(args, "OOO", &capsule, &x_lst, &v_lst))
+	if (!PyArg_ParseTuple(args, "OOO|i", &capsule, &x_lst, &v_lst, &skip_ic))
 		return NULL;
 
 	MoorDyn system =
@@ -260,7 +261,11 @@ init(PyObject*, PyObject* args)
 	}
 
 	// Now we can call MoorDyn
-	const int err = MoorDyn_Init(system, x_arr, v_arr);
+	int err;
+	if (skip_ic)
+		err = MoorDyn_Init_NoIC(system, x_arr, v_arr);
+	else
+		err = MoorDyn_Init(system, x_arr, v_arr);
 	free(x_arr);
 	free(v_arr);
 
@@ -826,6 +831,58 @@ get_fast_tens(PyObject*, PyObject* args)
 	PyTuple_SET_ITEM(lst, 3, anch_v_ten_lst);
 
 	return lst;
+}
+
+/** @brief Wrapper to MoorDyn_Save() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+save(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	const int err = MoorDyn_Save(system, filepath);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return Py_None;
+}
+
+/** @brief Wrapper to MoorDyn_Save() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+load(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	const int err = MoorDyn_Load(system, filepath);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return Py_None;
 }
 
 //                                 Waves.h
@@ -1480,6 +1537,8 @@ static PyMethodDef moordyn_methods[] = {
 	  get_fast_tens,
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "save", save, METH_VARARGS, "Save the system to a file" },
+	{ "load", load, METH_VARARGS, "Load the system from a file" },
 	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
 	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
 	{ "body_get_type", body_get_type, METH_VARARGS, "Get the body type" },

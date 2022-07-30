@@ -27,7 +27,7 @@ using namespace std;
 namespace moordyn {
 
 Body::Body(moordyn::Log* log)
-  : LogUser(log)
+  : io::IO(log)
   , U(vec::Zero())
   , Ud(vec::Zero())
 {
@@ -520,6 +520,54 @@ Body::Output(real time)
 	}
 	return;
 };
+
+std::vector<uint64_t>
+Body::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	data.push_back(io::IO::Serialize(t));
+	data.push_back(io::IO::Serialize(t0));
+	subdata = io::IO::Serialize(r6);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(v6);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(r_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(F6net);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(M);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(OrMat);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(U);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+
+	return data;
+}
+
+uint64_t*
+Body::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	ptr = io::IO::Deserialize(ptr, t);
+	ptr = io::IO::Deserialize(ptr, t0);
+	ptr = io::IO::Deserialize(ptr, r6);
+	ptr = io::IO::Deserialize(ptr, v6);
+	ptr = io::IO::Deserialize(ptr, r_ves);
+	ptr = io::IO::Deserialize(ptr, rd_ves);
+	ptr = io::IO::Deserialize(ptr, F6net);
+	ptr = io::IO::Deserialize(ptr, M);
+	ptr = io::IO::Deserialize(ptr, OrMat);
+	ptr = io::IO::Deserialize(ptr, U);
+	ptr = io::IO::Deserialize(ptr, Ud);
+
+	return ptr;
+}
 
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL

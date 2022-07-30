@@ -147,7 +147,17 @@ class IO : public LogUser
 	 * @return The packed list
 	 */
 	template<typename T>
-	std::vector<uint64_t> Serialize(const std::vector<std::vector<T>>& l);
+	std::vector<uint64_t> Serialize(const std::vector<std::vector<T>>& l)
+	{
+		std::vector<uint64_t> data;
+		const uint64_t n = l.size();
+		data.push_back(Serialize(n));
+		for (auto v : l) {
+			auto subdata = Serialize(v);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		return data;
+	}
 
 	/** @brief Unpack a loaded unsigned integer
 	 * @param in The pointer to the next unread value
@@ -202,7 +212,19 @@ class IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	template<typename T>
-	uint64_t* Deserialize(const uint64_t* in, std::vector<std::vector<T>>& out);
+	uint64_t* Deserialize(const uint64_t* in, std::vector<std::vector<T>>& out)
+	{
+		uint64_t n;
+		uint64_t* remaining = Deserialize(in, n);
+		out.clear();
+		out.reserve(n);
+		for (unsigned int i = 0; i < n; i++) {
+			std::vector<T> v;
+			remaining = Deserialize(remaining, v);
+			out.push_back(v);
+		}
+		return remaining;
+	}
 
   private:
 	/// endianess of the system

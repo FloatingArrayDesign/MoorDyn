@@ -35,7 +35,6 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "Log.hpp"
 #include "IO.hpp"
 #include "State.hpp"
 #include "Line.hpp"

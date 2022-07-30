@@ -39,7 +39,7 @@ using namespace std;
 namespace moordyn {
 
 Line::Line(moordyn::Log* log)
-  : LogUser(log)
+  : io::IO(log)
 {
 }
 
@@ -1311,6 +1311,100 @@ Line::Output(real time)
 	}
 	return;
 };
+
+std::vector<uint64_t>
+Line::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	data.push_back(io::IO::Serialize(t));
+	subdata = io::IO::Serialize(r);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(q);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(qs);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(l);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(lstr);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(ldstr);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Kurv);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(M);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(V);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(T);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Td);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Bs);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(W);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Dp);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Dq);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ap);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Aq);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(B);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Fnet);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(F);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(zeta);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(PDyn);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(U);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+
+	return data;
+}
+
+uint64_t*
+Line::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	ptr = io::IO::Deserialize(ptr, t);
+	ptr = io::IO::Deserialize(ptr, r);
+	ptr = io::IO::Deserialize(ptr, rd);
+	ptr = io::IO::Deserialize(ptr, q);
+	ptr = io::IO::Deserialize(ptr, qs);
+	ptr = io::IO::Deserialize(ptr, l);
+	ptr = io::IO::Deserialize(ptr, lstr);
+	ptr = io::IO::Deserialize(ptr, ldstr);
+	ptr = io::IO::Deserialize(ptr, Kurv);
+	ptr = io::IO::Deserialize(ptr, M);
+	ptr = io::IO::Deserialize(ptr, V);
+	ptr = io::IO::Deserialize(ptr, T);
+	ptr = io::IO::Deserialize(ptr, Td);
+	ptr = io::IO::Deserialize(ptr, Bs);
+	ptr = io::IO::Deserialize(ptr, W);
+	ptr = io::IO::Deserialize(ptr, Dp);
+	ptr = io::IO::Deserialize(ptr, Dq);
+	ptr = io::IO::Deserialize(ptr, Ap);
+	ptr = io::IO::Deserialize(ptr, Aq);
+	ptr = io::IO::Deserialize(ptr, B);
+	ptr = io::IO::Deserialize(ptr, Fnet);
+	ptr = io::IO::Deserialize(ptr, F);
+	ptr = io::IO::Deserialize(ptr, zeta);
+	ptr = io::IO::Deserialize(ptr, PDyn);
+	ptr = io::IO::Deserialize(ptr, U);
+	ptr = io::IO::Deserialize(ptr, Ud);
+
+	return ptr;
+}
 
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL

@@ -439,20 +439,6 @@ IO::Serialize(const std::vector<mat6>& l)
 	return data;
 }
 
-template<typename T>
-std::vector<uint64_t>
-IO::Serialize(const std::vector<std::vector<T>>& l)
-{
-	std::vector<uint64_t> data;
-	const uint64_t n = l.size();
-	data.push_back(Serialize(n));
-	for (auto v : l) {
-		auto subdata = Serialize(v);
-		data.insert(data.end(), subdata.begin(), subdata.end());
-	}
-	return data;
-}
-
 uint64_t*
 IO::Deserialize(const uint64_t* in, uint64_t& out)
 {
@@ -609,22 +595,6 @@ IO::Deserialize(const uint64_t* in, std::vector<mat6>& out)
 	out.reserve(n);
 	for (unsigned int i = 0; i < n; i++) {
 		mat6 v;
-		remaining = Deserialize(remaining, v);
-		out.push_back(v);
-	}
-	return remaining;
-}
-
-template<typename T>
-uint64_t*
-IO::Deserialize(const uint64_t* in, std::vector<std::vector<T>>& out)
-{
-	uint64_t n;
-	uint64_t* remaining = Deserialize(in, n);
-	out.clear();
-	out.reserve(n);
-	for (unsigned int i = 0; i < n; i++) {
-		std::vector<T> v;
 		remaining = Deserialize(remaining, v);
 		out.push_back(v);
 	}

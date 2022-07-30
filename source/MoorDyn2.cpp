@@ -53,7 +53,7 @@ const char* UnitList[] = { "(s)     ", "(m)     ", "(m)     ", "(m)     ",
 	                       "(N)     ", "(N)     " };
 
 moordyn::MoorDyn::MoorDyn(const char* infilename)
-  : LogUser(NULL)
+  : io::IO(NULL)
   , _filepath("Mooring/lines.txt")
   , _basename("lines")
   , _basepath("Mooring/")
@@ -162,7 +162,7 @@ moordyn::MoorDyn::~MoorDyn()
 }
 
 moordyn::error_id
-moordyn::MoorDyn::Init(const double* x, const double* xd)
+moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 {
 	if (NCoupedDOF() && !x) {
 		LOGERR << "ERROR: "
@@ -255,8 +255,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 
 	// ------------------ do dynamic relaxation IC gen --------------------
 
-	LOGMSG << "Finalizing ICs using dynamic relaxation (" << ICDfac
-	       << "X normal drag)" << endl;
+	if (!skip_ic) {
+		LOGMSG << "Finalizing ICs using dynamic relaxation (" << ICDfac
+		       << "X normal drag)" << endl;
+	}
 
 	// boost drag coefficients to speed static equilibrium convergence
 	for (auto obj : LineList)
@@ -275,7 +277,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd)
 	real t = 0;
 	bool converged = true;
 	real max_error = 0.0;
-	while (t < ICTmax) {
+	while ((t < ICTmax) && (!skip_ic)) {
 		// Integrate one ICD timestep (ICdt)
 		real t_target = t + ICdt;
 		real dt;
@@ -541,6 +543,50 @@ moordyn::MoorDyn::Step(const double* x,
 		return GetForces(f);
 	else
 		return MOORDYN_SUCCESS;
+}
+
+std::vector<uint64_t>
+MoorDyn::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	data.push_back(io::IO::Serialize((uint64_t)npW));
+	data.push_back(io::IO::Serialize(tW_1));
+	subdata = io::IO::Serialize(U_1);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud_1);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	data.push_back(io::IO::Serialize(tW_2));
+	subdata = io::IO::Serialize(U_2);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud_2);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+
+	// Ask to save the data off all the subinstances
+	subdata = _t_integrator->Serialize();
+	data.insert(data.end(), subdata.begin(), subdata.end());
+
+	return data;
+}
+
+uint64_t*
+MoorDyn::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	uint64_t n;
+	ptr = io::IO::Deserialize(ptr, n);
+	npW = n;
+	ptr = io::IO::Deserialize(ptr, tW_1);
+	ptr = io::IO::Deserialize(ptr, U_1);
+	ptr = io::IO::Deserialize(ptr, Ud_1);
+	ptr = io::IO::Deserialize(ptr, tW_2);
+	ptr = io::IO::Deserialize(ptr, U_2);
+	ptr = io::IO::Deserialize(ptr, Ud_2);
+
+	// Load the children data also
+	ptr = _t_integrator->Deserialize(ptr);
+
+	return ptr;
 }
 
 moordyn::error_id
@@ -2010,6 +2056,13 @@ MoorDyn_Init(MoorDyn system, const double* x, const double* xd)
 }
 
 int DECLDIR
+MoorDyn_Init_NoIC(MoorDyn system, const double* x, const double* xd)
+{
+	CHECK_SYSTEM(system);
+	return ((moordyn::MoorDyn*)system)->Init(x, xd, true);
+}
+
+int DECLDIR
 MoorDyn_Step(MoorDyn system,
              const double* x,
              const double* xd,
@@ -2216,6 +2269,40 @@ MoorDyn_GetFASTtens(MoorDyn system,
 		    FairHTen + l, FairVTen + l, AnchHTen + l, AnchVTen + l);
 
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_Save(MoorDyn system, const char* filepath)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->Save(filepath);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
+int DECLDIR
+MoorDyn_Load(MoorDyn system, const char* filepath)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->Load(filepath);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
 }
 
 int DECLDIR

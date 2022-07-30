@@ -35,7 +35,7 @@
 #pragma once
 
 #include "MoorDynAPI.h"
-#include "Log.hpp"
+#include "IO.hpp"
 #include "Misc.hpp"
 
 #include "Time.hpp"
@@ -54,7 +54,7 @@ namespace moordyn {
  * This class contains everything required to hold a whole mooring system,
  * making everything thread-friendly easier
  */
-class MoorDyn : public LogUser
+class MoorDyn : public io::IO
 {
   public:
 	/** @brief Constructor
@@ -74,12 +74,18 @@ class MoorDyn : public LogUser
 	 * mooring lines
 	 * @param x Position vector
 	 * @param xd Velocity vector
+	 * @param skip_ic true to skip computing the initial condition, false
+	 * otherwise. You might be insterested on skipping the initial condition
+	 * computation if for install you plan to load a previously saved simulation
+	 * state
 	 * @note You can know the number of components required for \p x and \p xd
 	 * with the function MoorDyn::NCoupedDOF()
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 */
-	moordyn::error_id Init(const double* x, const double* xd);
+	moordyn::error_id Init(const double* x,
+	                       const double* xd,
+	                       bool skip_ic = false);
 
 	/** @brief Runs a time step of the MoorDyn system
 	 * @param x Position vector
@@ -278,6 +284,25 @@ class MoorDyn : public LogUser
 		U_1 = U;
 		Ud_1 = Ud;
 	}
+
+	/** @brief Produce the packed data to be saved
+	 *
+	 * The produced data can be used afterwards to restore the saved information
+	 * afterwards calling Deserialize(void).
+	 *
+	 * Thus, this function is not processing the information that is extracted
+	 * from the definition file
+	 * @return The packed data
+	 */
+	virtual std::vector<uint64_t> Serialize(void);
+
+	/** @brief Unpack the data to restore the Serialized information
+	 *
+	 * This is the inverse of Serialize(void)
+	 * @param data The packed data
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	virtual uint64_t* Deserialize(const uint64_t* data);
 
   protected:
 	/** @brief Read the input file, setting up all the requird objects and their

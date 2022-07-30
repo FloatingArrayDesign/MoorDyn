@@ -26,8 +26,10 @@ module moordyn
   integer, parameter :: MD_NO_OUTPUT = 4096
 
   private :: MoorDyn_Create, MoorDyn_SetLogFile, MoorDyn_Log, MoorDyn_Init, &
-             MoorDyn_Step, MoorDyn_ExternalWaveKinGetCoordinates, &
-             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
+             MoorDyn_Init_NoIC, MoorDyn_Step, &
+             MoorDyn_ExternalWaveKinGetCoordinates, &
+             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, MoorDyn_Save, &
+             MoorDyn_Load, &
              MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
@@ -36,12 +38,12 @@ module moordyn
              MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
-            MD_SetLogLevel, MD_Log, MD_Init, MD_Step, MD_Close, &
+            MD_SetLogLevel, MD_Log, MD_Init, MD_Init_NoIC, MD_Step, MD_Close, &
             MD_GetWaves, MD_ExternalWaveKinInit, MD_ExternalWaveKinGetN, &
             MD_ExternalWaveKinGetCoordinates, MD_ExternalWaveKinSet, &
             MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
             MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
-            MD_GetLine, MD_GetFASTtens, &
+            MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, &
             MD_GetWavesKin, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
@@ -103,6 +105,14 @@ module moordyn
       type(c_ptr), value, intent(in) :: xd
       integer(c_int) :: rc
     end function MoorDyn_Init
+
+    function MoorDyn_Init_NoIC(instance, x, xd) bind(c, name='MoorDyn_Init_NoIC') result(rc)
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: x
+      type(c_ptr), value, intent(in) :: xd
+      integer(c_int) :: rc
+    end function MoorDyn_Init_NoIC
 
     function MoorDyn_Step(instance, x, xd, f, t, dt) bind(c, name='MoorDyn_Step') result(rc)
       import :: c_ptr, c_double, c_int
@@ -211,6 +221,20 @@ module moordyn
       type(c_ptr), value, intent(in) :: avt
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
+
+    function MoorDyn_Save(instance, f) bind(c, name='MoorDyn_Save') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_Save
+
+    function MoorDyn_Load(instance, f) bind(c, name='MoorDyn_Load') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_Load
 
     !                                Waves.h
     ! ==========================================================================
@@ -410,6 +434,14 @@ contains
     MD_Init = MoorDyn_Init(instance, c_loc(x), c_loc(xd))
   end function MD_Init
 
+  integer function MD_Init_NoIC(instance, x, xd)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: x(:)
+    real(c_double), intent(in), target :: xd(:)
+    MD_Init_NoIC = MoorDyn_Init_NoIC(instance, c_loc(x), c_loc(xd))
+  end function MD_Init_NoIC
+
   integer function MD_Step(instance, x, xd, f, t, dt)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
@@ -447,6 +479,21 @@ contains
     real(c_double), intent(in), target :: avt(:)
     MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
   end function MD_GetFASTtens
+
+  integer function MD_Save(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_Save = MoorDyn_Save(instance, trim(f) // c_null_char)
+  end function MD_Save
+
+  integer function MD_Load(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_Load = MoorDyn_Load(instance, trim(f) // c_null_char)
+  end function MD_Load
+
 
   !                                Waves.h
   ! ============================================================================

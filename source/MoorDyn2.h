@@ -153,6 +153,26 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_Init(MoorDyn system, const double* x, const double* xd);
 
+	/** @brief The same than MoorDyn_Init(), but the initial condition is not
+	 * computed at all.
+	 *
+	 * This is of use when you are loading a state file afterwards with
+	 * Moordyn_Load()
+	 *
+	 * @param system The Moordyn system
+	 * @param x Position vector (6 components per coupled body or cantilevered
+	 * rod and 3 components per pinned rod or coupled connection)
+	 * @param xd Velocity vector (6 components per coupled body or cantilevered
+	 * rod and 3 components per pinned rod or coupled connection)
+	 * @return MOORDYN_SUCESS If the mooring system is correctly initialized,
+	 * an error code otherwise (see @ref moordyn_errors)
+	 * @note MoorDyn_NCoupledDOF() can be used to know the number of components
+	 * required for \p x and \p xd
+	 */
+	int DECLDIR MoorDyn_Init_NoIC(MoorDyn system,
+	                              const double* x,
+	                              const double* xd);
+
 	/** @brief Runs a time step of the MoorDyn system
 	 * @param system The Moordyn system
 	 * @param x Position vector
@@ -379,6 +399,32 @@ extern "C"
 	                                float FairVTen[],
 	                                float AnchHTen[],
 	                                float AnchVTen[]);
+
+	/** @brief Save the system so it can be loaded afterwards
+	 *
+	 * At the time of loading the system, it is still required to create the
+	 * system reading the same definition file and calling MoorDyn_Init_NoIC()
+	 * @param system The Moordyn system
+	 * @param filepath The path of the file to write
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 * @see MoorDyn_Load
+	 * @see MoorDyn_Init_NoIC
+	 */
+	int DECLDIR MoorDyn_Save(MoorDyn system, const char* filepath);
+
+	/** @brief Load the system saved before
+	 *
+	 * You must still call MoorDyn_Create() and MoorDyn_Init_NoIC() before
+	 * calling this function
+	 * @param system The Moordyn system
+	 * @param filepath The path of the MoorDyn saved system
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 * @see MoorDyn_Save
+	 * @see MoorDyn_Init_NoIC
+	 */
+	int DECLDIR MoorDyn_Load(MoorDyn system, const char* filepath);
 
 	/** @brief Draw the lines and connections in the active OpenGL context
 	 *

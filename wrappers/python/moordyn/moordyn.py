@@ -174,7 +174,26 @@ def Init(instance, x, v):
     int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return cmoordyn.init(instance, list(x), list(v))
+    return cmoordyn.init(instance, list(x), list(v), 0)
+
+
+def Init_NoIC(instance, x, v):
+    """Initializes the MoorDyn sytem, without calculating initial conditions
+
+    Use this when you are planning to call moordyn.Load() afterwards
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Keyword arguments:
+    x (list): Position of the coupled connections
+    v (list): Velocity of the coupled connections
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.init(instance, list(x), list(v), 1)
 
 
 def Step(instance, x, v, t, dt):
@@ -441,9 +460,41 @@ def GetFASTtens(instance, n_lines):
     list: The horizontal anchor tension at each line
     list: The vertical anchor tension at each line
     """
-    data = moordyn.get_fast_tens(instance, n_lines)
+    import cmoordyn
+    data = cmoordyn.get_fast_tens(instance, n_lines)
     return data[0], data[1], data[2], data[3]
 
+
+def Save(instance, filepath):
+    """Save the MoorDyn system into a file that can be loaded afterwards to
+    resume the simulation
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.save(instance, filepath)
+
+
+def Load(instance, filepath):
+    """Load a previously saved MoorDyn system, in order to resume the simulation
+
+    You still must read the same definition file with moordyn.Create() and call
+    moordyn.Init_NoIC()
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.load(instance, filepath)
 
 #                                  Waves.h
 #  =============================================================================

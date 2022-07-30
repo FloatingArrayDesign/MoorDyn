@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "Log.hpp"
+#include "IO.hpp"
 #include <utility>
 
 using namespace std;
@@ -59,7 +59,7 @@ class Waves;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The connection position and velocity is externally imposed
  */
-class Connection : public LogUser
+class Connection : public io::IO
 {
   public:
 	/** @brief Costructor
@@ -362,6 +362,25 @@ class Connection : public LogUser
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
 	moordyn::error_id doRHS();
+
+	/** @brief Produce the packed data to be saved
+	 *
+	 * The produced data can be used afterwards to restore the saved information
+	 * afterwards calling Deserialize(void).
+	 *
+	 * Thus, this function is not processing the information that is extracted
+	 * from the definition file
+	 * @return The packed data
+	 */
+	virtual std::vector<uint64_t> Serialize(void);
+
+	/** @brief Unpack the data to restore the Serialized information
+	 *
+	 * This is the inverse of Serialize(void)
+	 * @param data The packed data
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	virtual uint64_t* Deserialize(const uint64_t* data);
 
 #ifdef USEGL
 	void drawGL(void);

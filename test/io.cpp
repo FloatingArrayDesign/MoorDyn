@@ -33,6 +33,7 @@
  */
 
 #include "IO.hpp"
+#include "MoorDyn2.h"
 #include <vector>
 #include <sstream>
 #include <filesystem>
@@ -196,7 +197,7 @@ bool
 io_class()
 {
 	// First basic test, check that we can serialize and deserialize
-	cout << "Serialize -> Deserialize..." << endl;
+	cout << "*** Serialize -> Deserialize..." << endl;
 	Log dummy_log;
 	IOTester src(&dummy_log), dst(&dummy_log);
 	dst.clear();
@@ -206,10 +207,10 @@ io_class()
 		cerr << "The deserialized data does not match the original" << endl;
 		return false;
 	}
-	cout << "  OK!" << endl;
+	cout << "***  OK!" << endl;
 
 	// Now try saving and loading
-	cout << "Save -> Load..." << endl;
+	cout << "*** Save -> Load..." << endl;
 	stringstream filepath;
 	filepath << fs::temp_directory_path().c_str() << "/"
 	         << "test.moordyn";
@@ -220,7 +221,173 @@ io_class()
 		cerr << "The loaded data does not match the original" << endl;
 		return false;
 	}
-	cout << "  OK!" << endl;
+	cout << "***  OK!" << endl;
+
+	return true;
+}
+
+bool
+skip_ic()
+{
+	cout << "*** Skip initial condition..." << endl;
+	// We first run the system in the regular way, but saving the state after
+	// calling MoorDyn_Init()
+
+	MoorDyn system = MoorDyn_Create("Mooring/lines.txt");
+	if (!system) {
+		cerr << "Failure Creating the Mooring system" << endl;
+		return false;
+	}
+
+	unsigned int n_dof;
+	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		return false;
+	}
+	if (n_dof != 9) {
+		cerr << "3x3 = 9 DOFs were expected, but " << n_dof << "were reported"
+		     << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	int err;
+	double x[9], dx[9];
+	// Get the initial positions from the config file
+	for (unsigned int i = 0; i < 3; i++) {
+		// 4 = first fairlead id
+		auto conn = MoorDyn_GetConnection(system, i + 4);
+		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure retrieving the fairlead " << i + 4
+			     << " position: " << err << endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+	std::fill(dx, dx + 9, 0.0);
+	err = MoorDyn_Init(system, x, dx);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the mooring initialization: " << err << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	stringstream filepath;
+	filepath << fs::temp_directory_path().c_str() << "/"
+	         << "minimal.moordyn";
+	err = MoorDyn_Save(system, filepath.str().c_str());
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure saving the mooring system: " << err << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	double f[9];
+	double t = 0.0, dt = 0.5;
+	err = MoorDyn_Step(system, x, dx, f, &t, &dt);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the mooring step: " << err << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	// Now we create and run a second system, this time loading it from the
+	// saved snapshot above
+	MoorDyn system2 = MoorDyn_Create("Mooring/lines.txt");
+	if (!system2) {
+		cerr << "Failure Creating the second Mooring system" << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	err = MoorDyn_Init_NoIC(system2, x, dx);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the second mooring initialization: " << err
+		     << endl;
+		MoorDyn_Close(system);
+		MoorDyn_Close(system2);
+		return false;
+	}
+
+	err = MoorDyn_Load(system2, filepath.str().c_str());
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure loading the mooring system: " << err << endl;
+		MoorDyn_Close(system);
+		MoorDyn_Close(system2);
+		return false;
+	}
+
+	t = 0.0;
+	err = MoorDyn_Step(system2, x, dx, f, &t, &dt);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the second mooring step: " << err << endl;
+		MoorDyn_Close(system);
+		MoorDyn_Close(system2);
+		return false;
+	}
+
+	// Check that the nodes positions match between both systems
+	unsigned int n_lines;
+	err = MoorDyn_GetNumberLines(system, &n_lines);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure getting the number of lines: " << err << endl;
+		MoorDyn_Close(system);
+		MoorDyn_Close(system2);
+		return false;
+	}
+	for (unsigned int line_i = 1; line_i <= n_lines; line_i++) {
+		auto line = MoorDyn_GetLine(system, line_i);
+		auto line2 = MoorDyn_GetLine(system2, line_i);
+		unsigned int n_nodes;
+		err = MoorDyn_GetLineNumberNodes(line, &n_nodes);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure getting the number of nodes: " << err << endl;
+			MoorDyn_Close(system);
+			MoorDyn_Close(system2);
+			return false;
+		}
+		for (unsigned int node_i = 0; node_i < n_nodes; node_i++) {
+			double pos[3], pos2[3];
+			err = MoorDyn_GetLineNodePos(line, node_i, pos);
+			if (err != MOORDYN_SUCCESS) {
+				cerr << "Failure getting the node position: " << err << endl;
+				MoorDyn_Close(system);
+				MoorDyn_Close(system2);
+				return false;
+			}
+			err = MoorDyn_GetLineNodePos(line2, node_i, pos2);
+			if (err != MOORDYN_SUCCESS) {
+				cerr << "Failure getting the node position: " << err << endl;
+				MoorDyn_Close(system);
+				MoorDyn_Close(system2);
+				return false;
+			}
+			for (unsigned int i = 0; i < 3; i++) {
+				if (pos[i] != pos2[i]) {
+					cerr << "Line " << line_i << ", node " << node_i
+					     << ", coord " << i << ": " << pos[i]
+					     << " != " << pos2[i] << endl;
+					MoorDyn_Close(system);
+					MoorDyn_Close(system2);
+					return false;
+				}
+			}
+		}
+	}
+
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing Moordyn: " << err << endl;
+		MoorDyn_Close(system2);
+		return false;
+	}
+	err = MoorDyn_Close(system2);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing second Moordyn: " << err << endl;
+		return false;
+	}
+	cout << "***  OK!" << endl;
 
 	return true;
 }
@@ -229,6 +396,8 @@ int
 main(int, char**)
 {
 	if (!io_class())
+		return 1;
+	if (!skip_ic())
 		return 1;
 	return 0;
 }

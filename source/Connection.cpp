@@ -37,7 +37,7 @@
 namespace moordyn {
 
 Connection::Connection(moordyn::Log* log)
-  : LogUser(log)
+  : io::IO(log)
   , WaterKin(0)
 {
 }
@@ -415,6 +415,55 @@ Connection::doRHS()
 	M += conV * env->rho_w * conCa * mat::Identity();
 
 	return MOORDYN_SUCCESS;
+}
+
+std::vector<uint64_t>
+Connection::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	data.push_back(io::IO::Serialize(t));
+	data.push_back(io::IO::Serialize(t0));
+	subdata = io::IO::Serialize(r);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(r_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Fnet);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(M);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	data.push_back(io::IO::Serialize(zeta));
+	data.push_back(io::IO::Serialize(PDyn));
+	subdata = io::IO::Serialize(U);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+
+	return data;
+}
+
+uint64_t*
+Connection::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	ptr = io::IO::Deserialize(ptr, t);
+	ptr = io::IO::Deserialize(ptr, t0);
+	ptr = io::IO::Deserialize(ptr, r);
+	ptr = io::IO::Deserialize(ptr, rd);
+	ptr = io::IO::Deserialize(ptr, r_ves);
+	ptr = io::IO::Deserialize(ptr, rd_ves);
+	ptr = io::IO::Deserialize(ptr, Fnet);
+	ptr = io::IO::Deserialize(ptr, M);
+	ptr = io::IO::Deserialize(ptr, zeta);
+	ptr = io::IO::Deserialize(ptr, PDyn);
+	ptr = io::IO::Deserialize(ptr, U);
+	ptr = io::IO::Deserialize(ptr, Ud);
+
+	return ptr;
 }
 
 // new function to draw instantaneous line positions in openGL context

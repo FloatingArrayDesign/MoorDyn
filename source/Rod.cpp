@@ -44,7 +44,7 @@ namespace moordyn {
 //   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
 
 Rod::Rod(moordyn::Log* log)
-  : LogUser(log)
+  : io::IO(log)
 {
 }
 
@@ -1296,6 +1296,131 @@ Rod::Output(real time)
 		*outfile << "\n";
 	}
 	return;
+}
+
+std::vector<uint64_t>
+Rod::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	data.push_back(io::IO::Serialize(t));
+	data.push_back(io::IO::Serialize(t0));
+	subdata = io::IO::Serialize(r6);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(v6);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(r);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(q);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(l);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(M);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(V);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(FextA);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(FextB);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Mext);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(F6net);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(M6net);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(W);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Bo);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Pd);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Dp);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Dq);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ap);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Aq);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(B);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Fnet);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(F);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(zeta);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(PDyn);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(U);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	data.push_back(io::IO::Serialize(h0));
+	subdata = io::IO::Serialize(r_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(zetaTS);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(FTS);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(UTS);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(UdTS);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	data.push_back(io::IO::Serialize(dtWater));
+
+	return data;
+}
+
+uint64_t*
+Rod::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	ptr = io::IO::Deserialize(ptr, t);
+	ptr = io::IO::Deserialize(ptr, t0);
+	ptr = io::IO::Deserialize(ptr, r6);
+	ptr = io::IO::Deserialize(ptr, v6);
+	ptr = io::IO::Deserialize(ptr, r);
+	ptr = io::IO::Deserialize(ptr, rd);
+	ptr = io::IO::Deserialize(ptr, q);
+	ptr = io::IO::Deserialize(ptr, l);
+	ptr = io::IO::Deserialize(ptr, M);
+	ptr = io::IO::Deserialize(ptr, V);
+	ptr = io::IO::Deserialize(ptr, FextA);
+	ptr = io::IO::Deserialize(ptr, FextB);
+	ptr = io::IO::Deserialize(ptr, Mext);
+	ptr = io::IO::Deserialize(ptr, F6net);
+	ptr = io::IO::Deserialize(ptr, M6net);
+	ptr = io::IO::Deserialize(ptr, W);
+	ptr = io::IO::Deserialize(ptr, Bo);
+	ptr = io::IO::Deserialize(ptr, Pd);
+	ptr = io::IO::Deserialize(ptr, Dp);
+	ptr = io::IO::Deserialize(ptr, Dq);
+	ptr = io::IO::Deserialize(ptr, Ap);
+	ptr = io::IO::Deserialize(ptr, Aq);
+	ptr = io::IO::Deserialize(ptr, B);
+	ptr = io::IO::Deserialize(ptr, Fnet);
+	ptr = io::IO::Deserialize(ptr, F);
+	ptr = io::IO::Deserialize(ptr, zeta);
+	ptr = io::IO::Deserialize(ptr, PDyn);
+	ptr = io::IO::Deserialize(ptr, U);
+	ptr = io::IO::Deserialize(ptr, Ud);
+	ptr = io::IO::Deserialize(ptr, h0);
+	ptr = io::IO::Deserialize(ptr, r_ves);
+	ptr = io::IO::Deserialize(ptr, rd_ves);
+	ptr = io::IO::Deserialize(ptr, zetaTS);
+	ptr = io::IO::Deserialize(ptr, FTS);
+	ptr = io::IO::Deserialize(ptr, UTS);
+	ptr = io::IO::Deserialize(ptr, UdTS);
+	ptr = io::IO::Deserialize(ptr, dtWater);
+	ntWater = zetaTS.size();
+
+	return ptr;
 }
 
 // new function to draw instantaneous line positions in openGL context
