@@ -34,7 +34,10 @@
 
 #include "IO.hpp"
 #include <vector>
+#include <sstream>
+#include <filesystem>
 
+namespace fs = std::filesystem;
 using namespace moordyn;
 
 #define LISTS_LENGTH 32
@@ -59,6 +62,9 @@ class IOTester : public io::IO
 	        { 10.0, -256.0, -1024.341 },
 	        { 32.4, 55.7, 812309765.2 } })
 	  , m6({ { 3.0, 4.5, -8.0, 10.0, -256.0, -1024.341 },
+	         { 3.0, 4.5, -8.0, 10.0, -256.0, -1024.341 },
+	         { 3.0, 4.5, -8.0, 10.0, -256.0, -1024.341 },
+	         { 3.0, 4.5, -8.0, 10.0, -256.0, -1024.341 },
 	         { 3.0, 4.5, -8.0, 10.0, -256.0, -1024.341 },
 	         { 3.0, 4.5, -8.0, 10.0, -256.0, -1024.341 } })
 	{
@@ -195,14 +201,24 @@ main(int, char**)
 	Log dummy_log;
 	IOTester src(&dummy_log), dst(&dummy_log);
 	dst.clear();
-	if (src == dst) {
-		cerr << "src == dst from the beggining?!?!?" << endl;
-		return 1;
-	}
 	auto data = src.Serialize();
 	dst.Deserialize(data.data());
 	if (src == dst) {
 		cerr << "The deserialized data does not match the original" << endl;
+		return 1;
+	}
+	cout << "  OK!" << endl;
+
+	// Now try saving and loading
+	cout << "Save -> Load..." << endl;
+	stringstream filepath;
+	filepath << fs::temp_directory_path().c_str() << "/"
+	         << "test.moordyn";
+	dst.clear();
+	src.Save(filepath.str());
+	dst.Load(filepath.str());
+	if (src == dst) {
+		cerr << "The loaded data does not match the original" << endl;
 		return 1;
 	}
 	cout << "  OK!" << endl;

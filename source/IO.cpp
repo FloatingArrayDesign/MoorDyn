@@ -284,7 +284,7 @@ IO::Load(const std::string filepath)
 		       << filepath << "'" << endl;
 		throw moordyn::mem_error("Allocation error");
 	}
-	f.read((char*)&data, size);
+	f.read((char*)data, size);
 	f.close();
 
 	// So do the unpacking job
