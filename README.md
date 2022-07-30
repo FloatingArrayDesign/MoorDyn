@@ -11,37 +11,37 @@ More information about MoorDyn is now available at moordyn.readthedocs.io
 
 The version 2 is currently under development:
 
- [X] BSD-3 license
- [X] Rigid bodies
- [X] Rigid cylindrical Rod objects, with surface-piercing capabilities
- [ ] Wave kinematics
- [X] Bending stiffness for power cable simulation
- [X] pinned (3 DOF) and rigid (6 DOF) coupling options
- [X] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
- [X] Different time integrators
- [X] Save/load
- [ ] VTK exporter
- [X] New C API
- [ ] New C++ API
- [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
- [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
- [X] FORTRAN wrappers
- [X] Python wrappers
- [ ] MATLAB mex file
- [ ] Documentation for users
- [X] Documentation for developers
- [ ] Tests
+ - [X] BSD-3 license
+ - [X] Rigid bodies
+ - [X] Rigid cylindrical Rod objects, with surface-piercing capabilities
+ - [ ] Wave kinematics
+ - [X] Bending stiffness for power cable simulation
+ - [X] pinned (3 DOF) and rigid (6 DOF) coupling options
+ - [X] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
+ - [X] Different time integrators
+ - [X] Save/load
+ - [ ] VTK exporter
+ - [X] New C API
+ - [ ] New C++ API
+ - [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
+ - [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
+ - [X] FORTRAN wrappers
+ - [X] Python wrappers
+ - [ ] MATLAB mex file
+ - [ ] Documentation for users
+ - [X] Documentation for developers
+ - [ ] Tests
 
 There are also some other additional tasks to be carried out prior to the final
 release:
 
- [X] Test in Linux with GCC
- [X] Test in Linux with Clang
- [ ] Test in Windows with MinGW
- [ ] Test in Windows with Visual Studio CE
- [ ] Make a windows installer (CMake + CPack + NSIS)
- [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
- [ ] Fix the SCUDS missiles bug
+ - [X] Test in Linux with GCC
+ - [X] Test in Linux with Clang
+ - [ ] Test in Windows with MinGW
+ - [ ] Test in Windows with Visual Studio CE
+ - [ ] Make a windows installer (CMake + CPack + NSIS)
+ - [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
+ - [ ] Fix the SCUDS missiles bug
 
 
 ## Aknowledgments
