@@ -32,6 +32,17 @@ The version 2 is currently under development:
  [X] Documentation for developers
  [ ] Tests
 
+There are also some other additional tasks to be carried out prior to the final
+release:
+
+ [X] Test in Linux with GCC
+ [X] Test in Linux with Clang
+ [ ] Test in Windows with MinGW
+ [ ] Test in Windows with Visual Studio CE
+ [ ] Make a windows installer (CMake + CPack + NSIS)
+ [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
+
+
 ## Aknowledgments
 
 Many thanks to all the team of the
