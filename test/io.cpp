@@ -96,7 +96,6 @@ class IOTester : public io::IO
 	virtual std::vector<uint64_t> Serialize(void)
 	{
 		std::vector<uint64_t> data, subdata;
-		const int64_t ii = i;
 		data.push_back(io::IO::Serialize((int64_t)i));
 		data.push_back(io::IO::Serialize((uint64_t)ui));
 		data.push_back(io::IO::Serialize(r));
@@ -192,7 +191,6 @@ class IOTester : public io::IO
 	std::vector<moordyn::mat> lm;
 	std::vector<moordyn::mat6> lm6;
 };
-
 
 bool
 io_class()

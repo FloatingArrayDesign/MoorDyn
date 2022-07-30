@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "Log.hpp"
+#include "IO.hpp"
 #include "State.hpp"
 #include "Line.hpp"
 #include "Connection.hpp"
@@ -52,7 +53,7 @@ namespace moordyn {
  * This class is helping mooring::MoorDyn to can consider every single time
  * scheme in the very same way
  */
-class TimeScheme : public LogUser
+class TimeScheme : public io::IO
 {
   public:
 	/// @brief Destructor
@@ -248,7 +249,7 @@ class TimeScheme : public LogUser
 	 * @param log Logging handler
 	 */
 	TimeScheme(moordyn::Log* log)
-	  : LogUser(log)
+	  : io::IO(log)
 	  , has_ext_waves(false)
 	  , name("None")
 	  , t(0.0)
@@ -531,6 +532,151 @@ class TimeSchemeBase : public TimeScheme
 	 */
 	virtual void Step(real& dt) = 0;
 
+	/** @brief Produce the packed data to be saved
+	 *
+	 * The produced data can be used afterwards to restore the saved information
+	 * afterwards calling Deserialize(void).
+	 * @return The packed data
+	 */
+	virtual std::vector<uint64_t> Serialize(void)
+	{
+		std::vector<uint64_t> data, subdata;
+
+		data.push_back(io::IO::Serialize(t));
+		data.push_back(io::IO::Serialize((int64_t)has_ext_waves));
+		if (has_ext_waves) {
+			data.push_back(io::IO::Serialize(t_w));
+			subdata = io::IO::Serialize(u_w);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(ud_w);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+
+		// We do not need to save the number of states or derivatives, since
+		// that information is already known by each specific time scheme.
+		// Along the same line, we do not need to same information about the
+		// number of lines, rods and so on. That information is already
+		// collected from the definition file
+		for (unsigned int substep = 0; substep < NSTATE; substep++) {
+			for (unsigned int i = 0; i < bodies.size(); i++) {
+				subdata = io::IO::Serialize(r[substep].bodies[i].pos);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(r[substep].bodies[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+			for (unsigned int i = 0; i < rods.size(); i++) {
+				subdata = io::IO::Serialize(r[substep].rods[i].pos);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(r[substep].rods[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+			for (unsigned int i = 0; i < conns.size(); i++) {
+				subdata = io::IO::Serialize(r[substep].conns[i].pos);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(r[substep].conns[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+			for (unsigned int i = 0; i < lines.size(); i++) {
+				subdata = io::IO::Serialize(r[substep].lines[i].pos);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(r[substep].lines[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+		}
+		for (unsigned int substep = 0; substep < NDERIV; substep++) {
+			for (unsigned int i = 0; i < bodies.size(); i++) {
+				subdata = io::IO::Serialize(rd[substep].bodies[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(rd[substep].bodies[i].acc);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+			for (unsigned int i = 0; i < rods.size(); i++) {
+				subdata = io::IO::Serialize(rd[substep].rods[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(rd[substep].rods[i].acc);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+			for (unsigned int i = 0; i < conns.size(); i++) {
+				subdata = io::IO::Serialize(rd[substep].conns[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(rd[substep].conns[i].acc);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+			for (unsigned int i = 0; i < lines.size(); i++) {
+				subdata = io::IO::Serialize(rd[substep].lines[i].vel);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+				subdata = io::IO::Serialize(rd[substep].lines[i].acc);
+				data.insert(data.end(), subdata.begin(), subdata.end());
+			}
+		}
+
+		return data;
+	}
+
+	/** @brief Unpack the data to restore the Serialized information
+	 *
+	 * This is the function that each inherited class must implement, and should
+	 * be the inverse of Serialize(void)
+	 * @param data The packed data
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	virtual uint64_t* Deserialize(const uint64_t* data)
+	{
+		uint64_t* ptr = (uint64_t*)data;
+		ptr = io::IO::Deserialize(ptr, t);
+		int64_t ext_waves;
+		ptr = io::IO::Deserialize(ptr, ext_waves);
+		has_ext_waves = (bool)ext_waves;
+		if (has_ext_waves) {
+			ptr = io::IO::Deserialize(ptr, t_w);
+			ptr = io::IO::Deserialize(ptr, u_w);
+			ptr = io::IO::Deserialize(ptr, ud_w);
+		}
+
+		// We did not save the number of states or derivatives, since that
+		// information is already known by each specific time scheme.
+		// Along the same line, we did not save information about the number of
+		// lines, rods and so on
+		for (unsigned int substep = 0; substep < NSTATE; substep++) {
+			for (unsigned int i = 0; i < bodies.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, r[substep].bodies[i].pos);
+				ptr = io::IO::Deserialize(ptr, r[substep].bodies[i].vel);
+			}
+			for (unsigned int i = 0; i < rods.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, r[substep].rods[i].pos);
+				ptr = io::IO::Deserialize(ptr, r[substep].rods[i].vel);
+			}
+			for (unsigned int i = 0; i < conns.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, r[substep].conns[i].pos);
+				ptr = io::IO::Deserialize(ptr, r[substep].conns[i].vel);
+			}
+			for (unsigned int i = 0; i < lines.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, r[substep].lines[i].pos);
+				ptr = io::IO::Deserialize(ptr, r[substep].lines[i].vel);
+			}
+		}
+		for (unsigned int substep = 0; substep < NDERIV; substep++) {
+			for (unsigned int i = 0; i < bodies.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, rd[substep].bodies[i].vel);
+				ptr = io::IO::Deserialize(ptr, rd[substep].bodies[i].acc);
+			}
+			for (unsigned int i = 0; i < rods.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, rd[substep].rods[i].vel);
+				ptr = io::IO::Deserialize(ptr, rd[substep].rods[i].acc);
+			}
+			for (unsigned int i = 0; i < conns.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, rd[substep].conns[i].vel);
+				ptr = io::IO::Deserialize(ptr, rd[substep].conns[i].acc);
+			}
+			for (unsigned int i = 0; i < lines.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, rd[substep].lines[i].vel);
+				ptr = io::IO::Deserialize(ptr, rd[substep].lines[i].acc);
+			}
+		}
+
+		return ptr;
+	}
+
   protected:
 	/** @brief Costructor
 	 * @param log Logging handler
@@ -806,6 +952,38 @@ class ABScheme : public TimeSchemeBase<5, 1>
 	 * @param dt Time step
 	 */
 	virtual void Step(real& dt);
+
+	/** @brief Produce the packed data to be saved
+	 *
+	 * The produced data can be used afterwards to restore the saved information
+	 * afterwards calling Deserialize(void).
+	 * @return The packed data
+	 */
+	virtual std::vector<uint64_t> Serialize(void)
+	{
+		std::vector<uint64_t> data = TimeSchemeBase::Serialize();
+		// We append the number of available steps
+		data.push_back(io::IO::Serialize((uint64_t)n_steps));
+
+		return data;
+	}
+
+	/** @brief Unpack the data to restore the Serialized information
+	 *
+	 * This is the function that each inherited class must implement, and should
+	 * be the inverse of Serialize(void)
+	 * @param data The packed data
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	virtual uint64_t* Deserialize(const uint64_t* data)
+	{
+		uint64_t* ptr = TimeSchemeBase::Deserialize(data);
+		uint64_t n;
+		ptr = io::IO::Deserialize(ptr, n);
+		n_steps = n;
+
+		return ptr;
+	}
 
   private:
 	/// The number of derivatives already available

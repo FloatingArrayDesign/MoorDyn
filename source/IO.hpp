@@ -49,6 +49,9 @@ namespace io {
 /** @class IO IO.hpp
  * @brief A base class for all the entitites that must save/load data to/from
  * disk
+ *
+ * @note Since this class already publicly inherits moordyn::LogUser, all the
+ * classes inheriting this class do not require inheriting also LogUser
  */
 class IO : public LogUser
 {
