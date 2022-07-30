@@ -55,7 +55,7 @@ main(int, char**)
 	unsigned int n_dof;
 	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
 		MoorDyn_Close(system);
-		return false;
+		return 1;
 	}
 	if (n_dof) {
 		cerr << "No coupled Degrees Of Freedom were expected, but " << n_dof
@@ -89,7 +89,7 @@ main(int, char**)
 	err = MoorDyn_Close(system);
 	if (err != MOORDYN_SUCCESS) {
 		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
+		return 1;
 	}
 
 	return 0;
