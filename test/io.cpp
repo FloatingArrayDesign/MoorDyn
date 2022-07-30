@@ -193,8 +193,9 @@ class IOTester : public io::IO
 	std::vector<moordyn::mat6> lm6;
 };
 
-int
-main(int, char**)
+
+bool
+io_class()
 {
 	// First basic test, check that we can serialize and deserialize
 	cout << "Serialize -> Deserialize..." << endl;
@@ -205,7 +206,7 @@ main(int, char**)
 	dst.Deserialize(data.data());
 	if (src == dst) {
 		cerr << "The deserialized data does not match the original" << endl;
-		return 1;
+		return false;
 	}
 	cout << "  OK!" << endl;
 
@@ -219,9 +220,17 @@ main(int, char**)
 	dst.Load(filepath.str());
 	if (src == dst) {
 		cerr << "The loaded data does not match the original" << endl;
-		return 1;
+		return false;
 	}
 	cout << "  OK!" << endl;
 
+	return true;
+}
+
+int
+main(int, char**)
+{
+	if (!io_class())
+		return 1;
 	return 0;
 }
