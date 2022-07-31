@@ -34,6 +34,10 @@
 #include "MoorDyn2.h"
 #include <stdlib.h>
 #include <iostream>
+#ifdef WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 // =============================================================================
 //
@@ -126,9 +130,9 @@ MoorDynInit(const double x[], const double xd[], const char* infilename)
 
 		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
 		// point to console as well
-		ios::sync_with_stdio();
+		std::ios::sync_with_stdio();
 
-		cout << "(MoorDyn-initiated console window)" << endl;
+		std::cout << "(MoorDyn-initiated console window)" << std::endl;
 	}
 #endif
 
