@@ -14,6 +14,10 @@ foreach(TEST ${TESTS})
     add_dependencies(${TEST} Test_MooringConfigFiles)
     add_test(NAME ${TEST}
              COMMAND ${TEST})
+    if(WIN32)
+        set_property(TEST ${TEST} PROPERTY ENVIRONMENT 
+            "PATH=%PATH%\;${CMAKE_BINARY_DIR}\\source\\$<CONFIG>")
+    endif()
 endforeach()
 
 if(${FORTRAN_WRAPPER})
@@ -23,4 +27,8 @@ if(${FORTRAN_WRAPPER})
     add_dependencies(fortran_bindings Test_MooringConfigFiles)
     add_test(NAME fortran_bindings
              COMMAND fortran_bindings)
+    if(WIN32)
+        set_property(TEST ${TEST} PROPERTY ENVIRONMENT 
+            "PATH=%PATH%\;${CMAKE_BINARY_DIR}\\source\\$<CONFIG>")
+    endif()
 endif()
