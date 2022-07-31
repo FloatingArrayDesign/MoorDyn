@@ -38,11 +38,11 @@ release:
  - [X] Test in Linux with GCC
  - [X] Test in Linux with Clang
  - [ ] Test in Windows with MinGW
+ - [ ] Test in Windows with CLang
  - [ ] Test in Windows with Visual Studio CE
  - [ ] Make a windows installer (CMake + CPack + NSIS)
  - [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
  - [ ] Fix the SCUDS missiles bug
-
 
 ## Aknowledgments
 
