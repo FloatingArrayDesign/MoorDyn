@@ -57,6 +57,7 @@ set_property(TARGET moordyn APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING moordyn_MAJOR_VERSION
 )
 
+target_compile_definitions(moordyn PUBLIC MoorDyn_EXPORTS)
 target_link_libraries(moordyn PUBLIC ${MOORDYN_PUBLIC_DEPS})
 
 install(TARGETS moordyn EXPORT MoorDynTargets

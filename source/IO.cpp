@@ -321,7 +321,6 @@ IO::Serialize(const real& f)
 	return Serialize((int64_t)pack754_64((double)f));
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const vec& m)
 {
@@ -332,7 +331,6 @@ IO::Serialize(const vec& m)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const vec6& m)
 {
@@ -343,7 +341,6 @@ IO::Serialize(const vec6& m)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const mat& m)
 {
@@ -355,7 +352,6 @@ IO::Serialize(const mat& m)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const mat6& m)
 {
@@ -467,20 +463,6 @@ IO::Deserialize(const uint64_t* in, real& out)
 	return remaining;
 }
 
-template<int R, int C>
-uint64_t*
-IO::Deserialize(const uint64_t* in, Eigen::Matrix<real, R, C>& out)
-{
-	uint64_t* remaining = (uint64_t*)in;
-	const unsigned int nx = out.rows();
-	const unsigned int ny = out.cols();
-	for (unsigned int i = 0; i < nx; i++)
-		for (unsigned int j = 0; j < ny; i++)
-			remaining = Deserialize(remaining, out(i, j));
-	return remaining;
-}
-
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, vec& out)
 {
@@ -490,7 +472,6 @@ IO::Deserialize(const uint64_t* in, vec& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, vec6& out)
 {
@@ -500,7 +481,6 @@ IO::Deserialize(const uint64_t* in, vec6& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, mat& out)
 {
@@ -511,7 +491,6 @@ IO::Deserialize(const uint64_t* in, mat& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, mat6& out)
 {

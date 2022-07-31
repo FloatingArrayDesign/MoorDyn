@@ -120,12 +120,29 @@ class IO : public LogUser
 	 */
 	uint64_t Serialize(const real& f);
 
-	/** @brief Pack a generic matrix to make it writtable
+	/** @brief Pack a 3D vector to make it writtable
 	 * @param m The matrix
 	 * @return The packed matrix
 	 */
-	template<int R, int C>
-	std::vector<uint64_t> Serialize(const Eigen::Matrix<real, R, C>& m);
+	std::vector<uint64_t> Serialize(const vec& m);
+
+	/** @brief Pack a 6D vector to make it writtable
+	 * @param m The matrix
+	 * @return The packed matrix
+	 */
+	std::vector<uint64_t> Serialize(const vec6& m);
+
+	/** @brief Pack a 3x3 matrix to make it writtable
+	 * @param m The matrix
+	 * @return The packed matrix
+	 */
+	std::vector<uint64_t> Serialize(const mat& m);
+
+	/** @brief Pack a 6x6 matrix to make it writtable
+	 * @param m The matrix
+	 * @return The packed matrix
+	 */
+	std::vector<uint64_t> Serialize(const mat6& m);
 
 	/** @brief Pack a list of floating point numbers to make it writtable
 	 * @param l The list
@@ -180,13 +197,33 @@ class IO : public LogUser
 	 */
 	uint64_t* Deserialize(const uint64_t* in, real& out);
 
-	/** @brief Unpack a loaded generic matrix
+	/** @brief Unpack a loaded 3D vector
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
 	 * @return The new pointer to the remaining data to be read
 	 */
-	template<int R, int C>
-	uint64_t* Deserialize(const uint64_t* in, Eigen::Matrix<real, R, C>& out);
+	uint64_t* Deserialize(const uint64_t* in, vec& out);
+
+	/** @brief Unpack a loaded 6D vector
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, vec6& out);
+
+	/** @brief Unpack a loaded 3x3 matrix
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, mat& out);
+
+	/** @brief Unpack a loaded 6x6 matrix
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, mat6& out);
 
 	/** @brief Unpack a loaded list of floating point numbers
 	 * @param in The pointer to the next unread value
