@@ -375,7 +375,6 @@ IO::Serialize(const std::vector<real>& l)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const std::vector<vec>& l)
 {
@@ -390,7 +389,6 @@ IO::Serialize(const std::vector<vec>& l)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const std::vector<vec6>& l)
 {
@@ -405,7 +403,6 @@ IO::Serialize(const std::vector<vec6>& l)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const std::vector<mat>& l)
 {
@@ -420,7 +417,6 @@ IO::Serialize(const std::vector<mat>& l)
 	return data;
 }
 
-template<>
 std::vector<uint64_t>
 IO::Serialize(const std::vector<mat6>& l)
 {
@@ -516,7 +512,6 @@ IO::Deserialize(const uint64_t* in, std::vector<real>& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, std::vector<vec>& out)
 {
@@ -532,7 +527,6 @@ IO::Deserialize(const uint64_t* in, std::vector<vec>& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, std::vector<vec6>& out)
 {
@@ -548,7 +542,6 @@ IO::Deserialize(const uint64_t* in, std::vector<vec6>& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, std::vector<mat>& out)
 {
@@ -564,7 +557,6 @@ IO::Deserialize(const uint64_t* in, std::vector<mat>& out)
 	return remaining;
 }
 
-template<>
 uint64_t*
 IO::Deserialize(const uint64_t* in, std::vector<mat6>& out)
 {

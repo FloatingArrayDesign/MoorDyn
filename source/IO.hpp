@@ -150,13 +150,29 @@ class IO : public LogUser
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<real>& l);
 
-	/** @brief Pack a list of matrices to make it writtable
+	/** @brief Pack a list of 3D vectors to make it writtable
 	 * @param l The list
 	 * @return The packed list
 	 */
-	template<int R, int C>
-	std::vector<uint64_t> Serialize(
-	    const std::vector<Eigen::Matrix<real, R, C>>& l);
+	std::vector<uint64_t> Serialize(const std::vector<vec>& l);
+
+	/** @brief Pack a list of 6D vectors to make it writtable
+	 * @param l The list
+	 * @return The packed list
+	 */
+	std::vector<uint64_t> Serialize(const std::vector<vec6>& l);
+
+	/** @brief Pack a list of 3x3 matrices to make it writtable
+	 * @param l The list
+	 * @return The packed list
+	 */
+	std::vector<uint64_t> Serialize(const std::vector<mat>& l);
+
+	/** @brief Pack a list of 6x6 matrices to make it writtable
+	 * @param l The list
+	 * @return The packed list
+	 */
+	std::vector<uint64_t> Serialize(const std::vector<mat6>& l);
 
 	/** @brief Pack a list of lists to make it writtable
 	 * This function might act recursively
@@ -232,14 +248,33 @@ class IO : public LogUser
 	 */
 	uint64_t* Deserialize(const uint64_t* in, std::vector<real>& out);
 
-	/** @brief Unpack a loaded list of generic matrices
+	/** @brief Unpack a loaded list of 3D vectors
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
 	 * @return The new pointer to the remaining data to be read
 	 */
-	template<int R, int C>
-	uint64_t* Deserialize(const uint64_t* in,
-	                      std::vector<Eigen::Matrix<real, R, C>>& out);
+	uint64_t* Deserialize(const uint64_t* in, std::vector<vec>& out);
+
+	/** @brief Unpack a loaded list of 6D vectors
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, std::vector<vec6>& out);
+
+	/** @brief Unpack a loaded list of 3x3 matrices
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, std::vector<mat>& out);
+
+	/** @brief Unpack a loaded list of 6x6 matrices
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, std::vector<mat6>& out);
 
 	/** @brief Unpack a loaded list of lists
 	 *
