@@ -32,6 +32,11 @@
 #include "Waves.h"
 #include "kiss_fftr.h"
 
+#if defined WIN32 && defined max
+// We must avoid max messes up with std::numeric_limits<>::max()
+#undef max
+#endif
+
 using namespace std;
 
 namespace moordyn {
