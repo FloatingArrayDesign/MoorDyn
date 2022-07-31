@@ -30,8 +30,8 @@
 
 // This is version 2.a5, 2021-03-16
 
-#include "Log.hpp"
 #include "Misc.hpp"
+#include "Log.hpp"
 
 namespace moordyn {
 
