@@ -227,7 +227,7 @@ io_class()
 	// Now try saving and loading
 	std::cout << "*** Save -> Load..." << std::endl;
 	std::stringstream filepath;
-	filepath << fs::temp_directory_path().c_str() << "/"
+	filepath << fs::temp_directory_path().string() << "/"
 	         << "test.moordyn";
 	dst.clear();
 	src.Save(filepath.str());
@@ -290,7 +290,7 @@ skip_ic()
 	}
 
 	std::stringstream filepath;
-	filepath << fs::temp_directory_path().c_str() << "/"
+	filepath << fs::temp_directory_path().string() << "/"
 	         << "minimal.moordyn";
 	err = MoorDyn_Save(system, filepath.str().c_str());
 	if (err != MOORDYN_SUCCESS) {
