@@ -50,9 +50,7 @@ setup(
     author_email='jlc@core-marine.com',
     ext_modules = [cmoordyn],
     packages=find_packages(include=['moordyn', 'moordyn.*']),
-    install_requires=[
-        'numpy',
-    ],
+    install_requires=[],
     setup_requires=['cython', 'pytest-runner'],
-    tests_require=['pytest', 'numpy'],
+    tests_require=['pytest'],
 )

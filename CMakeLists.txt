@@ -38,8 +38,7 @@ mark_as_advanced(MOORDYN_FASTMATH)
 # Look for the dependencies
 if(${PYTHON_WRAPPER})
     find_package(Python
-                 COMPONENTS Interpreter Development NumPy
-                 REQUIRED)
+                 COMPONENTS Interpreter Development REQUIRED)
 endif()
 
 if(${FORTRAN_WRAPPER})
