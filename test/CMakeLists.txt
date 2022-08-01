@@ -4,8 +4,16 @@ file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/test/Mooring/*.dat
                              ${CMAKE_SOURCE_DIR}/test/Mooring/*.txt)
 add_custom_target(Test_MooringConfigFiles)
 add_custom_command(TARGET Test_MooringConfigFiles PRE_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E
+                   COMMAND ${CMAKE_COMMAND} -E
                         copy_directory ${CMAKE_SOURCE_DIR}/test/Mooring ${CMAKE_CURRENT_BINARY_DIR}/Mooring)
+if(WIN32)
+    add_custom_command(TARGET Test_MooringConfigFiles POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordyn> ${CMAKE_CURRENT_BINARY_DIR}/)
+    if(${FORTRAN_WRAPPER})
+        add_custom_command(TARGET Test_MooringConfigFiles POST_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordynf> ${CMAKE_CURRENT_BINARY_DIR}/)
+    endif()
+endif()
 
 set(TESTS "minimal;io;bodies_and_rods;wavekin;quasi_static_chain")
 foreach(TEST ${TESTS})
@@ -14,10 +22,6 @@ foreach(TEST ${TESTS})
     add_dependencies(${TEST} Test_MooringConfigFiles)
     add_test(NAME ${TEST}
              COMMAND ${TEST})
-    if(WIN32)
-        set_property(TEST ${TEST} PROPERTY ENVIRONMENT 
-            "PATH=%PATH%\;${CMAKE_BINARY_DIR}\\source\\$<CONFIG>")
-    endif()
 endforeach()
 
 if(${FORTRAN_WRAPPER})
@@ -27,8 +31,4 @@ if(${FORTRAN_WRAPPER})
     add_dependencies(fortran_bindings Test_MooringConfigFiles)
     add_test(NAME fortran_bindings
              COMMAND fortran_bindings)
-    if(WIN32)
-        set_property(TEST ${TEST} PROPERTY ENVIRONMENT 
-            "PATH=%PATH%\;${CMAKE_BINARY_DIR}\\source\\$<CONFIG>")
-    endif()
 endif()
