@@ -27,24 +27,31 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+
+import sys
 import os
 from setuptools import setup, find_packages, Extension
 import sysconfig
 
 
+def cmakepath(p):
+    if sys.platform == "win32":
+        return p.replace('/', r'\\')
+    return p
+
 cmoordyn = Extension(
     'cmoordyn',
-    sources=['${CMAKE_CURRENT_BINARY_DIR}/cmoordyn.cpp'],
+    sources=[cmakepath('${CMAKE_CURRENT_BINARY_DIR}/cmoordyn.cpp'), ],
     language='c++',
-    include_dirs=['${CMAKE_SOURCE_DIR}/source', ],
-    library_dirs=['${CMAKE_BINARY_DIR}/source', ],
+    include_dirs=[cmakepath('${CMAKE_SOURCE_DIR}/source'), ],
+    library_dirs=[cmakepath('${CMAKE_BINARY_DIR}/source'), ],
     extra_link_args=['-lmoordyn', ],
 )
 
 setup(
     name='moordyn',
     version='${MOORDYN_VERSION}',
-    package_dir={ '': '${CMAKE_CURRENT_BINARY_DIR}' },
+    package_dir={ '': cmakepath('${CMAKE_CURRENT_BINARY_DIR}') },
     description='Python wrapper for MoorDyn library',
     author='Jose Luis Cercos-Pita',
     author_email='jlc@core-marine.com',
