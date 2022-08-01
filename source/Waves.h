@@ -61,15 +61,15 @@ extern "C"
 	 * @return 0 If the data is correctly set, an error code otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int MoorDyn_GetWavesKin(MoorDynWaves waves,
-	                        double x,
-	                        double y,
-	                        double z,
-	                        double t,
-	                        double U[3],
-	                        double Ud[3],
-	                        double* zeta,
-	                        double* PDyn);
+	int DECLDIR MoorDyn_GetWavesKin(MoorDynWaves waves,
+	                                double x,
+	                                double y,
+	                                double z,
+	                                double t,
+	                                double U[3],
+	                                double Ud[3],
+	                                double* zeta,
+	                                double* PDyn);
 
 	/** @brief Compute the wave number
 	 * @param Omega The wave angular frequency
@@ -78,7 +78,7 @@ extern "C"
 	 * @return The wave number
 	 * @note credit: FAST source
 	 */
-	double WaveNumber(double Omega, double g, double h);
+	double DECLDIR WaveNumber(double Omega, double g, double h);
 
 	/**
 	 * @}

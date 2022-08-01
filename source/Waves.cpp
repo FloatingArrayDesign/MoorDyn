@@ -1035,7 +1035,7 @@ Waves::fillWaveGrid(const moordyn::complex* zetaC0,
 		return MOORDYN_INVALID_VALUE;                                          \
 	}
 
-int
+int DECLDIR
 MoorDyn_GetWavesKin(MoorDynWaves waves,
                     double x,
                     double y,
@@ -1057,7 +1057,7 @@ MoorDyn_GetWavesKin(MoorDynWaves waves,
 	return MOORDYN_SUCCESS;
 }
 
-double
+double DECLDIR
 WaveNumber(double Omega, double g, double h)
 {
 	//
