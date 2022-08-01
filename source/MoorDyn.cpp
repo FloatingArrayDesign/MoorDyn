@@ -122,7 +122,7 @@ MoorDynInit(const double x[], const double xd[], const char* infilename)
 		setvbuf(stdout, NULL, _IONBF, 0);
 
 		// redirect unbuffered STDERR to the console
-		lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
+		lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
 		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
 		fp = _fdopen(hConHandle, "w");
 		*stderr = *fp;
