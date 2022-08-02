@@ -124,10 +124,8 @@ if(WIN32)
     set(CPACK_PACKAGE_VERSION_MAJOR "${MOORDYN_MAJOR_VERSION}")
     set(CPACK_PACKAGE_VERSION_MINOR "${MOORDYN_MINOR_VERSION}")
     set(CPACK_PACKAGE_VERSION_PATCH "${MOORDYN_PATCH_VERSION}")
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
-    # There is a bug in NSI that does not handle full UNIX paths properly.
-    # Make sure there is at least one set of four backlashes.
-    set(CPACK_NSIS_DISPLAY_NAME "MoorDyn ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION}")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "MoorDyn-${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION}")
+    set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY}")
     set(CPACK_NSIS_HELP_LINK "http:\\\\\\\\moordyn.readthedocs.io")
     set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\moordyn.readthedocs.io")
     set(CPACK_NSIS_CONTACT "jlc@core-marine.com")
