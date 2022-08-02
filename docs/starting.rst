@@ -160,6 +160,16 @@ type the following commands:
   mingw32-make
   mingw32-make install
 
+NOTE: If you want to generate a Windows installer, disable the PYTHON_WRAPPER
+option and type
+
+.. code-block:: bash
+
+  cd C:\MoorDyn\MoorDyn.build
+  mingw32-make
+  cpack -C Release
+
+
 Linux and MAC
 ^^^^^^^^^^^^^
 
