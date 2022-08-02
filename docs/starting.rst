@@ -10,47 +10,174 @@ yet for MoorDyn v2, so you must compile it by yourself
 Compile and install MoorDyn
 ---------------------------
 
-In this tutorial it is assumed that you already have installed the following
-softwares in your system:
-
-* `Git <https://git-scm.com/>`_
-* `CMake <https://cmake.org/>`_
-* `Python <https://www.python.org/>`_
-
-It is also required to install
-`Eigen3 <https://eigen.tuxfamily.org/index.php?title=Main_Page>`_ if you are
-planning to use the :ref:`C++ API <api_Cpp>` (For the :ref:`C API <api_C>` it is
-not needed though).
-
 The process is sligthly different in Windows than in the other platforms, so it
 will be documented separatelly
 
 Windows
 ^^^^^^^
 
-On top of the softwares mentioned above, you must also install a compiler. You
-can use one of the following:
+In this tutorial we are installing Eigen3 and MoorDyn in the default folders
+(C:\Program Files (x86)\Eigen3 and C:\Program Files (x86)\Moordyn),
+using for that the latest versions available downloaded with Git.
 
-* `MinGW <https://www.mingw-w64.org/>`_
-* `Visual Studio <https://visualstudio.microsoft.com/>`_
+Please, install all the tools we need:
 
-MinGW is free and the community edition of Visual Studio cost no money.
+* `Git <https://git-scm.com/>`_
+* `CMake <https://cmake.org/>`_
+* `MSYS2 <https://www.msys2.org/>`_
 
-Please, when you install each of those software, make sure you select the option
-to add them to the PATH.
+During the installation of Git, please check that you install all the components
+shown below, and add it to the PATH:
 
-Finally, there is a `good tutorial to install Eigen3 <https://gist.github.com/danielTobon43/8ef3d15f84a43fb15f1f4a49de5fcc75>`_,
-which again is strongly recommended.
+.. figure:: win_git_install.png
+   :alt: Installing Git in Windows
 
-WIP...
+   Recommended options while installing Git in Windows
+
+The same holds for CMake:
+
+.. figure:: win_cmake_install.png
+   :alt: Installing CMake in Windows
+
+   Recommended options while installing CMake in Windows
+
+The installation of MSYS2 is pretty well documented in
+`the project web page <https://www.msys2.org/>`_. However, we need some
+additional tools, so after it, and running "MSYS MinGW 64-bit", please type
+the following command
+
+.. code-block:: bash
+
+  pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip
+
+Now we are making all the MinGW stack available along the whole system, adding
+it to the PATH environment variable.
+To this end, execute "System" from the Windows Init menu, and look for
+"environment".
+Then click on "Edit the system environment variables" and in the popping up
+window on "Enviroment Variables..."
+Do double click on Path (in the System variables box), and add a new entry:
+"C:\msys64\mingw64\bin"
+
+.. figure:: win_msys2_env.png
+   :alt: Adding MinGW to the PATH
+
+   Adding MinGW to the PATH
+
+Now we are ready to work! First we are creating a folder where we are
+downloading and compiling the codes, let's say C:\MoorDyn.
+Create such a folder, and do right click inside, selecting "Git GUI Here". In
+the Git window select "Clone Existing Repository".
+
+.. figure:: win_git_gui.png
+   :alt: Git GUI in Windows
+
+   The Git GUI to clone repositories
+
+We are starting with Eigen3, so in the first box set
+"https://gitlab.com/libeigen/eigen.git", and in the second "C:\MoorDyn\eigen":
+
+.. figure:: win_git_eigen.png
+   :alt: Options to clone Eigen3
+
+   Cloning Eigen3 repository
+
+Press "Clone" and let Git download the repository.
+Now you can repeat, setting "https://github.com/mattEhall/MoorDyn.git", and
+"C:\MoorDyn\MoorDyn" to download MoorDyn:
+
+.. figure:: win_git_moordyn.png
+   :alt: Options to clone MoorDyn
+
+   Cloning MoorDyn repository
+
+Now, create two additional folders in C:\MoorDyn named eigen.build and
+MoorDyn.build.
+It is time to start CMake from the Windows Init menu. To prepare Eigen3 set
+"C:\MoorDyn\eigen" in the source box and "C:\MoorDyn\eigen.build" in the
+binaries box, and press "Configure".
+The first time you configure a new project, CMake will ask you for the toolchain
+to use. Please, select "MinGW Makefiles":
+
+.. figure:: win_cmake_selectcompiler.png
+   :alt: Selecting the MinGW generator
+
+   Selecting the MinGW toolchain as generator
+
+Click on "Finish" and let CMake work. After a short while you will see a lot of
+new red boxes.
+Do not worry, they are red because they are new, they are not errors.
+Remember to set CMAKE_BUILD_TYPE as "Release".
+It is also recommended to disable BUILD_TESTING, EIGEN_BUILD_DOC and
+EIGEN_BUILD_TESTING:
+
+.. figure:: win_cmake_eigen.png
+   :alt: Configuration options for Eigen3
+
+   Configuration options for Eigen3
+
+Press "Configure" once again, and then "Generate". Now you can close CMake.
+
+Now, since we are installing Eigen in C:\Program Files (x86)\Eigen3, we need
+to execute a Command Prompt with administrative rights.
+To this end, look for "cmd" in the Windows Init menu and do right click on
+"Command Prompt", selecting Run as Administrator:
+
+.. figure:: win_cmd_admin.png
+   :alt: Launching an admin cmd
+
+   Launching a Command Prompt with administrative rights
+
+Now you just need to type the following commands:
+
+.. code-block:: bash
+
+  cd C:\MoorDyn\eigen.build
+  mingw32-make
+  mingw32-make install
+
+We will use a cmd with administrative rights later on, so do not close it.
+Now we are installing MoorDyn following a very similar process.
+Launch CMake again, and set "C:\MoorDyn\MoorDyn" in the source box and
+"C:\MoorDyn\MoorDyn.build" in the binaries box, clicking "Configure" afterwards.
+Select again the "MinGW Makefiles" for the generator.
+When the configuration options appear, set CMAKE_BUILD_TYPE as "Release", and
+enable FORTRAN_WRAPPER and PYTHON_WRAPPER:
+
+.. figure:: win_cmake_moordyn.png
+   :alt: Configuration options for MoorDyn
+
+   Configuration options for MoorDyn
+
+We are ready, click "Configure" once more and the "Generate".
+
+Now you can recover your Command Prompt (which has adminsitrative rights), and
+type the following commands:
+
+.. code-block:: bash
+
+  cd C:\MoorDyn\MoorDyn.build
+  mingw32-make
+  mingw32-make install
 
 Linux and MAC
 ^^^^^^^^^^^^^
 
+First of all, use you package manager to install the following packages
+
+* `Git <https://git-scm.com/>`_
+* `CMake <https://cmake.org/>`_
+* `Python <https://www.python.org/>`_
+* `Eigen3 <https://eigen.tuxfamily.org/>`_
+
 In Linux you can use either `GCC <https://gcc.gnu.org/>`_ or
 `CLang <https://clang.llvm.org/>`_, while in MAC the latter is the very only
-option. The process to compile and install is the same no matters the compiler
-you have chosen.
+option.
+The process to compile and install is the same no matters the compiler you have
+chosen.
+However, it should be noticed that CLang does not provides a Fortran compiler.
+To get Fortran support you would therefore install another compiler (e.g. the
+GCC one)
 
 In this tutorial we are assuming you have administrative rights in your system,
 although it is also possible to install MoorDyn and the wrappers in the user
@@ -69,6 +196,7 @@ Now we will ask cmake to configure everything typing
 .. code-block:: bash
 
    mkdir build
+   cd build
    cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ../
 
 If for some reason you decided to do not install
