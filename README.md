@@ -37,9 +37,9 @@ release:
 
  - [X] Test in Linux with GCC
  - [X] Test in Linux with Clang
- - [ ] Test in Windows with MinGW
- - [ ] Test in Windows with CLang
- - [ ] Test in Windows with Visual Studio CE
+ - [X] Test in Windows with MinGW
+ - [X] Test in Windows with CLang (No Fortran)
+ - [X] Test in Windows with Visual Studio CE (No C++, no Fortran)
  - [ ] Make a windows installer (CMake + CPack + NSIS)
  - [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
  - [ ] Fix the SCUDS missiles bug
