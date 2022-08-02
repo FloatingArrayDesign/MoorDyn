@@ -40,7 +40,7 @@ release:
  - [X] Test in Windows with MinGW
  - [X] Test in Windows with CLang (No Fortran)
  - [X] Test in Windows with Visual Studio CE (No C++, no Fortran)
- - [ ] Make a windows installer (CMake + CPack + NSIS)
+ - [X] Make a windows installer (CMake + CPack + NSIS)
  - [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
  - [ ] Fix the SCUDS missiles bug
  - [ ] Ask DualSphysics devs to join back the mainstream
