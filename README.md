@@ -43,6 +43,7 @@ release:
  - [ ] Make a windows installer (CMake + CPack + NSIS)
  - [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
  - [ ] Fix the SCUDS missiles bug
+ - [ ] Ask DualSphysics devs to join back the mainstream
 
 ## Aknowledgments
 
