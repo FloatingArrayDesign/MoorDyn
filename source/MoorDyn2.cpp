@@ -57,6 +57,7 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	, WaveKinTemp(0)
 	, dtM0(0.001)
 	, dtOut(0.0)
+	, solver('4')
 	, GroundBody(NULL)
 	, waves(NULL)
 	, nX(0)
@@ -92,6 +93,7 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	Cout(MOORDYN_MSG_LEVEL) << "The filename is " << _filepath << endl;
 	Cout(MOORDYN_DBG_LEVEL) << "The basename is " << _basename << endl;
 	Cout(MOORDYN_DBG_LEVEL) << "The basepath is " << _basepath << endl;
+	Cout(MOORDYN_DBG_LEVEL) << "Using RK" << solver << endl;
 
 	env.g = 9.8;
 	env.WtrDpth = 0.;
@@ -124,9 +126,13 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 	                        << nXtra << endl;
 	states = (double*) malloc(nXtra * sizeof(double));
 	xt = (double*) malloc(nXtra * sizeof(double));
+	xt2 = (double*) malloc(nXtra * sizeof(double));
+	xt3 = (double*) malloc(nXtra * sizeof(double));
 	f0 = (double*) malloc(nXtra * sizeof(double));
 	f1 = (double*) malloc(nXtra * sizeof(double));
-	if (!states || !f0 || !f1 || !xt)
+	f2 = (double*) malloc(nXtra * sizeof(double));
+	f3 = (double*) malloc(nXtra * sizeof(double));
+	if (!states || !f0 || !f1 || !f2 || !f3 || !xt || !xt2 || !xt3)
 	{
 		MOORDYN_THROW(MOORDYN_MEM_ERROR,
 		              "Error allocating memory for state variables");
@@ -134,8 +140,12 @@ moordyn::MoorDyn::MoorDyn(const char *infilename, const int verbosity)
 
 	memset(states, 0.0, nXtra * sizeof(double));
 	memset(xt, 0.0, nXtra * sizeof(double));
+	memset(xt2, 0.0, nXtra * sizeof(double));
+	memset(xt3, 0.0, nXtra * sizeof(double));
 	memset(f0, 0.0, nXtra * sizeof(double));
 	memset(f1, 0.0, nXtra * sizeof(double));
+	memset(f2, 0.0, nXtra * sizeof(double));
+	memset(f3, 0.0, nXtra * sizeof(double));
 }
 
 moordyn::MoorDyn::~MoorDyn()
@@ -167,8 +177,12 @@ moordyn::MoorDyn::~MoorDyn()
 
 	free(states);
 	free(xt);
+	free(xt2);
+	free(xt3);
 	free(f0);
 	free(f1);
+	free(f2);
+	free(f3);
 }
 
 moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
@@ -317,11 +331,24 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 		{
 			if (dtM0 < dt)
 				dt = dtM0;
-			const moordyn::error_id err = RK2(states, t, dt);
-			if (err != MOORDYN_SUCCESS)
-			{
-				free2Darray(FairTensLast, LineList.size());
-				return err;
+
+			// Perform integration, depending on solver specified
+			if (solver == '2') {
+				const moordyn::error_id err = RK2(states, t, dt);
+			
+				if (err != MOORDYN_SUCCESS)
+				{
+					free2Darray(FairTensLast, LineList.size());
+					return err;
+				}
+			} else {
+				const moordyn::error_id err = RK4(states, t, dt);
+			
+				if (err != MOORDYN_SUCCESS)
+				{
+					free2Darray(FairTensLast, LineList.size());
+					return err;
+				}
 			}
 		}
 
@@ -517,9 +544,18 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 	{
 		if (dtM0 < dt_step)
 			dt_step = dtM0;
-		const moordyn::error_id err = RK2(states, t, dt_step);
-		if (err != MOORDYN_SUCCESS)
-			return err;
+		// Perform integration, depending on solver specified
+		if (solver == '2') {
+			const moordyn::error_id err = RK2(states, t, dt);
+		
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		} else {
+			const moordyn::error_id err = RK4(states, t, dt);
+		
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		}
 	}
 	t = t_target;
 

@@ -296,6 +296,8 @@ private:
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
 	double dtOut;
+	/// Type of solver to use - '2' indicates RK2 integration, '4' RK4
+	char solver;
 
 	/// General options of the Mooryng system
 	EnvCond env;
