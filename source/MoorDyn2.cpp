@@ -1954,6 +1954,68 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 	return MOORDYN_SUCCESS;
 }
 
+moordyn::error_id moordyn::MoorDyn::RK4(double *x, double &t, const double dt)
+{
+	moordyn::error_id err;
+
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK4 predictor call to CalcStateDeriv at time "
+		          << t << " s -----\n";
+	// K1:
+	// get derivatives at t0. f0 = f(t0, x0);
+	err = CalcStateDeriv(x, f0, t, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
+	for (unsigned int i = 0; i < nX; i++)
+		xt[i] = x[i] + 0.5 * dt * f0[i];
+
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK4 corrector call to CalcStateDeriv at time "
+		          << t + 0.5 * dt << " s -----\n";
+
+	// K2:
+	// get derivatives at t0 + dt/2 (xt). f1 = f(t1, x1);
+	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// integrate to t0 + dt/2, but using midpoint slope estimate in f1: 
+	// x1 = x0 + dt*f1/2.0;
+	for (unsigned int i = 0; i < nX; i++)
+		xt2[i] = x[i] + 0.5 * dt * f1[i];
+
+	// K3:
+	// Get derivatives at t0 + dt/2 using corrected midpoint estimate (xt2):
+	// f2 = f(t0 + dt/2, xt2)
+	err = CalcStateDeriv(xt2, f2, t + 0.5 * dt, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// Integrate to t0 + dt, using new midpoint slope estimate f2:
+	for (unsigned int i = 0; i < nX; i++)
+		xt3[i] = x[i] + dt * f2[i];
+
+	// K4:
+	// Get derivatives at t0 + dt using estimate for y at t0 + dt (xt3)
+	err = CalcStateDeriv(xt3, f3, t + dt, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// integrate states to t0 + dt
+	for (unsigned int i = 0; i < nX; i++)
+		x[i] = x[i] + (1.0 / 6.0) * dt * (f0[i] + 2*f1[i] + 2*f2[i] + f3[i]);
+
+	// update time
+	t = t + dt;
+
+	// <<<<<<<<< maybe should check/force all rod unit vectors to be unit
+	// vectors here?
+
+	return MOORDYN_SUCCESS;
+}
+
 moordyn::error_id moordyn::MoorDyn::detachLines(int attachID, int isRod,
 	const int* lineIDs, int* lineTops, int nLinesToDetach, double time)
 {
