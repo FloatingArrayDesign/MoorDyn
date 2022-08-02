@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 set(MOORDYN_MAJOR_VERSION 2)
 set(MOORDYN_MINOR_VERSION 0)
+set(MOORDYN_PATCH_VERSION 0)
 set(MOORDYN_VERSION ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION})
 project(Moordyn VERSION ${MOORDYN_VERSION})
 
@@ -110,4 +111,29 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
     add_subdirectory(test)
+endif()
+
+# Windows installer
+if(WIN32)
+    include(InstallRequiredSystemLibraries)
+
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MoorDyn windows installer")
+    set(CPACK_PACKAGE_VENDOR "Jose Luis Cercos-Pita")
+    set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
+    set(CPACK_PACKAGE_VERSION_MAJOR "${MOORDYN_MAJOR_VERSION}")
+    set(CPACK_PACKAGE_VERSION_MINOR "${MOORDYN_MINOR_VERSION}")
+    set(CPACK_PACKAGE_VERSION_PATCH "${MOORDYN_PATCH_VERSION}")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+    # There is a bug in NSI that does not handle full UNIX paths properly.
+    # Make sure there is at least one set of four backlashes.
+    set(CPACK_NSIS_DISPLAY_NAME "MoorDyn ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION}")
+    set(CPACK_NSIS_HELP_LINK "http:\\\\\\\\moordyn.readthedocs.io")
+    set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\moordyn.readthedocs.io")
+    set(CPACK_NSIS_CONTACT "jlc@core-marine.com")
+    set(CPACK_NSIS_MODIFY_PATH ON)
+
+    include(CPack)
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/NSIS.definitions.nsh.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/cmake/NSIS.definitions.nsh)
 endif()
