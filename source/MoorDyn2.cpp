@@ -546,12 +546,12 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 			dt_step = dtM0;
 		// Perform integration, depending on solver specified
 		if (solver == '2') {
-			const moordyn::error_id err = RK2(states, t, dt);
+			const moordyn::error_id err = RK2(states, t, dt_step);
 		
 			if (err != MOORDYN_SUCCESS)
 				return err;
 		} else {
-			const moordyn::error_id err = RK4(states, t, dt);
+			const moordyn::error_id err = RK4(states, t, dt_step);
 		
 			if (err != MOORDYN_SUCCESS)
 				return err;
