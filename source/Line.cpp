@@ -83,7 +83,7 @@ Line::getNonlinearC(real ld_stretched, real l_unstretched)
 	if (!nCpoints)
 		return c;
 
-	real Xi = ld_stretched / l_unstretched; // strain rate based on inputs
+	real Xi = ld_stretched / l_unstretched; // stretching/compressing rate
 	real Yi = 0.0;
 
 	// find stress based on strain rate
