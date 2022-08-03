@@ -368,8 +368,7 @@ This section (optional) describes the Line objects, typically used for mooring l
 Options
 ^^^^^^^
 
-This section (required) describes the simulation options. Most entries are
-optional, with default values.
+This section (required) describes the simulation options
 
 .. code-block:: none
 
@@ -381,7 +380,10 @@ optional, with default values.
  10            TmaxIC        max time for ic gen (s)
  0.001         threshIC      threshold for IC convergence (-)
  
-Following the list of available options, with their default values:
+Any of these lines can be omitted, in which case default values will be used.
+As such, they are all optional settings, although some of them (such as time
+step size) often need to be set by the user for proper operation.
+The list of possible options is:
 
  - writeLog (0): If >0 a log file is written recording information. The bigger the number the more verbose. Please, be mindful that big values would critically reduce the performance!
  - DT (0.001): The time step (s)
