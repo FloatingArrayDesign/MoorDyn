@@ -219,7 +219,8 @@ io_class()
 	auto data = src.Serialize();
 	dst.Deserialize(data.data());
 	if (src == dst) {
-		cerr << "The deserialized data does not match the original" << std::endl;
+		cerr << "The deserialized data does not match the original"
+		     << std::endl;
 		return false;
 	}
 	std::cout << "***  OK!" << std::endl;
@@ -261,8 +262,8 @@ skip_ic()
 		return false;
 	}
 	if (n_dof != 9) {
-		std::cerr << "3x3 = 9 DOFs were expected, but " << n_dof << "were reported"
-		     << std::endl;
+		std::cerr << "3x3 = 9 DOFs were expected, but " << n_dof
+		          << "were reported" << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
@@ -276,7 +277,7 @@ skip_ic()
 		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
 		if (err != MOORDYN_SUCCESS) {
 			std::cerr << "Failure retrieving the fairlead " << i + 4
-			     << " position: " << err << std::endl;
+			          << " position: " << err << std::endl;
 			MoorDyn_Close(system);
 			return false;
 		}
@@ -284,7 +285,8 @@ skip_ic()
 	std::fill(dx, dx + 9, 0.0);
 	err = MoorDyn_Init(system, x, dx);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure during the mooring initialization: " << err << std::endl;
+		std::cerr << "Failure during the mooring initialization: " << err
+		          << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
@@ -320,7 +322,7 @@ skip_ic()
 	err = MoorDyn_Init_NoIC(system2, x, dx);
 	if (err != MOORDYN_SUCCESS) {
 		std::cerr << "Failure during the second mooring initialization: " << err
-		     << std::endl;
+		          << std::endl;
 		MoorDyn_Close(system);
 		MoorDyn_Close(system2);
 		return false;
@@ -337,7 +339,8 @@ skip_ic()
 	t = 0.0;
 	err = MoorDyn_Step(system2, x, dx, f, &t, &dt);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure during the second mooring step: " << err << std::endl;
+		std::cerr << "Failure during the second mooring step: " << err
+		          << std::endl;
 		MoorDyn_Close(system);
 		MoorDyn_Close(system2);
 		return false;
@@ -347,7 +350,8 @@ skip_ic()
 	unsigned int n_lines;
 	err = MoorDyn_GetNumberLines(system, &n_lines);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure getting the number of lines: " << err << std::endl;
+		std::cerr << "Failure getting the number of lines: " << err
+		          << std::endl;
 		MoorDyn_Close(system);
 		MoorDyn_Close(system2);
 		return false;
@@ -358,7 +362,8 @@ skip_ic()
 		unsigned int n_nodes;
 		err = MoorDyn_GetLineNumberNodes(line, &n_nodes);
 		if (err != MOORDYN_SUCCESS) {
-			std::cerr << "Failure getting the number of nodes: " << err << std::endl;
+			std::cerr << "Failure getting the number of nodes: " << err
+			          << std::endl;
 			MoorDyn_Close(system);
 			MoorDyn_Close(system2);
 			return false;
@@ -367,14 +372,16 @@ skip_ic()
 			double pos[3], pos2[3];
 			err = MoorDyn_GetLineNodePos(line, node_i, pos);
 			if (err != MOORDYN_SUCCESS) {
-				std::cerr << "Failure getting the node position: " << err << std::endl;
+				std::cerr << "Failure getting the node position: " << err
+				          << std::endl;
 				MoorDyn_Close(system);
 				MoorDyn_Close(system2);
 				return false;
 			}
 			err = MoorDyn_GetLineNodePos(line2, node_i, pos2);
 			if (err != MOORDYN_SUCCESS) {
-				std::cerr << "Failure getting the node position: " << err << std::endl;
+				std::cerr << "Failure getting the node position: " << err
+				          << std::endl;
 				MoorDyn_Close(system);
 				MoorDyn_Close(system2);
 				return false;
@@ -382,8 +389,8 @@ skip_ic()
 			for (unsigned int i = 0; i < 3; i++) {
 				if (pos[i] != pos2[i]) {
 					std::cerr << "Line " << line_i << ", node " << node_i
-					     << ", coord " << i << ": " << pos[i]
-					     << " != " << pos2[i] << std::endl;
+					          << ", coord " << i << ": " << pos[i]
+					          << " != " << pos2[i] << std::endl;
 					MoorDyn_Close(system);
 					MoorDyn_Close(system2);
 					return false;

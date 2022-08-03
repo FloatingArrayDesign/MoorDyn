@@ -270,7 +270,8 @@ class MoorDyn : public io::IO
 	{
 		if ((U.size() != Ud.size()) || (U.size() != U_1.size())) {
 			LOGERR << "Invalid input size."
-			       << "Have you called MoorDyn::ExternalWaveKinInit()?" << endl;
+			       << "Have you called MoorDyn::ExternalWaveKinInit()?"
+			       << std::endl;
 			throw moordyn::invalid_value_error("Invalid input size");
 		}
 
@@ -331,14 +332,14 @@ class MoorDyn : public io::IO
 				_log->Cout(MOORDYN_WRN_LEVEL)
 				    << "Warning: Forces have been asked on "
 				    << "the coupled entities, but there are no such entities"
-				    << endl;
+				    << std::endl;
 			return MOORDYN_SUCCESS;
 		}
 		if (NCoupedDOF() && !f) {
 			_log->Cout(MOORDYN_ERR_LEVEL)
 			    << "Error: " << __PRETTY_FUNC_NAME__
 			    << " called with a NULL forces pointer, but there are "
-			    << NCoupedDOF() << " coupled Degrees Of Freedom" << endl;
+			    << NCoupedDOF() << " coupled Degrees Of Freedom" << std::endl;
 			return MOORDYN_INVALID_VALUE;
 		}
 		unsigned int ix = 0;
@@ -503,15 +504,15 @@ class MoorDyn : public io::IO
 			stringstream oname;
 			oname << _basepath << _basename << ".legacy.log";
 			LOGDBG << "Creating the legacy log file: '" << oname.str() << "'"
-			       << endl;
+			       << std::endl;
 			outfileLog.open(oname.str());
 			if (!outfileLog.is_open()) {
 				LOGERR << "Unable to create the legacy log file '"
-				       << oname.str() << "'" << endl;
+				       << oname.str() << "'" << std::endl;
 				return MOORDYN_INVALID_OUTPUT_FILE;
 			}
 			outfileLog << "MoorDyn v2 legacy log file with output level "
-			           << env.writeLog << endl;
+			           << env.writeLog << std::endl;
 			// get pointer to outfile for MD objects to use
 			env.outfileLogPtr = &outfileLog;
 
@@ -525,12 +526,12 @@ class MoorDyn : public io::IO
 			MOORDYN_CATCHER(err, err_msg);
 			if (err != MOORDYN_SUCCESS)
 				LOGERR << "Unable to create the log at '" << filepath.str()
-				       << "': " << endl
-				       << err_msg << endl;
+				       << "': " << std::endl
+				       << err_msg << std::endl;
 			else
 				LOGMSG << "MoorDyn v2 log file with output level "
 				       << log_level_name(GetLogger()->GetLogLevel()) << " at '"
-				       << filepath.str() << "'" << endl;
+				       << filepath.str() << "'" << std::endl;
 			return err;
 		}
 
@@ -557,22 +558,23 @@ class MoorDyn : public io::IO
 	                             vector<double>& x,
 	                             vector<double>& y)
 	{
-		if (strpbrk(entry,
-		            "abcdfghijklmnopqrstuvwxyzABCDFGHIJKLMNOPQRSTUVWXYZ") ==
-		    NULL) {
-			// "eE" are exluded as they're used for scientific notation!
+		try {
+			y.push_back((real)std::stold(entry));
+			// If we reach this point, it is a valid number
 			x.push_back(0.0);
-			y.push_back(atof(entry));
 			return MOORDYN_SUCCESS;
+		} catch (std::out_of_range) {
+			LOGERR << "" << std::endl;
+			return MOORDYN_INVALID_INPUT;
+		} catch (std::invalid_argument) {
+			// Do nothing, just proceed to read the curve file
 		}
 
 		string fpath = _basepath + entry;
-		_log->Cout(MOORDYN_MSG_LEVEL)
-		    << "Loading a curve from '" << fpath << "'..." << endl;
+		LOGMSG << "Loading a curve from '" << fpath << "'..." << std::endl;
 		ifstream f(fpath);
 		if (!f.is_open()) {
-			_log->Cout(MOORDYN_ERR_LEVEL)
-			    << "Error: Cannot read the file" << endl;
+			LOGERR << "Cannot read the file '" << fpath << "'" << std::endl;
 			return MOORDYN_INVALID_INPUT_FILE;
 		}
 
@@ -587,20 +589,18 @@ class MoorDyn : public io::IO
 		for (auto fline : flines) {
 			vector<string> entries = moordyn::str::split(fline, ' ');
 			if (entries.size() < 2) {
-				_log->Cout(MOORDYN_ERR_LEVEL)
-				    << "Error: Bad curve point" << endl
-				    << "\t'" << fline << "'" << endl
-				    << "\t2 fields required, but just " << entries.size()
-				    << " are provided" << endl;
+				LOGERR << "Error: Bad curve point" << std::endl
+				       << "\t'" << fline << "'" << std::endl
+				       << "\t2 fields required, but just " << entries.size()
+				       << " are provided" << std::endl;
 				return MOORDYN_INVALID_INPUT;
 			}
 			x.push_back(atof(entries[0].c_str()));
 			y.push_back(atof(entries[0].c_str()));
-			_log->Cout(MOORDYN_DBG_LEVEL)
-			    << "(" << x.back() << ", " << y.back() << ")" << endl;
+			LOGDBG << "(" << x.back() << ", " << y.back() << ")" << std::endl;
 		}
 
-		_log->Cout(MOORDYN_MSG_LEVEL) << "OK" << endl;
+		LOGMSG << "OK" << std::endl;
 		return MOORDYN_SUCCESS;
 	}
 
@@ -637,9 +637,9 @@ class MoorDyn : public io::IO
 
 		if (xv.size() > nCoef) {
 			_log->Cout(MOORDYN_ERR_LEVEL)
-			    << "Error: Too much points in the curve" << endl
+			    << "Error: Too much points in the curve" << std::endl
 			    << "\t" << xv.size() << " points given, but just " << nCoef
-			    << " are accepted" << endl;
+			    << " are accepted" << std::endl;
 			return MOORDYN_INVALID_INPUT;
 		}
 
