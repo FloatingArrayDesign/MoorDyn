@@ -47,3 +47,4 @@ compile/SO/test*
 
 #program output files
 *.out
+source/.vscode/settings.json

@@ -55,6 +55,7 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 	, WaveKinTemp(0)
 	, dtM0(0.001)
 	, dtOut(0.0)
+	, solver('4')
 	, GroundBody(NULL)
 	, waves(NULL)
 	, nX(0)
@@ -89,9 +90,10 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 		<< "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl
 		<< "   This program is released under the GNU General Public License v3." << endl;
 
-	LOGMSG << "The filename is " << _filepath << endl;
-	LOGDBG << "The basename is " << _basename << endl;
-	LOGDBG << "The basepath is " << _basepath << endl;
+	Cout(MOORDYN_MSG_LEVEL) << "The filename is " << _filepath << endl;
+	Cout(MOORDYN_DBG_LEVEL) << "The basename is " << _basename << endl;
+	Cout(MOORDYN_DBG_LEVEL) << "The basepath is " << _basepath << endl;
+	Cout(MOORDYN_DBG_LEVEL) << "Using RK" << solver << endl;
 
 	env.g = 9.8;
 	env.WtrDpth = 0.;
@@ -124,9 +126,13 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 	                        << nXtra << endl;
 	states = (double*) malloc(nXtra * sizeof(double));
 	xt = (double*) malloc(nXtra * sizeof(double));
+	xt2 = (double*) malloc(nXtra * sizeof(double));
+	xt3 = (double*) malloc(nXtra * sizeof(double));
 	f0 = (double*) malloc(nXtra * sizeof(double));
 	f1 = (double*) malloc(nXtra * sizeof(double));
-	if (!states || !f0 || !f1 || !xt)
+	f2 = (double*) malloc(nXtra * sizeof(double));
+	f3 = (double*) malloc(nXtra * sizeof(double));
+	if (!states || !f0 || !f1 || !f2 || !f3 || !xt || !xt2 || !xt3)
 	{
 		MOORDYN_THROW(MOORDYN_MEM_ERROR,
 		              "Error allocating memory for state variables");
@@ -134,8 +140,12 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 
 	memset(states, 0.0, nXtra * sizeof(double));
 	memset(xt, 0.0, nXtra * sizeof(double));
+	memset(xt2, 0.0, nXtra * sizeof(double));
+	memset(xt3, 0.0, nXtra * sizeof(double));
 	memset(f0, 0.0, nXtra * sizeof(double));
 	memset(f1, 0.0, nXtra * sizeof(double));
+	memset(f2, 0.0, nXtra * sizeof(double));
+	memset(f3, 0.0, nXtra * sizeof(double));
 }
 
 moordyn::MoorDyn::~MoorDyn()
@@ -167,10 +177,12 @@ moordyn::MoorDyn::~MoorDyn()
 
 	free(states);
 	free(xt);
+	free(xt2);
+	free(xt3);
 	free(f0);
 	free(f1);
-
-	delete _log;
+	free(f2);
+	free(f3);
 }
 
 moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
@@ -319,11 +331,24 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 		{
 			if (dtM0 < dt)
 				dt = dtM0;
-			const moordyn::error_id err = RK2(states, t, dt);
-			if (err != MOORDYN_SUCCESS)
-			{
-				free2Darray(FairTensLast, LineList.size());
-				return err;
+
+			// Perform integration, depending on solver specified
+			if (solver == '2') {
+				const moordyn::error_id err = RK2(states, t, dt);
+			
+				if (err != MOORDYN_SUCCESS)
+				{
+					free2Darray(FairTensLast, LineList.size());
+					return err;
+				}
+			} else {
+				const moordyn::error_id err = RK4(states, t, dt);
+			
+				if (err != MOORDYN_SUCCESS)
+				{
+					free2Darray(FairTensLast, LineList.size());
+					return err;
+				}
 			}
 		}
 
@@ -530,9 +555,18 @@ moordyn::error_id moordyn::MoorDyn::Step(const double *x,
 	{
 		if (dtM0 < dt_step)
 			dt_step = dtM0;
-		const moordyn::error_id err = RK2(states, t, dt_step);
-		if (err != MOORDYN_SUCCESS)
-			return err;
+		// Perform integration, depending on solver specified
+		if (solver == '2') {
+			const moordyn::error_id err = RK2(states, t, dt_step);
+		
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		} else {
+			const moordyn::error_id err = RK4(states, t, dt_step);
+		
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		}
 	}
 	t = t_target;
 
@@ -1980,6 +2014,68 @@ moordyn::error_id moordyn::MoorDyn::RK2(double *x, double &t, const double dt)
 	// integrate states to t0 + dt
 	for (unsigned int i = 0; i < nX; i++)
 		x[i] = x[i] + dt * f1[i];
+
+	// update time
+	t = t + dt;
+
+	// <<<<<<<<< maybe should check/force all rod unit vectors to be unit
+	// vectors here?
+
+	return MOORDYN_SUCCESS;
+}
+
+moordyn::error_id moordyn::MoorDyn::RK4(double *x, double &t, const double dt)
+{
+	moordyn::error_id err;
+
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK4 predictor call to CalcStateDeriv at time "
+		          << t << " s -----\n";
+	// K1:
+	// get derivatives at t0. f0 = f(t0, x0);
+	err = CalcStateDeriv(x, f0, t, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// integrate to t0 + dt/2. x1 = x0 + dt*f0/2.0;
+	for (unsigned int i = 0; i < nX; i++)
+		xt[i] = x[i] + 0.5 * dt * f0[i];
+
+	if (env.writeLog > 2)
+		outfileLog << "\n----- RK4 corrector call to CalcStateDeriv at time "
+		          << t + 0.5 * dt << " s -----\n";
+
+	// K2:
+	// get derivatives at t0 + dt/2 (xt). f1 = f(t1, x1);
+	err = CalcStateDeriv(xt, f1, t + 0.5 * dt, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// integrate to t0 + dt/2, but using midpoint slope estimate in f1: 
+	// x1 = x0 + dt*f1/2.0;
+	for (unsigned int i = 0; i < nX; i++)
+		xt2[i] = x[i] + 0.5 * dt * f1[i];
+
+	// K3:
+	// Get derivatives at t0 + dt/2 using corrected midpoint estimate (xt2):
+	// f2 = f(t0 + dt/2, xt2)
+	err = CalcStateDeriv(xt2, f2, t + 0.5 * dt, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// Integrate to t0 + dt, using new midpoint slope estimate f2:
+	for (unsigned int i = 0; i < nX; i++)
+		xt3[i] = x[i] + dt * f2[i];
+
+	// K4:
+	// Get derivatives at t0 + dt using estimate for y at t0 + dt (xt3)
+	err = CalcStateDeriv(xt3, f3, t + dt, dt);
+	if (err != MOORDYN_SUCCESS)
+		return err;
+
+	// integrate states to t0 + dt
+	for (unsigned int i = 0; i < nX; i++)
+		x[i] = x[i] + (1.0 / 6.0) * dt * (f0[i] + 2*f1[i] + 2*f2[i] + f3[i]);
 
 	// update time
 	t = t + dt;

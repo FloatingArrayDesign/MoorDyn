@@ -307,6 +307,8 @@ private:
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
 	double dtOut;
+	/// Type of solver to use - '2' indicates RK2 integration, '4' RK4
+	char solver;
 
 	/// General options of the Mooryng system
 	EnvCond env;
@@ -364,12 +366,21 @@ private:
 
 	/// Global state vector
 	double* states;
-	/// State vector at midpoint in the RK-2 integration scheme 
+	/// State vector at midpoint in the RK-2 integration scheme
 	double* xt;
-	/// Drivatives computed in the first step of the RK-2 integration scheme 
+	/// State vector at midpoint in RK integration scheme calculated using
+	/// derivative of xt (f1)
+	double* xt2;
+	/// State vector at endpoint - calculated using derivative of xt2 (f2)
+	double* xt3; 
+	/// Derivatives computed in the first step of the RK-2 integration scheme 
 	double* f0;
-	/// Drivatives computed in the second step of the RK-2 integration scheme 
+	/// Derivatives computed in the second step of the RK-2 integration scheme 
 	double* f1;
+	/// Derivatives computed in the third step of the RK-4 integration scheme 
+	double* f2;
+	/// Derivatives computed in the fourth step of the RK-4 integration scheme 
+	double* f3;
 
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
@@ -610,7 +621,7 @@ private:
 	moordyn::error_id CalcStateDeriv(double *x,  double *xd,
                                      const double t, const double dt);
 
-	/** @brief Carry out an integration step
+	/** @brief Carry out an integration step using RK2 integrator
 	 *
 	 * 2nd order Runge-Kutta time integrator is considered
 	 * @param x Array of states which will be integrated
@@ -620,6 +631,18 @@ private:
 	 * code otherwise
 	 */
 	moordyn::error_id RK2(double *x, double &t, const double dt);
+
+	/**
+	 * @brief Carry out an integration step using RK4 integrator
+	 * 
+	 * 4th order Runge-Kutta time integrator is run.
+	 * @param x Array of states which will be integrated
+	 * @param t The time instant. It will be modified
+	 * @param dt Desired time step
+	 * @return MOORDYN_SUCCESS if the system was correctly integrated, an error
+	 * code otherwise
+	 */
+	moordyn::error_id RK4(double *x, double &t, const double dt);
 
 	/** @brief Detach lines from a failed connection
 	 * @param attachID ID of connection or Rod the lines are attached to (index
