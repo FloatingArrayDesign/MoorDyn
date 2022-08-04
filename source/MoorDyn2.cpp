@@ -90,10 +90,10 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 		<< "   Copyright: (C) 2021 National Renewable Energy Laboratory, (C) 2014-2019 Matt Hall" << endl
 		<< "   This program is released under the GNU General Public License v3." << endl;
 
-	Cout(MOORDYN_MSG_LEVEL) << "The filename is " << _filepath << endl;
-	Cout(MOORDYN_DBG_LEVEL) << "The basename is " << _basename << endl;
-	Cout(MOORDYN_DBG_LEVEL) << "The basepath is " << _basepath << endl;
-	Cout(MOORDYN_DBG_LEVEL) << "Using RK" << solver << endl;
+	LOGMSG << "The filename is " << _filepath << endl;
+	LOGMSG << "The basename is " << _basename << endl;
+	LOGMSG << "The basepath is " << _basepath << endl;
+	LOGMSG << "Using RK" << solver << endl;
 
 	env.g = 9.8;
 	env.WtrDpth = 0.;
