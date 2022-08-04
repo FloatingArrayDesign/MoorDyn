@@ -367,7 +367,7 @@ std::vector<uint64_t>
 IO::Serialize(const std::vector<real>& l)
 {
 	std::vector<uint64_t> data;
-	auto n = l.size();
+	const uint64_t n = l.size();
 	data.reserve(1 + l.size());
 	data.push_back(Serialize(n));
 	for (auto v : l)
