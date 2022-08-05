@@ -83,7 +83,7 @@
 #endif
 
 #ifndef __FUNC_NAME__
-#if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
+#ifdef _MSC_VER
 #define __FUNC_NAME__ __FUNCTION__
 #else
 #define __FUNC_NAME__ __func__
@@ -91,7 +91,7 @@
 #endif
 
 #ifndef __PRETTY_FUNC_NAME__
-#if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
+#ifdef _MSC_VER
 #define __PRETTY_FUNC_NAME__ __FUNCSIG__
 #else
 #define __PRETTY_FUNC_NAME__ __PRETTY_FUNCTION__
