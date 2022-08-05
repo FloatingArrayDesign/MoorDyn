@@ -68,18 +68,22 @@ jobs:
       env:
         FC: ${{ steps.setup-fortran.outputs.fc }}
 
+    - name: Create installation folder
+      run: |
+          mkdir -p ${{github.workspace}}/install
+
     - name: Configure CMake (Linux)
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
       if: runner.os == 'Linux'
 
     - name: Configure CMake (Windows)
-      run: cmake -B ${{github.workspace}}/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+      run: cmake -B ${{github.workspace}}/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
       env:
         FC: ${{ steps.setup-fortran.outputs.fc }}
       if: runner.os == 'Windows'
 
     - name: Configure CMake (MacOS)
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
       if: runner.os == 'MacOS'
 
     - name: Build
@@ -93,6 +97,27 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
       if: runner.os == 'Linux'
 
+    - name: Install
+      working-directory: ${{github.workspace}}/build
+      # We are just testing in Linux
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - uses: montudor/action-zip@v1
+      with:
+      args: zip -qq -r ${{runner.os}}-dev.zip install
+
+    - name: Upload ZIP
+      id: upload-zip
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/${{runner.os}}-dev.zip
+        asset_name: Moordyn-2.0.0-${{runner.os}}-dev.zip
+        asset_content_type: application/zip
+      if: github.event_name == 'push'
+
     - name: Windows installer
       working-directory: ${{github.workspace}}/build
       shell: bash
@@ -100,8 +125,8 @@ jobs:
       run: cpack -C ${{env.BUILD_TYPE}}
       if: runner.os == 'Windows'
 
-    - name: Upload Release Asset
-      id: upload-release-asset
+    - name: Upload Windows installer
+      id: upload-windows-installer
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
