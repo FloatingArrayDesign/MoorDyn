@@ -19,6 +19,15 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v3
+
+    - uses: dev-drprasad/delete-older-releases@v0.2.0
+      with:
+        repo: <owner>/<repoName> # defaults to current repo
+        keep_latest: 0
+        delete_tag_pattern: nightly
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - uses: rickstaa/action-create-tag@v1
       id: create_tag
       with:
@@ -26,6 +35,7 @@ jobs:
         message: "Latest release"
         force_push_tag: true
       if: github.event_name == 'push'
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -34,7 +44,7 @@ jobs:
       with:
         tag_name: "nightly"
         release_name: "nightly"
-        draft: true
+        draft: false
         prerelease: false
       if: github.event_name == 'push'
 
