@@ -116,7 +116,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/${{runner.os}}-dev.zip
+        asset_path: ${{github.workspace}}/install/${{runner.os}}-dev.zip
         asset_name: Moordyn-2.0.0-${{runner.os}}-dev.zip
         asset_content_type: application/zip
       if: github.event_name == 'push'
