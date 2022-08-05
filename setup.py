@@ -70,7 +70,7 @@ cmoordyn = Extension('cmoordyn',
                      language='c++',
                      extra_compile_args=extra_compile_args,
                      include_dirs=[MOORDYN_PATH, ],
-                     define_macros=['MoorDyn_EXPORTS'],
+                     define_macros=[('MoorDyn_EXPORTS', '1')],
                      )
 
 setup(
