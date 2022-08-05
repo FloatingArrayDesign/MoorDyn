@@ -38,7 +38,7 @@ jobs:
     - name: Configure CMake (Windows)
       run: |
         set FC="${{ env.FC }}"
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+        cmake -B ${{github.workspace}}/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
       env:
         FC: ${{ steps.setup-fortran.outputs.fc }}
       if: runner.os == 'Windows'
