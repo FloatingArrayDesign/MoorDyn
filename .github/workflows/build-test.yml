@@ -102,9 +102,13 @@ jobs:
       # We are just testing in Linux
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - uses: montudor/action-zip@v1
+    - name: Archive Release
+      uses: thedoctor0/zip-release@main
       with:
-        args: zip -qq -r ${{runner.os}}-dev.zip install
+        type: 'zip'
+        filename: ${{runner.os}}-dev.zip
+        path: './install/'
+        exclusions: '/*lib*/cmake*'
 
     - name: Upload ZIP
       id: upload-zip
