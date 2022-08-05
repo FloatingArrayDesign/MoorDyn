@@ -8,7 +8,7 @@ def setup_case(filename):
     """Setup a case in a temporal folder
 
     Parameters:
-    filename (str): The filename in the "Example" subfolder
+    filename (str): The filename in the "Mooring" subfolder
 
     Returns:
     str: The folder where the case has been generated
@@ -19,7 +19,7 @@ def setup_case(filename):
     input_folder = os.path.join(tmp_folder, "Mooring")
     os.mkdir(input_folder)
     r_path = os.path.join(
-        os.path.dirname(__file__), "Example", filename)
+        os.path.dirname(__file__), "Mooring", filename)
     w_path = os.path.join(input_folder, "lines.txt")
     with open(r_path, "r") as r_file, open(w_path, "w") as w_file:
         w_file.write(r_file.read())
@@ -33,7 +33,7 @@ class MinimalTests(TestCase):
 
     def test_no_input(self):
         try:
-            system = moordyn.Create()
+            system = moordyn.Create('file.invalid')
         except RuntimeError:
             return
         self.assertEqual(system, None, "The creation should fail")
