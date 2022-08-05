@@ -42,6 +42,7 @@ jobs:
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
       env:
         FC: ${{ steps.setup-fortran.outputs.fc }}
+      shell: bash
       if: runner.os == 'Windows'
 
     - name: Configure CMake (MacOS)
