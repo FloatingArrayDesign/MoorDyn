@@ -86,21 +86,8 @@ jobs:
         prerelease: false
       if: github.event_name == 'push'
 
-  install_nsis:
-    runs-on: windows-latest
-    steps:
-    - name: Install NSIS
-      id: install_nsis
-      run: |
-        iwr -useb get.scoop.sh -outfile 'install.ps1'
-        .\install.ps1 -RunAsAdmin
-        scoop update
-        scoop bucket add extras
-        scoop install nsis
-      if: github.event_name == 'push'
-
   win_installer:
-    needs: [create_release, install_nsis]
+    needs: [create_release]
     runs-on: windows-latest
     steps:
     - name: Package
