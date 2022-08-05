@@ -39,19 +39,31 @@ from setuptools import setup, find_packages, Extension
 import sysconfig
 
 
+# Collect the source code files
 MOORDYN_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                            '..', '..', 'source')
+                            'source')
 MOORDYN_SRCS = []
 for f in os.listdir(MOORDYN_PATH):
     if not os.path.isfile(os.path.join(MOORDYN_PATH, f)):
         continue
     if not f.lower().endswith(".c") and not f.lower().endswith(".cpp"):
         continue
-    MOORDYN_SRCS.append(os.path.join('..', '..', 'source', f))
+    MOORDYN_SRCS.append(os.path.join('source', f))
+MOORDYN_SRCS.append(os.path.join('wrappers', 'python', 'cmoordyn.cpp'))
 
+# Read the version from the CMakeLists.txt
+version = ""
+with open('CMakeLists.txt', 'r') as f:
+    txt = f.read()
+    for name in ('MAJOR', 'MINOR', 'PATCH'):
+        prefix = 'set(MOORDYN_{}_VERSION '.format(name)
+        subtxt = txt[txt.find(prefix) + len(prefix):]
+        subtxt = subtxt[:subtxt.find(')\n')]
+        version = version + subtxt + '.'
+    version = version[:-1]
 
 cmoordyn = Extension('cmoordyn',
-                     sources=MOORDYN_SRCS + ['cmoordyn.cpp'],
+                     sources=MOORDYN_SRCS,
                      language='c++',
                      include_dirs=[MOORDYN_PATH, ],
                      define_macros=[('MoorDyn_EXPORTS', 'None')],
@@ -59,7 +71,7 @@ cmoordyn = Extension('cmoordyn',
 
 setup(
     name='moordyn',
-    version='2.0.0',
+    version=version,
     description='MoorDyn for Python',
     author='Jose Luis Cercos-Pita',
     author_email='jlc@core-marine.com',
