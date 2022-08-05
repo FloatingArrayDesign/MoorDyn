@@ -322,11 +322,16 @@ step(PyObject*, PyObject* args)
 	if ((!x_arr) || (!v_arr)) {
 		return NULL;
 	}
+	double* forces;
+	forces = (double*)malloc(n_dof * sizeof(double));
+	if (!forces) {
+		PyErr_SetString(PyExc_MemoryError, "Failure allocating the forces");
+		return NULL;
+	}
 
 	// Now we can call MoorDyn
-	double forces[n_dof];
 	const int err = MoorDyn_Step(system, x_arr, v_arr, forces, &t, &dt);
-	;
+
 	free(x_arr);
 	free(v_arr);
 
@@ -340,6 +345,7 @@ step(PyObject*, PyObject* args)
 	for (unsigned int i = 0; i < n_dof; i++) {
 		PyTuple_SET_ITEM(f_lst, i, PyFloat_FromDouble(forces[i]));
 	}
+	free(forces);
 	return f_lst;
 }
 
