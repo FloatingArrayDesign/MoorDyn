@@ -11,8 +11,8 @@ set(MOORDYN_SRCS
     State.cpp
     Time.cpp
     Waves.cpp
-    kiss_fft.c
-    kiss_fftr.c
+    kiss_fft.cpp
+    kiss_fftr.cpp
 )
 
 set(MOORDYN_HEADERS

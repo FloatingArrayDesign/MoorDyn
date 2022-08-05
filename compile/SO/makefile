@@ -74,11 +74,11 @@ MoorDyn.o: ../../source/MoorDyn.cpp $(HEADERS)
 MoorDyn2.o: ../../source/MoorDyn2.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn2.cpp
 
-kiss_fft.o: ../../source/kiss_fft.c ../../source/kiss_fft.h ../../source/_kiss_fft_guts.h
-	$(CC) $(CFLAGS) ../../source/kiss_fft.c
+kiss_fft.o: ../../source/kiss_fft.cpp ../../source/kiss_fft.h ../../source/_kiss_fft_guts.h
+	$(CC) $(CFLAGS) ../../source/kiss_fft.cpp
 
-kiss_fftr.o: ../../source/kiss_fftr.c ../../source/kiss_fftr.h ../../source/_kiss_fft_guts.h
-	$(CC) $(CFLAGS) ../../source/kiss_fftr.c
+kiss_fftr.o: ../../source/kiss_fftr.cpp ../../source/kiss_fftr.h ../../source/_kiss_fft_guts.h
+	$(CC) $(CFLAGS) ../../source/kiss_fftr.cpp
 
 Line.o: ../../source/Line.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
