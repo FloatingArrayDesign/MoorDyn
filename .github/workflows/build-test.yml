@@ -101,4 +101,4 @@ jobs:
         asset_path: ${{github.workspace}}/build/Moordyn-2.0.0-win64.exe
         asset_name: Moordyn-2.0.0-win64.exe
         asset_content_type: application/exe
-      if: ${{ (github.event_name == 'push) && (runner.os == 'Windows') }}
+      if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
