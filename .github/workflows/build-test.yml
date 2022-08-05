@@ -100,7 +100,7 @@ jobs:
       if: github.event_name == 'push'
 
   win_installer:
-    needs: [release, install_nsis]
+    needs: [create_release, install_nsis]
     runs-on: windows-latest
     steps:
     - name: Package
