@@ -35,9 +35,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # core developers to setup the pipy packages
 
 import os
+import shutil
 from setuptools import setup, find_packages, Extension
 import sysconfig
 
+
+# We better copy here the moordyn module
+shutil.rmtree('moordyn', ignore_errors=True)
+shutil.copytree(os.path.join('wrappers', 'python', 'moordyn'), 'moordyn')
 
 # Collect the source code files
 MOORDYN_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
