@@ -1,11 +1,11 @@
 # We need first a custom target to copy all the input files in the compilation
 # folder
-file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/test/Mooring/*.dat
-                             ${CMAKE_SOURCE_DIR}/test/Mooring/*.txt)
+file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.dat
+                             ${CMAKE_SOURCE_DIR}/tests/Mooring/*.txt)
 add_custom_target(Test_MooringConfigFiles)
 add_custom_command(TARGET Test_MooringConfigFiles PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E
-                        copy_directory ${CMAKE_SOURCE_DIR}/test/Mooring ${CMAKE_CURRENT_BINARY_DIR}/Mooring)
+                        copy_directory ${CMAKE_SOURCE_DIR}/tests/Mooring ${CMAKE_CURRENT_BINARY_DIR}/Mooring)
 if(WIN32)
     add_custom_command(TARGET Test_MooringConfigFiles POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordyn> ${CMAKE_CURRENT_BINARY_DIR}/)
