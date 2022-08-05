@@ -4,11 +4,61 @@ Getting Started
 ===============
 
 The latest version of MoorDyn v2 is now available on
-`GitHub <https://github.com/mattEhall/moordyn/>`_. No binaries are provided
-yet for MoorDyn v2, so you must compile it by yourself
+`GitHub <https://github.com/mattEhall/moordyn/>`_.
+Here it is describe both, how to install MoorDyn
+:ref:`using the distributed binaries <_starting_binaries>`,
+and how to :ref:`compile by yourself <_starting_compile>`.
+
+Binaries and installers
+-----------------------
+
+.. _starting_binaries:
+
+Two different cases must be considered when installing binaries, the
+:ref:`C/C++ libraries <_starting_binaries_lib>` (with the Fortran wrapper), and
+the :ref:`Python package <_starting_binaries_python>`.
+
+C/C++ Library
+^^^^^^^^^^^^^
+
+.. _starting_binaries_lib:
+
+To install the C/C++ library (and the Fortran wrappers), please visit the
+`Releases page <https://github.com/mattEhall/MoorDyn/releases>`_, and select the
+version you want to install.
+Along this line you would probably want to consider either the latest version
+identified with a number, or the one named "nightly".
+The former is the latest stable version, while the latter is the latest version
+uploaded to the repository, which tends to be a bit less stable.
+
+Once you already chosen a release, click on the assets and select the most
+appropriate one for your platform.
+More specifically, if you are in Windows you probably want to download and
+execute Moordyn-X.Y.Z-win64.exe (with X.Y.Z replaced by the specific version),
+while for Linux and MacOS you can download Moordyn-X.Y.Z-Linux-dev.zip and
+Moordyn-2.0.0-macOS-dev.zip respectively, and uncompress them in the /usr
+folder.
+
+Now you can checkout
+:ref:`how to integrate MoorDyn in your project <_starting_using>` below.
+
+Python package
+^^^^^^^^^^^^^^
+
+.. _starting_binaries_python:
+
+Installing the Python package is extremelly easy, just type
+
+.. code-block:: bash
+
+  python -m pip install moordyn
+
+in your system terminal. Pip will take care of everything by you.
 
 Compile and install MoorDyn
 ---------------------------
+
+.. _starting_compile:
 
 The process is sligthly different in Windows than in the other platforms, so it
 will be documented separatelly
@@ -240,6 +290,8 @@ just setting the option -DFORTRAN_WRAPPER=ON.
 
 Use MoorDyn in your project
 ---------------------------
+
+.. _starting_using:
 
 The way you can use MoorDyn in your project depends of course on the language.
 Below it is documented the way you can integrate MoorDyn in your project in
