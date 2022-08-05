@@ -11,8 +11,38 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  create_release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+    - name: Create tag
+      id: create_tag
+      run: |
+        if [[ "${{ github.event_name }}" == "schedule" ]]; then
+          tag=v$(date +%Y%m%d.%H%M%S)
+        else
+          tag=$(basename "${{ github.ref }}")
+        fi
+        echo "::set-output name=tag::$tag"
+      if: github.event_name == 'push'
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.create_tag.outputs.tag }}
+        release_name: ${{ steps.create_tag.outputs.tag }}
+        draft: true
+        prerelease: false
+      if: github.event_name == 'push'
+
   build:
     runs-on: ${{ matrix.os }}
+    needs: [create_release]
     strategy:
         matrix:
             os: [ubuntu-latest, windows-latest, macOS-latest]
@@ -56,45 +86,12 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
       if: runner.os == 'Linux'
 
-  create_release:
-    name: Create GitHub Release
-    needs: [build]
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create_release.outputs.id }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-    - name: Create tag
-      id: create_tag
-      run: |
-        if [[ "${{ github.event_name }}" == "schedule" ]]; then
-          tag=v$(date +%Y%m%d.%H%M%S)
-        else
-          tag=$(basename "${{ github.ref }}")
-        fi
-        echo "::set-output name=tag::$tag"
-      if: github.event_name == 'push'
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.create_tag.outputs.tag }}
-        release_name: ${{ steps.create_tag.outputs.tag }}
-        draft: true
-        prerelease: false
-      if: github.event_name == 'push'
-
-  win_installer:
-    needs: [create_release]
-    runs-on: windows-latest
-    steps:
     - name: Package
       working-directory: ${{github.workspace}}/build
       shell: bash
       # Package the installer
       run: cpack -C ${{env.BUILD_TYPE}}
+      if: runner.os == 'Windows'
 
     - name: Upload the installer
       uses: svenstaro/upload-release-action@v2
@@ -105,3 +102,4 @@ jobs:
         tag: ${{ github.ref }}
         overwrite: true
         body: "Windows installer with the C/C++ and Fortran libraries"
+      if: runner.os == 'Windows'
