@@ -19,15 +19,15 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v3
-
     - uses: rickstaa/action-create-tag@v1
+      id: create_tag
       with:
         tag: "nightly"
         message: "Latest release"
         force_push_tag: true
       if: github.event_name == 'push'
-
     - name: Create Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
