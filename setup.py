@@ -62,11 +62,15 @@ with open('CMakeLists.txt', 'r') as f:
         version = version + subtxt + '.'
     version = version[:-1]
 
+# Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
+extra_compile_args = ["-std=c++17"]
+
 cmoordyn = Extension('cmoordyn',
                      sources=MOORDYN_SRCS,
                      language='c++',
+                     extra_compile_args=extra_compile_args,
                      include_dirs=[MOORDYN_PATH, ],
-                     define_macros=[('MoorDyn_EXPORTS', 'None')],
+                     define_macros=['MoorDyn_EXPORTS'],
                      )
 
 setup(
