@@ -19,6 +19,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v3
+      if: github.event_name == 'push'
 
     - uses: dev-drprasad/delete-tag-and-release@v0.2.0
       with:
@@ -26,6 +27,7 @@ jobs:
         tag_name: "nightly"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: github.event_name == 'push'
 
     - uses: rickstaa/action-create-tag@v1
       id: create_tag
@@ -163,4 +165,4 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          path: ./wrappers/python/wheelhouse/*.whl
+          path: ./wheelhouse/*.whl
