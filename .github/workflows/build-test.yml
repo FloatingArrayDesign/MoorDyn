@@ -107,8 +107,8 @@ jobs:
       with:
         type: 'zip'
         filename: ${{runner.os}}-dev.zip
-        path: './install/'
-        exclusions: '/*lib*/cmake*'
+        exclusions: '/lib/cmake*'
+      working-directory: ${{github.workspace}}/install
 
     - name: Upload ZIP
       id: upload-zip
