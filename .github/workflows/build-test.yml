@@ -91,13 +91,14 @@ jobs:
       run: cpack -C ${{env.BUILD_TYPE}}
       if: runner.os == 'Windows'
 
-    - name: Upload the Windows installer
-      uses: svenstaro/upload-release-action@v2
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ${{github.workspace}}/build/Moordyn-2.0.0-win64.exe
-        asset_name: Windows installer
-        tag: "nightly"
-        overwrite: true
-        body: "Windows installer with the C/C++ and Fortran libraries"
-      if: runner.os == 'Windows'
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/build/Moordyn-2.0.0-win64.exe
+        asset_name: Moordyn-2.0.0-win64.exe
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push) && (runner.os == 'Windows') }}
