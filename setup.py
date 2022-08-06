@@ -40,6 +40,21 @@ from setuptools import setup, find_packages, Extension
 import sysconfig
 
 
+DESC = """Python version of MoorDyn, a lumped-mass mooring dynamics model
+intended for coupling with floating structure codes.
+
+This is not a wrapper of MoorDyn, but an stand-alone version. Thus you can
+just install and use this package, no need of the MoorDyn library in your
+system.
+
+Please, visit https://moordyn.readthedocs.io to learn more about this package,
+and MoorDyn in general.
+
+If you detect any problem, please feel free to report the issue on the GitHub
+page:
+https://github.com/mattEhall/MoorDyn
+"""
+
 # We better copy here the moordyn module
 shutil.rmtree('moordyn', ignore_errors=True)
 shutil.copytree(os.path.join('wrappers', 'python', 'moordyn'), 'moordyn')
@@ -81,9 +96,11 @@ cmoordyn = Extension('cmoordyn',
 setup(
     name='moordyn',
     version=version,
-    description='MoorDyn for Python',
     author='Jose Luis Cercos-Pita',
     author_email='jlc@core-marine.com',
+    url = 'https://github.com/mattEhall/MoorDyn',
+    description='MoorDyn for Python',
+    long_description = DESC,
     ext_modules = [cmoordyn],
     packages=find_packages(include=['moordyn', 'moordyn.*']),
     install_requires=[],
