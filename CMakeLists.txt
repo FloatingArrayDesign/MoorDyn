@@ -24,6 +24,8 @@ set(PYTHON_WRAPPER ON CACHE BOOL
     "Build the Python wrapper")
 set(FORTRAN_WRAPPER OFF CACHE BOOL
     "Build the Fortran module")
+set(MATLAB_WRAPPER OFF CACHE BOOL
+    "Build the Matlab wrapper")
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
 set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
@@ -44,6 +46,10 @@ endif()
 
 if(${FORTRAN_WRAPPER})
     enable_language(Fortran)
+endif()
+
+if(${MATLAB_WRAPPER})
+    find_package(Matlab REQUIRED MEX_COMPILER ENG_LIBRARY MAIN_PROGRAM)
 endif()
 
 if(${BUILD_DOCS})

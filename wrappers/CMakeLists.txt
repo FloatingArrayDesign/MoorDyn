@@ -5,3 +5,7 @@ endif()
 if(${FORTRAN_WRAPPER})
     add_subdirectory(fortran)
 endif()
+
+if(${MATLAB_WRAPPER})
+    add_subdirectory(matlab)
+endif()
