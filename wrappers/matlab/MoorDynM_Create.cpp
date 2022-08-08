@@ -33,36 +33,48 @@
 
 #include "mex.hpp"
 #include "mexAdapter.hpp"
-#include "matrix.h"
 
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-class MexFunction : public matlab::mex::Function {
-public:
-    void operator()(ArgumentList outputs, ArgumentList inputs) {
-        checkArguments(outputs, inputs);
-        const char* filename = mxArrayToString(inputs[0]);
-		MoorDyn system = MoorDyn_Create(filename);
-		outputs[0] = factory.createArray<uint64_t>(encode_ptr((void*)system));
-    }
-    void checkArguments(ArgumentList outputs, ArgumentList inputs) {
-        std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
-        ArrayFactory factory;
+class MexFunction : public matlab::mex::Function
+{
+  public:
+	void operator()(ArgumentList outputs, ArgumentList inputs)
+	{
+		std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
+		ArrayFactory factory;
+		checkArguments(outputs, inputs);
 
-		if ((inputs.size() != 1) || (inputs[0].getType() != ArrayType::CHAR))
-        {
-            matlabPtr->feval(u"error",
-                0,
-                std::vector<Array>({ factory.createScalar("Only a single input string is accepted") }));
-        }
+		const CharArray filename_matlab = inputs[0];
+		std::string filename(filename_matlab.toAscii());
+		MoorDyn system = MoorDyn_Create(filename.c_str());
+		if (!system) {
+			matlabPtr->feval(u"error",
+			                 0,
+			                 std::vector<Array>({ factory.createScalar(
+			                     "MoorDyn reported an error") }));
+		}
+		outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)system);
+	}
+	void checkArguments(ArgumentList outputs, ArgumentList inputs)
+	{
+		std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
+		ArrayFactory factory;
 
-        // Check number of outputs
-        if (outputs.size() != 1)
-        {
-            matlabPtr->feval(u"error",
-                0,
-                std::vector<Array>({ factory.createScalar("Only the moordyn system is returned") }));
-        }
-    }
+		if ((inputs.size() != 1) || (inputs[0].getType() != ArrayType::CHAR)) {
+			matlabPtr->feval(u"error",
+			                 0,
+			                 std::vector<Array>({ factory.createScalar(
+			                     "1 input string is required") }));
+		}
+
+		// Check number of outputs
+		if (outputs.size() != 1) {
+			matlabPtr->feval(u"error",
+			                 0,
+			                 std::vector<Array>({ factory.createScalar(
+			                     "1 output scalar is required") }));
+		}
+	}
 };
