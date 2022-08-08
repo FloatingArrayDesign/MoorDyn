@@ -28,11 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MoorDyn2.h"
-#include "moordyn_matlab.h"
-
 #include "mex.hpp"
 #include "mexAdapter.hpp"
+
+#include "MoorDyn2.h"
+#include "moordyn_matlab.h"
 
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
