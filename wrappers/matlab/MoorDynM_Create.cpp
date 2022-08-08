@@ -55,7 +55,7 @@ class MexFunction : public matlab::mex::Function
 			                 std::vector<Array>({ factory.createScalar(
 			                     "MoorDyn reported an error") }));
 		}
-		outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)system);
+		outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)system));
 	}
 	void checkArguments(ArgumentList outputs, ArgumentList inputs)
 	{
