@@ -227,7 +227,7 @@ this time developed in Python:
     # Get the initial positions from the system itself
     x = []
     for i in range(3):
-        // 4 = first fairlead id
+        # 4 = first fairlead id
         conn = moordyn.GetConnection(system, i + 4)
         x = x + moordyn.GetConnectPos(conn)
 
@@ -412,49 +412,56 @@ MoorDyn with that support by yourself. Please, check out the
 wrapper working.
 
 Considering the same example above, the resulting Matlab code would look like
-the following (WIP):
+the following:
 
 .. code-block:: matlab
 
-    system = Moordyn_Create("Mooring/lines.txt")
+    system = MoorDynM_Create('Mooring/lines.txt');
 
-    # 3 coupled connections x 3 components per connection = 9 DoF
-    dx = [0] * 9
-    # Get the initial positions from the system itself
-    x = []
-    for i in range(3):
-        // 4 = first fairlead id
-        conn = Moordyn_GetConnection(system, i + 4)
-        x = x + Moordyn_GetConnectPos(conn)
+    %% 3 coupled connections x 3 components per connection = 9 DoF
+    x = zeros(9,1);
+    dx = zeros(9,1);
+    %% Get the initial positions from the system itself
+    for i=1:3
+        %% 4 = first fairlead id
+        conn = MoorDynM_GetConnection(system, i + 3);
+        x(1 + 3 * (i - 1):3 * i) = MoorDynM_GetConnectPos(conn);
+    end
 
-    # Setup the initial condition
-    Moordyn_Init(system, x, dx)
+    %% Setup the initial condition
+    MoorDynM_Init(system, x, dx);
 
-    # Make the connections move at 0.5 m/s to the positive x direction
-    for i in range(3):
-        dx[3 * i] = 0.5
-    t, dt = 0.0, 0.5
-    f = Moordyn_Step(system, x, dx, t, dt)
+    %% Make the connections move at 0.5 m/s to the positive x direction
+    for i=1:3
+        dx(1 + 3 * (i - 1)) = 0.5;
+    end
+    t = 0.0;
+    dt = 0.5;
+    [t, f] = MoorDynM_Step(system, x, dx, t, dt);
 
-    # Print the position and tension of the line nodes
-    n_lines = Moordyn_GetNumberLines(system)
-    for line_id in range(1, n_lines + 1):
-        print("Line {}".format(line_id))
-        print("=======")
-        line = Moordyn_GetLine(system, line_id)
-        n_nodes = Moordyn_GetLineNumberNodes(line)
-        for node_id in range(n_nodes):
-            print("  node {}:".format(node_id))
-            pos = Moordyn_GetLineNodePos(line, node_id)
-            printf("  pos = {}".format(pos))
-            ten = Moordyn_GetLineNodeTen(line, node_id)
-            printf("  ten = {}".format(ten))
-        }
-    }
+    %% Print the position and tension of the line nodes
+    n_lines = MoorDynM_GetNumberLines(system);
+    for line_id=1:n_lines
+        line_id
+        line = MoorDynM_GetLine(system, line_id);
+        n_nodes = MoorDynM_GetLineNumberNodes(line);
+        for node_id=1:n_nodes
+            node_id
+            pos = MoorDynM_GetLineNodePos(line, node_id - 1);
+            pos
+            ten = MoorDynM_GetLineNodeTen(line, node_id - 1);
+            ten
+        end
+    end
 
-    # Alright, time to finish!
-    Moordyn_Close(system)
+    %% Alright, time to finish!
+    MoorDynM_Close(system);
 
+As it was already mentioned, it is pretty similar to Python. The functions are
+not returning error codes, but the queried information.
+However, the functions are triggering exceptions, that can be catched by Matlab.
+Again, that feature shall be used at least to grant that MoorDynM_Close() is
+called even if the excution fails.
 
 Simulink
 ^^^^^^^^
