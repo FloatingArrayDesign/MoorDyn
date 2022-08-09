@@ -74,7 +74,7 @@ decode_ptr(uint64_t ptr)
 			ArrayFactory factory;                                              \
                                                                                \
 			if (inputs.size() != n_in) {                                       \
-				stringstream err_msg;                                          \
+				std::stringstream err_msg;                                     \
 				err_msg << n_in << " inputs are required";                     \
 				matlabPtr->feval(u"error",                                     \
 				                 0,                                            \
@@ -83,7 +83,7 @@ decode_ptr(uint64_t ptr)
 			}                                                                  \
                                                                                \
 			if (outputs.size() != n_out) {                                     \
-				stringstream err_msg;                                          \
+				std::stringstream err_msg;                                     \
 				err_msg << n_out << " outputs are required";                   \
 				matlabPtr->feval(u"error",                                     \
 				                 0,                                            \
@@ -100,7 +100,7 @@ decode_ptr(uint64_t ptr)
 
 #define MOORDYNM_CHECK_ERROR(err)                                              \
 	if (err != MOORDYN_SUCCESS) {                                              \
-		stringstream err_msg;                                                  \
+		std::stringstream err_msg;                                             \
 		err_msg << "MoorDyn reported an error: ";                              \
 		switch (err) {                                                         \
 			case MOORDYN_INVALID_INPUT_FILE:                                   \
