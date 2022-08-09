@@ -37,22 +37,15 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 5, 2)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 0)
 {
-	TypedArray<double> x_matlab = std::move(inputs[1]);
-	std::vector<double> x(x_matlab.begin(), x_matlab.end());
-	TypedArray<double> xd_matlab = std::move(inputs[2]);
-	std::vector<double> xd(xd_matlab.begin(), xd_matlab.end());
-	double t = inputs[3][0];
-	double dt = inputs[4][0];
-
-	std::vector<double> f(x.size(), 0.0);
-	const int err =
-	    MoorDyn_Step(instance, x.data(), xd.data(), f.data(), &t, &dt);
-	MOORDYNM_CHECK_ERROR(err);
-
-	outputs[0] = factory.createScalar<double>(t);
-	outputs[1] = factory.createArray<double>(
-	    { 1, f.size() }, f.data(), f.data() + f.size());
+	MoorDynWaves waves = MoorDyn_GetWaves(instance);
+	if (!waves) {
+		matlabPtr->feval(u"error",
+		                 0,
+		                 std::vector<Array>({ factory.createScalar(
+		                     "MoorDyn reported an error") }));
+	}
+	outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)waves));
 }
 MOORDYNM_MEX_FUNCTION_END
