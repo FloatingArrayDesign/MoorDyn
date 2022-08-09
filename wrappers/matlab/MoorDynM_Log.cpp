@@ -37,11 +37,12 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 2, 0)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 3, 0)
 {
-	const CharArray filename_matlab = inputs[0];
-	std::string filename(filename_matlab.toAscii());
-	const int err = MoorDyn_SetLogFile(instance, filename.c_str());
+	const int level = inputs[1][0];
+	const CharArray msg_matlab = inputs[2];
+	std::string msg(filename_matlab.toAscii());
+	const int err = MoorDyn_Log(instance, level, msg.c_str());
 	MOORDYNM_CHECK_ERROR(err);
 }
 MOORDYNM_MEX_FUNCTION_END
