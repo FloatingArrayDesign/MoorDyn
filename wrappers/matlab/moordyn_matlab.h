@@ -91,7 +91,7 @@ decode_ptr(uint64_t ptr)
 				                     err_msg.str()) }));                       \
 			}                                                                  \
 			const uint64_t _instance_id = inputs[0][0];                        \
-			instance_type instance = (instance_type)decode_ptr(id);
+			instance_type instance = (instance_type)decode_ptr(_instance_id);
 
 #define MOORDYNM_MEX_FUNCTION_END                                              \
 	}                                                                          \
