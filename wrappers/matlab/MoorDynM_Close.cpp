@@ -37,44 +37,9 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-class MexFunction : public matlab::mex::Function
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 0)
 {
-  public:
-	void operator()(ArgumentList outputs, ArgumentList inputs)
-	{
-		std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
-		ArrayFactory factory;
-		checkArguments(outputs, inputs);
-
-		const uint64_t id = inputs[0][0];
-		const int err = MoorDyn_Close((MoorDyn)decode_ptr(id));
-		if (err != MOORDYN_SUCCESS) {
-			matlabPtr->feval(u"error",
-			                 0,
-			                 std::vector<Array>({ factory.createScalar(
-			                     "MoorDyn reported an error") }));
-		}
-	}
-	void checkArguments(ArgumentList outputs, ArgumentList inputs)
-	{
-		std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
-		ArrayFactory factory;
-
-		if ((inputs.size() != 1) ||
-		    (inputs[0].getType() != ArrayType::UINT64) ||
-		    (inputs[0].getNumberOfElements() != 1)) {
-			matlabPtr->feval(u"error",
-			                 0,
-			                 std::vector<Array>({ factory.createScalar(
-			                     "1 input MoorDyn ID is required") }));
-		}
-
-		// Check number of outputs
-		if (outputs.size() != 0) {
-			matlabPtr->feval(u"error",
-			                 0,
-			                 std::vector<Array>({ factory.createScalar(
-			                     "No outputs are accepted") }));
-		}
-	}
-};
+	const int err = MoorDyn_Close(instance);
+	MOORDYNM_CHECK_ERROR(err);
+}
+MOORDYNM_MEX_FUNCTION_END
