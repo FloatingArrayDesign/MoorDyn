@@ -41,7 +41,7 @@ MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 3, 0)
 {
 	const int level = inputs[1][0];
 	const CharArray msg_matlab = inputs[2];
-	std::string msg(filename_matlab.toAscii());
+	std::string msg(msg_matlab.toAscii());
 	const int err = MoorDyn_Log(instance, level, msg.c_str());
 	MOORDYNM_CHECK_ERROR(err);
 }
