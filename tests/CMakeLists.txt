@@ -32,3 +32,11 @@ if(${FORTRAN_WRAPPER})
     add_test(NAME fortran_bindings
              COMMAND fortran_bindings)
 endif()
+
+if(${MATLAB_WRAPPER})
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/matlab_bindings.m.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m")
+
+    matlab_add_unit_test(NAME matlab_bindings
+                         UNITTEST_FILE ${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m)
+endif()
