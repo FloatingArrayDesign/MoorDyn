@@ -401,7 +401,60 @@ differences are just caused by the language.
 Matlab
 ^^^^^^
 
-MoorDyn can be called from Matlab scripts.
+Woha! You are still using Matlab! You really need to consider moving to Python
+soon. Yesterday would be a good moment to do that...
+
+Anyway, MoorDyn might also works with Matlab for your entire convenience.
+Unfortunately, it is not currently possible to automate the Matlab wrapper
+building, so no binaries will be provided, so you must compile and install
+MoorDyn with that support by yourself. Please, check out the
+:ref:`getting started documenation <starting>` to know how to get the Matlab
+wrapper working.
+
+Considering the same example above, the resulting Matlab code would look like
+the following (WIP):
+
+.. code-block:: matlab
+
+    system = Moordyn_Create("Mooring/lines.txt")
+
+    # 3 coupled connections x 3 components per connection = 9 DoF
+    dx = [0] * 9
+    # Get the initial positions from the system itself
+    x = []
+    for i in range(3):
+        // 4 = first fairlead id
+        conn = Moordyn_GetConnection(system, i + 4)
+        x = x + Moordyn_GetConnectPos(conn)
+
+    # Setup the initial condition
+    Moordyn_Init(system, x, dx)
+
+    # Make the connections move at 0.5 m/s to the positive x direction
+    for i in range(3):
+        dx[3 * i] = 0.5
+    t, dt = 0.0, 0.5
+    f = Moordyn_Step(system, x, dx, t, dt)
+
+    # Print the position and tension of the line nodes
+    n_lines = Moordyn_GetNumberLines(system)
+    for line_id in range(1, n_lines + 1):
+        print("Line {}".format(line_id))
+        print("=======")
+        line = Moordyn_GetLine(system, line_id)
+        n_nodes = Moordyn_GetLineNumberNodes(line)
+        for node_id in range(n_nodes):
+            print("  node {}:".format(node_id))
+            pos = Moordyn_GetLineNodePos(line, node_id)
+            printf("  pos = {}".format(pos))
+            ten = Moordyn_GetLineNodeTen(line, node_id)
+            printf("  ten = {}".format(ten))
+        }
+    }
+
+    # Alright, time to finish!
+    Moordyn_Close(system)
+
 
 Simulink
 ^^^^^^^^

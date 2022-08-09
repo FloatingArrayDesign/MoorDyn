@@ -199,6 +199,7 @@ enable FORTRAN_WRAPPER and PYTHON_WRAPPER:
 
    Configuration options for MoorDyn
 
+You can also enable MATLAB_WRAPPER if you have Matlab installed in your system.
 We are ready, click "Configure" once more and the "Generate".
 
 Now you can recover your Command Prompt (which has adminsitrative rights), and
@@ -287,6 +288,8 @@ You would need to edit the LD_LIBRARY_PATH environment variable afterwards.
 If you have also installed the Fortran compiler, which is usually the case in
 most Linux distributions, you can also compile and install the Fortran wrapper,
 just setting the option -DFORTRAN_WRAPPER=ON.
+Along the same line, if you have Matlab installed in your system, feel free to
+add also the option -DMATLAB_WRAPPER=ON.
 
 Use MoorDyn in your project
 ---------------------------
@@ -398,4 +401,25 @@ is also very similar to the C one:
      err = MD_Close(system)
 
    end program main
+
+Matlab
+^^^^^^
+
+Using MoorDyn in Matlab is so far similar to using it in Python. However, in
+Matlab you must manually add the folder where the wrapper an MoorDyn libraries
+are located to the path.
+To this end, in Matlab go to the HOME menu, section ENVIRONMENT, and click on
+"Set Path".
+In the window appearing click on "Add Folder...", and set the folder where you
+installed the MoorDyn library, which by default is:
+
+* C:\Program Files (x86)\MoorDyn\bin in Windows
+* /usr/lib in Linux and MacOS
+
+After that you are free to go!
+
+.. code-block:: matlab
+
+   system = MoorDynM_Create("Mooring/lines.txt")
+   MoorDynM_Close(system)
 
