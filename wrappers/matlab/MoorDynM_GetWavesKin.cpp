@@ -48,7 +48,7 @@ MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynWaves, 5, 4)
 	std::vector<double> ud(3, 0.0);
 	double zeta, pdyn;
 	const int err = MoorDyn_GetWavesKin(
-	    instance, x, y, z, t, u.data(), ud.data(), zeta, pdyn);
+	    instance, x, y, z, t, u.data(), ud.data(), &zeta, &pdyn);
 	MOORDYNM_CHECK_ERROR(err);
 
 	outputs[0] = factory.createArray<double>(
