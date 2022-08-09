@@ -39,13 +39,15 @@ using matlab::mex::ArgumentList;
 
 MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 1)
 {
-	MoorDynWaves waves = MoorDyn_GetWaves(instance);
-	if (!waves) {
-		matlabPtr->feval(u"error",
-		                 0,
-		                 std::vector<Array>({ factory.createScalar(
-		                     "MoorDyn reported an error") }));
-	}
-	outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)waves));
+	unsigned int n;
+	int err = MoorDyn_ExternalWaveKinGetN(instance, &n);
+	MOORDYNM_CHECK_ERROR(err);
+
+	std::vector<double> r(3 * n, 0.0);
+	err = MoorDyn_ExternalWaveKinGetCoordinates(instance, r.data());
+	MOORDYNM_CHECK_ERROR(err);
+
+	outputs[0] = factory.createArray<double>(
+	    { 1, r.size() }, r.data(), r.data() + r.size());
 }
 MOORDYNM_MEX_FUNCTION_END
