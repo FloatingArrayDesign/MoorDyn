@@ -45,7 +45,8 @@ MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 4, 0)
 	std::vector<double> ud(ud_matlab.begin(), ud_matlab.end());
 	double t = inputs[3][0];
 
-	err = MoorDyn_ExternalWaveKinSet(instance, u.data(), ud.data(), t);
+	const int err =
+	    MoorDyn_ExternalWaveKinSet(instance, u.data(), ud.data(), t);
 	MOORDYNM_CHECK_ERROR(err);
 }
 MOORDYNM_MEX_FUNCTION_END
