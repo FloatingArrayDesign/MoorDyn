@@ -38,5 +38,6 @@ if(${MATLAB_WRAPPER})
                    "${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m")
 
     matlab_add_unit_test(NAME matlab_bindings
-                         UNITTEST_FILE ${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m)
+                         UNITTEST_FILE ${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m
+                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
