@@ -54,6 +54,12 @@ upper(const string& str)
 }
 
 bool
+startswith(const string& str, const string& prefix)
+{
+	return str.rfind(prefix, 0) == 0;
+}
+
+bool
 has(const string& str, const vector<string> terms)
 {
 	for (auto term : terms) {

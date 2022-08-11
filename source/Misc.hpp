@@ -484,6 +484,14 @@ lower(const string& str);
 string
 upper(const string& str);
 
+/** @brief Check if a string starts with the provided prefix
+ * @param str String to check
+ * @param prefix The prefix to look for
+ * @return true if the string starts with the prefix, false otherwise
+ */
+bool
+startswith(const string& str, const string& prefix);
+
 /** @brief Check if a string contains one of the provided terms
  * @param str String to check
  * @param terms List of terms to look for

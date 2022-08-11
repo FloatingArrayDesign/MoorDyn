@@ -997,6 +997,43 @@ class ABScheme : public TimeSchemeBase<5, 1>
 	}
 };
 
+/** @class ImplicitEulerScheme Time.hpp
+ * @brief Implicit 1st order Euler time scheme
+ *
+ * The implicit Euler method is an implicit method where the derivative is
+ * evaluated somewhere inside the time step. Obviously, since that point depends
+ * on the derivative itself, a fixed point problem shall be solved
+ */
+class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param iters The number of inner iterations to find the derivative
+	 * @param dt_factor The inner evaluation point factor. 0.5 for the midpoint
+	 * method, 1.0 for the backward Euler method
+	 */
+	ImplicitEulerScheme(moordyn::Log* log,
+	                    unsigned int iters = 10,
+	                    real dt_factor = 0.5);
+
+	/// @brief Destructor
+	~ImplicitEulerScheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+
+  private:
+	/// The number of iterations
+	unsigned int _iters;
+	/// The evaluation point
+	real _dt_factor;
+};
+
 /** @brief Create a time scheme
  * @param name The time scheme name, one of the following:
  * "Euler", "Heun", "RK2", "RK4", "AB3", "AB4"

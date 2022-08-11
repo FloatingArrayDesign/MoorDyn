@@ -185,6 +185,33 @@ ABScheme<order>::Step(real& dt)
 	Update(t, 0);
 }
 
+ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
+                                         unsigned int iters,
+                                         real dt_factor)
+  : TimeSchemeBase(log)
+  , _iters(iters)
+  , _dt_factor(dt_factor)
+{
+	stringstream s;
+	s << "k=" << dt_factor << " implicit Euler (" << iters << " iterations)";
+	name = s.str();
+}
+
+void
+ImplicitEulerScheme::Step(real& dt)
+{
+	for (unsigned int i = 0; i < _iters; i++) {
+		r[1] = r[0] + rd[0] * (_dt_factor * dt);
+		Update(t + _dt_factor * dt, 1);
+		CalcStateDeriv(0);
+	}
+
+	// Apply
+	r[0] = r[0] + rd[0] * dt;
+	t += dt;
+	Update(t, 0);
+}
+
 TimeScheme*
 create_time_scheme(const std::string& name, moordyn::Log* log)
 {
@@ -201,6 +228,24 @@ create_time_scheme(const std::string& name, moordyn::Log* log)
 		out = new ABScheme<3>(log);
 	} else if (str::lower(name) == "ab4") {
 		out = new ABScheme<4>(log);
+	} else if (str::startswith(str::lower(name), "beuler")) {
+		try {
+			unsigned int iters = std::stoi(name.substr(6));
+			out = new ImplicitEulerScheme(log, iters, 1.0);
+		} catch (std::invalid_argument) {
+			stringstream s;
+			s << "Invalid Backward Euler name format '" << name << "'";
+			throw moordyn::invalid_value_error(s.str().c_str());
+		}
+	} else if (str::startswith(str::lower(name), "midpoint")) {
+		try {
+			unsigned int iters = std::stoi(name.substr(8));
+			out = new ImplicitEulerScheme(log, iters, 0.5);
+		} catch (std::invalid_argument) {
+			stringstream s;
+			s << "Invalid Midpoint name format '" << name << "'";
+			throw moordyn::invalid_value_error(s.str().c_str());
+		}
 	} else {
 		stringstream s;
 		s << "Unknown time scheme '" << name << "'";
