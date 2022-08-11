@@ -15,7 +15,7 @@ if(WIN32)
     endif()
 endif()
 
-set(TESTS "minimal;pendulum;io;bodies_and_rods;wavekin;quasi_static_chain")
+set(TESTS "minimal;pendulum;time_schemes;io;bodies_and_rods;wavekin;quasi_static_chain")
 foreach(TEST ${TESTS})
     add_executable(${TEST} ${TEST}.cpp)
     target_link_libraries(${TEST} moordyn)
