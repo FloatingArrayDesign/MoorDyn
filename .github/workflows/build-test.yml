@@ -104,41 +104,23 @@ jobs:
       # We are just testing in Linux
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Prepare ZIP
-      uses: 1arp/create-a-file-action@0.2
-      with:
-        path: './install/'
-        file: ${{runner.os}}-dev.tar.gz
-        content: "Decoy tar.gz to be overwritten"
-      if: ${{ (github.event_name == 'push') && (runner.os != 'Windows') }}
+    - name: Create Installer
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      # Package the installer
+      run: cpack -C ${{env.BUILD_TYPE}}
 
-    - name: Archive ZIP
-      uses: thedoctor0/zip-release@main
-      with:
-        type: 'tar'
-        filename: ${{runner.os}}-dev.tar.gz
-        directory: './install/'
-        exclusions: ${{runner.os}}-dev.tar.gz
-      if: runner.os != 'Windows'
-
-    - name: Upload ZIP
-      id: upload-zip
+    - name: Upload Linux installer
+      id: upload-linux-installer
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/install/${{runner.os}}-dev.tar.gz
-        asset_name: Moordyn-2.0.0-${{runner.os}}-dev.tar.gz
-        asset_content_type: application/zip
-      if: ${{ (github.event_name == 'push') && (runner.os != 'Windows') }}
-
-    - name: Windows installer
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      # Package the installer
-      run: cpack -C ${{env.BUILD_TYPE}}
-      if: runner.os == 'Windows'
+        asset_path: ${{github.workspace}}/build/Moordyn-2.0.1-Linux.sh
+        asset_name: Moordyn-2.0.1-Linux.sh
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push') && (runner.os == 'Linux') }}
 
     - name: Upload Windows installer
       id: upload-windows-installer
@@ -151,6 +133,18 @@ jobs:
         asset_name: Moordyn-2.0.1-win64.exe
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
+
+    - name: Upload MacOS installer
+      id: upload-macos-installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/build/Moordyn-2.0.1-Darwin.sh
+        asset_name: Moordyn-2.0.1-Darwin.sh
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push') && (runner.os == 'MacOS') }}
 
   build_wheels:
     name: Build Python wheels
