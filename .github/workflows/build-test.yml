@@ -147,8 +147,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/Moordyn-2.0.0-win64.exe
-        asset_name: Moordyn-2.0.0-win64.exe
+        asset_path: ${{github.workspace}}/build/Moordyn-2.0.1-win64.exe
+        asset_name: Moordyn-2.0.1-win64.exe
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
 
