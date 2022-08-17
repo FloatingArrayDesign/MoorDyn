@@ -35,9 +35,11 @@ Once you already chosen a release, click on the assets and select the most
 appropriate one for your platform.
 More specifically, if you are in Windows you probably want to download and
 execute Moordyn-X.Y.Z-win64.exe (with X.Y.Z replaced by the specific version),
-while for Linux and MacOS you can download Moordyn-X.Y.Z-Linux-dev.zip and
-Moordyn-2.0.0-macOS-dev.zip respectively, and uncompress them in the /usr
-folder.
+in Linux you can download and execute Moordyn-X.Y.Z-Linux.sh and
+in MacOS you can download and execute Moordyn-X.Y.Z-Darwin.sh.
+
+NOTE: When you donwload the self-extracting files for Linux and MacOS they
+cannot be launched until you give them execution permissions.
 
 Now you can checkout
 :ref:`how to integrate MoorDyn in your project <_starting_using>` below.
