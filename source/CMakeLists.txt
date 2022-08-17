@@ -65,7 +65,7 @@ install(TARGETS moordyn EXPORT MoorDynTargets
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
-  COMPONENT C
+  COMPONENT Runtime
 )
 install(
   FILES

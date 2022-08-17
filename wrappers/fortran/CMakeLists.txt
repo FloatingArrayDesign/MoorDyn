@@ -19,7 +19,7 @@ install(TARGETS moordynf EXPORT MoorDynTargets
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
-  COMPONENT Fortran
+  COMPONENT Runtime
 )
 install(
   FILES
