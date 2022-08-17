@@ -104,7 +104,14 @@ jobs:
       # We are just testing in Linux
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Archive Release
+    - name: Prepare ZIP
+      uses: finnp/create-file-action@master
+      env:
+        FILE_NAME: ${{github.workspace}}/install/${{runner.os}}-dev.tar.gz
+        FILE_DATA: "Decoy tar.gz to be overwritten"
+      if: ${{ (github.event_name == 'push') && (runner.os != 'Windows') }}
+
+    - name: Archive ZIP
       uses: thedoctor0/zip-release@main
       with:
         type: 'tar'
