@@ -139,6 +139,11 @@ if(WIN32)
 
     include(CPack)
 
+    cpack_add_install_type(Developer
+        DISPLAY_NAME "Runtime components, header files and CMake helpers for developers")
+    cpack_add_install_type(User
+        DISPLAY_NAME "Just the runtime components for users")
+
     cpack_add_component(C
         DISPLAY_NAME "C/C++"
         DESCRIPTION "
