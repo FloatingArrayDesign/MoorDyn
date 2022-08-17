@@ -110,6 +110,7 @@ jobs:
         type: 'tar'
         filename: ${{runner.os}}-dev.tar.gz
         directory: './install/'
+      if: runner.os != 'Windows'
 
     - name: Upload ZIP
       id: upload-zip
@@ -121,7 +122,7 @@ jobs:
         asset_path: ${{github.workspace}}/install/${{runner.os}}-dev.tar.gz
         asset_name: Moordyn-2.0.0-${{runner.os}}-dev.tar.gz
         asset_content_type: application/zip
-      if: github.event_name == 'push'
+      if: ${{ (github.event_name == 'push') && (runner.os != 'Windows') }}
 
     - name: Windows installer
       working-directory: ${{github.workspace}}/build
