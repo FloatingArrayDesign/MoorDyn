@@ -144,6 +144,13 @@ if(WIN32)
     cpack_add_install_type(User
         DISPLAY_NAME "Set for users")
 
+    cpack_add_component_group(Runtime
+        EXPANDED
+        DESCRIPTION "Libraries components to make other programs properly work")
+    cpack_add_component_group(Development
+        EXPANDED
+        DESCRIPTION "Header files and CMake helpers for developers")
+
     cpack_add_component(C
         DISPLAY_NAME "C/C++"
         DESCRIPTION "
