@@ -139,82 +139,82 @@ if(WIN32)
 
     include(CPack)
 
-    cpack_add_install_type(Developer
-        DISPLAY_NAME "Set for developers")
-    cpack_add_install_type(User
-        DISPLAY_NAME "Set for users")
+    #cpack_add_install_type(Developer
+        #DISPLAY_NAME "Set for developers")
+    #cpack_add_install_type(User
+        #DISPLAY_NAME "Set for users")
 
-    cpack_add_component_group(Runtime
-        EXPANDED
-        DESCRIPTION "Libraries components to make other programs properly work")
-    cpack_add_component_group(Development
-        EXPANDED
-        DESCRIPTION "Header files and CMake helpers for developers")
+    #cpack_add_component_group(Runtime
+        #EXPANDED
+        #DESCRIPTION "Libraries components to make other programs properly work")
+    #cpack_add_component_group(Development
+        #EXPANDED
+        #DESCRIPTION "Header files and CMake helpers for developers")
 
-    cpack_add_component(C
-        DISPLAY_NAME "C/C++"
-        DESCRIPTION "
-The main version of the library, i.e. the one linked by the C/C++ projects.
-This component only installs the library. To install also the Headers and the
-CMake utilities please select the Development component
-        "
-        GROUP Runtime
-        INSTALL_TYPES Developer User
-    )
-    list(APPEND DEVEL_COMP_DEPS C)
+    #cpack_add_component(C
+        #DISPLAY_NAME "C/C++"
+        #DESCRIPTION "
+#The main version of the library, i.e. the one linked by the C/C++ projects.
+#This component only installs the library. To install also the Headers and the
+#CMake utilities please select the Development component
+        #"
+        #GROUP Runtime
+        #INSTALL_TYPES Developer User
+    #)
+    #list(APPEND DEVEL_COMP_DEPS C)
 
-    if(${FORTRAN_WRAPPER})
-        cpack_add_component(Fortran
-            DISPLAY_NAME "Fortran"
-            DESCRIPTION "
-The Fortran wrapper of the library.
-This component only installs the library. To install also the module file and
-the CMake utilities please select the Development component
-            "
-            GROUP Runtime
-            DEPENDS C
-            INSTALL_TYPES Developer User
-        )
-        list(APPEND DEVEL_COMP_DEPS Fortran)
-    endif()
+    #if(${FORTRAN_WRAPPER})
+        #cpack_add_component(Fortran
+            #DISPLAY_NAME "Fortran"
+            #DESCRIPTION "
+#The Fortran wrapper of the library.
+#This component only installs the library. To install also the module file and
+#the CMake utilities please select the Development component
+            #"
+            #GROUP Runtime
+            #DEPENDS C
+            #INSTALL_TYPES Developer User
+        #)
+        #list(APPEND DEVEL_COMP_DEPS Fortran)
+    #endif()
 
-    if(${PYTHON_WRAPPER})
-        cpack_add_component(Python
-            DISPLAY_NAME "Python wrapper"
-            DESCRIPTION "
-The Python wrappers, ready to be imported in your Python ${Python_VERSION}.
-In general it is preferred to install Python from pip.
-            "
-            GROUP Runtime
-            DEPENDS C
-            INSTALL_TYPES User
-        )
-    endif()
+    #if(${PYTHON_WRAPPER})
+        #cpack_add_component(Python
+            #DISPLAY_NAME "Python wrapper"
+            #DESCRIPTION "
+#The Python wrappers, ready to be imported in your Python ${Python_VERSION}.
+#In general it is preferred to install Python from pip.
+            #"
+            #GROUP Runtime
+            #DEPENDS C
+            #INSTALL_TYPES User
+        #)
+    #endif()
 
-    if(${MATLAB_WRAPPER})
-        cpack_add_component(Matlab
-            DISPLAY_NAME "Matlab wrapper"
-            DESCRIPTION "
-The Matlab mex files. You need to add the intallation folder to your Matlab PATH
-in order to start using MoorDyn.
-            "
-            GROUP Runtime
-            DEPENDS C
-            INSTALL_TYPES User
-        )
-    endif()
+    #if(${MATLAB_WRAPPER})
+        #cpack_add_component(Matlab
+            #DISPLAY_NAME "Matlab wrapper"
+            #DESCRIPTION "
+#The Matlab mex files. You need to add the intallation folder to your Matlab PATH
+#in order to start using MoorDyn.
+            #"
+            #GROUP Runtime
+            #DEPENDS C
+            #INSTALL_TYPES User
+        #)
+    #endif()
 
-    cpack_add_component(Devel
-        DISPLAY_NAME "Development"
-        DESCRIPTION "
-All the needed files to integrate MoorDyn into your project.
-This component includes the C/C++ header files, the Fortran module file, and the
-CMake utilities
-        "
-        GROUP Development
-        DEPENDS ${DEVEL_COMP_DEPS}
-        INSTALL_TYPES Developer
-    )
+    #cpack_add_component(Devel
+        #DISPLAY_NAME "Development"
+        #DESCRIPTION "
+#All the needed files to integrate MoorDyn into your project.
+#This component includes the C/C++ header files, the Fortran module file, and the
+#CMake utilities
+        #"
+        #GROUP Development
+        #DEPENDS ${DEVEL_COMP_DEPS}
+        #INSTALL_TYPES Developer
+    #)
 
     configure_file(${PROJECT_SOURCE_DIR}/cmake/NSIS.definitions.nsh.in
                    ${CMAKE_CURRENT_BINARY_DIR}/cmake/NSIS.definitions.nsh)
