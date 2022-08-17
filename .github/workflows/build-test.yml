@@ -110,6 +110,7 @@ jobs:
         type: 'tar'
         filename: ${{runner.os}}-dev.tar.gz
         directory: './install/'
+        exclusions: ${{runner.os}}-dev.tar.gz
       if: runner.os != 'Windows'
 
     - name: Upload ZIP
