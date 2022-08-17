@@ -42,6 +42,7 @@
 #include <regex>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <vector>
 #include <filesystem>
