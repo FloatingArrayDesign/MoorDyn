@@ -25,5 +25,5 @@ install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/moordyn.mod
   DESTINATION include/moordyn
-  COMPONENT Fortran
+  COMPONENT Devel
 )

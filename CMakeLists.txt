@@ -149,7 +149,7 @@ CMake utilities please select the Development component
         GROUP Runtime
         INSTALL_TYPES Developer User
     )
-    set(DEVEL_COMP_DEPS C)
+    list(APPEND DEVEL_COMP_DEPS C)
 
     if(${FORTRAN_WRAPPER})
         cpack_add_component(Fortran
