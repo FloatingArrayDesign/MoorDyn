@@ -105,10 +105,11 @@ jobs:
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Prepare ZIP
-      uses: finnp/create-file-action@master
-      env:
-        FILE_NAME: ${{github.workspace}}/install/${{runner.os}}-dev.tar.gz
-        FILE_DATA: "Decoy tar.gz to be overwritten"
+      uses: 1arp/create-a-file-action@0.2
+      with:
+        path: './install/'
+        file: ${{runner.os}}-dev.tar.gz
+        content: "Decoy tar.gz to be overwritten"
       if: ${{ (github.event_name == 'push') && (runner.os != 'Windows') }}
 
     - name: Archive ZIP
