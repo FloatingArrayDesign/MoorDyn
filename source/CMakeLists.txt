@@ -65,6 +65,7 @@ install(TARGETS moordyn EXPORT MoorDynTargets
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
+  COMPONENT C
 )
 install(
   FILES
@@ -100,6 +101,8 @@ install(EXPORT MoorDynTargets
     MoorDyn::
   DESTINATION
     ${ConfigPackageLocation}
+  COMPONENT
+    Devel
 )
 install(
   FILES
