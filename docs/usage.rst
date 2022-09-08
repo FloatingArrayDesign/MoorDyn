@@ -387,7 +387,7 @@ The list of possible options is:
 
  - writeLog (0): If >0 a log file is written recording information. The bigger the number the more verbose. Please, be mindful that big values would critically reduce the performance!
  - DT (0.001): The time step (s)
- - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB3, AB4. RK stands for Runge-Kutta while AB stands for Adams-Bashforth
+ - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for Runge-Kutta while AB stands for Adams-Bashforth
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
  - WtrDpth (0.0): The water depth (m)
