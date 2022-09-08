@@ -60,15 +60,14 @@ HeunScheme::HeunScheme(moordyn::Log* log)
 void
 HeunScheme::Step(real& dt)
 {
-	Update(t, 0);
-
 	// Apply the latest knew derivative, as a predictor
-	r[0] = r[0] + rd[1] * dt;
+	r[0] = r[0] + rd[0] * dt;
 	rd[1] = rd[0];
 	// Compute the new derivative
+	Update(t, 0);
 	CalcStateDeriv(0);
 	// Correct the integration
-	r[0] = r[0] + (rd[1] - rd[0]) * dt;
+	r[0] = r[0] + (rd[0] - rd[1]) * (0.5 * dt);
 
 	t += dt;
 	Update(t, 0);
@@ -224,6 +223,8 @@ create_time_scheme(const std::string& name, moordyn::Log* log)
 		out = new RK2Scheme(log);
 	} else if (str::lower(name) == "rk4") {
 		out = new RK4Scheme(log);
+	} else if (str::lower(name) == "ab2") {
+		out = new ABScheme<2>(log);
 	} else if (str::lower(name) == "ab3") {
 		out = new ABScheme<3>(log);
 	} else if (str::lower(name) == "ab4") {
