@@ -24,3 +24,4 @@ MoorDyn v2 C API is doing
 """
 
 from .moordyn import *
+from . import Generator
