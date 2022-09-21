@@ -44,6 +44,17 @@ ERRCODE_INVALID_VALUE = -6
 ERRCODE_NON_IMPLEMENTED = -7
 ERRCODE_UNHANDLED_ERROR = -255
 
+
+BODY_TYPE_COUPLED = CONN_TYPE_COUPLED = -1
+BODY_TYPE_FREE = CONN_TYPE_FREE = 0
+BODY_TYPE_FIXED = CONN_TYPE_FIXED = 1
+ROD_TYPE_COUPLED = -2
+ROD_TYPE_CPLDPIN = -1
+ROD_TYPE_FREE = 0
+ROD_TYPE_PINNED = 1
+ROD_TYPE_FIXED = 2
+
+
 #                                  MoorDyn2.h
 #  =============================================================================
 
