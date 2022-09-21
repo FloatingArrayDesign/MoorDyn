@@ -74,6 +74,15 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetLineNumberNodes(MoorDynLine l, unsigned int* n);
 
+	/** @brief Get the line unstretched length
+	 * @param l The Moordyn line
+	 * @param ul The output length
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_GetLineN()
+	 */
+	int DECLDIR MoorDyn_GetLineUnstretchedLength(MoorDynLine l, double* ul);
+
 	/** @brief Get a line node position
 	 * @param l The Moordyn line
 	 * @param i The node index

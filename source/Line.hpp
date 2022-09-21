@@ -315,6 +315,11 @@ class Line : public io::IO
 	 */
 	inline unsigned int getN() const { return N; }
 
+	/** @brief Get the unstretched length of the line
+	 * @return The unstretched length, moordyn::Line::UnstrLen
+	 */
+	inline moordyn::real getUnstretchedLength() const { return UnstrLen; }
+
 	/** @brief Get the position of a node
 	 * @param i The line node index
 	 * @return The position

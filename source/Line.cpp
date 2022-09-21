@@ -1513,6 +1513,14 @@ MoorDyn_GetLineNumberNodes(MoorDynLine l, unsigned int* n)
 }
 
 int DECLDIR
+MoorDyn_GetLineUnstretchedLength(MoorDynLine l, double* ul)
+{
+	CHECK_LINE(l);
+	*ul = ((moordyn::Line*)l)->getUnstretchedLength();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 {
 	CHECK_LINE(l);
