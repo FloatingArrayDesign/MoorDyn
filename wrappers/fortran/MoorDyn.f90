@@ -369,7 +369,7 @@ module moordyn
     end function MD_GetLineNumberNodes
 
     integer(c_int) function MD_GetLineUnstretchedLength(instance, l) bind(c, name='MoorDyn_GetLineUnstretchedLength')
-      import :: c_ptr, c_double
+      import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       real(c_double), intent(out) :: l
     end function MD_GetLineUnstretchedLength
