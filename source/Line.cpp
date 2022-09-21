@@ -720,16 +720,6 @@ Line::getStateDeriv()
 		}
 	}
 
-	// Traversing and printing to null buffer every single node can be
-	// wastefull, better checking before if we shall do that
-	if ((_log->GetVerbosity() <= MOORDYN_DBG_LEVEL) ||
-	    (_log->GetLogLevel() <= MOORDYN_DBG_LEVEL)) {
-		LOGDBG << "Line " << number << " node positions at time " << t << ":"
-		       << endl;
-		for (unsigned int j = 0; j <= N; j++)
-			LOGDBG << r[j][0] << "\t" << r[j][1] << "\t" << r[j][2] << endl;
-	}
-
 	// dt is possibly used for stability tricks...
 
 	// -------------------- calculate various kinematic quantities
