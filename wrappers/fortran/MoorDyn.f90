@@ -51,8 +51,8 @@ module moordyn
             MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
             MD_GetRodNodePos, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
-            MD_GetLineNodePos, MD_GetLineNodeTen, MD_GetLineNodeCurv, &
-            MD_GetLineFairTen
+            MD_GetLineUnstretchedLength, MD_GetLineNodePos, MD_GetLineNodeTen, &
+            MD_GetLineNodeCurv, MD_GetLineFairTen
 
   interface
 
@@ -367,6 +367,12 @@ module moordyn
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
     end function MD_GetLineNumberNodes
+
+    integer(c_int) function MD_GetLineUnstretchedLength(instance, l) bind(c, name='MoorDyn_GetLineUnstretchedLength')
+      import :: c_ptr, c_double
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: l
+    end function MD_GetLineUnstretchedLength
 
     function MoorDyn_GetLineNodePos(instance, n, r) bind(c, name='MoorDyn_GetLineNodePos') result(rc)
       import :: c_ptr, c_double, c_int

@@ -1353,6 +1353,33 @@ line_get_n(PyObject*, PyObject* args)
 	return PyLong_FromLong(n);
 }
 
+/** @brief Wrapper to MoorDyn_GetLineUnstretchedLength() function
+ * @param args Python passed arguments
+ * @return The unstretched length
+ */
+static PyObject*
+line_get_ulen(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double l;
+	const int err = MoorDyn_GetLineUnstretchedLength(instance, &l);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyFloat_FromDouble(l);
+}
+
 /** @brief Wrapper to MoorDyn_GetLineNodePos() function
  * @param args Python passed arguments
  * @return The position
@@ -1575,6 +1602,10 @@ static PyMethodDef moordyn_methods[] = {
 	  line_get_n,
 	  METH_VARARGS,
 	  "Get the line number of segments" },
+	{ "line_get_ulen",
+	  line_get_ulen,
+	  METH_VARARGS,
+	  "Get the line unstretched length" },
 	{ "line_get_node_pos",
 	  line_get_node_pos,
 	  METH_VARARGS,

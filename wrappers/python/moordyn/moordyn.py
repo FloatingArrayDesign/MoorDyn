@@ -731,6 +731,19 @@ def GetLineN(instance):
     return cmoordyn.line_get_n(instance)
 
 
+def GetLineUnstretchedLength(instance):
+    """ Get the line unstretched length
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    l: The unstreched length
+    """
+    import cmoordyn
+    return cmoordyn.line_get_ulength(instance)
+
+
 def GetLineNodePos(instance, i):
     """ Get a line node position
 
