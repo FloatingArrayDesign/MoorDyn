@@ -324,7 +324,14 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 						max_error = error;
 					if (max_error > ICthresh) {
 						converged = false;
-						break;
+						if ((_log->GetVerbosity() > MOORDYN_DBG_LEVEL) ||
+						    (_log->GetLogLevel() > MOORDYN_DBG_LEVEL))
+						{
+							// We are not reporting the error, so it is enough
+							// to know that the criteria convergence has not
+							// been met
+							break;
+						}
 					}
 				}
 				if (!converged) {
