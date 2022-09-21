@@ -16,8 +16,8 @@ It is used in the same way than the regular MoorDyn C API:
     v = [0, ] * 9
     moordyn.Init(system, x, v)
     dt = 0.1
-    pymoordyn.Step(system, x, v, 0.0, dt)
-    pymoordyn.Close(system)
+    moordyn.Step(system, x, v, 0.0, dt)
+    moordyn.Close(system)
 
 The majority of functions are returning error codes, exactly the same way the
 MoorDyn v2 C API is doing
