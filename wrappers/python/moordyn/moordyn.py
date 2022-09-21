@@ -741,7 +741,7 @@ def GetLineUnstretchedLength(instance):
     l: The unstreched length
     """
     import cmoordyn
-    return cmoordyn.line_get_ulength(instance)
+    return cmoordyn.line_get_ulen(instance)
 
 
 def GetLineNodePos(instance, i):
