@@ -185,9 +185,6 @@ class Rod : public io::IO
 	// time
 	/// simulation time
 	moordyn::real t;
-	/// simulation time current integration was started at (used for BC
-	/// function)
-	moordyn::real t0;
 
 	/// fairlead position for coupled rods [x/y/z]
 	vec6 r_ves;
@@ -455,7 +452,7 @@ class Rod : public io::IO
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
 	 */
-	void setState(vec6 pos, vec6 vel, double time);
+	void setState(vec6 pos, vec6 vel);
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps
@@ -467,12 +464,12 @@ class Rod : public io::IO
 	 * @note If the rod is of type moordyn::Rod::CPLDPIN, then just 3 components
 	 * of @p r and @p rd are considered
 	 */
-	void initiateStep(vec6 r, vec6 rd, real time);
+	void initiateStep(vec6 r, vec6 rd);
 
 	/** @brief Sets the kinematics
 	 *
 	 * This function is meant only for coupled or fixed bodies
-	 * @param time The simulation time
+	 * @param time Local time within the time step (from 0 to dt)
 	 * @throw moordyn::invalid_value_error If the rod is not of type
 	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
 	 */

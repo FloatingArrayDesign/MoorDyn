@@ -903,9 +903,9 @@ static PyObject*
 waves_getkin(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
-	double x, y, z, t;
+	double x, y, z;
 
-	if (!PyArg_ParseTuple(args, "Odddd", &capsule, &x, &y, &z, &t))
+	if (!PyArg_ParseTuple(args, "Oddd", &capsule, &x, &y, &z))
 		return NULL;
 
 	MoorDynWaves instance =
@@ -915,7 +915,7 @@ waves_getkin(PyObject*, PyObject* args)
 
 	double u[3], ud[3], zeta, pdyn;
 	const int err =
-	    MoorDyn_GetWavesKin(instance, x, y, z, t, u, ud, &zeta, &pdyn);
+	    MoorDyn_GetWavesKin(instance, x, y, z, u, ud, &zeta, &pdyn);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;

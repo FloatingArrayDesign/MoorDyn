@@ -121,11 +121,6 @@ class Connection : public io::IO
 	 * @}
 	 */
 
-	/// simulation time
-	real t;
-	/// simulation time current integration was started at (used for BC
-	/// function)
-	real t0;
 	/// fairlead position for vessel/coupled node types [x/y/z]
 	vec r_ves;
 	/// fairlead velocity for vessel/coupled node types [x/y/z]
@@ -291,13 +286,6 @@ class Connection : public io::IO
 	 */
 	inline void scaleDrag(real scaler) { conCdA *= scaler; }
 
-	/** @brief Set the time stamp
-	 *
-	 * function to reset time after IC generation
-	 * @param time Simulation time
-	 */
-	inline void setTime(real time) { t = time; }
-
 	/** @brief Initialize the time step integration
 	 *
 	 * Called at the beginning of each coupling step to update the boundary
@@ -307,13 +295,13 @@ class Connection : public io::IO
 	 * @param time Simulation time
 	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
-	void initiateStep(vec rFairIn, vec rdFairIn, real time);
+	void initiateStep(vec rFairIn, vec rdFairIn);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
 	 * Sets Connection states and ends of attached lines ONLY if this Connection
 	 * is driven externally, i.e. type = COUPLED (otherwise shouldn't be called)
-	 * @param time Simulation time
+	 * @param time Local time within the time step (from 0 to dt)
 	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
 	void updateFairlead(real time);
@@ -334,10 +322,9 @@ class Connection : public io::IO
 	 * is free, i.e. type = FREE (otherwise shouldn't be called)
 	 * @param pos Position
 	 * @param vel Velocity
-	 * @param time Simulation time
 	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
-	void setState(vec pos, vec vel, real time);
+	void setState(vec pos, vec vel);
 
 	/** @brief Calculate the forces and state derivatives of the connection
 	 * @param return The states derivatives, i.e. the velocity (first) and the

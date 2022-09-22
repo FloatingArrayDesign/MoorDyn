@@ -414,11 +414,8 @@ Rod::storeWaterKin(real dt,
 };
 
 void
-Rod::setState(vec6 pos, vec6 vel, double time)
+Rod::setState(vec6 pos, vec6 vel)
 {
-	// store current time
-	setTime(time);
-
 	// copy over state values for potential use during derivative calculations
 	if (type == FREE) {
 		// end A coordinates & Rod direction unit vector
@@ -448,10 +445,8 @@ Rod::setState(vec6 pos, vec6 vel, double time)
 }
 
 void
-Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn, real time)
+Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn)
 {
-	t0 = time; // set start time for BC functions
-
 	if (type == COUPLED) {
 		// set Rod kinematics based on BCs (linear model for now)
 		r_ves = rFairIn;
@@ -475,11 +470,9 @@ Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn, real time)
 void
 Rod::updateFairlead(real time)
 {
-	setTime(time);
-
 	if (type == COUPLED) {
 		// set Rod kinematics based on BCs (linear model for now)
-		r6 = r_ves + rd_ves * (time - t0);
+		r6 = r_ves + rd_ves * time;
 		v6 = rd_ves;
 		// enforce direction vector to be a unit vector
 		r6(Eigen::seqN(3, 3)) = r6(Eigen::seqN(3, 3)).normalized();
@@ -490,7 +483,7 @@ Rod::updateFairlead(real time)
 	} else if (type == CPLDPIN) {
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
 		r6(Eigen::seqN(0, 3)) =
-		    r_ves(Eigen::seqN(0, 3)) + rd_ves(Eigen::seqN(0, 3)) * (time - t0);
+		    r_ves(Eigen::seqN(0, 3)) + rd_ves(Eigen::seqN(0, 3)) * time;
 		v6(Eigen::seqN(0, 3)) = rd_ves(Eigen::seqN(0, 3));
 
 		// Rod is pinned so only end A is specified, rotations are left alone
@@ -881,7 +874,6 @@ Rod::doRHS()
 			    r[i][0],
 			    r[i][1],
 			    r[i][2],
-			    t,
 			    U[i],
 			    Ud[i],
 			    zeta[i],
@@ -1304,7 +1296,6 @@ Rod::Serialize(void)
 	std::vector<uint64_t> data, subdata;
 
 	data.push_back(io::IO::Serialize(t));
-	data.push_back(io::IO::Serialize(t0));
 	subdata = io::IO::Serialize(r6);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(v6);
@@ -1382,7 +1373,6 @@ Rod::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
 	ptr = io::IO::Deserialize(ptr, t);
-	ptr = io::IO::Deserialize(ptr, t0);
 	ptr = io::IO::Deserialize(ptr, r6);
 	ptr = io::IO::Deserialize(ptr, v6);
 	ptr = io::IO::Deserialize(ptr, r);

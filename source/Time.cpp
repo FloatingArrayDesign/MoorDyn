@@ -44,11 +44,12 @@ EulerScheme::EulerScheme(moordyn::Log* log)
 void
 EulerScheme::Step(real& dt)
 {
-	Update(t, 0);
+	Update(0.0, 0);
 	CalcStateDeriv(0);
 	r[0] = r[0] + rd[0] * dt;
 	t += dt;
-	Update(t, 0);
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
 }
 
 HeunScheme::HeunScheme(moordyn::Log* log)
@@ -64,13 +65,14 @@ HeunScheme::Step(real& dt)
 	r[0] = r[0] + rd[0] * dt;
 	rd[1] = rd[0];
 	// Compute the new derivative
-	Update(t, 0);
+	Update(0.0, 0);
 	CalcStateDeriv(0);
 	// Correct the integration
 	r[0] = r[0] + (rd[0] - rd[1]) * (0.5 * dt);
 
 	t += dt;
-	Update(t, 0);
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
 }
 
 RK2Scheme::RK2Scheme(moordyn::Log* log)
@@ -82,18 +84,20 @@ RK2Scheme::RK2Scheme(moordyn::Log* log)
 void
 RK2Scheme::Step(real& dt)
 {
-	Update(t, 0);
+	Update(0.0, 0);
 
 	// Compute the intermediate state
 	CalcStateDeriv(0);
+	t += 0.5 * dt;
 	r[1] = r[0] + rd[0] * (0.5 * dt);
-	Update(t + 0.5 * dt, 1);
+	Update(0.5 * dt, 1);
 	// And so we can compute the new derivative and apply it
 	CalcStateDeriv(0);
 	r[0] = r[0] + rd[0] * dt;
 
-	t += dt;
-	Update(t, 0);
+	t += 0.5 * dt;
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
 }
 
 RK4Scheme::RK4Scheme(moordyn::Log* log)
@@ -105,31 +109,33 @@ RK4Scheme::RK4Scheme(moordyn::Log* log)
 void
 RK4Scheme::Step(real& dt)
 {
-	Update(t, 0);
+	Update(0.0, 0);
 
 	// k1
 	CalcStateDeriv(0);
 
 	// k2
+	t += 0.5 * dt;
 	r[1] = r[0] + rd[0] * (0.5 * dt);
-	Update(t + 0.5 * dt, 1);
+	Update(0.5 * dt, 1);
 	CalcStateDeriv(1);
 
 	// k3
 	r[1] = r[0] + rd[1] * (0.5 * dt);
-	Update(t + 0.5 * dt, 1);
+	Update(0.5 * dt, 1);
 	CalcStateDeriv(2);
 
 	// k4
+	t += 0.5 * dt;
 	r[2] = r[0] + rd[2] * dt;
-	Update(t + dt, 2);
+	Update(dt, 2);
 	CalcStateDeriv(3);
 
 	// Apply
 	r[0] = r[0] + (rd[0] + rd[3]) * (dt / 6.0) + (rd[1] + rd[2]) * (dt / 3.0);
 
-	t += dt;
-	Update(t, 0);
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
 }
 
 template<unsigned int order>
@@ -151,7 +157,7 @@ template<unsigned int order>
 void
 ABScheme<order>::Step(real& dt)
 {
-	Update(t, 0);
+	Update(0.0, 0);
 	shift();
 
 	// Get the new derivative
@@ -181,7 +187,8 @@ ABScheme<order>::Step(real& dt)
 	}
 
 	t += dt;
-	Update(t, 0);
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
 }
 
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
@@ -199,16 +206,18 @@ ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
 void
 ImplicitEulerScheme::Step(real& dt)
 {
+	t += _dt_factor * dt;
 	for (unsigned int i = 0; i < _iters; i++) {
 		r[1] = r[0] + rd[0] * (_dt_factor * dt);
-		Update(t + _dt_factor * dt, 1);
+		Update(_dt_factor * dt, 1);
 		CalcStateDeriv(0);
 	}
 
 	// Apply
 	r[0] = r[0] + rd[0] * dt;
-	t += dt;
-	Update(t, 0);
+	t += (1.0 - _dt_factor) * dt;
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
 }
 
 TimeScheme*

@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "Log.hpp"
+#include "Time.hpp"
 #include <vector>
 
 namespace moordyn {
@@ -181,6 +182,9 @@ class Waves : public LogUser
 	/// water density
 	real rho_w;
 
+	/// The time integration scheme
+	TimeScheme* _t_integrator;
+
 	// ------------ from Line object... -----------
 	// new additions for handling waves in-object and precalculating them	(not
 	// necessarily used right now)
@@ -211,6 +215,7 @@ class Waves : public LogUser
 	 *
 	 * Always call this function after the construtor
 	 * @param env The enviromental options
+	 * @param t The time integration scheme
 	 * @param folder The root folder where the wave data can be found
 	 * @throws moordyn::input_file_error If an input file cannot be read, or if
 	 * a file is ill-formatted
@@ -219,14 +224,13 @@ class Waves : public LogUser
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
-	void setup(EnvCond* env, const char* folder = "Mooring/");
+	void setup(EnvCond* env, TimeScheme* t, const char* folder = "Mooring/");
 
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific positon and time
 	 * @param x The point x coordinate
 	 * @param y The point y coordinate
 	 * @param z The point z coordinate
-	 * @param t The simulation time
 	 * @param U_out The output velocity
 	 * @param Ud_out The output acceleration
 	 * @param zeta_out The output wave height
@@ -235,7 +239,6 @@ class Waves : public LogUser
 	void getWaveKin(real x,
 	                real y,
 	                real z,
-	                real t,
 	                vec& U_out,
 	                vec& Ud_out,
 	                real& zeta_out,

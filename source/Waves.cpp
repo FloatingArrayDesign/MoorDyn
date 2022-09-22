@@ -114,6 +114,7 @@ doIFFT(kiss_fftr_cfg cfg,
 
 Waves::Waves(moordyn::Log* log)
   : LogUser(log)
+  , _t_integrator(NULL)
 {
 }
 
@@ -218,11 +219,12 @@ Waves::allocateKinematicsArrays()
 }
 
 void
-Waves::setup(EnvCond* env, const char* folder)
+Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 {
 	dtWave = env->dtWave;
 	rho_w = env->rho_w;
 	g = env->g;
+	_t_integrator = t;
 
 	// ------------------- start with wave kinematics -----------------------
 
@@ -788,7 +790,6 @@ void
 Waves::getWaveKin(real x,
                   real y,
                   real z,
-                  real t,
                   vec& U_out,
                   vec& Ud_out,
                   moordyn::real& zeta_out,
@@ -803,7 +804,7 @@ Waves::getWaveKin(real x,
 	unsigned int it = 0;
 	real ft = 0.0;
 	if (nt > 1) {
-		real quot = t / dtWave;
+		real quot = _t_integrator->GetTime() / dtWave;
 		it = floor(quot);
 		ft = quot - it;
 		it++; // We use the upper bound
@@ -1040,7 +1041,6 @@ MoorDyn_GetWavesKin(MoorDynWaves waves,
                     double x,
                     double y,
                     double z,
-                    double t,
                     double U[3],
                     double Ud[3],
                     double* zeta,
@@ -1049,7 +1049,7 @@ MoorDyn_GetWavesKin(MoorDynWaves waves,
 	CHECK_WAVES(waves);
 	moordyn::vec u, ud;
 	moordyn::real h, p;
-	((moordyn::Waves*)waves)->getWaveKin(x, y, z, t, u, ud, h, p);
+	((moordyn::Waves*)waves)->getWaveKin(x, y, z, u, ud, h, p);
 	moordyn::vec2array(u, U);
 	moordyn::vec2array(ud, Ud);
 	*zeta = h;

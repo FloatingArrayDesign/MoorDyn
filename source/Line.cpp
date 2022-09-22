@@ -596,14 +596,12 @@ Line::storeWaterKin(real dt,
 };
 
 void
-Line::setState(std::vector<vec> pos, std::vector<vec> vel, const double time)
+Line::setState(std::vector<vec> pos, std::vector<vec> vel)
 {
 	if ((pos.size() != N - 1) || (vel.size() != N - 1)) {
 		LOGERR << "Invalid input size" << endl;
 		throw moordyn::invalid_value_error("Invalid input size");
 	}
-	// store current time
-	setTime(time);
 
 	// set interior node positions and velocities based on state vector
 	for (unsigned int i = 1; i < N; i++) {
@@ -783,7 +781,7 @@ Line::getStateDeriv()
 		for (unsigned int i = 0; i <= N; i++) {
 			// call generic function to get water velocities
 			waves->getWaveKin(
-			    r[i][0], r[i][1], r[i][2], t, U[i], Ud[i], zeta[i], PDyn[i]);
+			    r[i][0], r[i][1], r[i][2], U[i], Ud[i], zeta[i], PDyn[i]);
 
 			F[i] = 1.0; // set VOF value to one for now (everything submerged -
 			            // eventually this should be element-based!!!) <<<<

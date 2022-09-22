@@ -199,7 +199,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		vec6 r, rd;
 		moordyn::array2vec6(x + ix, r);
 		moordyn::array2vec6(xd + ix, rd);
-		BodyList[l]->initializeUnfreeBody(r, rd, 0.0);
+		BodyList[l]->initializeUnfreeBody(r, rd);
 		ix += 6;
 	}
 
@@ -219,7 +219,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			rd(Eigen::seqN(0, 3)) = rd3;
 			ix += 3; // for pinned rods 3 entries will be taken
 		}
-		RodList[l]->initiateStep(r, rd, 0.0);
+		RodList[l]->initiateStep(r, rd);
 		RodList[l]->updateFairlead(0.0);
 		// call this just to set up the output file header
 		RodList[l]->initialize();
@@ -231,7 +231,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
 		moordyn::array2vec(xd + ix, rd);
-		ConnectionList[l]->initiateStep(r, rd, 0.0);
+		ConnectionList[l]->initiateStep(r, rd);
 
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
@@ -279,9 +279,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	real max_error = 0.0;
 	while ((t < ICTmax) && (!skip_ic)) {
 		// Integrate one ICD timestep (ICdt)
-		real t_target = t + ICdt;
+		real t_target = ICdt;
 		real dt;
-		while ((dt = t_target - t) > 0.0) {
+		_t_integrator->Next();
+		while ((dt = t_target) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
 			moordyn::error_id err = MOORDYN_SUCCESS;
@@ -289,6 +290,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			try {
 				_t_integrator->Step(dt);
 				t = _t_integrator->GetTime();
+				t_target -= dt;
 			}
 			MOORDYN_CATCHER(err, err_msg);
 			if (err != MOORDYN_SUCCESS) {
@@ -363,18 +365,14 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
-	for (auto obj : ConnectionList) {
+	for (auto obj : ConnectionList)
 		obj->scaleDrag(1.0 / ICDfac);
-		obj->setTime(0.0);
-	}
 	for (auto obj : RodList) {
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
-	for (auto obj : BodyList) {
+	for (auto obj : BodyList)
 		obj->scaleDrag(1.0 / ICDfac);
-		obj->setTime(0.0);
-	}
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
@@ -382,7 +380,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		waves->setup(&env, _basepath.c_str());
+		waves->setup(&env, _t_integrator, _basepath.c_str());
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)
@@ -463,7 +461,7 @@ moordyn::MoorDyn::Step(const double* x,
 		vec6 r, rd;
 		moordyn::array2vec6(x + ix, r);
 		moordyn::array2vec6(xd + ix, rd);
-		BodyList[l]->initiateStep(r, rd, t);
+		BodyList[l]->initiateStep(r, rd);
 		ix += 6;
 	}
 	for (auto l : CpldRodIs) {
@@ -482,13 +480,13 @@ moordyn::MoorDyn::Step(const double* x,
 			rd(Eigen::seqN(0, 3)) = rd3;
 			ix += 3;
 		}
-		RodList[l]->initiateStep(r, rd, t);
+		RodList[l]->initiateStep(r, rd);
 	}
 	for (auto l : CpldConIs) {
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
 		moordyn::array2vec(xd + ix, rd);
-		ConnectionList[l]->initiateStep(r, rd, t);
+		ConnectionList[l]->initiateStep(r, rd);
 		ix += 3;
 	}
 
@@ -499,9 +497,10 @@ moordyn::MoorDyn::Step(const double* x,
 		// (U_1 and U_2)
 		_t_integrator->SetExtWaves(tW_1, U_1, Ud_1);
 	}
-	real t_target = t + dt;
+	real t_target = dt;
 	real dt_step;
-	while ((dt_step = t_target - t) > 0.0) {
+	_t_integrator->Next();
+	while ((dt_step = t_target) > 0.0) {
 		if (dtM0 < dt_step)
 			dt_step = dtM0;
 		moordyn::error_id err = MOORDYN_SUCCESS;
@@ -509,6 +508,7 @@ moordyn::MoorDyn::Step(const double* x,
 		try {
 			_t_integrator->Step(dt_step);
 			t = _t_integrator->GetTime();
+			t_target -= dt_step;
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -516,13 +516,12 @@ moordyn::MoorDyn::Step(const double* x,
 			return err;
 		}
 	}
-	t = t_target;
 
 	// --------------- check for line failures (detachments!) ----------------
 	// step 1: check for time-triggered failures
 	for (unsigned int l = 0; l < FailList.size(); l++) {
 		auto failure = FailList[l];
-		if (failure->status || (failure->time < _t_integrator->GetTime()))
+		if (failure->status || (failure->time < t))
 			continue;
 		LOGMSG << "Failure number " << l + 1 << " triggered at time " << t
 		       << " s" << endl;
@@ -1851,7 +1850,7 @@ moordyn::MoorDyn::ReadInFile()
 	// Setup the waves and populate them
 	waves = new moordyn::Waves(_log);
 	try {
-		waves->setup(&env, _basepath.c_str());
+		waves->setup(&env, _t_integrator, _basepath.c_str());
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)
@@ -1932,7 +1931,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 
 	// update connection kinematics to match old line attachment point
 	// kinematics and set positions of attached line ends
-	obj->setState(pos, vel, _t_integrator->GetTime());
+	obj->setState(pos, vel);
 }
 
 moordyn::error_id

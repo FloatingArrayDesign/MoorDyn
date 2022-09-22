@@ -67,7 +67,6 @@ Connection::setup(int number_in,
 	conCdA = CdA_in;
 	conCa = Ca_in;
 
-	t = 0.;
 	// beta = 0.0;
 
 	// Start off at position specified in input file (will be overwritten for
@@ -211,10 +210,8 @@ Connection::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
 }
 
 void
-Connection::initiateStep(vec rFairIn, vec rdFairIn, real time)
+Connection::initiateStep(vec rFairIn, vec rdFairIn)
 {
-	t0 = time; // set start time for BC functions
-
 	if (type != COUPLED) {
 		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
 		       << endl;
@@ -233,8 +230,6 @@ Connection::initiateStep(vec rFairIn, vec rdFairIn, real time)
 void
 Connection::updateFairlead(real time)
 {
-	setTime(time);
-
 	if (type != COUPLED) {
 		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
 		       << endl;
@@ -242,7 +237,7 @@ Connection::updateFairlead(real time)
 	}
 
 	// set fairlead position and velocity based on BCs (linear model for now)
-	r = r_ves + rd_ves * (time - t0);
+	r = r_ves + rd_ves * time;
 	rd = rd_ves;
 
 	// pass latest kinematics to any attached lines
@@ -269,11 +264,8 @@ Connection::setKinematics(vec r_in, vec rd_in)
 }
 
 void
-Connection::setState(vec pos, vec vel, real time)
+Connection::setState(vec pos, vec vel)
 {
-	// store current time
-	setTime(time);
-
 	// the kinematics should only be set with this function of it's an
 	// independent/free connection
 	if (type != FREE) {
@@ -378,7 +370,7 @@ Connection::doRHS()
 		// TBD
 	} else if (WaterKin == 2) {
 		// wave kinematics interpolated from global grid in Waves object
-		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, zeta, PDyn);
+		waves->getWaveKin(r[0], r[1], r[2], U, Ud, zeta, PDyn);
 	} else if (WaterKin != 0) {
 		LOGERR << "ERROR: We got a problem with WaterKin not being 0,1,2."
 		       << endl;
@@ -416,8 +408,6 @@ Connection::Serialize(void)
 {
 	std::vector<uint64_t> data, subdata;
 
-	data.push_back(io::IO::Serialize(t));
-	data.push_back(io::IO::Serialize(t0));
 	subdata = io::IO::Serialize(r);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(rd);
@@ -444,8 +434,6 @@ uint64_t*
 Connection::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
-	ptr = io::IO::Deserialize(ptr, t);
-	ptr = io::IO::Deserialize(ptr, t0);
 	ptr = io::IO::Deserialize(ptr, r);
 	ptr = io::IO::Deserialize(ptr, rd);
 	ptr = io::IO::Deserialize(ptr, r_ves);

@@ -518,12 +518,11 @@ class Line : public io::IO
 	/** @brief Set the line state
 	 * @param r The moordyn::Line::getN() - 1 positions
 	 * @param u The moordyn::Line::getN() - 1 velocities
-	 * @param time Simulation time
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
 	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
 	 */
-	void setState(std::vector<vec> r, std::vector<vec> u, double time);
+	void setState(std::vector<vec> r, std::vector<vec> u);
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r Position

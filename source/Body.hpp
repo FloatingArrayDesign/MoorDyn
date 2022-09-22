@@ -109,11 +109,6 @@ class Body : public io::IO
 	/// body 6dof velocity[x/y/z]
 	vec6 v6;
 
-	/// simulation time
-	real t;
-	/// simulation time current integration was started at (used for BC
-	/// function)
-	real t0;
 	/// fairlead position for coupled bodies [x/y/z]
 	vec6 r_ves;
 	/// fairlead velocity for coupled bodies [x/y/z]
@@ -220,13 +215,11 @@ class Body : public io::IO
 	 * moordyn::Body::FIXED
 	 * @param r The position (6 dof)
 	 * @param rd The velocity (6 dof)
-	 * @param time The simulation time
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
 	void initializeUnfreeBody(vec6 r = vec6::Zero(),
-	                          vec6 rd = vec6::Zero(),
-	                          real time = 0.0);
+	                          vec6 rd = vec6::Zero());
 
 	/** @brief Initialize the FREE connection state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
@@ -324,25 +317,19 @@ class Body : public io::IO
 	 */
 	inline void scaleDrag(real scaler) { bodyCdA *= scaler; }
 
-	/** @brief Set the simulation time
-	 * @param time The simulation time
-	 */
-	inline void setTime(real time) { t = time; }
-
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (body kinematics) for the proceeding time steps
 	 * @param r The output position
 	 * @param rd The output velocity
-	 * @param time The simulation time
 	 * @throw moordyn::invalid_value_error If the body is not of type
 	 * moordyn::Body::COUPLED or moordyn::Body::FIXED
 	 */
-	void initiateStep(vec6 r, vec6 rd, real time);
+	void initiateStep(vec6 r, vec6 rd);
 
 	/** @brief Sets the kinematics
 	 *
 	 * This function is meant only for coupled or fixed bodies
-	 * @param time The simulation time
+	 * @param time Local time within the time step (from 0 to dt)
 	 * @throw moordyn::invalid_value_error If the body is not of type
 	 * moordyn::Body::COUPLED or moordyn::Body::FIXED
 	 */
@@ -351,9 +338,8 @@ class Body : public io::IO
 	/** @brief Set the latest states to the body
 	 * @param r The position
 	 * @param rd The velocity
-	 * @param time The simulation time
 	 */
-	void setState(vec6 r, vec6 rd, real time);
+	void setState(vec6 r, vec6 rd);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *

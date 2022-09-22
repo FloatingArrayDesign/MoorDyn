@@ -130,14 +130,14 @@ Body::addRod(Rod* rod, vec6 coords)
 };
 
 void
-Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, real time)
+Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in)
 {
 	if (type == FREE) {
 		LOGERR << "Invalid initializator for a FREE body" << endl;
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
-	initiateStep(r6_in, v6_in, time);
-	updateFairlead(time);
+	initiateStep(r6_in, v6_in);
+	updateFairlead(0.0);
 
 	// If any Rod is fixed to the body (not pinned), initialize it now because
 	// otherwise it won't be initialized
@@ -315,10 +315,8 @@ Body::GetBodyOutput(OutChanProps outChan)
 // called at the beginning of each coupling step to update the boundary
 // conditions (body kinematics) for the proceeding time steps
 void
-Body::initiateStep(vec6 r, vec6 rd, real time)
+Body::initiateStep(vec6 r, vec6 rd)
 {
-	t0 = time; // set start time for BC functions
-
 	if (type == COUPLED) // if coupled, update boundary conditions
 	{
 		r_ves = r;
@@ -338,13 +336,10 @@ Body::initiateStep(vec6 r, vec6 rd, real time)
 void
 Body::updateFairlead(real time)
 {
-	// store current time
-	setTime(time);
-
 	if ((type == COUPLED) || (type == FIXED)) // if coupled OR GROUND BODY
 	{
 		// set Body kinematics based on BCs (linear model for now)
-		r6 = r_ves + rd_ves * (time - t0);
+		r6 = r_ves + rd_ves * time;
 		v6 = rd_ves;
 
 		// calculate orientation matrix based on latest angles
@@ -360,11 +355,8 @@ Body::updateFairlead(real time)
 }
 
 void
-Body::setState(vec6 pos, vec6 vel, real time)
+Body::setState(vec6 pos, vec6 vel)
 {
-	// store current time
-	setTime(time);
-
 	// set position and velocity vectors from state vector
 	r6 = pos;
 	v6 = vel;
@@ -520,8 +512,6 @@ Body::Serialize(void)
 {
 	std::vector<uint64_t> data, subdata;
 
-	data.push_back(io::IO::Serialize(t));
-	data.push_back(io::IO::Serialize(t0));
 	subdata = io::IO::Serialize(r6);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(v6);
@@ -548,8 +538,6 @@ uint64_t*
 Body::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
-	ptr = io::IO::Deserialize(ptr, t);
-	ptr = io::IO::Deserialize(ptr, t0);
 	ptr = io::IO::Deserialize(ptr, r6);
 	ptr = io::IO::Deserialize(ptr, v6);
 	ptr = io::IO::Deserialize(ptr, r_ves);

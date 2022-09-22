@@ -53,7 +53,6 @@ extern "C"
 	 * @param x The point x coordinate
 	 * @param y The point y coordinate
 	 * @param z The point z coordinate
-	 * @param t The simulation time
 	 * @param U The output velocity
 	 * @param Ud The output acceleration
 	 * @param zeta The output wave height
@@ -65,7 +64,6 @@ extern "C"
 	                                double x,
 	                                double y,
 	                                double z,
-	                                double t,
 	                                double U[3],
 	                                double Ud[3],
 	                                double* zeta,

@@ -226,8 +226,15 @@ class TimeScheme : public io::IO
 
 	/** @brief Set the simulation time
 	 * @param time The time
+	 * @note This method is also calling to TimeScheme::Next()
 	 */
-	inline void SetTime(const real& time) { t = time; }
+	inline void SetTime(const real& time) { t = time; Next(); }
+
+	/** @brief Prepare everything for the next outer time step
+	 *
+	 * Always call this method before start calling TimeScheme::Step()
+	 */
+	inline void Next() { t_local = 0.0; }
 
 	/** @brief Create an initial state for all the entities
 	 * @note Just the first state is written. None of the following states, nor
@@ -238,10 +245,12 @@ class TimeScheme : public io::IO
 
 	/** @brief Run a time step
 	 *
-	 * This function is the one that must be specialized on each time scheme
+	 * This function is the one that must be specialized on each time scheme,
+	 * but remember to call it at the end of the inherited function to increment
+	 * TimeScheme::t_local
 	 * @param dt Time step
 	 */
-	virtual void Step(real& dt) = 0;
+	virtual void Step(real& dt) { t_local += dt; };
 
   protected:
 	/** @brief Costructor
@@ -284,6 +293,8 @@ class TimeScheme : public io::IO
 
 	/// The simulation time
 	real t;
+	/// The local time, within the outer time step
+	real t_local;
 };
 
 /** @class TimeSchemeBase Time.hpp
@@ -526,10 +537,12 @@ class TimeSchemeBase : public TimeScheme
 
 	/** @brief Run a time step
 	 *
-	 * This function is the one that must be specialized on each time scheme
+	 * This function is the one that must be specialized on each time scheme,
+	 * but remember to call it at the end of the inherited function to increment
+	 * TimeScheme::t_local
 	 * @param dt Time step
 	 */
-	virtual void Step(real& dt) = 0;
+	virtual void Step(real& dt) { TimeScheme::Step(dt); };
 
 	/** @brief Produce the packed data to be saved
 	 *
@@ -688,27 +701,30 @@ class TimeSchemeBase : public TimeScheme
 	/** @brief Update all the entities to set the state
 	 * @param substep The index within moordyn::TimeSchemeBase::r that will be
 	 * applied to set the states
-	 * @param t The simulation time
+	 * @param t_local The local time, within the inner time step (from 0 to dt)
 	 * @note This is only affecting to the free entities
+	 * @see TimeScheme::Next()
+	 * @see TimeScheme::Step()
 	 */
-	void Update(real t, unsigned int substep = 0)
+	void Update(real t_local, unsigned int substep = 0)
 	{
-		ground->updateFairlead(t);
+		ground->updateFairlead(this->t);
 
+		t_local += this->t_local;
 		for (auto obj : bodies) {
 			if (obj->type != Body::COUPLED)
 				continue;
-			obj->updateFairlead(t);
+			obj->updateFairlead(t_local);
 		}
 		for (auto obj : rods) {
 			if ((obj->type != Rod::COUPLED) && (obj->type != Rod::CPLDPIN))
 				continue;
-			obj->updateFairlead(t);
+			obj->updateFairlead(t_local);
 		}
 		for (auto obj : conns) {
 			if (obj->type != Connection::COUPLED)
 				continue;
-			obj->updateFairlead(t);
+			obj->updateFairlead(t_local);
 		}
 
 		// update wave kinematics if applicable
@@ -716,7 +732,7 @@ class TimeSchemeBase : public TimeScheme
 			// extrapolate velocities from accelerations
 			// (in future could extrapolote from most recent two points,
 			// (U_1 and U_2)
-			const real dt = t - t_w;
+			const real dt = this->t - t_w;
 			const unsigned int n = u_w.size();
 			std::vector<vec> u_extrap;
 			u_extrap.reserve(n);
@@ -737,27 +753,29 @@ class TimeSchemeBase : public TimeScheme
 			if (bodies[i]->type != Body::FREE)
 				continue;
 			bodies[i]->setState(
-			    r[substep].bodies[i].pos, r[substep].bodies[i].vel, t);
+			    r[substep].bodies[i].pos, r[substep].bodies[i].vel);
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if ((rods[i]->type != Rod::PINNED) &&
 			    (rods[i]->type != Rod::CPLDPIN) && (rods[i]->type != Rod::FREE))
 				continue;
+			rods[i]->setTime(this->t);
 			rods[i]->setState(
-			    r[substep].rods[i].pos, r[substep].rods[i].vel, t);
+			    r[substep].rods[i].pos, r[substep].rods[i].vel);
 		}
 
 		for (unsigned int i = 0; i < conns.size(); i++) {
 			if (conns[i]->type != Connection::FREE)
 				continue;
 			conns[i]->setState(
-			    r[substep].conns[i].pos, r[substep].conns[i].vel, t);
+			    r[substep].conns[i].pos, r[substep].conns[i].vel);
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
+			lines[i]->setTime(this->t);
 			lines[i]->setState(
-			    r[substep].lines[i].pos, r[substep].lines[i].vel, t);
+			    r[substep].lines[i].pos, r[substep].lines[i].vel);
 		}
 	}
 
