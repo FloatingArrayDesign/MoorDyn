@@ -302,12 +302,6 @@ Connection::getStateDeriv()
 		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
-	// with current IC gen approach, we skip the first call to the line objects,
-	// because they're set AFTER the call to the connects BUG: above is no
-	// longer true!!! <<<
-	if (t == 0)
-		return std::make_pair(rd, vec::Zero());
-
 	// cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " <<
 	// Fnet[1] << " " << Fnet[2] << endl;
 	doRHS();

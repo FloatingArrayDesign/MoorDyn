@@ -387,12 +387,6 @@ Body::getStateDeriv()
 	// Get contributions from attached connections (and lines attached to
 	// them)
 
-	// with current IC gen approach, we skip the first call to the line
-	// objects, because they're set AFTER the call to the connects
-	// BUG: above is no longer true!!! <<<
-	if (t == 0)
-		return std::make_pair(v6, vec6::Zero());
-
 	doRHS();
 
 	// solve for accelerations in [M]{a}={f}
