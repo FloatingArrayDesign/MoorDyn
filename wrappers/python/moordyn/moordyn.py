@@ -755,7 +755,7 @@ def GetLineNodePos(instance, i):
     r: The node position
     """
     import cmoordyn
-    return cmoordyn.line_get_pos(instance, i)
+    return cmoordyn.line_get_node_pos(instance, i)
 
 
 def GetLineNodeTen(instance, i):
@@ -769,7 +769,7 @@ def GetLineNodeTen(instance, i):
     t: The node tension
     """
     import cmoordyn
-    return cmoordyn.line_get_force(instance, i)
+    return cmoordyn.line_get_node_force(instance, i)
 
 
 def GetLineNodeCurv(instance, i):
@@ -783,7 +783,7 @@ def GetLineNodeCurv(instance, i):
     r: The node curvature
     """
     import cmoordyn
-    return cmoordyn.line_get_curv(instance, i)
+    return cmoordyn.line_get_node_curv(instance, i)
 
 
 def GetLineGetLineFairTen(instance):
