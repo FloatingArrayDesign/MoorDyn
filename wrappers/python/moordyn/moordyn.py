@@ -818,7 +818,7 @@ def GetLineNodeCurv(instance, i):
     return cmoordyn.line_get_node_curv(instance, i)
 
 
-def GetLineGetLineFairTen(instance):
+def GetLineFairTen(instance):
     """ Get the tension magnitude at the fairlead of a line
 
     Parameters:
@@ -831,7 +831,7 @@ def GetLineGetLineFairTen(instance):
     return cmoordyn.line_get_fairlead_tension(instance)
 
 
-def GetLineGetLineMaxTen(instance):
+def GetLineMaxTen(instance):
     """ Get the line maximum tension magnitude
 
     Parameters:
