@@ -1567,3 +1567,17 @@ MoorDyn_GetLineFairTen(MoorDynLine l, double* t)
 	*t = ((moordyn::Line*)l)->getNodeTen(((moordyn::Line*)l)->getN()).norm();
 	return MOORDYN_SUCCESS;
 }
+
+int DECLDIR
+MoorDyn_GetLineMaxTen(MoorDynLine l, double* t)
+{
+	CHECK_LINE(l);
+	double t_max = 0.0;
+	for (unsigned int i = 0; i < ((moordyn::Line*)l)->getN(); i++) {
+		const double t_candidate = ((moordyn::Line*)l)->getNodeTen(i).norm();
+		if (t_candidate > t_max)
+			t_max = t_candidate;
+	}
+	*t = t_max;
+	return MOORDYN_SUCCESS;
+}

@@ -829,3 +829,16 @@ def GetLineGetLineFairTen(instance):
     """
     import cmoordyn
     return cmoordyn.line_get_fairlead_tension(instance)
+
+
+def GetLineGetLineMaxTen(instance):
+    """ Get the line maximum tension magnitude
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    t: The tension magnitude
+    """
+    import cmoordyn
+    return cmoordyn.line_get_max_tension(instance)

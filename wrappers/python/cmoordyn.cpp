@@ -1557,6 +1557,33 @@ line_get_fairlead_tension(PyObject*, PyObject* args)
 	return PyFloat_FromDouble(t);
 }
 
+/** @brief Wrapper to MoorDyn_GetLineMaxTen() function
+ * @param args Python passed arguments
+ * @return The tension magnitude
+ */
+static PyObject*
+line_get_max_tension(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double t;
+	const int err = MoorDyn_GetLineMaxTen(instance, &t);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyFloat_FromDouble(t);
+}
+
 static PyMethodDef moordyn_methods[] = {
 	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
 	{ "n_coupled_dof",
@@ -1688,6 +1715,10 @@ static PyMethodDef moordyn_methods[] = {
 	  line_get_fairlead_tension,
 	  METH_VARARGS,
 	  "Get the line fairlead tension magnitude" },
+	{ "line_get_max_tension",
+	  line_get_max_tension,
+	  METH_VARARGS,
+	  "Get the line maximum tension magnitude" },
 	{ NULL, NULL, 0, NULL }
 };
 

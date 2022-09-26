@@ -127,6 +127,14 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetLineFairTen(MoorDynLine l, double* t);
 
+	/** @brief Get the maximum tension module
+	 * @param l The Moordyn line
+	 * @param t The output maximum tension module
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetLineMaxTen(MoorDynLine l, double* t);
+
 	/**
 	 * @}
 	 */

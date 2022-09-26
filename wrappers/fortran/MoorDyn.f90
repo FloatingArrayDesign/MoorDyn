@@ -53,7 +53,7 @@ module moordyn
             MD_GetRodNodePos, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
             MD_GetLineUnstretchedLength, MD_GetLineNodePos, MD_GetLineNodeTen, &
-            MD_GetLineNodeCurv, MD_GetLineFairTen
+            MD_GetLineNodeCurv, MD_GetLineMaxTen, MD_GetLineFairTen
 
   interface
 
@@ -417,6 +417,12 @@ module moordyn
       type(c_ptr), value, intent(in) :: instance
       real(c_double), intent(out) :: r
     end function MD_GetLineFairTen
+
+    integer(c_int) function MD_GetLineMaxTen(instance, r) bind(c, name='MoorDyn_GetLineMaxTen') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: r
+    end function MD_GetLineMaxTen
 
 end interface
 
