@@ -55,6 +55,10 @@ ROD_TYPE_PINNED = 1
 ROD_TYPE_FIXED = 2
 
 
+ENDPOINT_A = ENDPOINT_BOTTOM = 0
+ENDPOINT_B = ENDPOINT_TOP = 1
+
+
 #                                  MoorDyn2.h
 #  =============================================================================
 
@@ -699,6 +703,34 @@ def GetConnectForce(instance):
     """
     import cmoordyn
     return cmoordyn.conn_get_force(instance)
+
+
+def GetConnectNAttached(instance):
+    """ Get the number of attached lines
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+
+    Returns:
+    n: The number of attached lines
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_nattached(instance)
+
+
+def GetConnectAttached(instance, i):
+    """ Get an attached line
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+    i (int): The index of the attachment
+
+    Returns:
+    l: The attached line
+    e: The endpoint
+    """
+    import cmoordyn
+    return cmoordyn.conn_get_attached(instance, i)
 
 
 #                                  Line.h

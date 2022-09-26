@@ -522,3 +522,30 @@ MoorDyn_GetConnectForce(MoorDynConnection conn, double f[3])
 	moordyn::vec2array(fnet, f);
 	return MOORDYN_SUCCESS;
 }
+
+int DECLDIR
+MoorDyn_GetConnectNAttached(MoorDynConnection conn, unsigned int* n)
+{
+	CHECK_CONNECTION(conn);
+	*n = ((moordyn::Connection*)conn)->getLines().size();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetConnectAttached(MoorDynConnection conn,
+                           unsigned int i,
+                           MoorDynLine* l,
+                           int* e)
+{
+	CHECK_CONNECTION(conn);
+	auto attached = ((moordyn::Connection*)conn)->getLines();
+	if (i >= attached.size()) {
+		cerr << "Invalid line index " << i << ", just " << attached.size()
+		     << " are available" << __FUNC_NAME__ << " (" << XSTR(__FILE__)
+		     << ":" << __LINE__ << ")" << endl;
+		return MOORDYN_INVALID_VALUE;
+	}
+	*l = (MoorDynLine)(attached[i].line);
+	*e = (int)(attached[i].end_point);
+	return MOORDYN_SUCCESS;
+}

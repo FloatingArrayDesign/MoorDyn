@@ -914,8 +914,7 @@ waves_getkin(PyObject*, PyObject* args)
 		return NULL;
 
 	double u[3], ud[3], zeta, pdyn;
-	const int err =
-	    MoorDyn_GetWavesKin(instance, x, y, z, u, ud, &zeta, &pdyn);
+	const int err = MoorDyn_GetWavesKin(instance, x, y, z, u, ud, &zeta, &pdyn);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1296,6 +1295,65 @@ conn_get_force(PyObject*, PyObject* args)
 	return pyr;
 }
 
+/** @brief Wrapper to MoorDyn_GetConnectNAttached() function
+ * @param args Python passed arguments
+ * @return The number of attached lines
+ */
+static PyObject*
+conn_get_nattached(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	unsigned int n;
+	const int err = MoorDyn_GetConnectNAttached(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(n);
+}
+
+/** @brief Wrapper to MoorDyn_GetConnectNAttached() function
+ * @param args Python passed arguments
+ * @return The number of attached lines
+ */
+static PyObject*
+conn_get_attached(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	unsigned int i;
+
+	if (!PyArg_ParseTuple(args, "Oi", &capsule, &i))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	MoorDynLine l;
+	int e;
+	const int err = MoorDyn_GetConnectAttached(instance, i, &l, &e);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* pyv = PyTuple_New(2);
+	PyTuple_SET_ITEM(pyv, 0, PyCapsule_New((void*)l, line_capsule_name, NULL));
+	PyTuple_SET_ITEM(pyv, 1, PyLong_FromLong(e));
+	return pyv;
+}
+
 //                                 Line.h
 // =============================================================================
 
@@ -1597,6 +1655,14 @@ static PyMethodDef moordyn_methods[] = {
 	  conn_get_force,
 	  METH_VARARGS,
 	  "Get the connection force" },
+	{ "conn_get_nattached",
+	  conn_get_nattached,
+	  METH_VARARGS,
+	  "Get the number of attached lines" },
+	{ "conn_get_attached",
+	  conn_get_attached,
+	  METH_VARARGS,
+	  "Get an attached line" },
 	{ "line_get_id", line_get_id, METH_VARARGS, "Get the line id" },
 	{ "line_get_n",
 	  line_get_n,

@@ -47,7 +47,8 @@ module moordyn
             MD_GetWavesKin, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
-            MD_GetConnectVel, MD_GetConnectForce, &
+            MD_GetConnectVel, MD_GetConnectForce, MD_GetConnectNAttached, &
+            MD_GetConnectAttached, &
             MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
             MD_GetRodNodePos, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
@@ -346,6 +347,20 @@ module moordyn
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
     end function MoorDyn_GetConnectForce
+
+    integer(c_int) function MD_GetConnectNAttached(instance, n) bind(c, name='MoorDyn_GetConnectNAttached')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: n
+    end function MD_GetConnectNAttached
+
+    integer(c_int) function MD_GetConnectAttached(instance, i, l, e) bind(c, name='MoorDyn_GetConnectAttached')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: i
+      type(c_ptr), intent(out) :: l
+      integer(c_int), intent(out) :: e
+    end function MD_GetConnectAttached
 
     !                                Line.h
     ! ==========================================================================

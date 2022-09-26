@@ -35,6 +35,8 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+#include "Line.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -67,7 +69,8 @@ extern "C"
 	/** @brief Get the position of a connection
 	 * @param conn The Moordyn connection
 	 * @param pos The output position
-	 * @return 0 If the data is correctly set, an error code otherwise
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_GetConnectPos(MoorDynConnection conn, double pos[3]);
@@ -75,7 +78,8 @@ extern "C"
 	/** @brief Get the velocity of a connection
 	 * @param conn The Moordyn connection
 	 * @param v The output velocity
-	 * @return 0 If the data is correctly set, an error code otherwise
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_GetConnectVel(MoorDynConnection conn, double v[3]);
@@ -83,10 +87,35 @@ extern "C"
 	/** @brief Get the force at a connection
 	 * @param conn The Moordyn connection
 	 * @param f The output force
-	 * @return 0 If the data is correctly set, an error code otherwise
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_GetConnectForce(MoorDynConnection conn, double f[3]);
+
+	/** @brief Get the number of connected lines
+	 * @param conn The Moordyn connection
+	 * @param n The output number of connected lines
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise
+	 * (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_GetConnectNAttached(MoorDynConnection conn,
+	                                        unsigned int* n);
+
+	/** @brief Get the number of connected lines
+	 * @param conn The Moordyn connection
+	 * @param i The index of the attached line
+	 * @param l The output attached line
+	 * @param e The output endpoint, see moordyn::EndPoints
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise
+	 * (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_GetConnectAttached(MoorDynConnection conn,
+	                                       unsigned int i,
+	                                       MoorDynLine* l,
+	                                       int* e);
 
 	/**
 	 * @}

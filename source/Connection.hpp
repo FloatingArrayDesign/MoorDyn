@@ -71,13 +71,6 @@ class Connection : public io::IO
 	 */
 	~Connection();
 
-  private:
-	// ENVIRONMENTAL STUFF
-	/// Global struct that holds environmental settings
-	EnvCond* env;
-	/// global Waves object
-	moordyn::Waves* waves;
-
 	/// Attached lines to the connection
 	typedef struct _attachment
 	{
@@ -86,6 +79,14 @@ class Connection : public io::IO
 		/// The attachment end point
 		EndPoints end_point;
 	} attachment;
+
+  private:
+	// ENVIRONMENTAL STUFF
+	/// Global struct that holds environmental settings
+	EnvCond* env;
+	/// global Waves object
+	moordyn::Waves* waves;
+
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
 
@@ -234,6 +235,11 @@ class Connection : public io::IO
 	 * with the provided @p lineID
 	 */
 	EndPoints removeLine(Line* line);
+
+	/** @brief Get the list of attachments
+	 * @return The list of attachments
+	 */
+	inline std::vector<attachment> getLines() const { return attached; }
 
 	/** @brief Initialize the FREE connection state
 	 * @return The position (first) and the velocity (second)
