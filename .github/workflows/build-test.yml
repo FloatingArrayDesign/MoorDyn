@@ -61,6 +61,7 @@ jobs:
 
     - name: moordyn_version
       id: moordyn_version
+      shell: bash
       run: |
         major=`cat CMakeLists.txt | grep MOORDYN_MAJOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         minor=`cat CMakeLists.txt | grep MOORDYN_MINOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
