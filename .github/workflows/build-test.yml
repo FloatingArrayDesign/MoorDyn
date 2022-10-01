@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ $default-branch, v2 ]
   pull_request:
     branches: [ $default-branch ]
 
@@ -58,6 +58,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: moordyn_version
+      id: moordyn_version
+      run: |
+        major=`cat CMakeLists.txt | grep MOORDYN_MAJOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        minor=`cat CMakeLists.txt | grep MOORDYN_MINOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        echo "::set-output name=moordyn_version::$major.$minor.$patch"
 
     - name: Setup Fortran
       uses: awvwgk/setup-fortran@main
@@ -117,8 +125,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/Moordyn-2.0.1-Linux.sh
-        asset_name: Moordyn-2.0.1-Linux.sh
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Linux.sh
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Linux.sh
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'Linux') }}
 
@@ -129,8 +137,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/Moordyn-2.0.1-win64.exe
-        asset_name: Moordyn-2.0.1-win64.exe
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
 
@@ -141,8 +149,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/Moordyn-2.0.1-Darwin.sh
-        asset_name: Moordyn-2.0.1-Darwin.sh
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Darwin.sh
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Darwin.sh
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'MacOS') }}
 
