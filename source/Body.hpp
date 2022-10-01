@@ -218,8 +218,7 @@ class Body : public io::IO
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	void initializeUnfreeBody(vec6 r = vec6::Zero(),
-	                          vec6 rd = vec6::Zero());
+	void initializeUnfreeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero());
 
 	/** @brief Initialize the FREE connection state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)

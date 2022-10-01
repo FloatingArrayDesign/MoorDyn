@@ -228,7 +228,11 @@ class TimeScheme : public io::IO
 	 * @param time The time
 	 * @note This method is also calling to TimeScheme::Next()
 	 */
-	inline void SetTime(const real& time) { t = time; Next(); }
+	inline void SetTime(const real& time)
+	{
+		t = time;
+		Next();
+	}
 
 	/** @brief Prepare everything for the next outer time step
 	 *
@@ -752,8 +756,8 @@ class TimeSchemeBase : public TimeScheme
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if (bodies[i]->type != Body::FREE)
 				continue;
-			bodies[i]->setState(
-			    r[substep].bodies[i].pos, r[substep].bodies[i].vel);
+			bodies[i]->setState(r[substep].bodies[i].pos,
+			                    r[substep].bodies[i].vel);
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
@@ -761,21 +765,20 @@ class TimeSchemeBase : public TimeScheme
 			    (rods[i]->type != Rod::CPLDPIN) && (rods[i]->type != Rod::FREE))
 				continue;
 			rods[i]->setTime(this->t);
-			rods[i]->setState(
-			    r[substep].rods[i].pos, r[substep].rods[i].vel);
+			rods[i]->setState(r[substep].rods[i].pos, r[substep].rods[i].vel);
 		}
 
 		for (unsigned int i = 0; i < conns.size(); i++) {
 			if (conns[i]->type != Connection::FREE)
 				continue;
-			conns[i]->setState(
-			    r[substep].conns[i].pos, r[substep].conns[i].vel);
+			conns[i]->setState(r[substep].conns[i].pos,
+			                   r[substep].conns[i].vel);
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			lines[i]->setTime(this->t);
-			lines[i]->setState(
-			    r[substep].lines[i].pos, r[substep].lines[i].vel);
+			lines[i]->setState(r[substep].lines[i].pos,
+			                   r[substep].lines[i].vel);
 		}
 	}
 
