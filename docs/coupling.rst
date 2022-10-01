@@ -27,7 +27,7 @@ After developing a coupling with MoorDyn, the DualSPHysics team has forked it in
 a seperate version called MoorDyn+, specifically dedicated to the coupling with
 DualSPHysics.
 MoorDyn v2 should on the other hand provide all the functionality required by
-DUalSphysics, so DualSPHysics team will be queried to merge back on the
+DualSPHysics, so DualSPHysics team will be queried to merge back on the
 upstream.
 
 Basic coupling with MoorDyn

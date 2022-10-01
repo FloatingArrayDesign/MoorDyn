@@ -429,17 +429,17 @@ needs to end with another header-style line (as shown below) for the program to 
 
 General output suffixes
 
-========         ======================== =======  =====  =====  =====  =====
-Suffix           Description              Units    Node   Point  Rod    Body
-========         ======================== =======  =====  =====  =====  =====
-PX/PY/PZ         Position coordinates     [m]      X      X      X      X
-VX/VY/VZ         Velocity components      [m/s]    X      X      X      X
-Ax/Ay/AZ         Acceleration components  [m/s^2]  X      X      X      X
-T                Tension or net force     [N]      X      X      X      X
-Fx/Fy/Fz         Force components         [N]      X      X      X      X
-Roll/Pitch/Yaw   Orientation angles       [deg]                  X      X
-Sub              Fraction of submergence  [0-1]                  X      
-========         ======================== =======  =====  =====  =====  =====
+============== ======================== =======  =====  =====  =====  =====
+Suffix         Description              Units    Node   Point  Rod    Body
+============== ======================== =======  =====  =====  =====  =====
+PX/PY/PZ       Position coordinates     [m]      X      X      X      X
+VX/VY/VZ       Velocity components      [m/s]    X      X      X      X
+Ax/Ay/AZ       Acceleration components  [m/s^2]  X      X      X      X
+T              Tension or net force     [N]      X      X      X      X
+Fx/Fy/Fz       Force components         [N]      X      X      X      X
+Roll/Pitch/Yaw Orientation angles       [deg]                  X      X
+Sub            Fraction of submergence  [0-1]                  X      
+============== ======================== =======  =====  =====  =====  =====
 
 The v2 snapshot file
 --------------------
@@ -568,19 +568,19 @@ characterized by mass-spring-damper values of
 
 .. math::
 
-  m=w L/N \; c=4NBA/L \; k=4NEA/L.
+  m = w \frac{L}{N}, \\ c = 4 B A \frac{N}{L}, \\ k = 4 E A \frac{N}{L}.
 
 The natural frequency of this mode is then
 
 .. math::
 
-  \omega_n=\sqrt{k/m}=2/l \sqrt{EA/w}=2N/L \sqrt{EA/w}
+  \omega_n = \sqrt{\frac{k}{m}} = \frac{2}{l} \sqrt{\frac{E A}{w}}=2 \frac{N}{L} \sqrt{\frac{E A}{w}}
 
 and the damping ratio, ζ, is related to the internal damping coefficient, BA, by
 
 .. math::
 
-  \zeta =c/c_{crit} = B/l \sqrt{A/Ew} = NBA/L \sqrt{(1/EAw}  \;\;  BA=\zeta \frac{L}{N}\sqrt{EAw}.
+  \zeta =\frac{c}{c_{crit}} = \frac{B}{l} \sqrt{\frac{A}{E w}} = B A \frac{N}{L} \sqrt{\frac{1}{E A w}}, \\ B A= \zeta \frac{L}{N} \sqrt{E A w}.
 
 The line dynamics frequencies of interest should be lower than ω_n in order to be resolved by the model.  
 Accordingly, line dynamics at ω_n, which are likely to be dominated by the artificial resonance created 
@@ -598,12 +598,19 @@ damping coefficient (BA) for each mooring line that will give every line segment
 Note that the damping ratio is with respect to the critical damping of each segment along a mooring 
 line, not with respect to the line as a whole or the floating platform as a whole.  It is just a way
 of letting MoorDyn calculate the damping coefficient automatically from the perspective of damping 
-non-physical segment resonances.    If the model is set up right, this damping can have a negligible 
+non-physical segment resonances. If the model is set up right, this damping can have a negligible 
 contribution to the overall damping provided by the moorings on the floating platform.  However, if 
 the damping contribution of the mooring lines on the floating platform is supposed to be significant, 
 it is best to (1) set the BA value directly to ensure that the expected damping is provided and then 
 (2) adjust the number of segments per line to whatever provides adequate numerical stability.
 
+Finally, to ensure stability the time step should be significantly smaller than
+the natural period,
 
+.. math::
 
-(THIS PAGE IN PROGRESS)
+  \Delta t < \frac{2 \pi}{\omega_n}.
+
+However, in contrast to the damping, which can be selected line by line, the
+time step is a constant of the whole system, and thus should be selected
+considering the minimum natural period of all lines.

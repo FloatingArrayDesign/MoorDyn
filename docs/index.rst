@@ -25,6 +25,10 @@ Welcome to MoorDyn's (UNDER CONSTRUCTION) online documentation.
 See the pages on this site for information about the operation,
 :ref:`usage <usage>`, and :ref:`theory <theory>` of MoorDyn.
 
+Note: This documentation is meant for users, a
+`Doxygen documentation <./doxygen/index.html>`_ has been deployed for the
+developers.
+
 About MoorDyn
 -------------
 
