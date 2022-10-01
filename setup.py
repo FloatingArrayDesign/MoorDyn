@@ -47,12 +47,15 @@ This is not a wrapper of MoorDyn, but an stand-alone version. Thus you can
 just install and use this package, no need of the MoorDyn library in your
 system.
 
-Please, visit https://moordyn.readthedocs.io to learn more about this package,
+Please, visit https://moordyn-v2.readthedocs.io to learn more about this package,
 and MoorDyn in general.
 
 If you detect any problem, please feel free to report the issue on the GitHub
 page:
 https://github.com/mattEhall/MoorDyn
+
+WARNING: This is a pre-release version of MoorDyn v2. The API may be changed
+in the future, breaking your program
 """
 
 # We better copy here the moordyn module
