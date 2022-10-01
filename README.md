@@ -5,7 +5,7 @@ MoorDyn v2 is a lumped-mass mooring dynamics model intended for coupling with
 floating structure codes. As of 2022 it is available under the BSD 3-Clause
 license.
 
-More information about MoorDyn is now available at moordyn.readthedocs.io
+More information about MoorDyn is now available at moordyn-v2.readthedocs.io
 
 ## Roadmap
 
@@ -41,8 +41,8 @@ release:
  - [X] Test in Windows with CLang (No Fortran)
  - [X] Test in Windows with Visual Studio CE (No C++, no Fortran)
  - [X] Make a windows installer (CMake + CPack + NSIS)
- - [ ] Upload the doxygen documentation somewhere (ideally in readthedocs)
- - [ ] Fix the SCUDS missiles bug
+ - [X] Upload the doxygen documentation somewhere (ideally in readthedocs)
+ - [X] Fix the SCUDS missiles bug
  - [ ] Ask DualSphysics devs to join back the mainstream
  - [X] pip package (with wheels?)
 
