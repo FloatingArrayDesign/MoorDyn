@@ -29,6 +29,9 @@ if read_the_docs_build:
 else:
     subprocess.call('make clean', shell=True)
     subprocess.call('doxygen', shell=True)
+os.makedirs("_build/doxygen/out", exist_ok=True)
+subprocess.call('mv _build/doxygen/html _build/doxygen/out/doxygen',
+                shell=True)
 
 breathe_projects['MoorDyn'] = "_build/doxygen/xml"
 breathe_default_project = "MoorDyn"
@@ -86,4 +89,4 @@ html_theme = 'sphinx_rtd_theme' # need to run pip install sphinx_rtd_theme to us
 cpp_id_attributes = ['DECLDIR']
 
 # Keep the doxygen documentaion in readthedocs
-# html_extra_path = ['_build/doxygen/html']
+html_extra_path = ['_build/doxygen/out']
