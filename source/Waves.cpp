@@ -13,7 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <string>
+#include <iterator>
 #include "Waves.hpp"
 #include "Waves.h"
 
@@ -218,7 +219,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 	if ((env->WaveKin == moordyn::WAVES_NONE) &&
 		(env->Current == moordyn::CURRENTS_NONE))
 	{
-		LOGMSG << "No Waves or Currents, or set externally";
+		LOGMSG << "No Waves or Currents, or set externally\n";
 		return;
 	}
 
@@ -671,10 +672,16 @@ void Waves::setup(EnvCond *env, const char* folder)
 		vector<vector<real>> UProfileUz;
 
 		// this is the depths row
+		LOGMSG << "Reading Depths\n";
 		vector<string> entries = split(lines[4]);
 		const unsigned int nzin = entries.size();
-		for (unsigned int i = 0; i < nzin; i++)
-			UProfileZ[i] = atof(entries[i].c_str());
+		LOGMSG << nzin << '\n';
+		LOGMSG << entries[0] << '\n';
+		for (unsigned int i = 0; i < nzin; i++) {
+			LOGMSG << entries[i].c_str() << '\n';
+			UProfileZ.push_back(atof(entries[i].c_str()));
+		}
+		LOGMSG << "Depths read\n";
 
 		// Read the time rows
 		const unsigned int ntin = lines.size() - 6;
@@ -709,7 +716,12 @@ void Waves::setup(EnvCond *env, const char* folder)
 				for (unsigned int iz = 0; iz < nzin; iz++)
 					UProfileUz[iz][it] = 0.0;
 		}
+		
+		std::ostringstream oss;
+		std::copy(UProfileUy[1].begin(), UProfileUy[1].begin()+10, std::ostream_iterator<real>(oss, "\n"));
+		LOGMSG << oss.str() << '\n';
 		LOGMSG << "'" << CurrentsFilename << "' parsed" << endl;
+
 
 		// check data
 		if ((nx * ny * nz != 0) && !nt) {
@@ -755,6 +767,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 			{
 				for (unsigned int it = 0; it < nt; it++)
 				{
+					iti = it + 1;  // Need to reset this, otherwise it will lock at end of array after first pass
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
 						UProfileUx[iz][iti - 1] * (1. - ft);
@@ -781,6 +794,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 				unsigned iti = 1;
 				for (unsigned int it = 0; it < nt; it++)
 				{
+					iti = it + 1;
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					for (unsigned int ix = 0; ix < nx; ix++) {
 						for (unsigned int iy = 0; iy < ny; iy++) {
@@ -822,8 +836,9 @@ void Waves::getWaveKin(real x, real y, real z, real t,
                        vec &U_out, vec &Ud_out, moordyn::real &zeta_out,
                        moordyn::real &PDyn_out)
 {
-	real fx, fy, fz;
+	real fx, fy, fz;  // interpolation factors to use in linear interp
 
+	// Upper indices to be used in linear interp for a point
 	auto ix = interp_factor(px, x, fx);
 	auto iy = interp_factor(py, y, fy);
 	auto iz = interp_factor(pz, z, fz);

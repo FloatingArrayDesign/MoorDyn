@@ -450,7 +450,7 @@ inline unsigned int interp_factor(const vector<T> &xp,
 	}
 
 	// Justto avoid the compiler warnings. This point is actually never reached
-	f = 1.0;
+	f = -1000.0;
 	return xp.size() - 1;
 }
 
