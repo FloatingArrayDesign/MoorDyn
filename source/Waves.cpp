@@ -678,7 +678,6 @@ void Waves::setup(EnvCond *env, const char* folder)
 		LOGMSG << nzin << '\n';
 		LOGMSG << entries[0] << '\n';
 		for (unsigned int i = 0; i < nzin; i++) {
-			LOGMSG << entries[i].c_str() << '\n';
 			UProfileZ.push_back(atof(entries[i].c_str()));
 		}
 		LOGMSG << "Depths read\n";
@@ -716,10 +715,6 @@ void Waves::setup(EnvCond *env, const char* folder)
 				for (unsigned int iz = 0; iz < nzin; iz++)
 					UProfileUz[iz][it] = 0.0;
 		}
-		
-		std::ostringstream oss;
-		std::copy(UProfileUy[1].begin(), UProfileUy[1].begin()+10, std::ostream_iterator<real>(oss, "\n"));
-		LOGMSG << oss.str() << '\n';
 		LOGMSG << "'" << CurrentsFilename << "' parsed" << endl;
 
 
