@@ -108,6 +108,7 @@ moordyn::MoorDyn::MoorDyn(const char *infilename)
 	env.FrictionCoefficient = 0.0;
 	env.FricDamp = 200.0;
 	env.StatDynFricScale = 1.0;
+	env.outputMode = 0;             // by default all objects write to own output files
 
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
@@ -1629,9 +1630,10 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					env.FricDamp = atof(entries[0].c_str());
 				else if (name == "StatDynFricScale")
 					env.StatDynFricScale = atof(entries[0].c_str());
-				// output writing period (0 for at every call)
+				else if (name == "outputMode")
+				    env.outputMode = atoi(entries[0].c_str());
 				else if (name == "dtOut")
-					dtOut = atof(entries[0].c_str());
+					dtOut = atof(entries[0].c_str());  // output writing period (0 for at every call)
 				else
 					LOGWRN << "Warning: Unrecognized option '"
 					                        << name << "'" << endl;

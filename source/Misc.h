@@ -671,6 +671,9 @@ typedef struct
 	int writeLog;
 	/// The log file stream
 	ofstream *outfileLogPtr;
+	
+	// should outputting objects write separate outfiles (0) or to one monolithic outfile:
+	int outputMode;
 } EnvCond;
 
 
