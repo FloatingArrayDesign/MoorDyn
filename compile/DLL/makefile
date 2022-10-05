@@ -74,7 +74,7 @@ Misc.o: ../../source/Misc.cpp ../../source/Misc.h ../../source/MoorDynAPI.h
 	$(CXX) $(CPPFLAGS) ../../source/Misc.cpp
 
 clean:
-	$(RM) *.exe.manifest *.exe *.obj *.o *.dll
+	del *.exe.manifest *.exe *.obj *.o *.dll
 
 test_minimal.exe: ../../test/minimal.cpp libmoordyn2.dll ../../source/MoorDyn.h
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_minimal.exe ../../test/minimal.cpp
