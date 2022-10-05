@@ -1166,6 +1166,10 @@ typedef struct
 	int writeLog;
 	/// The log file stream
 	ofstream* outfileLogPtr;
+
+	/// should outputting objects write separate outfiles or to one monolithic
+	/// outfile. (0=several files, 1=monolithic file)
+	int outputMode;
 } EnvCond;
 
 typedef struct _LineProps // (matching Line Dictionary inputs)
