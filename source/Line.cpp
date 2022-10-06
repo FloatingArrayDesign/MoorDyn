@@ -1671,10 +1671,10 @@ MoorDyn_GetLineMaxTen(MoorDynLine l, double* t)
 	return MOORDYN_SUCCESS;
 }
 
-#ifdef USE_VTK
 int DECLDIR
 MoorDyn_SaveLineVTK(MoorDynLine l, const char* filename)
 {
+#ifdef USE_VTK
 	CHECK_LINE(l);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
@@ -1683,5 +1683,10 @@ MoorDyn_SaveLineVTK(MoorDynLine l, const char* filename)
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
-}
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
 #endif
+}

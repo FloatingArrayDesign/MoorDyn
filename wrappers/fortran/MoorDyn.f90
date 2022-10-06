@@ -35,7 +35,8 @@ module moordyn
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
              MoorDyn_GetConnectForce, &
              MoorDyn_GetRodNodePos, &
-             MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen
+             MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen, &
+             MoorDyn_SaveLineVTK
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
             MD_SetLogLevel, MD_Log, MD_Init, MD_Init_NoIC, MD_Step, MD_Close, &
@@ -52,8 +53,9 @@ module moordyn
             MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
             MD_GetRodNodePos, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
-            MD_GetLineUnstretchedLength, MD_GetLineNodePos, MD_GetLineNodeTen, &
-            MD_GetLineNodeCurv, MD_GetLineMaxTen, MD_GetLineFairTen
+            MD_GetLineUnstretchedLength, MD_GetLineNodePos, &
+            MD_GetLineNodeTen, MD_GetLineNodeCurv, MD_GetLineMaxTen, &
+            MD_GetLineFairTen, MD_SaveLineVTK
 
   interface
 
@@ -424,6 +426,12 @@ module moordyn
       real(c_double), intent(out) :: r
     end function MD_GetLineMaxTen
 
+    function MoorDyn_SaveLineVTK(instance, f) bind(c, name='MoorDyn_SaveLineVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveLineVTK
 end interface
 
 
@@ -603,5 +611,12 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetLineNodeTen = MoorDyn_GetLineNodeTen(instance, n, c_loc(r))
   end function MD_GetLineNodeTen
+
+  integer function MD_SaveLineVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveLineVTK = MoorDyn_SaveLineVTK(instance, trim(f) // c_null_char)
+  end function MD_SaveLineVTK
 
 end module moordyn

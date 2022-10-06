@@ -1584,6 +1584,27 @@ line_get_max_tension(PyObject*, PyObject* args)
 	return PyFloat_FromDouble(t);
 }
 
+/** @brief Wrapper to MoorDyn_SaveLineVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+line_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveLineVTK(instance, filepath));
+}
+
 static PyMethodDef moordyn_methods[] = {
 	{ "create", create, METH_VARARGS, "Creates the MoorDyn system" },
 	{ "n_coupled_dof",
@@ -1719,6 +1740,10 @@ static PyMethodDef moordyn_methods[] = {
 	  line_get_max_tension,
 	  METH_VARARGS,
 	  "Get the line maximum tension magnitude" },
+	{ "line_save_vtk",
+	  line_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the line" },
 	{ NULL, NULL, 0, NULL }
 };
 

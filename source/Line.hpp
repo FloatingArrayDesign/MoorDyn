@@ -603,7 +603,7 @@ class Line : public io::IO
 	 */
 	vtkSmartPointer<vtkPolyData> getVTK() const;
 
-	/** @brief Save the line on a VTK file
+	/** @brief Save the line on a VTK (.vtp) file
 	 * @param filename The output file name
 	 * @throws output_file_error If VTK reports
 	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError

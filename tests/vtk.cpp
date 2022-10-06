@@ -102,7 +102,7 @@ write_vtk_lines()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_line_" << line_i << ".vtp";
+		         << "vtk_line_" << line_i << ".00000.vtp";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 

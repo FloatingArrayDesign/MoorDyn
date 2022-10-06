@@ -842,3 +842,17 @@ def GetLineMaxTen(instance):
     """
     import cmoordyn
     return cmoordyn.line_get_max_tension(instance)
+
+
+def SaveLineVTK(instance, filename):
+    """ Save the line to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    filepath (str): The log file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.line_save_vtk(instance, filename)

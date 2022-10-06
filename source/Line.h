@@ -135,15 +135,16 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetLineMaxTen(MoorDynLine l, double* t);
 
-#ifdef USE_VTK
-	/** @brief Save the line to a VTK file
+	/** @brief Save the line to a VTK (.vtp) file
 	 * @param l The Moordyn line
 	 * @param filename The output maximum tension module
 	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
 	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
 	 */
 	int DECLDIR MoorDyn_SaveLineVTK(MoorDynLine l, const char* filename);
-#endif
 
 	/**
 	 * @}
