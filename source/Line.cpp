@@ -327,7 +327,8 @@ Line::initialize()
 
 		*outfile << "\n";
 
-		if (env->WriteUnits > 0) {
+		// Don't write units if writing to single file
+		if (env->WriteUnits > 0 && env->outputMode != 1) {
 			// 2nd line with the units
 
 			// output time
@@ -1307,6 +1308,18 @@ Line::Output(real time)
 		*outfile << "\n";
 	}
 	return;
+};
+
+ofstream* Line::getOutputFilestream()
+{
+	return outfile;
+};
+
+string Line::getLineName()
+{
+	if (env->outputMode == 0)
+		return "";
+	return "Line" + std::to_string(number);
 };
 
 std::vector<uint64_t>

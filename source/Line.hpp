@@ -578,6 +578,10 @@ class Line : public io::IO
 
 	void Output(real);
 
+	std::string getLineName();
+
+	ofstream* getOutputFilestream();
+
 	/** @brief Produce the packed data to be saved
 	 *
 	 * The produced data can be used afterwards to restore the saved information

@@ -254,6 +254,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// Initialize the system state
 	_t_integrator->init();
 
+	if (env.outputMode == 1)  // Formatting for single-file output headers
+	{
+		ofstream *linesOutputFile = LineList.back()->getOutputFilestream();
+		*linesOutputFile << '\n';
+	}
 	// ------------------ do dynamic relaxation IC gen --------------------
 
 	if (!skip_ic) {
@@ -1988,6 +1993,11 @@ moordyn::MoorDyn::AllOutput(double t, double dt)
 		obj->Output(t);
 	for (auto obj : BodyList)
 		obj->Output(t);
+
+	if (env.outputMode == 1) {
+			ofstream* outfile = LineList.back()->getOutputFilestream();
+			*outfile << '\n';
+	}
 
 	return MOORDYN_SUCCESS;
 }
