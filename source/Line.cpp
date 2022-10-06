@@ -162,77 +162,92 @@ void Line::initializeLine(double* X)
 		
 			// output time
 			*outfile << "Time" << "\t ";
+			string name = getLineName();
 			
-			// output positions?
+			// output positions?:w
+
 			//if (find(channels.begin(), channels.end(), "position") != channels.end())
 			if (channels.find("p") != string::npos)
 			{
 				for (int i=0; i<=N; i++)	//loop through nodes
 				{
-					*outfile << "Node" << i << "px \t Node" <<  i << "py \t Node" <<  i << "pz \t ";
+					*outfile << name << "Node" << i << "px \t" 
+					         << name << "Node" <<  i << "py \t"
+							 << name << "Node" <<  i << "pz \t ";
 				}
 			}
 			// output curvatures?
 			if (channels.find("K") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Ku \t ";
+					*outfile << name << "Node" << i << "Ku \t ";
 				}
 			}
 			// output velocities?
 			if (channels.find("v") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "vx \t Node" <<  i << "vy \t Node" <<  i << "vz \t ";
+					*outfile << name << "Node" << i << "vx \t" 
+					         << name << "Node" <<  i << "vy \t" 
+							 << name << "Node" <<  i << "vz \t ";
 				}
 			}
 			// output wave velocities?
 			if (channels.find("U") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Ux \t Node" <<  i << "Uy \t Node" <<  i << "Uz \t ";
+					*outfile << name << "Node" << i << "Ux \t" 
+						     << name << "Node" <<  i << "Uy \t" 
+							 << name << "Node" <<  i << "Uz \t ";
 				}
 			}
 			// output hydro force
 			if (channels.find("D") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "Dx \t Node" <<  i << "Dy \t Node" <<  i << "Dz \t ";
+					*outfile << name << "Node" << i << "Dx \t" 
+					         << name << "Node" <<  i << "Dy \t" 
+							 << name << "Node" <<  i << "Dz \t ";
 				}
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
 				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "cx \t Node" <<  i << "cy \t Node" <<  i << "cz \t ";
+					*outfile << name << "Seg" << i << "cx \t" 
+					         << name << "Node" <<  i << "cy \t" 
+							 << name << "Node" <<  i << "cz \t ";
 				}
 			}
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
 				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "Te \t ";
+					*outfile << name << "Seg" << i << "Te \t ";
 				}
 			}			
 			// output segment strains?
 			if (channels.find("s") != string::npos) {
 				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "St \t ";
+					*outfile << name << "Seg" << i << "St \t ";
 				}
 			}	
 			// output segment strain rates?
 			if (channels.find("d") != string::npos) {
 				for (int i=1; i<=N; i++)  {
-					*outfile << "Seg" << i << "dSt \t ";
+					*outfile << name << "Seg" << i << "dSt \t ";
 				}
 			}
 			// output seabed contact forces?
 			if (channels.find("b") != string::npos) {
 				for (int i=0; i<=N; i++)  {
-					*outfile << "Node" << i << "bx \t Node" <<  i << "by \t Node" <<  i << "bz \t ";
+					*outfile << name << "Node" << i << "bx \t" 
+					         << name << "Node" <<  i << "by \t" 
+							 << name << "Node" <<  i << "bz \t ";
 				}
 			}
 			
-			*outfile << "\n";   
+			if (env->outputMode != 1)
+				*outfile << "\n";
 			
 			
 			// ----------- write units line ---------------
 
-			if (env->WriteUnits > 0)
+			if (env->WriteUnits > 0 && env->outputMode != 1)  // Don't write units if writing to single file
 			{
 				// output time
 				*outfile << "(s)" << "\t ";
@@ -292,7 +307,8 @@ void Line::initializeLine(double* X)
 						*outfile << "(N) \t";
 				}
 				
-				*outfile << "\n";   // should also write units at some point!
+				if (env->outputMode != 1)
+					*outfile << "\n";   // should also write units at some point!
 			}
 		}
 		else cout << "   Error: unable to write file Line" << number << ".out" << endl;  //TODO: handle this!
@@ -1326,13 +1342,25 @@ void Line::Output(double time)
 				}
 			}
 			
-			*outfile << "\n";
+			if (env->outputMode != 1)
+				*outfile << "\n";
 		}
 		else cout << "Unable to write to output file " << endl;
 	}
 	return;
 };
 
+ofstream* Line::getOutputFilestream()
+{
+	return outfile;
+};
+
+string Line::getLineName()
+{
+	if (env->outputMode == 0)
+		return "";
+	return "Line" + std::to_string(number);
+};
 
 Line::~Line()
 {

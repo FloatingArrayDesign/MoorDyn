@@ -153,6 +153,7 @@ public:
 	int getNodePos(int i, double pos[3]);
 	void getNodeCoordinates(double r_out[]);
 	void setNodeWaveKin(double U_in[], double Ud_in[]);
+	std::string getLineName();
 	
 	double GetLineOutput(OutChanProps outChan);
 	
@@ -183,6 +184,8 @@ public:
 	void getEndSegmentInfo(double qEnd[3], double *EIout, double *dlout, int topOfLine);
 	
 	void getStateDeriv(double* Xd, const double dt);
+
+	ofstream* getOutputFilestream();
 	
 	void doRHS( const double* X,  double* Xd, const double time, const double dt);
 

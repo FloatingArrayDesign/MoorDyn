@@ -301,6 +301,11 @@ moordyn::error_id moordyn::MoorDyn::Init(const double *x, const double *xd)
 	for (unsigned int l = 0; l < LineList.size(); l++)
 		LineList[l]->initializeLine(states + LineStateIs[l]);
 
+	if (env.outputMode == 1)  // Formatting for single-file output headers
+	{
+		ofstream *linesOutputFile = LineList.back()->getOutputFilestream();
+		*linesOutputFile << '\n';
+	}
 	// ------------------ do dynamic relaxation IC gen --------------------
 	
 	LOGMSG << "Finalizing ICs using dynamic relaxation ("
@@ -2238,6 +2243,11 @@ moordyn::error_id moordyn::MoorDyn::AllOutput(double t, double dt)
 		obj->Output(t);
 	for (auto obj : BodyList)
 		obj->Output(t);
+
+	if (env.outputMode == 1) {
+			ofstream* outfile = LineList.back()->getOutputFilestream();
+			*outfile << '\n';
+	}
 
 	return MOORDYN_SUCCESS;
 }
