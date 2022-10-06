@@ -218,7 +218,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 	if ((env->WaveKin == moordyn::WAVES_NONE) &&
 		(env->Current == moordyn::CURRENTS_NONE))
 	{
-		LOGMSG << "No Waves or Currents, or set externally";
+		LOGMSG << "No Waves or Currents, or set externally\n";
 		return;
 	}
 
@@ -674,7 +674,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 		vector<string> entries = split(lines[4]);
 		const unsigned int nzin = entries.size();
 		for (unsigned int i = 0; i < nzin; i++)
-			UProfileZ[i] = atof(entries[i].c_str());
+			UProfileZ.push_back(atof(entries[i].c_str()));
 
 		// Read the time rows
 		const unsigned int ntin = lines.size() - 6;
@@ -755,6 +755,9 @@ void Waves::setup(EnvCond *env, const char* folder)
 			{
 				for (unsigned int it = 0; it < nt; it++)
 				{
+					// need to set iti, otherwise it will lock to final t after one pass through
+					// initially the upper index we check should always be one timestep ahead of it
+					iti = it + 1;  
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
 						UProfileUx[iz][iti - 1] * (1. - ft);
@@ -781,6 +784,7 @@ void Waves::setup(EnvCond *env, const char* folder)
 				unsigned iti = 1;
 				for (unsigned int it = 0; it < nt; it++)
 				{
+					iti = it + 1;  // Set initial iti
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					for (unsigned int ix = 0; ix < nx; ix++) {
 						for (unsigned int iy = 0; iy < ny; iy++) {
