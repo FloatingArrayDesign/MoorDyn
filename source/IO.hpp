@@ -39,6 +39,11 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#ifdef USE_VTK
+#include <vtkSmartPointer.h>
+#include <vtkFloatArray.h>
+#include <vtkErrorCode.h>
+#endif
 
 namespace moordyn {
 
@@ -306,6 +311,27 @@ class IO : public LogUser
 	/// The minimum minor version of the file that can be read
 	uint8_t _min_minor_version;
 };
+
+#ifdef USE_VTK
+/** @brief Create a data array
+ *
+ * This can be used later as either pointdata arrays or celldata arrays
+ * @param name The array name. It should be unique for each object
+ * @param dim The number of components of each array element. Usually 1 or 3
+ * @param len The number of elements on the array
+ * @return The VTK array
+ */
+vtkSmartPointer<vtkFloatArray>
+vtk_farray(const char* name, unsigned int dim, unsigned int len);
+
+/** @brief Convert a vtk error code to a moordyn error
+ * @param err_code The VTK error code
+ * @return The MoorDyn error code
+ * @see moordyn_errors_c
+ */
+int
+vtk_error(unsigned long err_code);
+#endif
 
 } // ::io
 

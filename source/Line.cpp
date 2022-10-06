@@ -34,6 +34,15 @@
 #include "QSlines.hpp"
 #include <tuple>
 
+#ifdef USE_VTK
+#include <vtkCellArray.h>
+#include <vtkPoints.h>
+#include <vtkPolyLine.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkXMLPolyDataWriter.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -1394,6 +1403,86 @@ Line::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
+#ifdef USE_VTK
+vtkSmartPointer<vtkPolyData>
+Line::getVTK() const
+{
+	auto points = vtkSmartPointer<vtkPoints>::New();
+	auto line = vtkSmartPointer<vtkPolyLine>::New();
+	// Node fields, i.e. r.size() number of tuples
+	auto vtk_rd = io::vtk_farray("rd", 3, r.size());
+	auto vtk_Kurv = io::vtk_farray("Kurv", 1, r.size());
+	auto vtk_M = io::vtk_farray("M", 9, r.size());
+	auto vtk_Fnet = io::vtk_farray("Fnet", 3, r.size());
+	// Segment fields, i.e. r.size()-1 number of tuples
+	auto vtk_lstr = io::vtk_farray("lstr", 1, r.size() - 1);
+	auto vtk_ldstr = io::vtk_farray("ldstr", 1, r.size() - 1);
+	auto vtk_V = io::vtk_farray("V", 1, r.size() - 1);
+
+	line->GetPointIds()->SetNumberOfIds(r.size());
+	for (unsigned int i = 0; i < r.size(); i++) {
+		auto p = r[i];
+		points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
+		line->GetPointIds()->SetId(i, i);
+		vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
+		vtk_Kurv->SetTuple1(i, Kurv[i]);
+		vtk_M->SetTuple9(i,
+		                 M[i](0, 0),
+		                 M[i](0, 1),
+		                 M[i](0, 2),
+		                 M[i](1, 0),
+		                 M[i](1, 1),
+		                 M[i](1, 2),
+		                 M[i](2, 0),
+		                 M[i](2, 1),
+		                 M[i](2, 2));
+		vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
+		if (i == r.size() - 1)
+			continue;
+		vtk_lstr->SetTuple1(i, lstr[i]);
+		vtk_ldstr->SetTuple1(i, ldstr[i]);
+		vtk_V->SetTuple1(i, V[i]);
+	}
+	auto cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->InsertNextCell(line);
+
+	auto out = vtkSmartPointer<vtkPolyData>::New();
+	out->SetPoints(points);
+	out->SetLines(cells);
+
+	out->GetCellData()->AddArray(vtk_lstr);
+	out->GetCellData()->AddArray(vtk_ldstr);
+	out->GetCellData()->AddArray(vtk_V);
+	out->GetCellData()->SetActiveScalars("ldstr");
+
+	out->GetPointData()->AddArray(vtk_rd);
+	out->GetPointData()->AddArray(vtk_Kurv);
+	out->GetPointData()->AddArray(vtk_M);
+	out->GetPointData()->AddArray(vtk_Fnet);
+	out->GetPointData()->SetActiveVectors("Fnet");
+
+	return out;
+}
+
+void
+Line::saveVTK(const char* filename) const
+{
+	auto obj = this->getVTK();
+	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName(filename);
+	writer->SetInputData(obj);
+	writer->SetDataModeToBinary();
+	writer->Update();
+	writer->Write();
+	auto err = io::vtk_error(writer->GetErrorCode());
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << "VTK reported an error while writing the VTP file '"
+		       << filename << "'" << endl;
+		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
+	}
+}
+#endif
+
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void
@@ -1581,3 +1670,18 @@ MoorDyn_GetLineMaxTen(MoorDynLine l, double* t)
 	*t = t_max;
 	return MOORDYN_SUCCESS;
 }
+
+#ifdef USE_VTK
+int DECLDIR
+MoorDyn_SaveLineVTK(MoorDynLine l, const char* filename)
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::Line*)l)->saveVTK(filename);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+#endif

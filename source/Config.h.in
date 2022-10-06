@@ -18,5 +18,6 @@
 #define MOORDYN_VERSION_STRING "${MOORDYN_VERSION}"
 
 #cmakedefine MOORDYN_SINGLEPRECISSION
+#cmakedefine USE_VTK
 
 #endif // __MOORDYN_PLATFORM_H__

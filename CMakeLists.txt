@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 set(MOORDYN_MAJOR_VERSION 2)
 set(MOORDYN_MINOR_VERSION 0)
-set(MOORDYN_PATCH_VERSION 3)
+set(MOORDYN_PATCH_VERSION 4)
 set(MOORDYN_VERSION ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION})
 project(Moordyn VERSION ${MOORDYN_VERSION})
 
@@ -21,6 +21,8 @@ set(BUILD_DOCS OFF CACHE BOOL
     "Build the documentation for users and developers")
 set(EXTERNAL_EIGEN ON CACHE BOOL
     "Use the Eigen3 installed in the system")
+set(USE_VTK OFF CACHE BOOL
+    "Link with VTK to produce output binary files")
 set(PYTHON_WRAPPER ON CACHE BOOL
     "Build the Python wrapper")
 set(FORTRAN_WRAPPER OFF CACHE BOOL
@@ -40,6 +42,12 @@ mark_as_advanced(MOORDYN_SSE)
 mark_as_advanced(MOORDYN_FASTMATH)
 
 # Look for the dependencies
+if(${USE_VTK})
+    find_package(VTK
+                 COMPONENTS CommonCore IOCore IOXML REQUIRED)
+    add_definitions(-DUSE_VTK)
+endif()
+
 if(${PYTHON_WRAPPER})
     find_package(Python
                  COMPONENTS Interpreter Development REQUIRED)
