@@ -666,6 +666,9 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 			const string name = entries[1];
 			if (name != "writeLog")
 			{
+				if (name == "outputMode")
+					env.outputMode = atoi(entries[0].c_str());
+				
 				i++;
 				continue;
 			}
@@ -1331,6 +1334,7 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 
 			// skip following two lines (label line and unit line)
 			i += 3;
+			bool setOutfile = false;	
 			// parse until the next header or the end of the file
 			while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size()))
 			{ 
@@ -1365,20 +1369,33 @@ moordyn::error_id moordyn::MoorDyn::ReadInFile()
 					return MOORDYN_INVALID_INPUT;
 				}
 
+				// At this point what to do depends on whether we want each line to output to a single file or
+				// to individual files
+
 				// Make the output file (if queried)
 				if ((outchannels.size() > 0) &&
 					(strcspn(outchannels.c_str(), "pvUDctsd") < strlen(outchannels.c_str())))
 				{
 					// if 1+ output flag chars are given and they're valid
-					stringstream oname;
-					oname << _basepath << _basename << "_Line" << number << ".out";
-					outfiles.push_back(make_shared<ofstream>(oname.str()));
-					if (!outfiles.back()->is_open())
+					if (env.outputMode == 0 || (env.outputMode == 1 && !setOutfile))
 					{
-						LOGERR
-							<< "Cannot create the output file '"
-							<< oname.str() << endl;
-						return MOORDYN_INVALID_OUTPUT_FILE;
+						// If we are outputting to multiple files OR just one, but haven't
+						// set it up yet:
+						stringstream oname;
+						oname << _basepath << _basename << "_Line" << number << ".out";
+
+						LOGERR << "Env output mode is: " << env.outputMode << "\n";
+						outfiles.push_back(make_shared<ofstream>(oname.str()));
+						if (!outfiles.back()->is_open())
+						{
+							LOGERR
+								<< "Cannot create the output file '"
+								<< oname.str() << endl;
+							return MOORDYN_INVALID_OUTPUT_FILE;
+						}
+
+						if (!setOutfile)
+							setOutfile = true;
 					}
 				}
 				else
