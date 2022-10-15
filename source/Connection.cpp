@@ -1,40 +1,58 @@
 /*
- * Copyright (c) 2019 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2022, Matt Hall
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "Connection.hpp"
 #include "Connection.h"
-#include "Line.h"
+#include "Line.hpp"
 #include "Waves.hpp"
+#include <tuple>
 
-namespace moordyn
-{
+namespace moordyn {
 
-Connection::Connection(moordyn::Log *log)
-	: LogUser(log)
-	, WaterKin(0)
-{
-}
-
-Connection::~Connection()
+Connection::Connection(moordyn::Log* log)
+  : io::IO(log)
+  , WaterKin(0)
 {
 }
 
-void Connection::setup(int number_in, types type_in, const double r0_in[3],
-                       double M_in, double V_in, const double F_in[3],
-                       double CdA_in, double Ca_in) 
+Connection::~Connection() {}
+
+void
+Connection::setup(int number_in,
+                  types type_in,
+                  vec r0_in,
+                  double M_in,
+                  double V_in,
+                  vec F_in,
+                  double CdA_in,
+                  double Ca_in)
 {
 	// props contains:
 	// Node, Type, X, Y, Z, M, V, FX, FY, FZ, CdA, Ca
@@ -43,335 +61,269 @@ void Connection::setup(int number_in, types type_in, const double r0_in[3],
 	type = type_in;
 
 	// store passed rod properties  >>>(and convert to numbers)<<<
-	conM  = M_in ;
-	conV  = V_in ;
-	moordyn::array2vec(F_in, conF);
-	conCdA= CdA_in;
+	conM = M_in;
+	conV = V_in;
+	conF = F_in;
+	conCdA = CdA_in;
 	conCa = Ca_in;
 
-	t=0.;
-	//beta = 0.0;
+	// beta = 0.0;
 
-	// Start off at position specified in input file (will be overwritten for fairleads).
-	// This is the starting point for connects and the permanent location of anchors.
-	moordyn::array2vec(r0_in, r);
-	rd = {0.0, 0.0, 0.0};
+	// Start off at position specified in input file (will be overwritten for
+	// fairleads). This is the starting point for connects and the permanent
+	// location of anchors.
+	r = r0_in;
+	rd = { 0.0, 0.0, 0.0 };
 
-	LOGDBG << "   Set up Connection " << number
-	       << ", type '" << TypeName(type) << "'. ";
+	LOGDBG << "   Set up Connection " << number << ", type '" << TypeName(type)
+	       << "'. " << endl;
 }
 
-
 // this function handles assigning a line to a connection node
-void Connection::addLineToConnect(Line *theLine, int TopOfLine)
+void
+Connection::addLine(Line* theLine, EndPoints end_point)
 {
-	LOGDBG << "L" << theLine->number << "->P" << number << " ";
+	LOGDBG << "L" << theLine->number << end_point_name(end_point) << "->P"
+	       << number << " ";
 
-	attachment a = {theLine, TopOfLine};
+	attachment a = { theLine, end_point };
 	attached.push_back(a);
 };
 
-
-
-// this function handles removing a line from a connection node
-void Connection::removeLineFromConnect(int lineID, int *TopOfLine,
-                                       double rEnd[], double rdEnd[])
+EndPoints
+Connection::removeLine(Line* line)
 {
+	EndPoints end_point;
 	// look through attached lines
-	for(auto it = std::begin(attached); it != std::end(attached); ++it)
-	{
-		if ((*it).line->number != lineID)
+	for (auto it = std::begin(attached); it != std::end(attached); ++it) {
+		if (it->line != line)
 			continue;
 		// This is the line's entry in the attachment list
-		*TopOfLine = (*it).top;
+		end_point = it->end_point;
 		attached.erase(it);
 
-		// also pass back the kinematics at the end
-		moordyn::vec2array(r, rEnd);
-		moordyn::vec2array(rd, rdEnd);
-
-		LOGMSG << "Detached line " << lineID
-		       << " from Connection " << number << endl;
-		return;
+		LOGMSG << "Detached line " << line->number << " from Connection "
+		       << number << endl;
+		return end_point;
 	}
 
 	// line not found
 	LOGERR << "Error: failed to find line to remove during "
 	       << __PRETTY_FUNC_NAME__ << " call to connection " << number
-	       << ". Line " << lineID << endl;
+	       << ". Line " << line->number << endl;
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
-void Connection::initializeConnect(double X[6])
+std::pair<vec, vec>
+Connection::initialize()
 {
-	// the default is for no water kinematics to be considered (or to be set externally on each node)
+	// the default is for no water kinematics to be considered (or to be set
+	// externally on each node)
 	WaterKin = 0;
-	U = {0.0, 0.0, 0.0};
-	Ud = {0.0, 0.0, 0.0};
+	U = vec::Zero();
+	Ud = vec::Zero();
 
-	if (type==FREE)
-	{
+	vec pos = vec::Zero();
+	vec vel = vec::Zero();
+
+	if (type == FREE) {
 		// pass kinematics to any attached lines so they have initial positions
 		// at this initialization stage
-		for (auto a : attached) {
-			// DEPRECATED: This conversion will not be necessary
-			double line_r[3], line_rd[3];
-			moordyn::vec2array(r, line_r);
-			moordyn::vec2array(rd, line_rd);
-			a.line->setEndState(line_r, line_rd, a.top);
-		}
+		for (auto a : attached)
+			a.line->setEndKinematics(r, rd, a.end_point);
 
 		// assign initial node kinematics to state vector
-		moordyn::vec2array(r, X + 3);
-		moordyn::vec2array(rd, X);
+		pos = r;
+		vel = rd;
 
 		if (-env->WtrDpth > r[2]) {
-			LOGERR
-				<< "Error: water depth is shallower than Point "
-				<< number << "." << endl;
+			LOGERR << "Error: water depth is shallower than Point " << number
+			       << "." << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
 		}
 
-		// set water kinematics flag based on global wave and current settings (for now)
-		if((env->WaveKin==2) || (env->WaveKin==3) || (env->WaveKin==6) || (env->Current==1) || (env->Current==2))
-			WaterKin = 2;   // water kinematics to be considered through precalculated global grid stored in Waves object
-		else if((env->WaveKin==4) || (env->WaveKin==5) || (env->Current==3) || (env->Current==4))
-			WaterKin = 1;   // water kinematics to be considered through precalculated time series for each node
-
+		// set water kinematics flag based on global wave and current settings
+		// (for now)
+		if ((env->WaveKin == 2) || (env->WaveKin == 3) || (env->WaveKin == 6) ||
+		    (env->Current == 1) || (env->Current == 2))
+			WaterKin = 2; // water kinematics to be considered through
+			              // precalculated global grid stored in Waves object
+		else if ((env->WaveKin == 4) || (env->WaveKin == 5) ||
+		         (env->Current == 3) || (env->Current == 4))
+			WaterKin = 1; // water kinematics to be considered through
+			              // precalculated time series for each node
 	}
 
 	LOGDBG << "   Initialized Connection " << number << endl;
+
+	return std::make_pair(pos, vel);
 };
 
-
-// function to return connection position and velocity to Line object
-void Connection::getConnectState(vec &r_out, vec &rd_out)
-{
-	r_out = r;
-	rd_out = rd;
-};
-
-
-
-// function to return net force on connection (just to allow public reading of Fnet)
-void Connection::getFnet(vec& Fnet_out)
+// function to return net force on connection (just to allow public reading of
+// Fnet)
+void
+Connection::getFnet(vec& Fnet_out)
 {
 	Fnet_out = Fnet;
 };
 
-
 // function to return mass matrix of connection
-void Connection::getM(mat &M_out)
+void
+Connection::getM(mat& M_out)
 {
 	M_out = M;
 };
 
-
-double Connection::GetConnectionOutput(OutChanProps outChan)
+real
+Connection::GetConnectionOutput(OutChanProps outChan)
 {
-	if      (outChan.QType == PosX)  return  r[0];
-	else if (outChan.QType == PosY)  return  r[1];
-	else if (outChan.QType == PosZ)  return  r[2];
-	else if (outChan.QType == VelX)  return  rd[0];
-	else if (outChan.QType == VelY)  return  rd[1];
-	else if (outChan.QType == VelZ)  return  rd[2];
-	else if (outChan.QType == Ten )  return  Fnet.squaredNorm();
-	else if (outChan.QType == FX)    return  Fnet[0];  // added Oct 20
-	else if (outChan.QType == FY)    return  Fnet[1];
-	else if (outChan.QType == FZ)    return  Fnet[2];
-	else
-	{
+	if (outChan.QType == PosX)
+		return r[0];
+	else if (outChan.QType == PosY)
+		return r[1];
+	else if (outChan.QType == PosZ)
+		return r[2];
+	else if (outChan.QType == VelX)
+		return rd[0];
+	else if (outChan.QType == VelY)
+		return rd[1];
+	else if (outChan.QType == VelZ)
+		return rd[2];
+	else if (outChan.QType == Ten)
+		return Fnet.squaredNorm();
+	else if (outChan.QType == FX)
+		return Fnet[0]; // added Oct 20
+	else if (outChan.QType == FY)
+		return Fnet[1];
+	else if (outChan.QType == FZ)
+		return Fnet[2];
+	else {
 		return 0.0;
 	}
 }
 
-void Connection::setEnv(EnvCond *env_in, moordyn::Waves *waves_in)
+void
+Connection::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
 {
-	env = env_in;      // set pointer to environment settings object
-	waves = waves_in;  // set pointer to Waves  object
+	env = env_in;     // set pointer to environment settings object
+	waves = waves_in; // set pointer to Waves  object
 }
 
-void Connection::scaleDrag(real scaler)
+void
+Connection::initiateStep(vec rFairIn, vec rdFairIn)
 {
-	conCdA *= scaler;
-}
-
-void Connection::setTime(real time)
-{
-	t = time;
-}
-
-void Connection::initiateStep(const double rFairIn[3], const double rdFairIn[3],
-                              real time)
-{
-	t0 = time; // set start time for BC functions
-	
-	if (type==COUPLED)  {  // if vessel type 
-		// update values to fairlead position and velocity functions
-		// (function of time)
-		moordyn::array2vec(rFairIn, r_ves);
-		moordyn::array2vec(rdFairIn, rd_ves);
+	if (type != COUPLED) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
+
+	// update values to fairlead position and velocity functions
+	// (function of time)
+	r_ves = rFairIn;
+	rd_ves = rdFairIn;
 
 	// do I want to get precalculated values here at each FAST time step or at
 	// each line time step?
 };
 
-
-void Connection::updateFairlead(const real time)
+void
+Connection::updateFairlead(real time)
 {
-	t = time;
-
-	if (type != COUPLED)
-	{
-		LOGERR << "Error: " << __PRETTY_FUNC_NAME__
-		       << "called for wrong Connection type. Connection " << number
-		       << " type " << TypeName(type) << endl;
-		throw moordyn::invalid_value_error("Wrong connection type");
+	if (type != COUPLED) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// set fairlead position and velocity based on BCs (linear model for now)
-	r = r_ves + rd_ves * (time - t0);
+	r = r_ves + rd_ves * time;
 	rd = rd_ves;
 
 	// pass latest kinematics to any attached lines
-	for (auto a : attached) {
-		// DEPRECATED: This connection will not be needed anymore
-		double line_r[3], line_rd[3];
-		moordyn::vec2array(r, line_r);
-		moordyn::vec2array(rd, line_rd);
-		a.line->setEndState(line_r, line_rd, a.top);
-	}
+	for (auto a : attached)
+		a.line->setEndKinematics(r, rd, a.end_point);
 }
 
-
-// sets Connection states and ends of attached lines ONLY if this Connection is attached to a body (otherwise shouldn't be called)
-void Connection::setKinematics(double *r_in, double *rd_in)
-{	
-	if (type != FIXED)
-	{
-		LOGERR
-			<< "Error: " << __PRETTY_FUNC_NAME__
-			<< "called for wrong Connection type. Connection " << number
-			<< " type " << type << endl;
-		throw moordyn::invalid_value_error("Wrong connection type");
+void
+Connection::setKinematics(vec r_in, vec rd_in)
+{
+	if (type != FIXED) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// set position and velocity
-	moordyn::array2vec(r_in, r);
-	moordyn::array2vec(rd_in, rd);
+	r = r_in;
+	rd = rd_in;
 
 	// pass latest kinematics to any attached lines
-	for (auto a : attached) {
-		// DEPRECATED: This connection will not be needed anymore
-		double line_r[3], line_rd[3];
-		moordyn::vec2array(r, line_r);
-		moordyn::vec2array(rd, line_rd);
-		a.line->setEndState(line_r, line_rd, a.top);
-	}
+	for (auto a : attached)
+		a.line->setEndKinematics(r, rd, a.end_point);
 }
 
-// pass the latest states to the connection ()
-moordyn::error_id Connection::setState(const double X[6],
-                                       const double time)
+void
+Connection::setState(vec pos, vec vel)
 {
-	// store current time
-	t = time;
-	
-	// the kinematics should only be set with this function of it's an independent/free connection
-	if (type != FREE) // "connect" type
-	{
-		LOGERR
-			<< "Error: " << __PRETTY_FUNC_NAME__
-			<< "called for wrong Connection type. Connection " << number
-			<< " type " << type << endl;
-		return MOORDYN_INVALID_VALUE;
+	// the kinematics should only be set with this function of it's an
+	// independent/free connection
+	if (type != FREE) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
 	// from state values, get r and rdot values
-	moordyn::array2vec(X + 3, r);
-	moordyn::array2vec(X, rd);
+	r = pos;
+	rd = vel;
 
 	// pass latest kinematics to any attached lines
-	for (auto a : attached) {
-		// DEPRECATED: This connection will not be needed anymore
-		double line_r[3], line_rd[3];
-		moordyn::vec2array(r, line_r);
-		moordyn::vec2array(rd, line_rd);
-		a.line->setEndState(line_r, line_rd, a.top);
-	}
-
-	return MOORDYN_SUCCESS;
+	for (auto a : attached)
+		a.line->setEndKinematics(r, rd, a.end_point);
 }
-	
-	
-// calculate the forces and state derivatives of the connectoin	
-moordyn::error_id Connection::getStateDeriv(double Xd[6])
+
+std::pair<vec, vec>
+Connection::getStateDeriv()
 {
-	// the RHS is only relevant (there are only states to worry about) if it is a Connect type of Connection
-	if (type != FREE)
-	{
-		LOGERR
-			<< "Error: " << __PRETTY_FUNC_NAME__
-			<< "called for wrong Connection type. Connection " << number
-			<< " type " << type << endl;
-		return MOORDYN_INVALID_VALUE;
+	// the RHS is only relevant (there are only states to worry about) if it is
+	// a Connect type of Connection
+	if (type != FREE) {
+		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid connection type");
 	}
 
-	if (t==0)   // with current IC gen approach, we skip the first call to the line objects, because they're set AFTER the call to the connects
-	{		// above is no longer true!!! <<<
-		moordyn::vec2array(rd, Xd + 3);
-		memset(Xd, 0.0, 3 * sizeof(double));
-	}
-	else
-	{
-		//cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " << Fnet[1] << " " << Fnet[2] << endl;
-		doRHS();
+	// cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " <<
+	// Fnet[1] << " " << Fnet[2] << endl;
+	doRHS();
 
-		// solve for accelerations in [M]{a}={f}
-		const vec acc = M.inverse() * Fnet;
+	// solve for accelerations in [M]{a}={f}
+	const vec acc = M.inverse() * Fnet;
 
-		// update states
-		moordyn::vec2array(rd, Xd + 3);
-		moordyn::vec2array(acc, Xd);
-	}
-
-	return MOORDYN_SUCCESS;
+	// update states
+	return std::make_pair(rd, acc);
 };
 
-
-moordyn::error_id Connection::getNetForceAndMass(const double rBody[3], double Fnet_out[6], double M_out[6][6])
+void
+Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 {
 	doRHS();
 
-	// make sure Fnet_out and M_out are zeroed first <<<<<<<<< can delete this <<<<<<<
-	for (int J=0; J<6; J++)
-	{
-		Fnet_out[J] = 0.0;
-		for (int K=0; K<6; K++)
-			M_out[J][K] = 0.0;
-	}
-
-	double rRel[3];    // position of connection relative to the body reference point (global orientation frame)
-
-	if (rBody == NULL)
-		moordyn::vec2array(r, rRel);
-	else
-		for (int J=0; J<3; J++) rRel[J] = r[J] - rBody[J]; // vector from body reference point to node
+	// position of connection relative to the body reference point (global
+	// orientation frame)
+	const vec rRel = r - rBody;
 
 	// convert segment net force into 6dof force about body ref point
-	// DEPRECATED: This conversion will not be necessary
-	double fnet[3];
-	moordyn::vec2array(Fnet, fnet);
-	translateForce3to6DOF(rRel, fnet, Fnet_out);
+	Fnet_out(Eigen::seqN(0, 3)) = Fnet;
+	Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
-	translateMass3to6DOF(rRel, M, M_out);
-
-	return MOORDYN_SUCCESS;
+	M_out = translateMass(rRel, M);
 }
 
-moordyn::error_id Connection::doRHS()
+moordyn::error_id
+Connection::doRHS()
 {
 	// start with the Connection's own forces including buoyancy and weight, and
 	// its own mass
@@ -379,58 +331,54 @@ moordyn::error_id Connection::doRHS()
 
 	// start with physical mass
 	M = conM * mat::Identity();
-   
+
 	// loop through attached lines, adding force and mass contributions
-	for (auto a : attached)
-	{
-		double Fnet_i[3] = {0.0}, Moment_dummy[3], M_i[3][3] = {{0.0}};
+	for (auto a : attached) {
+		vec Fnet_i, Moment_dummy;
+		mat M_i;
 
 		// get quantities
-		a.line->getEndStuff(Fnet_i, Moment_dummy, M_i, a.top);
+		a.line->getEndStuff(Fnet_i, Moment_dummy, M_i, a.end_point);
 
 		// Process outline for line failure (yet to be coded):
-		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if failure time has elapsed for line
-		// 2. create new massless connect with same instantaneous kinematics as current connection
-		// 3. disconnect line end from current connection and instead attach to new connect
-		// The above may require rearrangement of connection indices, expansion of state vector, etc.
+		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if
+		// failure time has elapsed for line
+		// 2. create new massless connect with same instantaneous kinematics as
+		// current connection
+		// 3. disconnect line end from current connection and instead attach to
+		// new connect The above may require rearrangement of connection
+		// indices, expansion of state vector, etc.
 
 		// sum quantitites
-		// DEPRECATED: This convertions will not be needed anymore
-		vec fi;
-		moordyn::array2vec(Fnet_i, fi);
-		mat mi;
-		moordyn::array2mat(M_i, mi);
-		Fnet += fi;
-		M += mi;
+		Fnet += Fnet_i;
+		M += M_i;
 	}
 
-	// --------------------------------- apply wave kinematics ------------------------------------
+	// --------------------------------- apply wave kinematics
+	// ------------------------------------
 
-	// env->waves->getU(r, t, U); // call generic function to get water velocities  <<<<<<<<<<<<<<<< all needs updating
+	// env->waves->getU(r, t, U); // call generic function to get water
+	// velocities  <<<<<<<<<<<<<<<< all needs updating
 
 	// set water accelerations as zero for now
-	Ud = {0.0, 0.0, 0.0};
+	Ud = { 0.0, 0.0, 0.0 };
 
-	if (WaterKin == 1)
-	{
+	if (WaterKin == 1) {
 		// wave kinematics time series set internally for each node
 		LOGWRN << "unsupported connection kinematics option"
 		       << __PRETTY_FUNC_NAME__ << endl;
 		// TBD
-	}
-	else if (WaterKin == 2)
-	{
+	} else if (WaterKin == 2) {
 		// wave kinematics interpolated from global grid in Waves object
-		waves->getWaveKin(r[0], r[1], r[2], t, U, Ud, zeta, PDyn); 
-	}
-	else if (WaterKin != 0)
-	{
-		LOGERR
-			<< "ERROR: We got a problem with WaterKin not being 0,1,2." << endl;
+		waves->getWaveKin(r[0], r[1], r[2], U, Ud, zeta, PDyn);
+	} else if (WaterKin != 0) {
+		LOGERR << "ERROR: We got a problem with WaterKin not being 0,1,2."
+		       << endl;
 		return MOORDYN_INVALID_VALUE;
 	}
 
-	// --------------------------------- hydrodynamic loads ----------------------------------		
+	// --------------------------------- hydrodynamic loads
+	// ----------------------------------
 
 	// viscous drag calculation
 	const vec vi = U - rd; // relative water velocity
@@ -439,15 +387,15 @@ moordyn::error_id Connection::doRHS()
 
 	// TODO <<<<<<<<< add Ud to inertia force calcuation!!
 
-	//if (abs(r[0]) > 40)
+	// if (abs(r[0]) > 40)
 	//{
 	//	cout <<"Connection going crazy at t=" << t << endl;
 	//	cout << r << endl;
 	//	cout << Fnet << endl;
-	//	
+	//
 	//	double r2 = r[0]+1;
 	//	cout << r2 << endl;
-	//}
+	// }
 
 	// added mass calculation
 	M += conV * env->rho_w * conCa * mat::Identity();
@@ -455,16 +403,62 @@ moordyn::error_id Connection::doRHS()
 	return MOORDYN_SUCCESS;
 }
 
+std::vector<uint64_t>
+Connection::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	subdata = io::IO::Serialize(r);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(r_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(rd_ves);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Fnet);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(M);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	data.push_back(io::IO::Serialize(zeta));
+	data.push_back(io::IO::Serialize(PDyn));
+	subdata = io::IO::Serialize(U);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	subdata = io::IO::Serialize(Ud);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+
+	return data;
+}
+
+uint64_t*
+Connection::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	ptr = io::IO::Deserialize(ptr, r);
+	ptr = io::IO::Deserialize(ptr, rd);
+	ptr = io::IO::Deserialize(ptr, r_ves);
+	ptr = io::IO::Deserialize(ptr, rd_ves);
+	ptr = io::IO::Deserialize(ptr, Fnet);
+	ptr = io::IO::Deserialize(ptr, M);
+	ptr = io::IO::Deserialize(ptr, zeta);
+	ptr = io::IO::Deserialize(ptr, PDyn);
+	ptr = io::IO::Deserialize(ptr, U);
+	ptr = io::IO::Deserialize(ptr, Ud);
+
+	return ptr;
+}
+
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
-void Connection::drawGL(void)
+void
+Connection::drawGL(void)
 {
-	double radius = pow( conV/(4/3*pi), 0.33333);  //conV
+	double radius = pow(conV / (4 / 3 * pi), 0.33333); // conV
 	Sphere(r[0], r[1], r[2], radius);
 };
 #endif
 
-}  // ::moordyn
+} // ::moordyn
 
 // =============================================================================
 //
@@ -476,52 +470,82 @@ void Connection::drawGL(void)
 // =============================================================================
 
 /// Check that the provided system is not Null
-#define CHECK_CONNECTION(s)                                                     \
-	if (!s)                                                                     \
-	{                                                                           \
-		cerr << "Null system received in " << __FUNC_NAME__                     \
-		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;       \
-		return MOORDYN_INVALID_VALUE;                                           \
+#define CHECK_CONNECTION(c)                                                    \
+	if (!c) {                                                                  \
+		cerr << "Null connection received in " << __FUNC_NAME__ << " ("        \
+		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
+		return MOORDYN_INVALID_VALUE;                                          \
 	}
 
-int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn)
+int DECLDIR
+MoorDyn_GetConnectID(MoorDynConnection conn, int* id)
 {
 	CHECK_CONNECTION(conn);
-	return ((moordyn::Connection*)conn)->number;
+	*id = ((moordyn::Connection*)conn)->number;
+	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_GetConnectType(MoorDynConnection conn)
+int DECLDIR
+MoorDyn_GetConnectType(MoorDynConnection conn, int* t)
 {
 	CHECK_CONNECTION(conn);
-	return ((moordyn::Connection*)conn)->type;
+	*t = ((moordyn::Connection*)conn)->type;
+	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_GetConnectPos(MoorDynConnection conn,
-                                  double pos[3])
+int DECLDIR
+MoorDyn_GetConnectPos(MoorDynConnection conn, double pos[3])
 {
 	CHECK_CONNECTION(conn);
-	vec r, rd;
-	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	moordyn::vec r, rd;
+	((moordyn::Connection*)conn)->getState(r, rd);
 	moordyn::vec2array(r, pos);
-	return MOORDYN_SUCCESS;    
+	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_GetConnectVel(MoorDynConnection conn,
-                                  double v[3])
+int DECLDIR
+MoorDyn_GetConnectVel(MoorDynConnection conn, double v[3])
 {
 	CHECK_CONNECTION(conn);
-	vec r, rd;
-	((moordyn::Connection*)conn)->getConnectState(r, rd);
+	moordyn::vec r, rd;
+	((moordyn::Connection*)conn)->getState(r, rd);
 	moordyn::vec2array(rd, v);
-	return MOORDYN_SUCCESS;    
+	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_GetConnectForce(MoorDynConnection conn,
-                                    double f[3])
+int DECLDIR
+MoorDyn_GetConnectForce(MoorDynConnection conn, double f[3])
 {
 	CHECK_CONNECTION(conn);
-	vec fnet;
+	moordyn::vec fnet;
 	((moordyn::Connection*)conn)->getFnet(fnet);
 	moordyn::vec2array(fnet, f);
-	return MOORDYN_SUCCESS;    
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetConnectNAttached(MoorDynConnection conn, unsigned int* n)
+{
+	CHECK_CONNECTION(conn);
+	*n = ((moordyn::Connection*)conn)->getLines().size();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetConnectAttached(MoorDynConnection conn,
+                           unsigned int i,
+                           MoorDynLine* l,
+                           int* e)
+{
+	CHECK_CONNECTION(conn);
+	auto attached = ((moordyn::Connection*)conn)->getLines();
+	if (i >= attached.size()) {
+		cerr << "Invalid line index " << i << ", just " << attached.size()
+		     << " are available" << __FUNC_NAME__ << " (" << XSTR(__FILE__)
+		     << ":" << __LINE__ << ")" << endl;
+		return MOORDYN_INVALID_VALUE;
+	}
+	*l = (MoorDynLine)(attached[i].line);
+	*e = (int)(attached[i].end_point);
+	return MOORDYN_SUCCESS;
 }

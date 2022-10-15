@@ -12,8 +12,8 @@
 #
 import subprocess
 import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import sys
+sys.path.insert(0, os.path.abspath('../wrappers/python/moordyn/'))
 
 
 # -- Doxygen and breathe steps -----------------------------------------------------------
@@ -23,13 +23,17 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 breathe_projects = {}
 
+os.makedirs("_build/doxygen", exist_ok=True)
 if read_the_docs_build:
     subprocess.call('doxygen', shell=True)
 else:
     subprocess.call('make clean', shell=True)
     subprocess.call('doxygen', shell=True)
+os.makedirs("_build/doxygen/out", exist_ok=True)
+subprocess.call('mv _build/doxygen/html _build/doxygen/out/doxygen',
+                shell=True)
 
-breathe_projects['MoorDyn'] = "_build/xml"
+breathe_projects['MoorDyn'] = "_build/doxygen/xml"
 breathe_default_project = "MoorDyn"
 
 #breathe_projects = { "trianglelib": "../../doxygen/build/xml/" }
@@ -84,3 +88,5 @@ html_theme = 'sphinx_rtd_theme' # need to run pip install sphinx_rtd_theme to us
 # specify custom attributes to accept (see https://github.com/sphinx-doc/sphinx/issues/2682)
 cpp_id_attributes = ['DECLDIR']
 
+# Keep the doxygen documentaion in readthedocs
+html_extra_path = ['_build/doxygen/out']

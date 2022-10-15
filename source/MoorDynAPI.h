@@ -1,34 +1,71 @@
 /*
- * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2022, Matt Hall
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @mainpage Moordyn v2 developers documentation
+ *
+ * If you are looking for the users documentation, please visit
+ * moordyn.readthedocs.io
+ *
+ * Code styling
+ * ============
+ *
+ * Moordyn v2 is now based in clang-format to control the code styling, so you
+ * do not need to worry about the code styling.
+ *
+ * Along this line, a .clang-format file has been placed in the root folder.
+ * Many IDEs are able to use that file to automagically assist you in the code
+ * editing.
+ *
+ * Please, if you plan to submit a pull request execute clang-format over all
+ * the source files and headers before.
+ */
+
+/** @file MoorDynAPI.h
+ * A set of handful definitions
  */
 
 #ifndef __MOORDYNAPI_H__
 #define __MOORDYNAPI_H__
 
-#ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
-	#ifdef WIN32
-		#define DECLDIR __declspec(dllexport)
-	#else
-		#define DECLDIR 
-	#endif
+#ifdef MoorDyn_EXPORTS
+#ifdef WIN32
+#define DECLDIR __declspec(dllexport)
 #else
-	#ifdef WIN32
-		#define DECLDIR //__declspec(dllimport)
-	#else
-		#define DECLDIR 
-	#endif
+#define DECLDIR
+#endif
+#else
+#ifdef WIN32
+#define DECLDIR __declspec(dllimport)
+#else
+#define DECLDIR
+#endif
 #endif
 
 #if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
@@ -37,19 +74,27 @@
 #define PARAM_UNUSED
 #endif
 
-#ifndef __FUNC_NAME__
-#if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
-#define __FUNC_NAME__   __FUNCTION__  
+#ifdef _MSC_VER
+#define DEPRECATED __declspec(deprecated)
+#elif defined(__GNUC__) | defined(__clang__)
+#define DEPRECATED __attribute__((__deprecated__))
 #else
-#define __FUNC_NAME__   __func__ 
+#define DEPRECATED
+#endif
+
+#ifndef __FUNC_NAME__
+#ifdef _MSC_VER
+#define __FUNC_NAME__ __FUNCTION__
+#else
+#define __FUNC_NAME__ __func__
 #endif
 #endif
 
 #ifndef __PRETTY_FUNC_NAME__
-#if defined WIN32 && !defined __MINGW32__ && !defined __MINGW64__
-#define __PRETTY_FUNC_NAME__   __FUNCSIG__
+#ifdef _MSC_VER
+#define __PRETTY_FUNC_NAME__ __FUNCSIG__
 #else
-#define __PRETTY_FUNC_NAME__   __PRETTY_FUNCTION__
+#define __PRETTY_FUNC_NAME__ __PRETTY_FUNCTION__
 #endif
 #endif
 
@@ -79,7 +124,11 @@
  * @}
  */
 
-/** \addtogroup moordyn_errors
+/** \defgroup moordyn_errors Errors reported by MoorDyn
+ *  @{
+ */
+
+/** \defgroup moordyn_errors_c The list of error codes returned by the C API
  *  @{
  */
 
@@ -106,4 +155,8 @@
  * @}
  */
 
-#endif  // __MOORDYNAPI_H__
+/**
+ * @}
+ */
+
+#endif // __MOORDYNAPI_H__

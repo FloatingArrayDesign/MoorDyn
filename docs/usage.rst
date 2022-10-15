@@ -1,3 +1,5 @@
+.. _usage:
+
 MoorDyn Usage
 =====================================================
 
@@ -222,29 +224,39 @@ and @ is the number of the node along that line.  For example,
 
 
 
-The v2 Input File (next release)
--------------------------------
+The v2 Input File
+-----------------
 
-MoorDyn v2 uses a standardized plain-text input file for its description of the mooring system and simulation settings 
-that has some important additions and changes from v1. Most helpfully, this new format is identical between C++ and
-FORTRAN versions of MoorDyn, and it is designed to be support future capability enhancements without requiring changes.
-This file is divided into sections, some of which are optional. Each section is identified (and detected) by
-a header line consisting of a key phrase (e.g. Line Types) surrounded by dashes. While a couple sections are optional,
-the order of the sections should never be changed.
+MoorDyn v2 uses a standardized plain-text input file for its description of the
+mooring system and simulation settings  that has some important additions and
+changes from v1.
 
-Most of the sections are set 
-up to contain a table of input information. These tables begin with two preset lines that contain the column names
-and the corresponding units. These lines are followed by any number of lines containing the entries in that section's
-table of inputs.
+Most helpfully, this new format is identical between C++ and FORTRAN versions of
+MoorDyn, and it is designed to be support future capability enhancements without
+requiring changes.
 
+This file is divided into sections, some of which are optional. Each section is
+identified (and detected) by a header line consisting of a key phrase (e.g. Line
+Types) surrounded by dashes. While a couple sections are optional, the order of
+the sections should never be changed.
+
+Most of the sections are set up to contain a table of input information. These
+tables begin with two preset lines that contain the column names and the
+corresponding units. These lines are followed by any number of lines containing
+the entries in that section's table of inputs.
 
 Front matter
 ^^^^^^^^^^^^
 
-The first 1-n lines of the input file are reserved for free-form user input, for labeling the input file, 
-writing notes, etc. ::
+The first lines of the input file are reserved for free-form user input, for
+labeling the input file,  writing notes, etc.
+There is not a limit on the number of lines you can write here.
 
+.. code-block:: none
+
+ --------------------- MoorDyn Input File ------------------------------------
  MoorDyn-F v2 sample input file
+
 
 Line Types
 ^^^^^^^^^^
@@ -258,6 +270,30 @@ that will be used in the simulation
  TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx          
  (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
  Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5           
+
+The columns in order are as follows:
+
+ - Name – an identifier word for the line type
+ - Diam –  the volume-equivalent diameter of the line – the diameter of a cylinder having the same displacement per unit length (m)
+ - MassDen –  the mass per unit length of the line (kg/m)
+ - EA – the line stiffness, product of elasticity modulus and cross-sectional area (N)
+ - BA/-zeta –  the line internal damping (measured in N-s) or, if a negative value is entered, the desired damping ratio (in fraction of critical) for the line type (and MoorDyn will set the BA of each line accordingly – see Section 4.1 for more information)
+ - EI – the line bent stiffness, product of elasticity modulus and inertia of the cross-sectional area (N)
+ - Cd –  transverse drag coefficient (with respect to frontal area, d*l)
+ - Ca –  transverse added mass coefficient (with respect to line displacement)
+ - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
+ - CaAx – tangential added mass coefficient (with respect to line displacement)
+
+Non-linear values for the stiffness (EA), internal damping (BA/-zeta) and bent
+stiffness (EI) are accepted.
+To this end, a file can be provided (to be located in the same folder than the
+main MoorDyn input file) instead of a number.
+Such file is simply a tabulated file with 2 columns, separated by a blank space.
+The columns to be provided for each non-linear magnitude are the followings:
+
+ - Stiffness: Strain rate - EA/Stretching rate (N)
+ - Internal damping: Curvature - EI/Curvature (N-m^2)
+ - Bent stiffness: Stretching rate - Damping coefficient/Stretching rate (N-s^2/s)
 
 
 Rod Types
@@ -332,7 +368,7 @@ This section (optional) describes the Line objects, typically used for mooring l
 Options
 ^^^^^^^
 
-This section (required) describes the simulation options. Most entries are optional, with default values. 
+This section (required) describes the simulation options
 
 .. code-block:: none
 
@@ -344,7 +380,32 @@ This section (required) describes the simulation options. Most entries are optio
  10            TmaxIC        max time for ic gen (s)
  0.001         threshIC      threshold for IC convergence (-)
  
- 
+Any of these lines can be omitted, in which case default values will be used.
+As such, they are all optional settings, although some of them (such as time
+step size) often need to be set by the user for proper operation.
+The list of possible options is:
+
+ - writeLog (0): If >0 a log file is written recording information. The bigger the number the more verbose. Please, be mindful that big values would critically reduce the performance!
+ - DT (0.001): The time step (s)
+ - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for Runge-Kutta while AB stands for Adams-Bashforth
+ - g (9.81): The gravity acceleration (m/s^2)
+ - rho (1025): The water density (kg/m^3)
+ - WtrDpth (0.0): The water depth (m)
+ - kBot (3.0e6): The bottom stiffness (Pa/m)
+ - cBot (3.0e5): The bottom damping (Pa-s/m)
+ - dtIC (1.0): The time lapse between convergency checks during the initial condition computation (s)
+ - TmaxIC (120.0): The maximum simulation time to run in order to find a stationary initial condition (s)
+ - CdScaleIC (5.0): The damping scale factor during the initial condition computation
+ - threshIC (0.001): The lines tension maximum relative error to consider that the initial condition have converged
+ - WaveKin (0): The waves model to use. 0 = none, 1 = waves externally driven, 2 = FFT in a regular grid, 3 = kinematics in a regular grid, 4 = WIP, 5 = WIP
+ - dtWave (0.25): The time step to evaluate the waves, only for FFT ones (s)
+ - Currents (0): The currents model to use. 0 = none, 1 = steady in a regular grid, 2 = dynamic in a regular grid, 3 = WIP, 4 = WIP
+ - WriteUnits (1): 0 to do not write the units header on the output files, 1 otherwise
+ - FrictionCoefficient (0.0): The seabed friction coefficient
+ - FricDamp (200.0): The seabed friction damping, to scale from no friction at null velocity to full friction when the velocity is large
+ - StatDynFricScale (1.0): Rate between Static and Dynamic friction coefficients
+ - dtOut (0.0): Time lapse between the ouput files printing (s)
+
 Outputs
 ^^^^^^^
 
@@ -368,20 +429,34 @@ needs to end with another header-style line (as shown below) for the program to 
 
 General output suffixes
 
-========         ======================== =======  =====  =====  =====  =====
-Suffix           Description              Units    Node   Point  Rod    Body
-========         ======================== =======  =====  =====  =====  =====
-PX/PY/PZ         Position coordinates     [m]      X      X      X      X
-VX/VY/VZ         Velocity components      [m/s]    X      X      X      X
-Ax/Ay/AZ         Acceleration components  [m/s^2]  X      X      X      X
-T                Tension or net force     [N]      X      X      X      X
-Fx/Fy/Fz         Force components         [N]      X      X      X      X
-Roll/Pitch/Yaw   Orientation angles       [deg]                  X      X
-Sub              Fraction of submergence  [0-1]                  X      
-========         ======================== =======  =====  =====  =====  =====
+============== ======================== =======  =====  =====  =====  =====
+Suffix         Description              Units    Node   Point  Rod    Body
+============== ======================== =======  =====  =====  =====  =====
+PX/PY/PZ       Position coordinates     [m]      X      X      X      X
+VX/VY/VZ       Velocity components      [m/s]    X      X      X      X
+Ax/Ay/AZ       Acceleration components  [m/s^2]  X      X      X      X
+T              Tension or net force     [N]      X      X      X      X
+Fx/Fy/Fz       Force components         [N]      X      X      X      X
+Roll/Pitch/Yaw Orientation angles       [deg]                  X      X
+Sub            Fraction of submergence  [0-1]                  X      
+============== ======================== =======  =====  =====  =====  =====
 
+The v2 snapshot file
+--------------------
 
+In MoorDyn v2 two new functions have been added:
 
+.. doxygenfunction:: MoorDyn_Save
+.. doxygenfunction:: MoorDyn_Load
+
+With the former a snapshot of the simulation can be saved, in such a way it can
+be resumed in a different session using the latter function.
+It is anyway required to create the system using the same input file in both
+sessions.
+But the initial condition computation could be skip in the second session
+calling
+
+.. doxygenfunction:: MoorDyn_Init_NoIC
 
 
 
@@ -493,19 +568,19 @@ characterized by mass-spring-damper values of
 
 .. math::
 
-  m=w L/N \; c=4NBA/L \; k=4NEA/L.
+  m = w \frac{L}{N}, \\ c = 4 B A \frac{N}{L}, \\ k = 4 E A \frac{N}{L}.
 
 The natural frequency of this mode is then
 
 .. math::
 
-  \omega_n=\sqrt{k/m}=2/l \sqrt{EA/w}=2N/L \sqrt{EA/w}
+  \omega_n = \sqrt{\frac{k}{m}} = \frac{2}{l} \sqrt{\frac{E A}{w}}=2 \frac{N}{L} \sqrt{\frac{E A}{w}}
 
 and the damping ratio, ζ, is related to the internal damping coefficient, BA, by
 
 .. math::
 
-  \zeta =c/c_{crit} = B/l \sqrt{A/Ew} = NBA/L \sqrt{(1/EAw}  \;\;  BA=\zeta \frac{L}{N}\sqrt{EAw}.
+  \zeta =\frac{c}{c_{crit}} = \frac{B}{l} \sqrt{\frac{A}{E w}} = B A \frac{N}{L} \sqrt{\frac{1}{E A w}}, \\ B A= \zeta \frac{L}{N} \sqrt{E A w}.
 
 The line dynamics frequencies of interest should be lower than ω_n in order to be resolved by the model.  
 Accordingly, line dynamics at ω_n, which are likely to be dominated by the artificial resonance created 
@@ -523,12 +598,19 @@ damping coefficient (BA) for each mooring line that will give every line segment
 Note that the damping ratio is with respect to the critical damping of each segment along a mooring 
 line, not with respect to the line as a whole or the floating platform as a whole.  It is just a way
 of letting MoorDyn calculate the damping coefficient automatically from the perspective of damping 
-non-physical segment resonances.    If the model is set up right, this damping can have a negligible 
+non-physical segment resonances. If the model is set up right, this damping can have a negligible 
 contribution to the overall damping provided by the moorings on the floating platform.  However, if 
 the damping contribution of the mooring lines on the floating platform is supposed to be significant, 
 it is best to (1) set the BA value directly to ensure that the expected damping is provided and then 
 (2) adjust the number of segments per line to whatever provides adequate numerical stability.
 
+Finally, to ensure stability the time step should be significantly smaller than
+the natural period,
 
+.. math::
 
-(THIS PAGE IN PROGRESS)
+  \Delta t < \frac{2 \pi}{\omega_n}.
+
+However, in contrast to the damping, which can be selected line by line, the
+time step is a constant of the whole system, and thus should be selected
+considering the minimum natural period of all lines.

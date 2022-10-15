@@ -1,31 +1,48 @@
 /*
- * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2022, Matt Hall
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @file Connection.hpp
+ * C++ API for the moordyn::Connection object
  */
 
 #pragma once
 
-#include "Misc.h"
-#include "Log.hpp"
+#include "Misc.hpp"
+#include "IO.hpp"
+#include <utility>
 
 using namespace std;
 
+namespace moordyn {
+
 class Line;
-
-namespace moordyn
-{
-
 class Waves;
 
 /** @class Connection Connection.hpp
@@ -39,37 +56,37 @@ class Waves;
  *  - Free: The point freely moves, with its own translation degrees of freedom,
  *          to provide a connection point between multiple mooring lines or an
  *          unconnected termination point of a Line, which could have a clump
- *          weight or float via the point's mass and volume parameters 
+ *          weight or float via the point's mass and volume parameters
  *  - Coupled: The connection position and velocity is externally imposed
  */
-class Connection : public LogUser
+class Connection : public io::IO
 {
-public:
+  public:
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	Connection(moordyn::Log *log);
+	Connection(moordyn::Log* log);
 
 	/** @brief Destructor
 	 */
 	~Connection();
 
-private:
-	// ENVIRONMENTAL STUFF
-	/// Global struct that holds environmental settings
-	EnvCond *env;
-	/// global Waves object
-	moordyn::Waves *waves;
-
 	/// Attached lines to the connection
-	typedef struct _attachment {
+	typedef struct _attachment
+	{
 		/// The attached line
 		Line* line;
-		/// The attachment end point,
-		/// 1 = top/fairlead(end B)
-		/// 0 = bottom/anchor(end A)
-		int top;
+		/// The attachment end point
+		EndPoints end_point;
 	} attachment;
+
+  private:
+	// ENVIRONMENTAL STUFF
+	/// Global struct that holds environmental settings
+	EnvCond* env;
+	/// global Waves object
+	moordyn::Waves* waves;
+
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
 
@@ -105,10 +122,6 @@ private:
 	 * @}
 	 */
 
-	/// simulation time
-	real t;
-	/// simulation time current integration was started at (used for BC function)
-	real t0;
 	/// fairlead position for vessel/coupled node types [x/y/z]
 	vec r_ves;
 	/// fairlead velocity for vessel/coupled node types [x/y/z]
@@ -121,8 +134,8 @@ private:
 	mat M;
 
 	/** @defgroup conn_wave Wave data
-	*  @{
-	*/
+	 *  @{
+	 */
 
 	/// free surface elevation
 	real zeta;
@@ -134,13 +147,14 @@ private:
 	vec Ud;
 
 	/**
-	* @}
-	*/
+	 * @}
+	 */
 
-public:
+  public:
 	/** @brief Types of connections
 	 */
-	typedef enum {
+	typedef enum
+	{
 		/// Is coupled, i.e. is controlled by the user
 		COUPLED = -1,
 		/// Is free to move, controlled by MoorDyn
@@ -160,14 +174,13 @@ public:
 	 */
 	static string TypeName(types t)
 	{
-		switch(t)
-		{
-		case COUPLED:
-			return "COUPLED";
-		case FREE:
-			return "FREE";
-		case FIXED:
-			return "FIXED";
+		switch (t) {
+			case COUPLED:
+				return "COUPLED";
+			case FREE:
+				return "FREE";
+			case FIXED:
+				return "FIXED";
 		}
 		return "UNKNOWN";
 	}
@@ -177,8 +190,8 @@ public:
 	/// Connection type
 	types type;
 
-	/** @brief flag indicating whether wave/current kinematics will be considered for
-	 * this linec
+	/** @brief flag indicating whether wave/current kinematics will be
+	 * considered for this linec
 	 *
 	 * - 0: none, or use value set externally for each node of the object
 	 * - 1: interpolate from stored
@@ -200,99 +213,104 @@ public:
 	 * @param Ca_in Added mass coefficient used along with V to calculate added
 	 * mass on node
 	 */
-	void setup(int number_in, types type_in, const double r0_in[3], double M_in,
-	           double V_in, const double F_in[3], double CdA_in, double Ca_in);
+	void setup(int number_in,
+	           types type_in,
+	           vec r0_in,
+	           double M_in,
+	           double V_in,
+	           vec F_in,
+	           double CdA_in,
+	           double Ca_in);
 
 	/** @brief Attach a line endpoint to this connection
 	 * @param theLine The line to be attached
-	 * @param TopOfLine 1 for attachments at the last node of the line (top).
-	 * 0 for attachments at the first node of the line (bottom)
+	 * @param end_point The line endpoint
 	 */
-	void addLineToConnect(Line *theLine, int TopOfLine);
+	void addLine(moordyn::Line* theLine, EndPoints end_point);
 
-	/** @brief Dettach a line endpoint from this connection
-	 * @param lineID The line identifier
-	 * @param TopOfLine Output flag to indicate whether the line was connected
-	 * at the top end or at the bottom end. 1 for attachments at the last node
-	 * of the line (top). 0 for attachments at the first node of the line
-	 * (bottom)
-	 * @param rEnd Output position of the node
-	 * @param rdEnd Output velocity of the node
+	/** @brief Dettach a line
+	 * @param line The line
+	 * @return The line end point that was attached to the connection
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
-	void removeLineFromConnect(int lineID, int *TopOfLine,
-	                           double rEnd[], double rdEnd[]);
+	EndPoints removeLine(Line* line);
+
+	/** @brief Get the list of attachments
+	 * @return The list of attachments
+	 */
+	inline std::vector<attachment> getLines() const { return attached; }
 
 	/** @brief Initialize the FREE connection state
-	 * @param X The output state variables, i.e. the velocity [x,y,z] and
-	 * position [x,y,z]
+	 * @return The position (first) and the velocity (second)
 	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
-	void initializeConnect(double X[6]);
+	std::pair<vec, vec> initialize();
 
 	/** @brief Get the connection state
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
 	 */
-	void getConnectState(vec &r_out, vec &rd_out);
+	inline void getState(vec& r_out, vec& rd_out)
+	{
+		r_out = r;
+		rd_out = rd;
+	};
+
+	/** @brief Get the connection state
+	 * @param r_out The output position [x,y,z]
+	 * @param rd_out The output velocity [x,y,z]
+	 */
+	inline std::pair<vec, vec> getState() { return std::make_pair(r, rd); }
 
 	/** @brief Get the force on the connection
 	 * @param Fnet_out The output force [x,y,z]
 	 */
-	void getFnet(vec &Fnet_out);
+	void getFnet(vec& Fnet_out);
 
 	/** @brief Get the mass matrix
 	 * @param M_out The output mass matrix
 	 */
-	void getM(mat &M_out);
+	void getM(mat& M_out);
 
 	/** @brief Get the output
 	 * @param outChan The query
 	 * @return The data, 0.0 if no such data can be found
 	 */
-	double GetConnectionOutput(OutChanProps outChan);
+	real GetConnectionOutput(OutChanProps outChan);
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond *env_in, moordyn::Waves *waves_in);
+	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
 
 	/** @brief Multiply the drag by a factor
 	 *
 	 * function for boosting drag coefficients during IC generation
 	 * @param scaler Drag factor
 	 */
-	void scaleDrag(real scaler);
-
-	/** @brief Set the time stamp
-	 *
-	 * function to reset time after IC generation
-	 * @param time Simulation time
-	 */
-	void setTime(real time);
+	inline void scaleDrag(real scaler) { conCdA *= scaler; }
 
 	/** @brief Initialize the time step integration
 	 *
 	 * Called at the beginning of each coupling step to update the boundary
 	 * conditions (fairlead kinematics) for the proceeding line time steps
-	 * @param rFairIn Fairlead position, used only if type = COUPLED
-	 * @param rdFairIn Fairlead velocity, used only if type = COUPLED
+	 * @param rFairIn Fairlead position
+	 * @param rdFairIn Fairlead velocity
 	 * @param time Simulation time
+	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
-	void initiateStep(const double rFairIn[3],
-	                  const double rdFairIn[3],
-	                  real time);
+	void initiateStep(vec rFairIn, vec rdFairIn);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
 	 * Sets Connection states and ends of attached lines ONLY if this Connection
 	 * is driven externally, i.e. type = COUPLED (otherwise shouldn't be called)
-	 * @param time Simulation time
+	 * @param time Local time within the time step (from 0 to dt)
 	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
 	 */
-	void updateFairlead(const real time);
+	void updateFairlead(real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
@@ -302,38 +320,34 @@ public:
 	 * @param rd_in Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
 	 */
-	void setKinematics(double *r_in, double *rd_in);
+	void setKinematics(vec r_in, vec rd_in);
 
 	/** @brief Set the state variables
 	 *
 	 * sets Connection states and ends of attached lines ONLY if this Connection
 	 * is free, i.e. type = FREE (otherwise shouldn't be called)
-	 * @param X State variables, containing the velocity [x,y,z] and position
-	 * [x,y,z]
-	 * @param time Simulation time
-	 * @return MOORDYN_SUCCESS upon success, MOORDYN_INVALID_VALUE if it is not
-	 * a FREE connection
+	 * @param pos Position
+	 * @param vel Velocity
+	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
-	moordyn::error_id setState(const double X[6], const double time);
+	void setState(vec pos, vec vel);
 
 	/** @brief Calculate the forces and state derivatives of the connection
-	 * @param Xd Output state variables derivatives, i.e. the acceleration
-	 * [x,y,z] and the velocity [x,y,z]
-	 * @return MOORDYN_SUCCESS upon success, MOORDYN_INVALID_VALUE if it is not
-	 * a FREE connection
+	 * @param return The states derivatives, i.e. the velocity (first) and the
+	 * acceleration (second)
+	 * @throws moordyn::invalid_value_error If it is not a FREE connection
 	 */
-	moordyn::error_id getStateDeriv(double Xd[6]);
+	std::pair<vec, vec> getStateDeriv();
 
 	/** @brief Calculate the force and mass contributions of the connect on the
 	 * parent body
-	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
-	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
+	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
 	 */
-	moordyn::error_id getNetForceAndMass(const double rBody[3],
-	                                     double Fnet_out[6],
-	                                     double M_out[6][6]);
+	void getNetForceAndMass(vec6& Fnet_out,
+	                        mat6& M_out,
+	                        vec rBody = vec::Zero());
 
 	/** @brief Calculates the forces and mass on the connection, including from
 	 * attached lines
@@ -342,10 +356,28 @@ public:
 	 */
 	moordyn::error_id doRHS();
 
+	/** @brief Produce the packed data to be saved
+	 *
+	 * The produced data can be used afterwards to restore the saved information
+	 * afterwards calling Deserialize(void).
+	 *
+	 * Thus, this function is not processing the information that is extracted
+	 * from the definition file
+	 * @return The packed data
+	 */
+	virtual std::vector<uint64_t> Serialize(void);
+
+	/** @brief Unpack the data to restore the Serialized information
+	 *
+	 * This is the inverse of Serialize(void)
+	 * @param data The packed data
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	virtual uint64_t* Deserialize(const uint64_t* data);
+
 #ifdef USEGL
 	void drawGL(void);
 #endif
-
 };
 
-}  // ::moordyn
+} // ::moordyn

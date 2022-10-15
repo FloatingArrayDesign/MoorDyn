@@ -1,21 +1,37 @@
 /*
- * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2022, Matt Hall
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file Log.h
- * Utilities to log info on screen
+/** @file Log.hpp
+ * Utilities to log info on screen. 2 main classes are provided, moordyn::Log
+ * which is the logging handler itself, and moordyn::LogUser which shall be
+ * inherited by all the objects which are intended to use the logging handler
  */
 
 #pragma once
@@ -24,14 +40,14 @@
 #include <iostream>
 #include <fstream>
 
-namespace moordyn
-{
+namespace moordyn {
 
 /** @brief Name the log level
  * @param level The log level
  * @see @ref moordyn_log
  */
-std::string log_level_name(int level);
+std::string
+log_level_name(int level);
 
 /** @brief Utility to log messages
  *
@@ -39,8 +55,9 @@ std::string log_level_name(int level);
  * variable. The easiest way to grant you can safety use this macro is
  * inheriting the LogUser class
  */
-#define LOGGER(level) _log->Cout(level) << log_level_name(level)                \
-	<< " " << __FILE__ << ":" << __LINE__ << " " << __FUNC_NAME__ << "(): "
+#define LOGGER(level)                                                          \
+	_log->Cout(level) << log_level_name(level) << " " << __FILE__ << ":"       \
+	                  << __LINE__ << " " << __FUNC_NAME__ << "(): "
 
 /// Log a debug message, without extra info about the source code
 #define LOGDBG _log->Cout(MOORDYN_DBG_LEVEL)
@@ -60,7 +77,7 @@ class MultiStream;
  */
 class MultiStream
 {
-public:
+  public:
 	/// Constructor
 	MultiStream();
 	/// Destructor
@@ -81,9 +98,9 @@ public:
 	void SetFile(const char* file_path);
 
 	/** @brief Enable/disable the file printing
-	 * @param stream The terminal stream
+	 * @param enable true to enable the file printing, false to disable it
 	 */
-	inline void SetFile(bool enable=true) { _fout_enabled = enable; };
+	inline void SetFile(bool enable = true) { _fout_enabled = enable; };
 
 	/** @brief Set the terminal streamer
 	 * @param stream The terminal stream
@@ -92,9 +109,9 @@ public:
 
 	/** @brief Functionality for std::endl alike operators
 	 */
-	MultiStream& operator<< (std::ostream& (*pfun)(std::ostream&))
+	MultiStream& operator<<(std::ostream& (*pfun)(std::ostream&))
 	{
-		if(_fout_enabled && _fout.is_open())
+		if (_fout_enabled && _fout.is_open())
 			pfun(_fout);
 		pfun(*_terminal);
 		return *this;
@@ -112,10 +129,11 @@ public:
 
 /** @brief Streaming to the log file and the terminal
  */
-template <class T>
-MultiStream& operator<< (MultiStream& st, T val)
+template<class T>
+MultiStream&
+operator<<(MultiStream& st, T val)
 {
-	if(st._fout_enabled && st._fout.is_open())
+	if (st._fout_enabled && st._fout.is_open())
 		st._fout << val;
 	*(st._terminal) << val;
 	return st;
@@ -129,27 +147,27 @@ MultiStream& operator<< (MultiStream& st, T val)
  */
 class Log
 {
-public:
+  public:
 	/** @brief Constructor
 	 * @param verbosity The verbosity level (see @ref moordyn_log)
 	 * @param log_file_level The same than @p verbosity, but for the log file
 	 * (if any is open with SetFile(). It is disableby default)
 	 * @throws moordyn::mem_error If the inner streamer cannot be built
 	 */
-	Log(const int verbosity=MOORDYN_MSG_LEVEL,
-		const int log_file_level=MOORDYN_DBG_LEVEL);
+	Log(const int verbosity = MOORDYN_MSG_LEVEL,
+	    const int log_file_level = MOORDYN_DBG_LEVEL);
 
 	/** @brief Destuctor
-	 */    
+	 */
 	~Log();
 
 	/** @brief Get a stream to log data
-	 * 
+	 *
 	 * Whether the message is logged, and where, depends on the verbosity level
 	 *
 	 * @param level Message level
 	 */
-	MultiStream& Cout(const int level=MOORDYN_MSG_LEVEL) const;
+	MultiStream& Cout(const int level = MOORDYN_MSG_LEVEL) const;
 
 	/** @brief Get the verbosity level
 	 * @return The verbosity level (see @ref moordyn_log)
@@ -187,13 +205,13 @@ public:
 	 */
 	void SetFile(const char* file_path);
 
-private:
+  private:
 	/// Terminal verbosity level
 	int _verbosity;
 	/// Log file verbosity level
 	int _file_verbosity;
 	/// The streamer which might redirects to both the terminal and a file
-	MultiStream *_streamer;
+	MultiStream* _streamer;
 };
 
 /** @brief A helper for the entities to use the logger
@@ -203,17 +221,20 @@ private:
  */
 class LogUser
 {
-public:
+  public:
 	/** @brief Constructor
 	 * @param log The log handler. NULL can be passed, providing later the log
-     * handler with SetLogger()
+	 * handler with SetLogger()
 	 * @warning No messages shall be logged until a non NULL log handler is
-     * provided
+	 * provided
 	 */
-	LogUser(Log* log=NULL) : _log(log) {}
+	LogUser(Log* log = NULL)
+	  : _log(log)
+	{
+	}
 
 	/** @brief Destuctor
-	 */    
+	 */
 	~LogUser() {}
 
 	/** @brief Set the log handler
@@ -226,9 +247,9 @@ public:
 	 */
 	inline Log* GetLogger() const { return _log; }
 
-protected:
+  protected:
 	/// The log handler
-	Log *_log;
+	Log* _log;
 };
 
-}  // ::moordyn
+} // ::moordyn

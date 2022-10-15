@@ -1,27 +1,45 @@
 /*
- * Copyright (c) 2014 Matt Hall <mtjhall@alumni.uvic.ca>
- * 
- * This file is part of MoorDyn.  MoorDyn is free software: you can redistribute 
- * it and/or modify it under the terms of the GNU General Public License as 
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- * 
- * MoorDyn is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with MoorDyn.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2022, Matt Hall
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @file Waves.hpp
+ * C++ API for the moordyn::Waves object
  */
 
 #pragma once
 
-#include "Misc.h"
+#include "Misc.hpp"
 #include "Log.hpp"
+#include "Time.hpp"
 #include <vector>
 
-namespace moordyn
-{
+namespace moordyn {
 
 /** @class Waves Waves.hpp
  * @brief Wave kinematics
@@ -34,13 +52,13 @@ namespace moordyn
  */
 class Waves : public LogUser
 {
-public:
+  public:
 	/// Constructor
-	Waves(moordyn::Log *log);
+	Waves(moordyn::Log* log);
 	/// Destructor
 	~Waves();
 
-private:
+  private:
 	/** @brief Setup the grid
 	 *
 	 * The grid is defined in a tabulated file (separator=' '). That file has 3
@@ -58,7 +76,7 @@ private:
 	 * @throws moordyn::invalid_value_error If invalid values for the grid
 	 * initialization are found
 	 */
-	void makeGrid(const char* filepath="Mooring/water_grid.txt");
+	void makeGrid(const char* filepath = "Mooring/water_grid.txt");
 
 	/** @brief Allocate the needed memory for the kinematics storage
 	 * @param filepath The definition file path. If NULL or "" isprovided, then
@@ -75,23 +93,22 @@ private:
 	 * @param dw The difference in frequency between consequtive modes
 	 * @param g Gravity accelerations
 	 * @param h Water depth
-	 * @param filepath The output file path
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 */
-	void fillWaveGrid(const moordyn::complex *zetaC0, unsigned int nw,
-	                  real dw, real g, real h);
+	void fillWaveGrid(const moordyn::complex* zetaC0,
+	                  unsigned int nw,
+	                  real dw,
+	                  real g,
+	                  real h);
 
 	/** @brief Make a 2-D data grid
 	 * @param nx Number of components in the first dimension
 	 * @param ny Number of components in the second dimension
-	 * @param nz Number of components in the third dimension
 	 */
-	static inline std::vector<std::vector<real>> init2DArray(
-		unsigned int nx,
-		unsigned int ny)
+	static inline std::vector<std::vector<real>> init2DArray(unsigned int nx,
+	                                                         unsigned int ny)
 	{
-		return std::vector<std::vector<real>>(nx,
-			std::vector<real>(ny, 0.0));
+		return std::vector<std::vector<real>>(nx, std::vector<real>(ny, 0.0));
 	}
 
 	/** @brief Make a 3-D data grid
@@ -99,14 +116,11 @@ private:
 	 * @param ny Number of components in the second dimension
 	 * @param nz Number of components in the third dimension
 	 */
-	static inline std::vector<std::vector<std::vector<real>>> init3DArray(
-		unsigned int nx,
-		unsigned int ny,
-		unsigned int nz)
+	static inline std::vector<std::vector<std::vector<real>>>
+	init3DArray(unsigned int nx, unsigned int ny, unsigned int nz)
 	{
-		return std::vector<std::vector<std::vector<real>>>(nx,
-			std::vector<std::vector<real>>(ny,
-				std::vector<real>(nz, 0.0)));
+		return std::vector<std::vector<std::vector<real>>>(
+		    nx, std::vector<std::vector<real>>(ny, std::vector<real>(nz, 0.0)));
 	}
 
 	/** @brief Make a 4-D data grid
@@ -115,33 +129,22 @@ private:
 	 * @param nz Number of components in the third dimension
 	 * @param nw Number of components in the third dimension
 	 */
-	static inline std::vector<std::vector<std::vector<std::vector<real>>>> init4DArray(
-		unsigned int nx,
-		unsigned int ny,
-		unsigned int nz,
-		unsigned int nw)
+	static inline std::vector<std::vector<std::vector<std::vector<real>>>>
+	init4DArray(unsigned int nx,
+	            unsigned int ny,
+	            unsigned int nz,
+	            unsigned int nw)
 	{
-		return std::vector<std::vector<std::vector<std::vector<real>>>>(nx,
-			std::vector<std::vector<std::vector<real>>>(ny,
-				std::vector<std::vector<real>>(nz,
-					std::vector<real>(nw, 0.0))));
+		return std::vector<std::vector<std::vector<std::vector<real>>>>(
+		    nx,
+		    std::vector<std::vector<std::vector<real>>>(
+		        ny,
+		        std::vector<std::vector<real>>(nz,
+		                                       std::vector<real>(nw, 0.0))));
 	}
 
-	/** @brief Carry out the inverse Fourier transform
-	 * @param cfg KISS FFT instance
-	 * @param nFFT Numer of fourier components
-	 * @param cx_in KISS FFT frequency-domain data
-	 * @param cx_out KISS FFT time-domain output
-	 * @param inputs Input FFT values
-	 * @param outputs Output time-domain values
-	 */
-	static void doIFFT(kiss_fftr_cfg cfg, unsigned int nFFT,
-	                   kiss_fft_cpx* cx_in, kiss_fft_scalar* cx_out,
-	                   const moordyn::complex *inputs,
-	                   std::vector<real> &outputs);
-
 	/// number of grid points in x direction
-	unsigned int nx;           
+	unsigned int nx;
 	/// number of grid points in y direction
 	unsigned int ny;
 	/// number of grid points in z direction
@@ -173,28 +176,33 @@ private:
 	vector<vector<vector<vector<real>>>> ay;
 	/// wave acceleration z component [x,y,z,t]
 	vector<vector<vector<vector<real>>>> az;
-	
+
 	/// gravity acceleration
 	real g;
 	/// water density
 	real rho_w;
-	
+
+	/// The time integration scheme
+	TimeScheme* _t_integrator;
+
 	// ------------ from Line object... -----------
-	// new additions for handling waves in-object and precalculating them	(not necessarily used right now)
-//	int WaveMod;
-//	int WaveStMod;
-//	double Hs;
-//	double Tp;
-//	double gamma;
-//	float beta; 			// wave heading
-//
-//	vector< double > Ucurrent; // constant uniform current to add (three components)
-	
-	
-public:
+	// new additions for handling waves in-object and precalculating them	(not
+	// necessarily used right now)
+	//	int WaveMod;
+	//	int WaveStMod;
+	//	double Hs;
+	//	double Tp;
+	//	double gamma;
+	//	float beta; 			// wave heading
+	//
+	//	vector< double > Ucurrent; // constant uniform current to add (three
+	// components)
+
+  public:
 	/** @brief Types of coordinates input on the grid file
 	 */
-	typedef enum {
+	typedef enum
+	{
 		/// Single point (0, 0, 0)
 		GRID_SINGLE = 0,
 		/// List of points
@@ -207,6 +215,7 @@ public:
 	 *
 	 * Always call this function after the construtor
 	 * @param env The enviromental options
+	 * @param t The time integration scheme
 	 * @param folder The root folder where the wave data can be found
 	 * @throws moordyn::input_file_error If an input file cannot be read, or if
 	 * a file is ill-formatted
@@ -215,44 +224,40 @@ public:
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
-	void setup(EnvCond *env, const char* folder="Mooring/");
-
-	/// @{
+	void setup(EnvCond* env, TimeScheme* t, const char* folder = "Mooring/");
 
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific positon and time
 	 * @param x The point x coordinate
 	 * @param y The point y coordinate
 	 * @param z The point z coordinate
-	 * @param U The output velocity
-	 * @param Ud The output acceleration
-	 * @param zeta The output wave height
-	 * @param PDyn The output dynamic pressure
+	 * @param U_out The output velocity
+	 * @param Ud_out The output acceleration
+	 * @param zeta_out The output wave height
+	 * @param PDyn_out The output dynamic pressure
 	 */
-	void getWaveKin(double x, double y, double z, double t,
-	                double U[3], double Ud[3], double* zeta, double* PDyn);
-
-	void getWaveKin(real x, real y, real z, real t,
-	                vec &U, vec &Ud, real &zeta, real &PDyn);
-
-	/// @}
+	void getWaveKin(real x,
+	                real y,
+	                real z,
+	                vec& U_out,
+	                vec& Ud_out,
+	                real& zeta_out,
+	                real& PDyn_out);
 };
 
-
-
-// other relevant functions being thrown into this file for now (should move to Misc?) <<<<
+// other relevant functions being thrown into this file for now (should move to
+// Misc?) <<<<
 
 /** @brief Compute the coordinates from a grid definition entry line
  * @param coordtype The type of coordinates input
  * @param entries Nothing if @p coordtype is 0; the list of coordinates if
  * @p coordtype is 1 and minimum limit; the maximum limit and the number of
  * points if @p coordtype is 2
- * @param coordarray The output coordinates array
- * @return The number of points in coordarray
+ * @return The list of coordinates
  * @warning Memory will be allocated in coordarray. The user is responsible of
  * deallocating it afterwards
  */
-std::vector<real> gridAxisCoords(Waves::coordtypes coordtype,
-                                 vector<string> &entries);
+std::vector<real>
+gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries);
 
-}  // ::moordyn
+} // ::moordyn

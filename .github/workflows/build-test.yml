@@ -1,0 +1,182 @@
+name: CMake
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  create_release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+    - uses: actions/checkout@v3
+      if: github.event_name == 'push'
+
+    - uses: dev-drprasad/delete-tag-and-release@v0.2.0
+      with:
+        delete_release: true
+        tag_name: "nightly"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: github.event_name == 'push'
+
+    - uses: rickstaa/action-create-tag@v1
+      id: create_tag
+      with:
+        tag: "nightly"
+        message: "Latest release"
+        force_push_tag: true
+      if: github.event_name == 'push'
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: "nightly"
+        release_name: "nightly"
+        draft: false
+        prerelease: false
+      if: github.event_name == 'push'
+
+  build:
+    runs-on: ${{ matrix.os }}
+    needs: [create_release]
+    strategy:
+        matrix:
+            os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: moordyn_version
+      id: moordyn_version
+      shell: bash
+      run: |
+        major=`cat CMakeLists.txt | grep MOORDYN_MAJOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        minor=`cat CMakeLists.txt | grep MOORDYN_MINOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        echo "::set-output name=moordyn_version::$major.$minor.$patch"
+
+    - name: Setup Fortran
+      uses: awvwgk/setup-fortran@main
+      id: setup-fortran
+      with:
+        compiler: gcc
+
+    - name: Check Fortran
+      run: ${{ env.FC }} --version
+      env:
+        FC: ${{ steps.setup-fortran.outputs.fc }}
+
+    - name: Create installation folder
+      run: |
+          mkdir -p ${{github.workspace}}/install
+
+    - name: Configure CMake (Linux)
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+      if: runner.os == 'Linux'
+
+    - name: Configure CMake (Windows)
+      run: cmake -B ${{github.workspace}}/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+      env:
+        FC: ${{ steps.setup-fortran.outputs.fc }}
+      if: runner.os == 'Windows'
+
+    - name: Configure CMake (MacOS)
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON
+      if: runner.os == 'MacOS'
+
+    - name: Build
+      id: build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      # We are just testing in Linux
+      run: ctest -C ${{env.BUILD_TYPE}}
+      if: runner.os == 'Linux'
+
+    - name: Install
+      working-directory: ${{github.workspace}}/build
+      # We are just testing in Linux
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Create Installer
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      # Package the installer
+      run: cpack -C ${{env.BUILD_TYPE}}
+
+    - name: Upload Linux installer
+      id: upload-linux-installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Linux.sh
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Linux.sh
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push') && (runner.os == 'Linux') }}
+
+    - name: Upload Windows installer
+      id: upload-windows-installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
+
+    - name: Upload MacOS installer
+      id: upload-macos-installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Darwin.sh
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Darwin.sh
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push') && (runner.os == 'MacOS') }}
+
+  build_wheels:
+    name: Build Python wheels
+    needs: [create_release]
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v3
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.8.1
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: "Python wheels"
+          path: ./wheelhouse/*.whl

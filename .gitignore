@@ -47,3 +47,9 @@ compile/SO/test*
 
 #program output files
 *.out
+
+# Python packaging #
+####################
+.eggs
+moordyn.egg-info
+tests/__pycache__
