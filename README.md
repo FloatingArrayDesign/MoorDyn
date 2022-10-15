@@ -60,3 +60,8 @@ version 2 development:
   - Jose Luis Cercos-Pita
   - Aymeric Devulder
   - Elena Gridasova
+
+We must also express our gratitude to some other developers that have
+contributed
+
+  - [David Joseph Anderson](https://davidjosephanderson.com/)
