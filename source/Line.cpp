@@ -262,8 +262,8 @@ Line::initialize()
 		// output positions
 		if (channels.find("p") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << name << "Node" << i << "px \t" << name << "Node" << i << "py \t" << name << "Node"
-				         << i << "pz \t ";
+				*outfile << name << "Node" << i << "px \t" << name << "Node"
+				         << i << "py \t" << name << "Node" << i << "pz \t ";
 			}
 		}
 		// output curvatures
@@ -275,29 +275,29 @@ Line::initialize()
 		// output velocities
 		if (channels.find("v") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << name << "Node" << i << "vx \t" << name << "Node" << i << "vy \t" << name << "Node"
-				         << i << "vz \t ";
+				*outfile << name << "Node" << i << "vx \t" << name << "Node"
+				         << i << "vy \t" << name << "Node" << i << "vz \t ";
 			}
 		}
 		// output wave velocities
 		if (channels.find("U") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << name << "Node" << i << "Ux \t" << name << "Node" << i << "Uy \t" << name << "Node"
-				         << i << "Uz \t ";
+				*outfile << name << "Node" << i << "Ux \t" << name << "Node"
+				         << i << "Uy \t" << name << "Node" << i << "Uz \t ";
 			}
 		}
 		// output hydro force
 		if (channels.find("D") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << name << "Node" << i << "Dx \t" << name << "Node" << i << "Dy \t" << name << "Node"
-				         << i << "Dz \t ";
+				*outfile << name << "Node" << i << "Dx \t" << name << "Node"
+				         << i << "Dy \t" << name << "Node" << i << "Dz \t ";
 			}
 		}
 		// output internal damping force
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << name << "Seg" << i << "cx \t" << name << "Node" << i << "cy \t" << name << "Node" << i
-				         << "cz \t ";
+				*outfile << name << "Seg" << i << "cx \t" << name << "Node" << i
+				         << "cy \t" << name << "Node" << i << "cz \t ";
 			}
 		}
 		// output segment tensions
@@ -321,8 +321,8 @@ Line::initialize()
 		// output seabed contact forces
 		if (channels.find("b") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << name << "Node" << i << "bx \t" << name << "Node" << i << "by \t" << name << "Node"
-				         << i << "bz \t ";
+				*outfile << name << "Node" << i << "bx \t" << name << "Node"
+				         << i << "by \t" << name << "Node" << i << "bz \t ";
 			}
 		}
 

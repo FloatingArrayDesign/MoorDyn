@@ -114,7 +114,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 	env.FrictionCoefficient = 0.0;
 	env.FricDamp = 200.0;
 	env.StatDynFricScale = 1.0;
-	env.outputMode = 0;             // by default all objects write to own output files
+	env.outputMode = 0; // by default all objects write to own output files
 
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
@@ -254,9 +254,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// Initialize the system state
 	_t_integrator->init();
 
-	if (env.outputMode == 1)  // Formatting for single-file output headers
+	if (env.outputMode == 1) // Formatting for single-file output headers
 	{
-		ofstream *linesOutputFile = LineList.back()->getOutputFilestream();
+		ofstream* linesOutputFile = LineList.back()->getOutputFilestream();
 		*linesOutputFile << '\n';
 	}
 	// ------------------ do dynamic relaxation IC gen --------------------
@@ -1302,7 +1302,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			// skip following two lines (label line and unit line)
 			i += 3;
-			bool setOutfile = false;	
+			bool setOutfile = false;
 			// parse until the next header or the end of the file
 			while ((in_txt[i].find("---") == string::npos) &&
 			       (i < in_txt.size())) {
@@ -1335,28 +1335,28 @@ moordyn::MoorDyn::ReadInFile()
 					return MOORDYN_INVALID_INPUT;
 				}
 
-				// At this point what to do depends on whether we want each line to output to a single file or
-				// to individual files
+				// At this point what to do depends on whether we want each line
+				// to output to a single file or to individual files
 
 				// Make the output file (if queried)
 				if ((outchannels.size() > 0) &&
 				    (strcspn(outchannels.c_str(), "pvUDctsd") <
 				     strlen(outchannels.c_str()))) {
 					// if 1+ output flag chars are given and they're valid
-					if (env.outputMode == 0 || (env.outputMode == 1 && !setOutfile))
-					{
-						// If we are outputting to multiple files OR just one, but haven't
-						// set it up yet:
+					if (env.outputMode == 0 ||
+					    (env.outputMode == 1 && !setOutfile)) {
+						// If we are outputting to multiple files OR just one,
+						// but haven't set it up yet:
 						stringstream oname;
-						oname << _basepath << _basename << "_Line" << number << ".out";
+						oname << _basepath << _basename << "_Line" << number
+						      << ".out";
 
-						LOGERR << "Env output mode is: " << env.outputMode << "\n";
+						LOGERR << "Env output mode is: " << env.outputMode
+						       << "\n";
 						outfiles.push_back(make_shared<ofstream>(oname.str()));
-						if (!outfiles.back()->is_open())
-						{
-							LOGERR
-								<< "Cannot create the output file '"
-								<< oname.str() << endl;
+						if (!outfiles.back()->is_open()) {
+							LOGERR << "Cannot create the output file '"
+							       << oname.str() << endl;
 							return MOORDYN_INVALID_OUTPUT_FILE;
 						}
 
@@ -1631,9 +1631,10 @@ moordyn::MoorDyn::ReadInFile()
 				else if (name == "StatDynFricScale")
 					env.StatDynFricScale = atof(entries[0].c_str());
 				else if (name == "outputMode")
-				    env.outputMode = atoi(entries[0].c_str());
+					env.outputMode = atoi(entries[0].c_str());
 				else if (name == "dtOut")
-					dtOut = atof(entries[0].c_str());  // output writing period (0 for at every call)
+					dtOut = atof(entries[0].c_str()); // output writing period
+					                                  // (0 for at every call)
 				else
 					LOGWRN << "Warning: Unrecognized option '" << name << "'"
 					       << endl;
@@ -1995,8 +1996,8 @@ moordyn::MoorDyn::AllOutput(double t, double dt)
 		obj->Output(t);
 
 	if (env.outputMode == 1) {
-			ofstream* outfile = LineList.back()->getOutputFilestream();
-			*outfile << '\n';
+		ofstream* outfile = LineList.back()->getOutputFilestream();
+		*outfile << '\n';
 	}
 
 	return MOORDYN_SUCCESS;
