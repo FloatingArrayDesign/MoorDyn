@@ -578,6 +578,13 @@ class Line : public io::IO
 
 	void Output(real);
 
+	/** @brief Return the line name, as it is stated in the output files
+	 *
+	 * Thus, if moordyn::Lines::env->outputMode is 0 (multiple output files),
+	 * then this is returning "". Otherwise (monolithic output file) it is
+	 * returning the name printed in the file
+	 * @return The name at the output files
+	 */
 	inline std::string getLineName() const
 	{
 		if (env->outputMode == 0)
@@ -585,6 +592,9 @@ class Line : public io::IO
 		return "Line" + std::to_string(number);
 	}
 
+	/** @brief Get the output stream considered by this line
+	 * @return The output stream
+	 */
 	inline ofstream* getOutputFilestream() const { return outfile; }
 
 	/** @brief Produce the packed data to be saved
