@@ -1,0 +1,32 @@
+--------------------- MoorDyn Input File -------------------------------------------------------
+David Joseph Anderson:
+Trying to simulate a single chain hanging in seawater. The idea is to pass a current over it and
+see what happens.
+----------------------- LINE TYPES --------------------------------------------------------------
+TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
+(name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
+chain      13.33E-3  1.1      7.51E6     -0.5        0        2.4      0.0    0.1     0.0
+---------------------------- BODIES --------------------------------------------------------------
+ID   Attachment  X0     Y0    Z0     r0      p0     y0     Mass  CG*   I*      Volume   CdA*   Ca
+(#)     (-)      (m)    (m)   (m)   (deg)   (deg)  (deg)   (kg)  (m)  (kg-m^2)  (m^3)   (m^2)  (-)
+----------------------- POINTS -------------------------------------------------------------------
+Node      Type      X        Y         Z        M        V         CdA   CA
+(-)       (-)      (m)      (m)       (m)      (kg)     (m^3)     (m^2)  (-)
+1         fixed     18       5         -10      0        0         0     0
+2         free      18       5         -40      0        0         0     0
+-------------------------- LINES -----------------------------------------------------------------
+Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
+(-)      (-)       (-)       (-)   (m)         (-)          (-)
+1        chain    1         2      30        30          p,t
+-------------------------- SOLVER OPTIONS----------------------------------------------------------
+2         writeLog     - Write a log file
+1.0e-4    dtM          - time step to use in mooring integration
+3.0e6     kb           - bottom stiffness
+3.0e5     cb           - bottom damping
+400       WtrDpth      - water depth
+4.0       ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
+1.0e-3    threshIC     - threshold for IC convergence
+30.0      TmaxIC       - threshold for IC convergence
+1.0       dtIC         - Time lapse between convergence tests (s)
+2         Currents     - Consider currents reading the profile from "current_profile_dynamic.txt"
+------------------------- need this line -------------------------------------- 
