@@ -578,9 +578,14 @@ class Line : public io::IO
 
 	void Output(real);
 
-	std::string getLineName();
+	inline std::string getLineName() const
+	{
+		if (env->outputMode == 0)
+			return "";
+		return "Line" + std::to_string(number);
+	}
 
-	ofstream* getOutputFilestream();
+	inline ofstream* getOutputFilestream() const { return outfile; }
 
 	/** @brief Produce the packed data to be saved
 	 *
