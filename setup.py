@@ -38,6 +38,7 @@ import os
 import shutil
 from setuptools import setup, find_packages, Extension
 import sysconfig
+import platform
 
 
 DESC = """Python version of MoorDyn, a lumped-mass mooring dynamics model
@@ -93,12 +94,14 @@ try:
 except KeyError:
     print("$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR env variables missing")
 
+
 # Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
 extra_compile_args = ["-std=c++17"]
 definitions = [('MoorDyn_EXPORTS', '1'), ('USE_VTK', '1')]
 include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
 library_dirs = ["vtk/lib"]
-libraries = ["m", "dl"]
+platform_system = platform.system()
+libraries = ["m", "dl"] if platform_system == "Linux" else []
 extra_link_args = [
     "vtk/lib/libvtkIOXML-9.2.a", "vtk/lib/libvtkIOXMLParser-9.2.a",
     "vtk/lib/libvtkIOCore-9.2.a", "vtk/lib/libvtkCommonExecutionModel-9.2.a",
