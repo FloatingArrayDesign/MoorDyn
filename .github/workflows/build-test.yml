@@ -181,9 +181,8 @@ jobs:
       # Skip 32-bit wheels builds
       CIBW_SKIP: "*-win32 *_i686"
       CIBW_BEFORE_ALL_LINUX: >
-        echo "Considering vtk-Linux-`uname -m`.tar.gz" &&
+        echo "Considering vtk-Linux-`uname -m`.tar.gz..." &&
         mkdir -p vtk &&
-        ls &&
         tar -xvzf vtk-Linux-`uname -m`.tar.gz -C vtk/
 
     steps:
