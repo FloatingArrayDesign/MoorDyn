@@ -181,8 +181,8 @@ jobs:
       # Skip 32-bit wheels builds
       CIBW_SKIP: "*-win32 *_i686"
       CIBW_BEFORE_ALL_LINUX: >
-        echo https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.2-static/vtk-Linux-`uname -m`.tar.gz &&
-        curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.2-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz &&
+        echo "https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.2-static/vtk-Linux-`uname -m`.tar.gz" &&
+        curl "https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.2-static/vtk-Linux-`uname -m`.tar.gz" -o vtk.tar.gz &&
         mkdir -p vtk &&
         ls &&
         tar -xvzf vtk.tar.gz -C vtk/
