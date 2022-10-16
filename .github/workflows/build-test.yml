@@ -182,7 +182,7 @@ jobs:
       CIBW_SKIP: "*-win32 *_i686"
       CIBW_BEFORE_ALL_LINUX: >
         echo `uname -m` &&
-        curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR.$VTK_VERSION_PATCH-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz &&
+        curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.2-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz &&
         mkdir -p vtk &&
         tar -xvzf vtk.tar.gz -C vtk/
 
