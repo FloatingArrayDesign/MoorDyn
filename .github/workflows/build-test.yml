@@ -12,8 +12,6 @@ env:
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 2
   VTK_VERSION_PATCH: 2
-  # Skip 32-bit wheels builds
-  CIBW_SKIP: "*-win32 *-manylinux_i686"
 
 jobs:
   create_release:
@@ -180,7 +178,13 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-latest, macOS-latest]
     env:
-      CIBW_BEFORE_ALL_LINUX: curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR.$VTK_VERSION_PATCH-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz && mkdir -p vtk && tar -xvzf vtk.tar.gz -C vtk/
+      # Skip 32-bit wheels builds
+      CIBW_SKIP: "*-win32 *_i686"
+      CIBW_BEFORE_ALL_LINUX: >
+        echo `uname -m` &&
+        curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR.$VTK_VERSION_PATCH-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz &&
+        mkdir -p vtk &&
+        tar -xvzf vtk.tar.gz -C vtk/
 
     steps:
       - uses: actions/checkout@v3
