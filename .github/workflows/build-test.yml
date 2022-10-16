@@ -185,8 +185,8 @@ jobs:
         curl "https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.2-static/vtk-Linux-`uname -m`.tar.gz" -o vtk.tar.gz &&
         mkdir -p vtk &&
         ls &&
-        tar -xvzf vtk.tar.gz -C vtk/
-        ls &&
+        tar -xvzf vtk.tar.gz -C vtk/ &&
+        ls
 
     steps:
       - uses: actions/checkout@v3
