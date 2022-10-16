@@ -180,7 +180,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-latest, macOS-latest]
     env:
-      CIBW_BEFORE_ALL_LINUX: curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz && mkdir -p vtk && tar -xvzf vtk.tar.gz -C vtk/
+      CIBW_BEFORE_ALL_LINUX: curl https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR.$VTK_VERSION_PATCH-static/vtk-Linux-`uname -m`.tar.gz -o vtk.tar.gz && mkdir -p vtk && tar -xvzf vtk.tar.gz -C vtk/
 
     steps:
       - uses: actions/checkout@v3
