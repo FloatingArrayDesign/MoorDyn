@@ -95,7 +95,7 @@ jobs:
 
     - name: Extract VTK tgz
       run: |
-          tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz vtk/
+          tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
 
     - name: Create installation folder
       run: |
