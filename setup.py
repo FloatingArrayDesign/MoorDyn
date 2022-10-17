@@ -93,27 +93,29 @@ try:
         os.environ['VTK_VERSION_MINOR']
 except KeyError:
     print("$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR env variables missing")
-
+platform_system = platform.system()
+vtk_libraries = ["vtkIOXML", "vtkIOXMLParser", "libvtkIOCore",
+                 "vtkCommonExecutionModel", "vtkCommonDataModel",
+                 "vtkCommonTransforms", "vtkCommonMath", "vtkkissfft",
+                 "vtkCommonCore", "vtksys"]
+for i, lib in enumerate(vtk_libraries):
+    vtk_libraries[i] = lib + "-" + vtk_version
 
 # Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
 extra_compile_args = ["-std=c++17"]
 definitions = [('MoorDyn_EXPORTS', '1'), ('USE_VTK', '1')]
 include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
 library_dirs = ["vtk/lib"]
-platform_system = platform.system()
-libraries = ["m", "dl"] if platform_system == "Linux" else []
-extra_link_args = [
-    "vtk/lib/libvtkIOXML-9.2.a", "vtk/lib/libvtkIOXMLParser-9.2.a",
-    "vtk/lib/libvtkIOCore-9.2.a", "vtk/lib/libvtkCommonExecutionModel-9.2.a",
-    "vtk/lib/libvtkdoubleconversion-9.2.a", "vtk/lib/libvtklz4-9.2.a",
-    "vtk/lib/libvtklzma-9.2.a", "vtk/lib/libvtkzlib-9.2.a",
-    "vtk/lib/libvtkCommonDataModel-9.2.a", "vtk/lib/libvtkCommonMisc-9.2.a",
-    "vtk/lib/libvtkCommonTransforms-9.2.a", "vtk/lib/libvtkCommonMath-9.2.a",
-    "vtk/lib/libvtkkissfft-9.2.a", "vtk/lib/libvtkpugixml-9.2.a",
-    "vtk/lib/libvtkexpat-9.2.a", "vtk/lib/libvtkCommonSystem-9.2.a",
-    "vtk/lib/libvtkCommonCore-9.2.a", "vtk/lib/libvtkloguru-9.2.a",
-    "vtk/lib/libvtksys-9.2.a"]
+if platform_system == "Windows":
+    extra_link_args = ["vtk/lib" + lib + ".dll.a" for lib in vtk_libraries]
+    libraries = []
+else:
+    libraries = vtk_libraries
+    extra_link_args = []
+             
+#, "libpthread.a", "vtksys.so",
 
+# libraries = ["m", "dl"] if platform_system == "Linux" else []
 cmoordyn = Extension('cmoordyn',
                      sources=MOORDYN_SRCS,
                      language='c++',
@@ -122,7 +124,7 @@ cmoordyn = Extension('cmoordyn',
                      extra_compile_args=extra_compile_args,
                      library_dirs=library_dirs,
                      libraries=libraries,
-                     extra_link_args=extra_link_args
+                     extra_link_args=extra_link_args,
                      )
 
 setup(
