@@ -137,7 +137,7 @@ setup(
     long_description = DESC,
     ext_modules = [cmoordyn],
     packages=find_packages(include=['moordyn', 'moordyn.*']),
-    install_requires=[],
+    install_requires=['vtk >=9.2.0, < 9.3.0'],
     setup_requires=['cython', 'pytest-runner'],
     tests_require=['pytest'],
 )
