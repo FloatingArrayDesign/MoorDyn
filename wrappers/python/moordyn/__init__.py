@@ -25,13 +25,3 @@ MoorDyn v2 C API is doing
 
 from .moordyn import *
 from . import Generator
-
-
-try:
-    import vtk
-except ImportError:
-    # If the pip package was installed, it already took care that vtk is
-    # installed. If the user compiled MoorDyn himself, he already needed to
-    # provide VTK, or compile without VTK support. Thus we should be clear to
-    # go
-    pass
