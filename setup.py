@@ -107,7 +107,7 @@ definitions = [('MoorDyn_EXPORTS', '1'), ('USE_VTK', '1')]
 include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
 library_dirs = ["vtk/lib"]
 if platform_system == "Windows":
-    extra_link_args = ["vtk/lib" + lib + ".dll.a" for lib in vtk_libraries]
+    extra_link_args = ["vtk/lib/lib" + lib + ".dll.a" for lib in vtk_libraries]
     libraries = []
 else:
     libraries = vtk_libraries
