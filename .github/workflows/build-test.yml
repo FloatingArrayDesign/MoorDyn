@@ -71,16 +71,22 @@ jobs:
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         echo "::set-output name=moordyn_version::$major.$minor.$patch"
 
-    - name: Setup Fortran
+    - name: Setup GCC Fortran
       uses: awvwgk/setup-fortran@main
       id: setup-fortran
       with:
         compiler: gcc
 
-    - name: Check Fortran
+    - name: Check GCC Fortran
       run: ${{ env.FC }} --version
       env:
         FC: ${{ steps.setup-fortran.outputs.fc }}
+
+    - name: Setup Intel Fortran
+      uses: modflowpy/install-intelfortran-action@v1
+  
+    - name: Check Intel Fortran
+      run: ifort --version
 
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.0.1
@@ -98,7 +104,7 @@ jobs:
           tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER=ON -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/
 
     - name: Build
       id: build
