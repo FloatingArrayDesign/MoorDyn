@@ -86,7 +86,7 @@ with open('CMakeLists.txt', 'r') as f:
         version = version + subtxt + '.'
     version = version[:-1]
 
-# Get the VTK version from the environment variables
+# Get everything required to compile with VTK support
 vtk_version = '9.2'
 try:
     vtk_version = os.environ['VTK_VERSION_MAJOR'] + "." + \
@@ -99,31 +99,21 @@ vtk_libraries = ["vtkIOXML", "vtkIOXMLParser", "vtkIOCore",
                  "vtkCommonTransforms", "vtkCommonMath", "vtkkissfft",
                  "vtkCommonCore", "vtksys"]
 for i, lib in enumerate(vtk_libraries):
-    vtk_libraries[i] = lib + "-" + vtk_version
+    vtk_libraries[i] = "vtk/lib/lib" + lib + "-" + vtk_version + ".a"
 
 # Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
 extra_compile_args = ["-std=c++17"]
 definitions = [('MoorDyn_EXPORTS', '1'), ('USE_VTK', '1')]
 include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
 library_dirs = ["vtk/lib"]
-if platform_system == "Windows":
-    extra_link_args = ["vtk/lib/lib" + lib + ".dll.a" for lib in vtk_libraries]
-    libraries = []
-else:
-    libraries = vtk_libraries
-    extra_link_args = []
+extra_link_args = vtk_libraries
              
-#, "libpthread.a", "vtksys.so",
-
-# libraries = ["m", "dl"] if platform_system == "Linux" else []
 cmoordyn = Extension('cmoordyn',
                      sources=MOORDYN_SRCS,
                      language='c++',
                      define_macros=definitions,
                      include_dirs=include_dirs,
                      extra_compile_args=extra_compile_args,
-                     library_dirs=library_dirs,
-                     libraries=libraries,
                      extra_link_args=extra_link_args,
                      )
 
@@ -137,7 +127,7 @@ setup(
     long_description = DESC,
     ext_modules = [cmoordyn],
     packages=find_packages(include=['moordyn', 'moordyn.*']),
-    install_requires=['vtk >=9.2.0, < 9.3.0'],
+    install_requires=[],
     setup_requires=['cython', 'pytest-runner'],
     tests_require=['pytest'],
 )
