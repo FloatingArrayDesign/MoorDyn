@@ -93,10 +93,12 @@ try:
         os.environ['VTK_VERSION_MINOR']
 except KeyError:
     print("$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR env variables missing")
-vtk_libraries = ["vtkIOXML", "vtkIOXMLParser", "vtkIOCore",
+vtk_libraries = ["vtkCommonCore", "vtkIOXML", "vtkIOXMLParser", "vtkIOCore",
                  "vtkCommonExecutionModel", "vtkCommonDataModel",
-                 "vtkCommonTransforms", "vtkCommonMath", "vtkkissfft",
-                 "vtkCommonCore", "vtksys"]
+                 "vtkCommonTransforms", "vtkCommonMath", "vtkCommonMisc",
+                 "vtkCommonSystem",
+                 "vtkdoubleconversion", "vtklz4", "vtklzma", "vtkzlib",
+                 "vtkkissfft", "vtkpugixml", "vtkexpat", "vtkloguru", "vtksys"]
 
 # Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
 extra_compile_args = ["-std=c++17"]
