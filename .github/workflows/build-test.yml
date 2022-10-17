@@ -77,17 +77,9 @@ jobs:
       with:
         compiler: gcc
 
-    - name: Check GCC Fortran
-      run: ${{ env.FC }} --version
-      env:
-        FC: ${{ steps.setup-fortran.outputs.fc }}
-
     - name: Setup Intel Fortran
       uses: modflowpy/install-intelfortran-action@v1
   
-    - name: Check Intel Fortran
-      run: ifort --version
-
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.0.1
       with:
