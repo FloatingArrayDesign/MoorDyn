@@ -1421,7 +1421,6 @@ Line::getVTK() const
 
 	line->GetPointIds()->SetNumberOfIds(r.size());
 	for (unsigned int i = 0; i < r.size(); i++) {
-		auto p = r[i];
 		points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
 		line->GetPointIds()->SetId(i, i);
 		vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
