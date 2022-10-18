@@ -760,6 +760,19 @@ def GetConnectAttached(instance, i):
     return cmoordyn.conn_get_attached(instance, i)
 
 
+def SaveConnectVTK(instance, filename):
+    """ Save the connection to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.conn_save_vtk(instance, filename)
+
 #                                  Line.h
 #  =============================================================================
 

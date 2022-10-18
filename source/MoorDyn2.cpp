@@ -603,13 +603,16 @@ vtkSmartPointer<vtkMultiBlockDataSet>
 MoorDyn::getVTK() const
 {
 	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
-	out->SetNumberOfBlocks(LineList.size() + RodList.size());
+	out->SetNumberOfBlocks(RodList.size() + ConnectionList.size() + LineList.size());
 	unsigned int n = 0;
-	for (unsigned int i = 0; i < LineList.size(); i++)
-		out->SetBlock(n + i, LineList[i]->getVTK());
-	n += LineList.size();
+	for (unsigned int i = 0; i < ConnectionList.size(); i++)
+		out->SetBlock(n + i, ConnectionList[i]->getVTK());
+	n += ConnectionList.size();
 	for (unsigned int i = 0; i < RodList.size(); i++)
 		out->SetBlock(n + i, RodList[i]->getVTK());
+	n += RodList.size();
+	for (unsigned int i = 0; i < LineList.size(); i++)
+		out->SetBlock(n + i, LineList[i]->getVTK());
 	return out;
 }
 

@@ -1396,6 +1396,27 @@ conn_get_attached(PyObject*, PyObject* args)
 	return pyv;
 }
 
+/** @brief Wrapper to MoorDyn_SaveConnectVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+conn_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveConnectVTK(instance, filepath));
+}
+
 //                                 Line.h
 // =============================================================================
 
@@ -1720,6 +1741,10 @@ static PyMethodDef moordyn_methods[] = {
 	  "Get vertical and horizontal forces in the mooring lines" },
 	{ "save", save, METH_VARARGS, "Save the system to a file" },
 	{ "load", load, METH_VARARGS, "Load the system from a file" },
+	{ "save_vtk",
+	  save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtm file of the whole system" },
 	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
 	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
 	{ "body_get_type", body_get_type, METH_VARARGS, "Get the body type" },
@@ -1731,6 +1756,10 @@ static PyMethodDef moordyn_methods[] = {
 	  rod_get_node_pos,
 	  METH_VARARGS,
 	  "Get a rod node position" },
+	{ "rod_save_vtk",
+	  rod_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the rod" },
 	{ "conn_get_id", conn_get_id, METH_VARARGS, "Get the connection id" },
 	{ "conn_get_type", conn_get_type, METH_VARARGS, "Get the connection type" },
 	{ "conn_get_pos",
@@ -1753,6 +1782,10 @@ static PyMethodDef moordyn_methods[] = {
 	  conn_get_attached,
 	  METH_VARARGS,
 	  "Get an attached line" },
+	{ "conn_save_vtk",
+	  conn_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the connection" },
 	{ "line_get_id", line_get_id, METH_VARARGS, "Get the line id" },
 	{ "line_get_n",
 	  line_get_n,

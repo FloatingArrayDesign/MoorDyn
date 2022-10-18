@@ -33,7 +33,7 @@ module moordyn
              MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
-             MoorDyn_GetConnectForce, &
+             MoorDyn_GetConnectForce, MoorDyn_SaveConnectVTK, &
              MoorDyn_GetRodNodePos, MoorDyn_SaveRodVTK, &
              MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen, &
              MoorDyn_SaveLineVTK
@@ -49,7 +49,7 @@ module moordyn
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
             MD_GetConnectVel, MD_GetConnectForce, MD_GetConnectNAttached, &
-            MD_GetConnectAttached, &
+            MD_GetConnectAttached, MD_SaveConnectVTK, &
             MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
             MD_GetRodNodePos, MD_SaveRodVTK, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
@@ -378,6 +378,13 @@ module moordyn
       integer(c_int), intent(out) :: e
     end function MD_GetConnectAttached
 
+    function MoorDyn_SaveConnectVTK(instance, f) bind(c, name='MoorDyn_SaveConnectVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveConnectVTK
+
     !                                Line.h
     ! ==========================================================================
 
@@ -619,6 +626,13 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetConnectForce = MoorDyn_GetConnectForce(instance, c_loc(r))
   end function MD_GetConnectForce
+
+  integer function MD_SaveConnectVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveConnectVTK = MoorDyn_SaveConnectVTK(instance, trim(f) // c_null_char)
+  end function MD_SaveConnectVTK
 
   !                                Line.h
   ! ============================================================================
