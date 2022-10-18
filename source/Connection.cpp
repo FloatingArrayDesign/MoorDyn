@@ -470,15 +470,15 @@ Connection::getVTK() const
 	vtk_rd->SetTuple3(0, rd[0], rd[1], rd[2]);
 	auto vtk_M = io::vtk_farray("M", 9, 1);
 	vtk_M->SetTuple9(0,
-		             M(0, 0),
-		             M(0, 1),
-		             M(0, 2),
-		             M(1, 0),
-		             M(1, 1),
-		             M(1, 2),
-		             M(2, 0),
-		             M(2, 1),
-		             M(2, 2));
+	                 M(0, 0),
+	                 M(0, 1),
+	                 M(0, 2),
+	                 M(1, 0),
+	                 M(1, 1),
+	                 M(1, 2),
+	                 M(2, 0),
+	                 M(2, 1),
+	                 M(2, 2));
 	auto vtk_Fnet = io::vtk_farray("Fnet", 3, 1);
 	vtk_Fnet->SetTuple3(0, Fnet[0], Fnet[1], Fnet[2]);
 	auto cells = vtkSmartPointer<vtkCellArray>::New();

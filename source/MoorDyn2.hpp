@@ -51,7 +51,6 @@
 #include <vtkMultiBlockDataSet.h>
 #endif
 
-
 namespace moordyn {
 
 /** @class MoorDyn

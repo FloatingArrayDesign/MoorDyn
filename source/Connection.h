@@ -126,7 +126,8 @@ extern "C"
 	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
 	 * anyway
 	 */
-	int DECLDIR MoorDyn_SaveConnectVTK(MoorDynConnection conn, const char* filename);
+	int DECLDIR MoorDyn_SaveConnectVTK(MoorDynConnection conn,
+	                                   const char* filename);
 
 	/**
 	 * @}

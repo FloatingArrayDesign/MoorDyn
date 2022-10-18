@@ -394,7 +394,10 @@ class Body : public io::IO
 	 * transformations
 	 * @param vtk_obj The VTK object
 	 */
-	inline void setVTK(vtkSmartPointer<vtkPolyData> vtk_obj) {vtk_body = vtk_obj;}
+	inline void setVTK(vtkSmartPointer<vtkPolyData> vtk_obj)
+	{
+		vtk_body = vtk_obj;
+	}
 
 	/** @brief Save the body on a VTK (.vtp) file
 	 * @param filename The output file name
@@ -415,7 +418,7 @@ class Body : public io::IO
 	void drawGL(void);
 #endif
 
-private:
+  private:
 #ifdef USE_VTK
 	/// The 3D object that represents the body
 	vtkSmartPointer<vtkPolyData> vtk_body;

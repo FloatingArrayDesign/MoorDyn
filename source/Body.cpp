@@ -724,9 +724,10 @@ MoorDyn_UseBodyVTK(MoorDynBody b, const char* filename)
 	CHECK_BODY(b);
 
 	vtkSmartPointer<vtkPolyData> model;
-	std::string ext = moordyn::str::lower(moordyn::str::split(filename, '.').back());
+	std::string ext =
+	    moordyn::str::lower(moordyn::str::split(filename, '.').back());
 	moordyn::error_id err = MOORDYN_SUCCESS;
-		if (ext == "vtp") {
+	if (ext == "vtp") {
 		auto reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
 		reader->SetFileName(filename);
 		reader->Update();
@@ -741,16 +742,16 @@ MoorDyn_UseBodyVTK(MoorDynBody b, const char* filename)
 		if (err == MOORDYN_SUCCESS)
 			model = reader->GetOutput();
 	} else {
-		cerr << "Unrecognized file format in " << __FUNC_NAME__
-		     << " (" << XSTR(__FILE__) << ":" << __LINE__
-		     << "). Cannot load the file '" << filename << "'" << endl;
+		cerr << "Unrecognized file format in " << __FUNC_NAME__ << " ("
+		     << XSTR(__FILE__) << ":" << __LINE__ << "). Cannot load the file '"
+		     << filename << "'" << endl;
 		return MOORDYN_INVALID_INPUT_FILE;
 	}
 
 	if (err != MOORDYN_SUCCESS) {
-		cerr << "VTK reported an error while reading the file '"
-		     << filename << "'in " << __FUNC_NAME__
-		     << " (" << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;
+		cerr << "VTK reported an error while reading the file '" << filename
+		     << "'in " << __FUNC_NAME__ << " (" << XSTR(__FILE__) << ":"
+		     << __LINE__ << ")" << endl;
 		return err;
 	}
 
