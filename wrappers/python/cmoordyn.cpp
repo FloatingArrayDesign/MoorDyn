@@ -1050,6 +1050,48 @@ body_get_state(PyObject*, PyObject* args)
 	return lst;
 }
 
+/** @brief Wrapper to MoorDyn_SaveBodyVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+body_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveBodyVTK(instance, filepath));
+}
+
+/** @brief Wrapper to MoorDyn_UseBodyVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+body_use_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_UseBodyVTK(instance, filepath));
+}
+
 //                                 Rod.h
 // =============================================================================
 
@@ -1749,6 +1791,14 @@ static PyMethodDef moordyn_methods[] = {
 	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
 	{ "body_get_type", body_get_type, METH_VARARGS, "Get the body type" },
 	{ "body_get_state", body_get_state, METH_VARARGS, "Get the body state" },
+	{ "body_save_vtk",
+	  body_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the body" },
+	{ "body_use_vtk",
+	  body_use_vtk,
+	  METH_VARARGS,
+	  "Load a representation model for the body" },
 	{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
 	{ "rod_get_type", rod_get_type, METH_VARARGS, "Get the rod type" },
 	{ "rod_get_n", rod_get_n, METH_VARARGS, "Get the rod number of segments" },

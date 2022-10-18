@@ -93,10 +93,11 @@ try:
         os.environ['VTK_VERSION_MINOR']
 except KeyError:
     print("$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR env variables missing")
-vtk_libraries = ["vtkCommonCore", "vtkIOXML", "vtkIOXMLParser", "vtkIOCore",
+vtk_libraries = ["vtkCommonCore", "vtkIOXML", "vtkIOGeometry",
+                 "vtkIOXMLParser", "vtkIOLegacy", "vtkIOCore",
                  "vtkCommonExecutionModel", "vtkCommonDataModel",
                  "vtkCommonTransforms", "vtkCommonMath", "vtkCommonMisc",
-                 "vtkCommonSystem",
+                 "vtkCommonSystem", "vtkFiltersGeneral", "vtkFiltersCore",
                  "vtkdoubleconversion", "vtklz4", "vtklzma", "vtkzlib",
                  "vtkkissfft", "vtkpugixml", "vtkexpat", "vtkloguru", "vtksys"]
 

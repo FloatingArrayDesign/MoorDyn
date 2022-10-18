@@ -71,6 +71,36 @@ write_vtk_by_instances()
 		return false;
 	}
 
+	unsigned int n_bodies;
+	err = MoorDyn_GetNumberBodies(system, &n_bodies);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the number of bodies: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int body_i = 1; body_i <= n_bodies; body_i++) {
+		auto body = MoorDyn_GetBody(system, body_i);
+		if (!body) {
+			std::cerr << "Failure getting the body " << body_i << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		std::stringstream filepath;
+		filepath << fs::temp_directory_path().string() << "/"
+		         << "vtk_body_" << body_i << ".00000.vtp";
+		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+		          << std::endl;
+
+		err = MoorDyn_SaveBodyVTK(body, filepath.str().c_str());
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure saving the body file '"
+			          << filepath.str().c_str() << "':" << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+
 	unsigned int n_rods;
 	err = MoorDyn_GetNumberRods(system, &n_rods);
 	if (err != MOORDYN_SUCCESS) {
@@ -198,6 +228,21 @@ write_vtk_system()
 	if (err != MOORDYN_SUCCESS) {
 		std::cerr << "Failure during the mooring initialization: " << err
 		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	// In this second example we are replacing the representation of the body
+	auto body = MoorDyn_GetBody(system, 1);
+	if (!body) {
+		std::cerr << "Failure getting the body" << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	err = MoorDyn_UseBodyVTK(body, "Mooring/ship.stl");
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure loading the body model '"
+					<< "Mooring/ship.stl" << "':" << err << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}

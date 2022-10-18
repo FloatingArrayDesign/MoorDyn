@@ -1,6 +1,7 @@
 # We need first a custom target to copy all the input files in the compilation
 # folder
-file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.dat
+file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.stl
+                             ${CMAKE_SOURCE_DIR}/tests/Mooring/*.dat
                              ${CMAKE_SOURCE_DIR}/tests/Mooring/*.txt)
 add_custom_target(Test_MooringConfigFiles)
 add_custom_command(TARGET Test_MooringConfigFiles PRE_BUILD
