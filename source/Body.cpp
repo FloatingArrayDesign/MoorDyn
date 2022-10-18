@@ -570,11 +570,11 @@ Body::getVTK() const
 {
 	auto transform = vtkSmartPointer<vtkTransform>::New();
 	// The VTK object is already centered on 0,0,0, so we can rotate it
-	transform->RotateX(body_r6[3]);
-	transform->RotateY(body_r6[4]);
-	transform->RotateZ(body_r6[5]);
+	transform->RotateX(r6[3]);
+	transform->RotateY(r6[4]);
+	transform->RotateZ(r6[5]);
 	// And then we can move it to the appropriate position
-	transform->Translate(body_r6[0], body_r6[1], body_r6[2]);
+	transform->Translate(r6[0], r6[1], r6[2]);
 
 	auto transformer = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
 	transformer->SetInputData(vtk_body);
