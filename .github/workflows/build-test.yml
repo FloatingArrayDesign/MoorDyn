@@ -71,14 +71,53 @@ jobs:
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         echo "::set-output name=moordyn_version::$major.$minor.$patch"
 
-    - name: Setup GCC Fortran
+    - name: Setup GCC Fortran (Linux & Mac)
       uses: awvwgk/setup-fortran@main
       id: setup-fortran
       with:
         compiler: gcc
+      if: runner.os != 'Windows'
 
-    - name: Setup Intel Fortran
-      uses: modflowpy/install-intelfortran-action@v1
+    - name: Set ifort resources (Windows)
+      if: runner.os == 'Windows'
+      id: set-resources-windows
+      shell: pwsh
+      run: |
+        echo "::set-output name=hpckit_url::https://registrationcenter-download.intel.com/akdlm/IRC_NAS/18680/w_HPCKit_p_2022.2.0.173_offline.exe"
+        echo "::set-output name=components::intel.oneapi.win.ifort-compiler"
+
+    - name: Install ifort (Windows)
+      shell: cmd
+      run: |
+        REM SPDX-FileCopyrightText: 2022 Intel Corporation
+        REM SPDX-License-Identifier: MIT
+        curl.exe --output %TEMP%\webimage.exe --url %HPCKIT_URL% --retry 5 --retry-delay 5
+        start /b /wait %TEMP%\webimage.exe -s -x -f webimage_extracted --log extract.log
+        del %TEMP%\webimage.exe
+        if "%COMPONENTS%"=="" (
+          webimage_extracted\bootstrapper.exe -s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
+        ) else (
+          webimage_extracted\bootstrapper.exe -s --action install --components=%COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
+        )
+        rd /s/q "webimage_extracted"
+      env:
+        HPCKIT_URL: ${{ steps.set-resources-windows.outputs.hpckit_url }}
+        COMPONENTS: ${{ steps.set-resources-windows.outputs.components }}
+      if: runner.os == 'Windows'
+    
+    - name: Configure ifort environment (Windows)
+      shell: cmd
+      run: |
+        :: set environment variables
+        call "C:\Program Files (x86)\Intel\oneAPI\setvars-vcvarsall.bat" %VS_VER%
+        for /f "tokens=* usebackq" %%f in (`dir /b "C:\Program Files (x86)\Intel\oneAPI\compiler\" ^| findstr /V latest ^| sort`) do @set "LATEST_VERSION=%%f"
+        call "C:\Program Files (x86)\Intel\oneAPI\compiler\%LATEST_VERSION%\env\vars.bat"
+        
+        :: persist environment variables for remainder of workflow
+        set | findstr /c:"oneAPI" >> %GITHUB_ENV%
+      env:
+        VS_VER: vs2022
+      if: runner.os == 'Windows'
   
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.0.1
