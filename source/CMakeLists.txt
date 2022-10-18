@@ -40,7 +40,11 @@ set(MOORDYN_HEADERS
 
 set(MOORDYN_PUBLIC_DEPS "")
 if(USE_VTK)
-    list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore VTK::IOCore VTK::IOXML)
+    list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore
+                                    VTK::IOCore
+                                    VTK::IOXML
+                                    VTK::IOGeometry
+                                    VTK::FiltersGeneral)
 endif()
 if(EXTERNAL_EIGEN)
     list(APPEND MOORDYN_PUBLIC_DEPS Eigen3::Eigen)

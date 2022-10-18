@@ -39,6 +39,11 @@
 #include <vector>
 #include <utility>
 
+#ifdef USE_VTK
+#include <vtkSmartPointer.h>
+#include <vtkPolyData.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -377,8 +382,47 @@ class Body : public io::IO
 	 */
 	virtual uint64_t* Deserialize(const uint64_t* data);
 
+#ifdef USE_VTK
+	/** @brief Produce a VTK object
+	 * @return The new VTK object
+	 */
+	vtkSmartPointer<vtkPolyData> getVTK() const;
+
+	/** @brief Use the provided VTK object as the representation
+	 *
+	 * Afterwards moordyn::Body::getVTK() will apply the appropriate
+	 * transformations
+	 * @param vtk_obj The VTK object
+	 */
+	inline void setVTK(vtkSmartPointer<vtkPolyData> vtk_obj) {vtk_body = vtk_obj;}
+
+	/** @brief Save the body on a VTK (.vtp) file
+	 * @param filename The output file name
+	 * @throws output_file_error If VTK reports
+	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError
+	 * or vtkErrorCode::NoFileNameError
+	 * @throws invalid_value_error If VTK reports
+	 * vtkErrorCode::UnrecognizedFileTypeError or vtkErrorCode::FileFormatError
+	 * @throws mem_error If VTK reports
+	 * vtkErrorCode::OutOfDiskSpaceError
+	 * @throws unhandled_error If VTK reports
+	 * any other error
+	 */
+	void saveVTK(const char* filename) const;
+#endif
+
 #ifdef USEGL
 	void drawGL(void);
+#endif
+
+private:
+#ifdef USE_VTK
+	/// The 3D object that represents the body
+	vtkSmartPointer<vtkPolyData> vtk_body;
+
+	/** @brief Helper function to setup an initial body representation
+	 */
+	void defaultVTK();
 #endif
 };
 

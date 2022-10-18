@@ -605,6 +605,9 @@ MoorDyn::getVTK() const
 	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
 	out->SetNumberOfBlocks(RodList.size() + ConnectionList.size() + LineList.size());
 	unsigned int n = 0;
+	for (unsigned int i = 0; i < BodyList.size(); i++)
+		out->SetBlock(n + i, BodyList[i]->getVTK());
+	n += BodyList.size();
 	for (unsigned int i = 0; i < ConnectionList.size(); i++)
 		out->SetBlock(n + i, ConnectionList[i]->getVTK());
 	n += ConnectionList.size();

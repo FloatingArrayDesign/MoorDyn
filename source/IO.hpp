@@ -41,6 +41,7 @@
 #include <vector>
 #ifdef USE_VTK
 #include <vtkSmartPointer.h>
+#include <vtkCharArray.h>
 #include <vtkFloatArray.h>
 #include <vtkErrorCode.h>
 #endif
@@ -323,6 +324,17 @@ class IO : public LogUser
  */
 vtkSmartPointer<vtkFloatArray>
 vtk_farray(const char* name, unsigned int dim, unsigned int len);
+
+/** @brief Create a data array
+ *
+ * This can be used later as either pointdata arrays or celldata arrays
+ * @param name The array name. It should be unique for each object
+ * @param dim The number of components of each array element. Usually 1 or 3
+ * @param len The number of elements on the array
+ * @return The VTK array
+ */
+vtkSmartPointer<vtkCharArray>
+vtk_carray(const char* name, unsigned int dim, unsigned int len);
 
 /** @brief Convert a vtk error code to a moordyn error
  * @param err_code The VTK error code

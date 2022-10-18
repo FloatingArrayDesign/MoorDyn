@@ -73,6 +73,34 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6]);
 
+	/** @brief Save the connection to a VTK (.vtp) file
+	 * @param b The Moordyn body
+	 * @param filename The output maximum tension module
+	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
+	 */
+	int DECLDIR MoorDyn_SaveBodyVTK(MoorDynBody b, const char* filename);
+
+	/** @brief Load the model that would represent the body
+	 *
+	 * The model can have one of the following formats:
+	 *
+	 *  - VTK PolyData (.vtp)
+	 *  - Stereo Lithography (.stl)
+	 *
+	 * @param b The Moordyn body
+	 * @param filename The output maximum tension module
+	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
+	 */
+	int DECLDIR MoorDyn_UseBodyVTK(MoorDynBody b, const char* filename);
+
 	/**
 	 * @}
 	 */

@@ -593,6 +593,33 @@ def GetBodyState(instance):
     return cmoordyn.body_get_state(instance)
 
 
+def SaveBodyVTK(instance, filename):
+    """ Save the body to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.body_save_vtk(instance, filename)
+
+
+def UseBodyVTK(instance, filename):
+    """ Load the body representation from a 3d model file
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.use_save_vtk(instance, filename)
+
 #                                  Rod.h
 #  =============================================================================
 

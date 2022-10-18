@@ -44,7 +44,8 @@ mark_as_advanced(MOORDYN_FASTMATH)
 # Look for the dependencies
 if(${USE_VTK})
     find_package(VTK
-                 COMPONENTS CommonCore IOCore IOXML REQUIRED)
+                 COMPONENTS CommonCore IOCore IOXML IOGeometry FiltersGeneral
+                 REQUIRED)
     add_definitions(-DUSE_VTK)
 endif()
 
