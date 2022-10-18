@@ -39,6 +39,11 @@
 #include <vector>
 #include <utility>
 
+#ifdef USE_VTK
+#include <vtkSmartPointer.h>
+#include <vtkPolyData.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -555,6 +560,27 @@ class Rod : public io::IO
 	 * @return A pointer to the end of the file, for debugging purposes
 	 */
 	virtual uint64_t* Deserialize(const uint64_t* data);
+
+#ifdef USE_VTK
+	/** @brief Produce a VTK object
+	 * @return The new VTK object
+	 */
+	vtkSmartPointer<vtkPolyData> getVTK() const;
+
+	/** @brief Save the rod on a VTK (.vtp) file
+	 * @param filename The output file name
+	 * @throws output_file_error If VTK reports
+	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError
+	 * or vtkErrorCode::NoFileNameError
+	 * @throws invalid_value_error If VTK reports
+	 * vtkErrorCode::UnrecognizedFileTypeError or vtkErrorCode::FileFormatError
+	 * @throws mem_error If VTK reports
+	 * vtkErrorCode::OutOfDiskSpaceError
+	 * @throws unhandled_error If VTK reports
+	 * any other error
+	 */
+	void saveVTK(const char* filename) const;
+#endif
 
 #ifdef USEGL
 	void drawGL(void);

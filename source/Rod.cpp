@@ -34,6 +34,15 @@
 #include "Waves.hpp"
 #include <tuple>
 
+#ifdef USE_VTK
+#include <vtkCellArray.h>
+#include <vtkPoints.h>
+#include <vtkPolyLine.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkXMLPolyDataWriter.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -1413,6 +1422,55 @@ Rod::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
+#ifdef USE_VTK
+vtkSmartPointer<vtkPolyData>
+Rod::getVTK() const
+{
+	auto points = vtkSmartPointer<vtkPoints>::New();
+	auto line = vtkSmartPointer<vtkPolyLine>::New();
+	auto vtk_rd = io::vtk_farray("rd", 3, r.size());
+	auto vtk_Fnet = io::vtk_farray("Fnet", 3, r.size());
+
+	line->GetPointIds()->SetNumberOfIds(r.size());
+	for (unsigned int i = 0; i < r.size(); i++) {
+		points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
+		line->GetPointIds()->SetId(i, i);
+		vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
+		vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
+	}
+	auto cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->InsertNextCell(line);
+
+	auto out = vtkSmartPointer<vtkPolyData>::New();
+	out->SetPoints(points);
+	out->SetLines(cells);
+
+	out->GetPointData()->AddArray(vtk_rd);
+	out->GetPointData()->AddArray(vtk_Fnet);
+	out->GetPointData()->SetActiveVectors("Fnet");
+
+	return out;
+}
+
+void
+Rod::saveVTK(const char* filename) const
+{
+	auto obj = this->getVTK();
+	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName(filename);
+	writer->SetInputData(obj);
+	writer->SetDataModeToBinary();
+	writer->Update();
+	writer->Write();
+	auto err = io::vtk_error(writer->GetErrorCode());
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << "VTK reported an error while writing the VTP file '"
+		       << filename << "'" << endl;
+		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
+	}
+}
+#endif
+
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void
@@ -1549,4 +1607,24 @@ MoorDyn_GetRodNodePos(MoorDynRod rod, unsigned int i, double pos[3])
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
+}
+
+int DECLDIR
+MoorDyn_SaveRodVTK(MoorDynRod l, const char* filename)
+{
+#ifdef USE_VTK
+	CHECK_ROD(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::Rod*)l)->saveVTK(filename);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
+#endif
 }
