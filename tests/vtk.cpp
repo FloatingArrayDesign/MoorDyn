@@ -141,10 +141,66 @@ write_vtk_by_instances()
 	return true;
 }
 
+bool
+write_vtk_system()
+{
+	std::cout << "*** Writing VTK file..." << std::endl;
+	MoorDyn system = MoorDyn_Create("Mooring/BodiesAndRods.dat");
+	if (!system) {
+		std::cerr << "Failure Creating the Mooring system" << std::endl;
+		return false;
+	}
+
+	unsigned int n_dof;
+	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		return false;
+	}
+	if (n_dof) {
+		std::cerr << "No DOFs were expected, but " << n_dof
+		          << " were reported" << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	int err;
+	err = MoorDyn_Init(system, NULL, NULL);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure during the mooring initialization: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	std::stringstream filepath;
+	filepath << fs::temp_directory_path().string() << "/"
+				<< "vtk_system.00000.vtm";
+	std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+				<< std::endl;
+	err = MoorDyn_SaveVTK(system, filepath.str().c_str());
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure saving the file '"
+					<< filepath.str().c_str() << "':" << err << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure closing Moordyn: " << err << std::endl;
+		return false;
+	}
+	std::cout << "***  OK!" << std::endl;
+
+	return true;
+}
+
 int
 main(int, char**)
 {
 	if (!write_vtk_by_instances())
 		return 1;
+	if (!write_vtk_system())
+		return 2;
 	return 0;
 }
