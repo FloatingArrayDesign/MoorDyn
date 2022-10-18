@@ -511,6 +511,20 @@ def Load(instance, filepath):
     import cmoordyn
     cmoordyn.load(instance, filepath)
 
+
+def SaveVTK(instance, filename):
+    """ Save the rod to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.save_vtk(instance, filename)
+
 #                                  Waves.h
 #  =============================================================================
 
@@ -635,6 +649,19 @@ def GetRodNodePos(instance, i):
     import cmoordyn
     return cmoordyn.rod_get_node_pos(instance, i)
 
+
+def SaveRodVTK(instance, filename):
+    """ Save the rod to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.rod_save_vtk(instance, filename)
 
 #                                Connection.h
 #  =============================================================================
@@ -849,7 +876,7 @@ def SaveLineVTK(instance, filename):
 
     Parameters:
     instance (cmoordyn.MoorDynLine): The line instance
-    filepath (str): The log file path
+    filepath (str): The file path
 
     Returns:
     int: 0 uppon success, an error code otherwise

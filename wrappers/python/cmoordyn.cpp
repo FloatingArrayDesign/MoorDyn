@@ -891,6 +891,27 @@ load(PyObject*, PyObject* args)
 	return Py_None;
 }
 
+/** @brief Wrapper to MoorDyn_SaveRodVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveVTK(system, filepath));
+}
+
 //                                 Waves.h
 // =============================================================================
 
@@ -1143,6 +1164,27 @@ rod_get_node_pos(PyObject*, PyObject* args)
 		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
 
 	return pyr;
+}
+
+/** @brief Wrapper to MoorDyn_SaveRodVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+rod_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynRod instance =
+	    (MoorDynRod)PyCapsule_GetPointer(capsule, rod_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveRodVTK(instance, filepath));
 }
 
 //                              Connection.h
