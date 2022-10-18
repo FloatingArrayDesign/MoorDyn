@@ -71,36 +71,6 @@ write_vtk_by_instances()
 		return false;
 	}
 
-	unsigned int n_lines;
-	err = MoorDyn_GetNumberLines(system, &n_lines);
-	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure getting the number of lines: " << err
-		          << std::endl;
-		MoorDyn_Close(system);
-		return false;
-	}
-	for (unsigned int line_i = 1; line_i <= n_lines; line_i++) {
-		auto line = MoorDyn_GetLine(system, line_i);
-		if (!line) {
-			std::cerr << "Failure getting the line " << line_i << std::endl;
-			MoorDyn_Close(system);
-			return false;
-		}
-		std::stringstream filepath;
-		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_line_" << line_i << ".00000.vtp";
-		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
-		          << std::endl;
-
-		err = MoorDyn_SaveLineVTK(line, filepath.str().c_str());
-		if (err != MOORDYN_SUCCESS) {
-			std::cerr << "Failure saving the line file '"
-			          << filepath.str().c_str() << "':" << err << std::endl;
-			MoorDyn_Close(system);
-			return false;
-		}
-	}
-
 	unsigned int n_rods;
 	err = MoorDyn_GetNumberRods(system, &n_rods);
 	if (err != MOORDYN_SUCCESS) {
@@ -125,6 +95,66 @@ write_vtk_by_instances()
 		err = MoorDyn_SaveRodVTK(rod, filepath.str().c_str());
 		if (err != MOORDYN_SUCCESS) {
 			std::cerr << "Failure saving the rod file '"
+			          << filepath.str().c_str() << "':" << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+
+	unsigned int n_conns;
+	err = MoorDyn_GetNumberConnections(system, &n_conns);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the number of conns: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int conn_i = 1; conn_i <= n_conns; conn_i++) {
+		auto conn = MoorDyn_GetConnection(system, conn_i);
+		if (!conn) {
+			std::cerr << "Failure getting the conn " << conn_i << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		std::stringstream filepath;
+		filepath << fs::temp_directory_path().string() << "/"
+		         << "vtk_conn_" << conn_i << ".00000.vtp";
+		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+		          << std::endl;
+
+		err = MoorDyn_SaveConnectVTK(conn, filepath.str().c_str());
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure saving the conn file '"
+			          << filepath.str().c_str() << "':" << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+
+	unsigned int n_lines;
+	err = MoorDyn_GetNumberLines(system, &n_lines);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the number of lines: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int line_i = 1; line_i <= n_lines; line_i++) {
+		auto line = MoorDyn_GetLine(system, line_i);
+		if (!line) {
+			std::cerr << "Failure getting the line " << line_i << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		std::stringstream filepath;
+		filepath << fs::temp_directory_path().string() << "/"
+		         << "vtk_line_" << line_i << ".00000.vtp";
+		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+		          << std::endl;
+
+		err = MoorDyn_SaveLineVTK(line, filepath.str().c_str());
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure saving the line file '"
 			          << filepath.str().c_str() << "':" << err << std::endl;
 			MoorDyn_Close(system);
 			return false;

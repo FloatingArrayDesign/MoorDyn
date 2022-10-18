@@ -34,6 +34,15 @@
 #include "Waves.hpp"
 #include <tuple>
 
+#ifdef USE_VTK
+#include <vtkCellArray.h>
+#include <vtkPoints.h>
+#include <vtkVertex.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkXMLPolyDataWriter.h>
+#endif
+
 namespace moordyn {
 
 Connection::Connection(moordyn::Log* log)
@@ -448,6 +457,64 @@ Connection::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
+#ifdef USE_VTK
+vtkSmartPointer<vtkPolyData>
+Connection::getVTK() const
+{
+	auto points = vtkSmartPointer<vtkPoints>::New();
+	points->InsertNextPoint(r[0], r[1], r[2]);
+	auto vertex = vtkSmartPointer<vtkVertex>::New();
+	vertex->GetPointIds()->SetId(0, 0);
+	// Node fields, i.e. r.size() number of tuples
+	auto vtk_rd = io::vtk_farray("rd", 3, 1);
+	vtk_rd->SetTuple3(0, rd[0], rd[1], rd[2]);
+	auto vtk_M = io::vtk_farray("M", 9, 1);
+	vtk_M->SetTuple9(0,
+		             M(0, 0),
+		             M(0, 1),
+		             M(0, 2),
+		             M(1, 0),
+		             M(1, 1),
+		             M(1, 2),
+		             M(2, 0),
+		             M(2, 1),
+		             M(2, 2));
+	auto vtk_Fnet = io::vtk_farray("Fnet", 3, 1);
+	vtk_Fnet->SetTuple3(0, Fnet[0], Fnet[1], Fnet[2]);
+	auto cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->InsertNextCell(vertex);
+
+	auto out = vtkSmartPointer<vtkPolyData>::New();
+	out->SetPoints(points);
+	out->SetVerts(cells);
+
+	out->GetPointData()->AddArray(vtk_rd);
+	out->GetPointData()->AddArray(vtk_M);
+	out->GetPointData()->AddArray(vtk_Fnet);
+	out->GetPointData()->SetActiveVectors("Fnet");
+
+	return out;
+}
+
+void
+Connection::saveVTK(const char* filename) const
+{
+	auto obj = this->getVTK();
+	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName(filename);
+	writer->SetInputData(obj);
+	writer->SetDataModeToBinary();
+	writer->Update();
+	writer->Write();
+	auto err = io::vtk_error(writer->GetErrorCode());
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << "VTK reported an error while writing the VTP file '"
+		       << filename << "'" << endl;
+		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
+	}
+}
+#endif
+
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void
@@ -548,4 +615,24 @@ MoorDyn_GetConnectAttached(MoorDynConnection conn,
 	*l = (MoorDynLine)(attached[i].line);
 	*e = (int)(attached[i].end_point);
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SaveConnectVTK(MoorDynConnection conn, const char* filename)
+{
+#ifdef USE_VTK
+	CHECK_CONNECTION(conn);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::Connection*)conn)->saveVTK(filename);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
+#endif
 }
