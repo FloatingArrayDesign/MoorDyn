@@ -436,6 +436,23 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_DrawWithGL(MoorDyn system);
 
+	/** @brief Save the whole system to a VTK (.vtm) file
+	 *
+	 * In general it is more convenient to handle each object independently,
+	 * using MoorDyn_SaveLineVTK() and MoorDyn_SaveRodVTK() functions. However,
+	 * if the number of subinstances is large, that would not be an option
+	 * anymore. In that case you can use this function to pack everything
+	 * together in a single file
+	 * @param system The Moordyn system
+	 * @param filename The output maximum tension module
+	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
+	 */
+	int DECLDIR MoorDyn_SaveVTK(MoorDyn system, const char* filename);
+
 	/**
 	 * @}
 	 */

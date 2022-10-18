@@ -42,6 +42,10 @@
 #define isnan(x) std::isnan(x)
 #endif
 
+#ifdef USE_VTK
+#include <vtkXMLMultiBlockDataWriter.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -593,6 +597,40 @@ MoorDyn::Deserialize(const uint64_t* data)
 
 	return ptr;
 }
+
+#ifdef USE_VTK
+vtkSmartPointer<vtkMultiBlockDataSet>
+MoorDyn::getVTK() const
+{
+	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
+	out->SetNumberOfBlocks(LineList.size() + RodList.size());
+	unsigned int n = 0;
+	for (unsigned int i = 0; i < LineList.size(); i++)
+		out->SetBlock(n + i, LineList[i]->getVTK());
+	n += LineList.size();
+	for (unsigned int i = 0; i < RodList.size(); i++)
+		out->SetBlock(n + i, RodList[i]->getVTK());
+	return out;
+}
+
+void
+MoorDyn::saveVTK(const char* filename) const
+{
+	auto obj = this->getVTK();
+	auto writer = vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
+	writer->SetFileName(filename);
+	writer->SetInputData(obj);
+	writer->SetDataModeToBinary();
+	writer->Update();
+	writer->Write();
+	auto err = io::vtk_error(writer->GetErrorCode());
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << "VTK reported an error while writing the VTM file '"
+		       << filename << "'" << endl;
+		MOORDYN_THROW(err, "vtkXMLMultiBlockDataWriter reported an error");
+	}
+}
+#endif
 
 moordyn::error_id
 moordyn::MoorDyn::ReadInFile()
@@ -2324,4 +2362,24 @@ MoorDyn_DrawWithGL(MoorDyn system)
 		conn->drawGL();
 #endif
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SaveVTK(MoorDyn system, const char* filename)
+{
+#ifdef USE_VTK
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->saveVTK(filename);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
+#endif
 }
