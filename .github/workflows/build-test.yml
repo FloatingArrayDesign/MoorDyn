@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch, vtk ]
+    branches: [ $default-branch ]
   pull_request:
     branches: [ $default-branch ]
 
