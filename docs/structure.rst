@@ -101,6 +101,51 @@ and Line objects, the core Body object properties are as follows:
 - added mass coefficient in each direction
 - added mass moment of inertia coefficient about each axis
 
+In the C++ API, Bodies are represented as a standalone class. This class can have different behaviors
+depending on it's "type" (in the intuitive sense, not in the C++ sense) - there are three possible types 
+for bodies:
+- COUPLED: the body position is controlled by the calling program.
+- FREE: the body position is free to move, controlled by the hydrodynamic forces implemented in MoorDyn
+- FIXED: the body is fixed, either to a particular location or to a connected, moving entity.
+
+Body objects have the following data members:
+
+General:
+- env: a pointer to a global struct holding environmental settings
+- waves: a pointer to a global object representing Waves in the system
+
+Unique to Body:
+Attachments:
+- attachedC: a vector of pointers to Connection objects, indicating all the connections attached to the body
+- attachedR: a vector of pointers to Rod objects attached to the body. 
+- rConnectRel: a vector<vec> of 3d vectors describing the attachment points locations for Connections
+- r6RodRel: a vector<vec6> of 6D vectors describing the attachment points and orientation of eac rod.
+
+Body Properties (set upon call to Body::setup()). Note that these are all set to zero for all Body types
+other than FREE, as they are not relevant to COUPLED or FIXED scenarios:
+- body_r6: 6D reference point for the body.
+- body_rCG: 3D location of body center-of-gravity
+- bodyM: real number describing the body's mass
+- bodyV: real number describing the body's volume
+- bodyI: 3d Vector describing the inertia diagonal components of the body
+- bodyCdA: 6D vector describing the body's drag coefficients
+- bodyCa: 6D vector describing added-mass coefficients
 
 
+Values describing the body's state:
+- r6: 6D vector describing body's position
+- v6: 6D vector describing body's velocity
+- r_ves: 6D vector describing fairlead position if a coupled body (may be different than overall r6)
+- rd_ves: 6D vector describing fairlead velocity if a coupled body (may be different than overall v6)
+- F6net: 6D vector describing total force/moment vector on node
+- M: 6x6 matrix representing total body mass + added mass
+- m0: 6x6 matrix representing 'starting mass' matrix of body, not taking into accound rod elements.
+- OrMat: 3x3 matrix representing orientation of the body
+- U: 3D vector of wave velocity at reference point
+- Ud: 3D vector of wave acceleration at reference point
+- outfile: pointer to the main output file for the body
+
+Misc:
+- number: a unique int id identifying the body
+- type: FREE, COUPLED, or FIXED, describing the "type" of body to be modeled
 

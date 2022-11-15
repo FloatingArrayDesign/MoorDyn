@@ -240,9 +240,12 @@ Body::setDependentStates()
 	// dependent lines, yeah?)
 	for (unsigned int i = 0; i < attachedC.size(); i++) {
 		// this is making a "fake" state vector for the connect, describing its
-		// position and velocity
+		// position (rConnect) and velocity (rdConnect)
 		vec rConnect, rdConnect;
 
+		// Get connection location from rConnectRel for ith connected Connection
+		// and calculate the kinematics of that connection based on the kinematics
+		// of the Body:
 		transformKinematics(rConnectRel[i],
 		                    OrMat,
 		                    r6(Eigen::seqN(0, 3)),
@@ -336,16 +339,18 @@ Body::initiateStep(vec6 r, vec6 rd)
 	{
 		r_ves = r;
 		rd_ves = rd;
-		return;
 	}
 	if (type == FIXED) // if the ground body, set the BCs to stationary
 	{
 		r_ves = vec6::Zero();
 		rd_ves = vec6::Zero();
-		return;
 	}
-	LOGERR << "The body is not a coupled/fixed one" << endl;
-	throw moordyn::invalid_value_error("Invalid body type");
+	else 
+	{
+		LOGERR << "Body " << number << "is not of type COUPLED or FIXED." << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
+	}
+	return;
 }
 
 void
@@ -358,7 +363,7 @@ Body::updateFairlead(real time)
 		v6 = rd_ves;
 
 		// calculate orientation matrix based on latest angles
-		OrMat = RotXYZ(r6[3], r6[4], r6[5]);
+		OrMat = RotXYZ(r6(Eigen::seqN(3, 3)));
 
 		// set positions of any dependent connections and rods
 		setDependentStates();
@@ -392,12 +397,11 @@ Body::getStateDeriv()
 	}
 
 	// Get contributions from attached connections (and lines attached to
-	// them)
-
+	// them) and store in FNet:
 	doRHS();
 
 	// solve for accelerations in [M]{a}={f}
-	// For small systems, which are anyway larger than 4x4, we can use the
+	// For small systems, which are larger than 4x4, we can use the
 	// ColPivHouseholderQR algorithm, which is working with every single
 	// matrix, retaining a very good accuracy, and becoming yet faster
 	// See:
@@ -417,7 +421,7 @@ Body::doRHS()
 	// "winding" close to 2pi, and maybe prevent it if it risks compromising
 	// angle assumptions <<<<<<
 
-	// clear before re-summing
+	// clear Mass and Force matrix before re-summing
 	F6net = vec6::Zero();
 	M = mat6::Zero();
 
