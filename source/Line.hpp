@@ -58,18 +58,18 @@ class Waves;
  * [connect (node 0)] - seg 0 - [node 1] - ... - seg n-1 - [connect (node N)]
  *
  * Depending on the length of the line, \f$ l \f$, the number of segments,
- * \f$ n \f$, an the material density and Young's modulus, \f$ \rho \f$ &
- * \f$ E \f$, a natural scillation period can be defined:
+ * \f$ n \f$, and the material density and Young's modulus, \f$ \rho \f$ &
+ * \f$ E \f$, a natural oscillation period can be defined:
  *
  * \f$ T = \frac{l}{\pi n} \sqrt{\frac{\rho}{E}} \f$
  *
- * Thus, the integration time step (moordyn::MoorDyn.dtM0) shall be smaller than
- * such natural period to avoid numerical instabilities
+ * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
+ * this natural period to avoid numerical instabilities
  */
 class Line : public io::IO
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 */
 	Line(moordyn::Log* log);
@@ -79,7 +79,8 @@ class Line : public io::IO
 	~Line();
 
   private:
-	/** @brief Get the non-linear Young's modulus
+	/** @brief Get the non-linear Young's modulus. This is interpolated from a
+	 * curve provided in the input file.
 	 * @param l_stretched The actual length of the segment
 	 * @param l_unstretched The unstretched length of the segment
 	 */

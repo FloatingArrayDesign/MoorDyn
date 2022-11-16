@@ -92,7 +92,7 @@ class StateVar
 /** @class StateVarDeriv Time.hpp
  * @brief Generic state variables derivative
  *
- * This is holding the velocitites and accelerations
+ * This is holding the velocities and accelerations
  */
 template<class T>
 class StateVarDeriv

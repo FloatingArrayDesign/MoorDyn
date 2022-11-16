@@ -56,9 +56,9 @@ class Waves;
  * Each line must have 2 connections at each endpoint, which are used to define
  * how those points are moving. There are 3 basic types of connections:
  *
- *  - Fixed: The point is indeed fixed, either to a unmovable point (i.e. an
- *           anchor) or to a Body
- *  - Free: The point freely moves, with its own translation degrees of freedom,
+ *  - Fixed: The point is fixed, either to a unmovable point (i.e. an anchor
+ *           or to a Body
+ *  - Free: The point freely moves, with its own translational degrees of freedom,
  *          to provide a connection point between multiple mooring lines or an
  *          unconnected termination point of a Line, which could have a clump
  *          weight or float via the point's mass and volume parameters
@@ -196,7 +196,7 @@ class Connection : public io::IO
 	types type;
 
 	/** @brief flag indicating whether wave/current kinematics will be
-	 * considered for this linec
+	 * considered for this Connection. 
 	 *
 	 * - 0: none, or use value set externally for each node of the object
 	 * - 1: interpolate from stored
