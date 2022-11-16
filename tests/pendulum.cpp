@@ -112,6 +112,7 @@ pendulum()
 	std::vector<double> t_peaks = { 0.0 };
 	double d_peak = 0.0;
 	while (t < 5.0 * T) {
+		cout << t << " / " << 5.0 * T << '\n';
 		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
 		if (err != MOORDYN_SUCCESS) {
 			cerr << "Failure during the mooring step: " << err << endl;
