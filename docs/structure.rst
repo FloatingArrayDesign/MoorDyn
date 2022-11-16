@@ -33,6 +33,71 @@ MoorDyn keeps a dictionary of line types to describe the cross-sectional
 to identify it, and contains all the properties aside from length and discretization that
 are needed to describe a mooring line in MoorDyn.
 
+Line objects maintain the following Data Members:
+
+General:
+- env: a pointer to the global environment object
+- waves: a pointer to the global object storing information about waves/currents
+- t: the simulation time, as a real
+
+Specific to each Line:
+- N: int indicating the number of line segments in N
+- UnstrLen: real indicating the unstretched length of the line
+- d: real describing the line diameter
+- rho: real describing the linear density of the line
+- E: Young's modulus of the line (Pa)
+- EI: real Bending stiffness (Nm^2)
+- c: real damping coefficient (Ns). This can be the literal damping coefficient, or a negative value representing
+fraction of critical damping
+- Can: real normal added mass coefficient
+- Cat: real axial added mass coefficient
+- Cdn: real normal drag coefficient w/r/t frontal area
+- Cdt: real axial drag coefficient w/r/t surface area
+- BAin: real axial-internal damping
+- A: real cross sectional area
+- nEApoints: number of values in stress-strain lookup table
+- stiffXs: x-array for stress-strain lookup table
+- stiffYs: y-array of reals for stress-strain lookup table
+- nEIpoints: number of values in bent-stiffness lookup table
+- bstiffXs: x-array for bent-stiffness lookup table
+- bstiffYs: y-array of reals for bent-stiffness lookup table
+
+State:
+- r: a vector of 3D node positions for the nodes representing the line.
+- rd: a vector of 3D velocities for each of the nodes representing the line
+- q: a vector of 3D tangent vectors for each node
+- qs: a vector of 3D tangent vectors for each segment
+- l: a vector of unstretched line segment lengths (as reals)
+- lstr: a vector of stretched segment lengths (as reals)
+- ldstr: a vector of reals describing the rate of stretch for each segment
+- Kurv: a vector of reals describing the curvature at node points
+- M: a vector of 3x3 matrices describing the mass+added mass of each node in the line
+- V: a vector of line-segment volumes as reals
+
+Forces are computed at every node in the line. Hence, all line forces are represented as std::vectors of 3D force vectors:
+- T: a vector of 3D vectors describing segment tensions
+- Td: a vector of 3D vectors describing segment Damping forces
+- Bs: a vector of 3D vectors describing bending stiffness forces
+- W: a vector of 3D vectors describing weight (gravity) forces
+- Dp: a vector of 3D vectors describing node drag (transversal)
+- Dq: a vector of 3D vectors describing node drag (axial)
+- Ap: a vector of 3D vectors describing added-mass forcing (Transversal)
+- Aq: a vector of 3D vectors describing mass-forcing (axial)
+- B: a vector of 3D vectors describing node bottom contact force
+- Fnet: a vector of 3D vectors describing total force on each node in the line
+
+Waves:
+- F: a vector of reals indicating volume of each segment submerged (1 = fully submerged, 0 = out of water)
+- zeta: vector of reals describing free-surface elevations
+- PDyn: vecctor of reals describing dynamic pressures
+- U: vector of 3D vectors describing wave velocities
+- Ud: vector of 3D vectors describing wave accelerations
+
+Misc.
+- endTypeA, endTypeB: indicates whether ends are pinned or cantilevered to rod
+- endMomentA, endMomentB: 3D moment vectors at ends, to be applied to attached Rod/Body
+- outfile: pointer to outfile to write to
+- channels: which channels to write to the outfile
 
 Points
 ^^^^^^
@@ -53,8 +118,44 @@ There are three types of Points:
 Free Points facilitate more advanced mooring systems. They can be used to connect two 
 or more mooring lines together, to create multi-segmented lines or junctions such as in a 
 bridle mooring configuration. If a free Point is given nonzero volume or mass properties,
-it can also represent a clump weight or float.  
+it can also represent a clump weight or float. 
 
+In the C++ API, "Points" are represented as Connection objects (as their principle purpose
+is to connect different lines/bodies/rods together). Currently, every line must have 2
+Connections at each endpoint. Connection objects expose a public member, Connection::attachment,
+that contains 1. a pointer to the Line object attached to the point and 2. a field indicating
+which "end" (A or B) of the line is attached to the point.
+
+Connections Objects have the following data members:
+
+General:
+- env: a pointer to a global struct holding environmental settings
+- waves: a pointer to a global object representing Waves in the system
+
+Specific to each Connection:
+- attached: a vector of attachments, describing all lines attached to the Connection
+- conM: the mass of the connection as a real
+- conV: the volume of the connection as a real
+- conF: a 3D vector of forces on the connection
+- conCdA: Drag coefficient of the connection
+- conCa: Added mass coefficient of the connection
+
+State:
+- r: 3D node position
+- rd: 3D node velocity
+- FNet: 3D force vector on node
+- M: 3x3 mass + added mass matrix
+
+Waves:
+- zeta: real representing free-surface elevation
+- PDyn: dynamic pressure
+- U: Wave velocities
+- Ud: Wave accelerations
+
+Misc:
+- number: connection ID (unique int)
+- type: Connection type, one of moordyn::Connection::types
+- WaterKin: Flag indicating whether wave/current kinematics will be considered:
 
 Rods 
 ^^^^
