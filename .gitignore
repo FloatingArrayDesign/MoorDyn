@@ -63,3 +63,5 @@ tests/__pycache__
 build
 dist
 source/.vscode/settings.json
+
+/source/.vscode
