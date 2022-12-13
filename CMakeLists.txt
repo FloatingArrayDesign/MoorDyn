@@ -23,12 +23,14 @@ set(EXTERNAL_EIGEN ON CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(USE_VTK OFF CACHE BOOL
     "Link with VTK to produce output binary files")
-set(PYTHON_WRAPPER ON CACHE BOOL
-    "Build the Python wrapper")
 set(FORTRAN_WRAPPER OFF CACHE BOOL
     "Build the Fortran module")
 set(MATLAB_WRAPPER OFF CACHE BOOL
     "Build the Matlab wrapper")
+set(PYTHON_WRAPPER ON CACHE BOOL
+    "Build the Python wrapper")
+set(RUST_WRAPPER ON CACHE BOOL
+    "Build the Rust wrapper")
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
 set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
@@ -49,17 +51,21 @@ if(${USE_VTK})
     add_definitions(-DUSE_VTK)
 endif()
 
-if(${PYTHON_WRAPPER})
-    find_package(Python
-                 COMPONENTS Interpreter Development REQUIRED)
-endif()
-
 if(${FORTRAN_WRAPPER})
     enable_language(Fortran)
 endif()
 
 if(${MATLAB_WRAPPER})
     find_package(Matlab REQUIRED MEX_COMPILER ENG_LIBRARY MAIN_PROGRAM)
+endif()
+
+if(${PYTHON_WRAPPER})
+    find_package(Python
+                 COMPONENTS Interpreter Development REQUIRED)
+endif()
+
+if(${RUST_WRAPPER})
+    find_package(Rust REQUIRED)
 endif()
 
 if(${BUILD_DOCS})
