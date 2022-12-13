@@ -28,6 +28,7 @@ The version 2 is currently under development:
  - [X] FORTRAN wrappers
  - [X] Python wrappers
  - [X] MATLAB mex files
+ - [X] Rust wrappers
  - [ ] Documentation for users
  - [X] Documentation for developers
  - [ ] Tests
