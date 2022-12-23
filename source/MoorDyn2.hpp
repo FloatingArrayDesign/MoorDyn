@@ -84,7 +84,7 @@ class MoorDyn : public io::IO
 	 * computation if for install you plan to load a previously saved simulation
 	 * state
 	 * @note You can know the number of components required for \p x and \p xd
-	 * with the function MoorDyn::NCoupedDOF()
+	 * with the function MoorDyn::NCoupledDOF()
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 */
@@ -101,7 +101,7 @@ class MoorDyn : public io::IO
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly evolved,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 * @note You can know the number of components required for \p x, \p xd and
-	 * \p f with the function MoorDyn::NCoupedDOF()
+	 * \p f with the function MoorDyn::NCoupledDOF()
 	 */
 	moordyn::error_id Step(const double* x,
 	                       const double* xd,
@@ -140,7 +140,7 @@ class MoorDyn : public io::IO
 	 *
 	 * @return The number of coupled DOF
 	 */
-	inline unsigned int NCoupedDOF() const
+	inline unsigned int NCoupledDOF() const
 	{
 		unsigned int n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
 		for (auto rodi : CpldRodIs) {
@@ -359,11 +359,11 @@ class MoorDyn : public io::IO
 	 * @return MOORDYN_SUCCESS If the forces are correctly set, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 * @note You can know the number of components required for \p f with the
-	 * function MoorDyn::NCoupedDOF()
+	 * function MoorDyn::NCoupledDOF()
 	 */
 	inline moordyn::error_id GetForces(double* f) const
 	{
-		if (!NCoupedDOF()) {
+		if (!NCoupledDOF()) {
 			if (f)
 				_log->Cout(MOORDYN_WRN_LEVEL)
 				    << "Warning: Forces have been asked on "
@@ -371,11 +371,11 @@ class MoorDyn : public io::IO
 				    << std::endl;
 			return MOORDYN_SUCCESS;
 		}
-		if (NCoupedDOF() && !f) {
+		if (NCoupledDOF() && !f) {
 			_log->Cout(MOORDYN_ERR_LEVEL)
 			    << "Error: " << __PRETTY_FUNC_NAME__
 			    << " called with a NULL forces pointer, but there are "
-			    << NCoupedDOF() << " coupled Degrees Of Freedom" << std::endl;
+			    << NCoupledDOF() << " coupled Degrees Of Freedom" << std::endl;
 			return MOORDYN_INVALID_VALUE;
 		}
 		unsigned int ix = 0;

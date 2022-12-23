@@ -122,7 +122,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
 
-	LOGDBG << "MoorDyn is expecting " << NCoupedDOF()
+	LOGDBG << "MoorDyn is expecting " << NCoupledDOF()
 	       << " coupled degrees of freedom" << endl;
 
 	if (!nX) {
@@ -168,10 +168,10 @@ moordyn::MoorDyn::~MoorDyn()
 moordyn::error_id
 moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 {
-	if (NCoupedDOF() && !x) {
+	if (NCoupledDOF() && !x) {
 		LOGERR << "ERROR: "
 		       << "MoorDyn::Init received a Null position vector, "
-		       << "but " << NCoupedDOF() << "components are required" << endl;
+		       << "but " << NCoupledDOF() << "components are required" << endl;
 	}
 
 	// <<<<<<<<< need to add bodys
@@ -444,13 +444,13 @@ moordyn::MoorDyn::Step(const double* x,
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
-		if (NCoupedDOF())
+		if (NCoupledDOF())
 			return GetForces(f);
 		else
 			return MOORDYN_SUCCESS;
 	}
 
-	if (NCoupedDOF() && (!x || !xd || !f)) {
+	if (NCoupledDOF() && (!x || !xd || !f)) {
 		LOGERR << "Null Pointer received in " << __FUNC_NAME__ << " ("
 		       << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;
 	}
@@ -548,7 +548,7 @@ moordyn::MoorDyn::Step(const double* x,
 		return err;
 
 	// recover the forces if there are coupled DOFs
-	if (NCoupedDOF())
+	if (NCoupledDOF())
 		return GetForces(f);
 	else
 		return MOORDYN_SUCCESS;
@@ -2094,7 +2094,7 @@ int DECLDIR
 MoorDyn_NCoupledDOF(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ((moordyn::MoorDyn*)system)->NCoupedDOF();
+	*n = ((moordyn::MoorDyn*)system)->NCoupledDOF();
 	return MOORDYN_SUCCESS;
 }
 
