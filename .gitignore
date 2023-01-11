@@ -1,5 +1,11 @@
 *.py[cod]
 
+#Compile files
+*.o
+*.dylib
+*.dll
+*.so
+
 # Sphinx
 _build
 generated
