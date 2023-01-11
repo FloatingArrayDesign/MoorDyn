@@ -19,9 +19,16 @@
 
 #ifdef MoorDyn_EXPORTS     // this is set as a preprocessor definition!!!
 	#ifndef LINUX
-		#define DECLDIR __declspec(dllexport)
-	#else
-		#define DECLDIR 
+
+        #ifndef OSX
+
+            #define DECLDIR __declspec(dllexport)
+
+        #else
+
+            #define DECLDIR
+
+        #endif
 	#endif
 #else
 	#define DECLDIR //__declspec(dllimport)
