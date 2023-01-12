@@ -606,6 +606,28 @@ Line::storeWaterKin(real dt,
 	}
 };
 
+real
+calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
+{
+	if (!WAVES_NONE) {
+		// For now, the assumption is that everythings submerged except in still
+		// water state
+		return 1.0;  
+	}
+	real firstNodeZ = r[firstNodeIdx][2];
+	real secondNodeZ = r[secondNodeIdx][2];
+
+	if (firstNodeZ <= 0.0 && secondNodeZ < 0.0) {
+		return 1.0;  // Both nodes below water; segment must be too
+	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
+		return 0.0;  // Both nodes above water; segment must be too
+	} else {
+		lowerEnd = firstNodeZ < 0.0 ? firstNodeZ : secondNodeZ;
+		upperEnd = firstNodeZ < 0.0 ? secondNodeZ : firstNodeZ;
+		return fabs(lowerEnd) / (fabs(lowerEnd) + upperEnd);
+	}
+}
+
 void
 Line::setState(std::vector<vec> pos, std::vector<vec> vel)
 {
@@ -797,12 +819,25 @@ Line::getStateDeriv()
 			F[i] = 1.0; // set VOF value to one for now (everything submerged -
 			            // eventually this should be element-based!!!) <<<<
 		}
-	} else if (WaterKin !=
-	           WAVES_NONE) // Hopefully WaterKin is set to zero, meaning no
-	                       // waves or set externally, otherwise it's an error
+	} else if (WaterKin != WAVES_NONE) {
+		// Hopefully WaterKin is set to zero, meaning no
+		// waves or set externally, otherwise it's an error	
 		cout << "ERROR: We got a problem with WaterKin not being 0,1,2."
 		     << endl;
-
+	} else {
+		// In the case that there are no waves, the VOF should be set based on
+		// Z-positions of neighboring nodes are above/below the free surface:
+		// TODO: Update this to reflect average portion of upper/lower segment
+		// submerged:
+		for (unsigned int i = 0; i <= N; i++) {
+			if (r[i][2] <= 0.0) {
+				F[i] = 1.0;
+			} else {
+				F[i] = 0.0;
+			}
+		}
+	}
+	
 	//============================================================================================
 
 	// calculate mass matrix
@@ -1165,6 +1200,21 @@ Line::getStateDeriv()
 		else
 			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
 		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i];
+
+		if (i == 0 && r[i][2] > 0.0) {
+			// LOGMSG << "ABOVE_WATER\n";
+		}
+
+		if (i == 0) {
+			// LOGMSG << "Node weight: " << W[i] << '\n';
+			// LOGMSG << "F[i]: " << F[i] << '\n';
+		/*	LOGMSG << "Node drag (transverse): " << Dp[i] << '\n';
+			LOGMSG << "Node drag (axial): " << Dq[i] << '\n';
+        	LOGMSG << "Node added mass (transverse): " << Ap[i] << '\n';
+			LOGMSG << "Node added mass (axial): " << Aq[i] << '\n';
+			LOGMSG << "Node bottom contact force: " << B[i] << '\n';
+			LOGMSG << "Node bending stiffness force: " << Bs[i] << '\n';*/
+		}
 	}
 
 	//	if (t > 5)

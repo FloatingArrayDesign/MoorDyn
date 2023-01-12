@@ -542,6 +542,15 @@ class Line : public io::IO
 	                   std::vector<std::vector<vec>> u,
 	                   std::vector<std::vector<vec>> ud);
 
+	/** @brief calculate the volume of the segment between firstNodeIdx and secondNodeIdx submerged
+	* 
+	* This must be used with adjacent nodes for accurate results. It is currently only implemented
+	* for the still water case.
+	* @param firstNodeIdx Index of the first node of the segment
+	* @param secondNodeIdx Index of the second node of the segment
+	*/
+	real calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx);
+
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients
 	 */
