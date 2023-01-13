@@ -604,14 +604,15 @@ Line::storeWaterKin(real dt,
 		u_in[i] = UTS[i];
 		ud_in[i] = UdTS[i];
 	}
-};
+}
 
 real
-calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
+Line::calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
 {
-	if (!WAVES_NONE) {
+	if (WaterKin != WAVES_NONE) {
 		// For now, the assumption is that everythings submerged except in still
 		// water state
+		LOGMSG << "ERROR in calcSubSeg: waves not set to WAVES_NONE\n";
 		return 1.0;  
 	}
 	real firstNodeZ = r[firstNodeIdx][2];
@@ -622,8 +623,11 @@ calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
 	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
 		return 0.0;  // Both nodes above water; segment must be too
 	} else {
-		lowerEnd = firstNodeZ < 0.0 ? firstNodeZ : secondNodeZ;
-		upperEnd = firstNodeZ < 0.0 ? secondNodeZ : firstNodeZ;
+		// Segment partially submerged - calculate submergence based on zvalue
+		real lowerEnd = firstNodeZ < 0.0 ? firstNodeZ : secondNodeZ;
+		real upperEnd = firstNodeZ < 0.0 ? secondNodeZ : firstNodeZ;
+		//LOGMSG << "Node partially submerged. LowerEndZ=" << lowerEnd
+		//       << " UpperEndZ=" << upperEnd << '\n';
 		return fabs(lowerEnd) / (fabs(lowerEnd) + upperEnd);
 	}
 }
@@ -825,16 +829,12 @@ Line::getStateDeriv()
 		cout << "ERROR: We got a problem with WaterKin not being 0,1,2."
 		     << endl;
 	} else {
-		// In the case that there are no waves, the VOF should be set based on
-		// Z-positions of neighboring nodes are above/below the free surface:
-		// TODO: Update this to reflect average portion of upper/lower segment
-		// submerged:
-		for (unsigned int i = 0; i <= N; i++) {
-			if (r[i][2] <= 0.0) {
-				F[i] = 1.0;
-			} else {
-				F[i] = 0.0;
-			}
+		// If in still water, iterate over all the segments and calculate
+		// volume of segment submerged. This is later used to calculate
+		// v_i, the *nodal* submerged volumes, which is then used to
+		// to calculate buoyancy.
+		for (unsigned int i = 0; i < N; i++) {
+			F[i] = calcSubSeg(i, i + 1);
 		}
 	}
 	
