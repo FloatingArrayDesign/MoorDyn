@@ -584,6 +584,8 @@ typedef enum
 	CURRENTS_STEADY_NODE = 3,
 	/// dynamic current profile, node approach
 	CURRENTS_DYNAMIC_NODE = 4,
+	/// 4D current profile
+	CURRENTS_4D = 5;
 } currents_settings;
 
 /** @brief Are the waves settings grid based?

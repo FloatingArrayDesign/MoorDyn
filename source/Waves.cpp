@@ -358,7 +358,7 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 		}
 
 		// Interpolate/check frequency data
-		real dw = std::numeric_limits<real>::max();
+		real dw = std::numeric_limits<real>::max();  // Change in wave freq.
 		for (unsigned int i = 1; i < wavefreqs.size(); i++)
 			if (wavefreqs[i] - wavefreqs[i - 1] < dw)
 				dw = wavefreqs[i] - wavefreqs[i - 1];
@@ -758,11 +758,220 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 					az[0][0][iz][it] = 0.0;
 				}
 			}
+		}
+	} else if (env->Current == CURRENTS_4D) {
+		const string CurrentsFilename =
+		    (string)folder + "/current_profile_4d.txt";
+		LOGMSG << "Reading 4d currents dynamic profile from '" << CurrentsFilename
+		       << "'..." << endl;
+
+		vector<string> lines;
+		string line;
+
+		ifstream f(CurrentsFilename);
+		if (!f.is_open()) {
+			LOGERR << "Cannot read the file '" << CurrentsFilename << "'"
+			       << endl;
+			throw moordyn::input_file_error("Invalid file");
+		}
+		while (getline(f, line)) {
+			lines.push_back(line);
+		}
+		f.close();
+
+		// A better check here is that the grid is at least as large as the
+		// waves grid, i.e. nxin * nyin * nzin * ntin >= size of waves
+		if (lines.size() < 7) { // TODO: Remove this check? Depends on final format
+			LOGERR << "The file '" << CurrentsFilename
+			       << "' should have at least 7 lines" << endl;
+			throw moordyn::input_file_error("Invalid file format");
+		}
+
+		// The first line must contain the number of x, y, z, t values in the input
+		// meshgrid (1-indexed, space delimited)
+		vector<string> gridDimensions = moordyn::str::split(lines[0]);
+		auto nxCurGrid = atoi(gridDimensions[0]);
+		auto nyCurGrid = atoi(gridDimensions[1]);
+		auto nzCurGrid = atoi(gridDimensions[2]);
+		auto ntCurGrid = atoi(gridDimensions[3]);
+
+
+		// Next four rows specify grid points x, y, t, z
+		vector<real> UProfileX;
+		vector<real> UProfileY;
+		vector<real> UProfileZ;
+		vector<real> UProfileT;
+
+		// Need to keep track of 
+
+		// And a map to keep track of coord->idx mapping...
+		map<string, int> XMap;
+		map<string, int> YMap;
+		map<string, int> ZMap;
+		map<string, int> TMap;
+
+		for (i = 0; i < nxCurGrid; i++) {
+			auto entry = moordyn::str::split(lines[1]);
+			UProfileX.push_back(atof(entry));
+			XMap.insert(entry, i);
+		}
+		for (i = 0; i < nyCurGrid; i++) {
+			auto entry = moordyn::str::split(lines[2]);
+			UProfileY.push_back(atof(entry));
+			YMap.insert(entry, i);
+		}
+		for (i = 0; i < nzCurGrid; i++) {
+			auto entry = moordyn::str::split(lines[3]);
+			UProfileZ.push_back(atof(entry));
+			ZMap.insert(entry, i);
+		}
+		for (i = 0; i < ntCurGrid; i++) {
+			auto entry = moordyn::str::split(lines[4]);
+			UProfileT.push_back(atof(entry));
+			TMap.insert(entry, i);
+		}
+
+		// Need 3 4D grids - one for each component of current velocity:
+		vector<vector<vector<vector<real>>>> currentGridUx =
+			init4DArray(nxCurGrid, nyCurGrid, nzCurGrid, ntCurGrid);
+		vector<vector<vector<vector<real>>>> currentGridUy =
+			init4DArray(nxCurGrid, nyCurGrid, nzCurGrid, ntCurGrid);
+		vector<vector<vector<vector<real>>>> currentGridUz =
+			init4DArray(nxCurGrid, nyCurGrid, nzCurGrid, ntCurGrid);
+		
+		// Number of points in the current grid (important for iteration):
+		unsigned int nCurGridPoints =
+			nxCurGrid * nyCurGrid * nzCurGrid * ntCurGrid;
+
+		// Need to ensure that there is an entry for each gridpoint:
+		if (lines.size() < nCurGridPoints) {
+			LOGERR << "The file'" << CurrentsFilename
+				   << "' should have a line for each gridpoint\n";
+			throw moordyn::input_file_error("Invalid file format\n");
+		}
+
+		// Read values into 4D array
+		for (i = 1; i <= nCurGridPoints; i++) {
+			vector<string> entry = moordyn::str::split(lines[i]);
+
+			// Need to get indices (don't match coord values)
+			auto ix = XMap[entry[0]];
+			auto iy = YMap[entry[1]];
+			auto iz = ZMap[entry[2]];
+			auto it = TMap[entry[3]];
+
+			// Need to set velocity components in three separate vectors
+			// at the coordinate above
+			currentGridUx[ix][iy][iz][it] = atof(entry[4]);
+			currentGridUy[ix][iy][iz][it] = atof(entry[5]);
+			currentGridUz[ix][iy][iz][it] = atof(entry[6]);
+		}
+
+
+		// check data
+		if ((nx * ny * nz != 0) && !nt) {
+			LOGERR << "At least one time step of current data read from '"
+			       << CurrentsFilename << "', but nt = 0" << endl;
+			throw moordyn::invalid_value_error("No time data");
+		}
+
+		// interpolate and add data to wave kinematics grid
+		if (nx * ny * nz == 0) {
+			// A grid hasn't been set up yet, make it based on the read-in z
+			// values
+			nx = 1;
+			px.assign(nx, 0.0);
+			ny = 1;
+			py.assign(ny, 0.0);
+			nz = UProfileZ.size();
+			pz.assign(nz, 0.0);
+			for (unsigned int i = 0; i < nz; i++)
+				pz[i] = UProfileZ[i];
+
+			// set the time step size to be the smallest interval in the
+			// inputted times
+			dtWave = std::numeric_limits<real>::max();
+			for (unsigned int i = 1; i < ntin; i++)
+				if (UProfileT[i] - UProfileT[i - 1] < dtWave)
+					dtWave = UProfileT[i] - UProfileT[i - 1];
+			nt = floor(UProfileT[ntin - 1] / dtWave) + 1;
+
+			try {
+				allocateKinematicsArrays();
+			} catch (...) {
+				throw;
+			}
+
+			// fill in output arrays
+			real ft;
+			unsigned iti = 1;
+			for (unsigned int iz = 0; iz < nz; iz++) {
+				for (unsigned int it = 0; it < nt; it++) {
+					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
+					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
+					                   UProfileUx[iz][iti - 1] * (1. - ft);
+					uy[0][0][iz][it] = UProfileUy[iz][iti] * ft +
+					                   UProfileUy[iz][iti - 1] * (1. - ft);
+					uz[0][0][iz][it] = UProfileUz[iz][iti] * ft +
+					                   UProfileUz[iz][iti - 1] * (1. - ft);
+					// TODO: approximate fluid accelerations using finite
+					//       differences
+					ax[0][0][iz][it] = 0.0;
+					ay[0][0][iz][it] = 0.0;
+					az[0][0][iz][it] = 0.0;
+				}
+			}
 		} else // otherwise interpolate read in data and add to existing grid
 		       // (dtWave, px, etc are already set in the grid)
 		{
+			real fx;
+			real fy;
 			real fz;
-			unsigned izi = 1;
+			real ft;
+			unsigned ixi = 1;
+			for (unsigned int ix = 0; ix < nx; ix++) {
+				unsigned iyi = 1;
+				ixi = interp_factor(UProfileX, ixi, px[ix], fx);
+				for (unsigned int iy = 0; iy < ny; iy++) {
+					unsigned izi = 1;
+					iyi = interp_factor(UProfileY, iyi, py[iy], fy);
+					for (unsigned int iz = 0; iz < nz; iz++) {
+						unsigned iti = 1;
+						izi = interp_factor(UProfileZ, izi, pz[iz], fz);
+						for (unsigned int it = 0; it < nt; it++) {
+							iti = interp_factor(UProfileT, iti, it*dtWave, ft);
+							ux[ix][iy][iz][it] += interp4(currentGridUx,
+							                              ixi,
+							                              iyi,
+							                              izi,
+							                              iti,
+							                              fx,
+							                              fy,
+							                              fz,
+							                              ft);
+							uy[ix][iy][iz][it] += interp4(currentGridUy,
+							                              ixi,
+							                              iyi,
+							                              izi,
+							                              iti,
+							                              fx,
+							                              fy,
+							                              fz,
+							                              ft);
+							uz[ix][iy][iz][it] += interp4(currentGridUz,
+							                              ixi,
+							                              iyi,
+							                              izi,
+							                              iti,
+							                              fx,
+							                              fy,
+							                              fz,
+							                              ft);
+						}
+					}
+				}
+			}
+
 			for (unsigned int iz = 0; iz < nz; iz++) {
 				izi = interp_factor(UProfileZ, izi, pz[iz], fz);
 				real ft;

@@ -38,6 +38,7 @@
 #include "Log.hpp"
 #include "Time.hpp"
 #include <vector>
+#include <map>
 
 namespace moordyn {
 
