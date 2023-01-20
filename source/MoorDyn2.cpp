@@ -2321,6 +2321,50 @@ MoorDyn_GetFASTtens(MoorDyn system,
 	return MOORDYN_SUCCESS;
 }
 
+int DECLDIR MoorDyn_Serialize(MoorDyn system,
+	                          size_t* size,
+	                          uint64_t* data)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const std::vector<uint64_t> backup = ((moordyn::MoorDyn*)system)->Serialize();
+		if (size)
+			*size = backup.size() * sizeof(uint64_t);
+		if (data)
+			memcpy(data, backup.data(), backup.size() * sizeof(uint64_t));
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
+int DECLDIR MoorDyn_Deserialize(MoorDyn system,
+	                            const uint64_t* data)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	if (!data) {
+		cerr << "Error: No data has been provided to "
+	         << __FUNC_NAME__ << "()" << endl;
+		return MOORDYN_INVALID_VALUE;
+	}
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->Deserialize(data);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
 int DECLDIR
 MoorDyn_Save(MoorDyn system, const char* filepath)
 {
