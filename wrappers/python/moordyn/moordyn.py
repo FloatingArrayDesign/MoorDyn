@@ -480,6 +480,34 @@ def GetFASTtens(instance, n_lines):
     return data[0], data[1], data[2], data[3]
 
 
+def Serialize(instance):
+    """Serialize the MoorDyn system into a bytes array that can be restored
+    afterwards to resume the simulation
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    Bytes array
+    """
+    import cmoordyn
+    return cmoordyn.serialize(instance)
+
+
+def Deserialize(instance, data):
+    """Restores the MoorDyn system to a previous serialized state
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    data (bytes): The serialized data
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.deserialize(instance, data)
+
+
 def Save(instance, filepath):
     """Save the MoorDyn system into a file that can be loaded afterwards to
     resume the simulation

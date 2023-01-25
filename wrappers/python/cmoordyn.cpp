@@ -839,6 +839,76 @@ get_fast_tens(PyObject*, PyObject* args)
 	return lst;
 }
 
+/** @brief Wrapper to MoorDyn_Serialize() function
+ * @param args Python passed arguments
+ * @return The bytes array
+ */
+static PyObject*
+serialize(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	int err;
+	size_t array_size;
+	err = MoorDyn_Serialize(system, &array_size, NULL);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	char* array = (char*)malloc(array_size);
+	if (!array) {
+		std::stringstream err;
+		err << "Failure allocating " << array_size << " bytes";
+		PyErr_SetString(PyExc_MemoryError, err.str().c_str());
+		return NULL;
+	}
+	err = MoorDyn_Serialize(system, NULL, (uint64_t*)array);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* bytes = PyBytes_FromStringAndSize(array, array_size);
+	free(array);
+
+	return bytes;
+}
+
+/** @brief Wrapper to MoorDyn_Deserialize() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+deserialize(PyObject*, PyObject* args)
+{
+	PyObject *capsule, *bytes;
+
+	if (!PyArg_ParseTuple(args, "OO", &capsule, &bytes))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system || !PyBytes_Check(bytes))
+		return NULL;
+
+	char* array = PyBytes_AsString(bytes);
+	const int err = MoorDyn_Deserialize(system, (uint64_t*)array);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
 /** @brief Wrapper to MoorDyn_Save() function
  * @param args Python passed arguments
  * @return None
@@ -865,7 +935,7 @@ save(PyObject*, PyObject* args)
 	return Py_None;
 }
 
-/** @brief Wrapper to MoorDyn_Save() function
+/** @brief Wrapper to MoorDyn_Load() function
  * @param args Python passed arguments
  * @return None
  */
@@ -1781,6 +1851,8 @@ static PyMethodDef moordyn_methods[] = {
 	  get_fast_tens,
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "serialize", save, METH_VARARGS, "Serialize the system to a bytes array" },
+	{ "deserialize", load, METH_VARARGS, "Deserialize the system from a bytes array" },
 	{ "save", save, METH_VARARGS, "Save the system to a file" },
 	{ "load", load, METH_VARARGS, "Load the system from a file" },
 	{ "save_vtk",
