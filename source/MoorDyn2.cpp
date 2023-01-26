@@ -1665,6 +1665,7 @@ moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]), { "OUTPUT" })) {
 			LOGDBG << "   Reading output options:" << endl;
 
+			i++;
 			// parse until the next header or the end of the file
 			while ((in_txt[i].find("---") == string::npos) &&
 			       (i < in_txt.size())) {
