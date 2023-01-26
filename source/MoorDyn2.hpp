@@ -503,9 +503,6 @@ class MoorDyn : public io::IO
 	/// array of wave acceleration at each of the npW points
 	std::vector<vec> Ud_2;
 
-	/// log output file
-	ofstream outfileLog;
-
 	/// main output file
 	ofstream outfileMain;
 
@@ -534,24 +531,6 @@ class MoorDyn : public io::IO
 		GetLogger()->SetLogLevel(log_level);
 
 		if (env.writeLog > 0) {
-			// BUG: The legacy file shall be removed in the future, when all
-			// the API revamp is done. For the time being I am keeping it for
-			// simplicity
-			stringstream oname;
-			oname << _basepath << _basename << ".legacy.log";
-			LOGDBG << "Creating the legacy log file: '" << oname.str() << "'"
-			       << std::endl;
-			outfileLog.open(oname.str());
-			if (!outfileLog.is_open()) {
-				LOGERR << "Unable to create the legacy log file '"
-				       << oname.str() << "'" << std::endl;
-				return MOORDYN_INVALID_OUTPUT_FILE;
-			}
-			outfileLog << "MoorDyn v2 legacy log file with output level "
-			           << env.writeLog << std::endl;
-			// get pointer to outfile for MD objects to use
-			env.outfileLogPtr = &outfileLog;
-
 			moordyn::error_id err = MOORDYN_SUCCESS;
 			string err_msg;
 			stringstream filepath;
@@ -569,11 +548,6 @@ class MoorDyn : public io::IO
 				       << log_level_name(GetLogger()->GetLogLevel()) << " at '"
 				       << filepath.str() << "'" << std::endl;
 			return err;
-		}
-
-		if (outfileLog.is_open()) {
-			env.outfileLogPtr = NULL;
-			outfileLog.close();
 		}
 
 		return MOORDYN_SUCCESS;

@@ -135,8 +135,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 
 moordyn::MoorDyn::~MoorDyn()
 {
-	if (outfileLog.is_open())
-		outfileLog.close();
 	if (outfileMain.is_open())
 		outfileMain.close();
 	for (auto outfile : outfiles) // int l=0; l<nLines; l++)

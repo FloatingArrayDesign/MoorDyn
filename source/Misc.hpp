@@ -1164,8 +1164,6 @@ typedef struct
 	/// whether to write a log file. (0=no, 1=basic, 2=full description,
 	/// 3=ongoing output
 	int writeLog;
-	/// The log file stream
-	ofstream* outfileLogPtr;
 } EnvCond;
 
 typedef struct _LineProps // (matching Line Dictionary inputs)
