@@ -325,6 +325,27 @@ class Line : public io::IO
 	 */
 	inline moordyn::real getUnstretchedLength() const { return UnstrLen; }
 
+	/** @brief Set the unstretched length of the line
+	 *
+	 * This function is also changing the unstretched length of each segment,
+	 * moordyn::Line::l, and recomputing the stretched length,
+	 * moordyn::Line::lstr, so the stretching ratio remains the same
+	 * @param len The unstretched length, moordyn::Line::UnstrLen
+	 * @note This function should be called after moordyn::Line::initialize()
+	 * @warning The lines damping is not changed, which might affect the
+	 * stability
+	 */
+	inline void setUnstretchedLength(const moordyn::real len)
+	{
+		UnstrLen = len;
+		for (unsigned int i = 0; i < N; i++) {
+			const moordyn::real lstr_ratio = lstr[i] / l[i];
+			l[i] = UnstrLen / double(N);
+			V[i] = l[i] * A;
+			lstr[i] = lstr_ratio * l[i];
+		}
+	}
+
 	/** @brief Get the position of a node
 	 * @param i The line node index
 	 * @return The position
