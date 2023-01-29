@@ -1608,6 +1608,14 @@ MoorDyn_GetLineUnstretchedLength(MoorDynLine l, double* ul)
 }
 
 int DECLDIR
+MoorDyn_SetLineUnstretchedLength(MoorDynLine l, double ul)
+{
+	CHECK_LINE(l);
+	((moordyn::Line*)l)->setUnstretchedLength((const moordyn::real)ul);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 {
 	CHECK_LINE(l);
