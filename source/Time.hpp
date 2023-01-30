@@ -238,7 +238,13 @@ class TimeScheme : public io::IO
 	 *
 	 * Always call this method before start calling TimeScheme::Step()
 	 */
-	inline void Next() { t_local = 0.0; }
+	inline void Next()
+	{
+		t_local = 0.0;
+		for (unsigned int i = 0; i < lines.size(); i++) {
+			lines[i]->updateUnstretchedLength();
+		}
+	}
 
 	/** @brief Create an initial state for all the entities
 	 * @note Just the first state is written. None of the following states, nor
@@ -729,6 +735,9 @@ class TimeSchemeBase : public TimeScheme
 			if (obj->type != Connection::COUPLED)
 				continue;
 			obj->updateFairlead(t_local);
+		}
+		for (auto obj : lines) {
+			obj->updateUnstretchedLength(t_local);
 		}
 
 		// update wave kinematics if applicable

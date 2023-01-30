@@ -128,6 +128,7 @@ Line::setup(int number_in,
 	// Note, this is a temporary value that will be processed depending on sign
 	// during initializeLine
 	UnstrLen = UnstrLen_in;
+	UnstrLend = 0.0;
 	// assign number of nodes to line
 	N = NumSegs;
 
@@ -434,6 +435,7 @@ Line::initialize()
 		LOGMSG << "Line " << number << " unstretched length set to " << UnstrLen
 		       << " m" << endl;
 	}
+	UnstrLen0 = UnstrLen;
 
 	// now that line length is known, assign length and volume properties
 	for (unsigned int i = 0; i < N; i++) {
@@ -1612,6 +1614,14 @@ MoorDyn_SetLineUnstretchedLength(MoorDynLine l, double ul)
 {
 	CHECK_LINE(l);
 	((moordyn::Line*)l)->setUnstretchedLength((const moordyn::real)ul);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetLineUnstretchedLengthVel(MoorDynLine l, double v)
+{
+	CHECK_LINE(l);
+	((moordyn::Line*)l)->setUnstretchedLengthVel((const moordyn::real)v);
 	return MOORDYN_SUCCESS;
 }
 

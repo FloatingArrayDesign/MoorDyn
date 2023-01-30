@@ -92,6 +92,16 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_SetLineUnstretchedLength(MoorDynLine l, double ul);
 
+	/** @brief Set the line unstretched length rate of change
+	 * @param l The Moordyn line
+	 * @param v The rate of change
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_GetLineUnstretchedLength()
+	 * @see MoorDyn_SetLineUnstretchedLength()
+	 */
+	int DECLDIR MoorDyn_SetLineUnstretchedLengthVel(MoorDynLine l, double v);
+
 	/** @brief Get a line node position
 	 * @param l The Moordyn line
 	 * @param i The node index

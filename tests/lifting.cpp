@@ -42,7 +42,7 @@
 #include <cmath>
 #include <vector>
 
-#define TOL 1.0e-1
+#define TOL 0.5
 
 bool
 compare(double v1, double v2, double tol)
@@ -92,13 +92,37 @@ lifting()
 		return false;
 	}
 
-	double dt = 1e-2;
-	double t = 0.0;
+	auto line = MoorDyn_GetLine(system, 1);
+	if (!line) {
+		cerr << "Failure getting the line" << endl;
+		return false;
+	}
+	const auto conn = MoorDyn_GetConnection(system, 2);
+	if (!conn) {
+		cerr << "Failure getting the connection" << endl;
+		return false;
+	}
+
 	const double lift_vel = 1.0;
+	err = MoorDyn_SetLineUnstretchedLengthVel(line, -lift_vel);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure setting the line length rate of change: " << err
+		     << endl;
+		return false;
+	}
+	double line_len0;
+	err = MoorDyn_GetLineUnstretchedLength(line, &line_len0);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure getting the starting line length: " << err << endl;
+		return false;
+	}
+
+	double dt = 1.0;
+	double t = 0.0;
 	while (t < 10.0) {
-		auto line = MoorDyn_GetLine(system, 1);
-		if (!line) {
-			cerr << "Failure getting the line" << endl;
+		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure during the mooring step: " << err << endl;
 			return false;
 		}
 		double line_len;
@@ -107,17 +131,26 @@ lifting()
 			cerr << "Failure getting the line length: " << err << endl;
 			return false;
 		}
-		cout << line_len << endl;
-		err = MoorDyn_SetLineUnstretchedLength(line, line_len - lift_vel * dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure setting the new length: " << err << endl;
+		if (fabs(line_len - (line_len0 - lift_vel * t)) > TOL) {
+			cerr << "Line unstretched length error (t = " << t << "): "
+			     << line_len << " vs. " << line_len0 - lift_vel * t << endl;
 			return false;
 		}
-		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
+
+		double pos[3];
+		err = MoorDyn_GetConnectPos(conn, pos);
 		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring step: " << err << endl;
+			cerr << "Failure getting the mass position: " << err << endl;
 			return false;
 		}
+
+		if (fabs(line_len + pos[2]) > TOL) {
+			cerr << "Line length error (t = " << t << "): " << line_len
+			     << " vs. " << -pos[2] << endl;
+			return false;
+		}
+
+		t += dt;
 	}
 
 	err = MoorDyn_Close(system);
