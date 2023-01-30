@@ -21,7 +21,7 @@ RK4           tScheme       The time integration Scheme (-)
 1000.0        WtrDnsty      water density (kg/m^3)
 500           WtrDpth       water depth (m)
 1E-3          dtIC          time interval for analyzing convergence during IC gen (s)
-1.0           TmaxIC        max time for ic gen (s)
+1E-3          TmaxIC        max time for ic gen (s)
 1.0           CdScaleIC     factor by which to scale drag coefficients during dynamic relaxation (-)
 0.01          threshIC      threshold for IC convergence (-)
 ------------------------- need this line -------------------------------------- 

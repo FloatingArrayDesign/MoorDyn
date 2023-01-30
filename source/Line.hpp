@@ -106,6 +106,10 @@ class Line : public io::IO
 	unsigned int N;
 	/// Unstretched line length
 	moordyn::real UnstrLen;
+	/// Unstretched line length at the beggining of the time step
+	moordyn::real UnstrLen0;
+	/// Unstretched line length rate of change
+	moordyn::real UnstrLend;
 	/// line diameter
 	moordyn::real d;
 	/// line linear density
@@ -341,6 +345,34 @@ class Line : public io::IO
 			l[i] = UnstrLen / double(N);
 			V[i] = l[i] * A;
 		}
+	}
+
+	/** @brief Set the unstretched length rate of change of the line
+	 * @param len The unstretched length, moordyn::Line::UnstrLen
+	 * @see moordyn::Line::setUnstretchedLength()
+	 */
+	inline void setUnstretchedLengthVel(const moordyn::real v)
+	{
+		UnstrLend = v;
+	}
+
+	/** @brief Update the unstretched length of the line, according to the
+	 * velocity
+	 *
+	 * @param len The unstretched length, moordyn::Line::UnstrLen
+	 * @note This function should be called after moordyn::Line::initialize()
+	 * @warning The lines damping is not changed, which might affect the
+	 * stability
+	 */
+	inline void updateUnstretchedLength(const moordyn::real dt=0.0)
+	{
+		if (!UnstrLend)
+			return;
+		if (!dt) {
+			UnstrLen0 = UnstrLen;
+			return;
+		}
+		setUnstretchedLength(UnstrLen0 + dt * UnstrLend);
 	}
 
 	/** @brief Get the position of a node
