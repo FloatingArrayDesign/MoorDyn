@@ -16,7 +16,7 @@ if(WIN32)
     endif()
 endif()
 
-set(TESTS "minimal;pendulum;time_schemes;io;bodies_and_rods;wavekin;quasi_static_chain")
+set(TESTS "minimal;lifting;pendulum;time_schemes;io;bodies_and_rods;wavekin;quasi_static_chain")
 if(USE_VTK)
     set(TESTS "${TESTS};vtk")
 endif()
