@@ -776,6 +776,28 @@ def GetLineUnstretchedLength(instance):
     return cmoordyn.line_get_ulen(instance)
 
 
+def SetLineUnstretchedLength(instance, l):
+    """ Set the line unstretched length
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    l (float): The unstreched length
+    """
+    import cmoordyn
+    return cmoordyn.line_set_ulen(instance, l)
+
+
+def GetLineUnstretchedLength(instance, v):
+    """ Set the line unstretched length rate of change
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    v (float): The unstreched length rate of change
+    """
+    import cmoordyn
+    return cmoordyn.line_set_ulenv(instance, v)
+
+
 def GetLineNodePos(instance, i):
     """ Get a line node position
 

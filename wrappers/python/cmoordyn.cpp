@@ -1438,6 +1438,60 @@ line_get_ulen(PyObject*, PyObject* args)
 	return PyFloat_FromDouble(l);
 }
 
+/** @brief Wrapper to MoorDyn_SetLineUnstretchedLength() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_ulen(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	double l;
+
+	if (!PyArg_ParseTuple(args, "Of", &capsule, &l))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	const int err = MoorDyn_SetLineUnstretchedLength(instance, l);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
+/** @brief Wrapper to MoorDyn_SetLineUnstretchedLength() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_ulenv(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	double v;
+
+	if (!PyArg_ParseTuple(args, "Of", &capsule, &v))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	const int err = MoorDyn_SetLineUnstretchedLengthVel(instance, v);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
 /** @brief Wrapper to MoorDyn_GetLineNodePos() function
  * @param args Python passed arguments
  * @return The position
@@ -1720,6 +1774,14 @@ static PyMethodDef moordyn_methods[] = {
 	  line_get_ulen,
 	  METH_VARARGS,
 	  "Get the line unstretched length" },
+	{ "line_set_ulen",
+	  line_set_ulen,
+	  METH_VARARGS,
+	  "Set the line unstretched length" },
+	{ "line_set_ulenv",
+	  line_set_ulenv,
+	  METH_VARARGS,
+	  "Set the line rate of change of unstretched length" },
 	{ "line_get_node_pos",
 	  line_get_node_pos,
 	  METH_VARARGS,
