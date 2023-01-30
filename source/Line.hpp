@@ -327,9 +327,8 @@ class Line : public io::IO
 
 	/** @brief Set the unstretched length of the line
 	 *
-	 * This function is also changing the unstretched length of each segment,
-	 * moordyn::Line::l, and recomputing the stretched length,
-	 * moordyn::Line::lstr, so the stretching ratio remains the same
+	 * This function is consistently changing the unstretched length of each
+	 * segment, moordyn::Line::l
 	 * @param len The unstretched length, moordyn::Line::UnstrLen
 	 * @note This function should be called after moordyn::Line::initialize()
 	 * @warning The lines damping is not changed, which might affect the
@@ -339,10 +338,8 @@ class Line : public io::IO
 	{
 		UnstrLen = len;
 		for (unsigned int i = 0; i < N; i++) {
-			const moordyn::real lstr_ratio = lstr[i] / l[i];
 			l[i] = UnstrLen / double(N);
 			V[i] = l[i] * A;
-			lstr[i] = lstr_ratio * l[i];
 		}
 	}
 
