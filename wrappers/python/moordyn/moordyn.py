@@ -787,7 +787,7 @@ def SetLineUnstretchedLength(instance, l):
     return cmoordyn.line_set_ulen(instance, l)
 
 
-def GetLineUnstretchedLength(instance, v):
+def SetLineUnstretchedLengthVel(instance, v):
     """ Set the line unstretched length rate of change
 
     Parameters:
