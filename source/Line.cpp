@@ -617,18 +617,37 @@ Line::calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
 	}
 	real firstNodeZ = r[firstNodeIdx][2];
 	real secondNodeZ = r[secondNodeIdx][2];
-
 	if (firstNodeZ <= 0.0 && secondNodeZ < 0.0) {
 		return 1.0;  // Both nodes below water; segment must be too
 	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
 		return 0.0;  // Both nodes above water; segment must be too
 	} else {
-		// Segment partially submerged - calculate submergence based on zvalue
-		real lowerEnd = firstNodeZ < 0.0 ? firstNodeZ : secondNodeZ;
-		real upperEnd = firstNodeZ < 0.0 ? secondNodeZ : firstNodeZ;
-		//LOGMSG << "Node partially submerged. LowerEndZ=" << lowerEnd
-		//       << " UpperEndZ=" << upperEnd << '\n';
-		return fabs(lowerEnd) / (fabs(lowerEnd) + upperEnd);
+		// Segment partially submerged - figure out which node is above water
+		vec lowerEnd = firstNodeZ < 0.0 ? r[firstNodeIdx] : r[secondNodeIdx];
+		vec upperEnd = firstNodeZ < 0.0 ? r[secondNodeIdx] : r[firstNodeIdx];
+
+		// segment submergence is calculated by calculating submergence of
+		// hypotenuse across segment from upper corner to lower corner
+		// To calculate this, we need the coordinates of these corners.
+		// first step is to get vector from lowerEnd to upperEnd
+		vec segmentAxis = upperEnd - lowerEnd;
+
+		// Next, find normal vector in z-plane, i.e. the normal vecto that
+		// points "up" the most. See the following stackexchange:
+		// https://math.stackexchange.com/questions/2283842/
+		vec upVec(0, 0, 1);  // the global up-unit vector
+		vec normVec = segmentAxis.cross(upVec.cross(segmentAxis));
+		normVec.normalize();
+
+		// make sure normal vector has length equal to radius of segment
+		real radius = d / 2;
+		scalevector(normVec, radius, normVec);
+
+		// Calculate and return submerged ratio:
+		lowerEnd = lowerEnd - normVec;
+		upperEnd = upperEnd + normVec;
+
+		return fabs(lowerEnd[2]) / (fabs(lowerEnd[2]) + upperEnd[2]);
 	}
 }
 
@@ -834,6 +853,8 @@ Line::getStateDeriv()
 		// v_i, the *nodal* submerged volumes, which is then used to
 		// to calculate buoyancy.
 		for (unsigned int i = 0; i < N; i++) {
+			//waves->getWaveKin(
+			//    r[i][0], r[i][1], r[i][2], U[i], Ud[i], zeta[i], PDyn[i]);
 			F[i] = calcSubSeg(i, i + 1);
 		}
 	}

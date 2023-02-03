@@ -1638,7 +1638,7 @@ moordyn::MoorDyn::ReadInFile()
 					env.Current =
 					    (moordyn::currents_settings)atoi(entries[0].c_str());
 					if ((env.Current < CURRENTS_NONE) ||
-					    (env.Current > CURRENTS_DYNAMIC_NODE))
+					    (env.Current > CURRENTS_4D))
 						LOGWRN << "Unknown Currents option value "
 						       << env.Current << endl;
 				} else if (name == "WriteUnits")
