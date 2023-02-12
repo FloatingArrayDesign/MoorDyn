@@ -290,9 +290,9 @@ transformKinematics(const vec& rRelBody,
 std::pair<real, real>
 orientationAngles(vec v)
 {
-	real l = v.norm();
-	if (l < 1.e-6)
+	if (v.squaredNorm() < 1.e-12)
 		throw nan_error("Supplied vector is near zero");
+	real l = v(Eigen::seqN(0, 2)).norm();
 
 	// incline angle
 	const real phi = atan2(l, v[2]);
