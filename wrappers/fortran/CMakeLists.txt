@@ -19,11 +19,9 @@ install(TARGETS moordynf EXPORT MoorDynTargets
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
-  COMPONENT Runtime
 )
 install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/moordyn.mod
   DESTINATION include/moordyn
-  COMPONENT Devel
 )
