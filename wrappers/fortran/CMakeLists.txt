@@ -19,7 +19,6 @@ install(TARGETS moordynf EXPORT MoorDynTargets
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
-  COMPONENT Runtime
 )
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -34,7 +33,6 @@ install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/moordyn.mod
   DESTINATION include/moordyn
-  COMPONENT Devel
 )
 endif()
 

@@ -72,7 +72,6 @@ install(TARGETS moordyn EXPORT MoorDynTargets
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
-  COMPONENT Runtime
 )
 install(
   FILES
@@ -80,8 +79,6 @@ install(
     ${CMAKE_BINARY_DIR}/Config.h
   DESTINATION
     include/moordyn
-  COMPONENT
-    Devel
 )
 
 include(CMakePackageConfigHelpers)
@@ -95,12 +92,11 @@ export(EXPORT MoorDynTargets
   FILE "${CMAKE_CURRENT_BINARY_DIR}/moordyn/MoorDynTargets.cmake"
   NAMESPACE MoorDyn::
 )
-configure_file(${CMAKE_SOURCE_DIR}/cmake/MoorDynConfig.cmake
-  "${CMAKE_CURRENT_BINARY_DIR}/moordyn/MoorDynConfig.cmake"
-  COPYONLY
-)
-
 set(ConfigPackageLocation lib/cmake/moordyn)
+configure_package_config_file(${CMAKE_SOURCE_DIR}/cmake/MoorDynConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/moordyn/MoorDynConfig.cmake
+  INSTALL_DESTINATION ${ConfigPackageLocation})
+
 install(EXPORT MoorDynTargets
   FILE
     MoorDynTargets.cmake
@@ -108,8 +104,6 @@ install(EXPORT MoorDynTargets
     MoorDyn::
   DESTINATION
     ${ConfigPackageLocation}
-  COMPONENT
-    Devel
 )
 install(
   FILES
@@ -117,6 +111,4 @@ install(
     "${CMAKE_CURRENT_BINARY_DIR}/moordyn/MoorDynConfigVersion.cmake"
   DESTINATION
     ${ConfigPackageLocation}
-  COMPONENT
-    Devel
 )

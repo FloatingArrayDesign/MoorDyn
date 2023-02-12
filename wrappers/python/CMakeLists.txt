@@ -37,5 +37,4 @@ endif()
 install(CODE "
   execute_process(COMMAND ${Python_EXECUTABLE} ${SETUP_PY} install ${PY_INSTALL_ARGS}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-"
-    COMPONENT Python)
+")
