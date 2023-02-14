@@ -767,7 +767,6 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 				real ft;
 				unsigned iti = 1;
 				for (unsigned int it = 0; it < nt; it++) {
-				{
 					iti = it + 1;  // Set initial iti
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					for (unsigned int ix = 0; ix < nx; ix++) {
