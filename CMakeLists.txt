@@ -29,7 +29,7 @@ set(MATLAB_WRAPPER OFF CACHE BOOL
     "Build the Matlab wrapper")
 set(PYTHON_WRAPPER ON CACHE BOOL
     "Build the Python wrapper")
-set(RUST_WRAPPER ON CACHE BOOL
+set(RUST_WRAPPER OFF CACHE BOOL
     "Build the Rust wrapper")
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
