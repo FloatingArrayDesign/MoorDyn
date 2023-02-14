@@ -11,7 +11,7 @@ env:
   BUILD_TYPE: Release
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 2
-  VTK_VERSION_PATCH: 2
+  VTK_VERSION_PATCH: 5
 
 jobs:
   create_release:
