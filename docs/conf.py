@@ -47,7 +47,7 @@ copyright = '2021, National Renewable Energy Laboratory'
 author = 'Matt Hall'
 
 # The full version, including alpha/beta/rc tags
-release = '1.01.01'
+release = '2.1.0'
 
 
 # -- General configuration ---------------------------------------------------
