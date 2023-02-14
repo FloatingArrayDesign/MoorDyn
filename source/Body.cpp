@@ -43,7 +43,9 @@ Body::Body(moordyn::Log* log)
   , U(vec::Zero())
   , Ud(vec::Zero())
 {
+#ifdef USE_VTK
 	defaultVTK();
+#endif
 }
 
 Body::~Body() {}
