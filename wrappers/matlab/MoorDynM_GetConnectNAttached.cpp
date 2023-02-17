@@ -39,9 +39,9 @@ using matlab::mex::ArgumentList;
 
 MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnection, 1, 1)
 {
-	int n;
+	unsigned int n;
 	const int err = MoorDyn_GetConnectNAttached(instance, &n);
 	MOORDYNM_CHECK_ERROR(err);
-	outputs[0] = factory.createScalar<int64_t>(n);
+	outputs[0] = factory.createScalar<uint64_t>(n);
 }
 MOORDYNM_MEX_FUNCTION_END
