@@ -37,9 +37,9 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnect, 2, 0)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnection, 2, 0)
 {
-	const CharArray filename_matlab = inputs[0];
+	const CharArray filename_matlab = inputs[1];
 	std::string filename(filename_matlab.toAscii());
 	const int err = MoorDyn_SaveConnectVTK(instance, filename.c_str());
 	MOORDYNM_CHECK_ERROR(err);
