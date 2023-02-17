@@ -42,7 +42,7 @@ MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnection, 2, 2)
 	const unsigned int i = inputs[1][0];
 	MoorDynLine l;
 	int e;
-	const int err = MoorDyn_GetConnectNAttached(instance, i, &l, &e);
+	const int err = MoorDyn_GetConnectAttached(instance, i, &l, &e);
 	MOORDYNM_CHECK_ERROR(err);
 	outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)l));
 	;
