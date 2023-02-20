@@ -1623,7 +1623,7 @@ line_set_ulen(PyObject*, PyObject* args)
 	PyObject* capsule;
 	double l;
 
-	if (!PyArg_ParseTuple(args, "Of", &capsule, &l))
+	if (!PyArg_ParseTuple(args, "Od", &capsule, &l))
 		return NULL;
 
 	MoorDynLine instance =
@@ -1650,7 +1650,7 @@ line_set_ulenv(PyObject*, PyObject* args)
 	PyObject* capsule;
 	double v;
 
-	if (!PyArg_ParseTuple(args, "Of", &capsule, &v))
+	if (!PyArg_ParseTuple(args, "Od", &capsule, &v))
 		return NULL;
 
 	MoorDynLine instance =
