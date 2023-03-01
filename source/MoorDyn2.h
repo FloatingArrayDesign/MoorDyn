@@ -41,6 +41,8 @@
 #include "Rod.h"
 #include "Line.h"
 #include "Body.h"
+#include <stdlib.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -400,6 +402,38 @@ extern "C"
 	                                float AnchHTen[],
 	                                float AnchVTen[]);
 
+	/** @brief Serialize the system to bytes
+	 *
+	 * Typically you want to call this function twice. A first call to know the
+	 * amount of memory to be allocated for the bytes array and a second one
+	 * to actually get the bytes array
+	 *
+	 * The returned bytes can be used afterwards to restore the model calling
+	 * to MoorDyn_Deserialize()
+	 * @param system The Moordyn system
+	 * @param size Output size of the bytes array. It can be null
+	 * @param data Allocated memory for the output bytes array. It can be null
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_Serialize(MoorDyn system,
+	                              size_t* size,
+	                              uint64_t* data);
+
+	/** @brief Load the system from the serialized data before
+	 *
+	 * You can restore the system to a previous state retrieved calling
+	 * MoorDyn_Serialize()
+	 * @param system The Moordyn system
+	 * @param data Bytes array
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 * @see MoorDyn_Save
+	 * @see MoorDyn_Init_NoIC
+	 */
+	int DECLDIR MoorDyn_Deserialize(MoorDyn system,
+	                                const uint64_t* data);
+
 	/** @brief Save the system so it can be loaded afterwards
 	 *
 	 * At the time of loading the system, it is still required to create the
@@ -435,6 +469,23 @@ extern "C"
 	 * otherwise (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_DrawWithGL(MoorDyn system);
+
+	/** @brief Save the whole system to a VTK (.vtm) file
+	 *
+	 * In general it is more convenient to handle each object independently,
+	 * using MoorDyn_SaveLineVTK() and MoorDyn_SaveRodVTK() functions. However,
+	 * if the number of subinstances is large, that would not be an option
+	 * anymore. In that case you can use this function to pack everything
+	 * together in a single file
+	 * @param system The Moordyn system
+	 * @param filename The output maximum tension module
+	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
+	 */
+	int DECLDIR MoorDyn_SaveVTK(MoorDyn system, const char* filename);
 
 	/**
 	 * @}

@@ -415,12 +415,128 @@ skip_ic()
 	return true;
 }
 
+bool
+restore()
+{
+	std::cout << "*** Restore to a previous state..." << std::endl;
+	// We first run the system in the regular way, then we restore it and run
+	// again
+
+	MoorDyn system = MoorDyn_Create("Mooring/lines.txt");
+	if (!system) {
+		std::cerr << "Failure Creating the Mooring system" << std::endl;
+		return false;
+	}
+
+	unsigned int n_dof;
+	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		return false;
+	}
+	if (n_dof != 9) {
+		std::cerr << "3x3 = 9 DOFs were expected, but " << n_dof
+		          << "were reported" << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	int err;
+	double x[9], dx[9];
+	// Get the initial positions from the config file
+	for (unsigned int i = 0; i < 3; i++) {
+		// 4 = first fairlead id
+		auto conn = MoorDyn_GetConnection(system, i + 4);
+		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure retrieving the fairlead " << i + 4
+			          << " position: " << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+	std::fill(dx, dx + 9, 0.0);
+	err = MoorDyn_Init(system, x, dx);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure during the mooring initialization: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	// We backup the system now
+	size_t backup_size = 0;
+	uint64_t *backup = NULL;
+	err = MoorDyn_Serialize(system, &backup_size, NULL);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the serialization size: "
+		          << err << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	backup = (uint64_t*)malloc(backup_size);
+	if (!backup) {
+		std::cerr << "Failure allocating " << backup_size << "bytes"
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	err = MoorDyn_Serialize(system, NULL, backup);
+
+	// First run
+	double f[9];
+	double t = 0.0, dt = 0.5;
+	err = MoorDyn_Step(system, x, dx, f, &t, &dt);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure during the mooring step: " << err << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	// Now we restore the system and run again
+	err = MoorDyn_Deserialize(system, backup);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure while restoring the system: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	double f2[9];
+	t=0.0;
+	err = MoorDyn_Step(system, x, dx, f2, &t, &dt);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure during the repeated mooring step: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int i = 0; i < 9; i++) {
+		if (f[i] != f2[i]) {
+			std::cerr << "Force missmatch at component " << i
+			          << ": " << f[i] << " != " << f2[i] << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure closing Moordyn: " << err << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	std::cout << "***  OK!" << std::endl;
+
+	return true;
+}
+
 int
 main(int, char**)
 {
 	if (!io_class())
 		return 1;
 	if (!skip_ic())
+		return 1;
+	if (!restore())
 		return 1;
 	return 0;
 }

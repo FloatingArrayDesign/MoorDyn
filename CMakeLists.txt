@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 set(MOORDYN_MAJOR_VERSION 2)
-set(MOORDYN_MINOR_VERSION 0)
-set(MOORDYN_PATCH_VERSION 4)
+set(MOORDYN_MINOR_VERSION 1)
+set(MOORDYN_PATCH_VERSION 0)
 set(MOORDYN_VERSION ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION})
 project(Moordyn VERSION ${MOORDYN_VERSION})
 
@@ -23,12 +23,14 @@ set(EXTERNAL_EIGEN ON CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(USE_VTK OFF CACHE BOOL
     "Link with VTK to produce output binary files")
-set(PYTHON_WRAPPER ON CACHE BOOL
-    "Build the Python wrapper")
 set(FORTRAN_WRAPPER OFF CACHE BOOL
     "Build the Fortran module")
 set(MATLAB_WRAPPER OFF CACHE BOOL
     "Build the Matlab wrapper")
+set(PYTHON_WRAPPER ON CACHE BOOL
+    "Build the Python wrapper")
+set(RUST_WRAPPER OFF CACHE BOOL
+    "Build the Rust wrapper")
 set(PYTHON_WRAPPER_USERINSTALL OFF CACHE BOOL
     "Install the Python wrapper in the user space instead of the root one")
 set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
@@ -44,13 +46,9 @@ mark_as_advanced(MOORDYN_FASTMATH)
 # Look for the dependencies
 if(${USE_VTK})
     find_package(VTK
-                 COMPONENTS CommonCore IOCore IOXML REQUIRED)
+                 COMPONENTS CommonCore IOCore IOXML IOGeometry FiltersGeneral
+                 REQUIRED)
     add_definitions(-DUSE_VTK)
-endif()
-
-if(${PYTHON_WRAPPER})
-    find_package(Python
-                 COMPONENTS Interpreter Development REQUIRED)
 endif()
 
 if(${FORTRAN_WRAPPER})
@@ -59,6 +57,15 @@ endif()
 
 if(${MATLAB_WRAPPER})
     find_package(Matlab REQUIRED MEX_COMPILER ENG_LIBRARY MAIN_PROGRAM)
+endif()
+
+if(${PYTHON_WRAPPER})
+    find_package(Python
+                 COMPONENTS Interpreter Development REQUIRED)
+endif()
+
+if(${RUST_WRAPPER})
+    find_package(Rust REQUIRED)
 endif()
 
 if(${BUILD_DOCS})

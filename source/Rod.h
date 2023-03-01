@@ -48,7 +48,7 @@ extern "C"
 	typedef struct __MoorDynRod* MoorDynRod;
 
 	/** @brief Get the line identifier
-	 * @param l The Moordyn line
+	 * @param l The Moordyn rod
 	 * @param id The output id
 	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
 	 * MOORDYN_SUCCESS otherwise
@@ -56,7 +56,7 @@ extern "C"
 	int DECLDIR MoorDyn_GetRodID(MoorDynRod l, int* id);
 
 	/** @brief Get the line type
-	 * @param l The Moordyn line
+	 * @param l The Moordyn rod
 	 * @param t The output type
 	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
 	 * MOORDYN_SUCCESS otherwise
@@ -66,7 +66,7 @@ extern "C"
 	/** @brief Get the line number of segments
 	 *
 	 * The number of nodes is equal to this value plus 1
-	 * @param l The Moordyn line
+	 * @param l The Moordyn rod
 	 * @param n The output number of nodes
 	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
 	 * otherwise
@@ -74,7 +74,7 @@ extern "C"
 	int DECLDIR MoorDyn_GetRodN(MoorDynRod l, unsigned int* n);
 
 	/** @brief Get the line number of nodes
-	 * @param l The Moordyn line
+	 * @param l The Moordyn rod
 	 * @param n The output number of nodes
 	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
 	 * otherwise
@@ -83,7 +83,7 @@ extern "C"
 	int DECLDIR MoorDyn_GetRodNumberNodes(MoorDynRod l, unsigned int* n);
 
 	/** @brief Get a line node position
-	 * @param l The Moordyn line
+	 * @param l The Moordyn rod
 	 * @param i The node index
 	 * @param pos The output node position
 	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
@@ -92,6 +92,17 @@ extern "C"
 	int DECLDIR MoorDyn_GetRodNodePos(MoorDynRod l,
 	                                  unsigned int i,
 	                                  double pos[3]);
+
+	/** @brief Save the line to a VTK (.vtp) file
+	 * @param l The Moordyn rod
+	 * @param filename The output maximum tension module
+	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
+	 */
+	int DECLDIR MoorDyn_SaveRodVTK(MoorDynRod l, const char* filename);
 
 	/**
 	 * @}

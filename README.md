@@ -20,7 +20,7 @@ The version 2 is currently under development:
  - [X] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
  - [X] Different time integrators
  - [X] Save/load
- - [ ] VTK exporter
+ - [X] VTK exporter
  - [X] New C API
  - [ ] New C++ API
  - [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
@@ -28,6 +28,7 @@ The version 2 is currently under development:
  - [X] FORTRAN wrappers
  - [X] Python wrappers
  - [X] MATLAB mex files
+ - [X] Rust wrappers
  - [ ] Documentation for users
  - [X] Documentation for developers
  - [ ] Tests
@@ -60,3 +61,8 @@ version 2 development:
   - Jose Luis Cercos-Pita
   - Aymeric Devulder
   - Elena Gridasova
+
+We must also express our gratitude to some other developers that have
+contributed
+
+  - [David Joseph Anderson](https://davidjosephanderson.com/)

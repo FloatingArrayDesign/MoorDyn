@@ -29,12 +29,12 @@ module moordyn
              MoorDyn_Init_NoIC, MoorDyn_Step, &
              MoorDyn_ExternalWaveKinGetCoordinates, &
              MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, MoorDyn_Save, &
-             MoorDyn_Load, &
+             MoorDyn_Load, MoorDyn_SaveVTK, &
              MoorDyn_GetWavesKin, &
-             MoorDyn_GetBodyState, &
+             MoorDyn_GetBodyState, MoorDyn_SaveBodyVTK, MoorDyn_UseBodyVTK, &
              MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
-             MoorDyn_GetConnectForce, &
-             MoorDyn_GetRodNodePos, &
+             MoorDyn_GetConnectForce, MoorDyn_SaveConnectVTK, &
+             MoorDyn_GetRodNodePos, MoorDyn_SaveRodVTK, &
              MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen, &
              MoorDyn_SaveLineVTK
 
@@ -44,14 +44,15 @@ module moordyn
             MD_ExternalWaveKinGetCoordinates, MD_ExternalWaveKinSet, &
             MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
             MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
-            MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, &
+            MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, MD_SaveVTK, &
             MD_GetWavesKin, &
-            MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, &
+            MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, MD_SaveBodyVTK, &
+            MD_UseBodyVTK, &
             MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
             MD_GetConnectVel, MD_GetConnectForce, MD_GetConnectNAttached, &
-            MD_GetConnectAttached, &
+            MD_GetConnectAttached, MD_SaveConnectVTK, &
             MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
-            MD_GetRodNodePos, &
+            MD_GetRodNodePos, MD_SaveRodVTK, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
             MD_GetLineUnstretchedLength, MD_GetLineNodePos, &
             MD_GetLineNodeTen, MD_GetLineNodeCurv, MD_GetLineMaxTen, &
@@ -239,6 +240,13 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_Load
 
+    function MoorDyn_SaveVTK(instance, f) bind(c, name='MoorDyn_SaveVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveVTK
+
     !                                Waves.h
     ! ==========================================================================
 
@@ -279,6 +287,20 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetBodyState
 
+    function MoorDyn_SaveBodyVTK(instance, f) bind(c, name='MoorDyn_SaveBodyVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveBodyVTK
+
+    function MoorDyn_UseBodyVTK(instance, f) bind(c, name='MoorDyn_UseBodyVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_UseBodyVTK
+
     !                                Rod.h
     ! ==========================================================================
 
@@ -313,6 +335,13 @@ module moordyn
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
     end function MoorDyn_GetRodNodePos
+
+    function MoorDyn_SaveRodVTK(instance, f) bind(c, name='MoorDyn_SaveRodVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveRodVTK
 
     !                                Connection.h
     ! ==========================================================================
@@ -363,6 +392,13 @@ module moordyn
       type(c_ptr), intent(out) :: l
       integer(c_int), intent(out) :: e
     end function MD_GetConnectAttached
+
+    function MoorDyn_SaveConnectVTK(instance, f) bind(c, name='MoorDyn_SaveConnectVTK') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveConnectVTK
 
     !                                Line.h
     ! ==========================================================================
@@ -529,6 +565,12 @@ contains
     MD_Load = MoorDyn_Load(instance, trim(f) // c_null_char)
   end function MD_Load
 
+  integer function MD_SaveVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveVTK = MoorDyn_SaveVTK(instance, trim(f) // c_null_char)
+  end function MD_SaveVTK
 
   !                                Waves.h
   ! ============================================================================
@@ -558,6 +600,20 @@ contains
     MD_GetBodyState = MoorDyn_GetBodyState(instance, c_loc(r), c_loc(rd))
   end function MD_GetBodyState
 
+  integer function MD_SaveBodyVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveBodyVTK = MoorDyn_SaveBodyVTK(instance, trim(f) // c_null_char)
+  end function MD_SaveBodyVTK
+
+  integer function MD_UseBodyVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_UseBodyVTK = MoorDyn_UseBodyVTK(instance, trim(f) // c_null_char)
+  end function MD_UseBodyVTK
+
   !                                Rod.h
   ! ============================================================================
 
@@ -568,6 +624,13 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetRodNodePos = MoorDyn_GetRodNodePos(instance, n, c_loc(r))
   end function MD_GetRodNodePos
+
+  integer function MD_SaveRodVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveRodVTK = MoorDyn_SaveRodVTK(instance, trim(f) // c_null_char)
+  end function MD_SaveRodVTK
 
   !                                Connection.h
   ! ============================================================================
@@ -592,6 +655,13 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetConnectForce = MoorDyn_GetConnectForce(instance, c_loc(r))
   end function MD_GetConnectForce
+
+  integer function MD_SaveConnectVTK(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveConnectVTK = MoorDyn_SaveConnectVTK(instance, trim(f) // c_null_char)
+  end function MD_SaveConnectVTK
 
   !                                Line.h
   ! ============================================================================

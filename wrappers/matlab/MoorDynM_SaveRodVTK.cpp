@@ -37,11 +37,11 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynLine, 2, 0)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynRod, 2, 0)
 {
 	const CharArray filename_matlab = inputs[0];
 	std::string filename(filename_matlab.toAscii());
-	const int err = MoorDyn_SaveLineVTK(instance, filename.c_str());
+	const int err = MoorDyn_SaveRodVTK(instance, filename.c_str());
 	MOORDYNM_CHECK_ERROR(err);
 }
 MOORDYNM_MEX_FUNCTION_END

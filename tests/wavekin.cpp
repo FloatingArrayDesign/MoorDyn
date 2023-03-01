@@ -186,9 +186,9 @@ api(void (*cb)(double, const double*, double*, double*))
  * @return true if the test is passed, false if problems are detected
  */
 bool
-grid()
+tabulated(const char* input_file)
 {
-	MoorDyn system = MoorDyn_Create("Mooring/wavekin_2/wavekin_2.txt");
+	MoorDyn system = MoorDyn_Create(input_file);
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;
@@ -199,18 +199,15 @@ grid()
 		MoorDyn_Close(system);
 		return false;
 	}
-	if (n_dof != 3) {
-		cerr << "3x1 = 3 DOFs were expected, but " << n_dof << "were reported"
-		     << endl;
-		MoorDyn_Close(system);
-		return false;
+	double *x=NULL, *dx=NULL;
+	if(n_dof) {
+		x = new double[n_dof];
+		std::fill(x, x + n_dof, 0.0);
+		dx = new double[n_dof];
+		std::fill(dx, dx + n_dof, 0.0);
 	}
 
 	int err;
-	double x[3], dx[3];
-	// Set the fairlead connections, as they are in the config file
-	std::fill(x, x + 3, 0.0);
-	std::fill(dx, dx + 3, 0.0);
 	err = MoorDyn_Init(system, x, dx);
 	if (err != MOORDYN_SUCCESS) {
 		MoorDyn_Close(system);
@@ -250,7 +247,9 @@ main(int, char**)
 		return 1;
 	if (!api(&wave))
 		return 1;
-	if (!grid())
+	if (!tabulated("Mooring/wavekin_2/wavekin_2.txt"))
+		return 2;
+	if (!tabulated("Mooring/wavekin_3/test_dynamic_currents.txt"))
 		return 2;
 
 	return 0;

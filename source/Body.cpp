@@ -22,6 +22,18 @@
 #include "Waves.hpp"
 #include <tuple>
 
+#ifdef USE_VTK
+#include <vtkTransform.h>
+#include <vtkTransformPolyDataFilter.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkCellArray.h>
+#include <vtkPoints.h>
+#include <vtkLine.h>
+#include <vtkCellData.h>
+#include <vtkXMLPolyDataReader.h>
+#include <vtkSTLReader.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -31,6 +43,9 @@ Body::Body(moordyn::Log* log)
   , U(vec::Zero())
   , Ud(vec::Zero())
 {
+#ifdef USE_VTK
+	defaultVTK();
+#endif
 }
 
 Body::~Body() {}
@@ -551,6 +566,83 @@ Body::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
+#ifdef USE_VTK
+vtkSmartPointer<vtkPolyData>
+Body::getVTK() const
+{
+	auto transform = vtkSmartPointer<vtkTransform>::New();
+	// The VTK object is already centered on 0,0,0, so we can rotate it
+	transform->RotateX(r6[3]);
+	transform->RotateY(r6[4]);
+	transform->RotateZ(r6[5]);
+	// And then we can move it to the appropriate position
+	transform->Translate(r6[0], r6[1], r6[2]);
+
+	auto transformer = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+	transformer->SetInputData(vtk_body);
+	transformer->SetTransform(transform);
+	transformer->Update();
+
+	vtkSmartPointer<vtkPolyData> out = transformer->GetOutput();
+
+	return out;
+}
+
+void
+Body::saveVTK(const char* filename) const
+{
+	auto obj = this->getVTK();
+	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName(filename);
+	writer->SetInputData(obj);
+	writer->SetDataModeToBinary();
+	writer->Update();
+	writer->Write();
+	auto err = io::vtk_error(writer->GetErrorCode());
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << "VTK reported an error while writing the VTP file '"
+		       << filename << "'" << endl;
+		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
+	}
+}
+
+void
+Body::defaultVTK()
+{
+	vtk_body = vtkSmartPointer<vtkPolyData>::New();
+	auto points = vtkSmartPointer<vtkPoints>::New();
+	points->InsertNextPoint(0, 0, 0);
+	points->InsertNextPoint(1, 0, 0);
+	points->InsertNextPoint(0, 1, 0);
+	points->InsertNextPoint(0, 0, 1);
+	auto x_axis = vtkSmartPointer<vtkLine>::New();
+	x_axis->GetPointIds()->SetId(0, 0);
+	x_axis->GetPointIds()->SetId(1, 1);
+	auto y_axis = vtkSmartPointer<vtkLine>::New();
+	y_axis->GetPointIds()->SetId(0, 0);
+	y_axis->GetPointIds()->SetId(1, 2);
+	auto z_axis = vtkSmartPointer<vtkLine>::New();
+	z_axis->GetPointIds()->SetId(0, 0);
+	z_axis->GetPointIds()->SetId(1, 3);
+
+	auto axes = io::vtk_carray("axis", 1, 3);
+	axes->SetTuple1(0, 'x');
+	axes->SetTuple1(1, 'y');
+	axes->SetTuple1(2, 'z');
+
+	auto cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->InsertNextCell(x_axis);
+	cells->InsertNextCell(y_axis);
+	cells->InsertNextCell(z_axis);
+
+	vtk_body->SetPoints(points);
+	vtk_body->SetLines(cells);
+
+	vtk_body->GetCellData()->AddArray(axes);
+	vtk_body->GetCellData()->SetActiveScalars("axis");
+}
+#endif
+
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void
@@ -605,4 +697,76 @@ MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6])
 	moordyn::vec62array(pos, r);
 	moordyn::vec62array(vel, rd);
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SaveBodyVTK(MoorDynBody b, const char* filename)
+{
+#ifdef USE_VTK
+	CHECK_BODY(b);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::Body*)b)->saveVTK(filename);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
+#endif
+}
+
+int DECLDIR
+MoorDyn_UseBodyVTK(MoorDynBody b, const char* filename)
+{
+#ifdef USE_VTK
+	CHECK_BODY(b);
+
+	vtkSmartPointer<vtkPolyData> model;
+	std::string ext =
+	    moordyn::str::lower(moordyn::str::split(filename, '.').back());
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	if (ext == "vtp") {
+		auto reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+		reader->SetFileName(filename);
+		reader->Update();
+		err = moordyn::io::vtk_error(reader->GetErrorCode());
+		if (err == MOORDYN_SUCCESS)
+			model = reader->GetOutput();
+	} else if (ext == "stl") {
+		auto reader = vtkSmartPointer<vtkSTLReader>::New();
+		reader->SetFileName(filename);
+		reader->Update();
+		err = moordyn::io::vtk_error(reader->GetErrorCode());
+		if (err == MOORDYN_SUCCESS)
+			model = reader->GetOutput();
+	} else {
+		cerr << "Unrecognized file format in " << __FUNC_NAME__ << " ("
+		     << XSTR(__FILE__) << ":" << __LINE__ << "). Cannot load the file '"
+		     << filename << "'" << endl;
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
+
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "VTK reported an error while reading the file '" << filename
+		     << "'in " << __FUNC_NAME__ << " (" << XSTR(__FILE__) << ":"
+		     << __LINE__ << ")" << endl;
+		return err;
+	}
+
+	string err_msg;
+	try {
+		((moordyn::Body*)b)->setVTK(model);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
+#endif
 }

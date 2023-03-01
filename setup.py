@@ -38,6 +38,7 @@ import os
 import shutil
 from setuptools import setup, find_packages, Extension
 import sysconfig
+import platform
 
 
 DESC = """Python version of MoorDyn, a lumped-mass mooring dynamics model
@@ -85,15 +86,44 @@ with open('CMakeLists.txt', 'r') as f:
         version = version + subtxt + '.'
     version = version[:-1]
 
+# Get everything required to compile with VTK support
+vtk_version = '9.2'
+try:
+    vtk_version = os.environ['VTK_VERSION_MAJOR'] + "." + \
+        os.environ['VTK_VERSION_MINOR']
+except KeyError:
+    print("$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR env variables missing")
+vtk_libraries = ["vtkCommonCore", "vtkIOXML", "vtkIOGeometry",
+                 "vtkIOXMLParser", "vtkIOLegacy", "vtkIOCore",
+                 "vtkCommonExecutionModel", "vtkCommonDataModel",
+                 "vtkCommonTransforms", "vtkCommonMath", "vtkCommonMisc",
+                 "vtkCommonSystem", "vtkFiltersGeneral", "vtkFiltersCore",
+                 "vtkdoubleconversion", "vtklz4", "vtklzma", "vtkzlib",
+                 "vtkkissfft", "vtkpugixml", "vtkexpat", "vtkloguru", "vtksys"]
+
 # Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
 extra_compile_args = ["-std=c++17"]
-
+definitions = [('MoorDyn_EXPORTS', '1'), ('USE_VTK', '1')]
+include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
+library_dirs = ["vtk/lib"]
+if platform.system() == "Windows":
+    extra_link_args = ["vtk/lib/" + lib + "-" + vtk_version + ".lib"
+                       for lib in vtk_libraries]
+    extra_link_args = extra_link_args + [
+        "ws2_32.lib", "dbghelp.lib", "psapi.lib", "kernel32.lib", "user32.lib",
+        "gdi32.lib", "winspool.lib", "shell32.lib", "ole32.lib",
+        "oleaut32.lib", "uuid.lib", "comdlg32.lib", "advapi32.lib"]
+else:
+    extra_link_args = ["vtk/lib/lib" + lib + "-" + vtk_version + ".a"
+                       for lib in vtk_libraries]
+             
 cmoordyn = Extension('cmoordyn',
                      sources=MOORDYN_SRCS,
                      language='c++',
+                     define_macros=definitions,
+                     include_dirs=include_dirs,
                      extra_compile_args=extra_compile_args,
-                     include_dirs=[MOORDYN_PATH, ],
-                     define_macros=[('MoorDyn_EXPORTS', '1')],
+                     extra_link_args=extra_link_args,
                      )
 
 setup(

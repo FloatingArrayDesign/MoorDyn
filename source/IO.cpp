@@ -583,6 +583,16 @@ vtk_farray(const char* name, unsigned int dim, unsigned int len)
 	return a;
 }
 
+vtkSmartPointer<vtkCharArray>
+vtk_carray(const char* name, unsigned int dim, unsigned int len)
+{
+	vtkSmartPointer<vtkCharArray> a = vtkSmartPointer<vtkCharArray>::New();
+	a->SetName(name);
+	a->SetNumberOfComponents(dim);
+	a->SetNumberOfTuples(len);
+	return a;
+}
+
 int
 vtk_error(unsigned long err_code)
 {

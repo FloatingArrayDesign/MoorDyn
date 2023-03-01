@@ -46,6 +46,11 @@
 #include "Rod.hpp"
 #include "Body.hpp"
 
+#ifdef USE_VTK
+#include <vtkSmartPointer.h>
+#include <vtkMultiBlockDataSet.h>
+#endif
+
 namespace moordyn {
 
 /** @class MoorDyn
@@ -79,7 +84,7 @@ class MoorDyn : public io::IO
 	 * computation if for install you plan to load a previously saved simulation
 	 * state
 	 * @note You can know the number of components required for \p x and \p xd
-	 * with the function MoorDyn::NCoupedDOF()
+	 * with the function MoorDyn::NCoupledDOF()
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 */
@@ -96,7 +101,7 @@ class MoorDyn : public io::IO
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly evolved,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 * @note You can know the number of components required for \p x, \p xd and
-	 * \p f with the function MoorDyn::NCoupedDOF()
+	 * \p f with the function MoorDyn::NCoupledDOF()
 	 */
 	moordyn::error_id Step(const double* x,
 	                       const double* xd,
@@ -135,7 +140,7 @@ class MoorDyn : public io::IO
 	 *
 	 * @return The number of coupled DOF
 	 */
-	inline unsigned int NCoupedDOF() const
+	inline unsigned int NCoupledDOF() const
 	{
 		unsigned int n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
 		for (auto rodi : CpldRodIs) {
@@ -305,6 +310,37 @@ class MoorDyn : public io::IO
 	 */
 	virtual uint64_t* Deserialize(const uint64_t* data);
 
+#ifdef USE_VTK
+	/** @brief Produce a VTK object of the whole system
+	 * @return The new VTK object
+	 * @see moordyn::Line::getVTK()
+	 * @see moordyn::Rod::getVTK()
+	 */
+	vtkSmartPointer<vtkMultiBlockDataSet> getVTK() const;
+
+	/** @brief Save the whole system on a VTK (.vtm) file
+	 *
+	 * Many times, it is more convenient for the user to save each instance in
+	 * a separate file. However, if the number of subinstances is too large,
+	 * that would not be an option anymore. Then you can use this function to
+	 * save the whole system in a multiblock VTK file
+	 *
+	 * @param filename The output file name
+	 * @throws output_file_error If VTK reports
+	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError
+	 * or vtkErrorCode::NoFileNameError
+	 * @throws invalid_value_error If VTK reports
+	 * vtkErrorCode::UnrecognizedFileTypeError or vtkErrorCode::FileFormatError
+	 * @throws mem_error If VTK reports
+	 * vtkErrorCode::OutOfDiskSpaceError
+	 * @throws unhandled_error If VTK reports
+	 * any other error
+	 * @see moordyn::Line::saveVTK()
+	 * @see moordyn::Rod::saveVTK()
+	 */
+	void saveVTK(const char* filename) const;
+#endif
+
   protected:
 	/** @brief Read the input file, setting up all the requird objects and their
 	 * relationships
@@ -323,11 +359,11 @@ class MoorDyn : public io::IO
 	 * @return MOORDYN_SUCCESS If the forces are correctly set, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 * @note You can know the number of components required for \p f with the
-	 * function MoorDyn::NCoupedDOF()
+	 * function MoorDyn::NCoupledDOF()
 	 */
 	inline moordyn::error_id GetForces(double* f) const
 	{
-		if (!NCoupedDOF()) {
+		if (!NCoupledDOF()) {
 			if (f)
 				_log->Cout(MOORDYN_WRN_LEVEL)
 				    << "Warning: Forces have been asked on "
@@ -335,11 +371,11 @@ class MoorDyn : public io::IO
 				    << std::endl;
 			return MOORDYN_SUCCESS;
 		}
-		if (NCoupedDOF() && !f) {
+		if (NCoupledDOF() && !f) {
 			_log->Cout(MOORDYN_ERR_LEVEL)
 			    << "Error: " << __PRETTY_FUNC_NAME__
 			    << " called with a NULL forces pointer, but there are "
-			    << NCoupedDOF() << " coupled Degrees Of Freedom" << std::endl;
+			    << NCoupledDOF() << " coupled Degrees Of Freedom" << std::endl;
 			return MOORDYN_INVALID_VALUE;
 		}
 		unsigned int ix = 0;
@@ -467,9 +503,6 @@ class MoorDyn : public io::IO
 	/// array of wave acceleration at each of the npW points
 	std::vector<vec> Ud_2;
 
-	/// log output file
-	ofstream outfileLog;
-
 	/// main output file
 	ofstream outfileMain;
 
@@ -498,24 +531,6 @@ class MoorDyn : public io::IO
 		GetLogger()->SetLogLevel(log_level);
 
 		if (env.writeLog > 0) {
-			// BUG: The legacy file shall be removed in the future, when all
-			// the API revamp is done. For the time being I am keeping it for
-			// simplicity
-			stringstream oname;
-			oname << _basepath << _basename << ".legacy.log";
-			LOGDBG << "Creating the legacy log file: '" << oname.str() << "'"
-			       << std::endl;
-			outfileLog.open(oname.str());
-			if (!outfileLog.is_open()) {
-				LOGERR << "Unable to create the legacy log file '"
-				       << oname.str() << "'" << std::endl;
-				return MOORDYN_INVALID_OUTPUT_FILE;
-			}
-			outfileLog << "MoorDyn v2 legacy log file with output level "
-			           << env.writeLog << std::endl;
-			// get pointer to outfile for MD objects to use
-			env.outfileLogPtr = &outfileLog;
-
 			moordyn::error_id err = MOORDYN_SUCCESS;
 			string err_msg;
 			stringstream filepath;
@@ -533,11 +548,6 @@ class MoorDyn : public io::IO
 				       << log_level_name(GetLogger()->GetLogLevel()) << " at '"
 				       << filepath.str() << "'" << std::endl;
 			return err;
-		}
-
-		if (outfileLog.is_open()) {
-			env.outfileLogPtr = NULL;
-			outfileLog.close();
 		}
 
 		return MOORDYN_SUCCESS;

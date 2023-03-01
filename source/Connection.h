@@ -117,6 +117,18 @@ extern "C"
 	                                       MoorDynLine* l,
 	                                       int* e);
 
+	/** @brief Save the connection to a VTK (.vtp) file
+	 * @param conn The Moordyn connection
+	 * @param filename The output maximum tension module
+	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+	 * otherwise
+	 * @note If MoorDyn has been built without VTK support, this function will
+	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+	 * anyway
+	 */
+	int DECLDIR MoorDyn_SaveConnectVTK(MoorDynConnection conn,
+	                                   const char* filename);
+
 	/**
 	 * @}
 	 */

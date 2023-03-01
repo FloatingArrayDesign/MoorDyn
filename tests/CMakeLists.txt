@@ -1,6 +1,7 @@
 # We need first a custom target to copy all the input files in the compilation
 # folder
-file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.dat
+file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.stl
+                             ${CMAKE_SOURCE_DIR}/tests/Mooring/*.dat
                              ${CMAKE_SOURCE_DIR}/tests/Mooring/*.txt)
 add_custom_target(Test_MooringConfigFiles)
 add_custom_command(TARGET Test_MooringConfigFiles PRE_BUILD
@@ -15,7 +16,7 @@ if(WIN32)
     endif()
 endif()
 
-set(TESTS "minimal;pendulum;time_schemes;io;bodies_and_rods;wavekin;quasi_static_chain")
+set(TESTS "minimal;lifting;pendulum;time_schemes;io;bodies_and_rods;wavekin;quasi_static_chain")
 if(USE_VTK)
     set(TESTS "${TESTS};vtk")
 endif()

@@ -41,10 +41,10 @@
 namespace fs = std::filesystem;
 
 bool
-write_vtk_lines()
+write_vtk_by_instances()
 {
 	std::cout << "*** Writing VTK files..." << std::endl;
-	MoorDyn system = MoorDyn_Create("Mooring/lines.txt");
+	MoorDyn system = MoorDyn_Create("Mooring/BodiesAndRods.dat");
 	if (!system) {
 		std::cerr << "Failure Creating the Mooring system" << std::endl;
 		return false;
@@ -55,34 +55,110 @@ write_vtk_lines()
 		MoorDyn_Close(system);
 		return false;
 	}
-	if (n_dof != 9) {
-		std::cerr << "3x3 = 9 DOFs were expected, but " << n_dof
-		          << "were reported" << std::endl;
+	if (n_dof) {
+		std::cerr << "No DOFs were expected, but " << n_dof
+		          << " were reported" << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
 
 	int err;
-	double x[9], dx[9];
-	// Get the initial positions from the config file
-	for (unsigned int i = 0; i < 3; i++) {
-		// 4 = first fairlead id
-		auto conn = MoorDyn_GetConnection(system, i + 4);
-		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
-		if (err != MOORDYN_SUCCESS) {
-			std::cerr << "Failure retrieving the fairlead " << i + 4
-			          << " position: " << err << std::endl;
-			MoorDyn_Close(system);
-			return false;
-		}
-	}
-	std::fill(dx, dx + 9, 0.0);
-	err = MoorDyn_Init(system, x, dx);
+	err = MoorDyn_Init(system, NULL, NULL);
 	if (err != MOORDYN_SUCCESS) {
 		std::cerr << "Failure during the mooring initialization: " << err
 		          << std::endl;
 		MoorDyn_Close(system);
 		return false;
+	}
+
+	unsigned int n_bodies;
+	err = MoorDyn_GetNumberBodies(system, &n_bodies);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the number of bodies: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int body_i = 1; body_i <= n_bodies; body_i++) {
+		auto body = MoorDyn_GetBody(system, body_i);
+		if (!body) {
+			std::cerr << "Failure getting the body " << body_i << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		std::stringstream filepath;
+		filepath << fs::temp_directory_path().string() << "/"
+		         << "vtk_body_" << body_i << ".00000.vtp";
+		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+		          << std::endl;
+
+		err = MoorDyn_SaveBodyVTK(body, filepath.str().c_str());
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure saving the body file '"
+			          << filepath.str().c_str() << "':" << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+
+	unsigned int n_rods;
+	err = MoorDyn_GetNumberRods(system, &n_rods);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the number of rods: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int rod_i = 1; rod_i <= n_rods; rod_i++) {
+		auto rod = MoorDyn_GetRod(system, rod_i);
+		if (!rod) {
+			std::cerr << "Failure getting the rod " << rod_i << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		std::stringstream filepath;
+		filepath << fs::temp_directory_path().string() << "/"
+		         << "vtk_rod_" << rod_i << ".00000.vtp";
+		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+		          << std::endl;
+
+		err = MoorDyn_SaveRodVTK(rod, filepath.str().c_str());
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure saving the rod file '"
+			          << filepath.str().c_str() << "':" << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+	}
+
+	unsigned int n_conns;
+	err = MoorDyn_GetNumberConnections(system, &n_conns);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure getting the number of conns: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int conn_i = 1; conn_i <= n_conns; conn_i++) {
+		auto conn = MoorDyn_GetConnection(system, conn_i);
+		if (!conn) {
+			std::cerr << "Failure getting the conn " << conn_i << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		std::stringstream filepath;
+		filepath << fs::temp_directory_path().string() << "/"
+		         << "vtk_conn_" << conn_i << ".00000.vtp";
+		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+		          << std::endl;
+
+		err = MoorDyn_SaveConnectVTK(conn, filepath.str().c_str());
+		if (err != MOORDYN_SUCCESS) {
+			std::cerr << "Failure saving the conn file '"
+			          << filepath.str().c_str() << "':" << err << std::endl;
+			MoorDyn_Close(system);
+			return false;
+		}
 	}
 
 	unsigned int n_lines;
@@ -125,10 +201,81 @@ write_vtk_lines()
 	return true;
 }
 
+bool
+write_vtk_system()
+{
+	std::cout << "*** Writing VTK file..." << std::endl;
+	MoorDyn system = MoorDyn_Create("Mooring/BodiesAndRods.dat");
+	if (!system) {
+		std::cerr << "Failure Creating the Mooring system" << std::endl;
+		return false;
+	}
+
+	unsigned int n_dof;
+	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
+		MoorDyn_Close(system);
+		return false;
+	}
+	if (n_dof) {
+		std::cerr << "No DOFs were expected, but " << n_dof
+		          << " were reported" << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	int err;
+	err = MoorDyn_Init(system, NULL, NULL);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure during the mooring initialization: " << err
+		          << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	// In this second example we are replacing the representation of the body
+	auto body = MoorDyn_GetBody(system, 1);
+	if (!body) {
+		std::cerr << "Failure getting the body" << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	err = MoorDyn_UseBodyVTK(body, "Mooring/ship.stl");
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure loading the body model '"
+					<< "Mooring/ship.stl" << "':" << err << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	std::stringstream filepath;
+	filepath << fs::temp_directory_path().string() << "/"
+				<< "vtk_system.00000.vtm";
+	std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
+				<< std::endl;
+	err = MoorDyn_SaveVTK(system, filepath.str().c_str());
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure saving the file '"
+					<< filepath.str().c_str() << "':" << err << std::endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		std::cerr << "Failure closing Moordyn: " << err << std::endl;
+		return false;
+	}
+	std::cout << "***  OK!" << std::endl;
+
+	return true;
+}
+
 int
 main(int, char**)
 {
-	if (!write_vtk_lines())
+	if (!write_vtk_by_instances())
 		return 1;
+	if (!write_vtk_system())
+		return 2;
 	return 0;
 }

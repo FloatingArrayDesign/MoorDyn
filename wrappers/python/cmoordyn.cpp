@@ -839,6 +839,76 @@ get_fast_tens(PyObject*, PyObject* args)
 	return lst;
 }
 
+/** @brief Wrapper to MoorDyn_Serialize() function
+ * @param args Python passed arguments
+ * @return The bytes array
+ */
+static PyObject*
+serialize(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	int err;
+	size_t array_size;
+	err = MoorDyn_Serialize(system, &array_size, NULL);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	char* array = (char*)malloc(array_size);
+	if (!array) {
+		std::stringstream err;
+		err << "Failure allocating " << array_size << " bytes";
+		PyErr_SetString(PyExc_MemoryError, err.str().c_str());
+		return NULL;
+	}
+	err = MoorDyn_Serialize(system, NULL, (uint64_t*)array);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	PyObject* bytes = PyBytes_FromStringAndSize(array, array_size);
+	free(array);
+
+	return bytes;
+}
+
+/** @brief Wrapper to MoorDyn_Deserialize() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+deserialize(PyObject*, PyObject* args)
+{
+	PyObject *capsule, *bytes;
+
+	if (!PyArg_ParseTuple(args, "OO", &capsule, &bytes))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system || !PyBytes_Check(bytes))
+		return NULL;
+
+	char* array = PyBytes_AsString(bytes);
+	const int err = MoorDyn_Deserialize(system, (uint64_t*)array);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
 /** @brief Wrapper to MoorDyn_Save() function
  * @param args Python passed arguments
  * @return None
@@ -865,7 +935,7 @@ save(PyObject*, PyObject* args)
 	return Py_None;
 }
 
-/** @brief Wrapper to MoorDyn_Save() function
+/** @brief Wrapper to MoorDyn_Load() function
  * @param args Python passed arguments
  * @return None
  */
@@ -889,6 +959,27 @@ load(PyObject*, PyObject* args)
 		return NULL;
 	}
 	return Py_None;
+}
+
+/** @brief Wrapper to MoorDyn_SaveRodVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveVTK(system, filepath));
 }
 
 //                                 Waves.h
@@ -1029,6 +1120,48 @@ body_get_state(PyObject*, PyObject* args)
 	return lst;
 }
 
+/** @brief Wrapper to MoorDyn_SaveBodyVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+body_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveBodyVTK(instance, filepath));
+}
+
+/** @brief Wrapper to MoorDyn_UseBodyVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+body_use_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynBody instance =
+	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_UseBodyVTK(instance, filepath));
+}
+
 //                                 Rod.h
 // =============================================================================
 
@@ -1143,6 +1276,27 @@ rod_get_node_pos(PyObject*, PyObject* args)
 		PyTuple_SET_ITEM(pyr, i, PyFloat_FromDouble(r[i]));
 
 	return pyr;
+}
+
+/** @brief Wrapper to MoorDyn_SaveRodVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+rod_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynRod instance =
+	    (MoorDynRod)PyCapsule_GetPointer(capsule, rod_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveRodVTK(instance, filepath));
 }
 
 //                              Connection.h
@@ -1354,6 +1508,27 @@ conn_get_attached(PyObject*, PyObject* args)
 	return pyv;
 }
 
+/** @brief Wrapper to MoorDyn_SaveConnectVTK() function
+ * @param args Python passed arguments
+ * @return 0 in case of success, an error code otherwise
+ */
+static PyObject*
+conn_save_vtk(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDynConnection instance =
+	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	if (!instance)
+		return NULL;
+
+	return PyLong_FromLong(MoorDyn_SaveConnectVTK(instance, filepath));
+}
+
 //                                 Line.h
 // =============================================================================
 
@@ -1436,6 +1611,60 @@ line_get_ulen(PyObject*, PyObject* args)
 	}
 
 	return PyFloat_FromDouble(l);
+}
+
+/** @brief Wrapper to MoorDyn_SetLineUnstretchedLength() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_ulen(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	double l;
+
+	if (!PyArg_ParseTuple(args, "Od", &capsule, &l))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	const int err = MoorDyn_SetLineUnstretchedLength(instance, l);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
+/** @brief Wrapper to MoorDyn_SetLineUnstretchedLength() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_ulenv(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	double v;
+
+	if (!PyArg_ParseTuple(args, "Od", &capsule, &v))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	const int err = MoorDyn_SetLineUnstretchedLengthVel(instance, v);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
 }
 
 /** @brief Wrapper to MoorDyn_GetLineNodePos() function
@@ -1676,12 +1905,26 @@ static PyMethodDef moordyn_methods[] = {
 	  get_fast_tens,
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "serialize", save, METH_VARARGS, "Serialize the system to a bytes array" },
+	{ "deserialize", load, METH_VARARGS, "Deserialize the system from a bytes array" },
 	{ "save", save, METH_VARARGS, "Save the system to a file" },
 	{ "load", load, METH_VARARGS, "Load the system from a file" },
+	{ "save_vtk",
+	  save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtm file of the whole system" },
 	{ "waves_getkin", waves_getkin, METH_VARARGS, "Get waves kinematics" },
 	{ "body_get_id", body_get_id, METH_VARARGS, "Get the body id" },
 	{ "body_get_type", body_get_type, METH_VARARGS, "Get the body type" },
 	{ "body_get_state", body_get_state, METH_VARARGS, "Get the body state" },
+	{ "body_save_vtk",
+	  body_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the body" },
+	{ "body_use_vtk",
+	  body_use_vtk,
+	  METH_VARARGS,
+	  "Load a representation model for the body" },
 	{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
 	{ "rod_get_type", rod_get_type, METH_VARARGS, "Get the rod type" },
 	{ "rod_get_n", rod_get_n, METH_VARARGS, "Get the rod number of segments" },
@@ -1689,6 +1932,10 @@ static PyMethodDef moordyn_methods[] = {
 	  rod_get_node_pos,
 	  METH_VARARGS,
 	  "Get a rod node position" },
+	{ "rod_save_vtk",
+	  rod_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the rod" },
 	{ "conn_get_id", conn_get_id, METH_VARARGS, "Get the connection id" },
 	{ "conn_get_type", conn_get_type, METH_VARARGS, "Get the connection type" },
 	{ "conn_get_pos",
@@ -1711,6 +1958,10 @@ static PyMethodDef moordyn_methods[] = {
 	  conn_get_attached,
 	  METH_VARARGS,
 	  "Get an attached line" },
+	{ "conn_save_vtk",
+	  conn_save_vtk,
+	  METH_VARARGS,
+	  "Save a .vtp file of the connection" },
 	{ "line_get_id", line_get_id, METH_VARARGS, "Get the line id" },
 	{ "line_get_n",
 	  line_get_n,
@@ -1720,6 +1971,14 @@ static PyMethodDef moordyn_methods[] = {
 	  line_get_ulen,
 	  METH_VARARGS,
 	  "Get the line unstretched length" },
+	{ "line_set_ulen",
+	  line_set_ulen,
+	  METH_VARARGS,
+	  "Set the line unstretched length" },
+	{ "line_set_ulenv",
+	  line_set_ulenv,
+	  METH_VARARGS,
+	  "Set the line rate of change of unstretched length" },
 	{ "line_get_node_pos",
 	  line_get_node_pos,
 	  METH_VARARGS,

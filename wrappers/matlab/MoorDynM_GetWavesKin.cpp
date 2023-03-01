@@ -37,18 +37,17 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynWaves, 5, 4)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynWaves, 4, 4)
 {
 	const double x = inputs[1][0];
 	const double y = inputs[2][0];
 	const double z = inputs[3][0];
-	const double t = inputs[4][0];
 
 	std::vector<double> u(3, 0.0);
 	std::vector<double> ud(3, 0.0);
 	double zeta, pdyn;
 	const int err = MoorDyn_GetWavesKin(
-	    instance, x, y, z, t, u.data(), ud.data(), &zeta, &pdyn);
+	    instance, x, y, z, u.data(), ud.data(), &zeta, &pdyn);
 	MOORDYNM_CHECK_ERROR(err);
 
 	outputs[0] = factory.createArray<double>(

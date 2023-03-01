@@ -42,6 +42,10 @@
 #define isnan(x) std::isnan(x)
 #endif
 
+#ifdef USE_VTK
+#include <vtkXMLMultiBlockDataWriter.h>
+#endif
+
 using namespace std;
 
 namespace moordyn {
@@ -118,7 +122,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
 
-	LOGDBG << "MoorDyn is expecting " << NCoupedDOF()
+	LOGDBG << "MoorDyn is expecting " << NCoupledDOF()
 	       << " coupled degrees of freedom" << endl;
 
 	if (!nX) {
@@ -131,8 +135,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 
 moordyn::MoorDyn::~MoorDyn()
 {
-	if (outfileLog.is_open())
-		outfileLog.close();
 	if (outfileMain.is_open())
 		outfileMain.close();
 	for (auto outfile : outfiles) // int l=0; l<nLines; l++)
@@ -164,10 +166,10 @@ moordyn::MoorDyn::~MoorDyn()
 moordyn::error_id
 moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 {
-	if (NCoupedDOF() && !x) {
+	if (NCoupledDOF() && !x) {
 		LOGERR << "ERROR: "
 		       << "MoorDyn::Init received a Null position vector, "
-		       << "but " << NCoupedDOF() << "components are required" << endl;
+		       << "but " << NCoupledDOF() << "components are required" << endl;
 	}
 
 	// <<<<<<<<< need to add bodys
@@ -440,13 +442,13 @@ moordyn::MoorDyn::Step(const double* x,
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
-		if (NCoupedDOF())
+		if (NCoupledDOF())
 			return GetForces(f);
 		else
 			return MOORDYN_SUCCESS;
 	}
 
-	if (NCoupedDOF() && (!x || !xd || !f)) {
+	if (NCoupledDOF() && (!x || !xd || !f)) {
 		LOGERR << "Null Pointer received in " << __FUNC_NAME__ << " ("
 		       << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;
 	}
@@ -544,7 +546,7 @@ moordyn::MoorDyn::Step(const double* x,
 		return err;
 
 	// recover the forces if there are coupled DOFs
-	if (NCoupedDOF())
+	if (NCoupledDOF())
 		return GetForces(f);
 	else
 		return MOORDYN_SUCCESS;
@@ -593,6 +595,47 @@ MoorDyn::Deserialize(const uint64_t* data)
 
 	return ptr;
 }
+
+#ifdef USE_VTK
+vtkSmartPointer<vtkMultiBlockDataSet>
+MoorDyn::getVTK() const
+{
+	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
+	out->SetNumberOfBlocks(RodList.size() + ConnectionList.size() +
+	                       LineList.size());
+	unsigned int n = 0;
+	for (unsigned int i = 0; i < BodyList.size(); i++)
+		out->SetBlock(n + i, BodyList[i]->getVTK());
+	n += BodyList.size();
+	for (unsigned int i = 0; i < ConnectionList.size(); i++)
+		out->SetBlock(n + i, ConnectionList[i]->getVTK());
+	n += ConnectionList.size();
+	for (unsigned int i = 0; i < RodList.size(); i++)
+		out->SetBlock(n + i, RodList[i]->getVTK());
+	n += RodList.size();
+	for (unsigned int i = 0; i < LineList.size(); i++)
+		out->SetBlock(n + i, LineList[i]->getVTK());
+	return out;
+}
+
+void
+MoorDyn::saveVTK(const char* filename) const
+{
+	auto obj = this->getVTK();
+	auto writer = vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
+	writer->SetFileName(filename);
+	writer->SetInputData(obj);
+	writer->SetDataModeToBinary();
+	writer->Update();
+	writer->Write();
+	auto err = io::vtk_error(writer->GetErrorCode());
+	if (err != MOORDYN_SUCCESS) {
+		LOGERR << "VTK reported an error while writing the VTM file '"
+		       << filename << "'" << endl;
+		MOORDYN_THROW(err, "vtkXMLMultiBlockDataWriter reported an error");
+	}
+}
+#endif
 
 moordyn::error_id
 moordyn::MoorDyn::ReadInFile()
@@ -1620,6 +1663,7 @@ moordyn::MoorDyn::ReadInFile()
 		if (moordyn::str::has(moordyn::str::upper(in_txt[i]), { "OUTPUT" })) {
 			LOGDBG << "   Reading output options:" << endl;
 
+			i++;
 			// parse until the next header or the end of the file
 			while ((in_txt[i].find("---") == string::npos) &&
 			       (i < in_txt.size())) {
@@ -2049,7 +2093,7 @@ int DECLDIR
 MoorDyn_NCoupledDOF(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ((moordyn::MoorDyn*)system)->NCoupedDOF();
+	*n = ((moordyn::MoorDyn*)system)->NCoupledDOF();
 	return MOORDYN_SUCCESS;
 }
 
@@ -2276,6 +2320,50 @@ MoorDyn_GetFASTtens(MoorDyn system,
 	return MOORDYN_SUCCESS;
 }
 
+int DECLDIR MoorDyn_Serialize(MoorDyn system,
+	                          size_t* size,
+	                          uint64_t* data)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const std::vector<uint64_t> backup = ((moordyn::MoorDyn*)system)->Serialize();
+		if (size)
+			*size = backup.size() * sizeof(uint64_t);
+		if (data)
+			memcpy(data, backup.data(), backup.size() * sizeof(uint64_t));
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
+int DECLDIR MoorDyn_Deserialize(MoorDyn system,
+	                            const uint64_t* data)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	if (!data) {
+		cerr << "Error: No data has been provided to "
+	         << __FUNC_NAME__ << "()" << endl;
+		return MOORDYN_INVALID_VALUE;
+	}
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->Deserialize(data);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
 int DECLDIR
 MoorDyn_Save(MoorDyn system, const char* filepath)
 {
@@ -2324,4 +2412,24 @@ MoorDyn_DrawWithGL(MoorDyn system)
 		conn->drawGL();
 #endif
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SaveVTK(MoorDyn system, const char* filename)
+{
+#ifdef USE_VTK
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->saveVTK(filename);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+#else
+	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
+	     << " (" << XSTR(__FILE__) << ":" << __LINE__
+	     << ") cannot save the file '" << filename << "'" << endl;
+	return MOORDYN_NON_IMPLEMENTED;
+#endif
 }

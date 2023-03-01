@@ -480,6 +480,34 @@ def GetFASTtens(instance, n_lines):
     return data[0], data[1], data[2], data[3]
 
 
+def Serialize(instance):
+    """Serialize the MoorDyn system into a bytes array that can be restored
+    afterwards to resume the simulation
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    Bytes array
+    """
+    import cmoordyn
+    return cmoordyn.serialize(instance)
+
+
+def Deserialize(instance, data):
+    """Restores the MoorDyn system to a previous serialized state
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    data (bytes): The serialized data
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.deserialize(instance, data)
+
+
 def Save(instance, filepath):
     """Save the MoorDyn system into a file that can be loaded afterwards to
     resume the simulation
@@ -510,6 +538,20 @@ def Load(instance, filepath):
     """
     import cmoordyn
     cmoordyn.load(instance, filepath)
+
+
+def SaveVTK(instance, filename):
+    """ Save the rod to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.save_vtk(instance, filename)
 
 #                                  Waves.h
 #  =============================================================================
@@ -579,6 +621,33 @@ def GetBodyState(instance):
     return cmoordyn.body_get_state(instance)
 
 
+def SaveBodyVTK(instance, filename):
+    """ Save the body to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.body_save_vtk(instance, filename)
+
+
+def UseBodyVTK(instance, filename):
+    """ Load the body representation from a 3d model file
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.use_save_vtk(instance, filename)
+
 #                                  Rod.h
 #  =============================================================================
 
@@ -635,6 +704,19 @@ def GetRodNodePos(instance, i):
     import cmoordyn
     return cmoordyn.rod_get_node_pos(instance, i)
 
+
+def SaveRodVTK(instance, filename):
+    """ Save the rod to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.rod_save_vtk(instance, filename)
 
 #                                Connection.h
 #  =============================================================================
@@ -733,6 +815,19 @@ def GetConnectAttached(instance, i):
     return cmoordyn.conn_get_attached(instance, i)
 
 
+def SaveConnectVTK(instance, filename):
+    """ Save the connection to a VTK (.vtp) file
+
+    Parameters:
+    instance (cmoordyn.MoorDynConnection): The connection instance
+    filepath (str): The file path
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    import cmoordyn
+    return cmoordyn.conn_save_vtk(instance, filename)
+
 #                                  Line.h
 #  =============================================================================
 
@@ -774,6 +869,28 @@ def GetLineUnstretchedLength(instance):
     """
     import cmoordyn
     return cmoordyn.line_get_ulen(instance)
+
+
+def SetLineUnstretchedLength(instance, l):
+    """ Set the line unstretched length
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    l (float): The unstreched length
+    """
+    import cmoordyn
+    return cmoordyn.line_set_ulen(instance, l)
+
+
+def SetLineUnstretchedLengthVel(instance, v):
+    """ Set the line unstretched length rate of change
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    v (float): The unstreched length rate of change
+    """
+    import cmoordyn
+    return cmoordyn.line_set_ulenv(instance, v)
 
 
 def GetLineNodePos(instance, i):
@@ -849,7 +966,7 @@ def SaveLineVTK(instance, filename):
 
     Parameters:
     instance (cmoordyn.MoorDynLine): The line instance
-    filepath (str): The log file path
+    filepath (str): The file path
 
     Returns:
     int: 0 uppon success, an error code otherwise
