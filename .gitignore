@@ -5,6 +5,11 @@
 *.dylib
 *.dll
 *.so
+build
+dist
+.eggs
+moordyn.egg-info
+OSX_example
 
 # Sphinx
 _build
