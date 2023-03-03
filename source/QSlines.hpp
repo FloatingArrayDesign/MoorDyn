@@ -244,12 +244,7 @@ Catenary(T XF,
 	XF = max(XF, Tol);
 	ZF = max(ZF, Tol);
 
-	VFMinWL = VF - WL;
-	HFOvrW = HF / W;
-	LMinVFOvrW = L - VF / W;
-	VFMinWLOvrHF = VFMinWL / HF;
-	VFMinWLOvrHF2 = VFMinWLOvrHF * VFMinWLOvrHF;
-	SQRT1VFMinWLOvrHF2 = sqrt(1.0 + VFMinWLOvrHF2);
+	
 
 	// Solve the analytical, static equilibrium equations for a catenary (or
 	// taut) mooring line with seabed interaction:
@@ -262,6 +257,14 @@ Catenary(T XF,
 		VFOvrHF = VF / HF;
 		VFOvrHF2 = VFOvrHF * VFOvrHF;
 		SQRT1VFOvrHF2 = sqrt(1.0 + VFOvrHF2);
+		VFMinWL = VF - WL;
+		//These variables below need to be located in for loop, otherwise catenary solver fails
+		HFOvrW = HF / W;
+		LMinVFOvrW = L - VF / W;
+		VFMinWLOvrHF = VFMinWL / HF;
+		VFMinWLOvrHF2 = VFMinWLOvrHF * VFMinWLOvrHF;
+		SQRT1VFMinWLOvrHF2 = sqrt(1.0 + VFMinWLOvrHF2);
+		
 
 		// Compute the error functions (to be zeroed) and the Jacobian matrix
 		//   (these depend on the anticipated configuration of the mooring
@@ -413,10 +416,13 @@ Catenary(T XF,
 			dHF = 0.0;
 			dVF = 0.0;
 		}
-
+		
 		else if ((I == MaxIter) && (!FirstIter)) {
 			// .TRUE. if we've iterated as much as we can take without finding a
 			// solution; Abort
+			if (longwinded == 1){
+				cout << "Reached max iterations without finding solution, aborting catenary solver ..." << endl;
+			}
 			return -1;
 		}
 

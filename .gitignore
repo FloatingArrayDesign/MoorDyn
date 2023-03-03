@@ -53,3 +53,5 @@ compile/SO/test*
 .eggs
 moordyn.egg-info
 tests/__pycache__
+build
+dist

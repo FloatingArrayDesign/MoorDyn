@@ -20,9 +20,13 @@
 #
 # debug: Build both targets, "all" and "test", with debug information
 
+# # Flags for compiling with gcc (not OSX default)
+# LFLAGS = -shared -static-libgcc -static-libstdc++ -DOSX -DMoorDyn_EXPORTS -fPIC
+# CFLAGS = -c -O3 -g -Wall -Wextra -DOSX -DMoorDyn_EXPORTS -fPIC
 
-LFLAGS = -shared -static-libgcc -static-libstdc++ -DOSX -DMoorDyn_EXPORTS -fPIC
-CFLAGS = -c -O3 -g -Wall -Wextra -DOSX -DMoorDyn_EXPORTS -fPIC
+# Flags for compiling with clang (OSX default)
+LFLAGS = -shared -DOSX -DMoorDyn_EXPORTS -fPIC
+CFLAGS = -c -O3 -static -g -Wall -Wextra -DOSX -DMoorDyn_EXPORTS -fPIC
 
 ifdef USEGL
 CFLAGS += -DUSEGL
@@ -34,6 +38,10 @@ LFLAGS += $(LOPTS)
 
 CPPFLAGS = $(CFLAGS) -std=c++14
 EXEFLAGS = -O3 -g -Wall -Wextra -DOSX $(EXEOPTS)
+
+CC = clang++
+CXX = clang++
+
 HEADERS = ../../source/Body.h \
           ../../source/Connection.h \
           ../../source/_kiss_fft_guts.h \

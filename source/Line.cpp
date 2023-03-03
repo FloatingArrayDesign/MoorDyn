@@ -246,6 +246,9 @@ Line::initialize()
 	       << "    ww_l: " << ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81
 	       << endl;
 
+	// r is vector of vectors. First index refers to node number, r[0] is anchor, r[N] is vessel. 
+	// Second index is property data. r[0][0] is the x position of anchor, r[0][1] is y position etc.
+
 	if (outfile) {
 		if (!outfile->is_open()) {
 			LOGERR << "Unable to write file Line" << number << ".out" << endl;
@@ -473,7 +476,9 @@ Line::initialize()
 
 	// if conditions are ideal, try to calculate initial line profile using
 	// catenary routine (from FAST v.7)
-	if (-r[0][0] == env->WtrDpth) {
+	
+	//if (-r[0][0] == env->WtrDpth) {
+	if (-r[0][2] == env->WtrDpth) {
 		real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;
