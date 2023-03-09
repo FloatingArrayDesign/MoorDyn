@@ -223,6 +223,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Create setup.py
+        run: |
+            mv ${{github.workspace}}/wrappers/python/.github.setup.py ${{github.workspace}}/setup.py
+            mv ${{github.workspace}}/wrappers/python/.github.setup.cfg ${{github.workspace}}/setup.cfg
+        shell: bash
+
       # Used to host cibuildwheel
       - uses: actions/setup-python@v3
 
