@@ -21,7 +21,7 @@ if(USE_VTK)
     set(TESTS "${TESTS};vtk")
 endif()
 foreach(TEST ${TESTS})
-    add_executable(${TEST} ${TEST}.cpp "tripod.cpp")
+    add_executable(${TEST} ${TEST}.cpp)
     target_link_libraries(${TEST} moordyn)
     add_dependencies(${TEST} Test_MooringConfigFiles)
     add_test(NAME ${TEST}
