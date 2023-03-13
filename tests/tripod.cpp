@@ -5,7 +5,7 @@
 
 int main(int, char**) {
     // Path for input file:
-    MoorDyn system = MoorDyn_Create("./Mooring/test.txt");
+    MoorDyn system = MoorDyn_Create("./Mooring/tripod.txt");
 
     if (!system)
     {
