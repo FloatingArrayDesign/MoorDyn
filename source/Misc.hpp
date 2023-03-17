@@ -561,6 +561,15 @@ typedef enum
 	WAVES_KIN = 6,
 } waves_settings;
 
+
+typedef enum
+{
+	/// Flat seafloor:
+	SEAFLOOR_FLAT = 0,
+	/// 3D seafloor
+	SEAFLOOR_3D = 1,
+} seafloor_settings;
+
 // Current options: 0 - no currents or set externally (as part of WaveKin =0 or
 // 1 approach) [default]
 //                  1 - read in steady current profile, grid approach
@@ -1146,6 +1155,9 @@ typedef struct
 	double kb;
 	/// bottom damping   (Pa/m/s)
 	double cb;
+	/// Bottom modeling mode (0=flat, 1=3d...)<<<
+	moordyn::seafloor_settings SeafloorMode;
+
 	/// wave kinematics flag (0=off, >0=on...)<<<
 	moordyn::waves_settings WaveKin;
 	/// current flag (0=off, >0=on...)<<<

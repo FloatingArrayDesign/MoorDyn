@@ -13,7 +13,7 @@ set(MOORDYN_SRCS
     Waves.cpp
     kiss_fft.cpp
     kiss_fftr.cpp
-)
+ "Seafloor.cpp")
 
 set(MOORDYN_HEADERS
     Body.hpp
