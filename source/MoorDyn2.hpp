@@ -354,6 +354,10 @@ class MoorDyn : public io::IO
 	 */
 	moordyn::error_id ReadInFile();
 
+	moordyn::error_id readFileIntoBuffers(vector<string> &in_txt);
+
+	int findStartOfSection(vector<string> &in_txt, vector<string> sectionName);
+
 	/** @brief Get the forces
 	 * @param f The forces array
 	 * @return MOORDYN_SUCCESS If the forces are correctly set, an error code

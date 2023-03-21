@@ -6,6 +6,11 @@ Model Structure
 
 MoorDyn Objects
 ---------------
+MoorDyn models the dynamics of mooring structures in an object-oriented programming (OOP) approach.
+The overall simulation is managed by the MoorDyn2 class. This class reads inputs, allows models to
+be loaded and saved, contains various environmental parameters (e.g. time-steps sizes and filepaths)
+and most importantly contains pointers to all the Objects representing physical parts of the model
+(Lines, Bodies, Rods, Connections). 
 
 Lines
 ^^^^^

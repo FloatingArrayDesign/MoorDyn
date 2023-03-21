@@ -1,5 +1,5 @@
 --------------------- MoorDyn Input File -------------------------------------------------------
-Trying to simulate a single chain swinging in seawater. Outputs should be p,t so that we
+Trying to simulate a single chain swinging in seawater. Outputs should be p so that we
 can get the position and tension for the line!
 ----------------------- LINE TYPES --------------------------------------------------------------
 TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
@@ -41,17 +41,17 @@ Node      Type      X        Y         Z        M        V         CdA   CA
 -------------------------- LINES -----------------------------------------------------------------
 Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 (-)      (-)       (-)       (-)   (m)         (-)          (-)
-1 nodeFloat 1 2 0.63 3 p,t
-2 nodeTether 3 1 1.11374 5 p,t
-3 Anchor-Bridle 3 4 6.0 7 p,t
-4 Anchor-Line 4 5 11.75240030480061 14 p,t
-5 Anchor-Chain 5 6 4.42 5 p,t
-6 Anchor-Bridle 3 7 6.0 7 p,t
-7 Anchor-Line 7 8 11.75240030480061 14 p,t
-8 Anchor-Chain 8 9 4.42 5 p,t
-9 Anchor-Bridle 3 10 6.0 7 p,t
-10 Anchor-Line 10 11 11.75240030480061 14 p,t
-11 Anchor-Chain 11 12 4.42 5 p,t
+1 nodeFloat 1 2 0.63 3 p
+2 nodeTether 3 1 1.11374 5 p
+3 Anchor-Bridle 3 4 6.0 7 p
+4 Anchor-Line 4 5 11.75240030480061 14 p
+5 Anchor-Chain 5 6 4.42 5 p
+6 Anchor-Bridle 3 7 6.0 7 p
+7 Anchor-Line 7 8 11.75240030480061 14 p
+8 Anchor-Chain 8 9 4.42 5 p
+9 Anchor-Bridle 3 10 6.0 7 p
+10 Anchor-Line 10 11 11.75240030480061 14 p
+11 Anchor-Chain 11 12 4.42 5 p
 -------------------------- SOLVER OPTIONS----------------------------------------------------------
 2         writeLog     - Write a log file
 0.000055  dtM          - time step to use in mooring integration
