@@ -69,6 +69,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , dtM0(0.001)
   , dtOut(0.0)
   , _t_integrator(NULL)
+  , t_integrator_name("RK2")
   , GroundBody(NULL)
   , waves(NULL)
   , nX(0)
@@ -671,29 +672,6 @@ moordyn::MoorDyn::ReadInFile()
 			i++;
 		}
 	}
-
-	// factor by which to boost drag coefficients during dynamic relaxation IC
-	// generation
-	ICDfac = 5.0;
-	// convergence analysis time step for IC generation
-	ICdt = 1.0;
-	// max time for IC generation
-	ICTmax = 120;
-	// threshold for relative change in tensions to call it converged
-	ICthresh = 0.001;
-	// temporary wave kinematics flag used to store input value while keeping
-	// env.WaveKin=0 for IC gen
-	WaveKinTemp = WAVES_NONE;
-	// assume no wave kinematics points are passed in externally, unless
-	// ExernalWaveKinInit is called later
-	npW = 0;
-	// default value for desired mooring model time step
-	dtM0 = 0.001;
-	// default time integration scheme
-	string t_integrator_name = "RK2";
-
-	// string containing which channels to write to output
-	vector<string> outchannels;
 
 	// make a "ground body" that will be the parent of all fixed objects
 	// (connections and rods)
@@ -1508,73 +1486,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
-			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			if (entries.size() < 2) {
-				i++;
-				LOGWRN << "Ignoring option line " << i << endl;
-				continue;
-			}
-
-			LOGDBG << "\t" << entries[1] << " = " << entries[0] << endl;
-			const string value = entries[0];
-			const string name = entries[1];
-			if (name == "writeLog") {
-				// Already registered
-				i++;
-				continue;
-			}
-			// DT is old way, should phase out
-			else if ((name == "dtM") || (name == "DT"))
-				dtM0 = atof(entries[0].c_str());
-			else if (name == "tScheme")
-				t_integrator_name = entries[0];
-			else if ((name == "g") || (name == "gravity"))
-				env.g = atof(entries[0].c_str());
-			else if ((name == "Rho") || (name == "rho") || (name == "WtrDnsty"))
-				env.rho_w = atof(entries[0].c_str());
-			else if (name == "WtrDpth")
-				env.WtrDpth = atof(entries[0].c_str());
-			else if ((name == "kBot") || (name == "kb"))
-				env.kb = atof(entries[0].c_str());
-			else if ((name == "cBot") || (name == "cb"))
-				env.cb = atof(entries[0].c_str());
-			else if ((name == "dtIC") || (name == "ICdt"))
-				ICdt = atof(entries[0].c_str());
-			else if ((name == "TmaxIC") || (name == "ICTmax"))
-				ICTmax = atof(entries[0].c_str());
-			else if ((name == "CdScaleIC") || (name == "ICDfac"))
-				ICDfac = atof(entries[0].c_str());
-			else if ((name == "threshIC") || (name == "ICthresh"))
-				ICthresh = atof(entries[0].c_str());
-			else if (name == "WaveKin") {
-				WaveKinTemp = (moordyn::waves_settings)atoi(entries[0].c_str());
-				if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
-					LOGWRN << "Unknown WaveKin option value " << WaveKinTemp
-					       << endl;
-			} else if (name == "dtWave")
-				env.dtWave = atoi(entries[0].c_str());
-			else if (name == "Currents") {
-				env.Current =
-				    (moordyn::currents_settings)atoi(entries[0].c_str());
-				if ((env.Current < CURRENTS_NONE) ||
-				    (env.Current > CURRENTS_4D))
-					LOGWRN << "Unknown Currents option value " << env.Current
-					       << endl;
-			} else if (name == "WriteUnits")
-				env.WriteUnits = atoi(entries[0].c_str());
-			else if (name == "FrictionCoefficient")
-				env.FrictionCoefficient = atof(entries[0].c_str());
-			else if (name == "FricDamp")
-				env.FricDamp = atof(entries[0].c_str());
-			else if (name == "StatDynFricScale")
-				env.StatDynFricScale = atof(entries[0].c_str());
-			// output writing period (0 for at every call)
-			else if (name == "dtOut")
-				dtOut = atof(entries[0].c_str());
-			else
-				LOGWRN << "Warning: Unrecognized option '" << name << "'"
-				       << endl;
-
+			readOptionsLine(in_txt, i);
 			i++;
 		}
 	}
@@ -1848,6 +1760,68 @@ moordyn::MoorDyn::findStartOfSection(vector<string>& in_txt,
 		i += 3; // need to also skip label line and unit line
 
 	return i;
+}
+
+void
+moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
+{
+	vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+	if (entries.size() < 2) {
+		LOGWRN << "Ignoring option line " << i
+		       << " due to unspecified value or option type" << endl;
+		return;
+	}
+
+	LOGDBG << "\t" << entries[1] << " = " << entries[0] << endl;
+	const string value = entries[0];
+	const string name = entries[1];
+
+	// DT is old way, should phase out
+	if ((name == "dtM") || (name == "DT"))
+		dtM0 = atof(entries[0].c_str());
+	else if (name == "tScheme")
+		t_integrator_name = entries[0];
+	else if ((name == "g") || (name == "gravity"))
+		env.g = atof(entries[0].c_str());
+	else if ((name == "Rho") || (name == "rho") || (name == "WtrDnsty"))
+		env.rho_w = atof(entries[0].c_str());
+	else if (name == "WtrDpth")
+		env.WtrDpth = atof(entries[0].c_str());
+	else if ((name == "kBot") || (name == "kb"))
+		env.kb = atof(entries[0].c_str());
+	else if ((name == "cBot") || (name == "cb"))
+		env.cb = atof(entries[0].c_str());
+	else if ((name == "dtIC") || (name == "ICdt"))
+		ICdt = atof(entries[0].c_str());
+	else if ((name == "TmaxIC") || (name == "ICTmax"))
+		ICTmax = atof(entries[0].c_str());
+	else if ((name == "CdScaleIC") || (name == "ICDfac"))
+		ICDfac = atof(entries[0].c_str());
+	else if ((name == "threshIC") || (name == "ICthresh"))
+		ICthresh = atof(entries[0].c_str());
+	else if (name == "WaveKin") {
+		WaveKinTemp = (moordyn::waves_settings)atoi(entries[0].c_str());
+		if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
+			LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
+	} else if (name == "dtWave")
+		env.dtWave = atoi(entries[0].c_str());
+	else if (name == "Currents") {
+		env.Current = (moordyn::currents_settings)atoi(entries[0].c_str());
+		if ((env.Current < CURRENTS_NONE) || (env.Current > CURRENTS_4D))
+			LOGWRN << "Unknown Currents option value " << env.Current << endl;
+	} else if (name == "WriteUnits")
+		env.WriteUnits = atoi(entries[0].c_str());
+	else if (name == "FrictionCoefficient")
+		env.FrictionCoefficient = atof(entries[0].c_str());
+	else if (name == "FricDamp")
+		env.FricDamp = atof(entries[0].c_str());
+	else if (name == "StatDynFricScale")
+		env.StatDynFricScale = atof(entries[0].c_str());
+	// output writing period (0 for at every call)
+	else if (name == "dtOut")
+		dtOut = atof(entries[0].c_str());
+	else
+		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 
 void

@@ -358,6 +358,8 @@ class MoorDyn : public io::IO
 
 	int findStartOfSection(vector<string> &in_txt, vector<string> sectionName);
 
+	void readOptionsLine(vector<string>& in_txt, int index);
+
 	/** @brief Get the forces
 	 * @param f The forces array
 	 * @return MOORDYN_SUCCESS If the forces are correctly set, an error code
@@ -436,6 +438,8 @@ class MoorDyn : public io::IO
 
 	/// The time integration scheme
 	TimeScheme* _t_integrator;
+	/// The time integration scheme name
+	string t_integrator_name;
 
 	/// General options of the Mooryng system
 	EnvCond env;
