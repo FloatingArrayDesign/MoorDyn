@@ -50,17 +50,17 @@ class Seafloor : LogUser
 	real getDepthAt(real x, real y);
 
   private:
-	/// number of grid points in x direction
+	/// number of grid points (ticks) in x direction
 	unsigned int nx;
-	/// number of grid points in y direction
+	/// number of grid points (ticks) in y direction
 	unsigned int ny;
 
-	/// grid x coordinate arrays
+	/// grid x coordinate arrays (indicating tick values)
 	std::vector<real> px;
-	/// grid y coordinate arrays
+	/// grid y coordinate arrays (indicating tick values)
 	std::vector<real> py;
 
-	/// Seafloor depth grid
+	/// Seafloor depth grid (nx by ny grid of z vals)
 	std::vector<std::vector<real>> depthGrid;
 
 };
