@@ -25,6 +25,7 @@ jobs:
       if: github.event_name == 'push'
 
     - uses: dev-drprasad/delete-tag-and-release@v0.2.1
+      continue-on-error: true
       with:
         delete_release: true
         tag_name: "nightly"
