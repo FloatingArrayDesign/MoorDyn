@@ -473,7 +473,7 @@ Line::initialize()
 
 	// if conditions are ideal, try to calculate initial line profile using
 	// catenary routine (from FAST v.7)
-	if (-r[0][0] == env->WtrDpth) {
+	if (-r[0][2] == env->WtrDpth) {
 		real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;

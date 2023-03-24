@@ -162,7 +162,7 @@ Rod::setup(int number_in,
 	// no memory errors are triggered)
 	const vec org = endCoords(Eigen::seqN(0, 3));
 	const vec dst = endCoords(Eigen::seqN(3, 3));
-	for (int i = 0; i <= N; i++) {
+	for (unsigned int i = 0; i <= N; i++) {
 		const real f = i / (real)N;
 		r[i] = org + f * (dst - org);
 		rd[i] = vec::Zero();
@@ -829,7 +829,7 @@ Rod::doRHS()
 
 	// set interior node positions and velocities (stretch the nodes between the
 	// endpoints linearly) (skipped for zero-length Rods)
-	for (int i = 1; i < N; i++) {
+	for (unsigned int i = 1; i < N; i++) {
 		const real f = i / (real)N;
 		r[i] = r[0] + f * (r[N] - r[0]);
 		rd[i] = rd[0] + f * (rd[N] - rd[0]);
@@ -1273,7 +1273,7 @@ Rod::Output(real time)
 
 		// output positions?
 		if (channels.find("p") != string::npos) {
-			for (int i = 0; i <= N; i++) // loop through nodes
+			for (unsigned int i = 0; i <= N; i++) // loop through nodes
 			{
 				for (int J = 0; J < 3; J++)
 					*outfile << r[i][J] << "\t ";
@@ -1281,15 +1281,15 @@ Rod::Output(real time)
 		}
 		// output velocities?
 		if (channels.find("v") != string::npos) {
-			for (int i = 0; i <= N; i++) {
+			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
 					*outfile << rd[i][J] << "\t ";
 			}
 		}
 		// output net node forces?
 		if (channels.find("f") != string::npos) {
-			for (int i = 0; i <= N; i++) {
-				for (int J = 0; J < 3; J++)
+			for (unsigned int i = 0; i <= N; i++) {
+				for (unsigned int J = 0; J < 3; J++)
 					*outfile << Fnet[i][J] << "\t ";
 			}
 		}
