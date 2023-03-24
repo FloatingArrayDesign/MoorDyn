@@ -364,7 +364,7 @@ class Line : public io::IO
 	 * @warning The lines damping is not changed, which might affect the
 	 * stability
 	 */
-	inline void updateUnstretchedLength(const moordyn::real dt=0.0)
+	inline void updateUnstretchedLength(const moordyn::real dt = 0.0)
 	{
 		if (!UnstrLend)
 			return;

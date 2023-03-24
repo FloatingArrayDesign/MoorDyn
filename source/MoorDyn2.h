@@ -416,9 +416,7 @@ extern "C"
 	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_Serialize(MoorDyn system,
-	                              size_t* size,
-	                              uint64_t* data);
+	int DECLDIR MoorDyn_Serialize(MoorDyn system, size_t* size, uint64_t* data);
 
 	/** @brief Load the system from the serialized data before
 	 *
@@ -431,8 +429,7 @@ extern "C"
 	 * @see MoorDyn_Save
 	 * @see MoorDyn_Init_NoIC
 	 */
-	int DECLDIR MoorDyn_Deserialize(MoorDyn system,
-	                                const uint64_t* data);
+	int DECLDIR MoorDyn_Deserialize(MoorDyn system, const uint64_t* data);
 
 	/** @brief Save the system so it can be loaded afterwards
 	 *

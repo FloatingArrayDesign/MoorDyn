@@ -740,9 +740,10 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 			unsigned iti = 1;
 			for (unsigned int iz = 0; iz < nz; iz++) {
 				for (unsigned int it = 0; it < nt; it++) {
-					// need to set iti, otherwise it will lock to final t after one pass through
-					// initially the upper index we check should always be one timestep ahead of it
-					iti = it + 1;  
+					// need to set iti, otherwise it will lock to final t after
+					// one pass through initially the upper index we check
+					// should always be one timestep ahead of it
+					iti = it + 1;
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
 					                   UProfileUx[iz][iti - 1] * (1. - ft);
@@ -767,7 +768,7 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 				real ft;
 				unsigned iti = 1;
 				for (unsigned int it = 0; it < nt; it++) {
-					iti = it + 1;  // Set initial iti
+					iti = it + 1; // Set initial iti
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
 					for (unsigned int ix = 0; ix < nx; ix++) {
 						for (unsigned int iy = 0; iy < ny; iy++) {

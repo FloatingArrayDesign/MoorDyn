@@ -2320,15 +2320,15 @@ MoorDyn_GetFASTtens(MoorDyn system,
 	return MOORDYN_SUCCESS;
 }
 
-int DECLDIR MoorDyn_Serialize(MoorDyn system,
-	                          size_t* size,
-	                          uint64_t* data)
+int DECLDIR
+MoorDyn_Serialize(MoorDyn system, size_t* size, uint64_t* data)
 {
 	CHECK_SYSTEM(system);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		const std::vector<uint64_t> backup = ((moordyn::MoorDyn*)system)->Serialize();
+		const std::vector<uint64_t> backup =
+		    ((moordyn::MoorDyn*)system)->Serialize();
 		if (size)
 			*size = backup.size() * sizeof(uint64_t);
 		if (data)
@@ -2342,14 +2342,14 @@ int DECLDIR MoorDyn_Serialize(MoorDyn system,
 	return err;
 }
 
-int DECLDIR MoorDyn_Deserialize(MoorDyn system,
-	                            const uint64_t* data)
+int DECLDIR
+MoorDyn_Deserialize(MoorDyn system, const uint64_t* data)
 {
 	CHECK_SYSTEM(system);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	if (!data) {
-		cerr << "Error: No data has been provided to "
-	         << __FUNC_NAME__ << "()" << endl;
+		cerr << "Error: No data has been provided to " << __FUNC_NAME__ << "()"
+		     << endl;
 		return MOORDYN_INVALID_VALUE;
 	}
 	string err_msg;

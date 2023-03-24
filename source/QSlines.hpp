@@ -255,7 +255,8 @@ Catenary(T XF,
 		VFOvrHF = VF / HF;
 		VFOvrHF2 = VFOvrHF * VFOvrHF;
 		SQRT1VFOvrHF2 = sqrt(1.0 + VFOvrHF2);
-		//These variables below need to be located in for loop, otherwise catenary solver fails
+		// These variables below need to be located in for loop, otherwise
+		// catenary solver fails
 		VFMinWL = VF - WL;
 		HFOvrW = HF / W;
 		LMinVFOvrW = L - VF / W;
