@@ -1001,166 +1001,8 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
-			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			if (entries.size() < 8) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-				       << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "8 fields are required, but just " << entries.size()
-				       << " are provided" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			int number = atoi(entries[0].c_str());
-			string RodType = entries[1];
-			vec6 endCoords;
-			for (unsigned int I = 0; I < 6; I++)
-				endCoords[I] = atof(entries[3 + I].c_str());
-			int NumSegs = atoi(entries[9].c_str());
-			string outchannels = entries[10];
-
-			char let1[10], num1[10], let2[10], num2[10], let3[10];
-			char typeWord[10];
-			strncpy(typeWord, entries[2].c_str(), 9);
-			typeWord[9] = '\0';
-			// divided outWord into letters and numbers
-			str::decomposeString(typeWord, let1, num1, let2, num2, let3);
-
-			Rod::types type;
-			if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-			    !strcmp(let1, "FIX")) {
-				// it is fixed  (this would just be used if someone wanted
-				// to temporarly fix a body that things were attached to)
-				type = Rod::FIXED;
-			} else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN")) {
-				// it is pinned
-				type = Rod::PINNED;
-				FreeRodIs.push_back(
-				    RodList.size()); // add this pinned rod to the free list
-				                     // because it is half free
-				RodStateIs.push_back(
-				    nX); // assign start index of this rod's states
-				nX += 6; // add 6 state variables for each pinned rod
-			} else if (!strcmp(let1, "BODY")) {
-				if (!strlen(num1)) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-					       << endl
-					       << "'" << in_txt[i] << "'" << endl
-					       << "no number provided for Rod " << number
-					       << " Body attachment" << endl;
-					return MOORDYN_INVALID_INPUT;
-				}
-				unsigned int bodyID = atoi(num1);
-				if (!bodyID || (bodyID > BodyList.size())) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-					       << endl
-					       << "'" << in_txt[i] << "'" << endl
-					       << "There is not " << bodyID << " bodies" << endl;
-					return MOORDYN_INVALID_INPUT;
-				}
-
-				if (!strcmp(let2, "PINNED") || !strcmp(let2, "PIN")) {
-					// it is pinned
-					type = Rod::PINNED;
-					FreeRodIs.push_back(
-					    RodList.size()); // add this pinned rod to the free
-					                     // list because it is half free
-					RodStateIs.push_back(
-					    nX); // assign start index of this rod's states
-					nX += 6; // add 6 state variables for each pinned rod
-				} else {
-					type = Rod::FIXED;
-				}
-			} else if (!strcmp(let1, "VESSEL") || !strcmp(let1, "VES") ||
-			           !strcmp(let1, "COUPLED") || !strcmp(let1, "CPLD")) {
-				// if a rigid fairlead, add to list and add
-				type = Rod::COUPLED;
-				CpldRodIs.push_back(
-				    RodList.size()); // index of fairlead in RodList vector
-			} else if (!strcmp(let1, "VESPIN") || !strcmp(let1, "CPLDPIN")) {
-				// if a pinned fairlead, add to list and add
-				type = Rod::CPLDPIN;
-				CpldRodIs.push_back(
-				    RodList.size()); // index of fairlead in RodList vector
-				FreeRodIs.push_back(
-				    RodList.size()); // also add this pinned rod to the free
-				                     // list because it is half free
-				RodStateIs.push_back(
-				    nX); // assign start index of this rod's states
-				nX += 6; // add 6 state variables for each pinned rod
-			} else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") ||
-			           !strcmp(let1, "FREE")) {
-				type = Rod::FREE;
-				FreeRodIs.push_back(
-				    RodList.size()); // add this free rod to the free list
-				RodStateIs.push_back(
-				    nX);  // assign start index of this rod's states
-				nX += 12; // add 12 state variables for each free rod
-			} else {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-				       << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "Unrecognized connection type '" << let1 << "'"
-				       << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			int TypeNum = -1;
-			for (unsigned int J = 0; J < RodPropList.size(); J++) {
-				if (RodPropList[J]->type == RodType)
-					TypeNum = J;
-			}
-			if (TypeNum == -1) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-				       << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "Unrecognized rod type " << RodType << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			// Make the output file (if queried)
-			if ((outchannels.size() > 0) &&
-			    (strcspn(outchannels.c_str(), "pvUDctsd") <
-			     strlen(outchannels.c_str()))) {
-				// if 1+ output flag chars are given and they're valid
-				stringstream oname;
-				oname << _basepath << _basename << "_Rod" << number << ".out";
-				outfiles.push_back(make_shared<ofstream>(oname.str()));
-				if (!outfiles.back()->is_open()) {
-					LOGERR << "Cannot create the output file '" << oname.str()
-					       << endl;
-					return MOORDYN_INVALID_OUTPUT_FILE;
-				}
-			} else
-				outfiles.push_back(NULL);
-
-			LOGDBG << "\t'" << number << "'"
-			       << " - of class " << RodType << " (" << TypeNum << ")"
-			       << " and type " << Rod::TypeName(type) << " with id "
-			       << RodList.size() << endl;
-
-			Rod* obj = new Rod(_log);
-			obj->setup(number,
-			           type,
-			           RodPropList[TypeNum],
-			           endCoords,
-			           NumSegs,
-			           outfiles.back(),
-			           outchannels);
+			Rod* obj = readRod(in_txt[i]);
 			RodList.push_back(obj);
-
-			// depending on type, assign the Rod to its respective parent
-			// body
-			if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-			    !strcmp(let1, "FIX"))
-				GroundBody->addRod(obj, endCoords);
-			else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN"))
-				GroundBody->addRod(obj, endCoords);
-			else if (!strcmp(let1, "BODY")) {
-				unsigned int bodyID = atoi(num1);
-				BodyList[bodyID - 1]->addRod(obj, endCoords);
-			}
-			LOGDBG << endl;
 
 			i++;
 		}
@@ -1691,11 +1533,7 @@ moordyn::MoorDyn::readLineProps(string inputText)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
 
-	if (entries.size() < 10) {
-		LOGERR << "Error in " << _filepath << ":"
-		       << "'" << inputText << "'" << endl
-		       << "10 fields are required, but just " << entries.size()
-		       << " are provided" << endl;
+	if (!checkNumberOfEntriesInLine(entries, 10)) {
 		return nullptr;
 	}
 
@@ -1747,11 +1585,7 @@ RodProps*
 moordyn::MoorDyn::readRodProps(string inputText)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
-	if (entries.size() < 7) {
-		LOGERR << "Error in " << _filepath << ":"
-		       << "'" << inputText << "'" << endl
-		       << "7 fields are required, but just " << entries.size()
-		       << " are provided" << endl;
+	if (checkNumberOfEntriesInLine(entries, 7)) {
 		return nullptr;
 	}
 
@@ -1772,6 +1606,156 @@ moordyn::MoorDyn::readRodProps(string inputText)
 	       << "\t\tCan : " << obj->Can << endl
 	       << "\t\tCdt : " << obj->Cdt << endl
 	       << "\t\tCat : " << obj->Cat << endl;
+	return obj;
+}
+
+Rod*
+moordyn::MoorDyn::readRod(string inputText)
+{
+
+	vector<string> entries = moordyn::str::split(inputText, ' ');
+	if (checkNumberOfEntriesInLine(entries, 8)) {
+		return nullptr;
+	}
+
+	int number = atoi(entries[0].c_str());
+	string RodType = entries[1];
+	vec6 endCoords;
+	for (unsigned int I = 0; I < 6; I++)
+		endCoords[I] = atof(entries[3 + I].c_str());
+	int NumSegs = atoi(entries[9].c_str());
+	string outchannels = entries[10];
+
+	char let1[10], num1[10], let2[10], num2[10], let3[10];
+	char typeWord[10];
+	strncpy(typeWord, entries[2].c_str(), 9);
+	typeWord[9] = '\0';
+	// divided outWord into letters and numbers
+	str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+
+	Rod::types type;
+	if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
+	    !strcmp(let1, "FIX")) {
+		// it is fixed  (this would just be used if someone wanted
+		// to temporarly fix a body that things were attached to)
+		type = Rod::FIXED;
+	} else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN")) {
+		// it is pinned
+		type = Rod::PINNED;
+		FreeRodIs.push_back(RodList.size()); // add this pinned rod to the free
+		                                     // list because it is half free
+		RodStateIs.push_back(nX); // assign start index of this rod's states
+		nX += 6;                  // add 6 state variables for each pinned rod
+	} else if (!strcmp(let1, "BODY")) {
+		if (!strlen(num1)) {
+			LOGERR << "Error in " << _filepath << ":" 
+			       << "'" << inputText << "'" << endl
+			       << "no number provided for Rod " << number
+			       << " Body attachment" << endl;
+			return nullptr;
+		}
+		unsigned int bodyID = atoi(num1);
+		if (!bodyID || (bodyID > BodyList.size())) {
+			LOGERR << "Error in " << _filepath << ":" 
+			       << "'" << inputText << "'" << endl
+			       << "There is not " << bodyID << " bodies" << endl;
+			return nullptr;
+		}
+
+		if (!strcmp(let2, "PINNED") || !strcmp(let2, "PIN")) {
+			// it is pinned
+			type = Rod::PINNED;
+			FreeRodIs.push_back(
+			    RodList.size());      // add this pinned rod to the free
+			                          // list because it is half free
+			RodStateIs.push_back(nX); // assign start index of this rod's states
+			nX += 6; // add 6 state variables for each pinned rod
+		} else {
+			type = Rod::FIXED;
+		}
+	} else if (!strcmp(let1, "VESSEL") || !strcmp(let1, "VES") ||
+	           !strcmp(let1, "COUPLED") || !strcmp(let1, "CPLD")) {
+		// if a rigid fairlead, add to list and add
+		type = Rod::COUPLED;
+		CpldRodIs.push_back(
+		    RodList.size()); // index of fairlead in RodList vector
+	} else if (!strcmp(let1, "VESPIN") || !strcmp(let1, "CPLDPIN")) {
+		// if a pinned fairlead, add to list and add
+		type = Rod::CPLDPIN;
+		CpldRodIs.push_back(
+		    RodList.size()); // index of fairlead in RodList vector
+		FreeRodIs.push_back(
+		    RodList.size());      // also add this pinned rod to the free
+		                          // list because it is half free
+		RodStateIs.push_back(nX); // assign start index of this rod's states
+		nX += 6;                  // add 6 state variables for each pinned rod
+	} else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") ||
+	           !strcmp(let1, "FREE")) {
+		type = Rod::FREE;
+		FreeRodIs.push_back(
+		    RodList.size());      // add this free rod to the free list
+		RodStateIs.push_back(nX); // assign start index of this rod's states
+		nX += 12;                 // add 12 state variables for each free rod
+	} else {
+		LOGERR << "Error in " << _filepath << ":" 
+		       << "'" << inputText << "'" << endl
+		       << "Unrecognized connection type '" << let1 << "'" << endl;
+		return nullptr;
+	}
+
+	int TypeNum = -1;
+	for (unsigned int J = 0; J < RodPropList.size(); J++) {
+		if (RodPropList[J]->type == RodType)
+			TypeNum = J;
+	}
+	if (TypeNum == -1) {
+		LOGERR << "Error in " << _filepath << ":" 
+		       << "'" << inputText << "'" << endl
+		       << "Unrecognized rod type " << RodType << endl;
+		return nullptr;
+	}
+
+	// Make the output file (if queried)
+	if ((outchannels.size() > 0) && (strcspn(outchannels.c_str(), "pvUDctsd") <
+	                                 strlen(outchannels.c_str()))) {
+		// if 1+ output flag chars are given and they're valid
+		stringstream oname;
+		oname << _basepath << _basename << "_Rod" << number << ".out";
+		outfiles.push_back(make_shared<ofstream>(oname.str()));
+		if (!outfiles.back()->is_open()) {
+			LOGERR << "Cannot create the output file '" << oname.str() << endl;
+			return nullptr;
+		}
+	} else
+		outfiles.push_back(NULL);
+
+	LOGDBG << "\t'" << number << "'"
+	       << " - of class " << RodType << " (" << TypeNum << ")"
+	       << " and type " << Rod::TypeName(type) << " with id "
+	       << RodList.size() << endl;
+
+	Rod* obj = new Rod(_log);
+	obj->setup(number,
+	           type,
+	           RodPropList[TypeNum],
+	           endCoords,
+	           NumSegs,
+	           outfiles.back(),
+	           outchannels);
+
+	// depending on type, assign the Rod to its respective parent
+	// body
+	if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
+	    !strcmp(let1, "FIX"))
+		GroundBody->addRod(obj, endCoords);
+	else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN"))
+		GroundBody->addRod(obj, endCoords);
+	else if (!strcmp(let1, "BODY")) {
+		unsigned int bodyID = atoi(num1);
+		BodyList[bodyID - 1]->addRod(obj, endCoords);
+	}
+	LOGDBG << endl;
+
 	return obj;
 }
 
@@ -1838,15 +1822,14 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 }
 
 bool
-MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
-                                    int supposedNumberOfEntries)
+moordyn::MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
+                                             int supposedNumberOfEntries)
 {
 	if (entries.size() < supposedNumberOfEntries) {
-		LOGERR << "Error in " << _filepath << ":" 
+		LOGERR << "Error in " << _filepath << ":"
 		       << "'" << entries << "'" << endl
-		       << supposedNumberOfEntries
-			   << " fields are required, but just " 
-			   << entries.size() << " are provided" << endl;
+		       << supposedNumberOfEntries << " fields are required, but just "
+		       << entries.size() << " are provided" << endl;
 		return false;
 	}
 

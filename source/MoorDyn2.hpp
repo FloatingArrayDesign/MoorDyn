@@ -372,6 +372,13 @@ class MoorDyn : public io::IO
 	*/
 	RodProps* readRodProps(string inputText);
 
+	/** @brief Helper function to cread a new rod given a line from
+	* the input file.
+	* 
+	* @param inputText a string from the Rod List section of input file
+	*/
+	Rod* readRod(string inputText);
+
 	void readOptionsLine(vector<string>& in_txt, int index);
 
 	bool checkNumberOfEntriesInLine(vector<string> entries,
