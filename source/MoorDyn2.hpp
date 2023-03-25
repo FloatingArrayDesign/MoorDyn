@@ -358,7 +358,24 @@ class MoorDyn : public io::IO
 
 	int findStartOfSection(vector<string> &in_txt, vector<string> sectionName);
 
+	/** @brief Helper function to cread a new line property given a line from
+	* the input file.
+	* 
+	* @param inputText a string from the Line Properties section of input file
+	*/
+	LineProps* readLineProps(string inputText);
+
+	/** @brief Helper function to cread a new rod property given a line from
+	* the input file.
+	* 
+	* @param inputText a string from the Rod Properties section of input file
+	*/
+	RodProps* readRodProps(string inputText);
+
 	void readOptionsLine(vector<string>& in_txt, int index);
+
+	bool checkNumberOfEntriesInLine(vector<string> entries,
+	                                int supposedNumberOfEntries);
 
 	/** @brief Get the forces
 	 * @param f The forces array

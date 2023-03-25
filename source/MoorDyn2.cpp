@@ -701,59 +701,11 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
-			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			if (entries.size() < 10) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-				       << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "10 fields are required, but just " << entries.size()
-				       << " are provided" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			LineProps* obj = new LineProps();
-
-			obj->type = entries[0];
-			obj->d = atof(entries[1].c_str());
-			obj->w = atof(entries[2].c_str());
-			obj->Cdn = atof(entries[6].c_str());
-			obj->Can = atof(entries[7].c_str());
-			obj->Cdt = atof(entries[8].c_str());
-			obj->Cat = atof(entries[9].c_str());
-
-			moordyn::error_id err;
-			err = read_curve(entries[3].c_str(),
-			                 &(obj->EA),
-			                 &(obj->nEApoints),
-			                 obj->stiffXs,
-			                 obj->stiffYs);
-			if (err)
-				return err;
-			err = read_curve(entries[4].c_str(),
-			                 &(obj->c),
-			                 &(obj->nCpoints),
-			                 obj->dampXs,
-			                 obj->dampYs);
-			if (err)
-				return err;
-			err = read_curve(entries[5].c_str(),
-			                 &(obj->EI),
-			                 &(obj->nEIpoints),
-			                 obj->bstiffXs,
-			                 obj->bstiffYs);
-			if (err)
-				return err;
-
-				LOGDBG << "\t'" << obj->type << "'"
-				       << " - with id " << LinePropList.size() << endl
-				       << "\t\td   : " << obj->d << endl
-				       << "\t\tw   : " << obj->w << endl
-				       << "\t\tCdn : " << obj->Cdn << endl
-				       << "\t\tCan : " << obj->Can << endl
-				       << "\t\tCdt : " << obj->Cdt << endl
-				       << "\t\tCat : " << obj->Cat << endl;
-
-			LinePropList.push_back(obj);
+			LineProps* obj = readLineProps(in_txt[i]);
+			if (obj)
+				LinePropList.push_back(obj);
+			else
+				delete obj; // Skips error lines... TODO update this
 			i++;
 		}
 	}
@@ -764,35 +716,12 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
-			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			if (entries.size() < 7) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-				       << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "7 fields are required, but just " << entries.size()
-				       << " are provided" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
+			RodProps* obj = readRodProps(in_txt[i]);
 
-			RodProps* obj = new RodProps();
-			obj->type = entries[0];
-			obj->d = atof(entries[1].c_str());
-			obj->w = atof(entries[2].c_str());
-			obj->Cdn = atof(entries[3].c_str());
-			obj->Can = atof(entries[4].c_str());
-			obj->Cdt = atof(entries[5].c_str());
-			obj->Cat = atof(entries[6].c_str());
-
-			LOGDBG << "\t'" << obj->type << "'"
-			       << " - with id " << RodPropList.size() << endl
-			       << "\t\td   : " << obj->d << endl
-			       << "\t\tw   : " << obj->w << endl
-			       << "\t\tCdn : " << obj->Cdn << endl
-			       << "\t\tCan : " << obj->Can << endl
-			       << "\t\tCdt : " << obj->Cdt << endl
-			       << "\t\tCat : " << obj->Cat << endl;
-
-			RodPropList.push_back(obj);
+			if (obj)
+				RodPropList.push_back(obj);
+			else
+				delete obj;
 			i++;
 		}
 	}
@@ -804,12 +733,8 @@ moordyn::MoorDyn::ReadInFile()
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			if (entries.size() < 14) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
-				       << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "14 fields are required, but just " << entries.size()
-				       << " are provided" << endl;
+			if (!checkNumberOfEntriesInLine(entries, 14)) {
+				LOGERR << "Error in " << _filepath << ":" << i + 1 << '\n';
 				return MOORDYN_INVALID_INPUT;
 			}
 
@@ -1761,6 +1686,94 @@ moordyn::MoorDyn::findStartOfSection(vector<string>& in_txt,
 
 	return i;
 }
+LineProps*
+moordyn::MoorDyn::readLineProps(string inputText)
+{
+	vector<string> entries = moordyn::str::split(inputText, ' ');
+
+	if (entries.size() < 10) {
+		LOGERR << "Error in " << _filepath << ":"
+		       << "'" << inputText << "'" << endl
+		       << "10 fields are required, but just " << entries.size()
+		       << " are provided" << endl;
+		return nullptr;
+	}
+
+	LineProps* obj = new LineProps();
+
+	obj->type = entries[0];
+	obj->d = atof(entries[1].c_str());
+	obj->w = atof(entries[2].c_str());
+	obj->Cdn = atof(entries[6].c_str());
+	obj->Can = atof(entries[7].c_str());
+	obj->Cdt = atof(entries[8].c_str());
+	obj->Cat = atof(entries[9].c_str());
+
+	moordyn::error_id err;
+	err = read_curve(entries[3].c_str(),
+	                 &(obj->EA),
+	                 &(obj->nEApoints),
+	                 obj->stiffXs,
+	                 obj->stiffYs);
+	if (err)
+		return nullptr;
+	err = read_curve(entries[4].c_str(),
+	                 &(obj->c),
+	                 &(obj->nCpoints),
+	                 obj->dampXs,
+	                 obj->dampYs);
+	if (err)
+		return nullptr;
+	err = read_curve(entries[5].c_str(),
+	                 &(obj->EI),
+	                 &(obj->nEIpoints),
+	                 obj->bstiffXs,
+	                 obj->bstiffYs);
+	if (err)
+		return nullptr;
+
+	LOGDBG << "\t'" << obj->type << "'"
+	       << " - with id " << LinePropList.size() << endl
+	       << "\t\td   : " << obj->d << endl
+	       << "\t\tw   : " << obj->w << endl
+	       << "\t\tCdn : " << obj->Cdn << endl
+	       << "\t\tCan : " << obj->Can << endl
+	       << "\t\tCdt : " << obj->Cdt << endl
+	       << "\t\tCat : " << obj->Cat << endl;
+	return obj;
+}
+
+RodProps*
+moordyn::MoorDyn::readRodProps(string inputText)
+{
+	vector<string> entries = moordyn::str::split(inputText, ' ');
+	if (entries.size() < 7) {
+		LOGERR << "Error in " << _filepath << ":"
+		       << "'" << inputText << "'" << endl
+		       << "7 fields are required, but just " << entries.size()
+		       << " are provided" << endl;
+		return nullptr;
+	}
+
+	RodProps* obj = new RodProps();
+	obj->type = entries[0];
+	obj->d = atof(entries[1].c_str());
+	obj->w = atof(entries[2].c_str());
+	obj->Cdn = atof(entries[3].c_str());
+	obj->Can = atof(entries[4].c_str());
+	obj->Cdt = atof(entries[5].c_str());
+	obj->Cat = atof(entries[6].c_str());
+
+	LOGDBG << "\t'" << obj->type << "'"
+	       << " - with id " << RodPropList.size() << endl
+	       << "\t\td   : " << obj->d << endl
+	       << "\t\tw   : " << obj->w << endl
+	       << "\t\tCdn : " << obj->Cdn << endl
+	       << "\t\tCan : " << obj->Can << endl
+	       << "\t\tCdt : " << obj->Cdt << endl
+	       << "\t\tCat : " << obj->Cat << endl;
+	return obj;
+}
 
 void
 moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
@@ -1822,6 +1835,22 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		dtOut = atof(entries[0].c_str());
 	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
+}
+
+bool
+MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
+                                    int supposedNumberOfEntries)
+{
+	if (entries.size() < supposedNumberOfEntries) {
+		LOGERR << "Error in " << _filepath << ":" 
+		       << "'" << entries << "'" << endl
+		       << supposedNumberOfEntries
+			   << " fields are required, but just " 
+			   << entries.size() << " are provided" << endl;
+		return false;
+	}
+
+	return true;
 }
 
 void
