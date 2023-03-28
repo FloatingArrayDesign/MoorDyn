@@ -379,6 +379,8 @@ class MoorDyn : public io::IO
 	*/
 	Rod* readRod(string inputText);
 
+	Body* readBody(string inputText);
+
 	void readOptionsLine(vector<string>& in_txt, int index);
 
 	bool checkNumberOfEntriesInLine(vector<string> entries,
