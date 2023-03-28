@@ -648,6 +648,7 @@ moordyn::MoorDyn::ReadInFile()
 	vector<string> in_txt;
 	if (readFileIntoBuffers(in_txt) != MOORDYN_SUCCESS) {
 		// BREAK
+		return MOORDYN_INVALID_INPUT_FILE;
 	}
 	// Skip until we find the options header line
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
@@ -1386,6 +1387,7 @@ moordyn::MoorDyn::readFileIntoBuffers(vector<string>& in_txt)
 		in_txt.push_back(line_txt);
 	}
 	in_file.close();
+	return MOORDYN_SUCCESS;
 }
 
 int
