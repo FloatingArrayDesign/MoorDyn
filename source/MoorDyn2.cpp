@@ -1827,7 +1827,7 @@ moordyn::MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
 {
 	if (entries.size() < supposedNumberOfEntries) {
 		LOGERR << "Error in " << _filepath << ":"
-		       << "'" << entries << "'" << endl
+		       << endl
 		       << supposedNumberOfEntries << " fields are required, but just "
 		       << entries.size() << " are provided" << endl;
 		return false;
