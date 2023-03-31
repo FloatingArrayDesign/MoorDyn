@@ -918,6 +918,8 @@ Rod::doRHS()
 		h0 = 0.0;
 	}
 
+	Mext = vec::Zero();
+
 	// -------------------------- loop through all the nodes
 	// -----------------------------------
 	real Lsum = 0.0;
@@ -1114,8 +1116,6 @@ Rod::doRHS()
 	// zero the external force/moment sums (important!)
 	FextA = vec::Zero();
 	FextB = vec::Zero();
-	// BUG: Then why we did the computations in line 1146???
-	Mext = vec::Zero();
 
 	for (auto attached : attachedA) {
 		vec Fnet_i, Mnet_i;
