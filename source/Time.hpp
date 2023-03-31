@@ -526,7 +526,7 @@ class TimeSchemeBase : public TimeScheme
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
-			if (rods[i]->type != Rod::FREE)
+			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
 			std::tie(r[0].rods[i].pos, r[0].rods[i].vel) =
 			    rods[i]->initialize();
