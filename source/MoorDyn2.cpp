@@ -524,7 +524,7 @@ moordyn::MoorDyn::Step(const double* x,
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "t = " << t << " s" << endl;
+			LOGERR << "t = " << t << " s: " << err_msg << endl;
 			return err;
 		}
 	}
