@@ -297,7 +297,7 @@ orientationAngles(vec v)
 	// incline angle
 	const real phi = atan2(l, v[2]);
 	// heading of incline
-	const real beta = (phi < 1.e-6) ? 0.0 : atan2(v[1], v[0]);
+	const real beta = (fabs(phi) < 1.e-6) ? 0.0 : atan2(v[1], v[0]);
 
 	return make_pair(phi, beta);
 }
