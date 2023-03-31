@@ -58,7 +58,7 @@ real
 Line::getNonlinearE(real l_stretched, real l_unstretched)
 {
 	if (!nEApoints)
-		return EI;
+		return E;
 
 	real Xi = l_stretched / l_unstretched - 1.0; // strain rate based on inputs
 	if (Xi < 0.0) {
