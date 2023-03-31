@@ -959,8 +959,8 @@ Line::getStateDeriv()
 					Mforce_i = -Mforce_ip1;
 
 					// apply these forces to the node forces
-					Bs[i] = Mforce_i;
-					Bs[i + 1] = Mforce_ip1;
+					Bs[i] += Mforce_i;
+					Bs[i + 1] += Mforce_ip1;
 				}
 			}
 			// end node A case (only if attached to a Rod, i.e. a cantilever
@@ -1001,8 +1001,8 @@ Line::getStateDeriv()
 					Mforce_i = -Mforce_im1;
 
 					// apply these forces to the node forces
-					Bs[i - 1] = Mforce_im1;
-					Bs[i] = Mforce_i;
+					Bs[i - 1] += Mforce_im1;
+					Bs[i] += Mforce_i;
 				}
 			}
 			// internal node
@@ -1032,9 +1032,9 @@ Line::getStateDeriv()
 				Mforce_i = -Mforce_im1 - Mforce_ip1;
 
 				// apply these forces to the node forces
-				Bs[i - 1] = Mforce_im1;
-				Bs[i] = Mforce_i;
-				Bs[i + 1] = Mforce_ip1;
+				Bs[i - 1] += Mforce_im1;
+				Bs[i] += Mforce_i;
+				Bs[i + 1] += Mforce_ip1;
 			}
 
 			// check for NaNs <<<<<<<<<<<<<<< temporary measure <<<<<<<
