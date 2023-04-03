@@ -221,10 +221,11 @@ Line::setup(int number_in,
 };
 
 void
-Line::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
+Line::setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
 {
 	env = env_in;
 	waves = waves_in;
+	seafloor = seafloor_in;
 }
 
 std::pair<std::vector<vec>, std::vector<vec>>
@@ -1169,18 +1170,22 @@ Line::getStateDeriv()
 		// bottom contact (stiffness and damping, vertical-only for now) -
 		// updated for general case of potentially anchor or fairlead end in
 		// contact
-		if (r[i][2] < -env->WtrDpth) {
+		real water_depth = -env->WtrDpth;
+		if (this->seafloor) {
+			water_depth = this->seafloor->getDepthAt(r[i][0], r[i][1]);	
+		}
+		if (r[i][2] < water_depth) {
 			if (i == 0)
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((water_depth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i]);
 			else if (i == N)
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((water_depth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i - 1]);
 			else
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((water_depth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i - 1] + l[i]);
 
 			// new rough-draft addition of seabed friction

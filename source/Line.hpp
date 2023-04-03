@@ -34,6 +34,7 @@
 
 #pragma once
 
+#include "Seafloor.hpp"
 #include "Misc.hpp"
 #include "IO.hpp"
 #include <utility>
@@ -102,6 +103,8 @@ class Line : public io::IO
 	EnvCond* env;
 	/// global Waves object
 	moordyn::Waves* waves;
+	/// Object containing the 3d seafloor info
+	std::shared_ptr<moordyn::Seafloor> seafloor;
 
 	/// Number of line segments
 	unsigned int N;
@@ -306,8 +309,9 @@ class Line : public io::IO
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
+	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes

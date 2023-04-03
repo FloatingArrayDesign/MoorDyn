@@ -72,6 +72,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , t_integrator_name("RK2")
   , GroundBody(NULL)
   , waves(NULL)
+  , seafloor(nullptr)
   , nX(0)
   , nXtra(0)
   , npW(0)
@@ -1367,7 +1368,7 @@ moordyn::MoorDyn::ReadInFile()
 	for (auto obj : ConnectionList)
 		obj->setEnv(&env, waves);
 	for (auto obj : LineList)
-		obj->setEnv(&env, waves);
+		obj->setEnv(&env, waves, seafloor);
 
 	return MOORDYN_SUCCESS;
 }
@@ -1828,6 +1829,12 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 	// output writing period (0 for at every call)
 	else if (name == "dtOut")
 		dtOut = atof(entries[0].c_str());
+	else if (name == "SeafloorFile") {
+		env.SeafloorMode = seafloor_settings::SEAFLOOR_3D;
+		this->seafloor = make_shared<moordyn::Seafloor>(_log);
+		std::string filepath = entries[0];
+		this->seafloor->setup(&env, filepath);
+	}
 	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }

@@ -45,6 +45,7 @@
 #include "Connection.hpp"
 #include "Rod.hpp"
 #include "Body.hpp"
+#include "Seafloor.hpp"
 
 #ifdef USE_VTK
 #include <vtkSmartPointer.h>
@@ -473,6 +474,8 @@ class MoorDyn : public io::IO
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
 	Waves* waves = NULL;
+	/// 3D Seafloor object that gets shared with the lines and other things that need it
+	std::shared_ptr<moordyn::Seafloor> seafloor;
 
 	/// array of pointers to hold line library types
 	vector<LineProps*> LinePropList;

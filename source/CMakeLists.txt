@@ -13,7 +13,7 @@ set(MOORDYN_SRCS
     Waves.cpp
     kiss_fft.cpp
     kiss_fftr.cpp
- "Seafloor.cpp")
+    Seafloor.cpp)
 
 set(MOORDYN_HEADERS
     Body.hpp
@@ -36,6 +36,7 @@ set(MOORDYN_HEADERS
     MoorDyn.h
     Rod.h
     Waves.h
+    Seafloor.hpp
 )
 
 set(MOORDYN_PUBLIC_DEPS "")

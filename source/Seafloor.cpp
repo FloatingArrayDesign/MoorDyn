@@ -9,7 +9,15 @@ Seafloor::Seafloor(moordyn::Log* log)
 
 Seafloor::~Seafloor() {}
 
-void Seafloor::setup(EnvCond* env, const char* folder)
+unsigned int calcInsertIndex(std::vector<real>& list, real value) {
+	for(unsigned int i = 0; i < list.size(); i++) {
+		if (list[i] > value) {
+			return i == 0 ? 0 : i - 1;
+		}
+	}
+	return (unsigned int)(list.size() - 1);
+}
+void Seafloor::setup(EnvCond* env, const string& filepath)
 {
 	// Initialize grid lengths:
 	nx = 0;
@@ -25,17 +33,17 @@ void Seafloor::setup(EnvCond* env, const char* folder)
 
 	if ((env->SeafloorMode) == moordyn::SEAFLOOR_3D) {
 		LOGDBG << "Seafloor set to 3D mode.";
-		const string SeafloorFilename =
-		    (string)folder + "/seafloor_profile_3d.txt";
-		LOGMSG << "Reading seafloor from " << SeafloorFilename << '\n';
+		// const string SeafloorFilename =
+		//     (string)folder + "/seafloor_profile_3d.txt";
+		LOGMSG << "Reading seafloor from " << filepath << '\n';
 
 		vector<string> fLines;  // Buffer to load file into line-by-line 
 		string fLine;  // Buffer to process each line of input file 
 
 		// Read file into buffers:
-		ifstream f(SeafloorFilename);
+		ifstream f(filepath);
 		if (!f.is_open()) {
-			LOGERR << "Cannot read the file " << SeafloorFilename << '\n';
+			LOGERR << "Cannot read the file " << filepath << '\n';
 			throw moordyn::input_file_error("Failure reading depths file");
 		}
 
@@ -49,7 +57,7 @@ void Seafloor::setup(EnvCond* env, const char* folder)
 			// 1st line indicating dimensions of x/y axes,
 			// 2nd and 3rd line denoting axis tick vals,
 			// and at least one line specifying a particular xyz val
-			LOGERR << "The file '" << SeafloorFilename
+			LOGERR << "The file '" << filepath
 			       << "' should have at least 4 lines\n";
 			throw moordyn::input_file_error("Invalid file format");
 		}
@@ -89,10 +97,17 @@ void Seafloor::setup(EnvCond* env, const char* folder)
 			// This loop iterates all the (x,y,z) entries in the input file
 			entries = moordyn::str::split(fLines[i]);
 			if (entries.size() != 3) {
-				LOGERR << "Line " << i + 1 << " of '" << SeafloorFilename
+				LOGERR << "Line " << i + 1 << " of '" << filepath
 				       << "' should have 3 entries (x, y, z)\n";
 				throw moordyn::input_file_error("Invalid file format");
 			}
+
+			real xPos = stof(entries[0]);
+			real yPos = stof(entries[1]);
+			real depth = stof(entries[2]);
+			unsigned int xIdx = calcInsertIndex(px, xPos);
+			unsigned int yIdx = calcInsertIndex(py, yPos);
+			depthGrid[xIdx][yIdx] = depth;
 
 		}
 
