@@ -40,10 +40,10 @@
 #include <algorithm>
 #include <cmath>
 
-#define TOL 2.0e-1
+#define TOL 0.2
 #define Z0 10.0
 #define L 10.0
-#define D 0.25
+#define D 0.05
 #define W 100.0
 #define EA 1.5e9
 #define EI 1.0e7
@@ -82,7 +82,7 @@ simply_supported_solution(double x)
 	return -p * x * (L * L * L - 2. * x * x * L + x * x * x) / (24. * EI);
 }
 
-/** @brief Simpky supported beam case
+/** @brief Simply supported beam case
  * @return true if the test worked, false otherwise
  */
 bool
@@ -135,6 +135,71 @@ simply_supported()
 	return true;
 }
 
+/** @brief Cantilevered beam analytic solution
+ * @param x x position of the node
+ * @return z position of the node
+ * @see https://www.efunda.com/formulae/solid_mechanics/beams/casestudy_display.cfm?case=cantilever_uniformload
+ */
+double
+cantilevered_solution(double x)
+{
+	const double p = W * G;
+	return -p * x * x * (6. * L * L - 4. * x * L + x * x) / (24. * EI);
+}
+
+/** @brief Cantilevered beam case
+ * @return true if the test worked, false otherwise
+ */
+bool
+cantilevered()
+{
+	int err;
+	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
+
+	MoorDyn system = MoorDyn_Create("Mooring/BeamCantilevered.txt");
+	if (!system) {
+		cerr << "Failure Creating the Mooring system" << endl;
+		return false;
+	}
+
+	err = MoorDyn_Init(system, NULL, NULL);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the mooring initialization: " << err << endl;
+		return false;
+	}
+
+	// Compare the node positions
+	auto line = MoorDyn_GetLine(system, 1);
+	unsigned int n_nodes;
+	err = MoorDyn_GetLineNumberNodes(line, &n_nodes);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure getting the number of nodes: " << err << endl;
+		MoorDyn_Close(system);
+		return false;
+	}
+	for (unsigned int i = 0; i < n_nodes; i++) {
+		double pos[3];
+		err = MoorDyn_GetLineNodePos(line, i, pos);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure getting the node " << i << " pos: " << err << endl;
+			MoorDyn_Close(system);
+			return false;
+		}
+		const double z = cantilevered_solution(pos[0]);
+		CHECK_VALUE(i, z, pos[2] - Z0);
+		cout << "Node " << i << " = " << pos[0] << ", " << pos[2] - Z0
+		     << " vs. " << z << endl;
+	}
+
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing Moordyn: " << err << endl;
+		return false;
+	}
+
+	return true;
+}
+
 /** @brief Runs all the test
  * @return 0 if the tests have ran just fine. The index of the failing test
  * otherwise
@@ -144,5 +209,7 @@ main(int, char**)
 {
 	if (!simply_supported())
 		return 1;
+	if (!cantilevered())
+		return 2;
 	return 0;
 }
