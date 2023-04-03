@@ -18,7 +18,7 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1e-5          dtM                  time step to use in mooring integration (s)
 10            WtrDpth              water depth (m)
 0.25          dtIC                 time interval for analyzing convergence during IC gen (s)
-50.0          TmaxIC               max time for ic gen (s)
+20.0          TmaxIC               max time for ic gen (s)
 1.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
 1.0e-3        threshIC             threshold for IC convergence (-)
 ------------------------- need this line -------------------------------------- 
