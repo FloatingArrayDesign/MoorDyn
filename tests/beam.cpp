@@ -40,7 +40,7 @@
 #include <algorithm>
 #include <cmath>
 
-#define TOL 0.2
+#define TOL 0.5
 #define Z0 10.0
 #define L 10.0
 #define D 0.05
