@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file pendulum.cpp
- * Simple case of a pendulum motion
+/** @file seafloor.cpp
+ * Pendulum swining into the seafloor to validate 3D seafloor
  */
 
 // Visual studio still uses this
@@ -61,7 +61,7 @@ compare(double v1, double v2, double tol)
 
 using namespace std;
 
-/** @brief Pendulum motion
+/** @brief Pendulum motion into the seafloor
  * @return true if the test worked, false otherwise
  */
 bool

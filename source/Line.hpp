@@ -112,6 +112,17 @@ class Line : public io::IO
 		}
 	}
 
+	/** @brief A single value representing the average water depth
+	 * 
+	*/
+	real avgWaterDepth() {
+		if (seafloor) {
+			return seafloor->getAverageDepth();
+		}
+		else {
+			return -env->WtrDpth;
+		}
+	}
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
 	EnvCond* env;

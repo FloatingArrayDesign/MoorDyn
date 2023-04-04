@@ -47,8 +47,8 @@ namespace moordyn {
 
 Connection::Connection(moordyn::Log* log)
   : io::IO(log)
-  , WaterKin(0)
   , seafloor(nullptr)
+  , WaterKin(0)
 {
 }
 

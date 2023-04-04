@@ -583,11 +583,10 @@ Line::storeWaterKin(real dt,
 	ntWater = zeta_in[0].size();
 	dtWater = dt;
 
-	// TODO - 3d seafloor?
 	LOGDBG << "Setting up wave variables for Line " << number
 	       << "!  ---------------------" << endl
 	       << "   nt=" << ntWater << ", and WaveDT=" << dtWater
-	       << ", env->WtrDpth=" << env->WtrDpth << endl;
+	       << ", average water depth=" << avgWaterDepth() << endl;
 
 	// resize the new time series vectors
 	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));

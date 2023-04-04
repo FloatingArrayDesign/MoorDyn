@@ -1,6 +1,6 @@
 --------------------- MoorDyn Input File ------------------------------------
-MoorDyn input for a simple pendulum. The conection line is almost weightless,
-i.e. it has the same density than water, and it has 0 damping
+MoorDyn input for a pendulum that will collide with a 3D seafloor. The conection 
+line is almost weightless, i.e. it has the same density than water,and it has 0 damping
 ----------------------- LINE TYPES ------------------------------------------
 TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
 (name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
