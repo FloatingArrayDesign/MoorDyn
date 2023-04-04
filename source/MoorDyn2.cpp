@@ -384,7 +384,16 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
+		// TODO - figure out how i want to do this better
+		// because this is horrible. the solution is probably to move EnvCond
+		// to its own .hpp and .cpp file so that it can contain the Seafloor and 
+		// can itself be queries about the seafloor in general
+		real tmp = env.WtrDpth;
+		if (seafloor) {
+			env.WtrDpth = seafloor->getAverageDepth();
+		}
 		waves->setup(&env, _t_integrator, _basepath.c_str());
+		env.WtrDpth = tmp;
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)
@@ -1355,7 +1364,16 @@ moordyn::MoorDyn::ReadInFile()
 	// Setup the waves and populate them
 	waves = new moordyn::Waves(_log);
 	try {
+		// TODO - figure out how i want to do this better
+		// because this is horrible. the solution is probably to move EnvCond
+		// to its own .hpp and .cpp file so that it can contain the Seafloor and 
+		// can itself be queries about the seafloor in general
+		real tmp = env.WtrDpth;
+		if (seafloor) {
+			env.WtrDpth = seafloor->getAverageDepth();
+		}
 		waves->setup(&env, _t_integrator, _basepath.c_str());
+		env.WtrDpth = tmp;
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)

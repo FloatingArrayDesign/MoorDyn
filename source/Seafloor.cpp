@@ -4,6 +4,8 @@ namespace moordyn {
 
 Seafloor::Seafloor(moordyn::Log* log)
 	: LogUser(log)
+	, averageDepth(0)
+	, minDepth(0)
 {
 }
 
@@ -93,6 +95,7 @@ void Seafloor::setup(EnvCond* env, const string& filepath)
 		// initialize depths grid (full of zeroes to begin with):
 		depthGrid = std::vector<std::vector<real>>(nx, std::vector<real>(ny, 0.0));
 
+		real depthTotal = 0.0;
 		for (unsigned int i = 3; i < fLines.size(); i++) {
 			// This loop iterates all the (x,y,z) entries in the input file
 			entries = moordyn::str::split(fLines[i]);
@@ -108,8 +111,13 @@ void Seafloor::setup(EnvCond* env, const string& filepath)
 			unsigned int xIdx = calcInsertIndex(px, xPos);
 			unsigned int yIdx = calcInsertIndex(py, yPos);
 			depthGrid[xIdx][yIdx] = depth;
+			depthTotal += depth;
+			if (depth < minDepth) {
+				minDepth = depth;
+			}
 
 		}
+		averageDepth = depthTotal / (real)(nx * ny);
 
 	} else {
 		// Handle case where we specified an inappropriate flag

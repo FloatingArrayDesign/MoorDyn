@@ -48,6 +48,19 @@ class Seafloor : LogUser
 	*/
 	real getDepthAt(real x, real y);
 
+	/** @brief The average of the depth at all the grid points
+	 * 
+	*/
+	real getAverageDepth() {
+		return averageDepth;
+	}
+	
+	/** @brief The minimum depth of the seafloor
+	 * Potentially useful for optimizing collision against the seafloor
+	*/
+	real getMinimumDepth() {
+		return minDepth;
+	}
   private:
 	/// number of grid points (ticks) in x direction
 	unsigned int nx;
@@ -62,5 +75,9 @@ class Seafloor : LogUser
 	/// Seafloor depth grid (nx by ny grid of z vals)
 	std::vector<std::vector<real>> depthGrid;
 
+	/// the average of the depth at the grid points
+	real averageDepth;
+	/// the minimum depth of a grid point
+	real minDepth;
 };
 }
