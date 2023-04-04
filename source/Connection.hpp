@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Seafloor.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -91,6 +92,7 @@ class Connection : public io::IO
 	EnvCond* env;
 	/// global Waves object
 	moordyn::Waves* waves;
+	std::shared_ptr<moordyn::Seafloor> seafloor;
 
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
@@ -288,7 +290,7 @@ class Connection : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
 
 	/** @brief Multiply the drag by a factor
 	 *

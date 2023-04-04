@@ -54,6 +54,7 @@ namespace moordyn {
 
 Rod::Rod(moordyn::Log* log)
   : io::IO(log)
+  , seafloor(nullptr)
 {
 }
 
@@ -1016,9 +1017,10 @@ Rod::doRHS()
 			// contact
 			B[i][0] = 0.0;
 			B[i][1] = 0.0;
-			if (r[i][2] < -env->WtrDpth)
+			real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+			if (r[i][2] < waterDepth)
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    d * dL;
 			else {
 				B[i][2] = 0.0;

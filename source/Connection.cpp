@@ -48,6 +48,7 @@ namespace moordyn {
 Connection::Connection(moordyn::Log* log)
   : io::IO(log)
   , WaterKin(0)
+  , seafloor(nullptr)
 {
 }
 
@@ -145,7 +146,11 @@ Connection::initialize()
 		pos = r;
 		vel = rd;
 
-		if (-env->WtrDpth > r[2]) {
+		real waterDepth = -env->WtrDpth;
+		if (seafloor) {
+			waterDepth = seafloor->getDepthAt(r[0], r[1]);
+		}
+		if (waterDepth > r[2]) {
 			LOGERR << "Error: water depth is shallower than Point " << number
 			       << "." << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
@@ -212,10 +217,11 @@ Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 void
-Connection::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
+Connection::setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
 {
 	env = env_in;     // set pointer to environment settings object
 	waves = waves_in; // set pointer to Waves  object
+	seafloor = seafloor_in;
 }
 
 void

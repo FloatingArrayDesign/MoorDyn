@@ -97,6 +97,20 @@ class Line : public io::IO
 	 * @param curv The curvature
 	 */
 	real getNonlinearEI(real curv);
+	
+	/** @brief Finds the depth of the water at some (x, y) point. Either using env->WtrDpth or the 3D seafloor if available
+	 * @param x x coordinate
+	 * @param y y coordinate
+	 * @return A negative number representing the sea floor depth at the given location
+	*/
+	real getWaterDepth(real x, real y) {
+		if (seafloor) {
+			return seafloor->getDepthAt(x, y);
+		}
+		else {
+			return -env->WtrDpth;
+		}
+	}
 
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings

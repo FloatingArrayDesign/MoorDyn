@@ -850,6 +850,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			// make default water depth at least the depth of the lowest
 			// node (so water depth input is optional)
+			// TODO - this probably doesn't care about 3d seafloor?
 			if (r0[2] < -env.WtrDpth)
 				env.WtrDpth = -r0[2];
 
@@ -1364,9 +1365,9 @@ moordyn::MoorDyn::ReadInFile()
 	for (auto obj : BodyList)
 		obj->setEnv(&env, waves);
 	for (auto obj : RodList)
-		obj->setEnv(&env, waves);
+		obj->setEnv(&env, waves, seafloor);
 	for (auto obj : ConnectionList)
-		obj->setEnv(&env, waves);
+		obj->setEnv(&env, waves, seafloor);
 	for (auto obj : LineList)
 		obj->setEnv(&env, waves, seafloor);
 
@@ -1887,7 +1888,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	// now make Connection object!
 	Connection* obj = new Connection(_log);
 	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
-	obj->setEnv(&env, waves);
+	obj->setEnv(&env, waves, seafloor);
 	ConnectionList.push_back(obj);
 
 	// Kinematics of old attachment point

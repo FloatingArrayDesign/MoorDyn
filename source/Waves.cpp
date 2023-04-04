@@ -387,6 +387,7 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 		// calculate wave kinematics throughout the grid
 		try {
 			makeGrid(((string)folder + "/water_grid.txt").c_str());
+			// TODO - does this need seafloor depth?
 			fillWaveGrid(zetaC0.data(), nw, dw, env->g, env->WtrDpth);
 		} catch (...) {
 			throw;
@@ -513,6 +514,7 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 			// make a grid for wave kinematics based on settings in
 			// water_grid.txt
 			makeGrid(((string)folder + "/water_grid.txt").c_str());
+			// TODO - does this need seafloor depth?
 			fillWaveGrid(zetaC0, nw, dw, env->g, env->WtrDpth);
 		} catch (...) {
 			throw;

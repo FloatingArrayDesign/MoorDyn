@@ -396,8 +396,7 @@ Line::initialize()
 	// corresponding Connection or Rod objects calling "setEndState",
 	// so now we can proceed with figuring out the positions of the nodes along
 	// the line.
-
-	if (-env->WtrDpth > r[0][2]) {
+	if (getWaterDepth(r[0][0], r[0][1]) > r[0][2]) {
 		LOGERR << "Water depth is shallower than Line " << number << " anchor"
 		       << endl;
 		throw moordyn::invalid_value_error("Invalid water depth");
@@ -474,7 +473,8 @@ Line::initialize()
 
 	// if conditions are ideal, try to calculate initial line profile using
 	// catenary routine (from FAST v.7)
-	if (-r[0][2] == env->WtrDpth) {
+	real waterDepth = getWaterDepth(r[0][0], r[0][1]);
+	if (r[0][2] == waterDepth) {
 		real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;
@@ -583,6 +583,7 @@ Line::storeWaterKin(real dt,
 	ntWater = zeta_in[0].size();
 	dtWater = dt;
 
+	// TODO - 3d seafloor?
 	LOGDBG << "Setting up wave variables for Line " << number
 	       << "!  ---------------------" << endl
 	       << "   nt=" << ntWater << ", and WaveDT=" << dtWater
@@ -1170,22 +1171,19 @@ Line::getStateDeriv()
 		// bottom contact (stiffness and damping, vertical-only for now) -
 		// updated for general case of potentially anchor or fairlead end in
 		// contact
-		real water_depth = -env->WtrDpth;
-		if (this->seafloor) {
-			water_depth = this->seafloor->getDepthAt(r[i][0], r[i][1]);	
-		}
-		if (r[i][2] < water_depth) {
+		real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+		if (r[i][2] < waterDepth) {
 			if (i == 0)
 				B[i][2] =
-				    ((water_depth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i]);
 			else if (i == N)
 				B[i][2] =
-				    ((water_depth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i - 1]);
 			else
 				B[i][2] =
-				    ((water_depth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i - 1] + l[i]);
 
 			// new rough-draft addition of seabed friction
