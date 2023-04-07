@@ -1071,7 +1071,8 @@ RotXYZ(vec rads)
 
 /** @brief Get the spherical angles for a vector
  * @param q The vector
- * @return The orientation angles, i.e. inclination and heading (in radians)
+ * @return The orientation angles, i.e. inclination (from the horizontal plane)
+ * and heading (in radians)
  * @throws nan_error If the provided vector is too small or null
  */
 std::pair<real, real>
