@@ -903,13 +903,24 @@ Rod::doRHS()
 
 	// >>> remember to check for violated conditions, if there are any... <<<
 
-	real zeta_i = zeta[N]; // just use the wave elevation computed at the
-	                       // location of the top node for now
+	// just use the wave elevation computed at the location of the top node for
+	// now
+	vec r_top, r_bottom;
+	real zeta_i;
+	if (r[N][2] > r[0][2]) {
+		r_top = r[N];
+		r_bottom = r[0];
+		real zeta_i = zeta[N];
+	} else {
+		r_top = r[0];
+		r_bottom = r[N];
+		real zeta_i = zeta[0];
+	}
 
-	if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i)) {
+	if ((r_bottom[2] < zeta_i) && (r_top[2] > zeta_i)) {
 		// the water plane is crossing the rod
 		// (should also add some limits to avoid near-horizontals at some point)
-		h0 = (zeta_i - r[0][2]) / q[2];
+		h0 = (zeta_i - r_bottom[2]) / fabs(q[2]);
 	} else if (r[0][2] < zeta_i) {
 		// fully submerged case
 		h0 = UnstrLen;
