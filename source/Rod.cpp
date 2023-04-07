@@ -1004,7 +1004,7 @@ Rod::doRHS()
 
 			// weight (now only the dry weight)
 			W[i][0] = W[i][1] = 0.0;
-			W[i][2] = m_i * (-env->g);
+			W[i][2] = -m_i * env->g;
 
 			// buoyance (now calculated based on outside pressure, for submerged
 			// portion only) radial buoyancy force from sides
