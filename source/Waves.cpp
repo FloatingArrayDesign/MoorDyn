@@ -764,29 +764,27 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 			}
 		}
 		else {
-
+			// fill in output arrays
+			real ft;
+			unsigned iti = 1;
 			for (unsigned int iz = 0; iz < nz; iz++) {
-				izi = interp_factor(UProfileZ, izi, pz[iz], fz);
-				real ft;
-				unsigned iti = 1;
 				for (unsigned int it = 0; it < nt; it++) {
-					iti = it + 1; // Set initial iti
+					// need to set iti, otherwise it will lock to final t after
+					// one pass through initially the upper index we check
+					// should always be one timestep ahead of it
+					iti = it + 1;
 					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
-					for (unsigned int ix = 0; ix < nx; ix++) {
-						for (unsigned int iy = 0; iy < ny; iy++) {
-							ux[ix][iy][iz][it] +=
-							    interp2(UProfileUx, izi, iti, fz, ft);
-							uy[ix][iy][iz][it] +=
-							    interp2(UProfileUy, izi, iti, fz, ft);
-							uz[ix][iy][iz][it] +=
-							    interp2(UProfileUz, izi, iti, fz, ft);
-							// TODO: approximate fluid accelerations using
-							//       finite differences
-							ax[0][0][iz][it] = 0.0;
-							ay[0][0][iz][it] = 0.0;
-							az[0][0][iz][it] = 0.0;
-						}
-					}
+					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
+					                   UProfileUx[iz][iti - 1] * (1. - ft);
+					uy[0][0][iz][it] = UProfileUy[iz][iti] * ft +
+					                   UProfileUy[iz][iti - 1] * (1. - ft);
+					uz[0][0][iz][it] = UProfileUz[iz][iti] * ft +
+					                   UProfileUz[iz][iti - 1] * (1. - ft);
+					// TODO: approximate fluid accelerations using finite
+					//       differences
+					ax[0][0][iz][it] = 0.0;
+					ay[0][0][iz][it] = 0.0;
+					az[0][0][iz][it] = 0.0;
 				}
 			}
 		}
