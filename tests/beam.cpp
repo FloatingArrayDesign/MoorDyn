@@ -28,9 +28,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file minimal.cpp
- * Minimal tests that only checks the library is correctly initialized,
- * running and closing
+/** @file beam.cpp
+ * Simply supported and cantilevered beams (Cables modelled by Euler-Bernoulli
+ * equations).
  */
 
 #include "MoorDyn2.h"
