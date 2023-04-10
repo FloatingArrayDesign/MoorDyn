@@ -181,13 +181,18 @@ Rods can have 6, 3, or 0 DOF.
 Pinned or Fixed Rods attached to a body (e.g. body 1) are labelled "Body1Pinned" or "Body1". 
 Pinned or fixed rods that serve as a coupling point are labelled "CoupledPinned" or "Coupled"
 
+As it happens with other entities, rods are computed considering a simplified
+Hydrodynamic model. Thus there are situations which are not properly handled,
+like surfaced rods with the free surface oriented along the main axis.
+In such case it is strongly recommended to set the rod "coupled" and apply an
+external solver.
+
 A special case exists if a Rod is specified with zero elements: in that case it is given zero length, and
 its end B input coordinates are instead interpreted as vector components to describe its direction vector. 
 This case is meant for convenience when making cantilever connections of a line with bending stiffness. 
 A fixed zero-length rod can be used to make a cantilever connection of a power cable to the ground, a body, or a coupling point.
 A free zero-length rod can be used to join two different types of power cable segments, and it will pass moments 
 between the cable segments without adding any mass or other characteristics.
-
 
 Bodies
 ^^^^^^
