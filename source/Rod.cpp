@@ -1006,10 +1006,13 @@ Rod::doRHS()
 			W[i][0] = W[i][1] = 0.0;
 			W[i][2] = -m_i * env->g;
 
-			// buoyance (now calculated based on outside pressure, for submerged
-			// portion only) radial buoyancy force from sides
-			real Ftemp = -VOF * Area * dL * env->rho_w * env->g * sinPhi;
-			Bo[i] = Ftemp * vec(cosBeta * cosPhi, sinBeta * cosPhi, sinPhi);
+			// Buoyance. As it happens with the lines, the bouyancy can be
+			// computed assuming a collection of submerged cylinders, since
+			// the forces on the missing caps are balanced.
+			// NOTE: There are though some unhandled situations, like free
+			// floating rods, which would horizontally surface. This is
+			// documented on docs/structure.rst
+			Bo[i] = vec(0.0, 0.0, VOF * Area * dL * env->rho_w * env->g);
 
 			// transverse and tangential drag
 			Dp[i] = VOF * 0.5 * env->rho_w * Cdn * d * dL * vp_mag * vp;
@@ -1054,18 +1057,6 @@ Rod::doRHS()
 		// end A
 		if ((i == 0) && (h0 > 0.0)) // if this is end A and it is submerged
 		{
-			// >>> eventually should consider a VOF approach for the ends hTilt
-			// = 0.5*Rod%d/cosPhi <<<
-
-			// buoyancy force
-			real Ftemp = -VOF * Area * env->rho_w * env->g * r[i][2];
-			Bo[i] += Ftemp * vec(cosBeta * sinPhi, sinBeta * sinPhi, cosPhi);
-
-			// buoyancy moment
-			real Mtemp =
-			    -VOF / 64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi;
-			Mext += Mtemp * vec(sinBeta, -cosBeta, 0.0);
-
 			// axial drag
 			Dq[i] += VOF * Area * env->rho_w * Cdt * vq_mag * vq;
 
@@ -1078,22 +1069,10 @@ Rod::doRHS()
 
 			// added mass
 			const mat Q = q * q.transpose();
-			M[i] = VOF * env->rho_w * V_temp * Cat * Q;
+			M[i] += VOF * env->rho_w * V_temp * Cat * Q;
 		}
 
 		if ((i == N) && (h0 >= UnstrLen)) {
-			// if this end B and it is submerged
-			// NOTE: if N=0, both this and previous if statement are true
-
-			// buoyancy force
-			real Ftemp = VOF * Area * env->rho_w * env->g * r[i][2];
-			Bo[i] += Ftemp * vec(cosBeta * sinPhi, sinBeta * sinPhi, cosPhi);
-
-			// buoyancy moment
-			real Mtemp =
-			    VOF / 64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi;
-			Mext += Mtemp * vec(sinBeta, -cosBeta, 0.0);
-
 			// axial drag
 			Dq[i] += VOF * Area * env->rho_w * Cdt * vq_mag * vq;
 
@@ -1106,7 +1085,7 @@ Rod::doRHS()
 
 			// added mass
 			const mat Q = q * q.transpose();
-			M[i] = VOF * env->rho_w * V_temp * Cat * Q;
+			M[i] += VOF * env->rho_w * V_temp * Cat * Q;
 		}
 
 		// ----------------- total forces for this node --------------------
@@ -1197,8 +1176,7 @@ Rod::doRHS()
 		F6_i(Eigen::seqN(0, 3)) = Fnet[i];
 		F6_i(Eigen::seqN(3, 3)) = rRel.cross(Fnet[i]);
 		// mass matrix of each rod to be added
-		const mat6 M6_i =
-		    translateMass(rRel, M[i](Eigen::seqN(0, 3), Eigen::seqN(0, 3)));
+		const mat6 M6_i = translateMass(rRel, M[i]);
 
 		// sum contributions
 		F6net += F6_i;
