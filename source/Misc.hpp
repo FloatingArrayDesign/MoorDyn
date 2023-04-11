@@ -872,14 +872,14 @@ interp4(const vector<vector<vector<vector<T>>>>& values,
 	unsigned int k0 = k > 0 ? k - 1 : 0;
 	unsigned int w0 = w > 0 ? w - 1 : 0;
 
-	T c000 = values[i0][j0][k0][w0] * fw + values[i0][j0][k0][w] * (1. - fw);
-	T c001 = values[i0][j0][k][w0] * fw + values[i0][j0][k][w] * (1. - fw);
-	T c010 = values[i0][j][k0][w0] * fw + values[i0][j][k0][w] * (1. - fw);
-	T c011 = values[i0][j][k][w0] * fw + values[i0][j][k][w] * (1. - fw);
-	T c100 = values[i][j0][k0][w0] * fw + values[i0][j0][k0][w] * (1. - fw);
-	T c101 = values[i][j0][k][w0] * fw + values[i0][j0][k][w] * (1. - fw);
-	T c110 = values[i][j][k0][w0] * fw + values[i0][j][k0][w] * (1. - fw);
-	T c111 = values[i][j][k][w0] * fw + values[i0][j0][k0][w] * (1. - fw);
+	T c000 = values[i0][j0][k0][w0] * (1. - fw) + values[i0][j0][k0][w] * fw;
+	T c001 = values[i0][j0][k][w0] * (1. - fw) + values[i0][j0][k][w] * fw;
+	T c010 = values[i0][j][k0][w0] * (1. - fw) + values[i0][j][k0][w] * fw;
+	T c011 = values[i0][j][k][w0] * (1. - fw) + values[i0][j][k][w] * fw;
+	T c100 = values[i][j0][k0][w0] * (1. - fw) + values[i][j0][k0][w] * fw;
+	T c101 = values[i][j0][k][w0] * (1. - fw) + values[i][j0][k][w] * fw;
+	T c110 = values[i][j][k0][w0] * (1. - fw) + values[i][j][k0][w] * fw;
+	T c111 = values[i][j][k][w0] * (1. - fw) + values[i][j][k][w] * fw;
 
 	T c00 = c000 * (1. - fx) + c100 * fx;
 	T c01 = c001 * (1. - fx) + c101 * fx;
