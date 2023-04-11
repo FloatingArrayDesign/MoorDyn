@@ -297,7 +297,7 @@ Line::initialize()
 		// output internal damping force
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "cx \t Node" << i << "cy \t Node" << i
+				*outfile << "Seg" << i << "cx \t Seg" << i << "cy \t Seg" << i
 				         << "cz \t ";
 			}
 		}
@@ -364,7 +364,7 @@ Line::initialize()
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
-				for (unsigned int i = 0; i < N; i++)
+				for (unsigned int i = 0; i < 3 * N; i++)
 					*outfile << "(N) \t";
 			}
 			// output segment tensions?
@@ -383,7 +383,7 @@ Line::initialize()
 					*outfile << "(-/s) \t";
 			}
 			// output seabed contact force?
-			if (channels.find("D") != string::npos) {
+			if (channels.find("b") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
@@ -1356,7 +1356,7 @@ Line::Output(real time)
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 0; i < N; i++) {
 				for (int J = 0; J < 3; J++)
-					*outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
+					*outfile << Td[i][J] << "\t ";
 			}
 		}
 		// output segment strains?
