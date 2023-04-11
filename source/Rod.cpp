@@ -342,7 +342,8 @@ Rod::initialize()
 	vec6 vel = vec6::Zero();
 	if (type == FREE)
 		pos(Eigen::seqN(0, 3)) = r[0];
-	pos(Eigen::seqN(3, 3)) = q;
+	const auto angles = orientationAngles(q);
+	pos(Eigen::seqN(3, 3)) = vec(0.0, angles.first, angles.second);
 
 	// otherwise this was only called to make the rod an output file and set its
 	// dependent line end kinematics...
@@ -429,11 +430,13 @@ Rod::setState(vec6 pos, vec6 vel)
 	if (type == FREE) {
 		// end A coordinates & Rod direction unit vector
 		r6(Eigen::seqN(0, 3)) = pos(Eigen::seqN(0, 3));
-		r6(Eigen::seqN(3, 3)) = pos(Eigen::seqN(3, 3)).normalized();
-		// end A velocityes & rotational velocities about unrotated axes
+		const mat OrMat = RotXYZ(pos(Eigen::seqN(3, 3)));
+		r6(Eigen::seqN(3, 3)) = OrMat * vec(1., 0., 0.);
+		// end A velocities & rotational velocities
 		v6 = vel;
 	} else if ((type == CPLDPIN) || (type == PINNED)) {
-		r6(Eigen::seqN(3, 3)) = pos(Eigen::seqN(3, 3)).normalized();
+		const mat OrMat = RotXYZ(pos(Eigen::seqN(3, 3)));
+		r6(Eigen::seqN(3, 3)) = OrMat * vec(1., 0., 0.);
 		v6(Eigen::seqN(3, 3)) = vel(Eigen::seqN(3, 3));
 	} else {
 		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
@@ -629,7 +632,8 @@ Rod::getStateDeriv()
 	vec6 vel6, acc6;
 	if (type == FREE) {
 		if (N == 0) {
-			// special zero-length Rod case, orientation is not an actual state
+			// special zero-length Rod case, where orientation rate of change is
+			// null (Dirichlet BC)
 
 			// For small systems it is usually faster to compute the inverse
 			// of the matrix. See
@@ -645,35 +649,35 @@ Rod::getStateDeriv()
 			acc6(Eigen::seqN(0, 3)) = acc;
 			acc6(Eigen::seqN(3, 3)) = vec::Zero();
 		} else {
-			// For small systems, which are anyway larger than 4x4, we can use
-			// the ColPivHouseholderQR algorithm, which is working with every
-			// single matrix, retaining a very good accuracy, and becoming yet
-			// faster See:
+			// Regular rod case, 6DOF
+
+			// For small systems, which are anyway larger than 4x4, we can use the
+			// ColPivHouseholderQR algorithm, which is working with every single
+			// matrix, retaining a very good accuracy, and becoming yet faster
+			// See:
 			// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 			Eigen::ColPivHouseholderQR<mat6> solver(M_out6);
-			acc6 = solver.solve(Fnet_out);
-
 			// dxdt = V   (velocities)
-			vel6(Eigen::seqN(0, 3)) = v6(Eigen::seqN(0, 3));
-			// rate of change of unit vector components!!  CHECK!   <<<<<
-			const vec v3 = v6(Eigen::seqN(3, 3));
-			const vec r3 = r6(Eigen::seqN(3, 3));
-			vel6(Eigen::seqN(3, 3)) = v3.cross(r3);
+			vel6 = v6;
+			// dVdt = a   (accelerations)
+			acc6 = solver.solve(Fnet_out);
 		}
 	} else {
-		// For small systems, which are anyway larger than 4x4, we can use the
-		// ColPivHouseholderQR algorithm, which is working with every single
-		// matrix, retaining a very good accuracy, and becoming yet faster
-		// See:
+		// Pinned rod, where the position rate of change is null (Dirichlet BC)
+
+		// For small systems it is usually faster to compute the inverse
+		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		Eigen::ColPivHouseholderQR<mat6> solver(M_out6);
-		acc6 = solver.solve(Fnet_out);
+		const vec Fnet_out3 = Fnet_out(Eigen::seqN(3, 3));
+		const mat M_out3 = M_out6(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+		const vec acc = M_out3.inverse() * Fnet_out3;
 
 		// dxdt = V   (velocities)
 		vel6(Eigen::seqN(0, 3)) = vec::Zero();
 		vel6(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
 		// dVdt = a   (accelerations)
 		acc6(Eigen::seqN(0, 3)) = vec::Zero();
+		acc6(Eigen::seqN(3, 3)) = acc;
 	}
 
 	return std::make_pair(vel6, acc6);
@@ -1174,7 +1178,8 @@ Rod::doRHS()
 		// orientation frame of course)
 		vec6 F6_i;
 		F6_i(Eigen::seqN(0, 3)) = Fnet[i];
-		F6_i(Eigen::seqN(3, 3)) = rRel.cross(Fnet[i]);
+		F6_i(Eigen::seqN(3, 3)) = Fnet[i].cross(rRel);
+
 		// mass matrix of each rod to be added
 		const mat6 M6_i = translateMass(rRel, M[i]);
 
@@ -1196,19 +1201,21 @@ Rod::doRHS()
 	// components only)
 	mat Imat_l = mat::Zero();
 	if (N > 0) {
-		real I_l = 0.125 * mass * d * d; // axial moment of inertia
+		// axial moment of inertia
+		real I_l = mass / 2.0 * d * d;
 		// summed radial moment of inertia for each segment individually
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
+		// i.e. we are summing up N elements of mass / N.
+		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2));
 
-		Imat_l(0, 0) = I_r;
+		Imat_l(0, 0) = I_l;
 		Imat_l(1, 1) = I_r;
-		Imat_l(2, 2) = I_l;
+		Imat_l(2, 2) = I_r;
 	}
 
 	// get rotation matrix to put things in global rather than rod-axis
 	// orientations
-	const mat OrMat = RotXYZ(phi, beta, 0.0);
-	const mat Imat = rotateMass(Imat_l, OrMat);
+	const mat OrMat = RotZ(beta) * RotY(phi);
+	const mat Imat = rotateMass(OrMat, Imat_l);
 	// these supplementary inertias can then be added the matrix (these are the
 	// terms ASIDE from the parallel axis terms)
 	M6net(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) += Imat;

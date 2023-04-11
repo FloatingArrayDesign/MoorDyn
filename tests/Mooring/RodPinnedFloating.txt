@@ -1,0 +1,20 @@
+--------------------- MoorDyn Input File ------------------------------------
+MoorDyn input file of the mooring system for FD validation cases
+---------------------- ROD TYPES ------------------------------------
+TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd
+(name)        (m)      (kg/m)    (-)    (-)     (-)      (-)
+rod           0.25     10.0      0.0    0.0     0.0      0.0
+---------------------- RODS ----------------------------------------
+ID   RodType   Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs  RodOutputs
+(#)  (name)     (#/key)    (m)   (m)   (m)   (m)   (m)   (m)  (-)       (-)
+1    rod       Pinned      0     0     -5    1     0     -5   1         -
+---------------------- OPTIONS -----------------------------------------
+2             writeLog             Write a log file
+1e-5          dtM                  time step to use in mooring integration (s)
+1000          WtrDnsity            water density (kg/m^3)
+10            WtrDpth              water depth (m)
+0.25          dtIC                 time interval for analyzing convergence during IC gen (s)
+0.0           TmaxIC               max time for ic gen (s)
+1.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
+1.0e-3        threshIC             threshold for IC convergence (-)
+------------------------- need this line -------------------------------------- 
