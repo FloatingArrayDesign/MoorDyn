@@ -343,8 +343,8 @@ class Rod : public io::IO
 	}
 
 	/** @brief Initialize the rod state
-	 * @return The position and direction (first) and the linear and angular
-	 * velocity (second)
+	 * @return The position and orientation angles (first) and the linear and
+	 * angular velocity (second)
 	 * @note moordyn::Rod::r6 and moordyn::Rod::v6 must already be set
 	 * @note ground- or body-pinned rods have already had
 	 * moordyn::Rod::setKinematics() called
