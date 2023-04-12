@@ -1178,7 +1178,7 @@ Rod::doRHS()
 		// orientation frame of course)
 		vec6 F6_i;
 		F6_i(Eigen::seqN(0, 3)) = Fnet[i];
-		F6_i(Eigen::seqN(3, 3)) = Fnet[i].cross(rRel);
+		F6_i(Eigen::seqN(3, 3)) = rRel.cross(Fnet[i]);
 
 		// mass matrix of each rod to be added
 		const mat6 M6_i = translateMass(rRel, M[i]);
