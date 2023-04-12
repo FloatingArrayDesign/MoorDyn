@@ -294,10 +294,10 @@ orientationAngles(vec v)
 	real l = v(Eigen::seqN(0, 2)).norm();
 
 	// inclination angle. 0.0 for horizontal vectors (v[2] = 0), growing in
-	// counter-clockwise direction
-	const real phi = atan2(v[2], l);
+	// clockwise direction at the XZ plane
+	const real phi = -atan2(v[2], l);
 	// heading angle. 0.0 for vectors pointing towards x, growing in
-	// counter-clockwise direction
+	// counter-clockwise direction at the XY plane
 	const real beta = (fabs(phi) < 1.e-6) ? 0.0 : atan2(v[1], v[0]);
 
 	return make_pair(phi, beta);

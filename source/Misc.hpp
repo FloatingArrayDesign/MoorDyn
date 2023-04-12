@@ -946,7 +946,7 @@ getH(vec r)
 {
 	mat H;
 	H << 0, r[2], r[1], r[2], 0, r[0], r[1], r[0], 0;
-	return H;
+	return -H;
 }
 
 /** @brief Compute the mass matrix on an offset point
@@ -1029,7 +1029,7 @@ RotY(real rads)
 	const real s = sin(rads);
 	const real c = cos(rads);
 	mat R;
-	R << c, 0., -s, 0., 1., 0., s, 0., c;
+	R << c, 0., s, 0., 1., 0., -s, 0., c;
 	return R;
 }
 

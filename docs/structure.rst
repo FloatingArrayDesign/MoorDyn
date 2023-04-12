@@ -2,8 +2,6 @@ Model Structure
 ===============
 
 
-
-
 MoorDyn Objects
 ---------------
 MoorDyn models the dynamics of mooring structures in an object-oriented programming (OOP) approach.
@@ -11,6 +9,7 @@ The overall simulation is managed by the MoorDyn2 class. This class reads inputs
 be loaded and saved, contains various environmental parameters (e.g. time-steps sizes and filepaths)
 and most importantly contains pointers to all the Objects representing physical parts of the model
 (Lines, Bodies, Rods, Connections). 
+
 
 Lines
 ^^^^^
@@ -242,7 +241,6 @@ other than FREE, as they are not relevant to COUPLED or FIXED scenarios:
 - bodyCdA: 6D vector describing the body's drag coefficients
 - bodyCa: 6D vector describing added-mass coefficients
 
-
 Values describing the body's state:
 - r6: 6D vector describing body's position
 - v6: 6D vector describing body's velocity
@@ -260,3 +258,44 @@ Misc:
 - number: a unique int id identifying the body
 - type: FREE, COUPLED, or FIXED, describing the "type" of body to be modeled
 
+Angles criteria
+---------------
+
+In the following figure the angles criteria is schematically depicted:
+
+.. figure:: angles.svg
+   :alt: Angles criteria schematic view
+
+Indeed, the roll and heading angles, :math:`\phi` and :math:`\psi`, follow the
+right hand criteria, while the pitch angle, :math:`\theta`, follows the left
+hand criteria.
+This way the classic rotation matrices can be considered,
+
+.. math::
+   \begin{alignat}{1}
+   R_x(\phi) &= \begin{bmatrix}
+   1 &  0         &  0           \\
+   0 &  \cos \phi & -\sin \phi \\[3pt]
+   0 &  \sin \phi & \cos \phi \\[3pt]
+   \end{bmatrix} \\[6pt]
+   R_y(\theta) &= \begin{bmatrix}
+   \cos \theta & 0 & \sin \theta \\[3pt]
+   0           & 1 &  0           \\[3pt]
+   -\sin \theta & 0 &  \cos \theta \\
+   \end{bmatrix} \\[6pt]
+   R_z(\psi) &= \begin{bmatrix}
+   \cos \psi & -\sin \psi & 0 \\[3pt]
+   \sin \psi &  \cos \psi & 0 \\[3pt]
+   0         &  0         & 1 \\
+   \end{bmatrix}
+   \end{alignat}
+
+which allows to compute moments just by simple cross products,
+:math:`\boldsymbol{M} = \boldsymbol{r} \times \boldsymbol{F}`.
+
+Please, notice that in MoorDyn the z axis is considered the upwards direction,
+i.e. the gravity points towards -z direction.
+Thus, the North-East-Down (NED) angles criteria widely applied in naval
+architecture does not match the MoorDyn one.
+More specifically, the pitch and heading angles shall be inverted whereas roll
+angle remains the same.
