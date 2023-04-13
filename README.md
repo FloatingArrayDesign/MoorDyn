@@ -65,4 +65,6 @@ version 2 development:
 We must also express our gratitude to some other developers that have
 contributed
 
+From [Kelson Marine](https://kelsonmarine.com):
   - [David Joseph Anderson](https://davidjosephanderson.com/)
+  - [Alex Kinley](https://github.com/AlexWKinley)
