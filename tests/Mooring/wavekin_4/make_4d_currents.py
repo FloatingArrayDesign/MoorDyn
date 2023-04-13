@@ -3,10 +3,11 @@ import numpy as np
 T = 15.0
 A = 1.0
 UX = 1.25
-x = np.linspace(-50.0, 50.0, num=100)
-y = np.linspace(-2.0, 2.0, num=5)
-z = np.linspace(-51.0, 5.0, num=57)
-t = np.linspace(0.0, 15.0, num=101)
+x = np.linspace(-50.0, 50.0, num=11)
+y = np.linspace(-2.0, 2.0, num=2)
+z = np.linspace(-30.0, 5.0, num=36)
+# t = np.linspace(0.0, 15.0, num=101)
+t = np.linspace(0.0, 15.0, num=2)
 zeta = A * np.sin(2.0 * np.pi * t / T)
 
 # Define a current that increases in X dimension, pointing along the positive x-axis
@@ -53,4 +54,4 @@ with open('current_profile_4d.txt', 'w') as f:
         for idy, ys in enumerate(y):
             for idz, zs in enumerate(z):
                 for idt, ts in enumerate(t):
-                    f.write(f"{xs} {ys} {zs} {ts} {ux[idy][idx][idz][idt]} {uy[idy][idx][idz][idt]} {uy[idy][idx][idz][idt]}\n")
+                    f.write(f"{xs} {ys} {zs} {ts} {ux[idy][idx][idz][idt]:.6g} {uy[idy][idx][idz][idt]} {uy[idy][idx][idz][idt]}\n")

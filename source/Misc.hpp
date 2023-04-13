@@ -1180,6 +1180,8 @@ typedef struct
 	int writeLog;
 } EnvCond;
 
+typedef std::shared_ptr<EnvCond> EnvCondRef;
+
 typedef struct _LineProps // (matching Line Dictionary inputs)
 {
 	string type;

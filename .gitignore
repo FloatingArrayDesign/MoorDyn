@@ -62,10 +62,5 @@ tests/__pycache__
 #########################
 build
 dist
-source/.vscode/settings.json
 
 /source/.vscode
-
-# Large Current Profiles #
-##########################
-current_profile_4d.txt

@@ -69,8 +69,9 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , dtM0(0.001)
   , dtOut(0.0)
   , _t_integrator(NULL)
+  , env(std::make_shared<EnvCond>())
   , GroundBody(NULL)
-  , waves(NULL)
+  , waves(nullptr)
   , seafloor(nullptr)
   , nX(0)
   , nXtra(0)
@@ -106,19 +107,19 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 	LOGDBG << "The basename is " << _basename << endl;
 	LOGDBG << "The basepath is " << _basepath << endl;
 
-	env.g = 9.8;
-	env.WtrDpth = 0.;
-	env.rho_w = 1025.;
-	env.kb = 3.0e6;
-	env.cb = 3.0e5;
-	env.WaveKin = moordyn::WAVES_NONE;
-	env.Current = moordyn::CURRENTS_NONE;
-	env.dtWave = 0.25;
-	env.WriteUnits = 1; // by default, write units line
-	env.writeLog = 0;   // by default, don't write out a log file
-	env.FrictionCoefficient = 0.0;
-	env.FricDamp = 200.0;
-	env.StatDynFricScale = 1.0;
+	env->g = 9.8;
+	env->WtrDpth = 0.;
+	env->rho_w = 1025.;
+	env->kb = 3.0e6;
+	env->cb = 3.0e5;
+	env->WaveKin = moordyn::WAVES_NONE;
+	env->Current = moordyn::CURRENTS_NONE;
+	env->dtWave = 0.25;
+	env->WriteUnits = 1; // by default, write units line
+	env->writeLog = 0;   // by default, don't write out a log file
+	env->FrictionCoefficient = 0.0;
+	env->FricDamp = 200.0;
+	env->StatDynFricScale = 1.0;
 
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
@@ -145,7 +146,6 @@ moordyn::MoorDyn::~MoorDyn()
 	delete _t_integrator;
 
 	delete GroundBody;
-	delete waves;
 	for (auto obj : LinePropList)
 		delete obj;
 	for (auto obj : RodPropList)
@@ -379,7 +379,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
-	env.WaveKin = WaveKinTemp;
+	env->WaveKin = WaveKinTemp;
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
@@ -387,12 +387,12 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		// because this is horrible. the solution is probably to move EnvCond
 		// to its own .hpp and .cpp file so that it can contain the Seafloor and
 		// can itself be queries about the seafloor in general
-		real tmp = env.WtrDpth;
+		real tmp = env->WtrDpth;
 		if (seafloor) {
-			env.WtrDpth = seafloor->getAverageDepth();
+			env->WtrDpth = seafloor->getAverageDepth();
 		}
-		waves->setup(&env, _t_integrator, _basepath.c_str());
-		env.WtrDpth = tmp;
+		waves->setup(env, _t_integrator, _basepath.c_str());
+		env->WtrDpth = tmp;
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)
@@ -401,7 +401,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// @mth: new approach to be implemented
 	// ------------------------- calculate wave time series if needed
 	// -------------------
-	// 	if (env.WaveKin == 2)
+	// 	if (env->WaveKin == 2)
 	// 	{
 	// 		for (int l=0; l<LineList.size(); l++)
 	// 			LineList[l]->makeWaveKinematics( 0.0 );
@@ -427,7 +427,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		outfileMain << channel.Name << "\t ";
 	outfileMain << endl;
 
-	if (env.WriteUnits > 0) {
+	if (env->WriteUnits > 0) {
 		// --- units ---
 		outfileMain << "(s)"
 		            << "\t ";
@@ -503,7 +503,7 @@ moordyn::MoorDyn::Step(const double* x,
 	}
 
 	// -------------------- do time stepping -----------------------
-	if (env.WaveKin == WAVES_EXTERNAL) {
+	if (env->WaveKin == WAVES_EXTERNAL) {
 		// extrapolate velocities from accelerations
 		// (in future could extrapolote from most recent two points,
 		// (U_1 and U_2)
@@ -674,7 +674,7 @@ moordyn::MoorDyn::ReadInFile()
 				i++;
 				continue;
 			}
-			env.writeLog = atoi(entries[0].c_str());
+			env->writeLog = atoi(entries[0].c_str());
 			const moordyn::error_id err = SetupLog();
 			if (err != MOORDYN_SUCCESS)
 				return err;
@@ -859,8 +859,8 @@ moordyn::MoorDyn::ReadInFile()
 			// make default water depth at least the depth of the lowest
 			// node (so water depth input is optional)
 			// TODO - this probably doesn't care about 3d seafloor?
-			if (r0[2] < -env.WtrDpth)
-				env.WtrDpth = -r0[2];
+			if (r0[2] < -env->WtrDpth)
+				env->WtrDpth = -r0[2];
 
 			LOGDBG << "\t'" << number << "'"
 			       << " - of type " << Connection::TypeName(type) << " with id "
@@ -1363,32 +1363,32 @@ moordyn::MoorDyn::ReadInFile()
 		_t_integrator->AddLine(obj);
 
 	// Setup the waves and populate them
-	waves = new moordyn::Waves(_log);
+	waves = std::make_shared<moordyn::Waves>(_log);
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
 		// to its own .hpp and .cpp file so that it can contain the Seafloor and
 		// can itself be queries about the seafloor in general
-		real tmp = env.WtrDpth;
+		real tmp = env->WtrDpth;
 		if (seafloor) {
-			env.WtrDpth = seafloor->getAverageDepth();
+			env->WtrDpth = seafloor->getAverageDepth();
 		}
-		waves->setup(&env, _t_integrator, _basepath.c_str());
-		env.WtrDpth = tmp;
+		waves->setup(env, _t_integrator, _basepath.c_str());
+		env->WtrDpth = tmp;
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS)
 		return err;
 
-	GroundBody->setEnv(&env, waves);
+	GroundBody->setEnv(env, waves);
 	for (auto obj : BodyList)
-		obj->setEnv(&env, waves);
+		obj->setEnv(env, waves);
 	for (auto obj : RodList)
-		obj->setEnv(&env, waves, seafloor);
+		obj->setEnv(env, waves, seafloor);
 	for (auto obj : ConnectionList)
-		obj->setEnv(&env, waves, seafloor);
+		obj->setEnv(env, waves, seafloor);
 	for (auto obj : LineList)
-		obj->setEnv(&env, waves, seafloor);
+		obj->setEnv(env, waves, seafloor);
 
 	return MOORDYN_SUCCESS;
 }
@@ -1821,15 +1821,15 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 			LOGERR << err_msg << endl;
 		}
 	} else if ((name == "g") || (name == "gravity"))
-		env.g = atof(entries[0].c_str());
+		env->g = atof(entries[0].c_str());
 	else if ((name == "Rho") || (name == "rho") || (name == "WtrDnsty"))
-		env.rho_w = atof(entries[0].c_str());
+		env->rho_w = atof(entries[0].c_str());
 	else if (name == "WtrDpth")
-		env.WtrDpth = atof(entries[0].c_str());
+		env->WtrDpth = atof(entries[0].c_str());
 	else if ((name == "kBot") || (name == "kb"))
-		env.kb = atof(entries[0].c_str());
+		env->kb = atof(entries[0].c_str());
 	else if ((name == "cBot") || (name == "cb"))
-		env.cb = atof(entries[0].c_str());
+		env->cb = atof(entries[0].c_str());
 	else if ((name == "dtIC") || (name == "ICdt"))
 		ICdt = atof(entries[0].c_str());
 	else if ((name == "TmaxIC") || (name == "ICTmax"))
@@ -1843,28 +1843,29 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
 			LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
 	} else if (name == "dtWave")
-		env.dtWave = atoi(entries[0].c_str());
+		env->dtWave = atoi(entries[0].c_str());
 	else if (name == "Currents") {
-		env.Current = (moordyn::currents_settings)atoi(entries[0].c_str());
-		if ((env.Current < CURRENTS_NONE) || (env.Current > CURRENTS_4D))
-			LOGWRN << "Unknown Currents option value " << env.Current << endl;
+		env->Current = (moordyn::currents_settings)atoi(entries[0].c_str());
+		if ((env->Current < CURRENTS_NONE) || (env->Current > CURRENTS_4D))
+			LOGWRN << "Unknown Currents option value " << env->Current << endl;
 	} else if (name == "WriteUnits")
-		env.WriteUnits = atoi(entries[0].c_str());
+		env->WriteUnits = atoi(entries[0].c_str());
 	else if (name == "FrictionCoefficient")
-		env.FrictionCoefficient = atof(entries[0].c_str());
+		env->FrictionCoefficient = atof(entries[0].c_str());
 	else if (name == "FricDamp")
-		env.FricDamp = atof(entries[0].c_str());
+		env->FricDamp = atof(entries[0].c_str());
 	else if (name == "StatDynFricScale")
-		env.StatDynFricScale = atof(entries[0].c_str());
+		env->StatDynFricScale = atof(entries[0].c_str());
 	// output writing period (0 for at every call)
 	else if (name == "dtOut")
 		dtOut = atof(entries[0].c_str());
 	else if (name == "SeafloorFile") {
-		env.SeafloorMode = seafloor_settings::SEAFLOOR_3D;
+		env->SeafloorMode = seafloor_settings::SEAFLOOR_3D;
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
 		std::string filepath = entries[0];
-		this->seafloor->setup(&env, filepath);
-	} else
+		this->seafloor->setup(env, filepath);
+	}
+	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 
@@ -1916,7 +1917,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	// now make Connection object!
 	Connection* obj = new Connection(_log);
 	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
-	obj->setEnv(&env, waves, seafloor);
+	obj->setEnv(env, waves, seafloor);
 	ConnectionList.push_back(obj);
 
 	// Kinematics of old attachment point
@@ -2106,7 +2107,15 @@ MoorDyn_GetWaves(MoorDyn system)
 {
 	if (!system)
 		return NULL;
-	return (MoorDynWaves)(((moordyn::MoorDyn*)system)->GetWaves());
+	return (MoorDynWaves)(((moordyn::MoorDyn*)system)->GetWaves().get());
+}
+
+MoorDynSeafloor DECLDIR MoorDyn_GetSeafloor(MoorDyn system) 
+{
+	if (!system)
+		return NULL;
+	return (MoorDynSeafloor)(((moordyn::MoorDyn*)system)->GetSeafloor().get());
+	
 }
 
 int DECLDIR

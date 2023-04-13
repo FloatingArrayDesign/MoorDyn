@@ -50,6 +50,7 @@ namespace moordyn {
 
 class Line;
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Connection Connection.hpp
  * @brief A connection for a line endpoint
@@ -89,10 +90,10 @@ class Connection : public io::IO
   private:
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
-	std::shared_ptr<moordyn::Seafloor> seafloor;
+	moordyn::WavesRef waves;
+	moordyn::SeafloorRef seafloor;
 
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
@@ -290,7 +291,7 @@ class Connection : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Multiply the drag by a factor
 	 *

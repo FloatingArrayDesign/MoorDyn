@@ -37,6 +37,7 @@
 
 #include "MoorDynAPI.h"
 #include "Waves.h"
+#include "Seafloor.h"
 #include "Connection.h"
 #include "Rod.h"
 #include "Line.h"
@@ -209,6 +210,14 @@ extern "C"
 	 * @return The waves instance, NULL if errors happened
 	 */
 	MoorDynWaves DECLDIR MoorDyn_GetWaves(MoorDyn system);
+
+	/** @brief Get the 3D seafloor instance
+	 *
+	 * The seafloor instance is only not null if a SeafloorPath was given as an option.
+	 * @param system The Moordyn system
+	 * @return The Seafloor instance, NULL if errors happened or there is no 3D seafloor
+	 */
+	MoorDynSeafloor DECLDIR MoorDyn_GetSeafloor(MoorDyn system);
 
 	/** @brief Initializes the external Wave kinetics
 	 *

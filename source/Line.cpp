@@ -221,7 +221,7 @@ Line::setup(int number_in,
 };
 
 void
-Line::setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
+Line::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
 {
 	env = env_in;
 	waves = waves_in;
