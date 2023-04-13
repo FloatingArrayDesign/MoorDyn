@@ -41,6 +41,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include <memory>
 #include <vector>
 #include <utility>
 
@@ -54,6 +55,8 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
+typedef  std::shared_ptr<Waves> WavesRef;
+
 class Connection;
 class Rod;
 
@@ -84,9 +87,9 @@ class Body : public io::IO
 
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	WavesRef waves;
 
 	// unique to Body:
 	/// Connections attached to this body
@@ -258,7 +261,7 @@ class Body : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in);
 
 	/** @brief set the states (positions and velocities) to all the attached
 	 * entities

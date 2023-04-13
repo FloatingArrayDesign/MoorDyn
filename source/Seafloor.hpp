@@ -37,7 +37,7 @@ class Seafloor : LogUser
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
-	void setup(EnvCond* env, const string& filepath);
+	void setup(EnvCondRef env, const string& filepath);
 
 	/** @brief Get the depth at a particular x/y coordinate
 	* This should default to nearest edge depth if beyond the

@@ -50,6 +50,7 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 class Line;
 
 /** @class Rod Rod.hpp
@@ -76,9 +77,9 @@ class Rod : public io::IO
   private:
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	moordyn::WavesRef waves;
 	/// Object containing the 3d seafloor info
 	std::shared_ptr<moordyn::Seafloor> seafloor;
 
@@ -340,7 +341,7 @@ class Rod : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	inline void setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
+	inline void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
 	{
 		env = env_in;
 		waves = waves_in;

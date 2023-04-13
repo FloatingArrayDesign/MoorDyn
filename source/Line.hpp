@@ -49,6 +49,7 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
@@ -125,9 +126,9 @@ class Line : public io::IO
 	}
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	moordyn::WavesRef waves;
 	/// Object containing the 3d seafloor info
 	std::shared_ptr<moordyn::Seafloor> seafloor;
 
@@ -336,7 +337,7 @@ class Line : public io::IO
 	 * @param waves_in Global Waves object
 	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes

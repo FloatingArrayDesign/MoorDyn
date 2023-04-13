@@ -219,7 +219,7 @@ Waves::allocateKinematicsArrays()
 }
 
 void
-Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
+Waves::setup(EnvCondRef env, TimeScheme* t, const char* folder)
 {
 	dtWave = env->dtWave;
 	rho_w = env->rho_w;
@@ -790,7 +790,7 @@ Waves::setup(EnvCond* env, TimeScheme* t, const char* folder)
 		}
 	} else if (env->Current == CURRENTS_4D) {
 		const string CurrentsFilename =
-		    (string)folder + "/current_profile_4d.txt";
+		    (string)folder + "current_profile_4d.txt";
 		LOGMSG << "Reading 4d currents dynamic profile from '" << CurrentsFilename
 		       << "'..." << endl;
 

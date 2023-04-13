@@ -19,7 +19,7 @@ unsigned int calcInsertIndex(std::vector<real>& list, real value) {
 	}
 	return (unsigned int)(list.size() - 1);
 }
-void Seafloor::setup(EnvCond* env, const string& filepath)
+void Seafloor::setup(EnvCondRef env, const string& filepath)
 {
 	// Initialize grid lengths:
 	nx = 0;

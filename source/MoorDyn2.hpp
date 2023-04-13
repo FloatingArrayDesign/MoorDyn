@@ -160,7 +160,7 @@ class MoorDyn : public io::IO
 	 * env.Currents is not CURRENTS_NONE
 	 * @return The wave knematics instance
 	 */
-	inline moordyn::Waves* GetWaves() const { return waves; }
+	inline moordyn::WavesRef GetWaves() const { return waves; }
 
 	/** @brief Initializes the external Wave kinetics
 	 *
@@ -469,11 +469,11 @@ class MoorDyn : public io::IO
 	string t_integrator_name;
 
 	/// General options of the Mooryng system
-	EnvCond env;
+	EnvCondRef env;
 	/// The ground body, which is unique
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
-	Waves* waves = NULL;
+	WavesRef waves = nullptr;
 	/// 3D Seafloor object that gets shared with the lines and other things that need it
 	std::shared_ptr<moordyn::Seafloor> seafloor;
 
@@ -560,14 +560,14 @@ class MoorDyn : public io::IO
 		// env.writeLog = 1 -> MOORDYN_WRN_LEVEL
 		// env.writeLog = 2 -> MOORDYN_MSG_LEVEL
 		// env.writeLog >= 3 -> MOORDYN_DBG_LEVEL
-		int log_level = MOORDYN_ERR_LEVEL - env.writeLog;
+		int log_level = MOORDYN_ERR_LEVEL - env->writeLog;
 		if (log_level >= MOORDYN_ERR_LEVEL)
 			log_level = MOORDYN_NO_OUTPUT;
 		if (log_level < MOORDYN_DBG_LEVEL)
 			log_level = MOORDYN_DBG_LEVEL;
 		GetLogger()->SetLogLevel(log_level);
 
-		if (env.writeLog > 0) {
+		if (env->writeLog > 0) {
 			moordyn::error_id err = MOORDYN_SUCCESS;
 			string err_msg;
 			stringstream filepath;
