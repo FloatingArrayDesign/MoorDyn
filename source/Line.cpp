@@ -1170,7 +1170,7 @@ Line::getStateDeriv()
 		// bottom contact (stiffness and damping, vertical-only for now) -
 		// updated for general case of potentially anchor or fairlead end in
 		// contact
-		real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+		const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
 		if (r[i][2] < waterDepth) {
 			if (i == 0)
 				B[i][2] =

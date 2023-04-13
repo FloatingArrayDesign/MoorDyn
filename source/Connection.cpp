@@ -146,10 +146,7 @@ Connection::initialize()
 		pos = r;
 		vel = rd;
 
-		real waterDepth = -env->WtrDpth;
-		if (seafloor) {
-			waterDepth = seafloor->getDepthAt(r[0], r[1]);
-		}
+		const real waterDepth = seafloor ? seafloor->getDepthAt(r[0], r[1]) : -env->WtrDpth;
 		if (waterDepth > r[2]) {
 			LOGERR << "Error: water depth is shallower than Point " << number
 			       << "." << endl;
