@@ -231,13 +231,8 @@ class Rod : public io::IO
 	 * @param y y coordinate
 	 * @return A negative number representing the sea floor depth at the given location
 	*/
-	real getWaterDepth(real x, real y) {
-		if (seafloor) {
-			return seafloor->getDepthAt(x, y);
-		}
-		else {
-			return -env->WtrDpth;
-		}
+	inline real getWaterDepth(real x, real y) {
+		return seafloor ? seafloor->getDepthAt(x, y) : -env->WtrDpth;
 	}
 
   public:
