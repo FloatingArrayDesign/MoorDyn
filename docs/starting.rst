@@ -181,7 +181,7 @@ Press "Configure" once again, and then "Generate". Now you can close CMake.
 
 Now, since we are installing Eigen in C:\Program Files (x86)\Eigen3, we need
 to execute a Command Prompt with administrative rights.
-Search for for "cmd" in the Windows Init menu and right click on
+Search for "cmd" in the Windows Init menu and right click on
 "Command Prompt", selecting Run as Administrator:
 
 .. figure:: win_cmd_admin.png
