@@ -69,7 +69,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , dtM0(0.001)
   , dtOut(0.0)
   , _t_integrator(NULL)
-  , t_integrator_name("RK2")
   , GroundBody(NULL)
   , waves(NULL)
   , seafloor(nullptr)
@@ -386,7 +385,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
-		// to its own .hpp and .cpp file so that it can contain the Seafloor and 
+		// to its own .hpp and .cpp file so that it can contain the Seafloor and
 		// can itself be queries about the seafloor in general
 		real tmp = env.WtrDpth;
 		if (seafloor) {
@@ -1342,13 +1341,15 @@ moordyn::MoorDyn::ReadInFile()
 	// Setup the time integrator
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
-	try {
-		_t_integrator = create_time_scheme(t_integrator_name, _log);
-	}
-	MOORDYN_CATCHER(err, err_msg);
-	if (err != MOORDYN_SUCCESS) {
-		LOGERR << err_msg << endl;
-		return err;
+	if (!_t_integrator) {
+		try {
+			_t_integrator = create_time_scheme("RK2", _log);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS) {
+			LOGERR << err_msg << endl;
+			return err;
+		}
 	}
 	LOGMSG << "Time integrator = " << _t_integrator->GetName() << endl;
 	_t_integrator->SetGround(GroundBody);
@@ -1366,7 +1367,7 @@ moordyn::MoorDyn::ReadInFile()
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
-		// to its own .hpp and .cpp file so that it can contain the Seafloor and 
+		// to its own .hpp and .cpp file so that it can contain the Seafloor and
 		// can itself be queries about the seafloor in general
 		real tmp = env.WtrDpth;
 		if (seafloor) {
@@ -1543,7 +1544,7 @@ moordyn::MoorDyn::readBody(string inputText)
 		rCG[1] = atof(entries_rCG[1].c_str());
 		rCG[2] = atof(entries_rCG[2].c_str());
 	} else {
-		LOGERR << "Error in " << _filepath << ":" <<  endl
+		LOGERR << "Error in " << _filepath << ":" << endl
 		       << "'" << inputText << "'" << endl
 		       << "CG entry (col 10) must have 1 or 3 numbers" << endl;
 		return nullptr;
@@ -1577,7 +1578,7 @@ moordyn::MoorDyn::readBody(string inputText)
 		CdA[1] = atof(entries_CdA[1].c_str());
 		CdA[2] = atof(entries_CdA[2].c_str());
 	} else {
-		LOGERR << "Error in " << _filepath <<  endl
+		LOGERR << "Error in " << _filepath << endl
 		       << "'" << inputText << "'" << endl
 		       << "CdA entry (col 13) must have 1 or 3 numbers" << endl;
 		return nullptr;
@@ -1595,7 +1596,8 @@ moordyn::MoorDyn::readBody(string inputText)
 		Ca[2] = atof(entries_Ca[2].c_str());
 	} else {
 		LOGERR << "Error in " << _filepath << endl
-		       << "'" << "'" << endl
+		       << "'"
+		       << "'" << endl
 		       << "Ca entry (col 14) must have 1 or 3 numbers" << endl;
 		return nullptr;
 	}
@@ -1807,9 +1809,18 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 	// DT is old way, should phase out
 	if ((name == "dtM") || (name == "DT"))
 		dtM0 = atof(entries[0].c_str());
-	else if (name == "tScheme")
-		t_integrator_name = entries[0];
-	else if ((name == "g") || (name == "gravity"))
+	else if (name == "tScheme") {
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try {
+			_t_integrator = create_time_scheme(entries[0], _log);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS) {
+			LOGWRN << "Defaulting to RK2 time integration";
+			LOGERR << err_msg << endl;
+		}
+	} else if ((name == "g") || (name == "gravity"))
 		env.g = atof(entries[0].c_str());
 	else if ((name == "Rho") || (name == "rho") || (name == "WtrDnsty"))
 		env.rho_w = atof(entries[0].c_str());
@@ -1853,8 +1864,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
 		std::string filepath = entries[0];
 		this->seafloor->setup(&env, filepath);
-	}
-	else
+	} else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 

@@ -465,8 +465,6 @@ class MoorDyn : public io::IO
 
 	/// The time integration scheme
 	TimeScheme* _t_integrator;
-	/// The time integration scheme name
-	string t_integrator_name;
 
 	/// General options of the Mooryng system
 	EnvCond env;
