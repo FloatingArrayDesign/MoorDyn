@@ -103,25 +103,15 @@ class Line : public io::IO
 	 * @param y y coordinate
 	 * @return A negative number representing the sea floor depth at the given location
 	*/
-	real getWaterDepth(real x, real y) {
-		if (seafloor) {
-			return seafloor->getDepthAt(x, y);
-		}
-		else {
-			return -env->WtrDpth;
-		}
+	inline real getWaterDepth(real x, real y) {
+		return seafloor ? seafloor->getDepthAt(x, y) : -env->WtrDpth;
 	}
 
 	/** @brief A single value representing the average water depth
 	 * 
 	*/
-	real avgWaterDepth() {
-		if (seafloor) {
-			return seafloor->getAverageDepth();
-		}
-		else {
-			return -env->WtrDpth;
-		}
+	inline real avgWaterDepth() {
+		return seafloor ? seafloor->getAverageDepth() : -env->WtrDpth;
 	}
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
