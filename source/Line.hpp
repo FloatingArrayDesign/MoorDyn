@@ -130,7 +130,7 @@ class Line : public io::IO
 	/// global Waves object
 	moordyn::WavesRef waves;
 	/// Object containing the 3d seafloor info
-	std::shared_ptr<moordyn::Seafloor> seafloor;
+	moordyn::SeafloorRef seafloor;
 
 	/// Number of line segments
 	unsigned int N;
@@ -337,7 +337,7 @@ class Line : public io::IO
 	 * @param waves_in Global Waves object
 	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes

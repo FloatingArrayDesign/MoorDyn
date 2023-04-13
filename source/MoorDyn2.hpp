@@ -475,7 +475,7 @@ class MoorDyn : public io::IO
 	/// Waves object that will be created to hold water kinematics info
 	WavesRef waves = nullptr;
 	/// 3D Seafloor object that gets shared with the lines and other things that need it
-	std::shared_ptr<moordyn::Seafloor> seafloor;
+	moordyn::SeafloorRef seafloor;
 
 	/// array of pointers to hold line library types
 	vector<LineProps*> LinePropList;

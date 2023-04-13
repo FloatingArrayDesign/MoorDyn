@@ -217,7 +217,7 @@ Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 void
-Connection::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
+Connection::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
 {
 	env = env_in;     // set pointer to environment settings object
 	waves = waves_in; // set pointer to Waves  object

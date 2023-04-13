@@ -41,7 +41,6 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
-#include <memory>
 #include <vector>
 #include <utility>
 
@@ -55,7 +54,7 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
-typedef  std::shared_ptr<Waves> WavesRef;
+typedef std::shared_ptr<Waves> WavesRef;
 
 class Connection;
 class Rod;

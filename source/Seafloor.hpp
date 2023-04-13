@@ -80,4 +80,6 @@ class Seafloor : LogUser
 	/// the minimum depth of a grid point
 	real minDepth;
 };
+
+typedef std::shared_ptr<Seafloor> SeafloorRef;
 }

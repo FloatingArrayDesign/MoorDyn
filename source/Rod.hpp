@@ -81,7 +81,7 @@ class Rod : public io::IO
 	/// global Waves object
 	moordyn::WavesRef waves;
 	/// Object containing the 3d seafloor info
-	std::shared_ptr<moordyn::Seafloor> seafloor;
+	moordyn::SeafloorRef seafloor;
 
 	/// Attached lines to the rod
 	typedef struct _attachment
@@ -341,7 +341,7 @@ class Rod : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	inline void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in)
+	inline void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
 	{
 		env = env_in;
 		waves = waves_in;

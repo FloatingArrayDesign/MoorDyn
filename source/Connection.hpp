@@ -93,7 +93,7 @@ class Connection : public io::IO
 	EnvCondRef env;
 	/// global Waves object
 	moordyn::WavesRef waves;
-	std::shared_ptr<moordyn::Seafloor> seafloor;
+	moordyn::SeafloorRef seafloor;
 
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
@@ -291,7 +291,7 @@ class Connection : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, std::shared_ptr<moordyn::Seafloor> seafloor_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Multiply the drag by a factor
 	 *
