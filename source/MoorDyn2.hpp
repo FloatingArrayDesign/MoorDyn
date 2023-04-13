@@ -161,6 +161,14 @@ class MoorDyn : public io::IO
 	 * @return The wave knematics instance
 	 */
 	inline moordyn::WavesRef GetWaves() const { return waves; }
+	
+	/** @brief Get the 3D seafloor instance
+	 * 
+	 * The Seafloor instance is used to represent a floor of varying depth over
+	 * a rectilinear grid. It allows for finding the seafloor height at any (x, y)
+	 * point which it calculated using a bilinear interpolation.
+	 */
+	inline moordyn::SeafloorRef GetSeafloor() const { return seafloor; }
 
 	/** @brief Initializes the external Wave kinetics
 	 *

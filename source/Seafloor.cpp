@@ -1,25 +1,29 @@
 #include "Seafloor.hpp"
+#include "Seafloor.h"
 
 namespace moordyn {
 
 Seafloor::Seafloor(moordyn::Log* log)
-	: LogUser(log)
-	, averageDepth(0)
-	, minDepth(0)
+  : LogUser(log)
+  , averageDepth(0)
+  , minDepth(0)
 {
 }
 
 Seafloor::~Seafloor() {}
 
-unsigned int calcInsertIndex(std::vector<real>& list, real value) {
-	for(unsigned int i = 0; i < list.size(); i++) {
+unsigned int
+calcInsertIndex(std::vector<real>& list, real value)
+{
+	for (unsigned int i = 0; i < list.size(); i++) {
 		if (list[i] > value) {
 			return i == 0 ? 0 : i - 1;
 		}
 	}
 	return (unsigned int)(list.size() - 1);
 }
-void Seafloor::setup(EnvCondRef env, const string& filepath)
+void
+Seafloor::setup(EnvCondRef env, const string& filepath)
 {
 	// Initialize grid lengths:
 	nx = 0;
@@ -39,8 +43,8 @@ void Seafloor::setup(EnvCondRef env, const string& filepath)
 		//     (string)folder + "/seafloor_profile_3d.txt";
 		LOGMSG << "Reading seafloor from " << filepath << '\n';
 
-		vector<string> fLines;  // Buffer to load file into line-by-line 
-		string fLine;  // Buffer to process each line of input file 
+		vector<string> fLines; // Buffer to load file into line-by-line
+		string fLine;          // Buffer to process each line of input file
 
 		// Read file into buffers:
 		ifstream f(filepath);
@@ -64,7 +68,6 @@ void Seafloor::setup(EnvCondRef env, const string& filepath)
 			throw moordyn::input_file_error("Invalid file format");
 		}
 
-
 		// Setup nx, ny
 		vector<string> entries = moordyn::str::split(fLines[0]);
 		nx = stoi(entries[0]);
@@ -73,7 +76,7 @@ void Seafloor::setup(EnvCondRef env, const string& filepath)
 		// Setup px (x-axis ticks):
 		entries = moordyn::str::split(fLines[1]);
 		if (entries.size() != nx) {
-			LOGERR << "There should be " << nx << " entries in line 2" 
+			LOGERR << "There should be " << nx << " entries in line 2"
 			       << " of the input file.\n";
 			throw moordyn::input_file_error("Invalid no. of x ticks");
 		}
@@ -84,7 +87,7 @@ void Seafloor::setup(EnvCondRef env, const string& filepath)
 		// Setup py (y-axis ticks):
 		entries = moordyn::str::split(fLines[2]);
 		if (entries.size() != ny) {
-			LOGERR << "There should be " << ny << " entries in line 3" 
+			LOGERR << "There should be " << ny << " entries in line 3"
 			       << " of the input file.\n";
 			throw moordyn::input_file_error("Invalid no. of y ticks");
 		}
@@ -93,7 +96,8 @@ void Seafloor::setup(EnvCondRef env, const string& filepath)
 		}
 
 		// initialize depths grid (full of zeroes to begin with):
-		depthGrid = std::vector<std::vector<real>>(nx, std::vector<real>(ny, 0.0));
+		depthGrid =
+		    std::vector<std::vector<real>>(nx, std::vector<real>(ny, 0.0));
 
 		real depthTotal = 0.0;
 		for (unsigned int i = 3; i < fLines.size(); i++) {
@@ -115,7 +119,6 @@ void Seafloor::setup(EnvCondRef env, const string& filepath)
 			if (depth < minDepth) {
 				minDepth = depth;
 			}
-
 		}
 		averageDepth = depthTotal / (real)(nx * ny);
 
@@ -139,4 +142,35 @@ Seafloor::getDepthAt(real x, real y)
 	return interp2(depthGrid, ix, iy, fx, fy);
 }
 
+}
+
+#define CHECK_SEAFLOOR(s)                                                      \
+	if (!s) {                                                                  \
+		cerr << "Null seafloor instance received in " << __FUNC_NAME__ << " (" \
+		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
+		return MOORDYN_INVALID_VALUE;                                          \
+	}
+
+int DECLDIR
+MoorDyn_GetDepthAt(MoorDynSeafloor seafloor, double x, double y, double* depth)
+{
+	CHECK_SEAFLOOR(seafloor);
+	*depth = ((moordyn::Seafloor*)seafloor)->getDepthAt(x, y);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetAverageDepth(MoorDynSeafloor seafloor, double* avgDepth)
+{
+	CHECK_SEAFLOOR(seafloor);
+	*avgDepth = ((moordyn::Seafloor*)seafloor)->getAverageDepth();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetMinDepth(MoorDynSeafloor seafloor, double* minDepth)
+{
+	CHECK_SEAFLOOR(seafloor);
+	*minDepth = ((moordyn::Seafloor*)seafloor)->getMinimumDepth();
+	return MOORDYN_SUCCESS;
 }

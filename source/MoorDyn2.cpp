@@ -2099,6 +2099,14 @@ MoorDyn_GetWaves(MoorDyn system)
 	return (MoorDynWaves)(((moordyn::MoorDyn*)system)->GetWaves().get());
 }
 
+MoorDynSeafloor DECLDIR MoorDyn_GetSeafloor(MoorDyn system) 
+{
+	if (!system)
+		return NULL;
+	return (MoorDynSeafloor)(((moordyn::MoorDyn*)system)->GetSeafloor().get());
+	
+}
+
 int DECLDIR
 MoorDyn_ExternalWaveKinInit(MoorDyn system, unsigned int* n)
 {

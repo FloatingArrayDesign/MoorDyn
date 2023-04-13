@@ -7,6 +7,7 @@
 
 #include "MoorDyn.h"
 #include "MoorDyn2.h"
+#include "Seafloor.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -74,15 +75,36 @@ pendulum()
 		return false;
 	}
 
+	MoorDynSeafloor seafloor = MoorDyn_GetSeafloor(system);
+	if (!seafloor) {
+		cerr << "Could not get seafloor instance" << endl;
+		return false;
+	}
+
+	double avgDepth, minDepth;
+	err = MoorDyn_GetMinDepth(seafloor, &minDepth);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "couldn't get min depth" << endl;
+		return false;
+	}
+
+	err = MoorDyn_GetAverageDepth(seafloor, &avgDepth);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "couldn't get min depth" << endl;
+		return false;
+	}
+	
+	cout << "Average depth is " << avgDepth << ", Minimum depth is " << minDepth << endl;
+
 	const double w = sqrt(9.81 / l0);
 	const double T = 2.0 * M_PI / w;
-	double dt = T / 100.0;
+	double dt = T / 20.0;
 	double t = 0.0;
 	std::vector<double> x_peaks = { x0 };
 	std::vector<double> t_peaks = { 0.0 };
 	double d_peak = 0.0;
-	while (t < 2.0 * T) {
-		cout << t << " / " << 2.0 * T << '\n';
+	while (t < 1.0 * T) {
+		cout << t << " / " << 1.0 * T << '\n';
 		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
 		if (err != MOORDYN_SUCCESS) {
 			cerr << "Failure during the mooring step: " << err << endl;

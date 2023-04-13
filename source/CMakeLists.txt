@@ -37,6 +37,7 @@ set(MOORDYN_HEADERS
     Rod.h
     Waves.h
     Seafloor.hpp
+    Seafloor.h
 )
 
 set(MOORDYN_PUBLIC_DEPS "")
