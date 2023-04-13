@@ -1,5 +1,4 @@
-#include "Moordyn.h"
-#include "Moordyn2.h"
+#include "MoorDyn2.h"
 #include <stdexcept>
 #include <iostream>
 
