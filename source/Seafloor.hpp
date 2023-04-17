@@ -55,7 +55,7 @@ class Seafloor : LogUser
 		return averageDepth;
 	}
 	
-	/** @brief The minimum depth of the seafloor
+	/** @brief The depth of the seafloor at the shallowest point
 	 * Potentially useful for optimizing collision against the seafloor
 	*/
 	real getMinimumDepth() {

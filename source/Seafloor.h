@@ -38,7 +38,7 @@ extern "C"
 	int DECLDIR MoorDyn_GetAverageDepth(MoorDynSeafloor seafloor,
 	                                    double* avgDepth);
 
-	/** @brief Get the minimum of depth of the seafloor
+	/** @brief The depth of the seafloor at the shallowest point
 	 * @param seafloor The Seafloor instance
 	 * @param minDepth The output minimum seafloor depth
 	 * @return 0 If the data is correctly set, an error code otherwise

@@ -389,7 +389,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		// can itself be queries about the seafloor in general
 		real tmp = env->WtrDpth;
 		if (seafloor) {
-			env->WtrDpth = seafloor->getAverageDepth();
+			env->WtrDpth = -seafloor->getAverageDepth();
 		}
 		waves->setup(env, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
@@ -1371,7 +1371,7 @@ moordyn::MoorDyn::ReadInFile()
 		// can itself be queries about the seafloor in general
 		real tmp = env->WtrDpth;
 		if (seafloor) {
-			env->WtrDpth = seafloor->getAverageDepth();
+			env->WtrDpth = -seafloor->getAverageDepth();
 		}
 		waves->setup(env, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;

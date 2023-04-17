@@ -1,12 +1,13 @@
 #include "Seafloor.hpp"
 #include "Seafloor.h"
+#include <limits>
 
 namespace moordyn {
 
 Seafloor::Seafloor(moordyn::Log* log)
   : LogUser(log)
   , averageDepth(0)
-  , minDepth(0)
+  , minDepth(-std::numeric_limits<real>::infinity())
 {
 }
 
@@ -116,7 +117,7 @@ Seafloor::setup(EnvCondRef env, const string& filepath)
 			unsigned int yIdx = calcInsertIndex(py, yPos);
 			depthGrid[xIdx][yIdx] = depth;
 			depthTotal += depth;
-			if (depth < minDepth) {
+			if (depth > minDepth) {
 				minDepth = depth;
 			}
 		}
