@@ -298,7 +298,7 @@ orientationAngles(vec v)
 	const real phi = -atan2(v[2], l);
 	// heading angle. 0.0 for vectors pointing towards x, growing in
 	// counter-clockwise direction at the XY plane
-	const real beta = (fabs(phi) < 1.e-6) ? 0.0 : atan2(v[1], v[0]);
+	const real beta = (fabs(l) < 1.e-6) ? 0.0 : atan2(v[1], v[0]);
 
 	return make_pair(phi, beta);
 }

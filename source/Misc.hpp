@@ -1056,7 +1056,7 @@ RotZ(real rads)
 inline mat
 RotXYZ(real x, real y, real z)
 {
-	return RotZ(x) * RotY(y) * RotX(z);
+	return RotZ(z) * RotY(y) * RotX(x);
 }
 
 /** @brief Euler XYZ rotation matrix
