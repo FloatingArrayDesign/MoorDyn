@@ -123,7 +123,8 @@ Rod::setup(int number_in,
 
 	// get Rod axis direction vector and Rod length
 	UnstrLen = unitvector(
-	    q, endCoords(Eigen::seqN(0, 3)), endCoords(Eigen::seqN(3, 3)));
+	    q0, endCoords(Eigen::seqN(0, 3)), endCoords(Eigen::seqN(3, 3)));
+	q = q0;
 
 	if (N == 0) {
 		// special case of zero-length rod, which is denoted by numsegs=0 in the
@@ -146,13 +147,13 @@ Rod::setup(int number_in,
 	if (type == FREE) {
 		// For an independent rod, set the position right off the bat
 		r6(Eigen::seqN(0, 3)) = endCoords(Eigen::seqN(0, 3));
-		r6(Eigen::seqN(3, 3)) = q;
+		r6(Eigen::seqN(3, 3)) = vec::Zero();
 		v6 = vec6::Zero();
 	} else if ((type == PINNED) || (type == CPLDPIN)) {
 		// for a pinned rod, just set the orientation (position will be set
 		// later by parent object)
-		r6(Eigen::seqN(3, 3)) = q;
-		v6(Eigen::seqN(3, 3)) = vec6::Zero();
+		r6(Eigen::seqN(3, 3)) = vec::Zero();
+		v6(Eigen::seqN(3, 3)) = vec::Zero();
 	}
 	// otherwise (for a fixed rod) the positions will be set by the parent body
 	// or via coupling
@@ -342,11 +343,9 @@ Rod::initialize()
 	vec6 vel = vec6::Zero();
 	if (type == FREE)
 		pos(Eigen::seqN(0, 3)) = r[0];
-	const auto angles = orientationAngles(q);
-	pos(Eigen::seqN(3, 3)) = vec(0.0, angles.first, angles.second);
-
-	// otherwise this was only called to make the rod an output file and set its
-	// dependent line end kinematics...
+	// Regarding the angles, they are always initialized as zeroes, considering
+	// q0 as the reference for the orientation-related transformations
+	pos(Eigen::seqN(3, 3)) = vec::Zero();
 
 	LOGMSG << "Initialized Rod " << number << endl;
 	return std::make_pair(pos, vel);
@@ -431,12 +430,12 @@ Rod::setState(vec6 pos, vec6 vel)
 		// end A coordinates & Rod direction unit vector
 		r6(Eigen::seqN(0, 3)) = pos(Eigen::seqN(0, 3));
 		const mat OrMat = RotXYZ(pos(Eigen::seqN(3, 3)));
-		r6(Eigen::seqN(3, 3)) = OrMat * vec(1., 0., 0.);
+		r6(Eigen::seqN(3, 3)) = OrMat * q0;
 		// end A velocities & rotational velocities
 		v6 = vel;
 	} else if ((type == CPLDPIN) || (type == PINNED)) {
 		const mat OrMat = RotXYZ(pos(Eigen::seqN(3, 3)));
-		r6(Eigen::seqN(3, 3)) = OrMat * vec(1., 0., 0.);
+		r6(Eigen::seqN(3, 3)) = OrMat * q0;
 		v6(Eigen::seqN(3, 3)) = vel(Eigen::seqN(3, 3));
 	} else {
 		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
