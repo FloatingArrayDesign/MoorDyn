@@ -104,6 +104,8 @@ class Rod : public io::IO
 	unsigned int N;
 	/// The constrained length of the rod
 	moordyn::real UnstrLen;
+	/// Original direction vector
+	vec q0;
 	/// rod diameter
 	moordyn::real d;
 	/// rod linear density

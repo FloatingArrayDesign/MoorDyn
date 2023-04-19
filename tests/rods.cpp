@@ -68,39 +68,46 @@ pinned_floating()
 		return false;
 	}
 
-	const auto rod = MoorDyn_GetRod(system, 1);
-	if (!rod) {
-		cerr << "Failure getting the rod" << endl;
-		return false;
-	}
+	unsigned int n_rods;
+	err = MoorDyn_GetNumberRods(system, &n_rods);
+	for (unsigned int i_rod = 1; i_rod <= n_rods; i_rod++) {
+		const auto rod = MoorDyn_GetRod(system, i_rod);
+		if (!rod) {
+			cerr << "Failure getting the rod " << i_rod << endl;
+			return false;
+		}
 
-	unsigned int n_nodes;
-	err = MoorDyn_GetRodN(rod, &n_nodes);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting the number of nodes: " << err << endl;
-		return false;
-	}
-	// Check that the rod is floating upwards
-	double pos[3];
-	err = MoorDyn_GetRodNodePos(rod, 0, pos);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting first node position: " << err << endl;
-		return false;
-	}
-	cout << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
-	const double z0 = pos[2];
-	err = MoorDyn_GetRodNodePos(rod, n_nodes, pos);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting last node position: " << err << endl;
-		return false;
-	}
-	const double z1 = pos[2];
-	cout << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
+		unsigned int n_nodes;
+		err = MoorDyn_GetRodN(rod, &n_nodes);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure getting the number of nodes for rod " << i_rod
+			     << ": " << err << endl;
+			return false;
+		}
+		// Check that the rod is floating upwards
+		double pos[3];
+		err = MoorDyn_GetRodNodePos(rod, 0, pos);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure getting first node position for rod " << i_rod
+			     << ": " << err << endl;
+			return false;
+		}
+		cout << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
+		const double z0 = pos[2];
+		err = MoorDyn_GetRodNodePos(rod, n_nodes, pos);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure getting last node position for rod " << i_rod
+			     << ": " << err << endl;
+			return false;
+		}
+		const double z1 = pos[2];
+		cout << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
 
-	if (z1 < z0) {
-		cerr << "The last node is below the first one: "
-		     << z1 << " vs. " << z0 << endl;
-		return false;
+		if (z1 < z0) {
+			cerr << "The last node is below the first one for rod " << i_rod
+			     << ": " << z1 << " vs. " << z0 << endl;
+			return false;
+		}
 	}
 
 	err = MoorDyn_Close(system);
