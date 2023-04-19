@@ -1,15 +1,17 @@
---------------------- MoorDyn Input File ------------------------------------
-MoorDyn input file of the mooring system for FD validation cases
----------------------- ROD TYPES ------------------------------------
+--------------------- MoorDyn Input File ---------------------------------------
+Tests of rods pinned, horizontally lying in different directions, which are
+floating. This is a conservative motion, so the rods will move like inverted
+pendulums
+---------------------- ROD TYPES -----------------------------------------------
 TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd
 (name)        (m)      (kg/m)    (-)    (-)     (-)      (-)
 rod           0.25     10.0      0.0    0.0     0.0      0.0
----------------------- RODS ----------------------------------------
+---------------------- RODS ----------------------------------------------------
 ID   RodType   Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs  RodOutputs
 (#)  (name)     (#/key)    (m)   (m)   (m)   (m)   (m)   (m)  (-)       (-)
 1    rod       Pinned      0     0     -5    1     0     -5   1         -
 2    rod       Pinned      0     0     -5    0     1     -5   1         -
----------------------- OPTIONS -----------------------------------------
+---------------------- OPTIONS -------------------------------------------------
 2             writeLog             Write a log file
 1e-5          dtM                  time step to use in mooring integration (s)
 1000          WtrDnsity            water density (kg/m^3)
@@ -18,4 +20,4 @@ ID   RodType   Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs  RodOutput
 0.0           TmaxIC               max time for ic gen (s)
 1.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
 1.0e-3        threshIC             threshold for IC convergence (-)
-------------------------- need this line -------------------------------------- 
+------------------------- need this line ---------------------------------------
