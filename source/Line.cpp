@@ -871,7 +871,7 @@ Line::getStateDeriv()
 			m_i = pi / 8. * d * d * l[0] * rho;
 			v_i = 1. / 2. * F[i] * V[i];
 		} else if (i == N) {
-			m_i = pi / 8. * d * d * l[N - 2] * rho;
+			m_i = pi / 8. * d * d * l[N - 1] * rho;
 			v_i = 1. / 2. * F[i - 1] * V[i - 1];
 		} else {
 			m_i = pi / 8. * (d * d * rho * (l[i] + l[i - 1]));
