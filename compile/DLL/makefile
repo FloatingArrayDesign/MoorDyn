@@ -45,6 +45,7 @@ HEADERS = ../../source/Body.h \
           ../../source/MoorDyn.h \
           ../../source/Rod.h \
           ../../source/Waves.h \
+		  ../../source/Seafloor.h \
           ../../source/Body.hpp \
           ../../source/Connection.hpp \
           ../../source/IO.hpp \
@@ -56,12 +57,13 @@ HEADERS = ../../source/Body.h \
           ../../source/Rod.hpp \
           ../../source/State.hpp \
           ../../source/Time.hpp \
-          ../../source/Waves.hpp
+          ../../source/Waves.hpp \
+		  ../../source/Seafloor.hpp
 
 all: libmoordyn2.dll
 
-libmoordyn2.dll: MoorDyn.o MoorDyn2.o Line.o Connection.o Rod.o Body.o Log.o IO.o Misc.o State.o Time.o Waves.o kiss_fftr.o kiss_fft.o
-	$(CXX) $(LFLAGS) -o libmoordyn2.dll MoorDyn.o MoorDyn2.o Line.o Rod.o Body.o Connection.o Log.o IO.o Misc.o State.o Time.o Waves.o kiss_fftr.o kiss_fft.o
+libmoordyn2.dll: MoorDyn.o MoorDyn2.o Line.o Connection.o Rod.o Body.o Log.o IO.o Misc.o State.o Time.o Waves.o Seafloor.o kiss_fftr.o kiss_fft.o
+	$(CXX) $(LFLAGS) -o libmoordyn2.dll MoorDyn.o MoorDyn2.o Line.o Rod.o Body.o Connection.o Log.o IO.o Misc.o State.o Time.o Waves.o Seafloor.o kiss_fftr.o kiss_fft.o
 
 MoorDyn.o: ../../source/MoorDyn.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/MoorDyn.cpp
@@ -95,6 +97,9 @@ Time.o: ../../source/Time.cpp $(HEADERS)
 
 Waves.o: ../../source/Waves.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
+
+Seafloor.o: ../../source/Seafloor.cpp $(HEADERS)
+	$(CXX) $(CPPFLAGS) ../../source/Seafloor.cpp
 
 Log.o: ../../source/Log.cpp $(HEADERS)
 	$(CXX) $(CPPFLAGS) ../../source/Log.cpp

@@ -34,6 +34,7 @@
 
 #pragma once
 
+#include "Seafloor.hpp"
 #include "Misc.hpp"
 #include "IO.hpp"
 #include <utility>
@@ -48,6 +49,7 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
@@ -58,18 +60,18 @@ class Waves;
  * [connect (node 0)] - seg 0 - [node 1] - ... - seg n-1 - [connect (node N)]
  *
  * Depending on the length of the line, \f$ l \f$, the number of segments,
- * \f$ n \f$, an the material density and Young's modulus, \f$ \rho \f$ &
- * \f$ E \f$, a natural scillation period can be defined:
+ * \f$ n \f$, and the material density and Young's modulus, \f$ \rho \f$ &
+ * \f$ E \f$, a natural oscillation period can be defined:
  *
  * \f$ T = \frac{l}{\pi n} \sqrt{\frac{\rho}{E}} \f$
  *
- * Thus, the integration time step (moordyn::MoorDyn.dtM0) shall be smaller than
- * such natural period to avoid numerical instabilities
+ * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
+ * this natural period to avoid numerical instabilities
  */
 class Line : public io::IO
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 */
 	Line(moordyn::Log* log);
@@ -79,7 +81,8 @@ class Line : public io::IO
 	~Line();
 
   private:
-	/** @brief Get the non-linear Young's modulus
+	/** @brief Get the non-linear Young's modulus. This is interpolated from a
+	 * curve provided in the input file.
 	 * @param l_stretched The actual length of the segment
 	 * @param l_unstretched The unstretched length of the segment
 	 */
@@ -95,12 +98,29 @@ class Line : public io::IO
 	 * @param curv The curvature
 	 */
 	real getNonlinearEI(real curv);
+	
+	/** @brief Finds the depth of the water at some (x, y) point. Either using env->WtrDpth or the 3D seafloor if available
+	 * @param x x coordinate
+	 * @param y y coordinate
+	 * @return A negative number representing the sea floor depth at the given location
+	*/
+	inline real getWaterDepth(real x, real y) {
+		return seafloor ? seafloor->getDepthAt(x, y) : -env->WtrDpth;
+	}
 
+	/** @brief A single value representing the average water depth
+	 * 
+	*/
+	inline real avgWaterDepth() {
+		return seafloor ? seafloor->getAverageDepth() : -env->WtrDpth;
+	}
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	moordyn::WavesRef waves;
+	/// Object containing the 3d seafloor info
+	moordyn::SeafloorRef seafloor;
 
 	/// Number of line segments
 	unsigned int N;
@@ -305,8 +325,9 @@ class Line : public io::IO
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
+	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes
@@ -540,6 +561,15 @@ class Line : public io::IO
 	                   std::vector<std::vector<moordyn::real>> f,
 	                   std::vector<std::vector<vec>> u,
 	                   std::vector<std::vector<vec>> ud);
+
+	/** @brief calculate the volume of the segment between firstNodeIdx and secondNodeIdx submerged
+	* 
+	* This must be used with adjacent nodes for accurate results. It is currently only implemented
+	* for the still water case.
+	* @param firstNodeIdx Index of the first node of the segment
+	* @param secondNodeIdx Index of the second node of the segment
+	*/
+	real calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx);
 
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients

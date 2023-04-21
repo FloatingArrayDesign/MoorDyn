@@ -68,9 +68,11 @@ will be documented separatelly
 Windows
 ^^^^^^^
 
-In this tutorial we are installing Eigen3 and MoorDyn in the default folders
-(C:\Program Files (x86)\Eigen3 and C:\Program Files (x86)\Moordyn),
-using for that the latest versions available downloaded with Git.
+In this tutorial we will install Eigen3 and MoorDyn in the default folders
+(C:\Program Files (x86)\Eigen3 and C:\Program Files (x86)\Moordyn).
+We will acquire the latest versions available with Git and build them
+using CMake. This documentation assumes that you are building
+in an MSYS2 build environment.
 
 Please, install all the tools we need:
 
@@ -95,20 +97,21 @@ The same holds for CMake:
 
 The installation of MSYS2 is pretty well documented in
 `the project web page <https://www.msys2.org/>`_. However, we need some
-additional tools, so after it, and running "MSYS MinGW 64-bit", please type
+additional tools, so after running "MSYS MinGW 64-bit", please type
 the following command
 
 .. code-block:: bash
+pacman -S 
 
-  pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip
+  pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip mingw64/mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb mingw-w64-x86_64-cmake
 
-Now we are making all the MinGW stack available along the whole system, adding
+Now we need to make the MinGW stack available across the whole system by adding
 it to the PATH environment variable.
 To this end, execute "System" from the Windows Init menu, and look for
 "environment".
 Then click on "Edit the system environment variables" and in the popping up
 window on "Enviroment Variables..."
-Do double click on Path (in the System variables box), and add a new entry:
+Double click on Path (in the System variables box), and add a new entry:
 "C:\msys64\mingw64\bin"
 
 .. figure:: win_msys2_env.png
@@ -116,9 +119,9 @@ Do double click on Path (in the System variables box), and add a new entry:
 
    Adding MinGW to the PATH
 
-Now we are ready to work! First we are creating a folder where we are
-downloading and compiling the codes, let's say C:\MoorDyn.
-Create such a folder, and do right click inside, selecting "Git GUI Here". In
+Now we are ready to work! First we must create a folder where we will
+download and compile the MoorDyn code, let's say C:\MoorDyn.
+Create such a folder, and right click inside, selecting "Git GUI Here". In
 the Git window select "Clone Existing Repository".
 
 .. figure:: win_git_gui.png
@@ -126,7 +129,7 @@ the Git window select "Clone Existing Repository".
 
    The Git GUI to clone repositories
 
-We are starting with Eigen3, so in the first box set
+We are starting with Eigen3, so in the first box of the window that pops up set
 "https://gitlab.com/libeigen/eigen.git", and in the second "C:\MoorDyn\eigen":
 
 .. figure:: win_git_eigen.png
@@ -144,12 +147,15 @@ Now you can repeat, setting "https://github.com/mattEhall/MoorDyn.git", and
    Cloning MoorDyn repository
 
 Now, create two additional folders in C:\MoorDyn named eigen.build and
-MoorDyn.build.
-It is time to start CMake from the Windows Init menu. To prepare Eigen3 set
+MoorDyn.build. As suggested by the names, these folders are where we will
+actually build the source code we just cloned from GitHub. To do this, we'll
+be using CMake as our build tool.
+
+Start CMake from the Windows Init menu. To prepare Eigen3 set
 "C:\MoorDyn\eigen" in the source box and "C:\MoorDyn\eigen.build" in the
 binaries box, and press "Configure".
 The first time you configure a new project, CMake will ask you for the toolchain
-to use. Please, select "MinGW Makefiles":
+to use. Select "MinGW Makefiles":
 
 .. figure:: win_cmake_selectcompiler.png
    :alt: Selecting the MinGW generator
@@ -158,8 +164,11 @@ to use. Please, select "MinGW Makefiles":
 
 Click on "Finish" and let CMake work. After a short while you will see a lot of
 new red boxes.
-Do not worry, they are red because they are new, they are not errors.
-Remember to set CMAKE_BUILD_TYPE as "Release".
+Don't worry, these are not errors - they are red because they are new, and you
+must specify some additional parameters for CMake.
+Remember to set CMAKE_BUILD_TYPE as "Release" (unless you are working on the
+source code, in which case you may wish to set the build type to "Debug" so
+as to run the built program through a debugger).
 It is also recommended to disable BUILD_TESTING, EIGEN_BUILD_DOC and
 EIGEN_BUILD_TESTING:
 
@@ -172,7 +181,7 @@ Press "Configure" once again, and then "Generate". Now you can close CMake.
 
 Now, since we are installing Eigen in C:\Program Files (x86)\Eigen3, we need
 to execute a Command Prompt with administrative rights.
-To this end, look for "cmd" in the Windows Init menu and do right click on
+Search for "cmd" in the Windows Init menu and right click on
 "Command Prompt", selecting Run as Administrator:
 
 .. figure:: win_cmd_admin.png
@@ -188,8 +197,9 @@ Now you just need to type the following commands:
   mingw32-make
   mingw32-make install
 
-We will use a cmd with administrative rights later on, so do not close it.
-Now we are installing MoorDyn following a very similar process.
+We will need to use cmd with administrative rights later on, so do not close it.
+
+Now we will install MoorDyn following a very similar process.
 Launch CMake again, and set "C:\MoorDyn\MoorDyn" in the source box and
 "C:\MoorDyn\MoorDyn.build" in the binaries box, clicking "Configure" afterwards.
 Select again the "MinGW Makefiles" for the generator.
@@ -202,9 +212,9 @@ enable FORTRAN_WRAPPER and PYTHON_WRAPPER:
    Configuration options for MoorDyn
 
 You can also enable MATLAB_WRAPPER if you have Matlab installed in your system.
-We are ready, click "Configure" once more and the "Generate".
+We are ready, click "Configure" once more and then "Generate".
 
-Now you can recover your Command Prompt (which has adminsitrative rights), and
+Now go back to your Command Prompt from earlier (which has adminsitrative rights), and
 type the following commands:
 
 .. code-block:: bash
@@ -226,7 +236,7 @@ option and type
 Linux and MAC
 ^^^^^^^^^^^^^
 
-First of all, use you package manager to install the following packages
+First of all, use your package manager to install the following packages
 
 * `Git <https://git-scm.com/>`_
 * `CMake <https://cmake.org/>`_

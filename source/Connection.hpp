@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Seafloor.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -49,6 +50,7 @@ namespace moordyn {
 
 class Line;
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Connection Connection.hpp
  * @brief A connection for a line endpoint
@@ -56,9 +58,9 @@ class Waves;
  * Each line must have 2 connections at each endpoint, which are used to define
  * how those points are moving. There are 3 basic types of connections:
  *
- *  - Fixed: The point is indeed fixed, either to a unmovable point (i.e. an
- *           anchor) or to a Body
- *  - Free: The point freely moves, with its own translation degrees of freedom,
+ *  - Fixed: The point is fixed, either to a unmovable point (i.e. an anchor
+ *           or to a Body
+ *  - Free: The point freely moves, with its own translational degrees of freedom,
  *          to provide a connection point between multiple mooring lines or an
  *          unconnected termination point of a Line, which could have a clump
  *          weight or float via the point's mass and volume parameters
@@ -88,9 +90,10 @@ class Connection : public io::IO
   private:
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	moordyn::WavesRef waves;
+	moordyn::SeafloorRef seafloor;
 
 	/// Lines attached to this connection node
 	std::vector<attachment> attached;
@@ -196,7 +199,7 @@ class Connection : public io::IO
 	types type;
 
 	/** @brief flag indicating whether wave/current kinematics will be
-	 * considered for this linec
+	 * considered for this Connection. 
 	 *
 	 * - 0: none, or use value set externally for each node of the object
 	 * - 1: interpolate from stored
@@ -288,7 +291,7 @@ class Connection : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Multiply the drag by a factor
 	 *

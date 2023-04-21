@@ -53,8 +53,14 @@ compile/SO/test*
 .eggs
 moordyn.egg-info
 tests/__pycache__
+/out/build
+/.vs/MoorDyn/FileContentIndex
+/.vs
+/CMakeSettings.json
 
 # Compilation artifacts #
 #########################
 build
 dist
+
+/source/.vscode

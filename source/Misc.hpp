@@ -561,6 +561,15 @@ typedef enum
 	WAVES_KIN = 6,
 } waves_settings;
 
+
+typedef enum
+{
+	/// Flat seafloor:
+	SEAFLOOR_FLAT = 0,
+	/// 3D seafloor
+	SEAFLOOR_3D = 1,
+} seafloor_settings;
+
 // Current options: 0 - no currents or set externally (as part of WaveKin =0 or
 // 1 approach) [default]
 //                  1 - read in steady current profile, grid approach
@@ -584,6 +593,8 @@ typedef enum
 	CURRENTS_STEADY_NODE = 3,
 	/// dynamic current profile, node approach
 	CURRENTS_DYNAMIC_NODE = 4,
+	/// 4D current profile
+	CURRENTS_4D = 5
 } currents_settings;
 
 /** @brief Are the waves settings grid based?
@@ -861,14 +872,14 @@ interp4(const vector<vector<vector<vector<T>>>>& values,
 	unsigned int k0 = k > 0 ? k - 1 : 0;
 	unsigned int w0 = w > 0 ? w - 1 : 0;
 
-	T c000 = values[i0][j0][k0][w0] * fw + values[i0][j0][k0][w] * (1. - fw);
-	T c001 = values[i0][j0][k][w0] * fw + values[i0][j0][k][w] * (1. - fw);
-	T c010 = values[i0][j][k0][w0] * fw + values[i0][j][k0][w] * (1. - fw);
-	T c011 = values[i0][j][k][w0] * fw + values[i0][j][k][w] * (1. - fw);
-	T c100 = values[i][j0][k0][w0] * fw + values[i0][j0][k0][w] * (1. - fw);
-	T c101 = values[i][j0][k][w0] * fw + values[i0][j0][k][w] * (1. - fw);
-	T c110 = values[i][j][k0][w0] * fw + values[i0][j][k0][w] * (1. - fw);
-	T c111 = values[i][j][k][w0] * fw + values[i0][j0][k0][w] * (1. - fw);
+	T c000 = values[i0][j0][k0][w0] * (1. - fw) + values[i0][j0][k0][w] * fw;
+	T c001 = values[i0][j0][k][w0] * (1. - fw) + values[i0][j0][k][w] * fw;
+	T c010 = values[i0][j][k0][w0] * (1. - fw) + values[i0][j][k0][w] * fw;
+	T c011 = values[i0][j][k][w0] * (1. - fw) + values[i0][j][k][w] * fw;
+	T c100 = values[i][j0][k0][w0] * (1. - fw) + values[i][j0][k0][w] * fw;
+	T c101 = values[i][j0][k][w0] * (1. - fw) + values[i][j0][k][w] * fw;
+	T c110 = values[i][j][k0][w0] * (1. - fw) + values[i][j][k0][w] * fw;
+	T c111 = values[i][j][k][w0] * (1. - fw) + values[i][j][k][w] * fw;
 
 	T c00 = c000 * (1. - fx) + c100 * fx;
 	T c01 = c001 * (1. - fx) + c101 * fx;
@@ -1144,6 +1155,9 @@ typedef struct
 	double kb;
 	/// bottom damping   (Pa/m/s)
 	double cb;
+	/// Bottom modeling mode (0=flat, 1=3d...)<<<
+	moordyn::seafloor_settings SeafloorMode;
+
 	/// wave kinematics flag (0=off, >0=on...)<<<
 	moordyn::waves_settings WaveKin;
 	/// current flag (0=off, >0=on...)<<<
@@ -1165,6 +1179,8 @@ typedef struct
 	/// 3=ongoing output
 	int writeLog;
 } EnvCond;
+
+typedef std::shared_ptr<EnvCond> EnvCondRef;
 
 typedef struct _LineProps // (matching Line Dictionary inputs)
 {

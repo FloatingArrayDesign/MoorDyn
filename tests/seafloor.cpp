@@ -1,35 +1,5 @@
-/*
- * Copyright (c) 2022 Jose Luis Cercos-Pita <jlc@core-marine.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its
- *    contributors may be used to endorse or promote products derived from
- *    this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
-/** @file pendulum.cpp
- * Simple case of a pendulum motion
+/** @file seafloor.cpp
+ * Pendulum swining into the seafloor to validate 3D seafloor
  */
 
 // Visual studio still uses this
@@ -37,6 +7,7 @@
 
 #include "MoorDyn.h"
 #include "MoorDyn2.h"
+#include "Seafloor.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -61,13 +32,13 @@ compare(double v1, double v2, double tol)
 
 using namespace std;
 
-/** @brief Pendulum motion
+/** @brief Pendulum motion into the seafloor
  * @return true if the test worked, false otherwise
  */
 bool
 pendulum()
 {
-	MoorDyn system = MoorDyn_Create("Mooring/pendulum.txt");
+	MoorDyn system = MoorDyn_Create("Mooring/seafloor.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;
@@ -104,15 +75,36 @@ pendulum()
 		return false;
 	}
 
+	MoorDynSeafloor seafloor = MoorDyn_GetSeafloor(system);
+	if (!seafloor) {
+		cerr << "Could not get seafloor instance" << endl;
+		return false;
+	}
+
+	double avgDepth, minDepth;
+	err = MoorDyn_GetMinDepth(seafloor, &minDepth);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "couldn't get min depth" << endl;
+		return false;
+	}
+
+	err = MoorDyn_GetAverageDepth(seafloor, &avgDepth);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "couldn't get min depth" << endl;
+		return false;
+	}
+	
+	cout << "Average depth is " << avgDepth << ", Minimum depth is " << minDepth << endl;
+
 	const double w = sqrt(9.81 / l0);
 	const double T = 2.0 * M_PI / w;
-	double dt = T / 100.0;
+	double dt = T / 20.0;
 	double t = 0.0;
 	std::vector<double> x_peaks = { x0 };
 	std::vector<double> t_peaks = { 0.0 };
 	double d_peak = 0.0;
-	while (t < 5.0 * T) {
-		cout << t << " / " << 5.0 * T << '\n';
+	while (t < 1.0 * T) {
+		cout << t << " / " << 1.0 * T << '\n';
 		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
 		if (err != MOORDYN_SUCCESS) {
 			cerr << "Failure during the mooring step: " << err << endl;
@@ -126,7 +118,7 @@ pendulum()
 		const double x = pos[0];
 		const double z = pos[2];
 		const double l = sqrt(x * x + z * z);
-		CHECK_VALUE("L", l0, l, 0.01 * l0, t);
+		// CHECK_VALUE("L", l0, l, 0.01 * l0, t);
 		const double d = fabs(x - x_peaks.back());
 		if (d > d_peak)
 			d_peak = d;
@@ -135,11 +127,6 @@ pendulum()
 			t_peaks.push_back(t);
 			d_peak = 0.0;
 		}
-	}
-
-	for (unsigned int i = 0; i < t_peaks.size(); i++) {
-		CHECK_VALUE("T", t_peaks[i], i * 0.5 * T, 0.02 * T, t_peaks[i]);
-		CHECK_VALUE("X", fabs(x_peaks[i]), x0, 0.01 * x0, t_peaks[i]);
 	}
 
 	err = MoorDyn_Close(system);

@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Seafloor.hpp"
 #include <vector>
 #include <utility>
 
@@ -49,6 +50,7 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 class Line;
 
 /** @class Rod Rod.hpp
@@ -75,9 +77,11 @@ class Rod : public io::IO
   private:
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	moordyn::WavesRef waves;
+	/// Object containing the 3d seafloor info
+	moordyn::SeafloorRef seafloor;
 
 	/// Attached lines to the rod
 	typedef struct _attachment
@@ -223,6 +227,15 @@ class Rod : public io::IO
 	 * @}
 	 */
 
+	/** @brief Finds the depth of the water at some (x, y) point. Either using env->WtrDpth or the 3D seafloor if available
+	 * @param x x coordinate
+	 * @param y y coordinate
+	 * @return A negative number representing the sea floor depth at the given location
+	*/
+	inline real getWaterDepth(real x, real y) {
+		return seafloor ? seafloor->getDepthAt(x, y) : -env->WtrDpth;
+	}
+
   public:
 	/** @brief Types of rods
 	 */
@@ -323,10 +336,11 @@ class Rod : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	inline void setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
+	inline void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
 	{
 		env = env_in;
 		waves = waves_in;
+		seafloor = seafloor_in;
 	}
 
 	/** @brief Initialize the rod state

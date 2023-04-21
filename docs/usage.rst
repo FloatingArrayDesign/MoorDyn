@@ -169,6 +169,7 @@ The list of possible options is:
  - g – gravitational constant (m/s^2)*
  - rhoW – water density (kg/m^3)*
  - WtrDpth – water depth (m)*
+ - SeafloorFile – Relative path of a 3D Seafloor file
  - kBot – bottom stiffness constant (Pa/m) 
  - cBot – bottom damping constant (Pa-s/m)
  - dtIC – period for analyzing convergence of dynamic relaxation IC generation (s)
@@ -181,8 +182,33 @@ custom values for the sake of consistency.`
 
 The bottom contact parameters, kBot and cBot, result in a pressure which is then applied to the cross-sectional area (d*l) 
 of each contacting line segment to give a resulting vertical contact force for each segment.
-
  
+Seafloor File
+^^^^^^^^^^^^^
+
+If you need the seafloor have different depths at different locations, it is possible to create and use a 3D Seafloor file.
+This file allows you to define a square grid of points and define depths at each of these points.
+
+code-block:: none
+  num_x_points num_y_points
+  x_1 x_2 ... x_num_x_points
+  y_1 y_2 ... y_num_y_points
+  x_pos y_pos depth
+  x_pos y_pos depth
+  x_pos y_pos depth
+  etc, etc
+
+The two values on the first line define the number of points in each axis of the grid.
+The second line defines the actual locations along the x axis for the x grid points.
+The third line defines the locations along the y axis for the y grid points.
+The remaining lines are (x, y, z) coordinates for the seafloor on grid points.
+The order of these points is not important.
+It is also important that the x_pos be a value found in line 2 and y_pos be a value found in line 3.
+What happens if one of these points does not fall on the grid is not defined and may overwrite other depth values.
+
+If some part of the simulation fall outside of the defined grid area, it will use the depth of the nearest grid edge.
+
+
 Outputs
 ^^^^^^^
 

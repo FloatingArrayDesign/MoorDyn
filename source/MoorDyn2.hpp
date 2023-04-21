@@ -45,6 +45,7 @@
 #include "Connection.hpp"
 #include "Rod.hpp"
 #include "Body.hpp"
+#include "Seafloor.hpp"
 
 #ifdef USE_VTK
 #include <vtkSmartPointer.h>
@@ -159,7 +160,15 @@ class MoorDyn : public io::IO
 	 * env.Currents is not CURRENTS_NONE
 	 * @return The wave knematics instance
 	 */
-	inline moordyn::Waves* GetWaves() const { return waves; }
+	inline moordyn::WavesRef GetWaves() const { return waves; }
+	
+	/** @brief Get the 3D seafloor instance
+	 * 
+	 * The Seafloor instance is used to represent a floor of varying depth over
+	 * a rectilinear grid. It allows for finding the seafloor height at any (x, y)
+	 * point which it calculated using a bilinear interpolation.
+	 */
+	inline moordyn::SeafloorRef GetSeafloor() const { return seafloor; }
 
 	/** @brief Initializes the external Wave kinetics
 	 *
@@ -354,6 +363,38 @@ class MoorDyn : public io::IO
 	 */
 	moordyn::error_id ReadInFile();
 
+	moordyn::error_id readFileIntoBuffers(vector<string> &in_txt);
+
+	int findStartOfSection(vector<string> &in_txt, vector<string> sectionName);
+
+	/** @brief Helper function to cread a new line property given a line from
+	* the input file.
+	* 
+	* @param inputText a string from the Line Properties section of input file
+	*/
+	LineProps* readLineProps(string inputText);
+
+	/** @brief Helper function to cread a new rod property given a line from
+	* the input file.
+	* 
+	* @param inputText a string from the Rod Properties section of input file
+	*/
+	RodProps* readRodProps(string inputText);
+
+	/** @brief Helper function to cread a new rod given a line from
+	* the input file.
+	* 
+	* @param inputText a string from the Rod List section of input file
+	*/
+	Rod* readRod(string inputText);
+
+	Body* readBody(string inputText);
+
+	void readOptionsLine(vector<string>& in_txt, int index);
+
+	bool checkNumberOfEntriesInLine(vector<string> entries,
+	                                int supposedNumberOfEntries);
+
 	/** @brief Get the forces
 	 * @param f The forces array
 	 * @return MOORDYN_SUCCESS If the forces are correctly set, an error code
@@ -434,11 +475,13 @@ class MoorDyn : public io::IO
 	TimeScheme* _t_integrator;
 
 	/// General options of the Mooryng system
-	EnvCond env;
+	EnvCondRef env;
 	/// The ground body, which is unique
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
-	Waves* waves = NULL;
+	WavesRef waves = nullptr;
+	/// 3D Seafloor object that gets shared with the lines and other things that need it
+	moordyn::SeafloorRef seafloor;
 
 	/// array of pointers to hold line library types
 	vector<LineProps*> LinePropList;
@@ -523,14 +566,14 @@ class MoorDyn : public io::IO
 		// env.writeLog = 1 -> MOORDYN_WRN_LEVEL
 		// env.writeLog = 2 -> MOORDYN_MSG_LEVEL
 		// env.writeLog >= 3 -> MOORDYN_DBG_LEVEL
-		int log_level = MOORDYN_ERR_LEVEL - env.writeLog;
+		int log_level = MOORDYN_ERR_LEVEL - env->writeLog;
 		if (log_level >= MOORDYN_ERR_LEVEL)
 			log_level = MOORDYN_NO_OUTPUT;
 		if (log_level < MOORDYN_DBG_LEVEL)
 			log_level = MOORDYN_DBG_LEVEL;
 		GetLogger()->SetLogLevel(log_level);
 
-		if (env.writeLog > 0) {
+		if (env->writeLog > 0) {
 			moordyn::error_id err = MOORDYN_SUCCESS;
 			string err_msg;
 			stringstream filepath;

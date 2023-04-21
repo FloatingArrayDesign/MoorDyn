@@ -221,10 +221,11 @@ Line::setup(int number_in,
 };
 
 void
-Line::setEnv(EnvCond* env_in, moordyn::Waves* waves_in)
+Line::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
 {
 	env = env_in;
 	waves = waves_in;
+	seafloor = seafloor_in;
 }
 
 std::pair<std::vector<vec>, std::vector<vec>>
@@ -296,7 +297,7 @@ Line::initialize()
 		// output internal damping force
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "cx \t Node" << i << "cy \t Node" << i
+				*outfile << "Seg" << i << "cx \t Seg" << i << "cy \t Seg" << i
 				         << "cz \t ";
 			}
 		}
@@ -363,7 +364,7 @@ Line::initialize()
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
-				for (unsigned int i = 0; i < N; i++)
+				for (unsigned int i = 0; i < 3 * N; i++)
 					*outfile << "(N) \t";
 			}
 			// output segment tensions?
@@ -382,7 +383,7 @@ Line::initialize()
 					*outfile << "(-/s) \t";
 			}
 			// output seabed contact force?
-			if (channels.find("D") != string::npos) {
+			if (channels.find("b") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
@@ -395,8 +396,7 @@ Line::initialize()
 	// corresponding Connection or Rod objects calling "setEndState",
 	// so now we can proceed with figuring out the positions of the nodes along
 	// the line.
-
-	if (-env->WtrDpth > r[0][2]) {
+	if (getWaterDepth(r[0][0], r[0][1]) > r[0][2]) {
 		LOGERR << "Water depth is shallower than Line " << number << " anchor"
 		       << endl;
 		throw moordyn::invalid_value_error("Invalid water depth");
@@ -473,7 +473,8 @@ Line::initialize()
 
 	// if conditions are ideal, try to calculate initial line profile using
 	// catenary routine (from FAST v.7)
-	if (-r[0][2] == env->WtrDpth) {
+	real waterDepth = getWaterDepth(r[0][0], r[0][1]);
+	if (r[0][2] == waterDepth) {
 		real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;
@@ -585,7 +586,7 @@ Line::storeWaterKin(real dt,
 	LOGDBG << "Setting up wave variables for Line " << number
 	       << "!  ---------------------" << endl
 	       << "   nt=" << ntWater << ", and WaveDT=" << dtWater
-	       << ", env->WtrDpth=" << env->WtrDpth << endl;
+	       << ", average water depth=" << avgWaterDepth() << endl;
 
 	// resize the new time series vectors
 	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
@@ -604,7 +605,52 @@ Line::storeWaterKin(real dt,
 		u_in[i] = UTS[i];
 		ud_in[i] = UdTS[i];
 	}
-};
+}
+
+real
+Line::calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
+{
+	if (WaterKin != WAVES_NONE) {
+		// For now, the assumption is that everythings submerged except in still
+		// water state
+		LOGMSG << "ERROR in calcSubSeg: waves not set to WAVES_NONE\n";
+		return 1.0;  
+	}
+	real firstNodeZ = r[firstNodeIdx][2];
+	real secondNodeZ = r[secondNodeIdx][2];
+	if (firstNodeZ <= 0.0 && secondNodeZ < 0.0) {
+		return 1.0;  // Both nodes below water; segment must be too
+	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
+		return 0.0;  // Both nodes above water; segment must be too
+	} else {
+		// Segment partially submerged - figure out which node is above water
+		vec lowerEnd = firstNodeZ < 0.0 ? r[firstNodeIdx] : r[secondNodeIdx];
+		vec upperEnd = firstNodeZ < 0.0 ? r[secondNodeIdx] : r[firstNodeIdx];
+
+		// segment submergence is calculated by calculating submergence of
+		// hypotenuse across segment from upper corner to lower corner
+		// To calculate this, we need the coordinates of these corners.
+		// first step is to get vector from lowerEnd to upperEnd
+		vec segmentAxis = upperEnd - lowerEnd;
+
+		// Next, find normal vector in z-plane, i.e. the normal vecto that
+		// points "up" the most. See the following stackexchange:
+		// https://math.stackexchange.com/questions/2283842/
+		vec upVec(0, 0, 1);  // the global up-unit vector
+		vec normVec = segmentAxis.cross(upVec.cross(segmentAxis));
+		normVec.normalize();
+
+		// make sure normal vector has length equal to radius of segment
+		real radius = d / 2;
+		scalevector(normVec, radius, normVec);
+
+		// Calculate and return submerged ratio:
+		lowerEnd = lowerEnd - normVec;
+		upperEnd = upperEnd + normVec;
+
+		return fabs(lowerEnd[2]) / (fabs(lowerEnd[2]) + upperEnd[2]);
+	}
+}
 
 void
 Line::setState(std::vector<vec> pos, std::vector<vec> vel)
@@ -797,12 +843,23 @@ Line::getStateDeriv()
 			F[i] = 1.0; // set VOF value to one for now (everything submerged -
 			            // eventually this should be element-based!!!) <<<<
 		}
-	} else if (WaterKin !=
-	           WAVES_NONE) // Hopefully WaterKin is set to zero, meaning no
-	                       // waves or set externally, otherwise it's an error
+	} else if (WaterKin != WAVES_NONE) {
+		// Hopefully WaterKin is set to zero, meaning no
+		// waves or set externally, otherwise it's an error	
 		cout << "ERROR: We got a problem with WaterKin not being 0,1,2."
 		     << endl;
-
+	} else {
+		// If in still water, iterate over all the segments and calculate
+		// volume of segment submerged. This is later used to calculate
+		// v_i, the *nodal* submerged volumes, which is then used to
+		// to calculate buoyancy.
+		for (unsigned int i = 0; i < N; i++) {
+			//waves->getWaveKin(
+			//    r[i][0], r[i][1], r[i][2], U[i], Ud[i], zeta[i], PDyn[i]);
+			F[i] = calcSubSeg(i, i + 1);
+		}
+	}
+	
 	//============================================================================================
 
 	// calculate mass matrix
@@ -814,7 +871,7 @@ Line::getStateDeriv()
 			m_i = pi / 8. * d * d * l[0] * rho;
 			v_i = 1. / 2. * F[i] * V[i];
 		} else if (i == N) {
-			m_i = pi / 8. * d * d * l[N - 2] * rho;
+			m_i = pi / 8. * d * d * l[N - 1] * rho;
 			v_i = 1. / 2. * F[i - 1] * V[i - 1];
 		} else {
 			m_i = pi / 8. * (d * d * rho * (l[i] + l[i - 1]));
@@ -1113,18 +1170,19 @@ Line::getStateDeriv()
 		// bottom contact (stiffness and damping, vertical-only for now) -
 		// updated for general case of potentially anchor or fairlead end in
 		// contact
-		if (r[i][2] < -env->WtrDpth) {
+		const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+		if (r[i][2] < waterDepth) {
 			if (i == 0)
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i]);
 			else if (i == N)
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i - 1]);
 			else
 				B[i][2] =
-				    ((-env->WtrDpth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
 				    0.5 * d * (l[i - 1] + l[i]);
 
 			// new rough-draft addition of seabed friction
@@ -1165,6 +1223,21 @@ Line::getStateDeriv()
 		else
 			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
 		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i];
+
+		if (i == 0 && r[i][2] > 0.0) {
+			// LOGMSG << "ABOVE_WATER\n";
+		}
+
+		if (i == 0) {
+			// LOGMSG << "Node weight: " << W[i] << '\n';
+			// LOGMSG << "F[i]: " << F[i] << '\n';
+		/*	LOGMSG << "Node drag (transverse): " << Dp[i] << '\n';
+			LOGMSG << "Node drag (axial): " << Dq[i] << '\n';
+        	LOGMSG << "Node added mass (transverse): " << Ap[i] << '\n';
+			LOGMSG << "Node added mass (axial): " << Aq[i] << '\n';
+			LOGMSG << "Node bottom contact force: " << B[i] << '\n';
+			LOGMSG << "Node bending stiffness force: " << Bs[i] << '\n';*/
+		}
 	}
 
 	//	if (t > 5)
@@ -1283,7 +1356,7 @@ Line::Output(real time)
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 0; i < N; i++) {
 				for (int J = 0; J < 3; J++)
-					*outfile << Td[i][J] + Td[i][J] + Td[i][J] << "\t ";
+					*outfile << Td[i][J] << "\t ";
 			}
 		}
 		// output segment strains?

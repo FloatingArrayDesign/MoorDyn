@@ -103,36 +103,43 @@ MoorDynInit(const double x[], const double xd[], const char* infilename)
 		OwnConsoleWindow = 1;
 
 		// allocate a console for this app
-		AllocConsole();
+		if (AllocConsole()) {
+			// set the screen buffer to be big enough to let us scroll text
+			static const WORD MAX_CONSOLE_LINES = 500;
+			CONSOLE_SCREEN_BUFFER_INFO coninfo;
+			GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),
+			                           &coninfo);
+			coninfo.dwSize.Y = MAX_CONSOLE_LINES;
+			SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),
+			                           coninfo.dwSize);
 
-		// set the screen buffer to be big enough to let us scroll text
-		static const WORD MAX_CONSOLE_LINES = 500;
-		CONSOLE_SCREEN_BUFFER_INFO coninfo;
-		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
-		coninfo.dwSize.Y = MAX_CONSOLE_LINES;
-		SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),
-		                           coninfo.dwSize);
+			// redirect unbuffered STDOUT to the console
+			// lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+			lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
+			hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+			fp = _fdopen(hConHandle, "w");
+			*stdout = *fp;
+			setvbuf(stdout, NULL, _IONBF, 0);
 
-		// redirect unbuffered STDOUT to the console
-		// lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
-		lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
-		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-		fp = _fdopen(hConHandle, "w");
-		*stdout = *fp;
-		setvbuf(stdout, NULL, _IONBF, 0);
+			// redirect unbuffered STDERR to the console
+			lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
+			hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+			fp = _fdopen(hConHandle, "w");
+			*stderr = *fp;
+			setvbuf(stderr, NULL, _IONBF, 0);
 
-		// redirect unbuffered STDERR to the console
-		lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
-		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-		fp = _fdopen(hConHandle, "w");
-		*stderr = *fp;
-		setvbuf(stderr, NULL, _IONBF, 0);
+			// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
+			// point to console as well
+			std::ios::sync_with_stdio();
 
-		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
-		// point to console as well
-		std::ios::sync_with_stdio();
-
-		std::cout << "(MoorDyn-initiated console window)" << std::endl;
+			std::cout << "(MoorDyn-initiated console window)" << std::endl;
+		} else {
+			// This is not a likely scenario, but we've run into some situations
+			// where you can neither get the console nor allocate a console.
+			// So just fall back to using whatever cout and cerr were before.
+			std::cout << "AllocConsole failed" << std::endl;
+			OwnConsoleWindow = 0;
+		}
 	}
 #endif
 

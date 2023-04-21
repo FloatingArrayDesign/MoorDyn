@@ -38,6 +38,7 @@
 #include "Log.hpp"
 #include "Time.hpp"
 #include <vector>
+#include <map>
 
 namespace moordyn {
 
@@ -224,7 +225,7 @@ class Waves : public LogUser
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
-	void setup(EnvCond* env, TimeScheme* t, const char* folder = "Mooring/");
+	void setup(EnvCondRef env, TimeScheme* t, const char* folder = "Mooring/");
 
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific positon and time
@@ -260,4 +261,9 @@ class Waves : public LogUser
 std::vector<real>
 gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries);
 
+
+/**
+* Renaming the shared pointer to be a little more ergonomic
+*/
+typedef std::shared_ptr<Waves> WavesRef;
 } // ::moordyn

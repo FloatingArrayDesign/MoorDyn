@@ -30,6 +30,11 @@
 
 /** @file Body.hpp
  * C++ API for the moordyn::Body object
+ * 
+ * Body objects provide generic 6DOF rigid-body representations based on a
+ * lumped-parameter model of translational and rotational properties. Rod
+ * and Line objects may be added to body objects at any location. This allows
+ * the user to simulate a variety of submerged structures.
  */
 
 #pragma once
@@ -49,6 +54,8 @@ using namespace std;
 namespace moordyn {
 
 class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
+
 class Connection;
 class Rod;
 
@@ -56,17 +63,20 @@ class Rod;
  * @brief A rigid body
  *
  * Some really basic dynamics are implemented for rigid bodiesout of the box,
- * which can be anyway extended through the usage of coupled ones.
+ * which can be extended through the usage of coupled ones.
  *
  * In the configuration file the options are:
  *
  * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
+ * 
+ * moordyn::Body exctends the io::IO class, allowing it to perform input/output in a
+ * consistent manner.
  */
 class Body : public io::IO
 {
   public:
 	/** @brief Costructor
-	 * @param log Logging handler
+	 * @param log Logging handler defining where/how results should be logged.
 	 */
 	Body(moordyn::Log* log);
 
@@ -76,9 +86,9 @@ class Body : public io::IO
 
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
-	EnvCond* env;
+	EnvCondRef env;
 	/// global Waves object
-	moordyn::Waves* waves;
+	WavesRef waves;
 
 	// unique to Body:
 	/// Connections attached to this body
@@ -132,9 +142,9 @@ class Body : public io::IO
 	/// orientation)
 	mat OrMat;
 
-	/// wave velocities at body reference point
+	/// wave velocity at body reference point
 	vec U;
-	/// wave accelerations
+	/// wave acceleration at body reference point 
 	vec Ud;
 
 	/// Pointer to moordyn::MoorDyn::outfileMain
@@ -177,7 +187,7 @@ class Body : public io::IO
 	/// Type of body
 	types type;
 
-	/** @brief Setup a rigid body
+	/** @brief Setup/initialize a rigid body. Called after instantiating a new Body in MoorDyn2.cpp
 	 * @param number Body ID
 	 * @param type Body type
 	 * @param r6 6dof position
@@ -209,7 +219,7 @@ class Body : public io::IO
 
 	/** @brief Attach a rod to the body
 	 * @param rod The rod
-	 * @param coords The fixation point (6dof)
+	 * @param coords vector indicating start (vals 0-2) and end (valse 3-5) of rod
 	 * @throw moordyn::invalid_value_error If @p rod is NULL
 	 */
 	void addRod(Rod* rod, vec6 coords);
@@ -250,7 +260,7 @@ class Body : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCond* env_in, moordyn::Waves* waves_in);
+	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in);
 
 	/** @brief set the states (positions and velocities) to all the attached
 	 * entities
@@ -330,7 +340,7 @@ class Body : public io::IO
 	 */
 	void initiateStep(vec6 r, vec6 rd);
 
-	/** @brief Sets the kinematics
+	/** @brief Sets the kinematics based on the position and velocity of the fairlead.
 	 *
 	 * This function is meant only for coupled or fixed bodies
 	 * @param time Local time within the time step (from 0 to dt)
@@ -339,7 +349,7 @@ class Body : public io::IO
 	 */
 	void updateFairlead(real time);
 
-	/** @brief Set the latest states to the body
+	/** @brief Set the states to the body to the position r and velocity rd
 	 * @param r The position
 	 * @param rd The velocity
 	 */
