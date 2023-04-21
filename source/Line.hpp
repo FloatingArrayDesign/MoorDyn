@@ -84,18 +84,18 @@ class Line : public io::IO
 	 * @param l_stretched The actual length of the segment
 	 * @param l_unstretched The unstretched length of the segment
 	 */
-	real getNonlinearE(real l_stretched, real l_unstretched);
+	real getNonlinearE(real l_stretched, real l_unstretched) const;
 
 	/** @brief Get the non-linear Damping coefficient
 	 * @param ld_stretched The segment rate of stretch
 	 * @param l_unstretched The unstretched length of the segment
 	 */
-	real getNonlinearC(real ld_stretched, real l_unstretched);
+	real getNonlinearC(real ld_stretched, real l_unstretched) const;
 
 	/** @brief Get the non-linear bending stiffness
 	 * @param curv The curvature
 	 */
-	real getNonlinearEI(real curv);
+	real getNonlinearEI(real curv) const;
 	
 	/** @brief Finds the depth of the water at some (x, y) point. Either using env->WtrDpth or the 3D seafloor if available
 	 * @param x x coordinate

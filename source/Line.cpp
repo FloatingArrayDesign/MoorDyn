@@ -54,7 +54,7 @@ Line::Line(moordyn::Log* log)
 Line::~Line() {}
 
 real
-Line::getNonlinearE(real l_stretched, real l_unstretched)
+Line::getNonlinearE(real l_stretched, real l_unstretched) const
 {
 	if (!nEApoints)
 		return E;
@@ -72,7 +72,7 @@ Line::getNonlinearE(real l_stretched, real l_unstretched)
 }
 
 real
-Line::getNonlinearEI(real curv)
+Line::getNonlinearEI(real curv) const
 {
 	if (!nEIpoints)
 		return EI;
@@ -86,7 +86,7 @@ Line::getNonlinearEI(real curv)
 }
 
 real
-Line::getNonlinearC(real ld_stretched, real l_unstretched)
+Line::getNonlinearC(real ld_stretched, real l_unstretched) const
 {
 	if (!nCpoints)
 		return c;
@@ -715,7 +715,7 @@ Line::setEndOrientation(vec qin, EndPoints end_point, EndPoints rod_end_point)
 vec
 Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 {
-	real dlEnd, EIEnd;
+	real dlEnd, non_linear_EI, EIEnd;
 	vec qEnd;
 
 	if ((rod_end_point != ENDPOINT_A) && (rod_end_point != ENDPOINT_B)) {
@@ -726,23 +726,25 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 		case ENDPOINT_TOP:
 			// unit vector of last line segment
 			dlEnd = unitvector(qEnd, r[N - 1], r[N]);
+			non_linear_EI = nEIpoints ? getNonlinearEI(Kurv[N]) : EI;
 			if (rod_end_point == ENDPOINT_A) {
 				// -----line----->[A==ROD==>B]
-				EIEnd = EI;
+				EIEnd = non_linear_EI;
 			} else {
 				// -----line----->[B==ROD==>A]
-				EIEnd = -EI;
+				EIEnd = -non_linear_EI;
 			}
 			break;
 		case ENDPOINT_BOTTOM:
-			// unit vector of last line segment
-			dlEnd = unitvector(qEnd, r[N - 1], r[N]);
+			// unit vector of first line segment
+			dlEnd = unitvector(qEnd, r[0], r[1]);
+			non_linear_EI = nEIpoints ? getNonlinearEI(Kurv[0]) : EI;
 			if (rod_end_point == ENDPOINT_A) {
 				// <----line-----[A==ROD==>B]
-				EIEnd = -EI;
+				EIEnd = -non_linear_EI;
 			} else {
 				// <----line-----[B==ROD==>A]
-				EIEnd = EI;
+				EIEnd = non_linear_EI;
 			}
 			break;
 		default:
@@ -913,7 +915,7 @@ Line::getStateDeriv()
 		Bs[i] = vec(0.0, 0.0, 0.0);
 
 	// and now compute them (if possible)
-	if (EI > 0) {
+	if ((EI > 0) || (nEIpoints > 0)) {
 		// loop through all nodes to calculate bending forces
 		for (unsigned int i = 0; i <= N; i++) {
 			moordyn::real Kurvi = 0.0;
@@ -934,6 +936,8 @@ Line::getStateDeriv()
 					// end (assuming rod angle is node angle which is middle of
 					// if there was a segment -1/2
 					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);
+					if (nEIpoints > 0)
+						EI = getNonlinearEI(Kurvi);
 
 					// get direction of bending radius axis
 					pvec = q[0].cross(qs[i]);
@@ -970,6 +974,8 @@ Line::getStateDeriv()
 					// angle which is middle of if there was a
 					// segment -1/2
 					Kurvi = GetCurvature(lstr[i - 1], qs[i - 1], q[i]);
+					if (nEIpoints > 0)
+						EI = getNonlinearEI(Kurvi);
 
 					// get direction of bending radius axis
 					pvec = qs[i - 1].cross(q[N]);
@@ -998,11 +1004,14 @@ Line::getStateDeriv()
 					Bs[i - 1] = Mforce_im1;
 					Bs[i] = Mforce_i;
 				}
-			} else // internal node
-			{
+			}
+			// internal node
+			else {
 				// curvature <<< remember to check
 				// sign, or just take abs
 				Kurvi = GetCurvature(lstr[i - 1] + lstr[i], qs[i - 1], qs[i]);
+				if (nEIpoints > 0)
+					EI = getNonlinearEI(Kurvi);
 
 				// get direction of bending radius axis
 				pvec = qs[i - 1].cross(q[i]);
