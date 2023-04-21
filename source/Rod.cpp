@@ -31,7 +31,6 @@
 #include "Rod.hpp"
 #include "Rod.h"
 #include "Line.hpp"
-#include "Waves.hpp"
 #include <tuple>
 
 #ifdef USE_VTK

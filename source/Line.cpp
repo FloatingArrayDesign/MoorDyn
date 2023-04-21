@@ -30,7 +30,6 @@
 
 #include "Line.hpp"
 #include "Line.h"
-#include "Waves.hpp"
 #include "QSlines.hpp"
 #include <tuple>
 

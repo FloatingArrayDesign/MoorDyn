@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Waves.hpp"
 #include <vector>
 #include <utility>
 
@@ -49,8 +50,6 @@ using namespace std;
 
 namespace moordyn {
 
-class Waves;
-typedef std::shared_ptr<Waves> WavesRef;
 class Line;
 
 /** @class Rod Rod.hpp

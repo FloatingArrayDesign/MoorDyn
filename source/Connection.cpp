@@ -31,7 +31,6 @@
 #include "Connection.hpp"
 #include "Connection.h"
 #include "Line.hpp"
-#include "Waves.hpp"
 #include <tuple>
 
 #ifdef USE_VTK

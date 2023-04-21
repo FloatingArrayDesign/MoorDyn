@@ -30,6 +30,7 @@
 
 #include "Waves.hpp"
 #include "Waves.h"
+#include "Time.hpp"
 #include "kiss_fftr.h"
 
 #if defined WIN32 && defined max

@@ -34,9 +34,10 @@
 
 #pragma once
 
-#include "Seafloor.hpp"
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Seafloor.hpp"
+#include "Waves.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -47,9 +48,6 @@
 using namespace std;
 
 namespace moordyn {
-
-class Waves;
-typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
