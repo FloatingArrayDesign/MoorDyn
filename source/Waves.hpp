@@ -36,11 +36,12 @@
 
 #include "Misc.hpp"
 #include "Log.hpp"
-#include "Time.hpp"
 #include <vector>
 #include <map>
 
 namespace moordyn {
+
+class TimeScheme;
 
 /** @class Waves Waves.hpp
  * @brief Wave kinematics
@@ -184,7 +185,7 @@ class Waves : public LogUser
 	real rho_w;
 
 	/// The time integration scheme
-	TimeScheme* _t_integrator;
+	moordyn::TimeScheme* _t_integrator;
 
 	// ------------ from Line object... -----------
 	// new additions for handling waves in-object and precalculating them	(not

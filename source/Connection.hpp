@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Waves.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -49,8 +50,6 @@ using namespace std;
 namespace moordyn {
 
 class Line;
-class Waves;
-typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Connection Connection.hpp
  * @brief A connection for a line endpoint

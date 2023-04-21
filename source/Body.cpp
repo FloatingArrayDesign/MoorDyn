@@ -19,7 +19,6 @@
 #include "Body.h"
 #include "Connection.hpp"
 #include "Rod.hpp"
-#include "Waves.hpp"
 #include <tuple>
 
 #ifdef USE_VTK
