@@ -38,6 +38,7 @@
 #include <vtkPoints.h>
 #include <vtkPolyLine.h>
 #include <vtkPointData.h>
+#include <vtkVertex.h>
 #include <vtkCellData.h>
 #include <vtkXMLPolyDataWriter.h>
 #endif
@@ -816,7 +817,7 @@ Rod::doRHS()
 	// ------------------------
 
 	// calculate some orientation information for the Rod as a whole
-	const auto angles = orientationAngles(q);
+	const auto angles = N ? orientationAngles(q) : make_pair(0.0, 0.0);
 	const real phi = angles.first;
 	const real beta = angles.second;
 	const real sinPhi = sin(phi);
@@ -1423,23 +1424,35 @@ vtkSmartPointer<vtkPolyData>
 Rod::getVTK() const
 {
 	auto points = vtkSmartPointer<vtkPoints>::New();
-	auto line = vtkSmartPointer<vtkPolyLine>::New();
+	auto cells = vtkSmartPointer<vtkCellArray>::New();
 	auto vtk_rd = io::vtk_farray("rd", 3, r.size());
 	auto vtk_Fnet = io::vtk_farray("Fnet", 3, r.size());
-
-	line->GetPointIds()->SetNumberOfIds(r.size());
-	for (unsigned int i = 0; i < r.size(); i++) {
-		points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
-		line->GetPointIds()->SetId(i, i);
-		vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
-		vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
+	if (N) {
+		auto line = vtkSmartPointer<vtkPolyLine>::New();
+		line->GetPointIds()->SetNumberOfIds(r.size());
+		for (unsigned int i = 0; i < r.size(); i++) {
+			points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
+			line->GetPointIds()->SetId(i, i);
+			vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
+			vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
+		}
+		cells->InsertNextCell(line);
+	} else {
+		auto vertex = vtkSmartPointer<vtkVertex>::New();
+		vertex->GetPointIds()->SetId(0, 0);
+		points->InsertNextPoint(r[0][0], r[0][1], r[0][2]);
+		vtk_rd->SetTuple3(0, rd[0][0], rd[0][1], rd[0][2]);
+		vtk_Fnet->SetTuple3(0, Fnet[0][0], Fnet[0][1], Fnet[0][2]);
+		cells->InsertNextCell(vertex);
 	}
-	auto cells = vtkSmartPointer<vtkCellArray>::New();
-	cells->InsertNextCell(line);
 
 	auto out = vtkSmartPointer<vtkPolyData>::New();
 	out->SetPoints(points);
-	out->SetLines(cells);
+	if (N) {
+		out->SetLines(cells);
+	} else {
+		out->SetVerts(cells);
+	}
 
 	out->GetPointData()->AddArray(vtk_rd);
 	out->GetPointData()->AddArray(vtk_Fnet);
