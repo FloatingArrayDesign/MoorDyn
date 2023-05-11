@@ -5,14 +5,16 @@
 // Visual studio still uses this
 #define _USE_MATH_DEFINES
 
-#include "MoorDyn.h"
 #include "MoorDyn2.h"
 #include "Seafloor.h"
+#include "Waves.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <vector>
+#include <array>
 
+#include "util.h"
 #define TOL 1.0e-1
 
 bool
@@ -38,7 +40,7 @@ using namespace std;
 bool
 pendulum()
 {
-	MoorDyn system = MoorDyn_Create("Mooring/seafloor.txt");
+	MoorDyn system = MoorDyn_Create("Mooring/3D_seafloor/hanging_lines.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;
@@ -93,8 +95,18 @@ pendulum()
 		cerr << "couldn't get min depth" << endl;
 		return false;
 	}
-	
-	cout << "Average depth is " << avgDepth << ", Minimum depth is " << minDepth << endl;
+
+	cout << "Average depth is " << avgDepth << ", Minimum depth is " << minDepth
+	     << endl;
+
+	MoorDynWaves waves = MoorDyn_GetWaves(system);
+	double x_min = -50.0;
+	double x_max = 50;
+	double x_step = 1.0;
+
+	double z_min = -50.0;
+	double z_max = 5.0;
+	double z_step = 1.0;
 
 	const double w = sqrt(9.81 / l0);
 	const double T = 2.0 * M_PI / w;
@@ -145,7 +157,9 @@ pendulum()
 int
 main(int, char**)
 {
-	if (!pendulum())
+	if (!pendulum()) {
+		cout << "seafloor test failed" << endl;
 		return 1;
+	}
 	return 0;
 }

@@ -30,10 +30,13 @@
 
 #include "Line.hpp"
 #include "Line.h"
+#include "Waves.hpp"
 #include "QSlines.hpp"
+#include "Util/Interp.hpp"
 #include <tuple>
 
 #ifdef USE_VTK
+#include "Util/VTK_Util.hpp"
 #include <vtkCellArray.h>
 #include <vtkPoints.h>
 #include <vtkPolyLine.h>
@@ -45,9 +48,11 @@
 using namespace std;
 
 namespace moordyn {
+using namespace waves;
 
-Line::Line(moordyn::Log* log)
+Line::Line(moordyn::Log* log, size_t lineId)
   : io::IO(log)
+  , lineId(lineId)
 {
 }
 
@@ -199,10 +204,6 @@ Line::setup(int number_in,
 	// wave things
 	F.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
 	                      // segments) (1 = fully submerged, 0 = out of water)
-	zeta.assign(N + 1, 0.0);           // wave elevation above each node
-	PDyn.assign(N + 1, 0.0);           // dynamic pressure
-	U.assign(N + 1, vec(0., 0., 0.));  // wave velocities
-	Ud.assign(N + 1, vec(0., 0., 0.)); // wave accelerations
 
 	// ensure end moments start at zero
 	endMomentA = vec(0., 0., 0.);
@@ -220,7 +221,9 @@ Line::setup(int number_in,
 };
 
 void
-Line::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
+Line::setEnv(EnvCondRef env_in,
+             moordyn::WavesRef waves_in,
+             moordyn::SeafloorRef seafloor_in)
 {
 	env = env_in;
 	waves = waves_in;
@@ -293,17 +296,17 @@ Line::initialize()
 				         << i << "Dz \t ";
 			}
 		}
+		// output segment tensions
+		if (channels.find("t") != string::npos) {
+			for (unsigned int i = 1; i <= N; i++) {
+				*outfile << "Seg" << i << "Te \t ";
+			}
+		}
 		// output internal damping force
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
 				*outfile << "Seg" << i << "cx \t Seg" << i << "cy \t Seg" << i
 				         << "cz \t ";
-			}
-		}
-		// output segment tensions
-		if (channels.find("t") != string::npos) {
-			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "Te \t ";
 			}
 		}
 		// output segment strains
@@ -361,14 +364,14 @@ Line::initialize()
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
-			// output internal damping force?
-			if (channels.find("c") != string::npos) {
-				for (unsigned int i = 0; i < 3 * N; i++)
-					*outfile << "(N) \t";
-			}
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
 				for (unsigned int i = 0; i < N; i++)
+					*outfile << "(N) \t";
+			}
+			// output internal damping force?
+			if (channels.find("c") != string::npos) {
+				for (unsigned int i = 0; i < 3 * N; i++)
 					*outfile << "(N) \t";
 			}
 			// output segment strains?
@@ -401,29 +404,9 @@ Line::initialize()
 		throw moordyn::invalid_value_error("Invalid water depth");
 	}
 
-	// set water kinematics flag based on global wave and current settings
-	// (for now)
-	if ((env->WaveKin == WAVES_FFT_GRID) || (env->WaveKin == WAVES_GRID) ||
-	    (env->WaveKin == WAVES_KIN) || (env->Current == CURRENTS_STEADY_GRID) ||
-	    (env->Current == CURRENTS_DYNAMIC_GRID)) {
-		// water kinematics to be considered through precalculated global grid
-		// stored in Waves object
-		WaterKin = WAVES_GRID;
-	} else if ((env->WaveKin == WAVES_FFT_NODE) ||
-	           (env->WaveKin == WAVES_NODE) ||
-	           (env->Current == CURRENTS_STEADY_NODE) ||
-	           (env->Current == CURRENTS_DYNAMIC_NODE)) {
-		// water kinematics to be considered through precalculated time series
-		// for each node
-		WaterKin = WAVES_EXTERNAL;
-	} else {
-		// no water kinematics to be considered (or to be set externally on each
-		// node)
-		WaterKin = WAVES_NONE;
-		U.assign(N + 1, vec(0.0, 0.0, 0.0));
-		Ud.assign(N + 1, vec(0.0, 0.0, 0.0));
-		F.assign(N + 1, 1.0);
-	}
+	// TODO - determine if F should be for each segment or for each node,
+	// currently it's actually for segments
+	F.assign(N + 1, 1.0);
 
 	// process unstretched line length input
 	vec dir = r[N] - r[0];
@@ -579,7 +562,7 @@ Line::storeWaterKin(real dt,
 		throw moordyn::invalid_value_error("Invalid input size");
 	}
 
-	ntWater = zeta_in[0].size();
+	ntWater = static_cast<unsigned int>(zeta_in[0].size());
 	dtWater = dt;
 
 	LOGDBG << "Setting up wave variables for Line " << number
@@ -607,24 +590,22 @@ Line::storeWaterKin(real dt,
 }
 
 real
-Line::calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
+Line::calcSubSeg(unsigned int firstNodeIdx,
+                 unsigned int secondNodeIdx,
+                 real surface_height)
 {
-	if (WaterKin != WAVES_NONE) {
-		// For now, the assumption is that everythings submerged except in still
-		// water state
-		LOGMSG << "ERROR in calcSubSeg: waves not set to WAVES_NONE\n";
-		return 1.0;  
-	}
-	real firstNodeZ = r[firstNodeIdx][2];
-	real secondNodeZ = r[secondNodeIdx][2];
+	real firstNodeZ = r[firstNodeIdx][2] - surface_height;
+	real secondNodeZ = r[secondNodeIdx][2] - surface_height;
 	if (firstNodeZ <= 0.0 && secondNodeZ < 0.0) {
-		return 1.0;  // Both nodes below water; segment must be too
+		return 1.0; // Both nodes below water; segment must be too
 	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
-		return 0.0;  // Both nodes above water; segment must be too
+		return 0.0; // Both nodes above water; segment must be too
 	} else {
 		// Segment partially submerged - figure out which node is above water
 		vec lowerEnd = firstNodeZ < 0.0 ? r[firstNodeIdx] : r[secondNodeIdx];
 		vec upperEnd = firstNodeZ < 0.0 ? r[secondNodeIdx] : r[firstNodeIdx];
+		lowerEnd.z() -= surface_height;
+		upperEnd.z() -= surface_height;
 
 		// segment submergence is calculated by calculating submergence of
 		// hypotenuse across segment from upper corner to lower corner
@@ -635,7 +616,7 @@ Line::calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx)
 		// Next, find normal vector in z-plane, i.e. the normal vecto that
 		// points "up" the most. See the following stackexchange:
 		// https://math.stackexchange.com/questions/2283842/
-		vec upVec(0, 0, 1);  // the global up-unit vector
+		vec upVec(0, 0, 1); // the global up-unit vector
 		vec normVec = segmentAxis.cross(upVec.cross(segmentAxis));
 		normVec.normalize();
 
@@ -813,54 +794,19 @@ Line::getStateDeriv()
 	//============================================================================================
 	// --------------------------------- apply wave kinematics
 	// -----------------------------
+	auto [zeta, U, Ud] = waves->getWaveKinLine(lineId);
 
-	if (WaterKin == WAVES_EXTERNAL) // wave kinematics time series set
-	                                // internally for each node
-	{
-		// =========== obtain (precalculated) wave kinematics at current time
-		// instant ============ get precalculated wave kinematics at
-		// previously-defined node positions for time instant t
-
-		// get interpolation constant and wave time step index
-		int it = floor(t / dtWater);
-		double frac = remainder(t, dtWater) / dtWater;
-
-		// loop through nodes
-		for (unsigned int i = 0; i <= N; i++) {
-			zeta[i] =
-			    zetaTS[i][it] + frac * (zetaTS[i][it + 1] - zetaTS[i][it]);
-			F[i] = 1.0; // FTS[i][it] + frac*(FTS[i][it+1] - FTS[i][it]);
-
-			U[i] = UTS[i][it] + frac * (UTS[i][it + 1] - UTS[i][it]);
-			Ud[i] = UdTS[i][it] + frac * (UdTS[i][it + 1] - UdTS[i][it]);
-		}
-	} else if (WaterKin == WAVES_GRID) {
-		// wave kinematics interpolated from global grid in Waves object
-		for (unsigned int i = 0; i <= N; i++) {
-			// call generic function to get water velocities
-			waves->getWaveKin(
-			    r[i][0], r[i][1], r[i][2], U[i], Ud[i], zeta[i], PDyn[i]);
-
-			F[i] = 1.0; // set VOF value to one for now (everything submerged -
-			            // eventually this should be element-based!!!) <<<<
-		}
-	} else if (WaterKin != WAVES_NONE) {
-		// Hopefully WaterKin is set to zero, meaning no
-		// waves or set externally, otherwise it's an error	
-		cout << "ERROR: We got a problem with WaterKin not being 0,1,2."
-		     << endl;
-	} else {
-		// If in still water, iterate over all the segments and calculate
-		// volume of segment submerged. This is later used to calculate
-		// v_i, the *nodal* submerged volumes, which is then used to
-		// to calculate buoyancy.
-		for (unsigned int i = 0; i < N; i++) {
-			//waves->getWaveKin(
-			//    r[i][0], r[i][1], r[i][2], U[i], Ud[i], zeta[i], PDyn[i]);
-			F[i] = calcSubSeg(i, i + 1);
-		}
+	// If in still water, iterate over all the segments and calculate
+	// volume of segment submerged. This is later used to calculate
+	// v_i, the *nodal* submerged volumes, which is then used to
+	// to calculate buoyancy.
+	for (unsigned int i = 0; i < N; i++) {
+		// TODO - figure out the best math to do here
+		// Averaging the surface heights at the two nodes is probably never
+		// correct
+		auto surface_height = 0.5 * (zeta[i] + zeta[i + 1]);
+		F[i] = calcSubSeg(i, i + 1, surface_height);
 	}
-	
 	//============================================================================================
 
 	// calculate mass matrix
@@ -1231,21 +1177,6 @@ Line::getStateDeriv()
 		else
 			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
 		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i];
-
-		if (i == 0 && r[i][2] > 0.0) {
-			// LOGMSG << "ABOVE_WATER\n";
-		}
-
-		if (i == 0) {
-			// LOGMSG << "Node weight: " << W[i] << '\n';
-			// LOGMSG << "F[i]: " << F[i] << '\n';
-		/*	LOGMSG << "Node drag (transverse): " << Dp[i] << '\n';
-			LOGMSG << "Node drag (axial): " << Dq[i] << '\n';
-        	LOGMSG << "Node added mass (transverse): " << Ap[i] << '\n';
-			LOGMSG << "Node added mass (axial): " << Aq[i] << '\n';
-			LOGMSG << "Node bottom contact force: " << B[i] << '\n';
-			LOGMSG << "Node bending stiffness force: " << Bs[i] << '\n';*/
-		}
 	}
 
 	//	if (t > 5)
@@ -1332,6 +1263,7 @@ Line::Output(real time)
 		}
 		// output wave velocities?
 		if (channels.find("U") != string::npos) {
+			auto [_z, U, _ud] = waves->getWaveKinLine(lineId);
 			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
 					*outfile << U[i][J] << "\t ";
@@ -1440,14 +1372,6 @@ Line::Serialize(void)
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(F);
 	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(zeta);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(PDyn);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(U);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(Ud);
-	data.insert(data.end(), subdata.begin(), subdata.end());
 
 	return data;
 }
@@ -1478,10 +1402,6 @@ Line::Deserialize(const uint64_t* data)
 	ptr = io::IO::Deserialize(ptr, B);
 	ptr = io::IO::Deserialize(ptr, Fnet);
 	ptr = io::IO::Deserialize(ptr, F);
-	ptr = io::IO::Deserialize(ptr, zeta);
-	ptr = io::IO::Deserialize(ptr, PDyn);
-	ptr = io::IO::Deserialize(ptr, U);
-	ptr = io::IO::Deserialize(ptr, Ud);
 
 	return ptr;
 }
@@ -1492,22 +1412,36 @@ Line::getVTK() const
 {
 	auto points = vtkSmartPointer<vtkPoints>::New();
 	auto line = vtkSmartPointer<vtkPolyLine>::New();
-	// Node fields, i.e. r.size() number of tuples
-	auto vtk_rd = io::vtk_farray("rd", 3, r.size());
-	auto vtk_Kurv = io::vtk_farray("Kurv", 1, r.size());
-	auto vtk_M = io::vtk_farray("M", 9, r.size());
-	auto vtk_Fnet = io::vtk_farray("Fnet", 3, r.size());
-	// Segment fields, i.e. r.size()-1 number of tuples
-	auto vtk_lstr = io::vtk_farray("lstr", 1, r.size() - 1);
-	auto vtk_ldstr = io::vtk_farray("ldstr", 1, r.size() - 1);
-	auto vtk_V = io::vtk_farray("V", 1, r.size() - 1);
 
-	line->GetPointIds()->SetNumberOfIds(r.size());
-	for (unsigned int i = 0; i < r.size(); i++) {
+	auto num_points = this->N + 1;
+	auto num_cells = this->N;
+
+	// Node fields, i.e. r.size() number of tuples
+	auto vtk_rd = vector_to_vtk_array("rd", this->rd);
+	auto vtk_Kurv = vector_to_vtk_array("Kurv", this->Kurv);
+	auto vtk_Fnet = vector_to_vtk_array("Fnet", this->Fnet);
+	auto vtk_M = io::vtk_farray("M", 9, num_points);
+	auto vtk_D = io::vtk_farray("Drag", 3, num_points);
+	auto [z, U, Ud] = waves->getWaveKinLine(lineId);
+	auto vtk_U = vector_to_vtk_array("U", U);
+
+	// Segment fields, i.e. r.size()-1 number of tuples
+	auto vtk_lstr = vector_to_vtk_array("lstr", this->lstr);
+	auto vtk_ldstr = vector_to_vtk_array("ldstr", this->ldstr);
+	auto vtk_V = vector_to_vtk_array("V", this->V);
+	auto vtk_T = vector_to_vtk_array("T", this->T);
+	auto vtk_F = vector_to_vtk_array("F", this->F);
+
+	line->GetPointIds()->SetNumberOfIds(num_points);
+
+	auto cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->AllocateExact(num_cells, num_cells * 2);
+
+	for (unsigned int i = 0; i < num_points; i++) {
 		points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
 		line->GetPointIds()->SetId(i, i);
-		vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
-		vtk_Kurv->SetTuple1(i, Kurv[i]);
+		auto drag = Dq[i] + Dp[i];
+		vtk_D->SetTuple3(i, drag[0], drag[1], drag[2]);
 		vtk_M->SetTuple9(i,
 		                 M[i](0, 0),
 		                 M[i](0, 1),
@@ -1521,12 +1455,10 @@ Line::getVTK() const
 		vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
 		if (i == r.size() - 1)
 			continue;
-		vtk_lstr->SetTuple1(i, lstr[i]);
-		vtk_ldstr->SetTuple1(i, ldstr[i]);
-		vtk_V->SetTuple1(i, V[i]);
+
+		std::array<vtkIdType, 2> cell_points{ i, i + 1 };
+		cells->InsertNextCell(cell_points.size(), cell_points.data());
 	}
-	auto cells = vtkSmartPointer<vtkCellArray>::New();
-	cells->InsertNextCell(line);
 
 	auto out = vtkSmartPointer<vtkPolyData>::New();
 	out->SetPoints(points);
@@ -1535,12 +1467,16 @@ Line::getVTK() const
 	out->GetCellData()->AddArray(vtk_lstr);
 	out->GetCellData()->AddArray(vtk_ldstr);
 	out->GetCellData()->AddArray(vtk_V);
+	out->GetCellData()->AddArray(vtk_T);
+	out->GetCellData()->AddArray(vtk_F);
 	out->GetCellData()->SetActiveScalars("ldstr");
 
 	out->GetPointData()->AddArray(vtk_rd);
 	out->GetPointData()->AddArray(vtk_Kurv);
 	out->GetPointData()->AddArray(vtk_M);
 	out->GetPointData()->AddArray(vtk_Fnet);
+	out->GetPointData()->AddArray(vtk_D);
+	out->GetPointData()->AddArray(vtk_U);
 	out->GetPointData()->SetActiveVectors("Fnet");
 
 	return out;

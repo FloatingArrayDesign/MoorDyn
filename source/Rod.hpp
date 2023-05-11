@@ -37,7 +37,6 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
-#include "Waves.hpp"
 #include <vector>
 #include <utility>
 
@@ -50,6 +49,8 @@ using namespace std;
 
 namespace moordyn {
 
+class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 class Line;
 
 /** @class Rod Rod.hpp
@@ -67,7 +68,7 @@ class Rod : public io::IO
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	Rod(moordyn::Log* log);
+	Rod(moordyn::Log* log, size_t rodId);
 
 	/** @brief Destructor
 	 */
@@ -181,14 +182,6 @@ class Rod : public io::IO
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	std::vector<moordyn::real> F;
-	/// free surface elevations
-	std::vector<moordyn::real> zeta;
-	/// dynamic pressures
-	std::vector<moordyn::real> PDyn;
-	/// wave velocities
-	std::vector<vec> U;
-	/// wave accelerations
-	std::vector<vec> Ud;
 	/// instantaneous axial submerged length [m]
 	real h0;
 
@@ -207,28 +200,8 @@ class Rod : public io::IO
 	/// A copy of moordyn::MoorDyn::outChans
 	string channels;
 
-	/** data structures for precalculated nodal water kinematics if applicable
-	 * @{
-	 */
-
-	/// time series of wave elevations above each node
-	std::vector<std::vector<moordyn::real>> zetaTS;
-	/// Volume of fluid at each node (currently unused)
-	std::vector<std::vector<moordyn::real>> FTS;
-	/// time series of velocities at each node
-	std::vector<std::vector<vec>> UTS;
-	/// time series of accelerations at each node
-	std::vector<std::vector<vec>> UdTS;
-	/// number of water kinematics time steps
-	unsigned int ntWater;
-	/// water kinematics time step size (s)
-	moordyn::real dtWater;
-
-	/**
-	 * @}
-	 */
-
-	/** @brief Finds the depth of the water at some (x, y) point. Either using env->WtrDpth or the 3D seafloor if available
+	/** @brief Finds the depth of the water at some (x, y) point. Either using
+	 * env->WtrDpth or the 3D seafloor if available
 	 * @param x x coordinate
 	 * @param y y coordinate
 	 * @return A negative number representing the sea floor depth at the given location
@@ -283,6 +256,8 @@ class Rod : public io::IO
 	}
 
 	/// Rod ID
+	size_t rodId;
+	/// Rod number
 	int number;
 	/// Rod type
 	types type;
@@ -291,13 +266,6 @@ class Rod : public io::IO
 	real roll;
 	/// The pitch angle (useful for output)
 	real pitch;
-
-	/** flag indicating whether wave/current kinematics will be considered
-	 *
-	 * Thisis not exactly a copy of EnvCond::WaveKin, but a compiled value
-	 * dependig on both EnvCond::WaveKin and EnvCond::Current
-	 */
-	moordyn::waves_settings WaterKin;
 
 	/** @brief Setup a rod
 	 * @param number Rod ID
@@ -337,7 +305,9 @@ class Rod : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	inline void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
+	inline void setEnv(EnvCondRef env_in,
+	                   moordyn::WavesRef waves_in,
+	                   moordyn::SeafloorRef seafloor_in)
 	{
 		env = env_in;
 		waves = waves_in;
@@ -401,28 +371,6 @@ class Rod : public io::IO
 	 * @return The output value, 0.0 if a non-valid field is set
 	 */
 	real GetRodOutput(OutChanProps outChan);
-
-	/** @brief store wave/current kinematics time series for this line
-	 *
-	 * This is used when nodal approaches are selected, i.e.
-	 * WaveKin = WAVES_FFT_NODE or WAVES_NODE, Currents = CURRENTS_STEADY_NODE
-	 * or CURRENTS_DYNAMIC_NODE
-	 * @param dt Time step
-	 * @param zeta The wave elevations
-	 * @param f The fluid fractions
-	 * @param u The flow velocity
-	 * @param ud The flow acceleration
-	 * @throws invalid_value_error If @p zeta, @p f, @p u and @p ud have not the
-	 * same size, in both dimensions.
-	 * @throws invalid_value_error If the length of @p zeta, @p f, @p u or @p ud
-	 * is not equal to moordyn::Line::getN() + 1
-	 * @note Working in progress
-	 */
-	void storeWaterKin(real dt,
-	                   std::vector<std::vector<moordyn::real>> zeta,
-	                   std::vector<std::vector<moordyn::real>> f,
-	                   std::vector<std::vector<vec>> u,
-	                   std::vector<std::vector<vec>> ud);
 
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients

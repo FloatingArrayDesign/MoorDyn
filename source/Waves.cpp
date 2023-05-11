@@ -29,9 +29,16 @@
  */
 
 #include "Waves.hpp"
+#include "Misc.hpp"
+#include "Seafloor.h"
+#include "Seafloor.hpp"
 #include "Waves.h"
-#include "Time.hpp"
+#include "Waves/WaveGrid.hpp"
+#include "Waves/WaveOptions.hpp"
+#include "Waves/WaveSpectrum.hpp"
+#include "Util/Interp.hpp"
 #include "kiss_fftr.h"
+#include <filesystem>
 
 #if defined WIN32 && defined max
 // We must avoid max messes up with std::numeric_limits<>::max()
@@ -41,6 +48,26 @@
 using namespace std;
 
 namespace moordyn {
+
+using namespace waves;
+
+real
+SeafloorProvider::getAverageDepth() const
+{
+
+	if (seafloor) {
+		return seafloor->getAverageDepth();
+	}
+	return waterDepth;
+}
+real
+SeafloorProvider::getDepth(const vec2& pos) const
+{
+	if (seafloor) {
+		return seafloor->getDepthAt(pos.x(), pos.y());
+	}
+	return waterDepth;
+}
 
 std::vector<real>
 gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
@@ -52,9 +79,9 @@ gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
 	if (coordtype == Waves::GRID_SINGLE)
 		n = 1;
 	else if (coordtype == Waves::GRID_LIST)
-		n = entries.size();
+		n = static_cast<unsigned int>(entries.size());
 	else if (coordtype == Waves::GRID_LATTICE)
-		n = atoi(entries[2].c_str());
+		n = static_cast<unsigned int>(stoul(entries[2]));
 	else
 		return coordarray;
 
@@ -77,40 +104,152 @@ gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries)
 	return coordarray;
 }
 
-/** @brief Carry out the inverse Fourier transform
- * @param cfg KISS FFT instance
- * @param nFFT Numer of fourier components
- * @param cx_w_in KISS FFT frequency-domain data
- * @param cx_t_out KISS FFT time-domain output
- * @param inputs Input FFT values
- * @param outputs Output time-domain values
- */
 void
-doIFFT(kiss_fftr_cfg cfg,
-       unsigned int nFFT,
-       kiss_fft_cpx* cx_w_in,
-       kiss_fft_scalar* cx_t_out,
-       const moordyn::complex* inputs,
-       std::vector<real>& outputs)
+WaveGrid::allocateKinematicArrays()
 {
-	unsigned int nw = nFFT / 2 + 1;
-
-	// copy frequency-domain data into input vector
-	// NOTE: (simpler way to do this, or bypass altogether?)
-	for (unsigned int i = 0; i < nw; i++) {
-		cx_w_in[i].r = std::real(inputs[i]);
-		cx_w_in[i].i = std::imag(inputs[i]);
+	if (!nx || !ny || !nz) {
+		LOGERR << "The grid has not been initialized..." << endl;
+		throw moordyn::invalid_value_error("Uninitialized values");
+	}
+	if (!nt) {
+		LOGERR << "The time series has null size" << endl;
+		throw moordyn::invalid_value_error("Uninitialized values");
 	}
 
-	kiss_fftri(cfg, cx_w_in, cx_t_out);
+	zetas = init3DArray(nx, ny, nt);
+	pDyn = init4DArray(nx, ny, nz, nt);
+	wave_vel = init4DArrayVec(nx, ny, nz, nt);
+	wave_acc = init4DArrayVec(nx, ny, nz, nt);
 
-	// copy out the IFFT data to the time series
-	for (unsigned int i = 0; i < nFFT; i++) {
-		// NOTE: is dividing by nFFT correct? (prevously was nw)
-		outputs[i] = cx_t_out[i] / (real)nFFT;
+	LOGDBG << "Allocated the waves data grid";
+}
+
+void
+WaveGrid::getWaveKin(const vec3& pos,
+                     real time,
+                     const SeafloorProvider& seafloor,
+                     real* zeta,
+                     vec3* vel,
+                     vec3* acc,
+                     real* pdyn)
+{
+	real fx, fy, fz;
+
+	auto ix = interp_factor(px, pos.x(), fx);
+	auto iy = interp_factor(py, pos.y(), fy);
+
+	unsigned int it = 0;
+	real ft = 0.0;
+	if (nt > 1) {
+		real quot = time / dtWave;
+		it = floor(quot);
+		ft = quot - it;
+		it++; // We use the upper bound
+		while (it > nt - 1)
+			it -= nt;
 	}
 
-	return;
+	// wave elevation
+	auto wave_elev = interp3(zetas, ix, iy, it, fx, fy, ft);
+
+	if (zeta) {
+		*zeta = wave_elev;
+	}
+	if (pos.z() > wave_elev) {
+		if (vel) {
+			*vel = vec::Zero();
+		}
+		if (acc) {
+			*acc = vec::Zero();
+		}
+		if (pdyn) {
+			*pdyn = 0;
+		}
+		return;
+	}
+
+	real stretched_z = 0.0;
+	const real bottom = seafloor.getDepth(vec2(pos.x(), pos.y()));
+	const real actual_depth = wave_elev - bottom;
+
+	const real avgDepth = seafloor.getAverageDepth();
+
+	stretched_z = (-avgDepth * (pos.z() - bottom)) / actual_depth + avgDepth;
+	// LOGMSG << "WaveGrid::getWaveKin - stretched_z = " << stretched_z << endl;
+
+	auto iz = interp_factor(pz, stretched_z, fz);
+
+	if (vel) {
+		*vel = interp4Vec(wave_vel, ix, iy, iz, it, fx, fy, fz, ft);
+	}
+	if (acc) {
+		*acc = interp4Vec(wave_acc, ix, iy, iz, it, fx, fy, fz, ft);
+	}
+	if (pdyn) {
+		*pdyn = interp4(pDyn, ix, iy, iz, it, fx, fy, fz, ft);
+	}
+}
+
+void
+CurrentGrid::allocateKinematicArrays()
+{
+	if (!nx || !ny || !nz) {
+		LOGERR << "The grid has not been initialized..." << endl;
+		throw moordyn::invalid_value_error("Uninitialized values");
+	}
+	if (!nt) {
+		LOGERR << "The time series has null size" << endl;
+		throw moordyn::invalid_value_error("Uninitialized values");
+	}
+
+	current_vel = init4DArrayVec(nx, ny, nz, nt);
+	current_acc = init4DArrayVec(nx, ny, nz, nt);
+
+	LOGDBG << "Allocated the current data grid";
+}
+
+void
+CurrentGrid::getCurrentKin(const vec3& pos,
+                           real time,
+                           const SeafloorProvider& seafloor,
+                           vec3* vel,
+                           vec3* acc)
+{
+	real fx, fy, fz;
+
+	auto ix = interp_factor(px, pos.x(), fx);
+	auto iy = interp_factor(py, pos.y(), fy);
+
+	unsigned int it = 0;
+	real ft = 0.0;
+	if (nt > 1) {
+		real quot = time / dtWave;
+		it = floor(quot);
+		ft = quot - it;
+		it++; // We use the upper bound
+		while (it > nt - 1)
+			it -= nt;
+	}
+
+	// real stretched_z = 0.0;
+	// const real bottom = seafloor.getDepth(vec2(pos.x(), pos.y()));
+	// const real actual_depth = -bottom;
+
+	// const real avgDepth = seafloor.getAverageDepth();
+
+	// stretched_z = (-avgDepth * (pos.z() - bottom)) / actual_depth + avgDepth;
+
+	// LOGMSG << "WaveGrid::getWaveKin - stretched_z = " << stretched_z << endl;
+
+	// TODO - current stretching?
+	auto iz = interp_factor(pz, pos.z(), fz);
+
+	if (vel) {
+		*vel = interp4Vec(current_vel, ix, iy, iz, it, fx, fy, fz, ft);
+	}
+	if (acc) {
+		*acc = interp4Vec(current_acc, ix, iy, iz, it, fx, fy, fz, ft);
+	}
 }
 
 Waves::Waves(moordyn::Log* log)
@@ -123,1161 +262,617 @@ Waves::Waves(moordyn::Log* log)
 Waves::~Waves() {}
 
 void
-Waves::makeGrid(const char* filepath)
+Waves::setup(EnvCondRef env_in,
+             SeafloorRef seafloor,
+             TimeScheme* t,
+             const char* folder)
 {
-	LOGMSG << "Reading waves coordinates grid from '" << filepath << "'..."
-	       << endl;
-
-	// --------------------- read grid data from file ------------------------
-	vector<string> lines;
-	string line;
-
-	ifstream f(filepath);
-	if (!f.is_open()) {
-		LOGERR << "Cannot read the file '" << filepath << "'" << endl;
-		throw moordyn::input_file_error("Invalid file");
-	}
-	while (getline(f, line))
-		lines.push_back(line);
-	f.close();
-
-	if (lines.size() < 9) {
-		LOGERR << "The waves grid file '" << filepath << "' has only "
-		       << lines.size() << "lines, but at least 9 are required" << endl;
-		throw moordyn::input_file_error("Invalid file format");
-	}
-
-	vector<string> entries;
-	coordtypes coordtype;
-
-	entries = moordyn::str::split(lines[3]);
-	coordtype = (coordtypes)atoi(entries[0].c_str());
-	entries = moordyn::str::split(lines[4]);
-	px = gridAxisCoords(coordtype, entries);
-	nx = px.size();
-	if (!nx) {
-		LOGERR << "Invalid entry for the grid x values in file '" << filepath
-		       << "'" << endl;
-		throw moordyn::invalid_value_error("Invalid line");
-	}
-
-	entries = moordyn::str::split(lines[5]);
-	coordtype = (coordtypes)atoi(entries[0].c_str());
-	entries = moordyn::str::split(lines[6]);
-	py = gridAxisCoords(coordtype, entries);
-	ny = py.size();
-	if (!ny) {
-		LOGERR << "Invalid entry for the grid y values in file '" << filepath
-		       << "'" << endl;
-		throw moordyn::invalid_value_error("Invalid line");
-	}
-
-	entries = moordyn::str::split(lines[7]);
-	coordtype = (coordtypes)atoi(entries[0].c_str());
-	entries = moordyn::str::split(lines[8]);
-	pz = gridAxisCoords(coordtype, entries);
-	nz = pz.size();
-	if (!nz) {
-		LOGERR << "Invalid entry for the grid z values in file '" << filepath
-		       << "'" << endl;
-		throw moordyn::invalid_value_error("Invalid line");
-	}
-
-	LOGDBG << "Setup the waves grid with " << nx << " x " << ny << " x " << nz
-	       << " points " << endl;
-
-	LOGMSG << "'" << filepath << "' parsed" << endl;
-
-	try {
-		allocateKinematicsArrays();
-	} catch (...) {
-		throw;
-	}
-}
-
-void
-Waves::allocateKinematicsArrays()
-{
-	if (!nx || !ny || !nz) {
-		LOGERR << "The grid has not been initializated..." << endl;
-		throw moordyn::invalid_value_error("Uninitialized values");
-	}
-	if (!nt) {
-		LOGERR << "The time series has null size" << endl;
-		throw moordyn::invalid_value_error("Uninitialized values");
-	}
-
-	zeta = init3DArray(nx, ny, nt);
-	PDyn = init4DArray(nx, ny, nz, nt);
-	ux = init4DArray(nx, ny, nz, nt);
-	uy = init4DArray(nx, ny, nz, nt);
-	uz = init4DArray(nx, ny, nz, nt);
-	ax = init4DArray(nx, ny, nz, nt);
-	ay = init4DArray(nx, ny, nz, nt);
-	az = init4DArray(nx, ny, nz, nt);
-
-	LOGDBG << "Allocated the waves data grid";
-}
-
-void
-Waves::setup(EnvCondRef env, TimeScheme* t, const char* folder)
-{
-	dtWave = env->dtWave;
+	// make sure to reset the kinematics if setup gets called multiple times
+	// (like before dynamic relaxation and then before the main simulation)
+	waveKinematics.reset();
+	currentKinematics.reset();
+	this->env = env_in;
+	this->seafloor = seafloor;
 	rho_w = env->rho_w;
 	g = env->g;
 	_t_integrator = t;
 
 	// ------------------- start with wave kinematics -----------------------
 
-	// start grid size at zero (used as a flag later)
-	nx = 0;
-	ny = 0;
-	nz = 0;
-
 	// ======================== check compatibility of wave and current settings
 	// =====================
 
-	if ((env->WaveKin == moordyn::WAVES_NONE) &&
-	    (env->Current == moordyn::CURRENTS_NONE)) {
+	auto wave_mode = env->waterKinOptions.waveMode;
+	auto current_mode = env->waterKinOptions.currentMode;
+	if ((wave_mode == moordyn::WAVES_NONE) &&
+	    (current_mode == moordyn::CURRENTS_NONE)) {
 		LOGMSG << "No Waves or Currents, or set externally" << endl;
 		return;
 	}
 
-	if (env->WaveKin == moordyn::WAVES_NONE) {
-		if (env->Current == moordyn::CURRENTS_STEADY_GRID)
+	if (wave_mode == waves::WAVES_NONE) {
+		if (current_mode == waves::CURRENTS_STEADY_GRID)
 			LOGDBG << "Current only: option 1 - "
 			       << "read in steady current profile, grid approach "
 			       << "(current_profile.txt)" << endl;
-		else if (env->Current == moordyn::CURRENTS_DYNAMIC_GRID)
+		else if (current_mode == waves::CURRENTS_DYNAMIC_GRID)
 			LOGDBG << "Current only: option 2 - "
 			       << "read in dynamic current profile, grid approach "
 			       << "(current_profile_dynamic.txt)" << endl;
-		else if (env->Current == moordyn::CURRENTS_STEADY_NODE)
+		else if (current_mode == waves::CURRENTS_STEADY_NODE)
 			LOGDBG << "Current only: option TBD3 - "
 			       << "read in steady current profile, node approach "
 			       << "(current_profile.txt)" << endl;
-		else if (env->Current == moordyn::CURRENTS_DYNAMIC_NODE)
+		else if (current_mode == waves::CURRENTS_DYNAMIC_NODE)
 			LOGDBG << "Current only: option TBD4 - "
 			       << "read in dynamic current profile, node approach "
 			       << "(current_profile_dynamic.txt)" << endl;
-		else if (env->Current == moordyn::CURRENTS_4D)
+		else if (current_mode == waves::CURRENTS_4D)
 			LOGDBG << "Current only: option 4D - read in current profile, grid "
-			       << "approach (current_profile_4d.txt"
-			       << endl;
+			       << "approach (current_profile_4d.txt" << endl;
 		else {
 			LOGDBG << "Invald current input settings (must be 0-4)" << endl;
 			throw moordyn::invalid_value_error("Invalid settings");
 		}
-	} else if (env->Current == moordyn::CURRENTS_NONE) {
-		if (env->WaveKin == moordyn::WAVES_EXTERNAL)
+	} else if (current_mode == waves::CURRENTS_NONE) {
+		if (wave_mode == waves::WAVES_EXTERNAL)
 			LOGDBG << "Waves only: option 1 - "
 			       << "set externally for each node in each object" << endl;
-		else if (env->WaveKin == moordyn::WAVES_FFT_GRID)
+		else if (wave_mode == waves::WAVES_FFT_GRID)
 			LOGDBG << "Waves only: option 2 - "
 			       << "set from inputted wave elevation FFT, grid approach "
 			       << "(NOT IMPLEMENTED YET)" << endl;
-		else if (env->WaveKin == moordyn::WAVES_GRID)
+		else if (wave_mode == waves::WAVES_GRID)
 			LOGDBG
 			    << "Waves only: option 3 - "
 			    << "set from inputted wave elevation time series, grid approach"
 			    << endl;
-		else if (env->WaveKin == moordyn::WAVES_FFT_GRID)
+		else if (wave_mode == waves::WAVES_FFT_GRID)
 			LOGDBG << "Waves only: option TBD4 - "
 			       << "set from inputted wave elevation FFT, node approach "
 			       << "(NOT IMPLEMENTED YET)" << endl;
-		else if (env->WaveKin == moordyn::WAVES_NODE)
+		else if (wave_mode == waves::WAVES_NODE)
 			LOGDBG
 			    << "Waves only: option TBD5 - "
 			    << "set from inputted wave elevation time series, node approach"
 			    << endl;
-		else if (env->WaveKin == moordyn::WAVES_KIN)
+		else if (wave_mode == waves::WAVES_KIN)
 			LOGDBG << "Waves only: option TBD6 - "
 			       << "set from inputted velocity, acceleration, and wave "
 			          "elevation grid data (TBD)"
 			       << endl;
+		else if (wave_mode == waves::WAVES_SUM_COMPONENTS_NODE)
+			LOGDBG << "Waves only: option 7 - "
+			       << "set from inputted wave spectrum, computed at nodes on "
+			          "update "
+			       << endl;
 		else {
-			LOGDBG << "Invald wave kinematics input settings (must be 0-6)"
+			LOGDBG << "Invald wave kinematics input settings (must be 0-7)"
 			       << endl;
 			throw moordyn::invalid_value_error("Invalid settings");
 		}
-	} else if (is_waves_grid(env->WaveKin) && is_currents_grid(env->Current)) {
-		LOGDBG << "Waves and currents: options " << env->WaveKin << " & "
-		       << env->Current << endl;
-	} else if (is_waves_node(env->WaveKin) && is_currents_node(env->Current)) {
-		LOGDBG << "Waves and currents: options TBD " << env->WaveKin << " & "
-		       << env->Current << endl;
-	} else {
-		LOGDBG << "Incompatible waves (" << env->WaveKin << ") and currents ("
-		       << env->Current << ") settings" << endl;
-		throw moordyn::invalid_value_error("Invalid settings");
+	} else if (wave_mode == waves::WAVES_EXTERNAL &&
+	           current_mode != waves::CURRENTS_NONE) {
+		LOGDBG << "External waves as well as currents, current options: "
+		       << current_mode << endl;
+
+	} else if (waves::is_waves_grid(wave_mode) &&
+	           waves::is_currents_grid(current_mode)) {
+		LOGDBG << "Waves and currents: options " << wave_mode << " & "
+		       << current_mode << endl;
+	} else if (waves::is_waves_node(wave_mode) &&
+	           waves::is_currents_node(current_mode)) {
+		LOGDBG << "Waves and currents: options TBD " << wave_mode << " & "
+		       << current_mode << endl;
 	}
 
 	// NOTE: nodal settings should use storeWaterKin in objects
-
 	// now go through each applicable WaveKin option
-	if (env->WaveKin == moordyn::WAVES_FFT_GRID) {
+	if (wave_mode == waves::WAVES_SUM_COMPONENTS_NODE) {
 		const string WaveFilename = (string)folder + "/wave_frequencies.txt";
-		LOGMSG << "Reading waves FFT from '" << WaveFilename << "'..." << endl;
-
-		// NOTE: need to decide what inputs/format to expect in file
-		// (1vs2-sided spectrum?)
-
-		vector<string> lines;
-		string line;
-
-		ifstream f(WaveFilename);
-		if (!f.is_open()) {
-			LOGERR << "Cannot read the file '" << WaveFilename << "'" << endl;
-			throw moordyn::input_file_error("Invalid file");
-		}
-		while (getline(f, line)) {
-			lines.push_back(line);
-		}
-		f.close();
-
-		if (lines.size() < 2) {
-			LOGERR << "At least 2 frequency components shall be provided in '"
-			       << WaveFilename << "'" << endl;
-			throw moordyn::input_file_error("Invalid file format");
-		}
-
-		vector<real> wavefreqs;
-		vector<moordyn::complex> waveelevs;
-
-		for (auto line : lines) {
-			vector<string> entries = moordyn::str::split(line);
-			if (entries.size() < 3) {
-				LOGERR << "The file '" << WaveFilename
-				       << "' should have 3 columns" << endl;
-				throw moordyn::input_file_error("Invalid file format");
-			}
-			wavefreqs.push_back(atof(entries[0].c_str()));
-			waveelevs.push_back((real)atof(entries[1].c_str()) +
-			                    i1 * (real)atof(entries[2].c_str()));
-		}
+		LOGMSG << "Reading waves spectrum frequencies from '" << WaveFilename
+		       << "'..." << endl;
+		auto waveSpectrum = spectrumFromFile(WaveFilename, _log);
 		LOGMSG << "'" << WaveFilename << "' parsed" << endl;
 
-		if (wavefreqs[0] != 0.0) {
+		if (waveSpectrum[0].omega != 0.0) {
 			LOGERR << "The first shall be 0 rad/s" << endl;
 			throw moordyn::invalid_value_error("Invalid frequencies");
 		}
+		SpectrumKin spectrumKin{};
+		spectrumKin.setup(waveSpectrum.getComponents(), env);
 
-		// Interpolate/check frequency data
-		real dw = std::numeric_limits<real>::max();  // Change in wave freq.
-		for (unsigned int i = 1; i < wavefreqs.size(); i++)
-			if (wavefreqs[i] - wavefreqs[i - 1] < dw)
-				dw = wavefreqs[i] - wavefreqs[i - 1];
-		if (dw <= 0) {
-			LOGERR << "Ascending frequencies are expected" << endl;
-			throw moordyn::invalid_value_error("Invalid frequencies");
-		}
-
-		unsigned int nw = floor(wavefreqs.back() / dw) + 1;
-		vector<real> freqs;
-		for (unsigned int i = 0; i < wavefreqs.size(); i++)
-			freqs.push_back(i * dw);
-		if (freqs.back() > 0.5 * 2.0 * pi) {
-			LOGERR << "The maximum frequency is " << freqs.back() / (2.0 * pi)
-			       << " Hz, which is bigger than the recommended 0.5 Hz value"
-			       << endl;
-		}
-
-		vector<moordyn::complex> zetaC0(nw);
-		interp(wavefreqs, waveelevs, freqs, zetaC0);
-
-		// calculate wave kinematics throughout the grid
-		try {
-			makeGrid(((string)folder + "/water_grid.txt").c_str());
-			fillWaveGrid(zetaC0.data(), nw, dw, env->g, env->WtrDpth);
-		} catch (...) {
-			throw;
-		}
-	} else if (env->WaveKin == moordyn::WAVES_GRID) {
+		waveKinematics =
+		    std::make_unique<SpectrumKinWrapper>(std::move(spectrumKin));
+	} else if (wave_mode == waves::WAVES_FFT_GRID) {
+		waveGrid = constructWaveGridSpectrumData((string)folder, env, _log);
+	} else if (wave_mode == waves::WAVES_GRID) {
 		// load wave elevation time series from file (similar to what's done in
 		// GenerateWaveExtnFile.py, and was previously in misc2.cpp)
-		const string WaveFilename = (string)folder + "/wave_elevation.txt";
-		LOGMSG << "Reading waves elevation from '" << WaveFilename << "'..."
-		       << endl;
-
-		vector<string> lines;
-		string line;
-
-		ifstream f(WaveFilename);
-		if (!f.is_open()) {
-			LOGERR << "Cannot read the file '" << WaveFilename << "'" << endl;
-			throw moordyn::input_file_error("Invalid file");
-		}
-		while (getline(f, line)) {
-			lines.push_back(line);
-		}
-		f.close();
-
-		// should add error checking.  two columns of data, and time column must
-		// start at zero?
-
-		vector<real> wavetimes;
-		vector<real> waveelevs;
-
-		for (auto line : lines) {
-			vector<string> entries = moordyn::str::split(line);
-			if (entries.size() < 2) {
-				LOGERR << "The file '" << WaveFilename
-				       << "' should have 2 columns" << endl;
-				throw moordyn::input_file_error("Invalid file format");
-			}
-			wavetimes.push_back(atof(entries[0].c_str()));
-			waveelevs.push_back(atof(entries[1].c_str()));
-		}
-		LOGMSG << "'" << WaveFilename << "' parsed" << endl;
-
-		// downsample to dtWave
-		nt = floor(wavetimes.back() / dtWave);
-		LOGDBG << "Number of wave time samples = " << nt << "("
-		       << wavetimes.size() << " samples provided in the file)" << endl;
-
-		vector<real> waveTime(nt, 0.0);
-		vector<real> waveElev(nt, 0.0);
-
-		for (unsigned int i = 0; i < nt; i++)
-			waveTime[i] = i * dtWave;
-		moordyn::interp(wavetimes, waveelevs, waveTime, waveElev);
-
-		// ensure N is even
-		if (nt % 2 != 0) {
-			nt = nt - 1;
-			waveTime.pop_back();
-			waveElev.pop_back();
-			LOGWRN << "The number of wave time samples was odd, "
-			       << "so it is decreased to " << nt << endl;
-		}
-
-		// FFT the wave elevation using kiss_fftr
-		LOGDBG << "Computing FFT..." << endl;
-		unsigned int nFFT = nt;
-		const int is_inverse_fft = 0;
-		// number of FFT frequencies (Nyquist)
-		// NOTE: should check consistency
-		unsigned int nw = nFFT / 2 + 1;
-
-		// Note: frequency-domain data is stored from dc up to 2pi.
-		// so cx_out[0] is the dc bin of the FFT
-		// and cx_out[nfft/2] is the Nyquist bin (if exists)                 ???
-		double dw = pi / dtWave / nw; // wave frequency interval (rad/s)
-
-		// allocate memory for kiss_fftr
-		kiss_fftr_cfg cfg = kiss_fftr_alloc(nFFT, is_inverse_fft, 0, 0);
-
-		// allocate input and output arrays for kiss_fftr
-		// (note that kiss_fft_scalar is set to double)
-		kiss_fft_scalar* cx_t_in =
-		    (kiss_fft_scalar*)malloc(nFFT * sizeof(kiss_fft_scalar));
-		kiss_fft_cpx* cx_w_out =
-		    (kiss_fft_cpx*)malloc(nw * sizeof(kiss_fft_cpx));
-		if (!cx_t_in || !cx_w_out) {
-			LOGERR << "Failure allocating "
-			       << nFFT * sizeof(kiss_fft_scalar) + nw * sizeof(kiss_fft_cpx)
-			       << "bytes for the FFT computation" << endl;
-			throw moordyn::mem_error("Insufficient memory");
-		}
-
-		// copy wave elevation time series into input vector
-		real zetaRMS = 0.0;
-		for (unsigned int i = 0; i < nFFT; i++) {
-			cx_t_in[i] = waveElev[i];
-			zetaRMS += waveElev[i] * waveElev[i];
-		}
-		zetaRMS = sqrt(zetaRMS / nFFT);
-
-		// perform the real-valued FFT
-		kiss_fftr(cfg, cx_t_in, cx_w_out);
-		LOGDBG << "Done!" << endl;
-
-		// copy frequencies over from FFT output
-		moordyn::complex* zetaC0 =
-		    (moordyn::complex*)malloc(nw * sizeof(moordyn::complex));
-		if (!zetaC0) {
-			LOGERR << "Failure allocating " << nw * sizeof(moordyn::complex)
-			       << "bytes for the FFT elevation" << endl;
-			throw moordyn::mem_error("Insufficient memory");
-		}
-		for (unsigned int i = 0; i < nw; i++)
-			zetaC0[i] = (real)(cx_w_out[i].r) + i1 * (real)(cx_w_out[i].i);
-
-		// cut frequencies above 0.5 Hz (2 s) to avoid FTT noise getting
-		// amplified when moving to other points in the wave field...
-		for (unsigned int i = 0; i < nw; i++)
-			if (i * dw > 0.5 * 2 * pi)
-				zetaC0[i] = 0.0;
-
-		// calculate wave kinematics throughout the grid
-		try {
-			// make a grid for wave kinematics based on settings in
-			// water_grid.txt
-			makeGrid(((string)folder + "/water_grid.txt").c_str());
-			fillWaveGrid(zetaC0, nw, dw, env->g, env->WtrDpth);
-		} catch (...) {
-			throw;
-		}
-
-		// free things up
-		free(cx_t_in);
-		free(cx_w_out);
-		free(cfg);
-		free(zetaC0);
+		waveGrid = constructWaveGridElevationData((string)folder, env, _log);
 	}
 
 	// Now add in current velocities (add to unsteady wave kinematics)
-	if (env->Current == CURRENTS_STEADY_GRID) {
-		const string CurrentsFilename = (string)folder + "/current_profile.txt";
-		LOGMSG << "Reading currents profile from '" << CurrentsFilename
-		       << "'..." << endl;
+	if (current_mode == CURRENTS_STEADY_GRID) {
+		auto currentGrid = constructSteadyCurrentGrid(folder, env, _log);
 
-		vector<string> lines;
-		string line;
+		// if there is an existing wave grid an we are set to unify the wave
+		// and current grids
+		if (waveGrid && env->waterKinOptions.unifyCurrentGrid) {
+			SeafloorProvider floorProvider{ -env->WtrDpth, seafloor };
+			for (unsigned int iz = 0; iz < waveGrid->nz; iz++) {
+				auto z = waveGrid->Pz()[iz];
+				vec3 curr_vel, curr_acc;
+				currentGrid->getCurrentKin(
+				    vec3(0, 0, z), 0.0, floorProvider, &curr_vel, &curr_acc);
 
-		ifstream f(CurrentsFilename);
-		if (!f.is_open()) {
-			LOGERR << "Cannot read the file '" << CurrentsFilename << "'"
-			       << endl;
-			throw moordyn::input_file_error("Invalid file");
-		}
-		while (getline(f, line)) {
-			lines.push_back(line);
-		}
-		f.close();
-
-		if (lines.size() < 4) {
-			LOGERR << "The file '" << CurrentsFilename
-			       << "' should have at least 4 lines" << endl;
-			throw moordyn::input_file_error("Invalid file format");
-		}
-
-		vector<real> UProfileZ;
-		vector<real> UProfileUx;
-		vector<real> UProfileUy;
-		vector<real> UProfileUz;
-
-		for (unsigned int i = 3; i < lines.size(); i++) {
-			vector<string> entries = moordyn::str::split(lines[i]);
-			if (entries.size() < 2) {
-				LOGERR << "The file '" << CurrentsFilename
-				       << "' should have at least 2 columns" << endl;
-				throw moordyn::input_file_error("Invalid file format");
-			}
-			UProfileZ.push_back(atof(entries[0].c_str()));
-			UProfileUx.push_back(atof(entries[1].c_str()));
-
-			if (entries.size() >= 3)
-				UProfileUy.push_back(atof(entries[2].c_str()));
-			else
-				UProfileUy.push_back(0.0);
-
-			if (entries.size() >= 4)
-				UProfileUz.push_back(atof(entries[3].c_str()));
-			else
-				UProfileUz.push_back(0.0);
-		}
-		LOGMSG << "'" << CurrentsFilename << "' parsed" << endl;
-
-		// NOTE: check data
-
-		// interpolate and add data to wave kinematics grid
-
-		if (nx * ny * nz == 0) {
-			// A grid hasn't been set up yet, make it based on the read-in z
-			// values
-			nx = 1;
-			px.assign(nx, 0.0);
-			ny = 1;
-			py.assign(ny, 0.0);
-			nz = UProfileZ.size();
-			pz.assign(nz, 0.0);
-			for (unsigned int i = 0; i < nz; i++)
-				pz[i] = UProfileZ[i];
-
-			// set 1 time step to indicate steady data
-			nt = 1;
-			dtWave = 1.0; // arbitrary entry
-
-			try {
-				allocateKinematicsArrays();
-			} catch (...) {
-				throw;
-			}
-
-			// fill in output arrays
-			for (unsigned int i = 0; i < nz; i++) {
-				ux[0][0][i][0] = UProfileUx[i];
-				uy[0][0][i][0] = UProfileUy[i];
-				uz[0][0][i][0] = UProfileUz[i];
+				for (unsigned int ix = 0; ix < waveGrid->nx; ix++) {
+					for (unsigned int iy = 0; iy < waveGrid->ny; iy++) {
+						for (unsigned int it = 0; it < waveGrid->nt; it++) {
+							waveGrid->WaveVel()[ix][iy][iz][it] += curr_vel;
+							waveGrid->WaveAcc()[ix][iy][iz][it] += curr_acc;
+						}
+					}
+				}
 			}
 		} else {
-			real fz;
-			unsigned izi = 1;
-			for (unsigned int iz = 0; iz < nz; iz++) {
-				izi = interp_factor(UProfileZ, izi, pz[iz], fz);
-				for (unsigned int ix = 0; ix < nx; ix++) {
-					for (unsigned int iy = 0; iy < ny; iy++) {
-						for (unsigned int it = 0; it < nt; it++) {
-							ux[ix][iy][iz][it] +=
-							    UProfileUx[izi] * fz +
-							    UProfileUx[izi - 1] * (1. - fz);
-							uy[ix][iy][iz][it] +=
-							    UProfileUy[izi] * fz +
-							    UProfileUy[izi - 1] * (1. - fz);
-							uz[ix][iy][iz][it] +=
-							    UProfileUz[izi] * fz +
-							    UProfileUz[izi - 1] * (1. - fz);
+			currentKinematics = std::move(currentGrid);
+		}
+	} else if (current_mode == CURRENTS_DYNAMIC_GRID) {
+		auto currentGrid = constructDynamicCurrentGrid(folder, env, _log);
+
+		if (waveGrid && env->waterKinOptions.unifyCurrentGrid) {
+			// interpolate currents on to wave existing wave grid
+			SeafloorProvider floorProvider{ -env->WtrDpth, seafloor };
+			for (unsigned int iz = 0; iz < waveGrid->nz; iz++) {
+				real z = waveGrid->Pz()[iz];
+				for (unsigned int it = 0; it < waveGrid->nt; it++) {
+					vec3 currentVel, currentAcc;
+					currentGrid->getCurrentKin(vec3(0.0, 0.0, z),
+					                           it * waveGrid->dtWave,
+					                           floorProvider,
+					                           &currentVel,
+					                           &currentAcc);
+					for (unsigned int ix = 0; ix < waveGrid->nx; ix++) {
+						for (unsigned int iy = 0; iy < waveGrid->ny; iy++) {
+							waveGrid->WaveVel()[ix][iy][iz][it] += currentVel;
+							waveGrid->WaveVel()[ix][iy][iz][it] += currentAcc;
 						}
 					}
 				}
 			}
+		} else {
+			currentKinematics = std::move(currentGrid);
 		}
-	} else if (env->Current == CURRENTS_DYNAMIC_GRID) {
-		const string CurrentsFilename =
-		    (string)folder + "/current_profile_dynamic.txt";
-		LOGMSG << "Reading currents dynamic profile from '" << CurrentsFilename
-		       << "'..." << endl;
+	} else if (current_mode == CURRENTS_4D) {
+		auto currentGrid = construct4DCurrentGrid(folder, env, _log);
+		if (waveGrid && env->waterKinOptions.unifyCurrentGrid) {
+			// interpolate read in data and add to existing grid
+			// (dtWave, px, etc are already set in the grid)
+			// LOGMSG << "interpolating 4d current grid onto wave grid" << endl;
+			// LOGMSG << "4D current grid stats: nx = " << currentGrid->nx
+			//        << " ny = " << currentGrid->ny << " nz = " <<
+			//        currentGrid->nz
+			//        << " nt = " << currentGrid->nt
+			//        << " dtWave = " << currentGrid->dtWave << endl;
 
-		vector<string> lines;
-		string line;
+			// LOGMSG << "wave grid stats: nx = " << waveGrid->nx
+			//        << " ny = " << waveGrid->ny << " nz = " << waveGrid->nz
+			//        << " nt = " << waveGrid->nt
+			//        << " dtWave = " << waveGrid->dtWave << endl;
+			SeafloorProvider floorProvider{ -env->WtrDpth, seafloor };
+			for (unsigned int ix = 0; ix < waveGrid->nx; ix++) {
+				const real x = waveGrid->Px()[ix];
+				for (unsigned int iy = 0; iy < waveGrid->ny; iy++) {
+					const real y = waveGrid->Py()[iy];
+					for (unsigned int iz = 0; iz < waveGrid->nz; iz++) {
+						const real z = waveGrid->Pz()[iz];
+						for (unsigned int it = 0; it < waveGrid->nt; it++) {
 
-		ifstream f(CurrentsFilename);
-		if (!f.is_open()) {
-			LOGERR << "Cannot read the file '" << CurrentsFilename << "'"
-			       << endl;
-			throw moordyn::input_file_error("Invalid file");
-		}
-		while (getline(f, line)) {
-			lines.push_back(line);
-		}
-		f.close();
-
-		if (lines.size() < 7) {
-			LOGERR << "The file '" << CurrentsFilename
-			       << "' should have at least 7 lines" << endl;
-			throw moordyn::input_file_error("Invalid file format");
-		}
-
-		vector<real> UProfileZ;
-		vector<real> UProfileT;
-		vector<vector<real>> UProfileUx;
-		vector<vector<real>> UProfileUy;
-		vector<vector<real>> UProfileUz;
-
-		// this is the depths row
-		vector<string> entries = moordyn::str::split(lines[4]);
-		const unsigned int nzin = entries.size();
-		for (unsigned int i = 0; i < nzin; i++)
-			UProfileZ.push_back(atof(entries[i].c_str()));
-
-		// Read the time rows
-		const unsigned int ntin = lines.size() - 6;
-		UProfileUx = init2DArray(nzin, ntin);
-		UProfileUy = init2DArray(nzin, ntin);
-		UProfileUz = init2DArray(nzin, ntin);
-		for (unsigned int i = 6; i < lines.size(); i++) {
-			entries = moordyn::str::split(lines[i]);
-			const unsigned int it = i - 6;
-			if (entries.size() <= nzin) {
-				LOGERR << "The file '" << CurrentsFilename
-				       << "' should have at least " << nzin + 1 << " columns"
-				       << endl;
-				throw moordyn::input_file_error("Invalid file format");
-			}
-			UProfileT.push_back(atof(entries[0].c_str()));
-			for (unsigned int iz = 0; iz < nzin; iz++)
-				UProfileUx[iz][it] = atof(entries[iz + 1].c_str());
-
-			if (entries.size() >= 2 * nzin + 1)
-				for (unsigned int iz = 0; iz < nzin; iz++)
-					UProfileUy[iz][it] = atof(entries[nzin + iz + 1].c_str());
-			else
-				for (unsigned int iz = 0; iz < nzin; iz++)
-					UProfileUy[iz][it] = 0.0;
-
-			if (entries.size() >= 3 * nzin + 1)
-				for (unsigned int iz = 0; iz < nzin; iz++)
-					UProfileUz[iz][it] =
-					    atof(entries[2 * nzin + iz + 1].c_str());
-			else
-				for (unsigned int iz = 0; iz < nzin; iz++)
-					UProfileUz[iz][it] = 0.0;
-		}
-		LOGMSG << "'" << CurrentsFilename << "' parsed" << endl;
-
-		// check data
-		if ((nx * ny * nz != 0) && !nt) {
-			LOGERR << "At least one time step of current data read from '"
-			       << CurrentsFilename << "', but nt = 0" << endl;
-			throw moordyn::invalid_value_error("No time data");
-		}
-
-		// interpolate and add data to wave kinematics grid
-		if (nx * ny * nz == 0) {
-			// A grid hasn't been set up yet, make it based on the read-in z
-			// values
-			nx = 1;
-			px.assign(nx, 0.0);
-			ny = 1;
-			py.assign(ny, 0.0);
-			nz = UProfileZ.size();
-			pz.assign(nz, 0.0);
-			for (unsigned int i = 0; i < nz; i++)
-				pz[i] = UProfileZ[i];
-
-			// set the time step size to be the smallest interval in the
-			// inputted times
-			dtWave = std::numeric_limits<real>::max();
-			for (unsigned int i = 1; i < ntin; i++)
-				if (UProfileT[i] - UProfileT[i - 1] < dtWave)
-					dtWave = UProfileT[i] - UProfileT[i - 1];
-			nt = floor(UProfileT[ntin - 1] / dtWave) + 1;
-
-			try {
-				allocateKinematicsArrays();
-			} catch (...) {
-				throw;
-			}
-
-			// fill in output arrays
-			real ft;
-			unsigned iti = 1;
-			for (unsigned int iz = 0; iz < nz; iz++) {
-				for (unsigned int it = 0; it < nt; it++) {
-					// need to set iti, otherwise it will lock to final t after
-					// one pass through initially the upper index we check
-					// should always be one timestep ahead of it
-					iti = it + 1;
-					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
-					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
-					                   UProfileUx[iz][iti - 1] * (1. - ft);
-					uy[0][0][iz][it] = UProfileUy[iz][iti] * ft +
-					                   UProfileUy[iz][iti - 1] * (1. - ft);
-					uz[0][0][iz][it] = UProfileUz[iz][iti] * ft +
-					                   UProfileUz[iz][iti - 1] * (1. - ft);
-					// TODO: approximate fluid accelerations using finite
-					//       differences
-					ax[0][0][iz][it] = 0.0;
-					ay[0][0][iz][it] = 0.0;
-					az[0][0][iz][it] = 0.0;
-				}
-			}
-		}
-		else {
-			// fill in output arrays
-			real ft;
-			unsigned iti = 1;
-			for (unsigned int iz = 0; iz < nz; iz++) {
-				for (unsigned int it = 0; it < nt; it++) {
-					// need to set iti, otherwise it will lock to final t after
-					// one pass through initially the upper index we check
-					// should always be one timestep ahead of it
-					iti = it + 1;
-					iti = interp_factor(UProfileT, iti, it * dtWave, ft);
-					ux[0][0][iz][it] = UProfileUx[iz][iti] * ft +
-					                   UProfileUx[iz][iti - 1] * (1. - ft);
-					uy[0][0][iz][it] = UProfileUy[iz][iti] * ft +
-					                   UProfileUy[iz][iti - 1] * (1. - ft);
-					uz[0][0][iz][it] = UProfileUz[iz][iti] * ft +
-					                   UProfileUz[iz][iti - 1] * (1. - ft);
-					// TODO: approximate fluid accelerations using finite
-					//       differences
-					ax[0][0][iz][it] = 0.0;
-					ay[0][0][iz][it] = 0.0;
-					az[0][0][iz][it] = 0.0;
-				}
-			}
-		}
-	} else if (env->Current == CURRENTS_4D) {
-		const string CurrentsFilename =
-		    (string)folder + "current_profile_4d.txt";
-		LOGMSG << "Reading 4d currents dynamic profile from '" << CurrentsFilename
-		       << "'..." << endl;
-
-		vector<string> lines;
-		string line;
-
-		ifstream f(CurrentsFilename);
-		if (!f.is_open()) {
-			LOGERR << "Cannot read the file '" << CurrentsFilename << "'"
-			       << endl;
-			throw moordyn::input_file_error("Invalid file");
-		}
-		while (getline(f, line)) {
-			lines.push_back(line);
-		}
-		f.close();
-
-		// A better check here is that the grid is at least as large as the
-		// waves grid, i.e. nxin * nyin * nzin * ntin >= size of waves
-		if (lines.size() < 7) { // TODO: Remove this check? Depends on final format
-			LOGERR << "The file '" << CurrentsFilename
-			       << "' should have at least 7 lines" << endl;
-			throw moordyn::input_file_error("Invalid file format");
-		}
-
-		// The first line must contain the number of x, y, z, t values in the input
-		// meshgrid (1-indexed, space delimited)
-		vector<string> gridDimensions = moordyn::str::split(lines[0]);
-		auto nxCurGrid = atoi(gridDimensions[0].c_str());
-		auto nyCurGrid = atoi(gridDimensions[1].c_str());
-		auto nzCurGrid = atoi(gridDimensions[2].c_str());
-		auto ntCurGrid = atoi(gridDimensions[3].c_str());
-
-
-		// Next four rows specify grid points x, y, t, z
-		vector<real> UProfileX;
-		vector<real> UProfileY;
-		vector<real> UProfileZ;
-		vector<real> UProfileT;
-
-		// Need to keep track of 
-
-		// And a map to keep track of coord->idx mapping...
-		map<string, int> XMap;
-		map<string, int> YMap;
-		map<string, int> ZMap;
-		map<string, int> TMap;
-
-		auto entry = moordyn::str::split(lines[1]);
-		for (int i = 0; i < nxCurGrid; i++) {
-			UProfileX.push_back(atof(entry[i].c_str()));
-			XMap[entry[i]] = i;
-		}
-
-		entry = moordyn::str::split(lines[2]);
-		for (int i = 0; i < nyCurGrid; i++) {
-			UProfileY.push_back(atof(entry[i].c_str()));
-			YMap[entry[i]] = i;
-		}
-
-		entry = moordyn::str::split(lines[3]);
-		for (int i = 0; i < nzCurGrid; i++) {
-			UProfileZ.push_back(atof(entry[i].c_str()));
-			ZMap[entry[i]] = i;
-		}
-		
-		entry = moordyn::str::split(lines[4]);
-		for (int i = 0; i < ntCurGrid; i++) {
-			UProfileT.push_back(atof(entry[i].c_str()));
-			TMap[entry[i]] = i;
-		}
-
-		// Need 3 4D grids - one for each component of current velocity:
-		vector<vector<vector<vector<real>>>> currentGridUx =
-			init4DArray(nxCurGrid, nyCurGrid, nzCurGrid, ntCurGrid);
-		vector<vector<vector<vector<real>>>> currentGridUy =
-			init4DArray(nxCurGrid, nyCurGrid, nzCurGrid, ntCurGrid);
-		vector<vector<vector<vector<real>>>> currentGridUz =
-			init4DArray(nxCurGrid, nyCurGrid, nzCurGrid, ntCurGrid);
-		
-		// Number of points in the current grid (important for iteration):
-		unsigned int nCurGridPoints =
-			nxCurGrid * nyCurGrid * nzCurGrid * ntCurGrid;
-
-		// Need to ensure that there is an entry for each gridpoint:
-		if (lines.size() < nCurGridPoints + 5) {
-			LOGERR << "The file'" << CurrentsFilename
-				   << "' should have a line for each gridpoint\n";
-			throw moordyn::input_file_error("Invalid file format\n");
-		}
-
-		// Read values into 4D array
-		for (int i = 6; i < lines.size(); i++) {
-			vector<string> entry = moordyn::str::split(lines[i]);
-
-			// Need to get indices (don't match coord values)
-			auto ix = XMap[entry[0]];
-			auto iy = YMap[entry[1]];
-			auto iz = ZMap[entry[2]];
-			auto it = TMap[entry[3]];
-
-			// Need to set velocity components in three separate vectors
-			// at the coordinate above
-			currentGridUx[ix][iy][iz][it] = atof(entry[4].c_str());
-			currentGridUy[ix][iy][iz][it] = atof(entry[5].c_str());
-			currentGridUz[ix][iy][iz][it] = atof(entry[6].c_str());
-		}
-
-
-		// check data
-		if ((nx * ny * nz != 0) && !nt) {
-			LOGERR << "At least one time step of current data read from '"
-			       << CurrentsFilename << "', but nt = 0" << endl;
-			throw moordyn::invalid_value_error("No time data");
-		}
-
-		// interpolate and add data to wave kinematics grid
-		if (nx * ny * nz == 0) {
-			// A grid hasn't been set up yet, make it based on the read-in z
-			// values. In this case, since we have 4D currents, we need to
-			// modify the CURRENTS_DYNAMIC case to add x and y axes to the
-			// current grid as well.
-			nx = UProfileX.size();
-			px.assign(nx, 0.0);
-			ny = UProfileY.size();
-			py.assign(ny, 0.0);
-			nz = UProfileZ.size();
-			pz.assign(nz, 0.0);
-			for (unsigned int i = 0; i < nx; i++)
-				px[i] = UProfileX[i];
-			for (unsigned int i = 0; i < ny; i++)
-				py[i] = UProfileY[i];
-			for (unsigned int i = 0; i < nz; i++)
-				pz[i] = UProfileZ[i];
-
-			// set the time step size to be the smallest interval in the
-			// inputted times
-			dtWave = std::numeric_limits<real>::max();
-			for (unsigned int i = 1; i < ntCurGrid; i++)
-				if (UProfileT[i] - UProfileT[i - 1] < dtWave)
-					dtWave = UProfileT[i] - UProfileT[i - 1];
-			nt = floor(UProfileT[ntCurGrid - 1] / dtWave) + 1;  // set number of timesteps
-
-			try {
-				allocateKinematicsArrays();
-			} catch (...) {
-				throw;
-			}
-
-			// fill in output arrays
-			real fx;
-			real fy;
-			real fz;
-			real ft;
-			unsigned ixi = 1;
-			for (unsigned int ix = 0; ix < nx; ix++) {
-				unsigned iyi = 1;
-				ixi = interp_factor(UProfileX, ixi, px[ix], fx);
-				for (unsigned int iy = 0; iy < ny; iy++) {
-					unsigned izi = 1;
-					iyi = interp_factor(UProfileY, iyi, py[iy], fy);
-					for (unsigned int iz = 0; iz < nz; iz++) {
-						unsigned iti = 1;
-						izi = interp_factor(UProfileZ, izi, pz[iz], fz);
-						for (unsigned int it = 0; it < nt; it++) {
-							iti = interp_factor(UProfileT, iti, it*dtWave, ft);
-							ux[ix][iy][iz][it] += interp4(currentGridUx,
-							                              ixi,
-							                              iyi,
-							                              izi,
-							                              iti,
-							                              fx,
-							                              fy,
-							                              fz,
-							                              ft);
-							uy[ix][iy][iz][it] += interp4(currentGridUy,
-							                              ixi,
-							                              iyi,
-							                              izi,
-							                              iti,
-							                              fx,
-							                              fy,
-							                              fz,
-							                              ft);
-							uz[ix][iy][iz][it] += interp4(currentGridUz,
-							                              ixi,
-							                              iyi,
-							                              izi,
-							                              iti,
-							                              fx,
-							                              fy,
-							                              fz,
-							                              ft);
-							ax[ix][iy][iz][it] = 0.0;  // TODO: approximate acceleration using finite differences
-							ay[ix][iy][iz][it] = 0.0;
-							az[ix][iy][iz][it] = 0.0;
+							vec3 currentVel, currentAcc;
+							currentGrid->getCurrentKin(vec3(x, y, z),
+							                           it * waveGrid->dtWave,
+							                           floorProvider,
+							                           &currentVel,
+							                           &currentAcc);
+							waveGrid->WaveVel()[ix][iy][iz][it] += currentVel;
+							waveGrid->WaveAcc()[ix][iy][iz][it] += currentAcc;
 						}
 					}
 				}
 			}
-		} else // otherwise interpolate read in data and add to existing grid
-		       // (dtWave, px, etc are already set in the grid)
-		{
-			real fx;
-			real fy;
-			real fz;
-			real ft;
-			unsigned ixi = 1;
-			for (unsigned int ix = 0; ix < nx; ix++) {
-				unsigned iyi = 1;
-				ixi = interp_factor(UProfileX, ixi, px[ix], fx);
-				for (unsigned int iy = 0; iy < ny; iy++) {
-					unsigned izi = 1;
-					iyi = interp_factor(UProfileY, iyi, py[iy], fy);
-					for (unsigned int iz = 0; iz < nz; iz++) {
-						unsigned iti = 1;
-						izi = interp_factor(UProfileZ, izi, pz[iz], fz);
-						for (unsigned int it = 0; it < nt; it++) {
-							iti = interp_factor(UProfileT, iti, it*dtWave, ft);
-							ux[ix][iy][iz][it] += interp4(currentGridUx,
-							                              ixi,
-							                              iyi,
-							                              izi,
-							                              iti,
-							                              fx,
-							                              fy,
-							                              fz,
-							                              ft);
-							uy[ix][iy][iz][it] += interp4(currentGridUy,
-							                              ixi,
-							                              iyi,
-							                              izi,
-							                              iti,
-							                              fx,
-							                              fy,
-							                              fz,
-							                              ft);
-							uz[ix][iy][iz][it] += interp4(currentGridUz,
-							                              ixi,
-							                              iyi,
-							                              izi,
-							                              iti,
-							                              fx,
-							                              fy,
-							                              fz,
-							                              ft);
-							ax[ix][iy][iz][it] = 0.0;  // TODO: approximate acceleration using finite differences
-							ay[ix][iy][iz][it] = 0.0;
-							az[ix][iy][iz][it] = 0.0;
-						}
-					}
-				}
-			}
+		} else {
+			currentKinematics = std::move(currentGrid);
 		}
+	}
+
+	// waveGrid is a temporary value to help with unifying wave and current
+	// grids if it is not null and wave kinematics is null then make that wave
+	// grid our wave kinematics
+	if (waveGrid && !waveKinematics) {
+		waveKinematics = std::move(waveGrid);
+	}
+	// waveGrid stores a temporary value that should have been moved out
+	assert(!waveGrid);
+
+	// either there are no waves (or external waves), or waveKinematics is not
+	// null
+	assert((wave_mode == WAVES_NONE || wave_mode == WAVES_EXTERNAL) !=
+	       (bool)(waveKinematics));
+
+	// if there is a current, at least one of waveKin and currentKind should not
+	// be null. currentKin could be null if the wave mode is a grid mode and
+	// it's set to unify current grids (which happens by default)
+	if (current_mode != CURRENTS_NONE) {
+		// if currents are defined, either wave or current kinematics should be
+		// defined
+		assert((bool)(waveKinematics) || (bool)(currentKinematics));
+	} else {
+		// if currents are not defined, current kinematics should not be defined
+		assert(!bool(currentKinematics));
 	}
 }
 
 void
-Waves::getWaveKin(real x,
-                  real y,
-                  real z,
-                  vec& U_out,
-                  vec& Ud_out,
-                  moordyn::real& zeta_out,
-                  moordyn::real& PDyn_out)
+Waves::addLine(moordyn::Line* line)
 {
-	real fx, fy, fz;
-
-	auto ix = interp_factor(px, x, fx);
-	auto iy = interp_factor(py, y, fy);
-	auto iz = interp_factor(pz, z, fz);
-
-	unsigned int it = 0;
-	real ft = 0.0;
-	if (nt > 1) {
-		real quot = _t_integrator->GetTime() / dtWave;
-		it = floor(quot);
-		ft = quot - it;
-		it++; // We use the upper bound
-		while (it > nt - 1)
-			it -= nt;
+	if (line->lineId == static_cast<int>(nodeKin.lines.structures.size())) {
+		auto num_nodes = line->getN() + 1;
+		genericAdd(line, num_nodes, nodeKin.lines);
+		// At some point we should figure out how to determine when to not do
+		// this, but because solving for initial conditions can cause waves to
+		// first be setup as off and then be setup as on, this is the easiest
+		// method
+		genericAdd(line, num_nodes, waveKin.lines);
+	} else {
+		throw "the lines id should be equal to its index in the lines "
+		      "array";
 	}
+}
+void
+Waves::addRod(moordyn::Rod* rod)
+{
+	if (rod->rodId == static_cast<int>(nodeKin.rods.structures.size())) {
+		auto num_nodes = rod->getN() + 1;
+		genericAdd(rod, num_nodes, nodeKin.rods);
+		nodeKin.rodPdyn.emplace_back(num_nodes, 0.0);
+		// TODO - only do this when needed, see comment in addLIne
+		genericAdd(rod, num_nodes, waveKin.rods);
+		waveKin.rodPdyn.emplace_back(num_nodes, 0.0);
+	} else {
+		throw "the rod id should be equal to its index in the rod array";
+	}
+}
+void
+Waves::addBody(moordyn::Body* body)
+{
+	if (body->bodyId == static_cast<int>(nodeKin.bodies.structures.size())) {
+		auto num_nodes = 1;
+		genericAdd(body, num_nodes, nodeKin.bodies);
 
-	zeta_out = interp3(zeta, ix, iy, it, fx, fy, ft);
-
-	U_out[0] = interp4(ux, ix, iy, iz, it, fx, fy, fz, ft);
-	U_out[1] = interp4(uy, ix, iy, iz, it, fx, fy, fz, ft);
-	U_out[2] = interp4(uz, ix, iy, iz, it, fx, fy, fz, ft);
-
-	Ud_out[0] = interp4(ax, ix, iy, iz, it, fx, fy, fz, ft);
-	Ud_out[1] = interp4(ay, ix, iy, iz, it, fx, fy, fz, ft);
-	Ud_out[2] = interp4(az, ix, iy, iz, it, fx, fy, fz, ft);
-
-	PDyn_out = interp4(PDyn, ix, iy, iz, it, fx, fy, fz, ft);
+		// TODO - only do this when needed, see comment in addLIne
+		genericAdd(body, num_nodes, waveKin.bodies);
+	} else {
+		throw "the body id should be equal to its index in the body array";
+	}
 }
 
 void
-Waves::fillWaveGrid(const moordyn::complex* zetaC0,
-                    unsigned int nw,
-                    real dw,
-                    real g,
-                    real h)
+Waves::addConn(moordyn::Connection* conn)
 {
-	// NOTE: should enable wave spreading at some point!
-	real beta = 0.0; // WaveDir_in;
+	if (conn->connId ==
+	    static_cast<int>(nodeKin.connections.structures.size())) {
+		auto num_nodes = 1;
+		genericAdd(conn, num_nodes, nodeKin.connections);
 
-	// initialize some frequency-domain wave calc vectors
-	vector<real> w(nw, 0.);
-	vector<real> k(nw, 0.);
-	auto data_size = nw * sizeof(moordyn::complex);
-	// Fourier transform of wave elevation
-	moordyn::complex* zetaC = (moordyn::complex*)malloc(data_size);
-	// Fourier transform of dynamic pressure
-	moordyn::complex* PDynC = (moordyn::complex*)malloc(data_size);
-	// Fourier transform of wave velocities
-	moordyn::complex* UCx = (moordyn::complex*)malloc(data_size);
-	moordyn::complex* UCy = (moordyn::complex*)malloc(data_size);
-	moordyn::complex* UCz = (moordyn::complex*)malloc(data_size);
-	// Fourier transform of wave accelerations
-	moordyn::complex* UdCx = (moordyn::complex*)malloc(data_size);
-	moordyn::complex* UdCy = (moordyn::complex*)malloc(data_size);
-	moordyn::complex* UdCz = (moordyn::complex*)malloc(data_size);
-	if (!zetaC || !PDynC || !UCx || !UCy || !UCz || !UdCx || !UdCy || !UdCz) {
-		LOGERR << "Failure allocating " << 8 * data_size
-		       << "bytes for the FFT data" << endl;
-		throw moordyn::mem_error("Insufficient memory");
+		// TODO - only do this when needed, see comment in addLIne
+		genericAdd(conn, num_nodes, waveKin.connections);
+	} else {
+		throw "the connection id should be equal to its index in the "
+		      "connection array";
+	}
+}
+
+Waves::NodeKinReturnType
+Waves::getWaveKinLine(size_t lineId)
+{
+	return nodeKin.lines[lineId];
+}
+
+std::tuple<const std::vector<real>&,
+           const std::vector<vec3>&,
+           const std::vector<vec3>&,
+           const std::vector<real>&>
+Waves::getWaveKinRod(size_t rodId)
+{
+	auto [z, u, ud] = nodeKin.rods[rodId];
+	return { z, u, ud, nodeKin.rodPdyn[rodId] };
+}
+
+Waves::NodeKinReturnType
+Waves::getWaveKinBody(size_t bodyId)
+{
+	return nodeKin.bodies[bodyId];
+}
+
+Waves::NodeKinReturnType
+Waves::getWaveKinConn(size_t connId)
+{
+	return nodeKin.connections[connId];
+}
+
+real
+Waves::getWaveHeightPoint(vec2 point)
+{
+	vec3 pos(point.x(), point.y(), 0.0);
+
+	real zeta;
+
+	SeafloorProvider floorProvider{ -env->WtrDpth, seafloor };
+	waveKinematics->getWaveKin(pos,
+	                           _t_integrator->GetTime(),
+	                           floorProvider,
+	                           &zeta,
+	                           nullptr,
+	                           nullptr,
+	                           nullptr);
+	return zeta;
+}
+void
+Waves::getWaveKin(const vec3& pos,
+                  real& zeta,
+                  vec3& vel,
+                  vec3& acc,
+                  real& pdyn,
+                  Seafloor* seafloor)
+{
+	if (!waveKinematics && !currentKinematics) {
+		zeta = 0;
+		pdyn = 0;
+		vel = vec::Zero();
+		acc = vec::Zero();
+		return;
 	}
 
-	// The number of wave time steps to be calculated
-	nt = 2 * (nw - 1);
+	real zeta_sum = 0;
+	real pdyn_sum = 0;
+	vec vel_sum{ 0.0, 0.0, 0.0 };
+	vec acc_sum{ 0.0, 0.0, 0.0 };
 
-	// single-sided spectrum for real fft
-	for (unsigned int i = 0; i < nw; i++)
-		w[i] = (real)i * dw;
-
-	LOGMSG << "Wave frequencies from " << w[0] << " rad/s to " << w[nw - 1]
-	       << " rad/s in increments of " << dw << " rad/s" << endl;
-
-	LOGDBG << "Wave numbers in rad/m are ";
-	for (unsigned int I = 0; I < nw; I++) {
-		k[I] = WaveNumber(w[I], g, h);
-		LOGDBG << k[I] << ", ";
-	}
-	LOGDBG << endl;
-
-	LOGDBG << "   nt = " << nt << ", h = " << h << endl;
-
-	// precalculates wave kinematics for a given set of node points for a series
-	// of time steps
-	LOGDBG << "Making wave Kinematics (iFFT)..." << endl;
-
-	// start the FFT stuff using kiss_fft
-	unsigned int nFFT = nt;
-	const int is_inverse_fft = 1;
-
-	// allocate memory for kiss_fftr
-	kiss_fftr_cfg cfg = kiss_fftr_alloc(nFFT, is_inverse_fft, NULL, NULL);
-
-	// allocate input and output arrays for kiss_fftr  (note that
-	// kiss_fft_scalar is set to double)
-	kiss_fft_cpx* cx_w_in = (kiss_fft_cpx*)malloc(nw * sizeof(kiss_fft_cpx));
-	kiss_fft_scalar* cx_t_out =
-	    (kiss_fft_scalar*)malloc(nFFT * sizeof(kiss_fft_scalar));
-	if (!cx_w_in || !cx_t_out) {
-		LOGERR << "Failure allocating "
-		       << nw * sizeof(kiss_fft_cpx) + nFFT * sizeof(kiss_fft_scalar)
-		       << "bytes for the iFFT" << endl;
-		throw moordyn::mem_error("Insufficient memory");
+	SeafloorProvider floorProvider{ -env->WtrDpth,
+		                            std::shared_ptr<Seafloor>(seafloor) };
+	if (waveKinematics) {
+		real wave_zeta, wave_pdyn;
+		vec wave_vel{}, wave_acc{};
+		waveKinematics->getWaveKin(pos,
+		                           _t_integrator->GetTime(),
+		                           floorProvider,
+		                           &wave_zeta,
+		                           &wave_vel,
+		                           &wave_acc,
+		                           &wave_pdyn);
+		zeta_sum += wave_zeta;
+		pdyn_sum += wave_pdyn;
+		vel_sum += wave_vel;
+		acc_sum += wave_acc;
 	}
 
-	// calculating wave kinematics for each grid point
+	if (currentKinematics) {
+		vec wave_vel{}, wave_acc{};
+		currentKinematics->getCurrentKin(
+		    pos, _t_integrator->GetTime(), floorProvider, &wave_vel, &wave_acc);
+		vel_sum += wave_vel;
+		acc_sum += wave_acc;
+	}
+	zeta = zeta_sum;
+	pdyn = pdyn_sum;
+	vel = vel_sum;
+	acc = acc_sum;
+}
 
-	for (unsigned int ix = 0; ix < nx; ix++) {
-		real x = px[ix];
-		for (unsigned int iy = 0; iy < ny; iy++) {
-			real y = py[iy];
-			// wave elevation
-			// handle all (not just positive-frequency half?) of spectrum?
-			for (unsigned int I = 0; I < nw; I++) {
-				// shift each zetaC to account for location
-				const real l = cos(beta) * x + sin(beta) * y;
-				// NOTE: check minus sign in exponent!
-				zetaC[I] = zetaC0[I] * exp(-i1 * (k[I] * l));
-			}
+std::vector<vec3>
+Waves::getWaveKinematicsPoints()
+{
 
-			// IFFT the wave elevation spectrum
-			doIFFT(cfg, nFFT, cx_w_in, cx_t_out, zetaC, zeta[ix][iy]);
+	std::vector<vec> rout;
+	// we kind of abuse this function just to get all of the positions
+	// but doing it this way does mean we always get consistency with
+	// setWaveKinematics
+	kinematicsForAllNodes(
+	    nodeKin, [&](vec pos, vec& _U, vec& _Ud, real& _zeta, real& _pdyn) {
+		    rout.push_back(pos);
+	    });
+	return rout;
+}
 
-			// wave velocities and accelerations
-			for (unsigned int iz = 0; iz < nz; iz++) {
-				real z = pz[iz];
-
-				// Loop through the positive frequency components (including
-				// zero) of the Fourier transforms
-				for (unsigned int I = 0; I < nw; I++) {
-					// Calculate
-					//     SINH( k*( z + h ) )/SINH( k*h )
-					//     COSH( k*( z + h ) )/SINH( k*h )
-					//     COSH( k*( z + h ) )/COSH( k*h )
-					real SINHNumOvrSIHNDen;
-					real COSHNumOvrSIHNDen;
-					real COSHNumOvrCOSHDen;
-
-					if (k[I] == 0.0) {
-						// The shallow water formulation is ill-conditioned;
-						// thus, the known value of unity is returned.
-						SINHNumOvrSIHNDen = 1.0;
-						COSHNumOvrSIHNDen = 99999.0;
-						COSHNumOvrCOSHDen = 99999.0;
-					} else if (k[I] * h > 89.4) {
-						// The shallow water formulation will trigger a floating
-						// point overflow error; however, for
-						// h > 14.23 * wavelength (since k = 2 * Pi /
-						// wavelength) we can use the numerically-stable deep
-						// water formulation instead.
-						SINHNumOvrSIHNDen = exp(k[I] * z);
-						COSHNumOvrSIHNDen = exp(k[I] * z);
-						COSHNumOvrCOSHDen =
-						    exp(k[I] * z) + exp(-k[I] * (z + 2.0 * h));
-					} else if (-k[I] * h > 89.4) {
-						// @mth: added negative k case
-						// NOTE: CHECK CORRECTNESS
-						SINHNumOvrSIHNDen = -exp(-k[I] * z);
-						COSHNumOvrSIHNDen = -exp(-k[I] * z);
-						COSHNumOvrCOSHDen =
-						    -exp(-k[I] * z) + exp(-k[I] * (z + 2.0 * h));
-					} else {
-						// shallow water formulation
-						SINHNumOvrSIHNDen =
-						    sinh(k[I] * (z + h)) / sinh(k[I] * h);
-						COSHNumOvrSIHNDen =
-						    cosh(k[I] * (z + h)) / sinh(k[I] * h);
-						COSHNumOvrCOSHDen =
-						    cosh(k[I] * (z + h)) / cosh(k[I] * h);
-					}
-
-					// Fourier transform of dynamic pressure
-					PDynC[I] = rho_w * g * zetaC[I] * COSHNumOvrCOSHDen;
-
-					// Fourier transform of wave velocities
-					// (note: need to multiply by abs(w) to avoid inverting
-					//  negative half of spectrum) <<< ???
-					UCx[I] = w[I] * zetaC[I] * COSHNumOvrSIHNDen * cos(beta);
-					UCy[I] = w[I] * zetaC[I] * COSHNumOvrSIHNDen * sin(beta);
-					UCz[I] = i1 * w[I] * zetaC[I] * SINHNumOvrSIHNDen;
-
-					// Fourier transform of wave accelerations
-					// NOTE: should confirm correct signs of +/- halves of
-					// spectrum here
-					UdCx[I] = i1 * w[I] * UCx[I];
-					UdCy[I] = i1 * w[I] * UCy[I];
-					UdCz[I] = i1 * w[I] * UCz[I];
-				}
-
-				// NOTE: could handle negative-frequency half of spectrum with
-				// for (int I=nw/2+1; I<nw; I++) <<<
-
-				// IFFT the dynamic pressure
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, PDynC, PDyn[ix][iy][iz]);
-				// IFFT the wave velocities
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, UCx, ux[ix][iy][iz]);
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, UCy, uy[ix][iy][iz]);
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, UCz, uz[ix][iy][iz]);
-				// IFFT the wave accelerations
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, UdCx, ax[ix][iy][iz]);
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, UdCy, ay[ix][iy][iz]);
-				doIFFT(cfg, nFFT, cx_w_in, cx_t_out, UdCz, az[ix][iy][iz]);
-
-				// NOTE: wave stretching stuff would maybe go here?? <<<
-			}
+void
+Waves::setWaveKinematics(std::vector<vec> const& U_in,
+                         std::vector<vec> const& Ud_in)
+{
+	unsigned int i = 0;
+	if (U_in.size() != Ud_in.size()) {
+		throw moordyn::invalid_value_error(
+		    "Waves::setWaveKinematics U and Ud must have the same size");
+	}
+	AllNodesKin& kinematics = currentKinematics ? waveKin : nodeKin;
+	kinematicsForAllNodes(
+	    kinematics, [&](vec _pos, vec& U, vec& Ud, real& _zeta, real& _pdyn) {
+		    if (i >= U_in.size()) {
+			    throw moordyn::invalid_value_error(
+			        "not enough points supplied to Waves::setWaveKinematics");
+		    }
+		    U = U_in[i];
+		    Ud = Ud_in[i];
+		    i++;
+	    });
+}
+template<typename F>
+void
+Waves::kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f)
+{
+	auto& lines = nodeKinematics.lines;
+	for (const auto& line : lines.structures) {
+		for (unsigned int i = 0; i <= line->getN(); i++) {
+			const vec pos = line->getNodePos(i);
+			const auto id = line->lineId;
+			real pdyn;
+			f(pos, lines.U[id][i], lines.Ud[id][i], lines.zetas[id][i], pdyn);
 		}
 	}
 
-	free(cx_w_in);
-	free(cx_t_out);
-	free(cfg);
-	free(zetaC);
-	free(PDynC);
-	free(UCx);
-	free(UCy);
-	free(UCz);
-	free(UdCx);
-	free(UdCy);
-	free(UdCz);
+	auto& rods = nodeKinematics.rods;
+	for (const auto& rod : rods.structures) {
+		for (unsigned int i = 0; i <= rod->getN(); i++) {
+			const vec pos = rod->getNodePos(i);
+			const auto id = rod->rodId;
+			f(pos,
+			  rods.U[id][i],
+			  rods.Ud[id][i],
+			  rods.zetas[id][i],
+			  nodeKinematics.rodPdyn[id][i]);
+		}
+	}
 
-	LOGDBG << "Done!" << endl;
+	auto& connections = nodeKinematics.connections;
+	for (const auto& conn : connections.structures) {
+		const vec& pos = conn->getPosition();
+		const auto id = conn->connId;
+		real pdyn;
+		f(pos,
+		  connections.U[id][0],
+		  connections.Ud[id][0],
+		  connections.zetas[id][0],
+		  pdyn);
+	}
+
+	auto& bodies = nodeKinematics.bodies;
+	for (const auto& body : bodies.structures) {
+		const vec pos = body->getPosition();
+		const auto id = body->bodyId;
+		real pdyn;
+		f(pos, bodies.U[id][0], bodies.Ud[id][0], bodies.zetas[id][0], pdyn);
+	}
+}
+
+void
+Waves::updateWaves()
+{
+	SeafloorProvider floorProvider{ -env->WtrDpth, seafloor };
+	if (env->waterKinOptions.waveMode == waves::WAVES_EXTERNAL &&
+	    currentKinematics) {
+		// if we have external waves and currents, then we go through and add
+		// together the externally defined wave kinematics with the calculated
+		// current kinematics
+		auto& lines = nodeKin.lines;
+		for (const auto& line : lines.structures) {
+			for (unsigned int i = 0; i <= line->getN(); i++) {
+				const vec pos = line->getNodePos(i);
+				const auto id = line->lineId;
+
+				vec3 curr_U{}, curr_Ud{};
+				currentKinematics->getCurrentKin(pos,
+				                                 _t_integrator->GetTime(),
+				                                 floorProvider,
+				                                 &curr_U,
+				                                 &curr_Ud);
+				lines.U[id][i] = waveKin.lines.U[id][i] + curr_U;
+				lines.Ud[id][i] = waveKin.lines.Ud[id][i] + curr_Ud;
+			}
+		}
+
+		auto& rods = nodeKin.rods;
+		for (const auto& rod : rods.structures) {
+			for (unsigned int i = 0; i <= rod->getN(); i++) {
+				const vec pos = rod->getNodePos(i);
+				const auto id = rod->rodId;
+				vec3 curr_U{}, curr_Ud{};
+				currentKinematics->getCurrentKin(pos,
+				                                 _t_integrator->GetTime(),
+				                                 floorProvider,
+				                                 &curr_U,
+				                                 &curr_Ud);
+				rods.U[id][i] = waveKin.rods.U[id][i] + curr_U;
+				rods.Ud[id][i] = waveKin.rods.Ud[id][i] + curr_Ud;
+			}
+		}
+
+		auto& connections = nodeKin.connections;
+		for (const auto& conn : connections.structures) {
+			const vec& pos = conn->getPosition();
+			const auto id = conn->connId;
+
+			vec3 curr_U{}, curr_Ud{};
+			currentKinematics->getCurrentKin(pos,
+			                                 _t_integrator->GetTime(),
+			                                 floorProvider,
+			                                 &curr_U,
+			                                 &curr_Ud);
+			connections.U[id][0] = waveKin.connections.U[id][0] + curr_U;
+			connections.Ud[id][0] = waveKin.connections.Ud[id][0] + curr_Ud;
+		}
+
+		auto& bodies = nodeKin.bodies;
+		for (const auto& body : bodies.structures) {
+			const vec pos = body->getPosition();
+			const auto id = body->bodyId;
+
+			vec3 curr_U{}, curr_Ud{};
+			currentKinematics->getCurrentKin(pos,
+			                                 _t_integrator->GetTime(),
+			                                 floorProvider,
+			                                 &curr_U,
+			                                 &curr_Ud);
+			bodies.U[id][0] = waveKin.bodies.U[id][0] + curr_U;
+			bodies.Ud[id][0] = waveKin.bodies.Ud[id][0] + curr_Ud;
+		}
+		return;
+	}
+	// if there are both waves and currents, then we calculate and sum
+	if (waveKinematics && currentKinematics) {
+		kinematicsForAllNodes(
+		    nodeKin, [&](vec pos, vec& U, vec& Ud, real& zeta, real& pdyn) {
+			    vec3 wave_U{}, wave_Ud{};
+			    waveKinematics->getWaveKin(pos,
+			                               _t_integrator->GetTime(),
+			                               floorProvider,
+			                               &zeta,
+			                               &wave_U,
+			                               &wave_Ud,
+			                               &pdyn);
+			    vec3 curr_U{}, curr_Ud{};
+			    currentKinematics->getCurrentKin(pos,
+			                                     _t_integrator->GetTime(),
+			                                     floorProvider,
+			                                     &curr_U,
+			                                     &curr_Ud);
+			    U = wave_U + curr_U;
+			    Ud = wave_Ud + curr_Ud;
+		    });
+		return;
+	}
+	// if there are just waves then we just do wave calculations
+	if (waveKinematics) {
+		kinematicsForAllNodes(
+		    nodeKin, [&](vec pos, vec& U, vec& Ud, real& zeta, real& pdyn) {
+			    waveKinematics->getWaveKin(pos,
+			                               _t_integrator->GetTime(),
+			                               floorProvider,
+			                               &zeta,
+			                               &U,
+			                               &Ud,
+			                               &pdyn);
+		    });
+		return;
+	}
+	// if there are just currents then we just do current calculations
+	if (currentKinematics) {
+		kinematicsForAllNodes(
+		    nodeKin, [&](vec pos, vec& U, vec& Ud, real& zeta, real& pdyn) {
+			    currentKinematics->getCurrentKin(
+			        pos, _t_integrator->GetTime(), floorProvider, &U, &Ud);
+		    });
+		return;
+	}
 }
 
 } // ::moordyn
@@ -1307,12 +902,19 @@ MoorDyn_GetWavesKin(MoorDynWaves waves,
                     double U[3],
                     double Ud[3],
                     double* zeta,
-                    double* PDyn)
+                    double* PDyn,
+                    MoorDynSeafloor seafloor)
 {
 	CHECK_WAVES(waves);
-	moordyn::vec u, ud;
-	moordyn::real h, p;
-	((moordyn::Waves*)waves)->getWaveKin(x, y, z, u, ud, h, p);
+	moordyn::vec u{}, ud{};
+	moordyn::real h{}, p{};
+	((moordyn::Waves*)waves)
+	    ->getWaveKin(moordyn::vec3({ x, y, z }),
+	                 h,
+	                 u,
+	                 ud,
+	                 p,
+	                 (moordyn::Seafloor*)seafloor);
 	moordyn::vec2array(u, U);
 	moordyn::vec2array(ud, Ud);
 	*zeta = h;
@@ -1373,7 +975,8 @@ WaveNumber(double Omega, double g, double h)
 		}
 
 		if (Omega < 0)
-			k = -k; // @mth: modified to return negative k for negative Omega
+			k = -k; // @mth: modified to return negative k for negative
+			        // Omega
 		return k;
 	}
 }

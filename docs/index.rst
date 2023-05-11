@@ -19,6 +19,7 @@ MoorDyn v2 - Lumped-Mass Mooring Dynamics
    api_cpp
    wrappers
    troubleshooting
+   waterkinematics
 
 
 Welcome to MoorDyn's (UNDER CONSTRUCTION) online documentation.

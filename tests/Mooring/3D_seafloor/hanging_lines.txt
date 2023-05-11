@@ -6,28 +6,28 @@ TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     Cd
 (name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
 chain       13.332E-3  1.1        7.51E6     -0.5        0        0.0    0.0      0.0     1.0
 ----------------------- POINTS -------------------------------------------------------------------
-Node      Type      X        Y         Z        M        V         CdA   CA
-(-)       (-)      (m)      (m)       (m)      (kg)     (m^3)     (m^2)  (-)
-1 fixed -50 0.0 -16.6 0 0 0 0
-2 free -50 0.0 -26.6 0 0 0 0
-3 fixed -40 0.0 -16.6 0 0 0 0
-4 free -40 0.0 -26.6 0 0 0 0
-5 fixed -30 0.0 -16.6 0 0 0 0
-6 free -30 0.0 -26.6 0 0 0 0
-7 fixed -20 0.0 -16.6 0 0 0 0
-8 free -20 0.0 -26.6 0 0 0 0
-9 fixed -10 0.0 -16.6 0 0 0 0
-10 free -10 0.0 -26.6 0 0 0 0
-11 fixed 0 0.0 -16.6 0 0 0 0
-12 free 0 0.0 -26.6 0 0 0 0
-13 fixed 10 0.0 -16.6 0 0 0 0
-14 free 10 0.0 -26.6 0 0 0 0
-15 fixed 20 0.0 -16.6 0 0 0 0
-16 free 20 0.0 -26.6 0 0 0 0
-17 fixed 30 0.0 -16.6 0 0 0 0
-18 free 30 0.0 -26.6 0 0 0 0
-19 fixed 40 0.0 -16.6 0 0 0 0
-20 free 40 0.0 -26.6 0 0 0 0
+Node      Type      X        Y         Z        M        V         CdA    CA
+(-)       (-)       (m)      (m)       (m)      (kg)     (m^3)     (m^2)  (-)
+1         fixed     -50      0.0       -6.6    0        0         0      0
+2         free      -50      0.0       -16.6    0        0         0      0
+3         fixed     -40      0.0       -6.6    0        0         0      0
+4         free      -40      0.0       -16.6    0        0         0      0
+5         fixed     -30      0.0       -6.6    0        0         0      0
+6         free      -30      0.0       -16.6    0        0         0      0
+7         fixed     -20      0.0       -6.6    0        0         0      0
+8         free      -20      0.0       -16.6    0        0         0      0
+9         fixed     -10      0.0       -6.6    0        0         0      0
+10        free      -10      0.0       -16.6    0        0         0      0
+11        fixed     0        0.0       -6.6    0        0         0      0
+12        free      0        0.0       -16.6    0        0         0      0
+13        fixed     10       0.0       -6.6    0        0         0      0
+14        free      10       0.0       -16.6    0        0         0      0
+15        fixed     20       0.0       -6.6    0        0         0      0
+16        free      20       0.0       -16.6    0        0         0      0
+17        fixed     30       0.0       -6.6    0        0         0      0
+18        free      30       0.0       -16.6    0        0         0      0
+19        fixed     40       0.0       -6.6    0        0         0      0
+20        free      40       0.0       -16.6    0        0         0      0
 -------------------------- LINES -----------------------------------------------------------------
 Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 (-)      (-)       (-)       (-)   (m)         (-)          (-)
@@ -46,10 +46,12 @@ Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 0.00050   dtM          - time step to use in mooring integration
 3.0e6     kb           - bottom stiffness
 3.0e5     cb           - bottom damping
-4000      WtrDpth      - water depth
+30      WtrDpth      - water depth
+Mooring/3D_seafloor/seafloor_profile_3d.txt    SeafloorFile    3D seafloor file path
 4.0       ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
 0.0000015 threshIC     - threshold for IC convergence
 0.0       TmaxIC       - threshold for IC convergence
 0.00001   dtIC         - Time lapse between convergence tests (s)
-0         WaveKin      - No waves
+3             WaveKin              the wave elevations are provided in a grid (-)
+1.0           dtWave               the time step for the waves (s)
 ------------------------- need this line -------------------------------------- 

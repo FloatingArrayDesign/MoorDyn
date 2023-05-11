@@ -195,25 +195,6 @@ class TimeScheme : public io::IO
 		return i;
 	}
 
-	/** @brief Set the external wave kinematics
-	 * @param t Timestamp of the wave kinematics
-	 * @param u Wave velocities
-	 * @param ud Wave accelerations
-	 */
-	inline void SetExtWaves(const real& t,
-	                        const std::vector<vec>& u,
-	                        const std::vector<vec>& ud)
-	{
-		has_ext_waves = true;
-		t_w = t;
-		u_w = u;
-		ud_w = ud;
-	}
-
-	/** @brief Disable the external wave kinematics (default option)
-	 */
-	inline void UnSetExtWaves() { has_ext_waves = false; }
-
 	/** @brief Get the name of the scheme
 	 * @return The name
 	 */
@@ -268,7 +249,6 @@ class TimeScheme : public io::IO
 	 */
 	TimeScheme(moordyn::Log* log)
 	  : io::IO(log)
-	  , has_ext_waves(false)
 	  , name("None")
 	  , t(0.0)
 	{
@@ -289,15 +269,6 @@ class TimeScheme : public io::IO
 	/// The bodies
 	std::vector<Body*> bodies;
 
-	/// External waves
-	bool has_ext_waves;
-	/// time corresponding to the wave kinematics data
-	real t_w;
-	/// array of wave velocity at each of the npW points at time tW
-	std::vector<vec> u_w;
-	/// array of wave acceleration at each of the npW points at time tW
-	std::vector<vec> ud_w;
-
 	/// The scheme name
 	std::string name;
 
@@ -306,6 +277,10 @@ class TimeScheme : public io::IO
 	/// The local time, within the outer time step
 	real t_local;
 };
+
+// Forward declare waves
+class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class TimeSchemeBase Time.hpp
  * @brief A generic abstract integration scheme
@@ -565,14 +540,6 @@ class TimeSchemeBase : public TimeScheme
 		std::vector<uint64_t> data, subdata;
 
 		data.push_back(io::IO::Serialize(t));
-		data.push_back(io::IO::Serialize((int64_t)has_ext_waves));
-		if (has_ext_waves) {
-			data.push_back(io::IO::Serialize(t_w));
-			subdata = io::IO::Serialize(u_w);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-			subdata = io::IO::Serialize(ud_w);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-		}
 
 		// We do not need to save the number of states or derivatives, since
 		// that information is already known by each specific time scheme.
@@ -646,14 +613,6 @@ class TimeSchemeBase : public TimeScheme
 	{
 		uint64_t* ptr = (uint64_t*)data;
 		ptr = io::IO::Deserialize(ptr, t);
-		int64_t ext_waves;
-		ptr = io::IO::Deserialize(ptr, ext_waves);
-		has_ext_waves = (bool)ext_waves;
-		if (has_ext_waves) {
-			ptr = io::IO::Deserialize(ptr, t_w);
-			ptr = io::IO::Deserialize(ptr, u_w);
-			ptr = io::IO::Deserialize(ptr, ud_w);
-		}
 
 		// We did not save the number of states or derivatives, since that
 		// information is already known by each specific time scheme.
@@ -702,9 +661,12 @@ class TimeSchemeBase : public TimeScheme
   protected:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves The simulation waves object, needed so that we can tell it
+	 * about substeps
 	 */
-	TimeSchemeBase(moordyn::Log* log)
+	TimeSchemeBase(moordyn::Log* log, moordyn::WavesRef waves)
 	  : TimeScheme(log)
+	  , waves(waves)
 	{
 	}
 
@@ -716,139 +678,21 @@ class TimeSchemeBase : public TimeScheme
 	 * @see TimeScheme::Next()
 	 * @see TimeScheme::Step()
 	 */
-	void Update(real t_local, unsigned int substep = 0)
-	{
-		ground->updateFairlead(this->t);
-
-		t_local += this->t_local;
-		for (auto obj : bodies) {
-			if (obj->type != Body::COUPLED)
-				continue;
-			obj->updateFairlead(t_local);
-		}
-		for (auto obj : rods) {
-			if ((obj->type != Rod::COUPLED) && (obj->type != Rod::CPLDPIN))
-				continue;
-			obj->updateFairlead(t_local);
-		}
-		for (auto obj : conns) {
-			if (obj->type != Connection::COUPLED)
-				continue;
-			obj->updateFairlead(t_local);
-		}
-		for (auto obj : lines) {
-			obj->updateUnstretchedLength(t_local);
-		}
-
-		// update wave kinematics if applicable
-		if (has_ext_waves) {
-			// extrapolate velocities from accelerations
-			// (in future could extrapolote from most recent two points,
-			// (U_1 and U_2)
-			const real dt = this->t - t_w;
-			const unsigned int n = u_w.size();
-			std::vector<vec> u_extrap;
-			u_extrap.reserve(n);
-			for (unsigned int i = 0; i < n; i++)
-				u_extrap.push_back(u_w[i] + ud_w[i] * dt);
-
-			// distribute to the appropriate objects
-			unsigned int i = 0;
-			for (auto line : lines) {
-				const unsigned int n_line = line->getN() + 1;
-				line->setNodeWaveKin(vector_slice(u_extrap, i, n_line),
-				                     vector_slice(ud_w, i, n_line));
-				i += n_line;
-			}
-		}
-
-		for (unsigned int i = 0; i < bodies.size(); i++) {
-			if (bodies[i]->type != Body::FREE)
-				continue;
-			bodies[i]->setState(r[substep].bodies[i].pos,
-			                    r[substep].bodies[i].vel);
-		}
-
-		for (unsigned int i = 0; i < rods.size(); i++) {
-			if ((rods[i]->type != Rod::PINNED) &&
-			    (rods[i]->type != Rod::CPLDPIN) && (rods[i]->type != Rod::FREE))
-				continue;
-			rods[i]->setTime(this->t);
-			rods[i]->setState(r[substep].rods[i].pos, r[substep].rods[i].vel);
-		}
-
-		for (unsigned int i = 0; i < conns.size(); i++) {
-			if (conns[i]->type != Connection::FREE)
-				continue;
-			conns[i]->setState(r[substep].conns[i].pos,
-			                   r[substep].conns[i].vel);
-		}
-
-		for (unsigned int i = 0; i < lines.size(); i++) {
-			lines[i]->setTime(this->t);
-			lines[i]->setState(r[substep].lines[i].pos,
-			                   r[substep].lines[i].vel);
-		}
-	}
+	void Update(real t_local, unsigned int substep = 0);
 
 	/** @brief Compute the time derivatives and store them
 	 * @param substep The index within moordyn::TimeSchemeBase::rd where the
 	 * info will be saved
 	 */
-	void CalcStateDeriv(unsigned int substep = 0)
-	{
-		for (unsigned int i = 0; i < lines.size(); i++) {
-			std::tie(rd[substep].lines[i].vel, rd[substep].lines[i].acc) =
-			    lines[i]->getStateDeriv();
-		}
-
-		for (unsigned int i = 0; i < conns.size(); i++) {
-			if (conns[i]->type != Connection::FREE)
-				continue;
-			std::tie(rd[substep].conns[i].vel, rd[substep].conns[i].acc) =
-			    conns[i]->getStateDeriv();
-		}
-
-		for (unsigned int i = 0; i < rods.size(); i++) {
-			if ((rods[i]->type != Rod::PINNED) &&
-			    (rods[i]->type != Rod::CPLDPIN) && (rods[i]->type != Rod::FREE))
-				continue;
-			std::tie(rd[substep].rods[i].vel, rd[substep].rods[i].acc) =
-			    rods[i]->getStateDeriv();
-		}
-
-		for (unsigned int i = 0; i < bodies.size(); i++) {
-			if (bodies[i]->type != Body::FREE)
-				continue;
-			std::tie(rd[substep].bodies[i].vel, rd[substep].bodies[i].acc) =
-			    bodies[i]->getStateDeriv();
-		}
-
-		for (auto obj : conns) {
-			if (obj->type != Connection::COUPLED)
-				continue;
-			obj->doRHS();
-		}
-		for (auto obj : rods) {
-			if ((obj->type != Rod::COUPLED) && (obj->type != Rod::CPLDPIN))
-				continue;
-			obj->doRHS();
-		}
-		for (auto obj : bodies) {
-			if (obj->type != Body::COUPLED)
-				continue;
-			obj->doRHS();
-		}
-
-		// call ground body to update all the fixed things
-		ground->setDependentStates(); // NOTE: (not likely needed)
-	}
+	void CalcStateDeriv(unsigned int substep = 0);
 
 	/// The list of states
 	std::array<MoorDynState, NSTATE> r;
 
 	/// The list of state derivatives
 	std::array<DMoorDynStateDt, NDERIV> rd;
+
+	std::shared_ptr<Waves> waves;
 };
 
 /** @class EulerScheme Time.hpp
@@ -863,7 +707,7 @@ class EulerScheme : public TimeSchemeBase<1, 1>
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	EulerScheme(moordyn::Log* log);
+	EulerScheme(moordyn::Log* log, WavesRef waves);
 
 	/// @brief Destructor
 	~EulerScheme() {}
@@ -889,7 +733,7 @@ class HeunScheme : public TimeSchemeBase<1, 2>
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	HeunScheme(moordyn::Log* log);
+	HeunScheme(moordyn::Log* log, WavesRef waves);
 
 	/// @brief Destructor
 	~HeunScheme() {}
@@ -913,7 +757,7 @@ class RK2Scheme : public TimeSchemeBase<2, 1>
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	RK2Scheme(moordyn::Log* log);
+	RK2Scheme(moordyn::Log* log, WavesRef waves);
 
 	/// @brief Destructor
 	~RK2Scheme() {}
@@ -940,7 +784,7 @@ class RK4Scheme : public TimeSchemeBase<5, 4>
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	RK4Scheme(moordyn::Log* log);
+	RK4Scheme(moordyn::Log* log, WavesRef waves);
 
 	/// @brief Destructor
 	~RK4Scheme() {}
@@ -970,7 +814,7 @@ class ABScheme : public TimeSchemeBase<5, 1>
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	ABScheme(moordyn::Log* log);
+	ABScheme(moordyn::Log* log, WavesRef waves);
 
 	/// @brief Destructor
 	~ABScheme() {}
@@ -1044,6 +888,7 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
 	 * method, 1.0 for the backward Euler method
 	 */
 	ImplicitEulerScheme(moordyn::Log* log,
+	                    WavesRef waves,
 	                    unsigned int iters = 10,
 	                    real dt_factor = 0.5);
 
@@ -1075,6 +920,6 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
  * @note Remember to delete the returned time scheme at some point
  */
 TimeScheme*
-create_time_scheme(const std::string& name, moordyn::Log* log);
+create_time_scheme(const std::string& name, moordyn::Log* log, WavesRef waves);
 
 } // ::moordyn

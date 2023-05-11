@@ -31,6 +31,7 @@
 #include "Rod.hpp"
 #include "Rod.h"
 #include "Line.hpp"
+#include "Waves.hpp"
 #include <tuple>
 
 #ifdef USE_VTK
@@ -52,9 +53,10 @@ namespace moordyn {
 //   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] ---
 //   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
 
-Rod::Rod(moordyn::Log* log)
+Rod::Rod(moordyn::Log* log, size_t rodId)
   : io::IO(log)
   , seafloor(nullptr)
+  , rodId(rodId)
 {
 }
 
@@ -117,10 +119,6 @@ Rod::setup(int number_in,
 	// wave things
 	F.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
 	                      // segments) (1 = fully submerged, 0 = out of water)
-	zeta.assign(N + 1, 0.0);           // wave elevation above each node
-	PDyn.assign(N + 1, 0.0);           // dynamic pressure
-	U.assign(N + 1, vec(0., 0., 0.));  // wave velocities
-	Ud.assign(N + 1, vec(0., 0., 0.)); // wave accelerations
 
 	// get Rod axis direction vector and Rod length
 	UnstrLen = unitvector(
@@ -170,10 +168,6 @@ Rod::setup(int number_in,
 		rd[i] = vec::Zero();
 	}
 
-	// set the number of preset wave kinematic time steps to zero (flagging
-	// disabled) to start with
-	ntWater = 0;
-
 	// record output file pointer and channel key-letter list
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 	channels = channels_in;          // copy string of output channels to object
@@ -214,6 +208,8 @@ Rod::removeLine(EndPoints end_point, Line* line)
 		// This is the line's entry in the attachment list
 		line_end_point = it->end_point;
 		lines->erase(it);
+		// TODO Waves - we probably want to clean up the line node wave kin
+		// stores in the waves class
 
 		LOGMSG << "Detached line " << line->number << " from rod " << number
 		       << end_point_name(end_point) << endl;
@@ -300,29 +296,7 @@ Rod::initialize()
 	//	cout << "   Error: water depth is shallower than Line " << number << "
 	// anchor." << endl; 	return;
 
-	// set water kinematics flag based on global wave and current settings (for
-	// now)
-	if ((env->WaveKin == WAVES_FFT_GRID) || (env->WaveKin == WAVES_GRID) ||
-	    (env->WaveKin == WAVES_KIN) || (env->Current == CURRENTS_STEADY_GRID) ||
-	    (env->Current == CURRENTS_DYNAMIC_GRID)) {
-		// water kinematics to be considered through precalculated global grid
-		// stored in Waves object
-		WaterKin = WAVES_GRID;
-	} else if ((env->WaveKin == WAVES_FFT_NODE) ||
-	           (env->WaveKin == WAVES_NODE) ||
-	           (env->Current == CURRENTS_STEADY_NODE) ||
-	           (env->Current == CURRENTS_DYNAMIC_NODE)) {
-		// water kinematics to be considered through precalculated time series
-		// for each node
-		WaterKin = WAVES_EXTERNAL;
-	} else {
-		// no water kinematics to be considered (or to be set externally on each
-		// node)
-		WaterKin = WAVES_NONE;
-		U.assign(N + 1, vec(0.0, 0.0, 0.0));
-		Ud.assign(N + 1, vec(0.0, 0.0, 0.0));
-		F.assign(N + 1, 1.0);
-	}
+	F.assign(N + 1, 1.0);
 
 	// the r6 and v6 vectors should have already been set
 	// r and rd of ends have already been set by setup function or by parent
@@ -382,46 +356,6 @@ Rod::GetRodOutput(OutChanProps outChan)
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
 }
-
-void
-Rod::storeWaterKin(real dt,
-                   std::vector<std::vector<moordyn::real>> zeta_in,
-                   std::vector<std::vector<moordyn::real>> f_in,
-                   std::vector<std::vector<vec>> u_in,
-                   std::vector<std::vector<vec>> ud_in)
-{
-	if ((zeta_in.size() != N + 1) || (f_in.size() != N + 1) ||
-	    (u_in.size() != N + 1) || (ud_in.size() != N + 1)) {
-		LOGERR << "Invalid input length" << endl;
-		throw moordyn::invalid_value_error("Invalid input size");
-	}
-
-	ntWater = zeta_in[0].size();
-	dtWater = dt;
-
-	LOGDBG << "Setting up wave variables for Rod " << number
-	       << "!  ---------------------" << endl
-	       << "   nt=" << ntWater << ", and WaveDT=" << dtWater
-	       << ", env->WtrDpth=" << env->WtrDpth << endl;
-
-	// resize the new time series vectors
-	zetaTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
-	FTS.assign(N + 1, std::vector<moordyn::real>(ntWater, 0.0));
-	UTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
-	UdTS.assign(N + 1, std::vector<vec>(ntWater, vec(0.0, 0.0, 0.0)));
-
-	for (unsigned int i = 0; i < N + 1; i++) {
-		if ((zeta_in[i].size() != N + 1) || (f_in[i].size() != N + 1) ||
-		    (u_in[i].size() != N + 1) || (ud_in[i].size() != N + 1)) {
-			LOGERR << "Invalid input length" << endl;
-			throw moordyn::invalid_value_error("Invalid input size");
-		}
-		zetaTS[i] = zeta_in[i];
-		FTS[i] = f_in[i];
-		u_in[i] = UTS[i];
-		ud_in[i] = UdTS[i];
-	}
-};
 
 void
 Rod::setState(vec6 pos, vec6 vel)
@@ -651,10 +585,10 @@ Rod::getStateDeriv()
 		} else {
 			// Regular rod case, 6DOF
 
-			// For small systems, which are anyway larger than 4x4, we can use the
-			// ColPivHouseholderQR algorithm, which is working with every single
-			// matrix, retaining a very good accuracy, and becoming yet faster
-			// See:
+			// For small systems, which are anyway larger than 4x4, we can use
+			// the ColPivHouseholderQR algorithm, which is working with every
+			// single matrix, retaining a very good accuracy, and becoming yet
+			// faster See:
 			// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 			Eigen::ColPivHouseholderQR<mat6> solver(M_out6);
 			// dxdt = V   (velocities)
@@ -858,51 +792,14 @@ Rod::doRHS()
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
-	if (WaterKin == WAVES_EXTERNAL) {
-		// wave kinematics time series set internally for each node
+	auto [zeta, U, Ud, PDyn] = waves->getWaveKinRod(rodId);
 
-		// =========== obtain (precalculated) wave kinematics at current time
-		// instant ============ get precalculated wave kinematics at
-		// previously-defined node positions for time instant t
+	for (unsigned int i = 0; i <= N; i++) {
+		// >>> add Pd variable for dynamic pressure, which will be applied
+		// on Rod surface
 
-		// get interpolation constant and wave time step index
-		int it = floor(t / dtWater);
-		double frac = remainder(t, dtWater) / dtWater;
-
-		// loop through nodes
-		for (unsigned int i = 0; i <= N; i++) {
-			zeta[i] =
-			    zetaTS[i][it] + frac * (zetaTS[i][it + 1] - zetaTS[i][it]);
-			PDyn[i] = 0.0; // this option is out of date
-			               // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-			F[i] = 1.0;    // FTS[i][it] + frac*(FTS[i][it+1] - FTS[i][it]);
-
-			U[i] = UTS[i][it] + frac * (UTS[i][it + 1] - UTS[i][it]);
-			Ud[i] = UdTS[i][it] + frac * (UdTS[i][it + 1] - UdTS[i][it]);
-		}
-	} else if (WaterKin == WAVES_FFT_GRID) {
-		// wave kinematics interpolated from global grid in Waves object
-		for (unsigned int i = 0; i <= N; i++) {
-			waves->getWaveKin(
-			    r[i][0],
-			    r[i][1],
-			    r[i][2],
-			    U[i],
-			    Ud[i],
-			    zeta[i],
-			    PDyn[i]); // call generic function to get water velocities
-
-			// >>> add Pd variable for dynamic pressure, which will be applied
-			// on Rod surface
-
-			F[i] = 1.0; // set VOF value to one for now (everything submerged -
-			            // eventually this should be element-based!!!) <<<<
-		}
-	} else if (WaterKin != WAVES_NONE) {
-		// Hopefully WaterKin is set to zero, meaning no waves or set
-		// externally, otherwise it's an error
-		LOGERR << "We got a problem with WaterKin?!?!?" << endl;
-		throw moordyn::unhandled_error("Invalid WaterKin");
+		F[i] = 1.0; // set VOF value to one for now (everything submerged -
+		            // eventually this should be element-based!!!) <<<<
 	}
 
 	// >>> remember to check for violated conditions, if there are any... <<<
@@ -914,11 +811,11 @@ Rod::doRHS()
 	if (r[N][2] > r[0][2]) {
 		r_top = r[N];
 		r_bottom = r[0];
-		real zeta_i = zeta[N];
+		zeta_i = zeta[N];
 	} else {
 		r_top = r[0];
 		r_bottom = r[N];
-		real zeta_i = zeta[0];
+		zeta_i = zeta[0];
 	}
 
 	if ((r_bottom[2] < zeta_i) && (r_top[2] > zeta_i)) {
@@ -1348,28 +1245,11 @@ Rod::Serialize(void)
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(F);
 	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(zeta);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(PDyn);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(U);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(Ud);
-	data.insert(data.end(), subdata.begin(), subdata.end());
 	data.push_back(io::IO::Serialize(h0));
 	subdata = io::IO::Serialize(r_ves);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(rd_ves);
 	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(zetaTS);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(FTS);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(UTS);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(UdTS);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	data.push_back(io::IO::Serialize(dtWater));
 
 	return data;
 }
@@ -1402,19 +1282,9 @@ Rod::Deserialize(const uint64_t* data)
 	ptr = io::IO::Deserialize(ptr, B);
 	ptr = io::IO::Deserialize(ptr, Fnet);
 	ptr = io::IO::Deserialize(ptr, F);
-	ptr = io::IO::Deserialize(ptr, zeta);
-	ptr = io::IO::Deserialize(ptr, PDyn);
-	ptr = io::IO::Deserialize(ptr, U);
-	ptr = io::IO::Deserialize(ptr, Ud);
 	ptr = io::IO::Deserialize(ptr, h0);
 	ptr = io::IO::Deserialize(ptr, r_ves);
 	ptr = io::IO::Deserialize(ptr, rd_ves);
-	ptr = io::IO::Deserialize(ptr, zetaTS);
-	ptr = io::IO::Deserialize(ptr, FTS);
-	ptr = io::IO::Deserialize(ptr, UTS);
-	ptr = io::IO::Deserialize(ptr, UdTS);
-	ptr = io::IO::Deserialize(ptr, dtWater);
-	ntWater = zetaTS.size();
 
 	return ptr;
 }

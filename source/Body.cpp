@@ -19,6 +19,7 @@
 #include "Body.h"
 #include "Connection.hpp"
 #include "Rod.hpp"
+#include "Waves.hpp"
 #include <tuple>
 
 #ifdef USE_VTK
@@ -37,10 +38,9 @@ using namespace std;
 
 namespace moordyn {
 
-Body::Body(moordyn::Log* log)
+Body::Body(moordyn::Log* log, size_t id)
   : io::IO(log)
-  , U(vec::Zero())
-  , Ud(vec::Zero())
+  , bodyId(id)
 {
 #ifdef USE_VTK
 	defaultVTK();
@@ -243,8 +243,8 @@ Body::setDependentStates()
 		vec rConnect, rdConnect;
 
 		// Get connection location from rConnectRel for ith connected Connection
-		// and calculate the kinematics of that connection based on the kinematics
-		// of the Body:
+		// and calculate the kinematics of that connection based on the
+		// kinematics of the Body:
 		transformKinematics(rConnectRel[i],
 		                    OrMat,
 		                    r6(Eigen::seqN(0, 3)),
@@ -345,9 +345,11 @@ Body::initiateStep(vec6 r, vec6 rd)
 		r_ves = vec6::Zero();
 		rd_ves = vec6::Zero();
 		return;
+	} else {
+		LOGERR << "Body " << number << "is not of type COUPLED or FIXED."
+		       << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
 	}
-	LOGERR << "Body " << number << "is not of type COUPLED or FIXED." << endl;
-	throw moordyn::invalid_value_error("Invalid body type");
 }
 
 void
@@ -439,8 +441,7 @@ Body::doRHS()
 
 	// env->waves->getU(r6, t, U); // call generic function to get water
 	// velocities <<<<<<<<< all needs updating
-
-	Ud = vec::Zero(); // set water accelerations as zero for now
+	auto [zeta, U, Ud] = waves->getWaveKinBody(bodyId);
 
 	// ------------------------------------------------------------------------------------------
 
@@ -450,7 +451,7 @@ Body::doRHS()
 	// for rotation, this is just the negative of the body's rotation for now
 	// (not allowing flow rotation)
 	vec6 vi = -v6;
-	vi(Eigen::seqN(0, 3)) += U;
+	vi(Eigen::seqN(0, 3)) += U[0];
 
 	// NOTE:, for body this should be fixed to account for orientation!!
 	// what about drag in rotational DOFs???
@@ -542,10 +543,6 @@ Body::Serialize(void)
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(OrMat);
 	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(U);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(Ud);
-	data.insert(data.end(), subdata.begin(), subdata.end());
 
 	return data;
 }
@@ -561,8 +558,6 @@ Body::Deserialize(const uint64_t* data)
 	ptr = io::IO::Deserialize(ptr, F6net);
 	ptr = io::IO::Deserialize(ptr, M);
 	ptr = io::IO::Deserialize(ptr, OrMat);
-	ptr = io::IO::Deserialize(ptr, U);
-	ptr = io::IO::Deserialize(ptr, Ud);
 
 	return ptr;
 }

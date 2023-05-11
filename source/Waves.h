@@ -40,6 +40,8 @@ extern "C"
 {
 #endif
 
+	typedef struct __MoorDynSeafloor* MoorDynSeafloor;
+
 	/** @addtogroup new_c_api
 	 *  @{
 	 */
@@ -67,7 +69,8 @@ extern "C"
 	                                double U[3],
 	                                double Ud[3],
 	                                double* zeta,
-	                                double* PDyn);
+	                                double* PDyn,
+									MoorDynSeafloor seafloor = 0);
 
 	/** @brief Compute the wave number
 	 * @param Omega The wave angular frequency

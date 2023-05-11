@@ -31,6 +31,7 @@
 // This is version 2.a5, 2021-03-16
 
 #include "MoorDyn2.h"
+#include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
 
@@ -56,7 +57,7 @@ const char* UnitList[] = { "(s)     ", "(m)     ", "(m)     ", "(m)     ",
 	                       "(m/s2)  ", "(m/s2)  ", "(N)     ", "(N)     ",
 	                       "(N)     ", "(N)     " };
 
-moordyn::MoorDyn::MoorDyn(const char* infilename)
+moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   : io::IO(NULL)
   , _filepath("Mooring/lines.txt")
   , _basename("lines")
@@ -65,7 +66,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , ICdt(1.0)
   , ICTmax(120.0)
   , ICthresh(0.001)
-  , WaveKinTemp(WAVES_NONE)
+  , WaveKinTemp(waves::WAVES_NONE)
   , dtM0(0.001)
   , dtOut(0.0)
   , _t_integrator(NULL)
@@ -76,10 +77,8 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
   , nX(0)
   , nXtra(0)
   , npW(0)
-  , tW_1(0.0)
-  , tW_2(0.0)
 {
-	SetLogger(new Log());
+	SetLogger(new Log(log_level));
 
 	if (infilename && (strlen(infilename) > 0)) {
 		_filepath = infilename;
@@ -112,14 +111,14 @@ moordyn::MoorDyn::MoorDyn(const char* infilename)
 	env->rho_w = 1025.;
 	env->kb = 3.0e6;
 	env->cb = 3.0e5;
-	env->WaveKin = moordyn::WAVES_NONE;
-	env->Current = moordyn::CURRENTS_NONE;
-	env->dtWave = 0.25;
+	env->waterKinOptions = waves::WaterKinOptions();
 	env->WriteUnits = 1; // by default, write units line
 	env->writeLog = 0;   // by default, don't write out a log file
 	env->FrictionCoefficient = 0.0;
 	env->FricDamp = 200.0;
 	env->StatDynFricScale = 1.0;
+
+	waves = std::make_shared<moordyn::Waves>(_log);
 
 	const moordyn::error_id err = ReadInFile();
 	MOORDYN_THROW(err, "Exception while reading the input file");
@@ -379,7 +378,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
-	env->WaveKin = WaveKinTemp;
+	env->waterKinOptions.waveMode = WaveKinTemp;
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
@@ -391,7 +390,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		if (seafloor) {
 			env->WtrDpth = -seafloor->getAverageDepth();
 		}
-		waves->setup(env, _t_integrator, _basepath.c_str());
+		waves->setup(env, seafloor, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
 	}
 	MOORDYN_CATCHER(err, err_msg);
@@ -440,7 +439,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	return AllOutput(0.0, 0.0);
 }
 
-moordyn::error_id
+moordyn::error_id DECLDIR
 moordyn::MoorDyn::Step(const double* x,
                        const double* xd,
                        double* f,
@@ -503,12 +502,6 @@ moordyn::MoorDyn::Step(const double* x,
 	}
 
 	// -------------------- do time stepping -----------------------
-	if (env->WaveKin == WAVES_EXTERNAL) {
-		// extrapolate velocities from accelerations
-		// (in future could extrapolote from most recent two points,
-		// (U_1 and U_2)
-		_t_integrator->SetExtWaves(tW_1, U_1, Ud_1);
-	}
 	real t_target = dt;
 	real dt_step;
 	_t_integrator->Next();
@@ -568,16 +561,6 @@ MoorDyn::Serialize(void)
 	std::vector<uint64_t> data, subdata;
 
 	data.push_back(io::IO::Serialize((uint64_t)npW));
-	data.push_back(io::IO::Serialize(tW_1));
-	subdata = io::IO::Serialize(U_1);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(Ud_1);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	data.push_back(io::IO::Serialize(tW_2));
-	subdata = io::IO::Serialize(U_2);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(Ud_2);
-	data.insert(data.end(), subdata.begin(), subdata.end());
 
 	// Ask to save the data off all the subinstances
 	subdata = _t_integrator->Serialize();
@@ -593,12 +576,6 @@ MoorDyn::Deserialize(const uint64_t* data)
 	uint64_t n;
 	ptr = io::IO::Deserialize(ptr, n);
 	npW = n;
-	ptr = io::IO::Deserialize(ptr, tW_1);
-	ptr = io::IO::Deserialize(ptr, U_1);
-	ptr = io::IO::Deserialize(ptr, Ud_1);
-	ptr = io::IO::Deserialize(ptr, tW_2);
-	ptr = io::IO::Deserialize(ptr, U_2);
-	ptr = io::IO::Deserialize(ptr, Ud_2);
 
 	// Load the children data also
 	ptr = _t_integrator->Deserialize(ptr);
@@ -687,7 +664,8 @@ moordyn::MoorDyn::ReadInFile()
 	// (connections and rods)
 	LOGDBG << "Creating the ground body of type " << Body::TypeName(Body::FIXED)
 	       << "..." << endl;
-	GroundBody = new Body(_log);
+	// GroundBody always get id of zero
+	GroundBody = new Body(_log, 0);
 	GroundBody->setup(0,
 	                  Body::FIXED,
 	                  vec6::Zero(),
@@ -867,7 +845,7 @@ moordyn::MoorDyn::ReadInFile()
 			       << ConnectionList.size() << endl;
 
 			// now make Connection object!
-			Connection* obj = new Connection(_log);
+			Connection* obj = new Connection(_log, ConnectionList.size());
 			obj->setup(number, type, r0, M, V, F, CdA, Ca);
 			ConnectionList.push_back(obj);
 
@@ -963,7 +941,7 @@ moordyn::MoorDyn::ReadInFile()
 			       << " - of class " << type << " (" << TypeNum << ")"
 			       << " with id " << LineList.size() << endl;
 
-			Line* obj = new Line(_log);
+			Line* obj = new Line(_log, LineList.size());
 			obj->setup(number,
 			           LinePropList[TypeNum],
 			           UnstrLen,
@@ -1343,7 +1321,7 @@ moordyn::MoorDyn::ReadInFile()
 	string err_msg;
 	if (!_t_integrator) {
 		try {
-			_t_integrator = create_time_scheme("RK2", _log);
+			_t_integrator = create_time_scheme("RK2", _log, waves);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -1363,7 +1341,6 @@ moordyn::MoorDyn::ReadInFile()
 		_t_integrator->AddLine(obj);
 
 	// Setup the waves and populate them
-	waves = std::make_shared<moordyn::Waves>(_log);
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
@@ -1373,7 +1350,7 @@ moordyn::MoorDyn::ReadInFile()
 		if (seafloor) {
 			env->WtrDpth = -seafloor->getAverageDepth();
 		}
-		waves->setup(env, _t_integrator, _basepath.c_str());
+		waves->setup(env, seafloor, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
 	}
 	MOORDYN_CATCHER(err, err_msg);
@@ -1381,14 +1358,23 @@ moordyn::MoorDyn::ReadInFile()
 		return err;
 
 	GroundBody->setEnv(env, waves);
-	for (auto obj : BodyList)
+	waves->addBody(GroundBody);
+	for (auto obj : BodyList) {
 		obj->setEnv(env, waves);
-	for (auto obj : RodList)
+		waves->addBody(obj);
+	}
+	for (auto obj : RodList) {
 		obj->setEnv(env, waves, seafloor);
-	for (auto obj : ConnectionList)
+		waves->addRod(obj);
+	}
+	for (auto obj : ConnectionList) {
 		obj->setEnv(env, waves, seafloor);
-	for (auto obj : LineList)
+		waves->addConn(obj);
+	}
+	for (auto obj : LineList) {
 		obj->setEnv(env, waves, seafloor);
+		waves->addLine(obj);
+	}
 
 	return MOORDYN_SUCCESS;
 }
@@ -1634,7 +1620,8 @@ moordyn::MoorDyn::readBody(string inputText)
 		return nullptr;
 	}
 
-	Body* obj = new Body(_log);
+	// id = size + 1 because of ground body, which has an Id of zero
+	Body* obj = new Body(_log, BodyList.size() + 1);
 	LOGDBG << "\t'" << number << "'"
 	       << " - of type " << Body::TypeName(type) << " with id "
 	       << BodyList.size() << endl;
@@ -1767,7 +1754,7 @@ moordyn::MoorDyn::readRod(string inputText)
 	       << " and type " << Rod::TypeName(type) << " with id "
 	       << RodList.size() << endl;
 
-	Rod* obj = new Rod(_log);
+	Rod* obj = new Rod(_log, RodList.size());
 	obj->setup(number,
 	           type,
 	           RodPropList[TypeNum],
@@ -1813,7 +1800,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			_t_integrator = create_time_scheme(entries[0], _log);
+			_t_integrator = create_time_scheme(entries[0], _log, waves);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -1839,15 +1826,27 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 	else if ((name == "threshIC") || (name == "ICthresh"))
 		ICthresh = atof(entries[0].c_str());
 	else if (name == "WaveKin") {
-		WaveKinTemp = (moordyn::waves_settings)atoi(entries[0].c_str());
-		if ((WaveKinTemp < WAVES_NONE) || (WaveKinTemp > WAVES_KIN))
+		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
+		if ((WaveKinTemp < waves::WAVES_NONE) ||
+		    (WaveKinTemp > waves::WAVES_SUM_COMPONENTS_NODE))
 			LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
 	} else if (name == "dtWave")
-		env->dtWave = atoi(entries[0].c_str());
+		env->waterKinOptions.dtWave = stof(entries[0]);
 	else if (name == "Currents") {
-		env->Current = (moordyn::currents_settings)atoi(entries[0].c_str());
-		if ((env->Current < CURRENTS_NONE) || (env->Current > CURRENTS_4D))
-			LOGWRN << "Unknown Currents option value " << env->Current << endl;
+		auto current_mode = (waves::currents_settings)stoi(entries[0]);
+		env->waterKinOptions.currentMode = current_mode;
+		if ((current_mode < waves::CURRENTS_NONE) ||
+		    (current_mode > waves::CURRENTS_4D))
+			LOGWRN << "Unknown Currents option value " << current_mode << endl;
+	} else if (name == "UnifyCurrentGrid") {
+		if (entries[0] == "1") {
+			env->waterKinOptions.unifyCurrentGrid = true;
+		} else if (entries[0] == "0") {
+			env->waterKinOptions.unifyCurrentGrid = false;
+		} else {
+			LOGWRN << "Unrecognized UnifyCurrentGrid value "
+			       << std::quoted(entries[1]) << ". Should be 0 or 1" << endl;
+		}
 	} else if (name == "WriteUnits")
 		env->WriteUnits = atoi(entries[0].c_str());
 	else if (name == "FrictionCoefficient")
@@ -1864,8 +1863,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
 		std::string filepath = entries[0];
 		this->seafloor->setup(env, filepath);
-	}
-	else
+	} else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 
@@ -1915,7 +1913,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	ConnectStateIs.push_back(nX);
 
 	// now make Connection object!
-	Connection* obj = new Connection(_log);
+	Connection* obj = new Connection(_log, ConnectionList.size());
 	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
 	obj->setEnv(env, waves, seafloor);
 	ConnectionList.push_back(obj);
@@ -1952,6 +1950,9 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 moordyn::error_id
 moordyn::MoorDyn::AllOutput(double t, double dt)
 {
+	if (env->writeLog == 0)
+		return MOORDYN_SUCCESS;
+
 	if (dtOut > 0)
 		if (t < (floor((t - dt) / dtOut) + 1.0) * dtOut)
 			return MOORDYN_SUCCESS;
@@ -2110,12 +2111,12 @@ MoorDyn_GetWaves(MoorDyn system)
 	return (MoorDynWaves)(((moordyn::MoorDyn*)system)->GetWaves().get());
 }
 
-MoorDynSeafloor DECLDIR MoorDyn_GetSeafloor(MoorDyn system) 
+MoorDynSeafloor DECLDIR
+MoorDyn_GetSeafloor(MoorDyn system)
 {
 	if (!system)
 		return NULL;
 	return (MoorDynSeafloor)(((moordyn::MoorDyn*)system)->GetSeafloor().get());
-	
 }
 
 int DECLDIR

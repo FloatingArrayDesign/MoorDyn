@@ -41,7 +41,6 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
-#include "Waves.hpp"
 #include <vector>
 #include <utility>
 
@@ -53,6 +52,9 @@
 using namespace std;
 
 namespace moordyn {
+
+class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 class Connection;
 class Rod;
@@ -76,7 +78,7 @@ class Body : public io::IO
 	/** @brief Costructor
 	 * @param log Logging handler defining where/how results should be logged.
 	 */
-	Body(moordyn::Log* log);
+	Body(moordyn::Log* log, size_t id);
 
 	/** @brief Destructor
 	 */
@@ -140,11 +142,6 @@ class Body : public io::IO
 	/// orientation)
 	mat OrMat;
 
-	/// wave velocity at body reference point
-	vec U;
-	/// wave acceleration at body reference point 
-	vec Ud;
-
 	/// Pointer to moordyn::MoorDyn::outfileMain
 	ofstream* outfile;
 
@@ -181,12 +178,14 @@ class Body : public io::IO
 	}
 
 	/// Body ID
+	size_t bodyId;
+	/// Body number
 	int number;
 	/// Type of body
 	types type;
 
 	/** @brief Setup/initialize a rigid body. Called after instantiating a new Body in MoorDyn2.cpp
-	 * @param number Body ID
+	 * @param number Body number
 	 * @param type Body type
 	 * @param r6 6dof position
 	 * @param rCG Center of gravity position

@@ -7,7 +7,7 @@ x = np.linspace(-450.0, 50.0, num=501)
 y = np.linspace(-2.0, 2.0, num=5)
 z = np.linspace(-51.0, 5.0, num=57)
 t = np.linspace(0.0, 15.0, num=101)
-zeta = A * np.sin(2.0 * np.pi * t / T)
+zeta = A * np.sin(4.0 * 2.0 * np.pi * t / T)
 
 with open('water_grid.txt', 'w') as f:
     f.write('--------------------- MoorDyn Waves grid File ----------------------------------\n')

@@ -37,7 +37,6 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
-#include "Waves.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -50,6 +49,8 @@ using namespace std;
 namespace moordyn {
 
 class Line;
+class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Connection Connection.hpp
  * @brief A connection for a line endpoint
@@ -59,8 +60,8 @@ class Line;
  *
  *  - Fixed: The point is fixed, either to a unmovable point (i.e. an anchor
  *           or to a Body
- *  - Free: The point freely moves, with its own translational degrees of freedom,
- *          to provide a connection point between multiple mooring lines or an
+ *  - Free: The point freely moves, with its own translational degrees of
+ * freedom, to provide a connection point between multiple mooring lines or an
  *          unconnected termination point of a Line, which could have a clump
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The connection position and velocity is externally imposed
@@ -71,7 +72,7 @@ class Connection : public io::IO
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	Connection(moordyn::Log* log);
+	Connection(moordyn::Log* log, size_t id);
 
 	/** @brief Destructor
 	 */
@@ -140,23 +141,6 @@ class Connection : public io::IO
 	/// node mass + added mass matrices
 	mat M;
 
-	/** @defgroup conn_wave Wave data
-	 *  @{
-	 */
-
-	/// free surface elevation
-	real zeta;
-	/// dynamic pressure
-	real PDyn;
-	/// wave velocities
-	vec U;
-	/// wave accelerations
-	vec Ud;
-
-	/**
-	 * @}
-	 */
-
   public:
 	/** @brief Types of connections
 	 */
@@ -193,18 +177,12 @@ class Connection : public io::IO
 	}
 
 	/// Connection ID
+	size_t connId;
+
+	/// Connection number
 	int number;
 	/// Connection type
 	types type;
-
-	/** @brief flag indicating whether wave/current kinematics will be
-	 * considered for this Connection. 
-	 *
-	 * - 0: none, or use value set externally for each node of the object
-	 * - 1: interpolate from stored
-	 * - 2: call interpolation function from global Waves grid
-	 */
-	int WaterKin;
 
 	/** @brief Setup the connection
 	 *
@@ -254,6 +232,7 @@ class Connection : public io::IO
 	 */
 	std::pair<vec, vec> initialize();
 
+	inline const vec& getPosition() const { return r; }
 	/** @brief Get the connection state
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
@@ -290,7 +269,9 @@ class Connection : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
+	void setEnv(EnvCondRef env_in,
+	            moordyn::WavesRef waves_in,
+	            moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Multiply the drag by a factor
 	 *

@@ -16,8 +16,8 @@ Node      Type      X        Y         Z        M        V         CdA   CA
 2         free      18       5         -40      0        0         0     0
 -------------------------- LINES -----------------------------------------------------------------
 Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
-(-)      (-)       (-)       (-)   (m)         (-)          (-)
-1        chain    1         2      30        30          p,t
+(-)      (-)       (-)       (-)    (m)         (-)          (-)
+1        chain     1         2      30          30           ptUD
 -------------------------- SOLVER OPTIONS----------------------------------------------------------
 2         writeLog     - Write a log file
 1.0e-4    dtM          - time step to use in mooring integration

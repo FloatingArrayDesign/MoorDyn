@@ -13,7 +13,12 @@ set(MOORDYN_SRCS
     Waves.cpp
     kiss_fft.cpp
     kiss_fftr.cpp
-    Seafloor.cpp)
+    Seafloor.cpp
+    Waves/WaveSpectrum.cpp
+    Waves/SpectrumKin.cpp
+    Waves/WaveOptions.cpp
+    Waves/WaveGrid.cpp
+    )
 
 set(MOORDYN_HEADERS
     Body.hpp
@@ -38,6 +43,11 @@ set(MOORDYN_HEADERS
     Waves.h
     Seafloor.hpp
     Seafloor.h
+    Waves/WaveSpectrum.hpp
+    Waves/SpectrumKin.hpp
+    Waves/WaveOptions.hpp
+    Waves/WaveGrid.hpp
+    Util/Interp.hpp
 )
 
 set(MOORDYN_PUBLIC_DEPS "")
@@ -47,6 +57,8 @@ if(USE_VTK)
                                     VTK::IOXML
                                     VTK::IOGeometry
                                     VTK::FiltersGeneral)
+    list(APPEND MOORDYN_HEADERS Util/VTK_Util.hpp)
+    list(APPEND MOORDYN_SRCS Util/VTK_Util.cpp)
 endif()
 if(EXTERNAL_EIGEN)
     list(APPEND MOORDYN_PUBLIC_DEPS Eigen3::Eigen)
@@ -57,6 +69,8 @@ configure_file(Config.h.in ${CMAKE_BINARY_DIR}/Config.h)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 add_library(moordyn SHARED ${MOORDYN_SRCS})
 set_property(TARGET moordyn PROPERTY VERSION ${MOORDYN_VERSION})
 set_property(TARGET moordyn PROPERTY SOVERSION ${MOORDYN_MAJOR_VERSION})
@@ -65,7 +79,10 @@ set_property(TARGET moordyn PROPERTY
 set_property(TARGET moordyn APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING moordyn_MAJOR_VERSION
 )
-
+if(${CMAKE_VERSION} VERSION_GREATER "3.15") 
+  message("Using Precompiled Headers!")
+  target_precompile_headers(moordyn PRIVATE Misc.hpp)
+endif()
 target_compile_definitions(moordyn PUBLIC MoorDyn_EXPORTS)
 target_link_libraries(moordyn PUBLIC ${MOORDYN_PUBLIC_DEPS})
 

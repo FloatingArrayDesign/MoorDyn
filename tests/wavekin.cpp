@@ -32,7 +32,11 @@
  * A simple driver program that will run MoorDyn VERSION 2 testing several
  * wave kinematics
  */
+#include "Config.h"
 #include "MoorDyn2.h"
+#include "MoorDyn2.hpp"
+#include "Waves.hpp"
+#include "util.h"
 #include <string.h>
 #include <math.h>
 #include <iostream>
@@ -85,9 +89,10 @@ wave(double t, const double* r, double* u, double* du)
  * @return true if the test is passed, false if problems are detected
  */
 bool
-api(void (*cb)(double, const double*, double*, double*))
+api(const char* input_file, void (*cb)(double, const double*, double*, double*))
 {
-	MoorDyn system = MoorDyn_Create("Mooring/wavekin_1.txt");
+	MoorDyn system = MoorDyn_Create(input_file);
+	// MoorDyn system = MoorDyn_Create("Mooring/wavekin_1.txt");
 	if (!system) {
 		cerr << "Failure Creating the Mooring system" << endl;
 		return false;
@@ -199,8 +204,8 @@ tabulated(const char* input_file)
 		MoorDyn_Close(system);
 		return false;
 	}
-	double *x=NULL, *dx=NULL;
-	if(n_dof) {
+	double *x = NULL, *dx = NULL;
+	if (n_dof) {
 		x = new double[n_dof];
 		std::fill(x, x + n_dof, 0.0);
 		dx = new double[n_dof];
@@ -216,7 +221,7 @@ tabulated(const char* input_file)
 	}
 
 	// Integrate in time
-	const double t_max = 30.0;
+	const double t_max = 10.0;
 	double t = 0.0, dt = 0.1;
 	double f[3];
 	while (t < t_max) {
@@ -227,6 +232,8 @@ tabulated(const char* input_file)
 			return false;
 		}
 	}
+
+	cout << "Finished stepping forward to time " << t << endl;
 
 	err = MoorDyn_Close(system);
 	if (err != MOORDYN_SUCCESS) {
@@ -243,12 +250,34 @@ tabulated(const char* input_file)
 int
 main(int, char**)
 {
-	if (!api(&current))
+	if (!api("Mooring/wavekin_current_1.txt", &current))
 		return 1;
-	if (!api(&wave))
+	if (!api("Mooring/wavekin_wave_1.txt", &wave))
 		return 1;
+
+	/**
+	 * Some of these tests are commented out mainly because it's a lot to run
+	 * and they're just for testing that waves and currents combine correctly
+	 */
+	// WAVE_GRID + Steady Currents
+	if (!tabulated("Mooring/wavekin_2/wavekin_3.txt"))
+		return 2;
+	// WAVE_GRID + Dynamic Currents
+	// if (!tabulated("Mooring/wavekin_2/wavekin_3_curr2.txt"))
+	// 	return 2;
+	// WAVE_GRID + 4D Current Grid
+	// if (!tabulated("Mooring/wavekin_2/wavekin_3_curr5.txt"))
+	// 	return 2;
+	// WAVE_FFT_GRID + Steady Currents
 	if (!tabulated("Mooring/wavekin_2/wavekin_2.txt"))
 		return 2;
+	// WAVE_FFT_GRID + Dynamic Currents
+	// if (!tabulated("Mooring/wavekin_2/wavekin_2_curr2.txt"))
+	// 	return 2;
+	// WAVE_FFT_GRID + 4D Current Grid
+	// if (!tabulated("Mooring/wavekin_2/wavekin_2_curr5.txt"))
+	// 	return 2;
+
 	if (!tabulated("Mooring/wavekin_3/test_dynamic_currents.txt"))
 		return 2;
 

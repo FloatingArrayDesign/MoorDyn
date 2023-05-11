@@ -31,16 +31,16 @@ Node      Type      X        Y         Z        M        V         CdA   CA
 -------------------------- LINES -----------------------------------------------------------------
 Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 (-)      (-)       (-)       (-)   (m)         (-)          (-)
-1 chain 1 2 10 10 p,t
-2 chain 3 4 10 10 p,t
-3 chain 5 6 10 10 p,t
-4 chain 7 8 10 10 p,t
-5 chain 9 10 10 10 p,t
-6 chain 11 12 10 10 p,t
-7 chain 13 14 10 10 p,t
-8 chain 15 16 10 10 p,t
-9 chain 17 18 10 10 p,t
-10 chain 19 20 10 10 p,t
+1 chain 1 2 10 10 p,tUD
+2 chain 3 4 10 10 p,tUD
+3 chain 5 6 10 10 p,tUD
+4 chain 7 8 10 10 p,tUD
+5 chain 9 10 10 10 p,tUD
+6 chain 11 12 10 10 p,tUD
+7 chain 13 14 10 10 p,tUD
+8 chain 15 16 10 10 p,tUD
+9 chain 17 18 10 10 p,tUD
+10 chain 19 20 10 10 p,tUD
 -------------------------- SOLVER OPTIONS----------------------------------------------------------
 2         writeLog     - Write a log file
 0.00050   dtM          - time step to use in mooring integration

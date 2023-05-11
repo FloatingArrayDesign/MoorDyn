@@ -29,14 +29,120 @@
  */
 
 #include "Time.hpp"
+#include "Waves.hpp"
 #include <sstream>
 
 using namespace std;
 
 namespace moordyn {
 
-EulerScheme::EulerScheme(moordyn::Log* log)
-  : TimeSchemeBase(log)
+template<unsigned int NSTATE, unsigned int NDERIV>
+void
+TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
+{
+	ground->updateFairlead(this->t);
+
+	t_local += this->t_local;
+	for (auto obj : bodies) {
+		if (obj->type != Body::COUPLED)
+			continue;
+		obj->updateFairlead(t_local);
+	}
+	for (auto obj : rods) {
+		if ((obj->type != Rod::COUPLED) && (obj->type != Rod::CPLDPIN))
+			continue;
+		obj->updateFairlead(t_local);
+	}
+	for (auto obj : conns) {
+		if (obj->type != Connection::COUPLED)
+			continue;
+		obj->updateFairlead(t_local);
+	}
+	for (auto obj : lines) {
+		obj->updateUnstretchedLength(t_local);
+	}
+
+	for (unsigned int i = 0; i < bodies.size(); i++) {
+		if (bodies[i]->type != Body::FREE)
+			continue;
+		bodies[i]->setState(r[substep].bodies[i].pos, r[substep].bodies[i].vel);
+	}
+
+	for (unsigned int i = 0; i < rods.size(); i++) {
+		if ((rods[i]->type != Rod::PINNED) && (rods[i]->type != Rod::CPLDPIN) &&
+		    (rods[i]->type != Rod::FREE))
+			continue;
+		rods[i]->setTime(this->t);
+		rods[i]->setState(r[substep].rods[i].pos, r[substep].rods[i].vel);
+	}
+
+	for (unsigned int i = 0; i < conns.size(); i++) {
+		if (conns[i]->type != Connection::FREE)
+			continue;
+		conns[i]->setState(r[substep].conns[i].pos, r[substep].conns[i].vel);
+	}
+
+	for (unsigned int i = 0; i < lines.size(); i++) {
+		lines[i]->setTime(this->t);
+		lines[i]->setState(r[substep].lines[i].pos, r[substep].lines[i].vel);
+	}
+}
+
+template<unsigned int NSTATE, unsigned int NDERIV>
+void
+TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
+{
+	waves->updateWaves();
+
+	for (unsigned int i = 0; i < lines.size(); i++) {
+		std::tie(rd[substep].lines[i].vel, rd[substep].lines[i].acc) =
+		    lines[i]->getStateDeriv();
+	}
+
+	for (unsigned int i = 0; i < conns.size(); i++) {
+		if (conns[i]->type != Connection::FREE)
+			continue;
+		std::tie(rd[substep].conns[i].vel, rd[substep].conns[i].acc) =
+		    conns[i]->getStateDeriv();
+	}
+
+	for (unsigned int i = 0; i < rods.size(); i++) {
+		if ((rods[i]->type != Rod::PINNED) && (rods[i]->type != Rod::CPLDPIN) &&
+		    (rods[i]->type != Rod::FREE))
+			continue;
+		std::tie(rd[substep].rods[i].vel, rd[substep].rods[i].acc) =
+		    rods[i]->getStateDeriv();
+	}
+
+	for (unsigned int i = 0; i < bodies.size(); i++) {
+		if (bodies[i]->type != Body::FREE)
+			continue;
+		std::tie(rd[substep].bodies[i].vel, rd[substep].bodies[i].acc) =
+		    bodies[i]->getStateDeriv();
+	}
+
+	for (auto obj : conns) {
+		if (obj->type != Connection::COUPLED)
+			continue;
+		obj->doRHS();
+	}
+	for (auto obj : rods) {
+		if ((obj->type != Rod::COUPLED) && (obj->type != Rod::CPLDPIN))
+			continue;
+		obj->doRHS();
+	}
+	for (auto obj : bodies) {
+		if (obj->type != Body::COUPLED)
+			continue;
+		obj->doRHS();
+	}
+
+	// call ground body to update all the fixed things
+	ground->setDependentStates(); // NOTE: (not likely needed)
+}
+
+EulerScheme::EulerScheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : TimeSchemeBase(log, waves)
 {
 	name = "1st order Euler";
 }
@@ -52,8 +158,8 @@ EulerScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
-HeunScheme::HeunScheme(moordyn::Log* log)
-  : TimeSchemeBase(log)
+HeunScheme::HeunScheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : TimeSchemeBase(log, waves)
 {
 	name = "2nd order Heun";
 }
@@ -75,8 +181,8 @@ HeunScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
-RK2Scheme::RK2Scheme(moordyn::Log* log)
-  : TimeSchemeBase(log)
+RK2Scheme::RK2Scheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : TimeSchemeBase(log, waves)
 {
 	name = "2nd order Runge-Kutta";
 }
@@ -100,8 +206,8 @@ RK2Scheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
-RK4Scheme::RK4Scheme(moordyn::Log* log)
-  : TimeSchemeBase(log)
+RK4Scheme::RK4Scheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : TimeSchemeBase(log, waves)
 {
 	name = "4th order Runge-Kutta";
 }
@@ -139,8 +245,8 @@ RK4Scheme::Step(real& dt)
 }
 
 template<unsigned int order>
-ABScheme<order>::ABScheme(moordyn::Log* log)
-  : TimeSchemeBase(log)
+ABScheme<order>::ABScheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : TimeSchemeBase(log, waves)
   , n_steps(0)
 {
 	stringstream s;
@@ -192,9 +298,10 @@ ABScheme<order>::Step(real& dt)
 }
 
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
+                                         moordyn::WavesRef waves,
                                          unsigned int iters,
                                          real dt_factor)
-  : TimeSchemeBase(log)
+  : TimeSchemeBase(log, waves)
   , _iters(iters)
   , _dt_factor(dt_factor)
 {
@@ -221,27 +328,29 @@ ImplicitEulerScheme::Step(real& dt)
 }
 
 TimeScheme*
-create_time_scheme(const std::string& name, moordyn::Log* log)
+create_time_scheme(const std::string& name,
+                   moordyn::Log* log,
+                   moordyn::WavesRef waves)
 {
 	TimeScheme* out = NULL;
 	if (str::lower(name) == "euler") {
-		out = new EulerScheme(log);
+		out = new EulerScheme(log, waves);
 	} else if (str::lower(name) == "heun") {
-		out = new HeunScheme(log);
+		out = new HeunScheme(log, waves);
 	} else if (str::lower(name) == "rk2") {
-		out = new RK2Scheme(log);
+		out = new RK2Scheme(log, waves);
 	} else if (str::lower(name) == "rk4") {
-		out = new RK4Scheme(log);
+		out = new RK4Scheme(log, waves);
 	} else if (str::lower(name) == "ab2") {
-		out = new ABScheme<2>(log);
+		out = new ABScheme<2>(log, waves);
 	} else if (str::lower(name) == "ab3") {
-		out = new ABScheme<3>(log);
+		out = new ABScheme<3>(log, waves);
 	} else if (str::lower(name) == "ab4") {
-		out = new ABScheme<4>(log);
+		out = new ABScheme<4>(log, waves);
 	} else if (str::startswith(str::lower(name), "beuler")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(6));
-			out = new ImplicitEulerScheme(log, iters, 1.0);
+			out = new ImplicitEulerScheme(log, waves, iters, 1.0);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Backward Euler name format '" << name << "'";
@@ -250,7 +359,7 @@ create_time_scheme(const std::string& name, moordyn::Log* log)
 	} else if (str::startswith(str::lower(name), "midpoint")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(8));
-			out = new ImplicitEulerScheme(log, iters, 0.5);
+			out = new ImplicitEulerScheme(log, waves, iters, 0.5);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Midpoint name format '" << name << "'";
