@@ -101,9 +101,10 @@ additional tools, so after running "MSYS MinGW 64-bit", please type
 the following command
 
 .. code-block:: bash
-pacman -S 
 
-  pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip mingw64/mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb mingw-w64-x86_64-cmake
+   pacman -S 
+
+   pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip mingw64/mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb mingw-w64-x86_64-cmake
 
 Now we need to make the MinGW stack available across the whole system by adding
 it to the PATH environment variable.

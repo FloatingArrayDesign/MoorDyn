@@ -12,15 +12,16 @@ zeta = A * np.sin(2.0 * np.pi * t / T)
 
 # Define a current that increases in X dimension, pointing along the positive x-axis
 # Doesn't vary current in any other dimension.
-xx, yy, zz, tt = np.meshgrid(x,y,z,t)
-ux = 0.1 * xx
+xx, yy, zz, tt = np.meshgrid(x, y, z, t)
+ux = 0.1 * xx + 0.1 * t
 uy = 0.0 * yy
-uz = 0.0 * zz
+uz = 0.05 * zz
 
 with open('water_grid.txt', 'w') as f:
     f.write('--------------------- MoorDyn Waves grid File ----------------------------------\n')
     f.write('List of grid points, in 3 blocks (x, y, z)\n')
-    f.write('Each block starts with a 2 (i.e. list of coords), and then th coordinates (m)\n')
+    f.write(
+        'Each block starts with a 2 (i.e. list of coords), and then th coordinates (m)\n')
     for l in (x, y, z):
         txt = '1\n'
         for p in l:
@@ -30,7 +31,7 @@ with open('water_grid.txt', 'w') as f:
 with open('current_profile_4d.txt', 'w') as f:
     # First line is number of (x,y,z,t) coords
     f.write(f"{len(x)} {len(y)} {len(z)} {len(t)}\n")
-    
+
     # Next four lines specify the axis (tick) values for x, y, z, t respectively
     for xx in x:
         f.write(f"{xx} ")
@@ -54,4 +55,5 @@ with open('current_profile_4d.txt', 'w') as f:
         for idy, ys in enumerate(y):
             for idz, zs in enumerate(z):
                 for idt, ts in enumerate(t):
-                    f.write(f"{xs} {ys} {zs} {ts} {ux[idy][idx][idz][idt]:.6g} {uy[idy][idx][idz][idt]} {uy[idy][idx][idz][idt]}\n")
+                    f.write(
+                        f"{xs} {ys} {zs} {ts} {ux[idy][idx][idz][idt]:.6g} {uy[idy][idx][idz][idt]} {uy[idy][idx][idz][idt]}\n")

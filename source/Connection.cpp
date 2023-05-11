@@ -31,6 +31,7 @@
 #include "Connection.hpp"
 #include "Connection.h"
 #include "Line.hpp"
+#include "Waves.hpp"
 #include <tuple>
 
 #ifdef USE_VTK
@@ -44,10 +45,10 @@
 
 namespace moordyn {
 
-Connection::Connection(moordyn::Log* log)
+Connection::Connection(moordyn::Log* log, size_t id)
   : io::IO(log)
   , seafloor(nullptr)
-  , WaterKin(0)
+  , connId(id)
 {
 }
 
@@ -128,9 +129,6 @@ Connection::initialize()
 {
 	// the default is for no water kinematics to be considered (or to be set
 	// externally on each node)
-	WaterKin = 0;
-	U = vec::Zero();
-	Ud = vec::Zero();
 
 	vec pos = vec::Zero();
 	vec vel = vec::Zero();
@@ -151,17 +149,6 @@ Connection::initialize()
 			       << "." << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
 		}
-
-		// set water kinematics flag based on global wave and current settings
-		// (for now)
-		if ((env->WaveKin == 2) || (env->WaveKin == 3) || (env->WaveKin == 6) ||
-		    (env->Current == 1) || (env->Current == 2))
-			WaterKin = 2; // water kinematics to be considered through
-			              // precalculated global grid stored in Waves object
-		else if ((env->WaveKin == 4) || (env->WaveKin == 5) ||
-		         (env->Current == 3) || (env->Current == 4))
-			WaterKin = 1; // water kinematics to be considered through
-			              // precalculated time series for each node
 	}
 
 	LOGDBG << "   Initialized Connection " << number << endl;
@@ -213,7 +200,9 @@ Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 void
-Connection::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in)
+Connection::setEnv(EnvCondRef env_in,
+                   moordyn::WavesRef waves_in,
+                   moordyn::SeafloorRef seafloor_in)
 {
 	env = env_in;     // set pointer to environment settings object
 	waves = waves_in; // set pointer to Waves  object
@@ -368,31 +357,15 @@ Connection::doRHS()
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
+	auto [zeta, U, Ud] = waves->getWaveKinConn(connId);
 	// env->waves->getU(r, t, U); // call generic function to get water
 	// velocities  <<<<<<<<<<<<<<<< all needs updating
-
-	// set water accelerations as zero for now
-	Ud = { 0.0, 0.0, 0.0 };
-
-	if (WaterKin == 1) {
-		// wave kinematics time series set internally for each node
-		LOGWRN << "unsupported connection kinematics option"
-		       << __PRETTY_FUNC_NAME__ << endl;
-		// TBD
-	} else if (WaterKin == 2) {
-		// wave kinematics interpolated from global grid in Waves object
-		waves->getWaveKin(r[0], r[1], r[2], U, Ud, zeta, PDyn);
-	} else if (WaterKin != 0) {
-		LOGERR << "ERROR: We got a problem with WaterKin not being 0,1,2."
-		       << endl;
-		return MOORDYN_INVALID_VALUE;
-	}
 
 	// --------------------------------- hydrodynamic loads
 	// ----------------------------------
 
 	// viscous drag calculation
-	const vec vi = U - rd; // relative water velocity
+	const vec vi = U[0] - rd; // relative water velocity
 	const vec dir = vi.normalized();
 	Fnet += 0.5 * env->rho_w * dir * vi.squaredNorm() * conCdA;
 
@@ -431,12 +404,6 @@ Connection::Serialize(void)
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(M);
 	data.insert(data.end(), subdata.begin(), subdata.end());
-	data.push_back(io::IO::Serialize(zeta));
-	data.push_back(io::IO::Serialize(PDyn));
-	subdata = io::IO::Serialize(U);
-	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(Ud);
-	data.insert(data.end(), subdata.begin(), subdata.end());
 
 	return data;
 }
@@ -451,10 +418,6 @@ Connection::Deserialize(const uint64_t* data)
 	ptr = io::IO::Deserialize(ptr, rd_ves);
 	ptr = io::IO::Deserialize(ptr, Fnet);
 	ptr = io::IO::Deserialize(ptr, M);
-	ptr = io::IO::Deserialize(ptr, zeta);
-	ptr = io::IO::Deserialize(ptr, PDyn);
-	ptr = io::IO::Deserialize(ptr, U);
-	ptr = io::IO::Deserialize(ptr, Ud);
 
 	return ptr;
 }

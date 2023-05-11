@@ -37,7 +37,6 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
-#include "Waves.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -48,6 +47,9 @@
 using namespace std;
 
 namespace moordyn {
+
+class Waves;
+typedef std::shared_ptr<Waves> WavesRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
@@ -71,8 +73,9 @@ class Line : public io::IO
   public:
 	/** @brief Constructor
 	 * @param log Logging handler
+	 * @param lineId the incremental Id of the line
 	 */
-	Line(moordyn::Log* log);
+	Line(moordyn::Log* log, size_t lineId);
 
 	/** @brief Destructor
 	 */
@@ -229,14 +232,6 @@ class Line : public io::IO
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
 	std::vector<moordyn::real> F;
-	/// free surface elevations
-	std::vector<moordyn::real> zeta;
-	/// dynamic pressures
-	std::vector<moordyn::real> PDyn;
-	/// wave velocities
-	std::vector<vec> U;
-	/// wave accelerations
-	std::vector<vec> Ud;
 
 	// time
 	/// simulation time
@@ -297,20 +292,16 @@ class Line : public io::IO
   public:
 	/// Line ID
 	int number;
-
-	/** flag indicating whether wave/current kinematics will be considered
-	 *
-	 * Thisis not exactly a copy of EnvCond::WaveKin, but a compiled value
-	 * dependig on both EnvCond::WaveKin and EnvCond::Current
-	 */
-	moordyn::waves_settings WaterKin;
+	/// a line id which is guaranteed to be contiguous up from zero for the
+	/// lines
+	size_t lineId;
 
 	/** @brief Setup a line
-	 * @param number Line ID
+	 * @param number Line number
 	 * @param props Line properties
 	 * @param l Unstretched line length
 	 * @param n Number of segments
-	 * @param outfile The outfile where information shall be witten
+	 * @param outfile The outfile where information shall be written
 	 * @param channels The channels/fields that shall be printed in the file
 	 */
 	void setup(int number,
@@ -325,7 +316,9 @@ class Line : public io::IO
 	 * @param waves_in Global Waves object
 	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in, moordyn::SeafloorRef seafloor_in);
+	void setEnv(EnvCondRef env_in,
+	            moordyn::WavesRef waves_in,
+	            moordyn::SeafloorRef seafloor_in);
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes
@@ -459,29 +452,6 @@ class Line : public io::IO
 	 */
 	inline std::vector<vec> getNodeCoordinates() const { return r; }
 
-	/** @brief Set the water flow velocity and acceleration at the line nodes
-	 *
-	 * used just when these are provided externally, i.e. WaveKin=1
-	 * @param U_in Velocities, should have (moordyn::Line::N + 1)
-	 *             components
-	 * @param Ud_in Accelerations, should have (moordyn::Line::N + 1)
-	 *              components
-	 * @throws invalid_value_error If either @p U_in or @p Ud_in have wrong
-	 * sizes
-	 */
-	inline void setNodeWaveKin(const std::vector<vec>& U_in,
-	                           const std::vector<vec>& Ud_in)
-	{
-		if ((U_in.size() != N + 1) || (Ud_in.size() != N + 1)) {
-			LOGERR << "Invalid input size " << U_in.size() << " & "
-			       << Ud_in.size() << ". " << N + 1 << " was expected"
-			       << std::endl;
-			throw moordyn::invalid_value_error("Invalid size");
-		}
-		U = U_in;
-		Ud = Ud_in;
-	}
-
 	/** @brief Get the tensions at the fairlead and anchor in a FASTv7 friendly
 	 * way
 	 * @param FairHTen Horizontal tension on the fairlead
@@ -560,14 +530,19 @@ class Line : public io::IO
 	                   std::vector<std::vector<vec>> u,
 	                   std::vector<std::vector<vec>> ud);
 
-	/** @brief calculate the volume of the segment between firstNodeIdx and secondNodeIdx submerged
-	* 
-	* This must be used with adjacent nodes for accurate results. It is currently only implemented
-	* for the still water case.
-	* @param firstNodeIdx Index of the first node of the segment
-	* @param secondNodeIdx Index of the second node of the segment
-	*/
-	real calcSubSeg(unsigned int firstNodeIdx, unsigned int secondNodeIdx);
+	/** @brief calculate the volume of the segment between firstNodeIdx and
+	 * secondNodeIdx submerged
+	 *
+	 * This must be used with adjacent nodes for accurate results. It is
+	 * currently only implemented for the still water case.
+	 * @param firstNodeIdx Index of the first node of the segment
+	 * @param secondNodeIdx Index of the second node of the segment
+	 * @param surfaceHeight Height of the water surface (assumed locally
+	 * horizontal)
+	 */
+	real calcSubSeg(unsigned int firstNodeIdx,
+	                unsigned int secondNodeIdx,
+	                real surfaceHeight);
 
 	/** @brief Get the drag coefficients
 	 * @return The normal (transversal) and tangential (axial) drag coefficients

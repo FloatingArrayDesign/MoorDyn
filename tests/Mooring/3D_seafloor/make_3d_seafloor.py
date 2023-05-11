@@ -22,4 +22,4 @@ with open('seafloor_profile_3d.txt', 'w') as f:
     # All the remaining lines specify an (x, y, z) coordinate
     for idx, xs in enumerate(x):
         for idy, ys in enumerate(y):
-            f.write(f"{xs} {ys} {BASE_DEPTH + ys}\n")
+            f.write(f"{xs} {ys} {BASE_DEPTH + 0.1 * xs}\n")

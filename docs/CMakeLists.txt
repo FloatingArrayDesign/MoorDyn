@@ -2,9 +2,7 @@
 # folder
 
 # Find all the public headers
-get_target_property(MOORDYN_PUBLIC_HEADER_DIR moordyn INTERFACE_INCLUDE_DIRECTORIES)
-file(GLOB_RECURSE MOORDYN_PUBLIC_HEADERS ${MOORDYN_PUBLIC_HEADER_DIR}/*.h*)
-
+file(GLOB_RECURSE MOORDYN_PUBLIC_HEADERS ${CMAKE_SOURCE_DIR}/source/*.h*)
 # We want to generate and keep the Doxygen documentation
 set(DOXYGEN_INPUT_DIR ${CMAKE_SOURCE_DIR}/source)
 set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
@@ -35,7 +33,7 @@ set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 # - The Sphinx config has been updated
 add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                    COMMAND
-                     ${SPHINX_EXECUTABLE} -b html
+                     ${SPHINX_BUILD_EXECUTABLE} -b html
                      # Tell Breathe where to find the Doxygen output
                      -Dbreathe_projects.CatCutifier=${DOXYGEN_OUTPUT_DIR}/xml
                    ${SPHINX_SOURCE} ${SPHINX_BUILD}

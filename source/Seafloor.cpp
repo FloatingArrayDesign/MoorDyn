@@ -1,5 +1,6 @@
 #include "Seafloor.hpp"
 #include "Seafloor.h"
+#include "Util/Interp.hpp"
 #include <limits>
 
 namespace moordyn {

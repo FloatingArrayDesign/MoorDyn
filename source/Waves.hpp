@@ -36,21 +36,348 @@
 
 #include "Misc.hpp"
 #include "Log.hpp"
+#include "Time.hpp"
+#include "Waves/SpectrumKin.hpp"
+#include "Waves/WaveOptions.hpp"
+#include "Waves/WaveSpectrum.hpp"
 #include <vector>
 #include <map>
 
 namespace moordyn {
 
-class TimeScheme;
+class Seafloor;
+typedef std::shared_ptr<Seafloor> SeafloorRef;
+
+template<class T>
+using Vec2D = std::vector<std::vector<T>>;
+
+template<class T>
+using Vec3D = std::vector<std::vector<std::vector<T>>>;
+
+template<class T>
+using Vec4D = std::vector<std::vector<std::vector<std::vector<T>>>>;
+
+/** @brief Make a 2-D data grid
+ * @param nx Number of components in the first dimension
+ * @param ny Number of components in the second dimension
+ */
+static inline Vec2D<real>
+init2DArray(unsigned int nx, unsigned int ny)
+{
+	return Vec2D<real>(nx, std::vector<real>(ny, 0.0));
+}
+
+/** @brief Make a 3-D data grid
+ * @param nx Number of components in the first dimension
+ * @param ny Number of components in the second dimension
+ * @param nz Number of components in the third dimension
+ */
+static inline Vec3D<real>
+init3DArray(unsigned int nx, unsigned int ny, unsigned int nz)
+{
+	return Vec3D<real>(nx, init2DArray(ny, nz));
+}
+
+/** @brief Make a 4-D data grid
+ * @param nx Number of components in the first dimension
+ * @param ny Number of components in the second dimension
+ * @param nz Number of components in the third dimension
+ * @param nw Number of components in the third dimension
+ */
+static inline Vec4D<vec3>
+init4DArrayVec(unsigned int nx,
+               unsigned int ny,
+               unsigned int nz,
+               unsigned int nw)
+{
+	return Vec4D<vec3>(
+	    nx,
+	    Vec3D<vec3>(ny, Vec2D<vec3>(nz, std::vector<vec3>(nw, vec3::Zero()))));
+}
+/** @brief Make a 4-D data grid
+ * @param nx Number of components in the first dimension
+ * @param ny Number of components in the second dimension
+ * @param nz Number of components in the third dimension
+ * @param nw Number of components in the third dimension
+ */
+static inline Vec4D<real>
+init4DArray(unsigned int nx, unsigned int ny, unsigned int nz, unsigned int nw)
+{
+	return Vec4D<real>(nx, init3DArray(ny, nz, nw));
+}
+
+struct SeafloorProvider
+{
+	real waterDepth;
+	SeafloorRef seafloor = nullptr;
+	real getAverageDepth() const;
+	real getDepth(const vec2& pos) const;
+};
+
+/**
+ * @brief An abstract class representing the capability of providing water
+ * current data at some point and time.
+ *
+ */
+class AbstractCurrentKin
+{
+  public:
+	/** @brief Get the velocity and acceleration at a specific position and time
+	 *
+	 * @param pos The location
+	 * @param time The time
+	 * @param seafloor A SeafloorProvider, could be used for kinematic
+	 * stretching
+	 * @param vel The output velocity, not set if null
+	 * @param acc The output acceleration, not set if null
+	 */
+	virtual void getCurrentKin(const vec3& pos,
+	                           real time,
+	                           const SeafloorProvider& seafloor,
+	                           vec3* vel,
+	                           vec3* acc) = 0;
+};
+
+/**
+ * @brief An abstract class representing having the capability of providing wave
+ * kinematics data
+ *
+ */
+class AbstractWaveKin
+{
+  public:
+	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
+	 * at a specific position and time
+	 * @param pos The location
+	 * @param time The time
+	 * @param seafloor A SeafloorProvider used for kinematic stretching
+	 * @param zeta The output wave height, not set if null
+	 * @param U The output velocity, not set if null
+	 * @param Ud The output acceleration, not set if null
+	 * @param PDyn The output dynamic pressure, not set if null
+	 */
+	virtual void getWaveKin(const vec3& pos,
+	                        real time,
+	                        const SeafloorProvider& seafloor,
+	                        real* zeta,
+	                        vec3* vel,
+	                        vec3* acc,
+	                        real* pdyn) = 0;
+};
+
+/**
+ * @brief Wrapper around waves::SpectrumKin to make it adhere to teh
+ * AbstractWaveKin interface
+ *
+ * This probably shouldn't exist, and SpectrumKin should do this by itself, but
+ * this is easy enough
+ *
+ */
+class SpectrumKinWrapper : public AbstractWaveKin
+{
+	waves::SpectrumKin spectrumKin;
+
+  public:
+	/**
+	 * @brief Construct a new Spectrum Kin Wrapper object
+	 *
+	 * SpectrumKin should be fully initialized, including having called setup.
+	 * Move the spectrum into the wrapper just to avoid an unecessary copy.
+	 *
+	 * @param spectrum
+	 */
+	SpectrumKinWrapper(waves::SpectrumKin&& spectrum)
+	  : spectrumKin(spectrum)
+	{
+	}
+
+	void getWaveKin(const vec3& pos,
+	                real time,
+	                const SeafloorProvider& seafloor,
+	                real* zeta,
+	                vec3* vel,
+	                vec3* acc,
+	                real* pdyn)
+	{
+		if (pdyn) {
+			*pdyn = 0.0;
+		}
+
+		real avgDepth = seafloor.getAverageDepth();
+		real actualDepth = seafloor.getDepth(pos.head<2>());
+		spectrumKin.getWaveKin(
+		    pos, time, avgDepth, actualDepth, zeta, vel, acc);
+	}
+};
+/**
+ * @brief A rectilinear grid with x, y, z, and t axes.
+ *
+ * The x, y, and z axis are defined by arbitrary lists of sorted values, and the
+ * time axis is represented by some number of equally spaced times starting at
+ * zero.
+ *
+ */
+class GridXYZT
+{
+  public:
+	GridXYZT(const std::vector<real>& px,
+	         const std::vector<real>& py,
+	         const std::vector<real>& pz,
+	         unsigned int nt,
+	         real dt)
+	  : nx(static_cast<unsigned int>(px.size()))
+	  , ny(static_cast<unsigned int>(py.size()))
+	  , nz(static_cast<unsigned int>(pz.size()))
+	  , nt(nt)
+	  , dtWave(dt)
+	  , px(px)
+	  , py(py)
+	  , pz(pz)
+	{
+	}
+	/// number of grid points in x direction
+	unsigned int nx;
+	/// number of grid points in y direction
+	unsigned int ny;
+	/// number of grid points in z direction
+	unsigned int nz;
+	/// number of time steps used in wave kinematics time series
+	unsigned int nt = 0;
+	/// time step for wave kinematics time series
+	real dtWave;
+
+  protected:
+	/// grid x coordinate arrays
+	std::vector<real> px;
+	/// grid y coordinate arrays
+	std::vector<real> py;
+	/// grid z coordinate arrays
+	std::vector<real> pz;
+};
+
+/**
+ * @brief Contains the data and functionality for the Wave grid kinematics modes
+ *
+ * Is an AbstractWaveKin
+ *
+ */
+class WaveGrid
+  : public AbstractWaveKin
+  , public GridXYZT
+  , LogUser
+{
+  public:
+	WaveGrid(moordyn::Log* log,
+	         const std::vector<real>& px,
+	         const std::vector<real>& py,
+	         const std::vector<real>& pz,
+	         unsigned int nt,
+	         real dt)
+	  : GridXYZT(px, py, pz, nt, dt)
+	  , LogUser(log)
+	{
+	}
+
+	void allocateKinematicArrays();
+
+	void getWaveKin(const vec3& pos,
+	                real time,
+	                const SeafloorProvider& seafloor,
+	                real* zeta,
+	                vec3* vel,
+	                vec3* acc,
+	                real* pdyn) override;
+
+	inline Vec3D<real>& Zetas() { return zetas; }
+	inline const Vec3D<real>& getZetas() const { return zetas; }
+
+	inline Vec4D<real>& PDyn() { return pDyn; }
+	inline const Vec4D<real>& getPDyn() const { return pDyn; }
+
+	inline Vec4D<vec3>& WaveVel() { return wave_vel; }
+	inline const Vec4D<vec3>& getWaveVel() const { return wave_vel; }
+
+	inline Vec4D<vec3>& WaveAcc() { return wave_acc; }
+	inline const Vec4D<vec3>& getWaveAcc() const { return wave_acc; }
+
+	inline const std::vector<real>& Px() const { return px; }
+	inline const std::vector<real>& Py() const { return py; }
+	inline const std::vector<real>& Pz() const { return pz; }
+
+  private:
+	/// wave elevation [x,y,t]
+	Vec3D<real> zetas;
+	/// dynamic pressure [x,y,z,t]
+	Vec4D<real> pDyn;
+	/// Wave velocity [x, y, z, t]
+	Vec4D<vec3> wave_vel;
+	/// Wave acceleration [x, y, z, t]
+	Vec4D<vec3> wave_acc;
+};
+
+/**
+ * @brief Contains grid based current data
+ *
+ * Is an AbstractCurrentKin
+ */
+class CurrentGrid
+  : public AbstractCurrentKin
+  , public GridXYZT
+  , LogUser
+{
+  public:
+	CurrentGrid(moordyn::Log* log,
+	            const std::vector<real>& px,
+	            const std::vector<real>& py,
+	            const std::vector<real>& pz,
+	            unsigned int nt,
+	            real dt)
+	  : GridXYZT(px, py, pz, nt, dt)
+	  , LogUser(log)
+	{
+	}
+
+	void allocateKinematicArrays();
+
+	void getCurrentKin(const vec3& pos,
+	                   real time,
+	                   const SeafloorProvider& seafloor,
+	                   vec3* vel,
+	                   vec3* acc);
+
+	inline Vec4D<vec3>& CurrentVel() { return current_vel; }
+	inline const Vec4D<vec3>& getCurrentVel() const { return current_vel; }
+
+	inline Vec4D<vec3>& CurrentAcc() { return current_acc; }
+	inline const Vec4D<vec3>& getCurrentAcc() const { return current_acc; }
+
+	inline const std::vector<real>& Px() const { return px; }
+	inline const std::vector<real>& Py() const { return py; }
+	inline const std::vector<real>& Pz() const { return pz; }
+
+  private:
+	/// Current velocity [x, y, z, t]
+	Vec4D<vec3> current_vel;
+	/// Current acceleration [x, y, z, t]
+	Vec4D<vec3> current_acc;
+};
 
 /** @class Waves Waves.hpp
- * @brief Wave kinematics
+ * @brief Class that handles wave and current kinematics
  *
- * The wave kinematics can be used to set the underwater velocity field, which
- * is obviously affecting the dynamics. To this end both the velocity and
- * acceleration fields are provided in 4-D, i.e. 3D grid + time
+ * This class keep track of all the structures (lines, connections, rods,
+ * bodies, etc) being simulated. For each of these structures, it stores the
+ * water and wave kinematics for each node of the structure. The Waves class is
+ * in charge of understanding the wave/current settings and following through
+ * with the correct behavior.
  *
- * This system is used just if WaveKin is set to 2
+ * Waves and current kinematics can be calculated by subclasses of
+ * AbstractWaveKin and AbstractCurrentKin. This makes it simple to add new wave
+ * or current kinematics modes, assuming they can adhere to the simple
+ * interface. The waves class itself just stores an AbstractWaveKin and
+ * AbstractCurrentKin, it has no ability to compute waves or currents on its
+ * own.
+ *
  */
 class Waves : public LogUser
 {
@@ -60,125 +387,239 @@ class Waves : public LogUser
 	/// Destructor
 	~Waves();
 
+	/**
+	 * @brief Get the positions of all the nodes with wave kinematics
+	 *
+	 * Returns a vector of the positions of all the line nodes, connections, rod
+	 * nodes, bodies, etc at the current time.
+	 * @return std::vector<vec3> Position of all the structural nodes with wave
+	 * kinematics
+	 */
+	std::vector<vec3> getWaveKinematicsPoints();
+
+	/**
+	 * @brief Set the wave kinematics for all the structural nodes
+	 *
+	 * This expects the order of the points to be the same as what was returned
+	 * by getWaveKinematicsPoints
+	 * @param U Water velocities at the nodes
+	 * @param Ud Water accelerations at the nodes
+	 */
+	void setWaveKinematics(std::vector<vec> const& U,
+	                       std::vector<vec> const& Ud);
+
+	/**
+	 * @brief Recalculates any wave and current kinematics for all the nodes
+	 *
+	 */
+	void updateWaves();
+
+	/**
+	 * @brief Adds a line to the list of structures we calculate water
+	 * kinematics for
+	 *
+	 * Should be called after Waves::setup
+	 * @param line
+	 */
+	void addLine(moordyn::Line* line);
+
+	/**
+	 * @brief Adds a rod to the list of structures we calculate water kinematics
+	 * for
+	 *
+	 * Should be called after Waves::setup
+	 * @param rod
+	 */
+	void addRod(moordyn::Rod* rod);
+
+	/**
+	 * @brief Adds a body to the list of structures we calculate water
+	 * kinematics for
+	 *
+	 * Should be called after Waves::setup
+	 * @param body
+	 */
+	void addBody(moordyn::Body* body);
+
+	/**
+	 * @brief Adds a connection to the list of structures we calculate water
+	 * kinematics for
+	 *
+	 * Should be called after Waves::setup
+	 * @param conn
+	 */
+	void addConn(moordyn::Connection* conn);
+
+	using NodeKinReturnType = std::tuple<const std::vector<real>&,
+	                                     const std::vector<vec3>&,
+	                                     const std::vector<vec3>&>;
+	/**
+	 * @brief Get the water kinematics for the line with id
+	 *
+	 * @param lineId Id of the line
+	 * @return std::tuple<std::vector<real>, std::vector<vec3>&,
+	 * std::vector<vec3>&> (zeta, U, Ud)
+	 */
+	NodeKinReturnType getWaveKinLine(size_t lineId);
+
+	/**
+	 * @brief Get the water kinematics for the rod with given Id.
+	 *
+	 * @param rodId Id of the rod
+	 * @return std::tuple<const std::vector<real>&,
+	 * const std::vector<vec3>&,
+	 * const std::vector<vec3>&,
+	 * const std::vector<real>&>  (zeta, U, Ud, pDyn)
+	 */
+	std::tuple<const std::vector<real>&,
+	           const std::vector<vec3>&,
+	           const std::vector<vec3>&,
+	           const std::vector<real>&>
+	getWaveKinRod(size_t rodId);
+
+	/**
+	 * @brief Get the water kinematics for the body with given Id
+	 *
+	 * The vectors should all be of length 1
+	 *
+	 * @param bodyId Id of the body
+	 * @return NodeKinReturnType (zeta, U, Ud)
+	 */
+	NodeKinReturnType getWaveKinBody(size_t bodyId);
+
+	/**
+	 * @brief Get the water kinematics for the connection with given Id
+	 *
+	 * The vectors should all be of length 1
+	 *
+	 * @param connId Id of the connections
+	 * @return NodeKinReturnType (zeta, U, Ud)
+	 */
+	NodeKinReturnType getWaveKinConn(size_t connId);
+
+	/**
+	 * @brief Gets the surface height at a given (x, y) point
+	 *
+	 * Used mainly for debugging and visualization purposes
+	 *
+	 * @param point
+	 * @return real
+	 */
+	real getWaveHeightPoint(vec2 point);
+
+	/**
+	 * @brief Get the wave kinematics at a point at the current time
+	 *
+	 * @param pos Point
+	 * @param seafloor O
+	 * @param zeta
+	 * @param vel
+	 * @param acc
+	 * @param pdyn
+	 */
+	void getWaveKin(const vec3& pos,
+	                real& zeta,
+	                vec3& vel,
+	                vec3& acc,
+	                real& pdyn,
+	                Seafloor* seafloor = nullptr);
+
   private:
-	/** @brief Setup the grid
+	/**
+	 * @brief Holds the water kinematics for all of the structures of a certain
+	 * type
 	 *
-	 * The grid is defined in a tabulated file (separator=' '). That file has 3
-	 * head lines, which are ignored, and then 3 lines defining the grid points
-	 * in x, y, z.
+	 * Mostly just to reduce code repetition
 	 *
-	 * Each one can be defined in 3 ways:
-	 *   - Defining just a point in 0
-	 *   - Defining the list of coordinates
-	 *   - Defining the boundaries and the number of equispaced points
-	 *
-	 * @param filepath The definition file path
-	 * @throws moordyn::input_file_error If the input file cannot be read, or if
-	 * the fileis ill-formatted
-	 * @throws moordyn::invalid_value_error If invalid values for the grid
-	 * initialization are found
+	 * @tparam C Type of the structure
 	 */
-	void makeGrid(const char* filepath = "Mooring/water_grid.txt");
-
-	/** @brief Allocate the needed memory for the kinematics storage
-	 * @param filepath The definition file path. If NULL or "" isprovided, then
-	 * "Mooring/water_grid.txt" is considered
-	 * @throws moordyn::invalid_value_error If either the grid, or the time
-	 * series has not been initialized yet
-	 */
-	void allocateKinematicsArrays();
-
-	/** @brief instantiator that takes discrete wave elevation fft data only
-	 * (MORE RECENT)
-	 * @param zetaC0 Amplitude of each frequency component
-	 * @param nw Number of wave components
-	 * @param dw The difference in frequency between consequtive modes
-	 * @param g Gravity accelerations
-	 * @param h Water depth
-	 * @throws moordyn::mem_error If there were roblems allocating memory
-	 */
-	void fillWaveGrid(const moordyn::complex* zetaC0,
-	                  unsigned int nw,
-	                  real dw,
-	                  real g,
-	                  real h);
-
-	/** @brief Make a 2-D data grid
-	 * @param nx Number of components in the first dimension
-	 * @param ny Number of components in the second dimension
-	 */
-	static inline std::vector<std::vector<real>> init2DArray(unsigned int nx,
-	                                                         unsigned int ny)
+	template<class C>
+	struct NodeKinematics
 	{
-		return std::vector<std::vector<real>>(nx, std::vector<real>(ny, 0.0));
+		std::vector<const C*> structures;
+		std::vector<std::vector<real>> zetas;
+		std::vector<std::vector<vec3>> U;
+		std::vector<std::vector<vec3>> Ud;
+
+		NodeKinReturnType operator[](size_t idx)
+		{
+
+			return { zetas[idx], U[idx], Ud[idx] };
+		}
+	};
+
+	/**
+	 * @brief Holds all of the water kinematic data for the simulation
+	 *
+	 * This is its own structure because when we hae separate current and wave
+	 * kinematics, we need 3 copies of this
+	 */
+	struct AllNodesKin
+	{
+		NodeKinematics<moordyn::Line> lines;
+		NodeKinematics<moordyn::Body> bodies;
+		NodeKinematics<moordyn::Rod> rods;
+		// at the moment, only rods need dynamic pressure
+		// so this kind of lives on its own
+		std::vector<std::vector<real>> rodPdyn;
+
+		NodeKinematics<moordyn::Connection> connections;
+	};
+
+	/// The final computed water kinematics at each node
+	AllNodesKin nodeKin;
+	/// The contribution of waves to the water kinematics at each node
+	/// Only used when there are external wave kinematics and internal currents
+	AllNodesKin waveKin;
+	/**
+	 * @brief Used for adding to a NodeKinematics instance
+	 *
+	 * @tparam C The type of structure being added
+	 * @param structure The instance being added
+	 * @param num_nodes Number of nodes in the instance
+	 * @param nodeKinematics A NodeKinematics instance for the structure type
+	 */
+	template<class C>
+	void genericAdd(const C* const structure,
+	                unsigned int num_nodes,
+	                NodeKinematics<C>& nodeKinematics)
+	{
+		nodeKinematics.structures.push_back(structure);
+		nodeKinematics.zetas.emplace_back(num_nodes, 0.0);
+		nodeKinematics.U.emplace_back(num_nodes, vec3::Zero());
+		nodeKinematics.Ud.emplace_back(num_nodes, vec3::Zero());
 	}
 
-	/** @brief Make a 3-D data grid
-	 * @param nx Number of components in the first dimension
-	 * @param ny Number of components in the second dimension
-	 * @param nz Number of components in the third dimension
+	/**
+	 * @brief Helper function that calls the given function on every node
+	 * AlNodesKin object
+	 *
+	 * @tparam F Callable object/function with signature void f(vec pos, vec& U,
+	 * vec& Ud, real& zeta, real& pdyn)
+	 * @param nodeKinematics
+	 * @param f Function to call for every node
 	 */
-	static inline std::vector<std::vector<std::vector<real>>>
-	init3DArray(unsigned int nx, unsigned int ny, unsigned int nz)
-	{
-		return std::vector<std::vector<std::vector<real>>>(
-		    nx, std::vector<std::vector<real>>(ny, std::vector<real>(nz, 0.0)));
-	}
+	template<typename F>
+	void kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f);
 
-	/** @brief Make a 4-D data grid
-	 * @param nx Number of components in the first dimension
-	 * @param ny Number of components in the second dimension
-	 * @param nz Number of components in the third dimension
-	 * @param nw Number of components in the third dimension
+	/// The generic wave kinematics provider object
+	std::unique_ptr<AbstractWaveKin> waveKinematics = nullptr;
+	/// The generic current kinematics provider object
+	std::unique_ptr<AbstractCurrentKin> currentKinematics = nullptr;
+
+	/**
+	 * @brief A member for temporary storage of wave grids.
+	 *
+	 * This exists because in cases where we want to unify wave and current
+	 * grids, it's preferable to have an object that is known to be a wave grid
+	 * rather than trying to do runtime type information deduction.
 	 */
-	static inline std::vector<std::vector<std::vector<std::vector<real>>>>
-	init4DArray(unsigned int nx,
-	            unsigned int ny,
-	            unsigned int nz,
-	            unsigned int nw)
-	{
-		return std::vector<std::vector<std::vector<std::vector<real>>>>(
-		    nx,
-		    std::vector<std::vector<std::vector<real>>>(
-		        ny,
-		        std::vector<std::vector<real>>(nz,
-		                                       std::vector<real>(nw, 0.0))));
-	}
+	std::unique_ptr<WaveGrid> waveGrid = nullptr;
 
-	/// number of grid points in x direction
-	unsigned int nx;
-	/// number of grid points in y direction
-	unsigned int ny;
-	/// number of grid points in z direction
-	unsigned int nz;
-	/// number of time steps used in wave kinematics time series
-	unsigned int nt;
-	/// time step for wave kinematics time series
-	real dtWave;
-
-	/// grid x coordinate arrays
-	std::vector<real> px;
-	/// grid y coordinate arrays
-	std::vector<real> py;
-	/// grid z coordinate arrays
-	std::vector<real> pz;
-	/// wave elevation [x,y,t]
-	vector<vector<vector<real>>> zeta;
-	/// dynamic pressure [x,y,z,t]
-	vector<vector<vector<vector<real>>>> PDyn;
-	/// wave velocity x component [x,y,z,t]
-	vector<vector<vector<vector<real>>>> ux;
-	/// wave velocity y component [x,y,z,t]
-	vector<vector<vector<vector<real>>>> uy;
-	/// wave velocity z component [x,y,z,t]
-	vector<vector<vector<vector<real>>>> uz;
-	/// wave acceleration x component [x,y,z,t]
-	vector<vector<vector<vector<real>>>> ax;
-	/// wave acceleration y component [x,y,z,t]
-	vector<vector<vector<vector<real>>>> ay;
-	/// wave acceleration z component [x,y,z,t]
-	vector<vector<vector<vector<real>>>> az;
-
+	/// Keep a reference to the environment
+	EnvCondRef env = nullptr;
+	// Keep a reference to any potential 3d seafloor
+	SeafloorRef seafloor = nullptr;
 	/// gravity acceleration
 	real g;
 	/// water density
@@ -226,25 +667,10 @@ class Waves : public LogUser
 	 * @throws moordyn::mem_error If there were roblems allocating memory
 	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
-	void setup(EnvCondRef env, TimeScheme* t, const char* folder = "Mooring/");
-
-	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
-	 * at a specific positon and time
-	 * @param x The point x coordinate
-	 * @param y The point y coordinate
-	 * @param z The point z coordinate
-	 * @param U_out The output velocity
-	 * @param Ud_out The output acceleration
-	 * @param zeta_out The output wave height
-	 * @param PDyn_out The output dynamic pressure
-	 */
-	void getWaveKin(real x,
-	                real y,
-	                real z,
-	                vec& U_out,
-	                vec& Ud_out,
-	                real& zeta_out,
-	                real& PDyn_out);
+	void setup(EnvCondRef env,
+	           SeafloorRef seafloor,
+	           TimeScheme* t,
+	           const char* folder = "Mooring/");
 };
 
 // other relevant functions being thrown into this file for now (should move to
@@ -262,9 +688,8 @@ class Waves : public LogUser
 std::vector<real>
 gridAxisCoords(Waves::coordtypes coordtype, vector<string>& entries);
 
-
 /**
-* Renaming the shared pointer to be a little more ergonomic
-*/
+ * Renaming the shared pointer to be a little more ergonomic
+ */
 typedef std::shared_ptr<Waves> WavesRef;
 } // ::moordyn

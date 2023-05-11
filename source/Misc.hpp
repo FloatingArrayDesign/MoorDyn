@@ -36,6 +36,8 @@
 #include "MoorDynAPI.h"
 #include "Eigen/Dense"
 
+#include "waves/WaveOptions.hpp"
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -47,6 +49,8 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
+
+#include <filesystem>
 
 #include <memory>
 
@@ -533,6 +537,15 @@ decomposeString(char outWord[10],
 
 } // ::moordyn::str
 
+namespace fileIO {
+
+/**
+ * Read in all of the lines of a file.
+ * Throws an error if file is not found or other error occurs.
+ */
+std::vector<std::string>
+fileToLines(const std::filesystem::path& path);
+}
 /**
  * @}
  */
@@ -541,27 +554,6 @@ decomposeString(char outWord[10],
  *  @{
  */
 
-/** @brief Available settings for waves
- */
-typedef enum
-{
-	/// No waves
-	WAVES_NONE = 0,
-	/// Waves externally provided
-	WAVES_EXTERNAL = 1,
-	/// Wave elevation FFT, grid approach
-	WAVES_FFT_GRID = 2,
-	/// Wave elevation time series, grid approach
-	WAVES_GRID = 3,
-	/// Wave elevation FFT, node approach
-	WAVES_FFT_NODE = 4,
-	/// Wave elevation time series, node approach
-	WAVES_NODE = 5,
-	/// velocity, acceleration, and wave elevation grid data
-	WAVES_KIN = 6,
-} waves_settings;
-
-
 typedef enum
 {
 	/// Flat seafloor:
@@ -569,328 +561,6 @@ typedef enum
 	/// 3D seafloor
 	SEAFLOOR_3D = 1,
 } seafloor_settings;
-
-// Current options: 0 - no currents or set externally (as part of WaveKin =0 or
-// 1 approach) [default]
-//                  1 - read in steady current profile, grid approach
-//                  (current_profile.txt)** 2 - read in dynamic current profile,
-//                  grid approach (current_profile_dynamic.txt)** 3 - read in
-//                  steady current profile, node approach (current_profile.txt)
-//                  4 - read in dynamic current profile, node approach
-//                  (current_profile_dynamic.txt)
-
-/** @brief Available settings for currents
- */
-typedef enum
-{
-	/// No currents
-	CURRENTS_NONE = 0,
-	/// steady current profile, grid approach
-	CURRENTS_STEADY_GRID = 1,
-	/// dynamic current profile, grid approach
-	CURRENTS_DYNAMIC_GRID = 2,
-	/// steady current profile, node approach
-	CURRENTS_STEADY_NODE = 3,
-	/// dynamic current profile, node approach
-	CURRENTS_DYNAMIC_NODE = 4,
-	/// 4D current profile
-	CURRENTS_4D = 5
-} currents_settings;
-
-/** @brief Are the waves settings grid based?
- * @param opt Waves settings
- * @return true if the waves are provided in a grid, false otherwise
- */
-inline bool
-is_waves_grid(waves_settings opt)
-{
-	if (opt == WAVES_FFT_GRID)
-		return true;
-	if (opt == WAVES_GRID)
-		return true;
-	return false;
-}
-
-/** @brief Are the waves settings node based?
- * @param opt Waves settings
- * @return true if the waves are provided in the nodes, false otherwise
- */
-inline bool
-is_waves_node(waves_settings opt)
-{
-	if (opt == WAVES_FFT_NODE)
-		return true;
-	if (opt == WAVES_NODE)
-		return true;
-	return false;
-}
-
-/** @brief Are the currents settings grid based?
- * @param opt Currents settings
- * @return true if the currents are provided in a grid, false otherwise
- */
-inline bool
-is_currents_grid(currents_settings opt)
-{
-	if (opt == CURRENTS_STEADY_GRID)
-		return true;
-	if (opt == CURRENTS_DYNAMIC_GRID)
-		return true;
-	return false;
-}
-
-/** @brief Are the currents settings node based?
- * @param opt Currents settings
- * @return true if the currents are provided in the nodes, false otherwise
- */
-inline bool
-is_currents_node(currents_settings opt)
-{
-	if (opt == CURRENTS_STEADY_NODE)
-		return true;
-	if (opt == CURRENTS_DYNAMIC_NODE)
-		return true;
-	return false;
-}
-
-/**
- * @}
- */
-
-/** \defgroup interpolation Interpolation utilities
- *  @{
- */
-
-/** @brief One-dimensional linear interpolation factor
- * @param xp The points where data is available
- * @param i0 The starting index to look for the upper bound
- * @param x The evaluation point
- * @param f The interpolation factor
- * @return The index of the upper bound
- */
-template<typename T>
-inline unsigned int
-interp_factor(const vector<T>& xp, unsigned int i0, const T& x, T& f)
-{
-	if (xp.size() == 1) {
-		f = 0.0;
-		return 0;
-	}
-
-	if (i0 == 0)
-		i0++;
-	if (i0 > xp.size() - 1)
-		i0 = xp.size() - 1;
-
-	if (x <= xp[i0 - 1]) {
-		f = 0.0;
-		return i0;
-	}
-	if (x >= xp.back()) {
-		f = 1.0;
-		return xp.size() - 1;
-	}
-
-	for (unsigned i = i0; i < xp.size() - 1; i++) {
-		if (x <= xp[i]) {
-			f = (x - xp[i - 1]) / (xp[i] - xp[i - 1]);
-			return i;
-		}
-	}
-
-	// Just to avoid the compiler warnings. This point is actually never reached
-	f = 1.0;
-	return xp.size() - 1;
-}
-
-/** @brief One-dimensional linear interpolation factor
- *
- * This function is equivalent to calling interp_factor(xp, 1, x, f)
- * @param xp The points where data is available
- * @param x The evaluation point
- * @param f The interpolation factor
- * @return The index of the upper bound
- */
-template<typename T>
-inline unsigned int
-interp_factor(const vector<T>& xp, const T& x, T& f)
-{
-	return interp_factor(xp, 1, x, f);
-}
-
-/** @brief One-dimensional linear interpolation
- *
- * For monotonically increasing sample points.
- * @param xp The points where data is available
- * @param yp The data values
- * @param x The evaluation points
- * @param y The interpolated values. The vector shall be already initialized
- * with at least the same number of components than \p x
- */
-template<typename Tx, typename Ty>
-inline void
-interp(const vector<Tx>& xp,
-       const vector<Ty>& yp,
-       const vector<Tx>& x,
-       vector<Ty>& y)
-{
-	if (yp.size() == 1) {
-		y[0] = yp[0];
-		return;
-	}
-
-	real f;
-	unsigned int j = 1;
-	for (unsigned int i = 0; i < x.size(); i++) {
-		j = interp_factor(xp, j, x[i], f);
-		y[i] = yp[j - 1] + f * (yp[j] - yp[j - 1]);
-	}
-}
-
-/** @brief One-dimensional linear interpolation
- * @param xp The points where data is available
- * @param yp The data values
- * @param x The evaluation point
- * @return The interpolated value
- */
-template<typename Tx, typename Ty>
-inline Ty
-interp(const vector<Tx>& xp, const vector<Ty>& yp, Tx x)
-{
-	if (yp.size() == 1) {
-		return yp[0];
-	}
-
-	real f;
-	const auto j = interp_factor(xp, 1, x, f);
-	return yp[j - 1] + f * (yp[j] - yp[j - 1]);
-}
-
-/** @brief Bilinear filter
- * @param values The available data
- * @param i The upper bound index in the x direction
- * @param j The upper bound index in the y direction
- * @param fx The linear interplation factor in the x direction
- * @param fy The linear interplation factor in the y direction
- * @return The linearly interpolated value
- * @see interp_factor
- */
-template<typename T>
-inline T
-interp2(const vector<vector<T>>& values,
-        unsigned int i,
-        unsigned int j,
-        T fx,
-        T fy)
-{
-	unsigned int i0 = i > 0 ? i - 1 : 0;
-	unsigned int j0 = j > 0 ? j - 1 : 0;
-
-	T c00 = values[i0][j0];
-	T c01 = values[i0][j];
-	T c10 = values[i][j0];
-	T c11 = values[i][j];
-
-	T c0 = c00 * (1. - fx) + c10 * fx;
-	T c1 = c01 * (1. - fx) + c11 * fx;
-
-	return c0 * (1 - fy) + c1 * fy;
-}
-
-/** @brief Trilinear filter
- * @param values The available data
- * @param i The upper bound index in the x direction
- * @param j The upper bound index in the y direction
- * @param k The upper bound index in the z direction
- * @param fx The linear interplation factor in the x direction
- * @param fy The linear interplation factor in the y direction
- * @param fz The linear interplation factor in the z direction
- * @return The linearly interpolated value
- * @see interp_factor
- */
-template<typename T>
-inline T
-interp3(const vector<vector<vector<T>>>& values,
-        unsigned int i,
-        unsigned int j,
-        unsigned int k,
-        T fx,
-        T fy,
-        T fz)
-{
-	unsigned int i0 = i > 0 ? i - 1 : 0;
-	unsigned int j0 = j > 0 ? j - 1 : 0;
-	unsigned int k0 = k > 0 ? k - 1 : 0;
-
-	T c000 = values[i0][j0][k0];
-	T c001 = values[i0][j0][k];
-	T c010 = values[i0][j][k0];
-	T c011 = values[i0][j][k];
-	T c100 = values[i][j0][k0];
-	T c101 = values[i][j0][k];
-	T c110 = values[i][j][k0];
-	T c111 = values[i][j][k];
-
-	T c00 = c000 * (1. - fx) + c100 * fx;
-	T c01 = c001 * (1. - fx) + c101 * fx;
-	T c10 = c010 * (1. - fx) + c110 * fx;
-	T c11 = c011 * (1. - fx) + c111 * fx;
-
-	T c0 = c00 * (1. - fy) + c10 * fy;
-	T c1 = c01 * (1. - fy) + c11 * fy;
-
-	return c0 * (1 - fz) + c1 * fz;
-}
-
-/** @brief Quadrilinear filter
- * @param values The available data
- * @param i The upper bound index in the x direction
- * @param j The upper bound index in the y direction
- * @param k The upper bound index in the z direction
- * @param w The upper bound index in the w direction
- * @param fx The linear interplation factor in the x direction
- * @param fy The linear interplation factor in the y direction
- * @param fz The linear interplation factor in the z direction
- * @param fw The linear interplation factor in the w direction
- * @return The linearly interpolated value
- * @see interp_factor
- */
-template<typename T>
-inline T
-interp4(const vector<vector<vector<vector<T>>>>& values,
-        unsigned int i,
-        unsigned int j,
-        unsigned int k,
-        unsigned int w,
-        T fx,
-        T fy,
-        T fz,
-        T fw)
-{
-	unsigned int i0 = i > 0 ? i - 1 : 0;
-	unsigned int j0 = j > 0 ? j - 1 : 0;
-	unsigned int k0 = k > 0 ? k - 1 : 0;
-	unsigned int w0 = w > 0 ? w - 1 : 0;
-
-	T c000 = values[i0][j0][k0][w0] * (1. - fw) + values[i0][j0][k0][w] * fw;
-	T c001 = values[i0][j0][k][w0] * (1. - fw) + values[i0][j0][k][w] * fw;
-	T c010 = values[i0][j][k0][w0] * (1. - fw) + values[i0][j][k0][w] * fw;
-	T c011 = values[i0][j][k][w0] * (1. - fw) + values[i0][j][k][w] * fw;
-	T c100 = values[i][j0][k0][w0] * (1. - fw) + values[i][j0][k0][w] * fw;
-	T c101 = values[i][j0][k][w0] * (1. - fw) + values[i][j0][k][w] * fw;
-	T c110 = values[i][j][k0][w0] * (1. - fw) + values[i][j][k0][w] * fw;
-	T c111 = values[i][j][k][w0] * (1. - fw) + values[i][j][k][w] * fw;
-
-	T c00 = c000 * (1. - fx) + c100 * fx;
-	T c01 = c001 * (1. - fx) + c101 * fx;
-	T c10 = c010 * (1. - fx) + c110 * fx;
-	T c11 = c011 * (1. - fx) + c111 * fx;
-
-	T c0 = c00 * (1. - fy) + c10 * fy;
-	T c1 = c01 * (1. - fy) + c11 * fy;
-
-	return c0 * (1 - fz) + c1 * fz;
-}
 
 /**
  * @}
@@ -1097,7 +767,8 @@ GetCurvature(moordyn::real length, const vec& q1, const vec& q2);
 const real pi = M_PIl;
 #else
 /// Pi constant
-const real pi = M_PI;
+// const real pi = M_PI;
+const real pi = 3.141592653589793238462643383279502884197169399375105820974944;
 #endif
 /// Constant to convert radians into degrees
 const real rad2deg = 180.0 / pi;
@@ -1159,12 +830,8 @@ typedef struct
 	/// Bottom modeling mode (0=flat, 1=3d...)<<<
 	moordyn::seafloor_settings SeafloorMode;
 
-	/// wave kinematics flag (0=off, >0=on...)<<<
-	moordyn::waves_settings WaveKin;
-	/// current flag (0=off, >0=on...)<<<
-	moordyn::currents_settings Current;
-	/// time step used to downsample wave elevation data with
-	double dtWave;
+	/// Water Kinematics Options
+	moordyn::waves::WaterKinOptions waterKinOptions;
 
 	/// general bottom friction coefficient, as a start
 	double FrictionCoefficient;

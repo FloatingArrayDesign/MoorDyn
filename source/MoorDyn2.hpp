@@ -70,11 +70,12 @@ class MoorDyn : public io::IO
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
 	 */
-	MoorDyn(const char* infilename = NULL);
+	DECLDIR MoorDyn(const char* infilename = NULL,
+	                int log_level = MOORDYN_MSG_LEVEL);
 
 	/** @brief Destuctor
 	 */
-	~MoorDyn();
+	DECLDIR ~MoorDyn();
 
 	/** @brief Initializes Moordyn, reading the input file and setting up the
 	 * mooring lines
@@ -89,9 +90,9 @@ class MoorDyn : public io::IO
 	 * @return MOORDYN_SUCCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 */
-	moordyn::error_id Init(const double* x,
-	                       const double* xd,
-	                       bool skip_ic = false);
+	moordyn::error_id DECLDIR Init(const double* x,
+	                               const double* xd,
+	                               bool skip_ic = false);
 
 	/** @brief Runs a time step of the MoorDyn system
 	 * @param x Position vector
@@ -104,11 +105,8 @@ class MoorDyn : public io::IO
 	 * @note You can know the number of components required for \p x, \p xd and
 	 * \p f with the function MoorDyn::NCoupledDOF()
 	 */
-	moordyn::error_id Step(const double* x,
-	                       const double* xd,
-	                       double* f,
-	                       double& t,
-	                       double& dt);
+	moordyn::error_id DECLDIR
+	Step(const double* x, const double* xd, double* f, double& t, double& dt);
 
 	/** @brief Get the connections
 	 */
@@ -160,13 +158,13 @@ class MoorDyn : public io::IO
 	 * env.Currents is not CURRENTS_NONE
 	 * @return The wave knematics instance
 	 */
-	inline moordyn::WavesRef GetWaves() const { return waves; }
-	
+	inline moordyn::WavesRef DECLDIR GetWaves() const { return waves; }
+
 	/** @brief Get the 3D seafloor instance
-	 * 
+	 *
 	 * The Seafloor instance is used to represent a floor of varying depth over
-	 * a rectilinear grid. It allows for finding the seafloor height at any (x, y)
-	 * point which it calculated using a bilinear interpolation.
+	 * a rectilinear grid. It allows for finding the seafloor height at any (x,
+	 * y) point which it calculated using a bilinear interpolation.
 	 */
 	inline moordyn::SeafloorRef GetSeafloor() const { return seafloor; }
 
@@ -177,22 +175,8 @@ class MoorDyn : public io::IO
 	 */
 	inline unsigned int ExternalWaveKinInit()
 	{
-		npW = 0;
-
-		for (auto line : LineList)
-			npW += line->getN() + 1;
-
-		// allocate arrays to hold data that could be passed in
-		U_1.clear();
-		Ud_1.clear();
-		U_2.clear();
-		Ud_2.clear();
-		U_1.assign(npW, vec::Zero());
-		U_1.assign(npW, vec::Zero());
-		U_1.assign(npW, vec::Zero());
-		U_1.assign(npW, vec::Zero());
-		tW_1 = 0.0;
-		tW_2 = 0.0;
+		const auto& points = waves->getWaveKinematicsPoints();
+		npW = points.size();
 
 		return npW;
 	}
@@ -220,13 +204,13 @@ class MoorDyn : public io::IO
 	 */
 	inline moordyn::error_id DEPRECATED GetWaveKinCoordinates(double* r) const
 	{
+		const auto& points = ExternalWaveKinGetPoints();
 		unsigned int i = 0;
-		for (auto line : LineList) {
-			std::vector<vec> rvec = line->getNodeCoordinates();
-			for (unsigned int j = 0; j < rvec.size(); j++)
-				moordyn::vec2array(rvec[j], &(r[3 * (i + j)]));
-			i += line->getN() + 1;
+		for (const auto& vec : points) {
+			moordyn::vec2array(vec, r + i);
+			i += 3;
 		}
+
 		return MOORDYN_SUCCESS;
 	}
 
@@ -240,12 +224,7 @@ class MoorDyn : public io::IO
 	 */
 	inline std::vector<vec> ExternalWaveKinGetPoints() const
 	{
-		std::vector<vec> rout;
-		for (auto line : LineList) {
-			std::vector<vec> rline = line->getNodeCoordinates();
-			vector_extend(rout, rline);
-		}
-		return rout;
+		return waves->getWaveKinematicsPoints();
 	}
 
 	/** @brief Set the kinematics of the waves
@@ -282,22 +261,7 @@ class MoorDyn : public io::IO
 	                               double t)
 
 	{
-		if ((U.size() != Ud.size()) || (U.size() != U_1.size())) {
-			LOGERR << "Invalid input size."
-			       << "Have you called MoorDyn::ExternalWaveKinInit()?"
-			       << std::endl;
-			throw moordyn::invalid_value_error("Invalid input size");
-		}
-
-		// shift the data
-		tW_2 = tW_1;
-		U_2 = U_1;
-		Ud_2 = Ud_1;
-
-		// Set the new info
-		tW_1 = t;
-		U_1 = U;
-		Ud_1 = Ud;
+		waves->setWaveKinematics(U, Ud);
 	}
 
 	/** @brief Produce the packed data to be saved
@@ -351,8 +315,8 @@ class MoorDyn : public io::IO
 #endif
 
   protected:
-	/** @brief Read the input file, setting up all the requird objects and their
-	 * relationships
+	/** @brief Read the input file, setting up all the required objects and
+	 * their relationships
 	 *
 	 * This function is called from the constructor, so this information is
 	 * ready when MoorDyn::Init() is called
@@ -363,29 +327,29 @@ class MoorDyn : public io::IO
 	 */
 	moordyn::error_id ReadInFile();
 
-	moordyn::error_id readFileIntoBuffers(vector<string> &in_txt);
+	moordyn::error_id readFileIntoBuffers(vector<string>& in_txt);
 
-	int findStartOfSection(vector<string> &in_txt, vector<string> sectionName);
+	int findStartOfSection(vector<string>& in_txt, vector<string> sectionName);
 
 	/** @brief Helper function to cread a new line property given a line from
-	* the input file.
-	* 
-	* @param inputText a string from the Line Properties section of input file
-	*/
+	 * the input file.
+	 *
+	 * @param inputText a string from the Line Properties section of input file
+	 */
 	LineProps* readLineProps(string inputText);
 
 	/** @brief Helper function to cread a new rod property given a line from
-	* the input file.
-	* 
-	* @param inputText a string from the Rod Properties section of input file
-	*/
+	 * the input file.
+	 *
+	 * @param inputText a string from the Rod Properties section of input file
+	 */
 	RodProps* readRodProps(string inputText);
 
 	/** @brief Helper function to cread a new rod given a line from
-	* the input file.
-	* 
-	* @param inputText a string from the Rod List section of input file
-	*/
+	 * the input file.
+	 *
+	 * @param inputText a string from the Rod List section of input file
+	 */
 	Rod* readRod(string inputText);
 
 	Body* readBody(string inputText);
@@ -464,7 +428,7 @@ class MoorDyn : public io::IO
 	real ICthresh;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
-	moordyn::waves_settings WaveKinTemp;
+	moordyn::waves::waves_settings WaveKinTemp;
 	/// (s) desired mooring line model time step
 	real dtM0;
 	/// (s) desired output interval (the default zero value provides output at
@@ -480,7 +444,8 @@ class MoorDyn : public io::IO
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
 	WavesRef waves = nullptr;
-	/// 3D Seafloor object that gets shared with the lines and other things that need it
+	/// 3D Seafloor object that gets shared with the lines and other things that
+	/// need it
 	moordyn::SeafloorRef seafloor;
 
 	/// array of pointers to hold line library types
@@ -533,18 +498,6 @@ class MoorDyn : public io::IO
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
-	/// time corresponding to the wave kinematics data
-	real tW_1;
-	/// array of wave velocity at each of the npW points at time tW_1
-	std::vector<vec> U_1;
-	/// array of wave acceleration at each of the npW points
-	std::vector<vec> Ud_1;
-	/// time corresponding to the wave kinematics data
-	real tW_2;
-	/// array of wave velocity at each of the npW points at time tW_2
-	std::vector<vec> U_2;
-	/// array of wave acceleration at each of the npW points
-	std::vector<vec> Ud_2;
 
 	/// main output file
 	ofstream outfileMain;

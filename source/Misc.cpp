@@ -183,6 +183,31 @@ decomposeString(char outWord[10],
 
 } // ::moordyn::str
 
+namespace fileIO {
+
+std::vector<std::string>
+fileToLines(const std::filesystem::path& path)
+{
+	std::vector<std::string> lines;
+	std::ifstream file(path);
+	if (file.is_open()) {
+		std::string line;
+		while (std::getline(file, line)) {
+			lines.push_back(line);
+		}
+		file.close();
+
+		return lines;
+	}
+	else {
+		std::stringstream ss;
+		ss << "Could not get lines of file: " << path;
+		throw input_file_error(ss.str().c_str());
+	}
+
+}
+
+} // ::moordyn::fileIO
 mat6
 translateMass(vec r, mat M)
 {

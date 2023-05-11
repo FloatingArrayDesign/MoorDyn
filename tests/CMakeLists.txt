@@ -16,17 +16,55 @@ if(WIN32)
     endif()
 endif()
 
-set(TESTS "minimal;lifting;pendulum;beam;time_schemes;io;rods;bodies_and_rods;wavekin;quasi_static_chain;wavekin_4;tripod;seafloor")
+set(TESTS 
+    minimal
+    lifting
+    pendulum
+    beam
+    time_schemes
+    io
+    rods
+    bodies_and_rods
+    quasi_static_chain
+    wavekin_4
+    tripod
+    seafloor
+)
+
+function(make_executable test_name)
+    add_executable(${test_name} ${test_name}.cpp)
+    target_link_libraries(${test_name} moordyn)
+    add_dependencies(${test_name} Test_MooringConfigFiles)
+endfunction()
+
+function(make_cpp_executable test_name)
+    make_executable(${test_name})
+    target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
+endfunction()
+
 if(USE_VTK)
     set(TESTS "${TESTS};vtk")
+
+    make_cpp_executable(wave_surface)
 endif()
+
 foreach(TEST ${TESTS})
-    add_executable(${TEST} ${TEST}.cpp)
-    target_link_libraries(${TEST} moordyn)
-    add_dependencies(${TEST} Test_MooringConfigFiles)
+    make_executable(${TEST})
     add_test(NAME ${TEST}
              COMMAND ${TEST})
 endforeach()
+
+set(CPP_TESTS 
+    wavekin
+    wavekin_7
+)
+
+foreach(TEST ${CPP_TESTS})
+    make_cpp_executable(${TEST})
+    add_test(NAME ${TEST}
+             COMMAND ${TEST})
+endforeach()
+
 
 if(${FORTRAN_WRAPPER})
     add_executable(fortran_bindings fortran_bindings.f90)

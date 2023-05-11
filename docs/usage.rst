@@ -423,9 +423,10 @@ The list of possible options is:
  - TmaxIC (120.0): The maximum simulation time to run in order to find a stationary initial condition (s)
  - CdScaleIC (5.0): The damping scale factor during the initial condition computation
  - threshIC (0.001): The lines tension maximum relative error to consider that the initial condition have converged
- - WaveKin (0): The waves model to use. 0 = none, 1 = waves externally driven, 2 = FFT in a regular grid, 3 = kinematics in a regular grid, 4 = WIP, 5 = WIP
- - dtWave (0.25): The time step to evaluate the waves, only for FFT ones (s)
- - Currents (0): The currents model to use. 0 = none, 1 = steady in a regular grid, 2 = dynamic in a regular grid, 3 = WIP, 4 = WIP
+ - WaveKin (0): The waves model to use. 0 = none, 1 = waves externally driven, 2 = FFT in a regular grid, 3 = kinematics in a regular grid, 4 = WIP, 5 = WIP, 7 = Wave Component Summing
+ - dtWave (0.25): The time step to evaluate the waves, only for wave grid (WaveKin = 3) (s)
+ - Currents (0): The currents model to use. 0 = none, 1 = steady in a regular grid, 2 = dynamic in a regular grid, 3 = WIP, 4 = WIP, 5 = 4D Current Grid
+ - UnifyCurrentGrid (1): When both waves and currents are defined using a grid method, you may want to pre-combine those grids into a single grid that stores the summed wave and current kinematics. When this option is 1 the wave grid points get the interpolated current grid values added to them. When this option is 0 the wave grid and current grid are kept separate.
  - WriteUnits (1): 0 to do not write the units header on the output files, 1 otherwise
  - FrictionCoefficient (0.0): The seabed friction coefficient
  - FricDamp (200.0): The seabed friction damping, to scale from no friction at null velocity to full friction when the velocity is large

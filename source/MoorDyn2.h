@@ -213,16 +213,24 @@ extern "C"
 
 	/** @brief Get the 3D seafloor instance
 	 *
-	 * The seafloor instance is only not null if a SeafloorPath was given as an option.
+	 * The seafloor instance is only not null if a SeafloorPath was given as an
+	 * option.
 	 * @param system The Moordyn system
-	 * @return The Seafloor instance, NULL if errors happened or there is no 3D seafloor
+	 * @return The Seafloor instance, NULL if errors happened or there is no 3D
+	 * seafloor
 	 */
 	MoorDynSeafloor DECLDIR MoorDyn_GetSeafloor(MoorDyn system);
 
-	/** @brief Initializes the external Wave kinetics
+	/**
+	 * @name External Wave Kinematics
+	 * The functions for setting external wave kinematics.
+	 */
+	/// @{
+
+	/** @brief Initializes the external Wave kinematics
 	 *
-	 * This is useless unless WaveKin option is set to 1 in the input file. If
-	 * that is the case, remember calling this function after MoorDyn_Init()
+	 * This is useless unless the WaveKin option is set to 1 in the input file.
+	 * If that is the case, remember to call this function after MoorDyn_Init()
 	 * @param system The Moordyn system
 	 * @param n The number of points where the wave kinematics shall be provided
 	 * @return MOORDYN_SUCESS If the external waves are correctly initialized,
@@ -233,26 +241,21 @@ extern "C"
 	/** @brief Get the number of points where the waves kinematics shall be
 	 * provided
 	 *
-	 * If env.WaveKin is not WAVES_EXTERNAL, this will return 0
-	 * @return The number of evaluation points
-	 * @see MoorDyn::ExternalWaveKinInit()
-	 * @see MoorDyn::GetWaves()
-	 */
-	/** @brief Get the number of points where the waves kinematics shall be
-	 * provided
-	 *
 	 * This is useless unless WaveKin option is set to 1 in the input file
 	 * @param system The Moordyn system
-	 * @param n The output number of points where the wave kinematics shall be
-	 * provided
+	 * @param n The output number of points where the wave kinematics shall
+	 * be provided
 	 * @return MOORDYN_SUCESS
+	 * @see MoorDyn_ExternalWaveKinInit()
 	 */
 	int DECLDIR MoorDyn_ExternalWaveKinGetN(MoorDyn system, unsigned int* n);
 
 	/** @brief Get the points where the waves kinematics shall be provided
 	 *
 	 * The kinematics on those points shall be provided just if WaveKin is set
-	 * to 1 in the input file
+	 * to 1 in the input file. The pointer r should be to an array with enough
+	 * space for 3 * N doubles, where N is the value from
+	 * MoorDyn_ExternalWaveKinGetN or MoorDyn_ExternalWaveKinInit.
 	 * @param system The Moordyn system
 	 * @param r The output coordinates (3 components per point)
 	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
@@ -282,12 +285,12 @@ extern "C"
 
 	/** @brief Set the kinematics of the waves
 	 *
-	 * Use this function if WaveKin option is set to 1 in the input file
+	 * Use this function if the WaveKin option is set to 1 in the input file
 	 * @param system The Moordyn system
 	 * @param U The velocities at the points (3 components per point)
 	 * @param Ud The accelerations at the points (3 components per point)
 	 * @param t Simulation time
-	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 * @see MoorDyn_ExternalWaveKinInit()
 	 * @see MoorDyn_ExternalWaveKinGetCoordinates()
@@ -318,6 +321,8 @@ extern "C"
 	{
 		return MoorDyn_ExternalWaveKinSet(system, U, Ud, t);
 	}
+
+	/// @}
 
 	/** @brief Get the number of bodies
 	 *
