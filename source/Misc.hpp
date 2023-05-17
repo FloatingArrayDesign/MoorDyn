@@ -36,7 +36,7 @@
 #include "MoorDynAPI.h"
 #include "Eigen/Dense"
 
-#include "waves/WaveOptions.hpp"
+#include "Waves/WaveOptions.hpp"
 
 #include <iostream>
 #include <vector>
