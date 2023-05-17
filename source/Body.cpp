@@ -345,11 +345,9 @@ Body::initiateStep(vec6 r, vec6 rd)
 		r_ves = vec6::Zero();
 		rd_ves = vec6::Zero();
 		return;
-	} else {
-		LOGERR << "Body " << number << "is not of type COUPLED or FIXED."
-		       << endl;
-		throw moordyn::invalid_value_error("Invalid body type");
 	}
+	LOGERR << "Body " << number << "is not of type COUPLED or FIXED." << endl;
+	throw moordyn::invalid_value_error("Invalid body type");
 }
 
 void

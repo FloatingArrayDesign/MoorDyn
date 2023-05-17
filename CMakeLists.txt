@@ -19,6 +19,8 @@ list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/Source")
 # The user options
 set(BUILD_DOCS OFF CACHE BOOL
     "Build the documentation for users and developers")
+set(BUILD_BENCHMARKS OFF CACHE BOOL
+    "Build the benchmarks. Makes use of Google's Benchmark library and requires an internet connection to download.")
 set(EXTERNAL_EIGEN ON CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(USE_VTK OFF CACHE BOOL
@@ -127,13 +129,17 @@ if(${BUILD_DOCS})
     add_subdirectory(docs)
 endif()
 
+# Benchmarks
+if(${BUILD_BENCHMARKS})
+    add_subdirectory(bench)
+endif()
+
 # Testing
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif()
 if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
     add_subdirectory(tests)
-    add_subdirectory(bench)
 endif()
 
 # Packaging
