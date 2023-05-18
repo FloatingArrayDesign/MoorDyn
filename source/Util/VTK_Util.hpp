@@ -24,10 +24,12 @@ vector_to_vtk_array(const char* name, const std::vector<double>& data);
  * @param mat
  * @return constexpr unsigned int
  */
-template<typename T, unsigned int N>
-constexpr unsigned int
+template<typename T, int N>
+constexpr int
 get_vec_size(const Eigen::Matrix<T, N, 1>& mat)
 {
+	static_assert(N >= 0,
+	              "cannot get_vec_size with dynamic sized Eigen vector");
 	return N;
 }
 
@@ -49,7 +51,7 @@ vector_to_vtk_array(const char* name, const std::vector<T>& data)
 
 	vtkSmartPointer<vtkFloatArray> a = vtkSmartPointer<vtkFloatArray>::New();
 	a->SetName(name);
-	const unsigned int num_comps = get_vec_size(data.front());
+	const int num_comps = get_vec_size(data.front());
 	a->SetNumberOfComponents(num_comps);
 	a->SetNumberOfTuples(data.size());
 
