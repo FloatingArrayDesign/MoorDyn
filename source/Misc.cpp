@@ -83,6 +83,15 @@ split(const string& str, const char sep)
 	return words;
 }
 
+void
+rtrim(std::string& s)
+{
+	s.erase(std::find_if(
+	            s.rbegin(), s.rend(), [](char& c) { return !std::isspace(c); })
+	            .base(),
+	        s.end());
+}
+
 int
 decomposeString(char outWord[10],
                 char let1[10],
@@ -193,18 +202,18 @@ fileToLines(const std::filesystem::path& path)
 	if (file.is_open()) {
 		std::string line;
 		while (std::getline(file, line)) {
+			// remove any trailing whitespace from the line
+			str::rtrim(line);
 			lines.push_back(line);
 		}
 		file.close();
 
 		return lines;
-	}
-	else {
+	} else {
 		std::stringstream ss;
 		ss << "Could not get lines of file: " << path;
 		throw input_file_error(ss.str().c_str());
 	}
-
 }
 
 } // ::moordyn::fileIO
