@@ -48,17 +48,13 @@ Seafloor::setup(EnvCondRef env, const string& filepath)
 		vector<string> fLines; // Buffer to load file into line-by-line
 		string fLine;          // Buffer to process each line of input file
 
-		// Read file into buffers:
-		ifstream f(filepath);
-		if (!f.is_open()) {
+		try {
+			fLines = moordyn::fileIO::fileToLines(filepath);
+
+		} catch (std::exception& err) {
 			LOGERR << "Cannot read the file " << filepath << '\n';
 			throw moordyn::input_file_error("Failure reading depths file");
 		}
-
-		while (getline(f, fLine)) {
-			fLines.push_back(fLine);
-		}
-		f.close();
 
 		if (fLines.size() < 4) {
 			// Basic input checking. Input file should contain

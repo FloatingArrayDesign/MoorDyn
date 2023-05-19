@@ -1391,6 +1391,7 @@ moordyn::MoorDyn::readFileIntoBuffers(vector<string>& in_txt)
 	while (in_file.good()) {
 		string line_txt;
 		getline(in_file, line_txt);
+		moordyn::str::rtrim(line_txt);
 		in_txt.push_back(line_txt);
 	}
 	in_file.close();

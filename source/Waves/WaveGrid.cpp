@@ -301,14 +301,7 @@ rectilinearGridFromFile(std::filesystem::path filepath, moordyn::Log* _log)
 	vector<string> lines;
 	string line;
 
-	ifstream f(filepath);
-	if (!f.is_open()) {
-		LOGERR << "Cannot read the file '" << filepath << "'" << endl;
-		throw moordyn::input_file_error("Invalid file");
-	}
-	while (getline(f, line))
-		lines.push_back(line);
-	f.close();
+	lines = moordyn::fileIO::fileToLines(filepath);
 
 	if (lines.size() < 9) {
 		LOGERR << "The waves grid file '" << filepath << "' has only "

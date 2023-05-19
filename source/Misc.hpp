@@ -525,6 +525,14 @@ split(const string& s)
 	return split(s, ' ');
 }
 
+/**
+ * @brief Removes trailing whitespace from the passed in string
+ *
+ * @param s String to trim
+ */
+void
+rtrim(string& s);
+
 /** @brief Split a string into separate letter strings and integers
  */
 int

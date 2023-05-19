@@ -588,6 +588,7 @@ class MoorDyn : public io::IO
 		while (f.good()) {
 			string fline;
 			getline(f, fline);
+			moordyn::str::rtrim(fline);
 			flines.push_back(fline);
 		}
 		f.close();
