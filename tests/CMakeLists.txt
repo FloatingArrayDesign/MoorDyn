@@ -1,5 +1,4 @@
-# We need first a custom target to copy all the input files in the compilation
-# folder
+# We need first a custom target to copy all the input files in the compilation # folder
 file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.stl
                              ${CMAKE_SOURCE_DIR}/tests/Mooring/*.dat
                              ${CMAKE_SOURCE_DIR}/tests/Mooring/*.txt)
@@ -31,6 +30,11 @@ set(TESTS
     seafloor
 )
 
+set(CPP_TESTS 
+    wavekin
+    wavekin_7
+)
+
 function(make_executable test_name)
     add_executable(${test_name} ${test_name}.cpp)
     target_link_libraries(${test_name} moordyn)
@@ -54,17 +58,11 @@ foreach(TEST ${TESTS})
              COMMAND ${TEST})
 endforeach()
 
-set(CPP_TESTS 
-    wavekin
-    wavekin_7
-)
-
 foreach(TEST ${CPP_TESTS})
     make_cpp_executable(${TEST})
     add_test(NAME ${TEST}
              COMMAND ${TEST})
 endforeach()
-
 
 if(${FORTRAN_WRAPPER})
     add_executable(fortran_bindings fortran_bindings.f90)
