@@ -58,6 +58,12 @@ foreach(TEST ${TESTS})
              COMMAND ${TEST})
 endforeach()
 
+set(CPP_TESTS 
+    wavekin
+    wavekin_7
+    testDecomposeString
+)
+
 foreach(TEST ${CPP_TESTS})
     make_cpp_executable(${TEST})
     add_test(NAME ${TEST}

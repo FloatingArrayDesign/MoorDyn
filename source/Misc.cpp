@@ -190,6 +190,54 @@ decomposeString(char outWord[10],
 	return 0;
 }
 
+int
+newDecomposeString(const std::string& outWord,
+                   std::string& let1,
+                   std::string& num1,
+                   std::string& let2,
+                   std::string& num2,
+                   std::string& let3)
+{
+	const std::string upperStr = upper(outWord);
+	const auto end = upperStr.cend();
+	std::array markers{ end, end, end, end, end };
+	std::size_t marker_idx = 0;
+	auto it = upperStr.cbegin();
+	bool wasLastAlpha = true;
+	while (it != upperStr.cend() && marker_idx < markers.size()) {
+		bool isalpha = std::isalpha(*it);
+		bool isnum = std::isdigit(*it);
+		if (isalpha || isnum) {
+			// if this char is alpha and the last one was not, or the last was
+			// one alpha and this one is not
+			if (isalpha != wasLastAlpha) {
+				markers[marker_idx] = it;
+				marker_idx++;
+				wasLastAlpha = !wasLastAlpha;
+			}
+		}
+		++it;
+	}
+	let1 = std::string(upperStr.cbegin(), markers[0]);
+	num1 = std::string(markers[0], markers[1]);
+	let2 = std::string(markers[1], markers[2]);
+	num2 = std::string(markers[2], markers[3]);
+	// using end here instead of markers[4] is to match the behavior of
+	// decomposeString, which copies all remaining characters
+	let3 = std::string(markers[3], end);
+	return num1.empty() ? -1 : 0;
+}
+
+bool
+isOneOf(const std::string& str, std::initializer_list<const std::string> values)
+{
+	for (auto v : values) {
+		if (str == v) {
+			return true;
+		}
+	}
+	return false;
+}
 } // ::moordyn::str
 
 namespace fileIO {
