@@ -5,6 +5,12 @@
 #include "MoorDyn2.hpp"
 #include "MoorDynAPI.h"
 #include "Misc.hpp"
+
+/** this currently just verified the new behavior against the previous behavior
+ *
+ *  In cases where the input string is larger than 9 characters, we don't do any
+ * check besides ensuring that they both run
+ */
 bool
 do_test(const std::string& source)
 {

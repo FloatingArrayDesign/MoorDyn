@@ -1143,7 +1143,7 @@ moordyn::MoorDyn::ReadInFile()
 				// declare dummy struct to be copied onto end of vector (and
 				// filled in later);
 				OutChanProps dummy;
-				strncpy(dummy.Name, entries[j].c_str(), 10);
+				dummy.Name = entries[j];
 
 				// figure out what type of output it is and process
 				// accordingly
@@ -1151,17 +1151,12 @@ moordyn::MoorDyn::ReadInFile()
 				// being NULL to below and handle errors (e.g. invalid line
 				// number)
 
-				// The length of dummy.Units is hardcoded to 10 in
-				// Misc.h
-				const int UnitsSize = 9;
-				dummy.Units[UnitsSize] = '\0';
-
 				// fairlead tension case (changed to just be for single
 				// line, not all connected lines)
 				if (let1 == "FAIRTEN") {
 					dummy.OType = 1;
 					dummy.QType = Ten;
-					strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
+					dummy.Units = moordyn::UnitList[Ten];
 					dummy.ObjID = atoi(num1.c_str());
 					dummy.NodeID = LineList[dummy.ObjID - 1]->getN();
 				}
@@ -1170,7 +1165,7 @@ moordyn::MoorDyn::ReadInFile()
 				else if (let1 == "ANCHTEN") {
 					dummy.OType = 1;
 					dummy.QType = Ten;
-					strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
+					dummy.Units = moordyn::UnitList[Ten];
 					dummy.ObjID = atoi(num1.c_str());
 					dummy.NodeID = 0;
 				}
@@ -1213,52 +1208,43 @@ moordyn::MoorDyn::ReadInFile()
 					if (let3 == "PX") {
 						// cout << "SETTING QTYPE to " << PosX << endl;
 						dummy.QType = PosX;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[PosX], UnitsSize);
+						dummy.Units = moordyn::UnitList[PosX];
 					} else if (let3 == "PY") {
 						dummy.QType = PosY;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[PosY], UnitsSize);
+						dummy.Units = moordyn::UnitList[PosY];
 					} else if (let3 == "PZ") {
 						dummy.QType = PosZ;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[PosZ], UnitsSize);
+						dummy.Units = moordyn::UnitList[PosZ];
 					} else if (let3 == "VX") {
 						dummy.QType = VelX;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[VelX], UnitsSize);
+						dummy.Units = moordyn::UnitList[VelX];
 					} else if (let3 == "VY") {
 						dummy.QType = VelY;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[VelY], UnitsSize);
+						dummy.Units = moordyn::UnitList[VelY];
 					} else if (let3 == "VZ") {
 						dummy.QType = VelZ;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[VelZ], UnitsSize);
+						dummy.Units = moordyn::UnitList[VelZ];
 					} else if (let3 == "AX") {
 						dummy.QType = AccX;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[AccX], UnitsSize);
+						dummy.Units = moordyn::UnitList[AccX];
 					} else if (let3 == "Ay") {
 						dummy.QType = AccY;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[AccY], UnitsSize);
+						dummy.Units = moordyn::UnitList[AccY];
 					} else if (let3 == "AZ") {
 						dummy.QType = AccZ;
-						strncpy(
-						    dummy.Units, moordyn::UnitList[AccZ], UnitsSize);
+						dummy.Units = moordyn::UnitList[AccZ];
 					} else if (let3 == "T" || let3 == "TEN") {
 						dummy.QType = Ten;
-						strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
+						dummy.Units = moordyn::UnitList[Ten];
 					} else if (let3 == "FX") {
 						dummy.QType = FX;
-						strncpy(dummy.Units, moordyn::UnitList[FX], UnitsSize);
+						dummy.Units = moordyn::UnitList[FX];
 					} else if (let3 == "FY") {
 						dummy.QType = FY;
-						strncpy(dummy.Units, moordyn::UnitList[FY], UnitsSize);
+						dummy.Units = moordyn::UnitList[FY];
 					} else if (let3 == "FZ") {
 						dummy.QType = FZ;
-						strncpy(dummy.Units, moordyn::UnitList[FZ], UnitsSize);
+						dummy.Units = moordyn::UnitList[FZ];
 					} else {
 						LOGWRN << "Warning in " << _filepath << ":" << i + 1
 						       << "..." << endl
@@ -1273,10 +1259,11 @@ moordyn::MoorDyn::ReadInFile()
 				// some name adjusting for special cases (maybe should
 				// handle this elsewhere...)
 				if ((dummy.OType == 3) && (dummy.QType == Ten)) {
-					if (dummy.NodeID > 0)
-						strncpy(dummy.Name, "TenEndB", 10);
-					else
-						strncpy(dummy.Name, "TenEndA", 10);
+					if (dummy.NodeID > 0) {
+						dummy.Name = "TenEndB";
+					} else {
+						dummy.Name = "TenEndA";
+					}
 				}
 
 				if ((dummy.OType > 0) && (dummy.QType > 0))
@@ -1587,20 +1574,16 @@ moordyn::MoorDyn::readBody(string inputText)
 		return nullptr;
 	}
 
-	char let1[10], num1[10], let2[10], num2[10], let3[10];
-	char typeWord[10];
-	strncpy(typeWord, entries[1].c_str(), 9);
-	typeWord[9] = '\0';
+	std::string let1, num1, let2, num2, let3;
 	// divided outWord into letters and numbers
-	str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+	str::newDecomposeString(entries[2], let1, num1, let2, num2, let3);
+	// str::decomposeString(typeWord, let1, num1, let2, num2, let3);
 
-	if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-	    !strcmp(let1, "FIX")) {
+	if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
 		// it is fixed  (this would just be used if someone wanted
 		// to temporarly fix a body that things were attached to)
 		type = Body::FIXED;
-	} else if (!strcmp(let1, "COUPLED") || !strcmp(let1, "VESSEL") ||
-	           !strcmp(let1, "VES") || !strcmp(let1, "CPLD")) {
+	} else if (str::isOneOf(let1, { "VESSEL", "VES", "COUPLED", "CPLD" })) {
 		// it is coupled - controlled from outside
 		type = Body::COUPLED;
 		CpldBodyIs.push_back(BodyList.size());
