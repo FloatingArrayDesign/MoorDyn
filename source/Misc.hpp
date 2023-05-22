@@ -549,7 +549,7 @@ newDecomposeString(const std::string& outWord,
 
 bool
 isOneOf(const std::string& str,
-        std::initializer_list<const std::string> values);
+        const std::initializer_list<const std::string> values);
 
 } // ::moordyn::str
 
@@ -947,13 +947,31 @@ typedef struct _BodyProps // matching body input stuff
 	double Ca;
 } BodyProps;
 
+enum QType : int
+{
+
+	Time = 0,
+	PosX = 1,
+	PosY = 2,
+	PosZ = 3,
+	VelX = 4,
+	VelY = 5,
+	VelZ = 6,
+	AccX = 7,
+	AccY = 8,
+	AccZ = 9,
+	Ten = 10,
+	FX = 11,
+	FY = 12,
+	FZ = 13
+};
 typedef struct _OutChanProps
 { // this is C version of MDOutParmType - a less literal alternative of the NWTC
   // OutParmType for MoorDyn (to avoid huge lists of possible output channel
   // permutations)
 	string Name;  // "name of output channel"
 	string Units; // "units string"
-	int QType;    // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
+	QType QType;  // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
 	int OType;    // "type of object - 1=line, 2=connect"
 	int NodeID;   // "node number if OType=1.  0=anchor, -1=N=Fairlead"
 	int ObjID;    // "number of Connect or Line object", subtract 1 to get the
@@ -982,20 +1000,20 @@ typedef struct _OutChanProps
 // Indices for computing output channels:  - customized for the MD_OutParmType
 // approach these are the "QTypes"
 
-const int Time = 0;
-const int PosX = 1;
-const int PosY = 2;
-const int PosZ = 3;
-const int VelX = 4;
-const int VelY = 5;
-const int VelZ = 6;
-const int AccX = 7;
-const int AccY = 8;
-const int AccZ = 9;
-const int Ten = 10;
-const int FX = 11;
-const int FY = 12;
-const int FZ = 13;
+// const int Time = 0;
+// const int PosX = 1;
+// const int PosY = 2;
+// const int PosZ = 3;
+// const int VelX = 4;
+// const int VelY = 5;
+// const int VelZ = 6;
+// const int AccX = 7;
+// const int AccY = 8;
+// const int AccZ = 9;
+// const int Ten = 10;
+// const int FX = 11;
+// const int FY = 12;
+// const int FZ = 13;
 
 // UnitList is in MoorDyn.cpp
 
