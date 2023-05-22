@@ -45,6 +45,7 @@
 #include <cmath>
 #include <complex>
 #include <utility>
+#include <initializer_list>
 
 #include <fstream>
 #include <sstream>
@@ -342,18 +343,13 @@ typedef enum
 	ENDPOINT_TOP = ENDPOINT_B,
 } EndPoints;
 
-#ifndef ASCII_A
-/// The ASCII value of the A character
-#define ASCII_A 10
-#endif
-
 /** @brief Gives an character representation of the end point
  * @return The endpoint char
  */
 inline char
 end_point_name(EndPoints p)
 {
-	return char(ASCII_A + (int)p);
+	return char('A' + (int)p);
 }
 
 /** \addtogroup moordyn_errors
@@ -542,6 +538,18 @@ decomposeString(char outWord[10],
                 char let2[10],
                 char num2[10],
                 char let3[10]);
+
+int
+newDecomposeString(const std::string& outWord,
+                   std::string& let1,
+                   std::string& num1,
+                   std::string& let2,
+                   std::string& num2,
+                   std::string& let3);
+
+bool
+isOneOf(const std::string& str,
+        std::initializer_list<const std::string> values);
 
 } // ::moordyn::str
 

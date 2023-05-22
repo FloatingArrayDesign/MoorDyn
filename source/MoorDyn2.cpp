@@ -791,21 +791,16 @@ moordyn::MoorDyn::ReadInFile()
 			}
 
 			Connection::types type;
-			char let1[10], num1[10], let2[10], num2[10], let3[10];
-			char typeWord[10];
-			strncpy(typeWord, entries[1].c_str(), 9);
-			typeWord[9] = '\0';
+			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
-			str::decomposeString(typeWord, let1, num1, let2, num2, let3);
-
-			if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-			    !strcmp(let1, "FIX")) {
+			str::newDecomposeString(entries[1], let1, num1, let2, num2, let3);
+			if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
 				// it is fixed  (this would just be used if someone wanted
 				// to temporarly fix a body that things were attached to)
 				type = Connection::FIXED;
-			} else if (!strcmp(let1, "BODY")) {
+			} else if (let1 == "BODY") {
 				type = Connection::FIXED;
-				if (!strlen(num1)) {
+				if (num1.empty()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
@@ -813,7 +808,7 @@ moordyn::MoorDyn::ReadInFile()
 					       << " Body attachment" << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-				unsigned int bodyID = atoi(num1);
+				unsigned int bodyID = atoi(num1.c_str());
 				if (!bodyID || (bodyID > BodyList.size())) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
@@ -821,14 +816,16 @@ moordyn::MoorDyn::ReadInFile()
 					       << "There is not " << bodyID << " bodies" << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-			} else if (!strcmp(let1, "FAIRLEAD") || !strcmp(let1, "VESSEL") ||
-			           !strcmp(let1, "VES") || !strcmp(let1, "COUPLED") ||
-			           !strcmp(let1, "CPLD")) {
+			} else if (str::isOneOf(let1,
+			                        { "FAIRLEAD",
+			                          "VESSEL",
+			                          "VES",
+			                          "COUPLED",
+			                          "CPLD" })) {
 				// if a fairlead, add to list and add
 				type = Connection::COUPLED;
 				CpldConIs.push_back(ConnectionList.size());
-			} else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") ||
-			           !strcmp(let1, "FREE")) {
+			} else if (str::isOneOf(let1, { "CONNECT", "CON", "FREE" })) {
 				// if a connect, add to list and add states for it
 				type = Connection::FREE;
 				FreeConIs.push_back(ConnectionList.size());
@@ -861,11 +858,10 @@ moordyn::MoorDyn::ReadInFile()
 
 			// depending on type, assign the Connection to its respective
 			// parent body
-			if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-			    !strcmp(let1, "FIX"))
+			if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" }))
 				GroundBody->addConnection(obj, r0);
-			else if (!strcmp(let1, "BODY")) {
-				int bodyID = atoi(num1);
+			else if (let1 == "BODY") {
+				int bodyID = stoi(num1);
 				BodyList[bodyID - 1]->addConnection(obj, r0);
 			}
 			LOGDBG << endl;
@@ -966,14 +962,12 @@ moordyn::MoorDyn::ReadInFile()
 
 			for (unsigned int I = 0; I < 2; I++) {
 				const EndPoints end_point = I == 0 ? ENDPOINT_A : ENDPOINT_B;
-				char let1[10], num1[10], let2[10], num2[10], let3[10];
-				char typeWord[10];
-				strncpy(typeWord, entries[2 + I].c_str(), 9);
-				typeWord[9] = '\0';
+				std::string let1, num1, let2, num2, let3;
 				// divided outWord into letters and numbers
-				str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+				str::newDecomposeString(
+				    entries[2 + I], let1, num1, let2, num2, let3);
 
-				if (!strlen(num1)) {
+				if (num1.empty()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
@@ -981,9 +975,9 @@ moordyn::MoorDyn::ReadInFile()
 					       << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-				unsigned int id = atoi(num1);
+				unsigned int id = atoi(num1.c_str());
 
-				if (!strcmp(let1, "R") || !strcmp(let1, "ROD")) {
+				if (str::isOneOf(let1, { "R", "ROD" })) {
 					if (!id || id > RodList.size()) {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
 						       << "..." << endl
@@ -991,9 +985,9 @@ moordyn::MoorDyn::ReadInFile()
 						       << "There are not " << id << " rods" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
-					if (!strcmp(let2, "A"))
+					if (let2 == "A")
 						RodList[id - 1]->addLine(obj, end_point, ENDPOINT_A);
-					else if (!strcmp(let2, "B"))
+					else if (let2 == "B")
 						RodList[id - 1]->addLine(obj, end_point, ENDPOINT_B);
 					else {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
@@ -1002,8 +996,7 @@ moordyn::MoorDyn::ReadInFile()
 						       << "Rod end (A or B) must be specified" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
-				} else if (!strlen(let1) || !strcmp(let1, "C") ||
-				           !strcmp(let1, "CON")) {
+				} else if (let1.empty() || str::isOneOf(let1, { "C", "CON" })) {
 					if (!id || id > ConnectionList.size()) {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
 						       << "..." << endl
@@ -1047,14 +1040,11 @@ moordyn::MoorDyn::ReadInFile()
 			obj->status = false;
 			FailList.push_back(obj);
 
-			char let1[10], num1[10], let2[10], num2[10], let3[10];
-			char typeWord[10];
-			strncpy(typeWord, entries[0].c_str(), 9);
-			typeWord[9] = '\0';
+			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
-			str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+			str::newDecomposeString(entries[0], let1, num1, let2, num2, let3);
 
-			if (!strlen(num1)) {
+			if (num1.empty()) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
@@ -1062,8 +1052,8 @@ moordyn::MoorDyn::ReadInFile()
 				return MOORDYN_INVALID_INPUT;
 			}
 
-			const unsigned int id = atoi(num1);
-			if (!strcmp(let1, "R") || !strcmp(let1, "ROD")) {
+			const unsigned int id = atoi(num1.c_str());
+			if (str::isOneOf(let1, { "R", "ROD" })) {
 				if (!id || id > RodList.size()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
@@ -1072,9 +1062,9 @@ moordyn::MoorDyn::ReadInFile()
 					return MOORDYN_INVALID_INPUT;
 				}
 				obj->rod = RodList[id - 1];
-				if (!strcmp(let2, "A"))
+				if (let2 == "A")
 					obj->rod_end_point = ENDPOINT_A;
-				else if (!strcmp(let2, "B"))
+				else if (let2 == "B")
 					obj->rod_end_point = ENDPOINT_B;
 				else {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1083,8 +1073,7 @@ moordyn::MoorDyn::ReadInFile()
 					       << "Failure end (A or B) must be specified" << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-			} else if (!strlen(let1) || !strcmp(let1, "C") ||
-			           !strcmp(let1, "CON")) {
+			} else if (let1.empty() || str::isOneOf(let1, { "C", "CON" })) {
 				if (!id || id > ConnectionList.size()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
@@ -1146,17 +1135,15 @@ moordyn::MoorDyn::ReadInFile()
 			for (unsigned int j = 0; j < entries.size();
 			     j++) // loop through each word on each line
 			{
-				char let1[10], num1[10], let2[10], num2[10], let3[10];
-				char typeWord[10];
-				typeWord[9] = '\0';
-				strncpy(typeWord, entries[j].c_str(), 9);
+				std::string let1, num1, let2, num2, let3;
 				// divided outWord into letters and numbers
-				str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+				str::newDecomposeString(
+				    entries[j], let1, num1, let2, num2, let3);
 
 				// declare dummy struct to be copied onto end of vector (and
 				// filled in later);
 				OutChanProps dummy;
-				strncpy(dummy.Name, typeWord, 10);
+				strncpy(dummy.Name, entries[j].c_str(), 10);
 
 				// figure out what type of output it is and process
 				// accordingly
@@ -1171,40 +1158,41 @@ moordyn::MoorDyn::ReadInFile()
 
 				// fairlead tension case (changed to just be for single
 				// line, not all connected lines)
-				if (!strcmp(let1, "FAIRTEN")) {
+				if (let1 == "FAIRTEN") {
 					dummy.OType = 1;
 					dummy.QType = Ten;
 					strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
-					dummy.ObjID = atoi(num1);
+					dummy.ObjID = atoi(num1.c_str());
 					dummy.NodeID = LineList[dummy.ObjID - 1]->getN();
 				}
 				// achor tension case (changed to just be for single line,
 				// not all connected lines)
-				else if (!strcmp(let1, "ANCHTEN")) {
+				else if (let1 == "ANCHTEN") {
 					dummy.OType = 1;
 					dummy.QType = Ten;
 					strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
-					dummy.ObjID = atoi(num1);
+					dummy.ObjID = atoi(num1.c_str());
 					dummy.NodeID = 0;
 				}
 				// more general case
 				else {
 					// get object type and node number if applicable
 					// Line case:  L?N?xxxx
-					if (!strcmp(let1, "L")) {
+					if (let1 == "L") {
 						dummy.OType = 1;
-						dummy.NodeID = atoi(num2);
+						dummy.NodeID = atoi(num2.c_str());
 					}
 					// Connect case:   C?xxx or Con?xxx
-					else if (!strcmp(let1, "C") || !strcmp(let1, "CON")) {
+					else if (str::isOneOf(let1, { "C", "CON" })) {
+
 						dummy.OType = 2;
 						dummy.NodeID = -1;
-						strncpy(let3, let2, 10);
+						let3 = let2;
 					}
 					// Rod case:   R?xxx or Rod?xxx
-					else if (!strcmp(let1, "R") || !strcmp(let1, "ROD")) {
+					else if (str::isOneOf(let1, { "R", "ROD" })) {
 						dummy.OType = 3;
-						dummy.NodeID = atoi(num2);
+						dummy.NodeID = atoi(num2.c_str());
 					}
 					// should do fairlead option also!
 
@@ -1220,55 +1208,55 @@ moordyn::MoorDyn::ReadInFile()
 					}
 
 					// object number
-					dummy.ObjID = atoi(num1);
+					dummy.ObjID = atoi(num1.c_str());
 
-					if (!strcmp(let3, "PX")) {
+					if (let3 == "PX") {
 						// cout << "SETTING QTYPE to " << PosX << endl;
 						dummy.QType = PosX;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[PosX], UnitsSize);
-					} else if (!strcmp(let3, "PY")) {
+					} else if (let3 == "PY") {
 						dummy.QType = PosY;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[PosY], UnitsSize);
-					} else if (!strcmp(let3, "PZ")) {
+					} else if (let3 == "PZ") {
 						dummy.QType = PosZ;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[PosZ], UnitsSize);
-					} else if (!strcmp(let3, "VX")) {
+					} else if (let3 == "VX") {
 						dummy.QType = VelX;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[VelX], UnitsSize);
-					} else if (!strcmp(let3, "VY")) {
+					} else if (let3 == "VY") {
 						dummy.QType = VelY;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[VelY], UnitsSize);
-					} else if (!strcmp(let3, "VZ")) {
+					} else if (let3 == "VZ") {
 						dummy.QType = VelZ;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[VelZ], UnitsSize);
-					} else if (!strcmp(let3, "AX")) {
+					} else if (let3 == "AX") {
 						dummy.QType = AccX;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[AccX], UnitsSize);
-					} else if (!strcmp(let3, "Ay")) {
+					} else if (let3 == "Ay") {
 						dummy.QType = AccY;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[AccY], UnitsSize);
-					} else if (!strcmp(let3, "AZ")) {
+					} else if (let3 == "AZ") {
 						dummy.QType = AccZ;
 						strncpy(
 						    dummy.Units, moordyn::UnitList[AccZ], UnitsSize);
-					} else if (!strcmp(let3, "T") || !strcmp(let3, "TEN")) {
+					} else if (let3 == "T" || let3 == "TEN") {
 						dummy.QType = Ten;
 						strncpy(dummy.Units, moordyn::UnitList[Ten], UnitsSize);
-					} else if (!strcmp(let3, "FX")) {
+					} else if (let3 == "FX") {
 						dummy.QType = FX;
 						strncpy(dummy.Units, moordyn::UnitList[FX], UnitsSize);
-					} else if (!strcmp(let3, "FY")) {
+					} else if (let3 == "FY") {
 						dummy.QType = FY;
 						strncpy(dummy.Units, moordyn::UnitList[FY], UnitsSize);
-					} else if (!strcmp(let3, "FZ")) {
+					} else if (let3 == "FZ") {
 						dummy.QType = FZ;
 						strncpy(dummy.Units, moordyn::UnitList[FZ], UnitsSize);
 					} else {
@@ -1657,35 +1645,31 @@ moordyn::MoorDyn::readRod(string inputText)
 	int NumSegs = atoi(entries[9].c_str());
 	string outchannels = entries[10];
 
-	char let1[10], num1[10], let2[10], num2[10], let3[10];
-	char typeWord[10];
-	strncpy(typeWord, entries[2].c_str(), 9);
-	typeWord[9] = '\0';
+	std::string let1, num1, let2, num2, let3;
 	// divided outWord into letters and numbers
-	str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+	str::newDecomposeString(entries[2], let1, num1, let2, num2, let3);
 
 	Rod::types type;
-	if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-	    !strcmp(let1, "FIX")) {
+	if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
 		// it is fixed  (this would just be used if someone wanted
 		// to temporarly fix a body that things were attached to)
 		type = Rod::FIXED;
-	} else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN")) {
+	} else if (str::isOneOf(let1, { "PINNED", "PIN" })) {
 		// it is pinned
 		type = Rod::PINNED;
 		FreeRodIs.push_back(RodList.size()); // add this pinned rod to the free
 		                                     // list because it is half free
 		RodStateIs.push_back(nX); // assign start index of this rod's states
 		nX += 6;                  // add 6 state variables for each pinned rod
-	} else if (!strcmp(let1, "BODY")) {
-		if (!strlen(num1)) {
+	} else if (let1 == "BODY") {
+		if (num1.empty()) {
 			LOGERR << "Error in " << _filepath << ":"
 			       << "'" << inputText << "'" << endl
 			       << "no number provided for Rod " << number
 			       << " Body attachment" << endl;
 			return nullptr;
 		}
-		unsigned int bodyID = atoi(num1);
+		unsigned int bodyID = atoi(num1.c_str());
 		if (!bodyID || (bodyID > BodyList.size())) {
 			LOGERR << "Error in " << _filepath << ":"
 			       << "'" << inputText << "'" << endl
@@ -1693,7 +1677,7 @@ moordyn::MoorDyn::readRod(string inputText)
 			return nullptr;
 		}
 
-		if (!strcmp(let2, "PINNED") || !strcmp(let2, "PIN")) {
+		if (str::isOneOf(let2, { "PINNED", "PIN" })) {
 			// it is pinned
 			type = Rod::PINNED;
 			FreeRodIs.push_back(
@@ -1704,13 +1688,12 @@ moordyn::MoorDyn::readRod(string inputText)
 		} else {
 			type = Rod::FIXED;
 		}
-	} else if (!strcmp(let1, "VESSEL") || !strcmp(let1, "VES") ||
-	           !strcmp(let1, "COUPLED") || !strcmp(let1, "CPLD")) {
+	} else if (str::isOneOf(let1, { "VESSEL", "VES", "COUPLED", "CPLD" })) {
 		// if a rigid fairlead, add to list and add
 		type = Rod::COUPLED;
 		CpldRodIs.push_back(
 		    RodList.size()); // index of fairlead in RodList vector
-	} else if (!strcmp(let1, "VESPIN") || !strcmp(let1, "CPLDPIN")) {
+	} else if (str::isOneOf(let1, { "VESPIN", "CPLDPIN" })) {
 		// if a pinned fairlead, add to list and add
 		type = Rod::CPLDPIN;
 		CpldRodIs.push_back(
@@ -1720,8 +1703,7 @@ moordyn::MoorDyn::readRod(string inputText)
 		                          // list because it is half free
 		RodStateIs.push_back(nX); // assign start index of this rod's states
 		nX += 6;                  // add 6 state variables for each pinned rod
-	} else if (!strcmp(let1, "CONNECT") || !strcmp(let1, "CON") ||
-	           !strcmp(let1, "FREE")) {
+	} else if (str::isOneOf(let1, { "CONNECT", "CON", "FREE" })) {
 		type = Rod::FREE;
 		FreeRodIs.push_back(
 		    RodList.size());      // add this free rod to the free list
@@ -1776,13 +1758,12 @@ moordyn::MoorDyn::readRod(string inputText)
 
 	// depending on type, assign the Rod to its respective parent
 	// body
-	if (!strcmp(let1, "ANCHOR") || !strcmp(let1, "FIXED") ||
-	    !strcmp(let1, "FIX"))
+	if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" }))
 		GroundBody->addRod(obj, endCoords);
-	else if (!strcmp(let1, "PINNED") || !strcmp(let1, "PIN"))
+	if (str::isOneOf(let1, { "PINNED", "PIN" }))
 		GroundBody->addRod(obj, endCoords);
-	else if (!strcmp(let1, "BODY")) {
-		unsigned int bodyID = atoi(num1);
+	else if (let1 == "BODY") {
+		unsigned int bodyID = stoi(num1);
 		BodyList[bodyID - 1]->addRod(obj, endCoords);
 	}
 	LOGDBG << endl;
