@@ -951,14 +951,13 @@ typedef struct _OutChanProps
 { // this is C version of MDOutParmType - a less literal alternative of the NWTC
   // OutParmType for MoorDyn (to avoid huge lists of possible output channel
   // permutations)
-	char Name[10];  // "name of output channel"
-	char Units[10]; // "units string"     - should match UnitsSize in
-	                // MoorDyn.cpp (should turn into def)
-	int QType;      // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
-	int OType;      // "type of object - 1=line, 2=connect"
-	int NodeID;     // "node number if OType=1.  0=anchor, -1=N=Fairlead"
-	int ObjID;      // "number of Connect or Line object", subtract 1 to get the
-	                // index in the LineList or ConnectList
+	string Name;  // "name of output channel"
+	string Units; // "units string"
+	int QType;    // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
+	int OType;    // "type of object - 1=line, 2=connect"
+	int NodeID;   // "node number if OType=1.  0=anchor, -1=N=Fairlead"
+	int ObjID;    // "number of Connect or Line object", subtract 1 to get the
+	              // index in the LineList or ConnectList
 } OutChanProps;
 
 // --------------------------- Output definitions
