@@ -229,7 +229,8 @@ newDecomposeString(const std::string& outWord,
 }
 
 bool
-isOneOf(const std::string& str, std::initializer_list<const std::string> values)
+isOneOf(const std::string& str,
+        const std::initializer_list<const std::string> values)
 {
 	for (auto v : values) {
 		if (str == v) {
