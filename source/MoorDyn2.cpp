@@ -1797,6 +1797,12 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 	// DT is old way, should phase out
 	if ((name == "dtM") || (name == "DT"))
 		dtM0 = atof(entries[0].c_str());
+	else if (name == "writeLog") {
+		// This was actually already did, so we do not need to do that again
+		// But we really want to have this if to avoid showing a warning for
+		// Unrecognized option writeLog
+		// env->writeLog = atoi(entries[0].c_str());
+	}
 	else if (name == "tScheme") {
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
