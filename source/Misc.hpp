@@ -725,27 +725,29 @@ RotZ(real rads)
 	return R;
 }
 
-/** @brief Rotation matrix around z axis
- * @param x The angle around x axis in radians
- * @param y The angle around y axis in radians
- * @param z The angle around z axis in radians
- * @return The rotation matrix
- */
-inline mat
-RotXYZ(real x, real y, real z)
-{
-	return RotZ(z) * RotY(y) * RotX(x);
+// Create the Euler rotations of the type RotXYZ, RotXZX, RotZYX...
+#define MAKE_EULER_ROT(a,b,c)                                                  \
+inline mat Rot ## a ## b ## c(real a1, real a2, real a3)                       \
+{                                                                              \
+	return Rot ## a (a1) * Rot ## b (a2) * Rot ## c (a3);                      \
+}                                                                              \
+inline mat Rot ## a ## b ## c(vec rads)                                        \
+{                                                                              \
+	return Rot ## a ## b ## c (rads[0], rads[1], rads[2]);                     \
 }
 
-/** @brief Euler XYZ rotation matrix
- * @param rads The angles in radians
- * @return The rotation matrix
- */
-inline mat
-RotXYZ(vec rads)
-{
-	return RotXYZ(rads[0], rads[1], rads[2]);
-}
+MAKE_EULER_ROT(X, Y, X)
+MAKE_EULER_ROT(X, Y, Z)
+MAKE_EULER_ROT(X, Z, X)
+MAKE_EULER_ROT(X, Z, Y)
+MAKE_EULER_ROT(Y, X, Y)
+MAKE_EULER_ROT(Y, X, Z)
+MAKE_EULER_ROT(Y, Z, X)
+MAKE_EULER_ROT(Y, Z, Y)
+MAKE_EULER_ROT(Z, X, Y)
+MAKE_EULER_ROT(Z, X, Z)
+MAKE_EULER_ROT(Z, Y, X)
+MAKE_EULER_ROT(Z, Y, Z)
 
 /** @brief Get the spherical angles for a vector
  * @param q The vector
