@@ -279,6 +279,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	real t = 0;
 	bool converged = true;
 	real max_error = 0.0;
+	unsigned int max_error_line = 0;
+	real best_score = std::numeric_limits<real>::max();
+	real best_score_t = 0.0;
+	unsigned int best_score_line = 0;
 	while ((t < ICTmax) && (!skip_ic)) {
 		// Integrate one ICD timestep (ICdt)
 		real t_target = ICdt;
@@ -324,25 +328,22 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 				for (unsigned int pt = 0; pt < convergence_iters; pt++) {
 					const real error =
 					    abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
-					if (error > max_error)
+					if (error > max_error) {
 						max_error = error;
-					if (max_error > ICthresh) {
-						converged = false;
-						if ((_log->GetVerbosity() > MOORDYN_DBG_LEVEL) ||
-						    (_log->GetLogLevel() > MOORDYN_DBG_LEVEL)) {
-							// We are not reporting the error, so it is enough
-							// to know that the criteria convergence has not
-							// been met
-							break;
-						}
+						max_error_line = LineList[lf]->number;
 					}
 				}
-				if (!converged) {
-					LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
-					       << iic << "), error = " << 100.0 * max_error
-					       << "%     \r";
-					break;
-				}
+			}
+			if (max_error < best_score) {
+				best_score = max_error;
+				best_score_t = t;
+				best_score_line = max_error_line;
+			}
+			if (max_error > ICthresh) {
+				converged = false;
+				LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
+						<< iic << "), error = " << 100.0 * max_error
+						<< "% on line " << max_error_line << "     \r";
 			}
 
 			if (converged)
@@ -358,7 +359,12 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		LOGWRN << "Fairlead tensions did not converged" << endl;
 	}
 	LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
-	       << "%" << endl;
+	       << "% on line " << max_error_line << endl;
+	if (!converged) {
+		LOGMSG << "Best score at " << best_score_t << " s = "
+		       << 100.0 * best_score << "% on line " << best_score_line
+		       << endl;
+	}
 
 	// restore drag coefficients to normal values and restart time counter of
 	// each object
