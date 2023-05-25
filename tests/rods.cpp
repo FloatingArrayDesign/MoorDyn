@@ -208,8 +208,8 @@ hanging()
 int
 main(int, char**)
 {
-	// if (!pinned_floating())
-	// 	return 1;
+	if (!pinned_floating())
+		return 1;
 	if (!hanging())
 		return 2;
 	return 0;
