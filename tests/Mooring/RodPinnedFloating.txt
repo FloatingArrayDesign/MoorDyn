@@ -14,7 +14,7 @@ ID   RodType   Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs  RodOutput
 ---------------------- OPTIONS -------------------------------------------------
 2             writeLog             Write a log file
 1e-5          dtM                  time step to use in mooring integration (s)
-1000          WtrDnsity            water density (kg/m^3)
+1000          WtrDnsty             water density (kg/m^3)
 10            WtrDpth              water depth (m)
 0.25          dtIC                 time interval for analyzing convergence during IC gen (s)
 0.0           TmaxIC               max time for ic gen (s)
