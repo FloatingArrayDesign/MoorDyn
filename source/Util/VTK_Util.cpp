@@ -1,5 +1,7 @@
 #include "VTK_Util.hpp"
 
+#ifdef USE_VTK
+
 vtkSmartPointer<vtkFloatArray>
 vector_to_vtk_array(const char* name, const std::vector<double>& data)
 {
@@ -14,3 +16,5 @@ vector_to_vtk_array(const char* name, const std::vector<double>& data)
 	}
 	return a;
 }
+
+#endif
