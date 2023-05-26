@@ -107,7 +107,7 @@ Body::setup(int number_in,
 	v6 = vec6::Zero();
 
 	// calculate orientation matrix based on latest angles
-	OrMat = RotXYZ(r6(Eigen::seqN(3, 3)));
+	OrMat = RotZYX(r6(Eigen::seqN(3, 3)).reverse());
 
 	LOGDBG << "Set up Body " << number << ", type " << TypeName(type) << ". "
 	       << endl;
@@ -360,7 +360,7 @@ Body::updateFairlead(real time)
 		v6 = rd_ves;
 
 		// calculate orientation matrix based on latest angles
-		OrMat = RotXYZ(r6(Eigen::seqN(3, 3)));
+		OrMat = RotZYX(r6(Eigen::seqN(3, 3)).reverse());
 
 		// set positions of any dependent connections and rods
 		setDependentStates();
@@ -379,7 +379,7 @@ Body::setState(vec6 pos, vec6 vel)
 	v6 = vel;
 
 	// calculate orientation matrix based on latest angles
-	OrMat = RotXYZ(r6[3], r6[4], r6[5]);
+	OrMat = RotZYX(r6[5], r6[4], r6[3]);
 
 	// set positions of any dependent connections and rods
 	setDependentStates();
