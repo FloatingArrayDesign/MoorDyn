@@ -23,7 +23,7 @@
 
 
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DLINUX -DMoorDyn_EXPORTS -fPIC
-CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC
+CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC -I../../source/
 
 ifdef USEGL
 CFLAGS += -DUSEGL
@@ -33,33 +33,17 @@ endif
 CFLAGS += $(COPTS)
 LFLAGS += $(LOPTS)
 
-CPPFLAGS = $(CFLAGS) -std=c++14
+CPPFLAGS = $(CFLAGS) -std=c++17
 EXEFLAGS = -O3 -g -Wall -Wextra -DLINUX $(EXEOPTS)
-HEADERS = ../../source/Body.h \
-          ../../source/Connection.h \
-          ../../source/_kiss_fft_guts.h \
-          ../../source/kiss_fft.h \
-          ../../source/kiss_fftr.h \
-          ../../source/Line.h \
-          ../../source/MoorDyn2.h \
-          ../../source/MoorDynAPI.h \
-          ../../source/MoorDyn.h \
-          ../../source/Rod.h \
-          ../../source/Waves.h \
-		  ../../source/Seafloor.h \
-          ../../source/Body.hpp \
-          ../../source/Connection.hpp \
-          ../../source/IO.hpp \
-          ../../source/Line.hpp \
-          ../../source/Log.hpp \
-          ../../source/Misc.hpp \
-          ../../source/MoorDyn2.hpp \
-          ../../source/QSlines.hpp \
-          ../../source/Rod.hpp \
-          ../../source/State.hpp \
-          ../../source/Time.hpp \
-          ../../source/Waves.hpp \
-		  ../../source/Seafloor.hpp
+HEADERS = $(wildcard ../../source/*.hpp) \
+          $(wildcard ../../source/Util/*.hpp) \
+          $(wildcard ../../source/Waves/*.hpp) \
+          $(wildcard ../../source/*.h)
+SOURCES = $(wildcard ../../source/*.cpp) \
+          $(wildcard ../../source/Util/*.cpp) \
+          $(wildcard ../../source/Waves/*.cpp)
+OBJECTS = $(patsubst ../../source/%,%,$(patsubst %.cpp,%.o,$(SOURCES)))
+DIRGUARD = @mkdir -p $(@D)
 
 all: libmoordyn.so
 
@@ -67,78 +51,42 @@ libmoordyn.so: libmoordyn.so.2.0.0
 	rm -f libmoordyn.so
 	ln -s libmoordyn.so.2.0.0 libmoordyn.so
 
-libmoordyn.so.2.0.0: MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Seafloor.o Log.o IO.o Misc.o kiss_fft.o kiss_fftr.o
-	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 MoorDyn.o MoorDyn2.o Line.o Connection.o Body.o Rod.o State.o Time.o Waves.o Seafloor.o Log.o IO.o Misc.o kiss_fft.o kiss_fftr.o
+libmoordyn.so.2.0.0: $(OBJECTS)
+	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 $(OBJECTS)
 
-MoorDyn.o: ../../source/MoorDyn.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/MoorDyn.cpp
-
-MoorDyn2.o: ../../source/MoorDyn2.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/MoorDyn2.cpp
-
-kiss_fft.o: ../../source/kiss_fft.cpp ../../source/kiss_fft.h ../../source/_kiss_fft_guts.h
-	$(CC) $(CFLAGS) ../../source/kiss_fft.cpp
-
-kiss_fftr.o: ../../source/kiss_fftr.cpp ../../source/kiss_fftr.h ../../source/_kiss_fft_guts.h
-	$(CC) $(CFLAGS) ../../source/kiss_fftr.cpp
-
-Line.o: ../../source/Line.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Line.cpp
-
-Connection.o: ../../source/Connection.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Connection.cpp
-
-Body.o: ../../source/Body.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Body.cpp
-
-Rod.o: ../../source/Rod.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Rod.cpp
-
-State.o: ../../source/State.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/State.cpp
-
-Time.o: ../../source/Time.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Time.cpp
-
-Waves.o: ../../source/Waves.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Waves.cpp
-
-Seafloor.o: ../../source/Seafloor.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Seafloor.cpp
-
-Log.o: ../../source/Log.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Log.cpp
-
-IO.o: ../../source/IO.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/IO.cpp
-
-Misc.o: ../../source/Misc.cpp $(HEADERS)
-	$(CXX) $(CPPFLAGS) ../../source/Misc.cpp
+%.o: ../../source/%.cpp $(HEADERS)
+	${CXX} $(CPPFLAGS) -o $@ $<
+Util/%.o: ../../source/Util/%.cpp $(HEADERS)
+	$(DIRGUARD)
+	${CXX} $(CPPFLAGS) -o $@ $<
+Waves/%.o: ../../source/Waves/%.cpp $(HEADERS)
+	$(DIRGUARD)
+	${CXX} $(CPPFLAGS) -o $@ $<
 
 clean:
 	rm -f *.o *.so *.so.*
 	rm -f test_*
 
-test_minimal: ../../test/minimal.cpp libmoordyn.so
-	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../test/minimal.cpp
+test_minimal: ../../tests/minimal.cpp libmoordyn.so
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_minimal ../../tests/minimal.cpp
 
-test_bodies_and_rods: ../../test/bodies_and_rods.cpp libmoordyn.so
-	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_bodies_and_rods ../../test/bodies_and_rods.cpp
+test_bodies_and_rods: ../../tests/bodies_and_rods.cpp libmoordyn.so
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_bodies_and_rods ../../tests/bodies_and_rods.cpp
 
-test_wavekin: ../../test/wavekin.cpp libmoordyn.so
-	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_wavekin ../../test/wavekin.cpp
+test_wavekin: ../../tests/wavekin.cpp libmoordyn.so
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_wavekin ../../tests/wavekin.cpp
 
-test_quasi_static_chain: ../../test/quasi_static_chain.cpp libmoordyn.so
-	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../test/quasi_static_chain.cpp
+test_quasi_static_chain: ../../tests/quasi_static_chain.cpp libmoordyn.so
+	$(CXX) $(EXEFLAGS) -L./ -lmoordyn -I../../source/ -o test_quasi_static_chain ../../tests/quasi_static_chain.cpp
 
 test: test_minimal test_bodies_and_rods test_wavekin test_quasi_static_chain
-	cd ../../test/; \
+	cd ../../tests/; \
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_minimal
-	cd ../../test/; \
+	cd ../../tests/; \
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_bodies_and_rods
-	cd ../../test/; \
+	cd ../../tests/; \
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_wavekin
-	cd ../../test/; \
+	cd ../../tests/; \
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../compile/SO/ ../compile/SO/test_wavekin
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
