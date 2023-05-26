@@ -34,6 +34,7 @@
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
+#include <limits>
 
 #ifdef LINUX
 #include <cmath>
