@@ -36,6 +36,11 @@
 #include "Rod.hpp"
 #include <limits>
 
+#ifdef WIN32
+// See https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
+#define NOMINMAX
+#endif
+
 #ifdef LINUX
 #include <cmath>
 #include <ctype.h>
