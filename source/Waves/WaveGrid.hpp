@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Log.hpp"
+#include "Misc.hpp"
 #include "WaveOptions.hpp"
+#include <memory>
 
 namespace moordyn {
 class WaveGrid;
