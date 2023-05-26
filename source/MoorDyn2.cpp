@@ -30,11 +30,6 @@
 
 // This is version 2.a5, 2021-03-16
 
-#ifdef WIN32
-// See https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
-#define NOMINMAX
-#endif
-
 #include "MoorDyn2.h"
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
@@ -286,7 +281,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	bool converged = true;
 	real max_error = 0.0;
 	unsigned int max_error_line = 0;
-	real best_score = std::numeric_limits<real>::max();
+	// The function is enclosed in parenthesis to avoid Windows min() and max()
+	// macros break it
+	// See https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
+	real best_score = (std::numeric_limits<real>::max)();
 	real best_score_t = 0.0;
 	unsigned int best_score_line = 0;
 	while ((t < ICTmax) && (!skip_ic)) {
