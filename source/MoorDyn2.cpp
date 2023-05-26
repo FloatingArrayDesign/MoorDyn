@@ -30,16 +30,16 @@
 
 // This is version 2.a5, 2021-03-16
 
+#ifdef WIN32
+// See https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
+#define NOMINMAX
+#endif
+
 #include "MoorDyn2.h"
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
 #include <limits>
-
-#ifdef WIN32
-// See https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
-#define NOMINMAX
-#endif
 
 #ifdef LINUX
 #include <cmath>
