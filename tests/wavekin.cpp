@@ -32,7 +32,6 @@
  * A simple driver program that will run MoorDyn VERSION 2 testing several
  * wave kinematics
  */
-#include "Config.h"
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
 #include "Waves.hpp"
