@@ -266,6 +266,19 @@ fileToLines(const std::filesystem::path& path)
 }
 
 } // ::moordyn::fileIO
+
+vec6
+solveMat6(const mat6& mat, const vec6& vec)
+{
+	// For small systems, which are larger than 4x4, we can use the
+	// ColPivHouseholderQR algorithm, which is working with every single
+	// matrix, retaining a very good accuracy, and becoming yet faster
+	// See:
+	// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
+	Eigen::ColPivHouseholderQR<mat6> solver(mat);
+	return solver.solve(vec);
+}
+
 mat6
 translateMass(vec r, mat M)
 {
