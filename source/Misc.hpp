@@ -582,6 +582,20 @@ typedef enum
  * @}
  */
 
+/**
+ * @brief Solves a 6x6 system of equations M * a = b
+ *
+ * Uses Eigen::ColPivHouseholderQR which means it doesn't
+ * have any particular constraints on the matrix properties.
+ * Has high accuracy and good speed.
+ * 
+ * @param mat 6x6 Matrix (M in M * a = b)
+ * @param vec 6x1 Vector (b in M * a = b)
+ * @return vec6 Resulting solution (a in M * a = b)
+ */
+vec6
+solveMat6(const mat6& mat, const vec6& vec);
+
 /** \defgroup transformations 3D transformations
  *  @{
  */

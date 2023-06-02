@@ -398,13 +398,7 @@ Body::getStateDeriv()
 	doRHS();
 
 	// solve for accelerations in [M]{a}={f}
-	// For small systems, which are larger than 4x4, we can use the
-	// ColPivHouseholderQR algorithm, which is working with every single
-	// matrix, retaining a very good accuracy, and becoming yet faster
-	// See:
-	// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-	Eigen::ColPivHouseholderQR<mat6> solver(M);
-	const vec6 acc = solver.solve(F6net);
+	const vec6 acc = solveMat6(M, F6net);
 
 	// NOTE; is the above still valid even though it includes rotational DOFs?
 	return std::make_pair(v6, acc);
