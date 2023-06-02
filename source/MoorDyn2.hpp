@@ -443,7 +443,7 @@ class MoorDyn : public io::IO
 	/// The ground body, which is unique
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
-	WavesRef waves = nullptr;
+	WavesRef waves{};
 	/// 3D Seafloor object that gets shared with the lines and other things that
 	/// need it
 	moordyn::SeafloorRef seafloor;

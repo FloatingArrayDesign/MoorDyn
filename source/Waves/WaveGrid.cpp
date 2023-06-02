@@ -524,7 +524,7 @@ constructWaveGridElevationData(const std::string& folder,
 		if (i * dw > 0.5 * 2 * pi)
 			zetaC0[i] = 0.0;
 
-	std::unique_ptr<WaveGrid> waveGrid = nullptr;
+	std::unique_ptr<WaveGrid> waveGrid{};
 	// calculate wave kinematics throughout the grid
 	// make a grid for wave kinematics based on settings in
 	// water_grid.txt

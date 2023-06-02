@@ -109,7 +109,7 @@ init4DArray(unsigned int nx, unsigned int ny, unsigned int nz, unsigned int nw)
 struct SeafloorProvider
 {
 	real waterDepth;
-	SeafloorRef seafloor = nullptr;
+	SeafloorRef seafloor{};
 	real getAverageDepth() const;
 	real getDepth(const vec2& pos) const;
 };
@@ -603,9 +603,9 @@ class Waves : public LogUser
 	void kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f);
 
 	/// The generic wave kinematics provider object
-	std::unique_ptr<AbstractWaveKin> waveKinematics = nullptr;
+	std::unique_ptr<AbstractWaveKin> waveKinematics{};
 	/// The generic current kinematics provider object
-	std::unique_ptr<AbstractCurrentKin> currentKinematics = nullptr;
+	std::unique_ptr<AbstractCurrentKin> currentKinematics{};
 
 	/**
 	 * @brief A member for temporary storage of wave grids.
@@ -614,12 +614,12 @@ class Waves : public LogUser
 	 * grids, it's preferable to have an object that is known to be a wave grid
 	 * rather than trying to do runtime type information deduction.
 	 */
-	std::unique_ptr<WaveGrid> waveGrid = nullptr;
+	std::unique_ptr<WaveGrid> waveGrid{};
 
 	/// Keep a reference to the environment
-	EnvCondRef env = nullptr;
+	EnvCondRef env{};
 	// Keep a reference to any potential 3d seafloor
-	SeafloorRef seafloor = nullptr;
+	SeafloorRef seafloor{};
 	/// gravity acceleration
 	real g;
 	/// water density
