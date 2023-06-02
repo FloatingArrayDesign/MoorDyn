@@ -639,8 +639,14 @@ Waves::getWaveKin(const vec3& pos,
 	vec vel_sum{ 0.0, 0.0, 0.0 };
 	vec acc_sum{ 0.0, 0.0, 0.0 };
 
-	SeafloorProvider floorProvider{ -env->WtrDpth,
-		                            std::shared_ptr<Seafloor>(seafloor) };
+	// Because SeafloorProvider expects a shared_ptr but we only have a ptr,
+	// we need to make a shared_ptr that won't call delete on seafloor when
+	// it goes out of scope.
+	// This constructor (called the aliasing constructor), allows us to do
+	// just that, so that calling Waves::getWaveKin with a seafloor ptr doesn't
+	// cause that seafloor object to be deleted.
+	SeafloorRef floor = SeafloorRef(SeafloorRef{}, seafloor);
+	SeafloorProvider floorProvider{ -env->WtrDpth, floor };
 	if (waveKinematics) {
 		real wave_zeta, wave_pdyn;
 		vec wave_vel{}, wave_acc{};
