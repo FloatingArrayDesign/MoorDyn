@@ -62,7 +62,7 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class Rod : public io::IO
+class Rod final : public io::IO
 {
   public:
 	/** @brief Costructor
@@ -514,7 +514,7 @@ class Rod : public io::IO
 	 * from the definition file
 	 * @return The packed data
 	 */
-	virtual std::vector<uint64_t> Serialize(void);
+	std::vector<uint64_t> Serialize(void);
 
 	/** @brief Unpack the data to restore the Serialized information
 	 *
@@ -522,7 +522,7 @@ class Rod : public io::IO
 	 * @param data The packed data
 	 * @return A pointer to the end of the file, for debugging purposes
 	 */
-	virtual uint64_t* Deserialize(const uint64_t* data);
+	uint64_t* Deserialize(const uint64_t* data);
 
 #ifdef USE_VTK
 	/** @brief Produce a VTK object

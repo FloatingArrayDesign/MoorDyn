@@ -72,7 +72,7 @@ class Rod;
  * moordyn::Body exctends the io::IO class, allowing it to perform input/output in a
  * consistent manner.
  */
-class Body : public io::IO
+class Body final : public io::IO
 {
   public:
 	/** @brief Costructor
@@ -379,7 +379,7 @@ class Body : public io::IO
 	 * from the definition file
 	 * @return The packed data
 	 */
-	virtual std::vector<uint64_t> Serialize(void);
+	std::vector<uint64_t> Serialize(void);
 
 	/** @brief Unpack the data to restore the Serialized information
 	 *
@@ -387,7 +387,7 @@ class Body : public io::IO
 	 * @param data The packed data
 	 * @return A pointer to the end of the file, for debugging purposes
 	 */
-	virtual uint64_t* Deserialize(const uint64_t* data);
+	uint64_t* Deserialize(const uint64_t* data);
 
 #ifdef USE_VTK
 	/** @brief Produce a VTK object
