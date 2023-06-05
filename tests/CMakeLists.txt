@@ -33,6 +33,7 @@ set(TESTS
 set(CPP_TESTS 
     wavekin
     wavekin_7
+    testDecomposeString
 )
 
 function(make_executable test_name)
@@ -57,12 +58,6 @@ foreach(TEST ${TESTS})
     add_test(NAME ${TEST}
              COMMAND ${TEST})
 endforeach()
-
-set(CPP_TESTS 
-    wavekin
-    wavekin_7
-    testDecomposeString
-)
 
 foreach(TEST ${CPP_TESTS})
     make_cpp_executable(${TEST})
