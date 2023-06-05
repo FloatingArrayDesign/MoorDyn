@@ -38,19 +38,12 @@
 
 #include "Waves/WaveOptions.hpp"
 
-#include <iostream>
 #include <vector>
 #include <string>
-#include <stdlib.h>
 #include <cmath>
 #include <complex>
 #include <utility>
 #include <initializer_list>
-
-#include <fstream>
-#include <sstream>
-#include <cstring>
-
 #include <filesystem>
 
 #include <memory>
@@ -66,10 +59,6 @@
 #include <windows.h> // these are for guicon function RedirectIOToConsole
 #include <io.h>
 #endif
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <iostream>
 
 // note: this file contains the struct definitions for environmental and
 // line/connect properties
@@ -848,7 +837,7 @@ typedef struct _FailProps
 const int nCoef = 30; // maximum number of entries to allow in nonlinear
                       // coefficient lookup tables
 
-typedef struct
+struct EnvCond
 {
 	/// Gavity acceleration (m/s^2)
 	double g;
@@ -880,7 +869,7 @@ typedef struct
 	/// whether to write a log file. (0=no, 1=basic, 2=full description,
 	/// 3=ongoing output
 	int writeLog;
-} EnvCond;
+};
 
 typedef std::shared_ptr<EnvCond> EnvCondRef;
 

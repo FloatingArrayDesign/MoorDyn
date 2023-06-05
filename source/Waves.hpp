@@ -36,15 +36,16 @@
 
 #include "Misc.hpp"
 #include "Log.hpp"
-#include "Time.hpp"
+#include "Line.hpp"
+#include "Connection.hpp"
+#include "Body.hpp"
+#include "Rod.hpp"
 #include "Waves/SpectrumKin.hpp"
-#include "Waves/WaveOptions.hpp"
-#include "Waves/WaveSpectrum.hpp"
 #include <vector>
-#include <map>
 
 namespace moordyn {
 
+class TimeScheme;
 class Seafloor;
 typedef std::shared_ptr<Seafloor> SeafloorRef;
 

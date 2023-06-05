@@ -29,15 +29,11 @@
  */
 
 #include "Waves.hpp"
-#include "Misc.hpp"
-#include "Seafloor.h"
-#include "Seafloor.hpp"
 #include "Waves.h"
+#include "Time.hpp"
+#include "Seafloor.hpp"
 #include "Waves/WaveGrid.hpp"
-#include "Waves/WaveOptions.hpp"
-#include "Waves/WaveSpectrum.hpp"
 #include "Util/Interp.hpp"
-#include "kiss_fftr.h"
 #include <filesystem>
 
 #if defined WIN32 && defined max
