@@ -198,9 +198,8 @@ RK2Scheme::Step(real& dt)
 	r[1] = r[0] + rd[0] * (0.5 * dt);
 	Update(0.5 * dt, 1);
 	// And so we can compute the new derivative and apply it
-	CalcStateDeriv(0);
-	r[0] = r[0] + rd[0] * dt;
-
+	CalcStateDeriv(1);
+	r[0] = r[0] + rd[1] * dt;
 	t += 0.5 * dt;
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);

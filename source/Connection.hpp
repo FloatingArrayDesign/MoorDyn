@@ -138,6 +138,10 @@ class Connection : public io::IO
 	/// total force on node
 	vec Fnet;
 
+	// time
+	/// simulation time
+	moordyn::real t;
+
 	/// node mass + added mass matrices
 	mat M;
 
@@ -183,6 +187,11 @@ class Connection : public io::IO
 	int number;
 	/// Connection type
 	types type;
+
+	/** @brief Set the line  simulation time
+	 * @param time Simulation time
+	 */
+	inline void setTime(real time) { t = time; }
 
 	/** @brief Setup the connection
 	 *

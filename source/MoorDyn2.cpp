@@ -1421,7 +1421,7 @@ moordyn::MoorDyn::findStartOfSection(vector<string>& in_txt,
 
 	if (i == in_txt.size())
 		return -1; // indicates section not found
-	if (sectionName[0] == "OPTIONS")
+	if (sectionName[0] == "OPTIONS" || sectionName[0] == "OUTPUT")
 		i++; // Increment once to get to the options
 	else
 		i += 3; // need to also skip label line and unit line
