@@ -31,7 +31,7 @@ Seafloor::setup(EnvCondRef env, const string& filepath)
 	nx = 0;
 	ny = 0;
 
-	if ((env->SeafloorMode == moordyn::SEAFLOOR_FLAT)) {
+	if (env->SeafloorMode == moordyn::SEAFLOOR_FLAT) {
 		// In the case where we have a flat seafloor, we shouldn't
 		// actually build this object. In case we attempt to, the
 		// setup function will simply return
@@ -39,7 +39,7 @@ Seafloor::setup(EnvCondRef env, const string& filepath)
 		return;
 	}
 
-	if ((env->SeafloorMode) == moordyn::SEAFLOOR_3D) {
+	if (env->SeafloorMode == moordyn::SEAFLOOR_3D) {
 		LOGDBG << "Seafloor set to 3D mode.";
 		// const string SeafloorFilename =
 		//     (string)folder + "/seafloor_profile_3d.txt";

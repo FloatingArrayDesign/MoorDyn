@@ -4,7 +4,6 @@
  *
  * Expects there to be a vtk_out/ folder in the base MoorDyn folder
  */
-#include "Config.h"
 #include "MoorDyn2.h"
 #include "MoorDyn2.hpp"
 #include "MoorDynAPI.h"
