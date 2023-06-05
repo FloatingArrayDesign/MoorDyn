@@ -123,6 +123,7 @@ struct SeafloorProvider
 class AbstractCurrentKin
 {
   public:
+	virtual ~AbstractCurrentKin(){};
 	/** @brief Get the velocity and acceleration at a specific position and time
 	 *
 	 * @param pos The location
@@ -147,6 +148,7 @@ class AbstractCurrentKin
 class AbstractWaveKin
 {
   public:
+	virtual ~AbstractWaveKin(){};
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific position and time
 	 * @param pos The location
@@ -192,13 +194,15 @@ class SpectrumKinWrapper : public AbstractWaveKin
 	{
 	}
 
+	~SpectrumKinWrapper() override = default;
+
 	void getWaveKin(const vec3& pos,
 	                real time,
 	                const SeafloorProvider& seafloor,
 	                real* zeta,
 	                vec3* vel,
 	                vec3* acc,
-	                real* pdyn)
+	                real* pdyn) override
 	{
 		if (pdyn) {
 			*pdyn = 0.0;
@@ -278,6 +282,7 @@ class WaveGrid
 	  , LogUser(log)
 	{
 	}
+	~WaveGrid() override = default;
 
 	void allocateKinematicArrays();
 
@@ -338,13 +343,15 @@ class CurrentGrid
 	{
 	}
 
+	~CurrentGrid() override = default;
+
 	void allocateKinematicArrays();
 
 	void getCurrentKin(const vec3& pos,
 	                   real time,
 	                   const SeafloorProvider& seafloor,
 	                   vec3* vel,
-	                   vec3* acc);
+	                   vec3* acc) override;
 
 	inline Vec4D<vec3>& CurrentVel() { return current_vel; }
 	inline const Vec4D<vec3>& getCurrentVel() const { return current_vel; }

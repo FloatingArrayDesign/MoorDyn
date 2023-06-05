@@ -1,9 +1,5 @@
 #include <iostream>
 #include <string>
-#include "Config.h"
-#include "MoorDyn2.h"
-#include "MoorDyn2.hpp"
-#include "MoorDynAPI.h"
 #include "Misc.hpp"
 
 /** this currently just verified the new behavior against the previous behavior

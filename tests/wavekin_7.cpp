@@ -2,20 +2,10 @@
  * A test case with component summing wave generation based on a
  * wave_frequencies.txt file
  */
-#include "Config.h"
 #include "MoorDyn2.hpp"
 #include "MoorDynAPI.h"
-#include "Waves.hpp"
-#include "Misc.hpp"
-#include <cstddef>
-#include <string.h>
-#include <math.h>
 #include <iostream>
 #include <algorithm>
-#include <fstream>
-#include <vector>
-#include "Waves/SpectrumKin.hpp"
-#include "Waves/WaveSpectrum.hpp"
 #include "util.h"
 using namespace std;
 
