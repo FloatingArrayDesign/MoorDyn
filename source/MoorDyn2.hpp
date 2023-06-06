@@ -141,14 +141,14 @@ class MoorDyn final : public io::IO
 	 */
 	inline unsigned int NCoupledDOF() const
 	{
-		unsigned int n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
+		std::size_t n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
 		for (auto rodi : CpldRodIs) {
 			if (RodList[rodi]->type == Rod::COUPLED)
 				n += 6; // cantilevered rods
 			else
 				n += 3; // pinned rods
 		}
-		return n;
+		return static_cast<unsigned int>(n);
 	}
 
 	/** @brief Get the wave kinematics instance
@@ -176,7 +176,7 @@ class MoorDyn final : public io::IO
 	inline unsigned int ExternalWaveKinInit()
 	{
 		const auto& points = waves->getWaveKinematicsPoints();
-		npW = points.size();
+		npW = static_cast<unsigned int>(points.size());
 
 		return npW;
 	}
@@ -651,7 +651,7 @@ class MoorDyn final : public io::IO
 		}
 
 		*c = 0.0;
-		*n = xv.size();
+		*n = static_cast<unsigned int>(xv.size());
 		memcpy(x, xv.data(), xv.size() * sizeof(double));
 		memcpy(y, yv.data(), yv.size() * sizeof(double));
 
