@@ -50,6 +50,21 @@
 
 using namespace std;
 
+/**
+ * @brief A helper function for getting the size of a vector as an unsigned int
+ *
+ * @tparam T
+ * @param a Vector to get size of
+ * @return unsigned int Size of vector (truncated to lower sizeof(unsigned int)
+ * bytes)
+ */
+template<typename T>
+unsigned int
+ui_size(const std::vector<T>& a)
+{
+	return static_cast<unsigned int>(a.size());
+}
+
 namespace moordyn {
 
 /// The list of units for the output
@@ -83,8 +98,8 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 
 	if (infilename && (strlen(infilename) > 0)) {
 		_filepath = infilename;
-		const int lastSlash = _filepath.find_last_of("/\\");
-		const int lastDot = _filepath.find_last_of('.');
+		const std::size_t lastSlash = _filepath.find_last_of("/\\");
+		const std::size_t lastDot = _filepath.find_last_of('.');
 		_basename = _filepath.substr(lastSlash + 1, lastDot - lastSlash - 1);
 		_basepath = _filepath.substr(0, lastSlash + 1);
 	}
@@ -132,7 +147,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 		       << " (Is there a mooring sytem?)" << endl;
 	}
 
-	nXtra = nX + 6 * 2 * LineList.size();
+	nXtra = nX + 6 * 2 * ui_size(LineList);
 }
 
 moordyn::MoorDyn::~MoorDyn()
@@ -283,7 +298,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	unsigned int max_error_line = 0;
 	// The function is enclosed in parenthesis to avoid Windows min() and max()
 	// macros break it
-	// See https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
+	// See
+	// https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
 	real best_score = (std::numeric_limits<real>::max)();
 	real best_score_t = 0.0;
 	unsigned int best_score_line = 0;
@@ -346,8 +362,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			if (max_error > ICthresh) {
 				converged = false;
 				LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
-						<< iic << "), error = " << 100.0 * max_error
-						<< "% on line " << max_error_line << "     \r";
+				       << iic << "), error = " << 100.0 * max_error
+				       << "% on line " << max_error_line << "     \r";
 			}
 
 			if (converged)
@@ -365,9 +381,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
 	       << "% on line " << max_error_line << endl;
 	if (!converged) {
-		LOGMSG << "Best score at " << best_score_t << " s = "
-		       << 100.0 * best_score << "% on line " << best_score_line
-		       << endl;
+		LOGMSG << "Best score at " << best_score_t
+		       << " s = " << 100.0 * best_score << "% on line "
+		       << best_score_line << endl;
 	}
 
 	// restore drag coefficients to normal values and restart time counter of
@@ -598,18 +614,18 @@ vtkSmartPointer<vtkMultiBlockDataSet>
 MoorDyn::getVTK() const
 {
 	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
-	out->SetNumberOfBlocks(RodList.size() + ConnectionList.size() +
-	                       LineList.size());
+	out->SetNumberOfBlocks(static_cast<unsigned int>(
+	    RodList.size() + ConnectionList.size() + LineList.size()));
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < BodyList.size(); i++)
 		out->SetBlock(n + i, BodyList[i]->getVTK());
-	n += BodyList.size();
+	n += ui_size(BodyList);
 	for (unsigned int i = 0; i < ConnectionList.size(); i++)
 		out->SetBlock(n + i, ConnectionList[i]->getVTK());
-	n += ConnectionList.size();
+	n += ui_size(ConnectionList);
 	for (unsigned int i = 0; i < RodList.size(); i++)
 		out->SetBlock(n + i, RodList[i]->getVTK());
-	n += RodList.size();
+	n += ui_size(RodList);
 	for (unsigned int i = 0; i < LineList.size(); i++)
 		out->SetBlock(n + i, LineList[i]->getVTK());
 	return out;
@@ -824,11 +840,11 @@ moordyn::MoorDyn::ReadInFile()
 			                          "CPLD" })) {
 				// if a fairlead, add to list and add
 				type = Connection::COUPLED;
-				CpldConIs.push_back(ConnectionList.size());
+				CpldConIs.push_back(ui_size(ConnectionList));
 			} else if (str::isOneOf(let1, { "CONNECT", "CON", "FREE" })) {
 				// if a connect, add to list and add states for it
 				type = Connection::FREE;
-				FreeConIs.push_back(ConnectionList.size());
+				FreeConIs.push_back(ui_size(ConnectionList));
 				ConnectStateIs.push_back(
 				    nX); // assign start index of this connect's states
 				nX += 6; // add 6 state variables for each connect
@@ -1586,11 +1602,11 @@ moordyn::MoorDyn::readBody(string inputText)
 	} else if (str::isOneOf(let1, { "VESSEL", "VES", "COUPLED", "CPLD" })) {
 		// it is coupled - controlled from outside
 		type = Body::COUPLED;
-		CpldBodyIs.push_back(BodyList.size());
+		CpldBodyIs.push_back(ui_size(BodyList));
 	} else {
 		// it is free - controlled by MoorDyn
 		type = Body::FREE;
-		FreeBodyIs.push_back(BodyList.size());
+		FreeBodyIs.push_back(ui_size(BodyList));
 		BodyStateIs.push_back(nX); // assign start index of this body's states
 		nX += 12;                  // add 12 state variables for the body
 	}
@@ -1640,8 +1656,9 @@ moordyn::MoorDyn::readRod(string inputText)
 	} else if (str::isOneOf(let1, { "PINNED", "PIN" })) {
 		// it is pinned
 		type = Rod::PINNED;
-		FreeRodIs.push_back(RodList.size()); // add this pinned rod to the free
-		                                     // list because it is half free
+		FreeRodIs.push_back(
+		    ui_size(RodList));    // add this pinned rod to the free
+		                          // list because it is half free
 		RodStateIs.push_back(nX); // assign start index of this rod's states
 		nX += 6;                  // add 6 state variables for each pinned rod
 	} else if (let1 == "BODY") {
@@ -1664,7 +1681,7 @@ moordyn::MoorDyn::readRod(string inputText)
 			// it is pinned
 			type = Rod::PINNED;
 			FreeRodIs.push_back(
-			    RodList.size());      // add this pinned rod to the free
+			    ui_size(RodList));    // add this pinned rod to the free
 			                          // list because it is half free
 			RodStateIs.push_back(nX); // assign start index of this rod's states
 			nX += 6; // add 6 state variables for each pinned rod
@@ -1675,21 +1692,21 @@ moordyn::MoorDyn::readRod(string inputText)
 		// if a rigid fairlead, add to list and add
 		type = Rod::COUPLED;
 		CpldRodIs.push_back(
-		    RodList.size()); // index of fairlead in RodList vector
+		    ui_size(RodList)); // index of fairlead in RodList vector
 	} else if (str::isOneOf(let1, { "VESPIN", "CPLDPIN" })) {
 		// if a pinned fairlead, add to list and add
 		type = Rod::CPLDPIN;
 		CpldRodIs.push_back(
-		    RodList.size()); // index of fairlead in RodList vector
+		    ui_size(RodList)); // index of fairlead in RodList vector
 		FreeRodIs.push_back(
-		    RodList.size());      // also add this pinned rod to the free
+		    ui_size(RodList));    // also add this pinned rod to the free
 		                          // list because it is half free
 		RodStateIs.push_back(nX); // assign start index of this rod's states
 		nX += 6;                  // add 6 state variables for each pinned rod
 	} else if (str::isOneOf(let1, { "CONNECT", "CON", "FREE" })) {
 		type = Rod::FREE;
 		FreeRodIs.push_back(
-		    RodList.size());      // add this free rod to the free list
+		    ui_size(RodList));    // add this free rod to the free list
 		RodStateIs.push_back(nX); // assign start index of this rod's states
 		nX += 12;                 // add 12 state variables for each free rod
 	} else {
@@ -1776,8 +1793,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		// But we really want to have this if to avoid showing a warning for
 		// Unrecognized option writeLog
 		// env->writeLog = atoi(entries[0].c_str());
-	}
-	else if (name == "tScheme") {
+	} else if (name == "tScheme") {
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
@@ -1889,13 +1905,20 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	nX += 6; // add 6 state variables for each connect
 
 	// add connect to list of free ones and add states for it
-	FreeConIs.push_back(ConnectionList.size());
+	FreeConIs.push_back(ui_size(ConnectionList));
 	// assign start index of this connect's states
 	ConnectStateIs.push_back(nX);
 
 	// now make Connection object!
 	Connection* obj = new Connection(_log, ConnectionList.size());
-	obj->setup(ConnectionList.size() + 1, type, r0, M, V, F, CdA, Ca);
+	obj->setup(static_cast<int>(ConnectionList.size() + 1),
+	           type,
+	           r0,
+	           M,
+	           V,
+	           F,
+	           CdA,
+	           Ca);
 	obj->setEnv(env, waves, seafloor);
 	ConnectionList.push_back(obj);
 
@@ -2173,7 +2196,7 @@ int DECLDIR
 MoorDyn_GetNumberBodies(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ((moordyn::MoorDyn*)system)->GetBodies().size();
+	*n = ui_size(((moordyn::MoorDyn*)system)->GetBodies());
 	return MOORDYN_SUCCESS;
 }
 
@@ -2195,7 +2218,7 @@ int DECLDIR
 MoorDyn_GetNumberRods(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ((moordyn::MoorDyn*)system)->GetRods().size();
+	*n = ui_size(((moordyn::MoorDyn*)system)->GetRods());
 	return MOORDYN_SUCCESS;
 }
 
@@ -2217,7 +2240,7 @@ int DECLDIR
 MoorDyn_GetNumberConnections(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ((moordyn::MoorDyn*)system)->GetConnections().size();
+	*n = ui_size(((moordyn::MoorDyn*)system)->GetConnections());
 	return MOORDYN_SUCCESS;
 }
 
@@ -2239,7 +2262,7 @@ int DECLDIR
 MoorDyn_GetNumberLines(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ((moordyn::MoorDyn*)system)->GetLines().size();
+	*n = ui_size(((moordyn::MoorDyn*)system)->GetLines());
 	return MOORDYN_SUCCESS;
 }
 
