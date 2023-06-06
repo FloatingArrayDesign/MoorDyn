@@ -521,20 +521,12 @@ rtrim(string& s);
 /** @brief Split a string into separate letter strings and integers
  */
 int
-decomposeString(char outWord[10],
-                char let1[10],
-                char num1[10],
-                char let2[10],
-                char num2[10],
-                char let3[10]);
-
-int
-newDecomposeString(const std::string& outWord,
-                   std::string& let1,
-                   std::string& num1,
-                   std::string& let2,
-                   std::string& num2,
-                   std::string& let3);
+decomposeString(const std::string& outWord,
+                std::string& let1,
+                std::string& num1,
+                std::string& let2,
+                std::string& num2,
+                std::string& let3);
 
 bool
 isOneOf(const std::string& str,

@@ -809,7 +809,7 @@ moordyn::MoorDyn::ReadInFile()
 			Connection::types type;
 			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
-			str::newDecomposeString(entries[1], let1, num1, let2, num2, let3);
+			str::decomposeString(entries[1], let1, num1, let2, num2, let3);
 			if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
 				// it is fixed  (this would just be used if someone wanted
 				// to temporarly fix a body that things were attached to)
@@ -980,7 +980,7 @@ moordyn::MoorDyn::ReadInFile()
 				const EndPoints end_point = I == 0 ? ENDPOINT_A : ENDPOINT_B;
 				std::string let1, num1, let2, num2, let3;
 				// divided outWord into letters and numbers
-				str::newDecomposeString(
+				str::decomposeString(
 				    entries[2 + I], let1, num1, let2, num2, let3);
 
 				if (num1.empty()) {
@@ -1058,7 +1058,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
-			str::newDecomposeString(entries[0], let1, num1, let2, num2, let3);
+			str::decomposeString(entries[0], let1, num1, let2, num2, let3);
 
 			if (num1.empty()) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1153,8 +1153,7 @@ moordyn::MoorDyn::ReadInFile()
 			{
 				std::string let1, num1, let2, num2, let3;
 				// divided outWord into letters and numbers
-				str::newDecomposeString(
-				    entries[j], let1, num1, let2, num2, let3);
+				str::decomposeString(entries[j], let1, num1, let2, num2, let3);
 
 				// declare dummy struct to be copied onto end of vector (and
 				// filled in later);
@@ -1592,7 +1591,7 @@ moordyn::MoorDyn::readBody(string inputText)
 
 	std::string let1, num1, let2, num2, let3;
 	// divided outWord into letters and numbers
-	str::newDecomposeString(entries[2], let1, num1, let2, num2, let3);
+	str::decomposeString(entries[2], let1, num1, let2, num2, let3);
 	// str::decomposeString(typeWord, let1, num1, let2, num2, let3);
 
 	if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
@@ -1646,7 +1645,7 @@ moordyn::MoorDyn::readRod(string inputText)
 
 	std::string let1, num1, let2, num2, let3;
 	// divided outWord into letters and numbers
-	str::newDecomposeString(entries[2], let1, num1, let2, num2, let3);
+	str::decomposeString(entries[2], let1, num1, let2, num2, let3);
 
 	Rod::types type;
 	if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
