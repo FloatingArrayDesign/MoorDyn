@@ -569,7 +569,7 @@ typedef enum
  * Uses Eigen::ColPivHouseholderQR which means it doesn't
  * have any particular constraints on the matrix properties.
  * Has high accuracy and good speed.
- * 
+ *
  * @param mat 6x6 Matrix (M in M * a = b)
  * @param vec 6x1 Vector (b in M * a = b)
  * @return vec6 Resulting solution (a in M * a = b)
@@ -626,9 +626,11 @@ inline mat
 getH(vec r)
 {
 	mat H;
+	// clang-format off
 	H <<     0,  r[2],  r[1],
 	     -r[2],     0,  r[0],
 	     -r[1], -r[0],     0;
+	// clang-format on
 	return H;
 }
 
@@ -730,6 +732,7 @@ RotZ(real rads)
 	return R;
 }
 
+// clang-format off
 // Create the Euler rotations of the type RotXYZ, RotXZX, RotZYX...
 #define MAKE_EULER_ROT(a,b,c)                                                  \
 inline mat Rot ## a ## b ## c(real a1, real a2, real a3)                       \
@@ -740,6 +743,8 @@ inline mat Rot ## a ## b ## c(vec rads)                                        \
 {                                                                              \
 	return Rot ## a ## b ## c (rads[0], rads[1], rads[2]);                     \
 }
+
+// clang-format on
 
 MAKE_EULER_ROT(X, Y, X)
 MAKE_EULER_ROT(X, Y, Z)
@@ -942,6 +947,7 @@ typedef struct _BodyProps // matching body input stuff
 	double Ca;
 } BodyProps;
 
+// ------------ Output definitions -------------
 enum QType : int
 {
 
@@ -960,21 +966,6 @@ enum QType : int
 	FY = 12,
 	FZ = 13
 };
-typedef struct _OutChanProps
-{ // this is C version of MDOutParmType - a less literal alternative of the NWTC
-  // OutParmType for MoorDyn (to avoid huge lists of possible output channel
-  // permutations)
-	string Name;  // "name of output channel"
-	string Units; // "units string"
-	QType QType;  // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
-	int OType;    // "type of object - 1=line, 2=connect"
-	int NodeID;   // "node number if OType=1.  0=anchor, -1=N=Fairlead"
-	int ObjID;    // "number of Connect or Line object", subtract 1 to get the
-	              // index in the LineList or ConnectList
-} OutChanProps;
-
-// --------------------------- Output definitions
-// -----------------------------------------
 
 // The following are some definitions for use with the output options in
 // MoorDyn. These are for the global output quantities specified by OutList, not
@@ -994,41 +985,17 @@ typedef struct _OutChanProps
 //
 // Indices for computing output channels:  - customized for the MD_OutParmType
 // approach these are the "QTypes"
-
-// const int Time = 0;
-// const int PosX = 1;
-// const int PosY = 2;
-// const int PosZ = 3;
-// const int VelX = 4;
-// const int VelY = 5;
-// const int VelZ = 6;
-// const int AccX = 7;
-// const int AccY = 8;
-// const int AccZ = 9;
-// const int Ten = 10;
-// const int FX = 11;
-// const int FY = 12;
-// const int FZ = 13;
-
+//
 // UnitList is in MoorDyn.cpp
-
-// vector<string> strvector(strarray, strarray + 3);
-
-// // List of units corresponding to the quantities parameters for QTypes
-//  struct Units
-// {
-//	  char Time[10]    = "(s)      ";
-//	  char PosX[10]    = "(m)      ";
-//	  char PosY[10]    = "(m)      ";
-//	  char PosZ[10]    = "(m)      ";
-//	  char VelX[10]    = "(m/s)    ";
-//	  char VelY[10]    = "(m/s)    ";
-//	  char VelZ[10]    = "(m/s)    ";
-//	  char AccX[10]    = "(m/s2)   ";
-//	  char AccY[10]    = "(m/s2)   ";
-//	  char AccZ[10]    = "(m/s2)   ";
-//	  char Ten [10]    = "(N)      ";
-//	  char FX  [10]    = "(N)      ";
-//	  char FY  [10]    = "(N)      ";
-//	  char FZ  [10]    = "(N)      ";
-// };
+typedef struct _OutChanProps
+{ // this is C version of MDOutParmType - a less literal alternative of the NWTC
+  // OutParmType for MoorDyn (to avoid huge lists of possible output channel
+  // permutations)
+	string Name;  // "name of output channel"
+	string Units; // "units string"
+	QType QType;  // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
+	int OType;    // "type of object - 1=line, 2=connect"
+	int NodeID;   // "node number if OType=1.  0=anchor, -1=N=Fairlead"
+	int ObjID;    // "number of Connect or Line object", subtract 1 to get the
+	              // index in the LineList or ConnectList
+} OutChanProps;
