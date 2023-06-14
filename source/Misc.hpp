@@ -948,7 +948,7 @@ typedef struct _BodyProps // matching body input stuff
 } BodyProps;
 
 // ------------ Output definitions -------------
-enum QType : int
+enum QTypeEnum : int
 {
 
 	Time = 0,
@@ -991,11 +991,11 @@ typedef struct _OutChanProps
 { // this is C version of MDOutParmType - a less literal alternative of the NWTC
   // OutParmType for MoorDyn (to avoid huge lists of possible output channel
   // permutations)
-	string Name;  // "name of output channel"
-	string Units; // "units string"
-	QType QType;  // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
-	int OType;    // "type of object - 1=line, 2=connect"
-	int NodeID;   // "node number if OType=1.  0=anchor, -1=N=Fairlead"
-	int ObjID;    // "number of Connect or Line object", subtract 1 to get the
-	              // index in the LineList or ConnectList
+	string Name;     // "name of output channel"
+	string Units;    // "units string"
+	QTypeEnum QType; // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
+	int OType;       // "type of object - 1=line, 2=connect"
+	int NodeID;      // "node number if OType=1.  0=anchor, -1=N=Fairlead"
+	int ObjID; // "number of Connect or Line object", subtract 1 to get the
+	           // index in the LineList or ConnectList
 } OutChanProps;
