@@ -585,16 +585,10 @@ Rod::getStateDeriv()
 		} else {
 			// Regular rod case, 6DOF
 
-			// For small systems, which are anyway larger than 4x4, we can use
-			// the ColPivHouseholderQR algorithm, which is working with every
-			// single matrix, retaining a very good accuracy, and becoming yet
-			// faster See:
-			// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-			Eigen::ColPivHouseholderQR<mat6> solver(M_out6);
 			// dxdt = V   (velocities)
 			vel6 = v6;
 			// dVdt = a   (accelerations)
-			acc6 = solver.solve(Fnet_out);
+			acc6 = solveMat6(M_out6, Fnet_out);
 		}
 	} else {
 		// Pinned rod, where the position rate of change is null (Dirichlet BC)

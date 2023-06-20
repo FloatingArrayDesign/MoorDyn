@@ -524,7 +524,7 @@ constructWaveGridElevationData(const std::string& folder,
 		if (i * dw > 0.5 * 2 * pi)
 			zetaC0[i] = 0.0;
 
-	std::unique_ptr<WaveGrid> waveGrid = nullptr;
+	std::unique_ptr<WaveGrid> waveGrid{};
 	// calculate wave kinematics throughout the grid
 	// make a grid for wave kinematics based on settings in
 	// water_grid.txt
@@ -613,7 +613,7 @@ constructSteadyCurrentGrid(const std::string& folder,
 		currentGrid->CurrentVel()[0][0][i][0] =
 		    vec3(UProfileUx[i], UProfileUy[i], UProfileUz[i]);
 	}
-	return std::move(currentGrid);
+	return currentGrid;
 }
 
 std::unique_ptr<CurrentGrid>
@@ -728,7 +728,7 @@ constructDynamicCurrentGrid(const std::string& folder,
 		}
 	}
 
-	return std::move(currentGrid);
+	return currentGrid;
 }
 
 std::unique_ptr<CurrentGrid>
@@ -883,7 +883,7 @@ construct4DCurrentGrid(const std::string& folder,
 			}
 		}
 	}
-	return std::move(currentGrid);
+	return currentGrid;
 }
 
 } // namespace waves

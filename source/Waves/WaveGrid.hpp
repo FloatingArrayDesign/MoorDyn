@@ -1,13 +1,15 @@
 #pragma once
 
-#include "Log.hpp"
-#include "Misc.hpp"
-#include "WaveOptions.hpp"
+#include <string>
 #include <memory>
 
+struct EnvCond;
+typedef std::shared_ptr<EnvCond> EnvCondRef;
 namespace moordyn {
 class WaveGrid;
 class CurrentGrid;
+
+class Log;
 
 namespace waves {
 

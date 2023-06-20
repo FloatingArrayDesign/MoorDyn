@@ -36,15 +36,16 @@
 
 #include "Misc.hpp"
 #include "Log.hpp"
-#include "Time.hpp"
+#include "Line.hpp"
+#include "Connection.hpp"
+#include "Body.hpp"
+#include "Rod.hpp"
 #include "Waves/SpectrumKin.hpp"
-#include "Waves/WaveOptions.hpp"
-#include "Waves/WaveSpectrum.hpp"
 #include <vector>
-#include <map>
 
 namespace moordyn {
 
+class TimeScheme;
 class Seafloor;
 typedef std::shared_ptr<Seafloor> SeafloorRef;
 
@@ -109,7 +110,7 @@ init4DArray(unsigned int nx, unsigned int ny, unsigned int nz, unsigned int nw)
 struct SeafloorProvider
 {
 	real waterDepth;
-	SeafloorRef seafloor = nullptr;
+	SeafloorRef seafloor{};
 	real getAverageDepth() const;
 	real getDepth(const vec2& pos) const;
 };
@@ -122,6 +123,7 @@ struct SeafloorProvider
 class AbstractCurrentKin
 {
   public:
+	virtual ~AbstractCurrentKin(){};
 	/** @brief Get the velocity and acceleration at a specific position and time
 	 *
 	 * @param pos The location
@@ -146,6 +148,7 @@ class AbstractCurrentKin
 class AbstractWaveKin
 {
   public:
+	virtual ~AbstractWaveKin(){};
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific position and time
 	 * @param pos The location
@@ -191,13 +194,15 @@ class SpectrumKinWrapper : public AbstractWaveKin
 	{
 	}
 
+	~SpectrumKinWrapper() override = default;
+
 	void getWaveKin(const vec3& pos,
 	                real time,
 	                const SeafloorProvider& seafloor,
 	                real* zeta,
 	                vec3* vel,
 	                vec3* acc,
-	                real* pdyn)
+	                real* pdyn) override
 	{
 		if (pdyn) {
 			*pdyn = 0.0;
@@ -277,6 +282,7 @@ class WaveGrid
 	  , LogUser(log)
 	{
 	}
+	~WaveGrid() override = default;
 
 	void allocateKinematicArrays();
 
@@ -337,13 +343,15 @@ class CurrentGrid
 	{
 	}
 
+	~CurrentGrid() override = default;
+
 	void allocateKinematicArrays();
 
 	void getCurrentKin(const vec3& pos,
 	                   real time,
 	                   const SeafloorProvider& seafloor,
 	                   vec3* vel,
-	                   vec3* acc);
+	                   vec3* acc) override;
 
 	inline Vec4D<vec3>& CurrentVel() { return current_vel; }
 	inline const Vec4D<vec3>& getCurrentVel() const { return current_vel; }
@@ -603,9 +611,9 @@ class Waves : public LogUser
 	void kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f);
 
 	/// The generic wave kinematics provider object
-	std::unique_ptr<AbstractWaveKin> waveKinematics = nullptr;
+	std::unique_ptr<AbstractWaveKin> waveKinematics{};
 	/// The generic current kinematics provider object
-	std::unique_ptr<AbstractCurrentKin> currentKinematics = nullptr;
+	std::unique_ptr<AbstractCurrentKin> currentKinematics{};
 
 	/**
 	 * @brief A member for temporary storage of wave grids.
@@ -614,12 +622,12 @@ class Waves : public LogUser
 	 * grids, it's preferable to have an object that is known to be a wave grid
 	 * rather than trying to do runtime type information deduction.
 	 */
-	std::unique_ptr<WaveGrid> waveGrid = nullptr;
+	std::unique_ptr<WaveGrid> waveGrid{};
 
 	/// Keep a reference to the environment
-	EnvCondRef env = nullptr;
+	EnvCondRef env{};
 	// Keep a reference to any potential 3d seafloor
-	SeafloorRef seafloor = nullptr;
+	SeafloorRef seafloor{};
 	/// gravity acceleration
 	real g;
 	/// water density

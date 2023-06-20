@@ -483,30 +483,43 @@ Line::initialize()
 		SINPhi = (r[N][1] - r[0][1]) / XF;
 
 		int success = Catenary(XF,
-								ZF,
-								UnstrLen,
-								E * A,
-								LW,
-								CB,
-								Tol,
-								&HF,
-								&VF,
-								&HA,
-								&VA,
-								N,
-								snodes,
-								Xl,
-								Zl,
-								Te);
+		                       ZF,
+		                       UnstrLen,
+		                       E * A,
+		                       LW,
+		                       CB,
+		                       Tol,
+		                       &HF,
+		                       &VF,
+		                       &HA,
+		                       &VA,
+		                       N,
+		                       snodes,
+		                       Xl,
+		                       Zl,
+		                       Te);
 
 		if (success >= 0) {
-			// the catenary solve is successful, update the node positions
-			LOGDBG << "Catenary initial profile available for Line "
-					<< number << endl;
-			for (unsigned int i = 1; i < N; i++) {
-				vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
-				r[i] = r[0] + l;
+			// It might happens that the output solution does not respect the
+			// queried final point. See the pendulum example
+			if (abs(Zl[N] - ZF) > Tol) {
+				LOGWRN << "Wrong catenary initial profile for Line, intializing as linear " << number
+				       << endl;
+        // From above:
+        // initialize line node positions as distributed linearly between the
+        // endpoints
+        for (unsigned int i = 1; i < N; i++) {
+          r[i] = r[0] + dir * (i / (real)N);
+        }
 			}
+			else {
+				// the catenary solve is successful, update the node positions
+				LOGDBG << "Catenary initial profile available for Line "
+				       << number << endl;
+				for (unsigned int i = 1; i < N; i++) {
+					vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
+					r[i] = r[0] + l;
+				}
 			}
 		else {
 			// From above:
@@ -523,6 +536,10 @@ Line::initialize()
 	else {
 		for (unsigned int i = 1; i < N; i++) {
 			r[i] = r[0] + dir * (i / (real)N);
+		}
+		else {
+			LOGWRN << "Catenary initial profile failed for Line " << number
+			       << endl;
 		}
 	}
 	

@@ -60,7 +60,7 @@ namespace moordyn {
  * This class contains everything required to hold a whole mooring system,
  * making everything thread-friendly easier
  */
-class MoorDyn : public io::IO
+class MoorDyn final : public io::IO
 {
   public:
 	/** @brief Constructor
@@ -141,14 +141,14 @@ class MoorDyn : public io::IO
 	 */
 	inline unsigned int NCoupledDOF() const
 	{
-		unsigned int n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
+		std::size_t n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
 		for (auto rodi : CpldRodIs) {
 			if (RodList[rodi]->type == Rod::COUPLED)
 				n += 6; // cantilevered rods
 			else
 				n += 3; // pinned rods
 		}
-		return n;
+		return static_cast<unsigned int>(n);
 	}
 
 	/** @brief Get the wave kinematics instance
@@ -176,7 +176,7 @@ class MoorDyn : public io::IO
 	inline unsigned int ExternalWaveKinInit()
 	{
 		const auto& points = waves->getWaveKinematicsPoints();
-		npW = points.size();
+		npW = static_cast<unsigned int>(points.size());
 
 		return npW;
 	}
@@ -273,7 +273,7 @@ class MoorDyn : public io::IO
 	 * from the definition file
 	 * @return The packed data
 	 */
-	virtual std::vector<uint64_t> Serialize(void);
+	std::vector<uint64_t> Serialize(void);
 
 	/** @brief Unpack the data to restore the Serialized information
 	 *
@@ -281,7 +281,7 @@ class MoorDyn : public io::IO
 	 * @param data The packed data
 	 * @return A pointer to the end of the file, for debugging purposes
 	 */
-	virtual uint64_t* Deserialize(const uint64_t* data);
+	uint64_t* Deserialize(const uint64_t* data);
 
 #ifdef USE_VTK
 	/** @brief Produce a VTK object of the whole system
@@ -443,7 +443,7 @@ class MoorDyn : public io::IO
 	/// The ground body, which is unique
 	Body* GroundBody;
 	/// Waves object that will be created to hold water kinematics info
-	WavesRef waves = nullptr;
+	WavesRef waves{};
 	/// 3D Seafloor object that gets shared with the lines and other things that
 	/// need it
 	moordyn::SeafloorRef seafloor;
@@ -651,7 +651,7 @@ class MoorDyn : public io::IO
 		}
 
 		*c = 0.0;
-		*n = xv.size();
+		*n = static_cast<unsigned int>(xv.size());
 		memcpy(x, xv.data(), xv.size() * sizeof(double));
 		memcpy(y, yv.data(), yv.size() * sizeof(double));
 
