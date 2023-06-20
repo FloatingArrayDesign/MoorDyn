@@ -1591,8 +1591,7 @@ moordyn::MoorDyn::readBody(string inputText)
 
 	std::string let1, num1, let2, num2, let3;
 	// divided outWord into letters and numbers
-	str::decomposeString(entries[2], let1, num1, let2, num2, let3);
-	// str::decomposeString(typeWord, let1, num1, let2, num2, let3);
+	str::decomposeString(entries[1], let1, num1, let2, num2, let3);
 
 	if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
 		// it is fixed  (this would just be used if someone wanted
