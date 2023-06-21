@@ -751,7 +751,7 @@ class HeunScheme : public TimeSchemeBase<1, 2>
  *
  * This was the traditionally applied time scheme in MoorDyn v1
  */
-class RK2Scheme : public TimeSchemeBase<2, 1>
+class RK2Scheme : public TimeSchemeBase<2, 2>
 {
   public:
 	/** @brief Costructor

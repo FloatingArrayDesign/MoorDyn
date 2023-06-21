@@ -455,51 +455,58 @@ Line::initialize()
 
 	// if conditions are ideal, try to calculate initial line profile using
 	// catenary routine (from FAST v.7)
-	real waterDepth = getWaterDepth(r[0][0], r[0][1]);
-	if (r[0][2] == waterDepth) {
-		real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
+
+	real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
+	if (XF > 0.0) {
+
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;
 		real CB = 0.;
 		real Tol = 0.00001;
 
-		if ((XF > 0.0) && (ZF > 0.0)) {
-			// locations of line nodes along line length - evenly distributed
-			// here
-			vector<real> snodes(N + 1, 0.0);
-			for (unsigned int i = 1; i <= N; i++)
-				snodes[i] = snodes[i - 1] + l[i - 1];
-			// double check to ensure the last node does not surpass the line
-			// length
-			snodes[N] = UnstrLen;
+		// locations of line nodes along line length - evenly distributed
+		// here
+		vector<real> snodes(N + 1, 0.0);
+		for (unsigned int i = 1; i <= N; i++)
+			snodes[i] = snodes[i - 1] + l[i - 1];
+		// double check to ensure the last node does not surpass the line
+		// length
+		snodes[N] = UnstrLen;
 
-			// output variables
-			real HF, VF, HA, VA, COSPhi, SINPhi;
-			vector<real> Xl(N + 1, 0.0);
-			vector<real> Zl(N + 1, 0.0);
-			vector<real> Te(N + 1, 0.0);
+		// output variables
+		real HF, VF, HA, VA, COSPhi, SINPhi;
+		vector<real> Xl(N + 1, 0.0);
+		vector<real> Zl(N + 1, 0.0);
+		vector<real> Te(N + 1, 0.0);
 
-			COSPhi = (r[N][0] - r[0][0]) / XF;
-			SINPhi = (r[N][1] - r[0][1]) / XF;
+		COSPhi = (r[N][0] - r[0][0]) / XF;
+		SINPhi = (r[N][1] - r[0][1]) / XF;
 
-			int success = Catenary(XF,
-			                       ZF,
-			                       UnstrLen,
-			                       E * A,
-			                       LW,
-			                       CB,
-			                       Tol,
-			                       &HF,
-			                       &VF,
-			                       &HA,
-			                       &VA,
-			                       N,
-			                       snodes,
-			                       Xl,
-			                       Zl,
-			                       Te);
+		int success = Catenary(XF,
+		                       ZF,
+		                       UnstrLen,
+		                       E * A,
+		                       LW,
+		                       CB,
+		                       Tol,
+		                       &HF,
+		                       &VF,
+		                       &HA,
+		                       &VA,
+		                       N,
+		                       snodes,
+		                       Xl,
+		                       Zl,
+		                       Te);
 
-			if (success >= 0) {
+		if (success >= 0) {
+			// It might happens that the output solution does not respect the
+			// queried final point. See the pendulum example
+			if (abs(Zl[N] - ZF) > Tol) {
+				LOGWRN << "Wrong catenary initial profile for Line, intializing as linear " << number
+				       << endl;
+			}
+			else {
 				// the catenary solve is successful, update the node positions
 				LOGDBG << "Catenary initial profile available for Line "
 				       << number << endl;
@@ -507,12 +514,18 @@ Line::initialize()
 					vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
 					r[i] = r[0] + l;
 				}
-			} else {
-				LOGWRN << "Catenary initial profile failed for Line " << number
-				       << endl;
 			}
 		}
+		else {
+			LOGWRN << "Catenary initial profile failed for Line " << number
+					<< endl;
+		}
 	}
+	else {
+		LOGDBG << "Vertical initial profile for Line " << number
+		       << endl;
+	}
+	
 
 	LOGMSG << "Initialized Line " << number << endl;
 
@@ -1115,9 +1128,9 @@ Line::getStateDeriv()
 			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (V[i] + V[i - 1]) * ap;
 		// tangential Froude-Krylov force
 		if (i == 0)
-			Aq[i] = 0.5 * env->rho_w * (1. + Cat) * 0.5 * (V[i]) * aq;
+			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (V[i]) * aq;
 		else if (i == N)
-			Aq[i] = 0.5 * env->rho_w * (1. + Cat) * 0.5 * (V[i - 1]) * aq;
+			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (V[i - 1]) * aq;
 		else
 			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (V[i] + V[i - 1]) * aq;
 

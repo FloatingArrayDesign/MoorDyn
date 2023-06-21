@@ -103,6 +103,15 @@ pendulum()
 		cerr << "Failure during the mooring initialization: " << err << endl;
 		return false;
 	}
+	err = MoorDyn_GetConnectPos(conn, pos);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure getting the initial mass position: " << err << endl;
+		return false;
+	}
+	const double x = pos[0];
+	const double z = pos[2];
+	const double l = sqrt(x * x + z * z);
+	CHECK_VALUE("L0", l0, l, 0.01 * l0, 0);
 
 	const double w = sqrt(9.81 / l0);
 	const double T = 2.0 * M_PI / w;
