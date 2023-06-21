@@ -42,11 +42,13 @@ are needed to describe a mooring line in MoorDyn.
 Line objects maintain the following Data Members:
 
 General:
+
 - env: a pointer to the global environment object
 - waves: a pointer to the global object storing information about waves/currents
 - t: the simulation time, as a real
 
 Specific to each Line:
+
 - N: int indicating the number of line segments in N
 - UnstrLen: real indicating the unstretched length of the line
 - d: real describing the line diameter
@@ -69,6 +71,7 @@ fraction of critical damping
 - bstiffYs: y-array of reals for bent-stiffness lookup table
 
 State:
+
 - r: a vector of 3D node positions for the nodes representing the line.
 - rd: a vector of 3D velocities for each of the nodes representing the line
 - q: a vector of 3D tangent vectors for each node
@@ -81,6 +84,7 @@ State:
 - V: a vector of line-segment volumes as reals
 
 Forces are computed at every node in the line. Hence, all line forces are represented as std::vectors of 3D force vectors:
+
 - T: a vector of 3D vectors describing segment tensions
 - Td: a vector of 3D vectors describing segment Damping forces
 - Bs: a vector of 3D vectors describing bending stiffness forces
@@ -93,6 +97,7 @@ Forces are computed at every node in the line. Hence, all line forces are repres
 - Fnet: a vector of 3D vectors describing total force on each node in the line
 
 Waves:
+
 - F: a vector of reals indicating volume of each segment submerged (1 = fully submerged, 0 = out of water)
 - zeta: vector of reals describing free-surface elevations
 - PDyn: vecctor of reals describing dynamic pressures
@@ -100,6 +105,7 @@ Waves:
 - Ud: vector of 3D vectors describing wave accelerations
 
 Misc.
+
 - endTypeA, endTypeB: indicates whether ends are pinned or cantilevered to rod
 - endMomentA, endMomentB: 3D moment vectors at ends, to be applied to attached Rod/Body
 - outfile: pointer to outfile to write to
@@ -136,10 +142,12 @@ which "end" (A or B) of the line is attached to the point.
 Connections Objects have the following data members:
 
 General:
+
 - env: a pointer to a global struct holding environmental settings
 - waves: a pointer to a global object representing Waves in the system
 
 Specific to each Connection:
+
 - attached: a vector of attachments, describing all lines attached to the Connection
 - conM: the mass of the connection as a real
 - conV: the volume of the connection as a real
@@ -148,18 +156,21 @@ Specific to each Connection:
 - conCa: Added mass coefficient of the connection
 
 State:
+
 - r: 3D node position
 - rd: 3D node velocity
 - FNet: 3D force vector on node
 - M: 3x3 mass + added mass matrix
 
 Waves:
+
 - zeta: real representing free-surface elevation
 - PDyn: dynamic pressure
 - U: Wave velocities
 - Ud: Wave accelerations
 
 Misc:
+
 - number: connection ID (unique int)
 - type: Connection type, one of moordyn::Connection::types
 - WaterKin: Flag indicating whether wave/current kinematics will be considered:
@@ -219,6 +230,7 @@ and Line objects, the core Body object properties are as follows:
 In the C++ API, Bodies are represented as a standalone class. This class can have different behaviors
 depending on it's "type" (in the intuitive sense, not in the C++ sense) - there are three possible types 
 for bodies:
+
 - **Fixed**: the body is fixed, either to a particular location or to a connected, moving entity.
 - **Coupled**: the body position is controlled by the calling program.
   See :ref:`the coupling documentation <coupling>`.
@@ -227,11 +239,14 @@ for bodies:
 Body objects have the following data members:
 
 General:
+
 - env: a pointer to a global struct holding environmental settings
 - waves: a pointer to a global object representing Waves in the system
 
 Unique to Body:
+
 Attachments:
+
 - attachedC: a vector of pointers to Connection objects, indicating all the connections attached to the body
 - attachedR: a vector of pointers to Rod objects attached to the body. 
 - rConnectRel: a vector<vec> of 3d vectors describing the attachment points locations for Connections
@@ -239,6 +254,7 @@ Attachments:
 
 Body Properties (set upon call to Body::setup()). Note that these are all set to zero for all Body types
 other than FREE, as they are not relevant to COUPLED or FIXED scenarios:
+
 - body_r6: 6D reference point for the body.
 - body_rCG: 3D location of body center-of-gravity
 - bodyM: real number describing the body's mass
@@ -248,6 +264,7 @@ other than FREE, as they are not relevant to COUPLED or FIXED scenarios:
 - bodyCa: 6D vector describing added-mass coefficients
 
 Values describing the body's state:
+
 - r6: 6D vector describing body's position
 - v6: 6D vector describing body's velocity
 - r_ves: 6D vector describing fairlead position if a coupled body (may be different than overall r6)
@@ -261,6 +278,7 @@ Values describing the body's state:
 - outfile: pointer to the main output file for the body
 
 Misc:
+
 - number: a unique int id identifying the body
 - type: FREE, COUPLED, or FIXED, describing the "type" of body to be modeled
 
