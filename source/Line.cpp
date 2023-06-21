@@ -522,13 +522,8 @@ Line::initialize()
 		}
 	}
 	else {
-		for (unsigned int i = 1; i < N; i++) {
-			r[i] = r[0] + dir * (i / (real)N);
-		}
-		else {
-			LOGWRN << "Catenary initial profile failed for Line " << number
-			       << endl;
-		}
+		LOGDBG << "Vertical initial profile for Line " << number
+		       << endl;
 	}
 	
 
