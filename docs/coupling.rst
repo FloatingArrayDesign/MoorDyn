@@ -67,9 +67,9 @@ variation rates respectively, should contain:
 They shall be provided on that specific order. Thus **xd** is just the time
 derivative of **x**.
 
-For optimal results, **x**(**t**) and **xd**(**t** + **dt**) should be
+For optimal results, **x** ( **t** ) and **xd** ( **t** + **dt** )  should be
 provided.
-However, with a small enough time step, **dt**, **xd**(**t**) can be safely
+However, with a small enough time step, **dt**, **xd** ( **t** ) can be safely
 applied.
 
 C
