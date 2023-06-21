@@ -505,12 +505,6 @@ Line::initialize()
 			if (abs(Zl[N] - ZF) > Tol) {
 				LOGWRN << "Wrong catenary initial profile for Line, intializing as linear " << number
 				       << endl;
-        // From above:
-        // initialize line node positions as distributed linearly between the
-        // endpoints
-        for (unsigned int i = 1; i < N; i++) {
-          r[i] = r[0] + dir * (i / (real)N);
-        }
 			}
 			else {
 				// the catenary solve is successful, update the node positions
@@ -521,14 +515,8 @@ Line::initialize()
 					r[i] = r[0] + l;
 				}
 			}
+		}
 		else {
-			// From above:
-			// initialize line node positions as distributed linearly between the
-			// endpoints
-			for (unsigned int i = 1; i < N; i++) {
-				r[i] = r[0] + dir * (i / (real)N);
-			}
-
 			LOGWRN << "Catenary initial profile failed for Line " << number
 					<< endl;
 		}
