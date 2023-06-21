@@ -1,3 +1,5 @@
+.. _structure:
+
 Model Structure
 ===============
 
@@ -116,6 +118,7 @@ There are three types of Points:
   They can be used as anchor points or as a way to attach mooring Lines to a Body.
 - **Coupled**: they move under the control of the calling program/script.  
   They can be used as fairlead connections when the platform is modeled externally.
+  See :ref:`the coupling documentation <coupling>`.
 - **Free**: they are free to move according to the forces acting on them, which includes
   the tensions of attached lines as well as their own self weight and buoyancy, if applicable.  
 
@@ -172,10 +175,12 @@ The end nodes of a rod are available for attachment of lines (specified like "R2
 
 Rods can have 6, 3, or 0 DOF. 
 
-- "Free" Rods are unconstrained to move in all 6 DOF. 
-- "Pinned" Rods are attached at end A to something else, whether that is a body, the ground, or a coupling point. 
+- **Fixed**: Rods are full constrained, and their movement is defined by that of a body, the ground, or a coupling point.
+- **Pinned**: Rods are attached at end A to something else, whether that is a body, the ground, or a coupling point. 
   This type of Rod only has three rotational degrees of freedom, about end A.
-- "Fixed" Rods are full constrained, and their movement is defined by that of a body, the ground, or a coupling point.
+- **Coupled**: They move under the control of the calling program/script.
+  See :ref:`the coupling documentation <coupling>`.
+- **Free**: Rods are unconstrained to move in all 6 DOF.  
 
 Pinned or Fixed Rods attached to a body (e.g. body 1) are labelled "Body1Pinned" or "Body1". 
 Pinned or fixed rods that serve as a coupling point are labelled "CoupledPinned" or "Coupled"
@@ -214,9 +219,10 @@ and Line objects, the core Body object properties are as follows:
 In the C++ API, Bodies are represented as a standalone class. This class can have different behaviors
 depending on it's "type" (in the intuitive sense, not in the C++ sense) - there are three possible types 
 for bodies:
-- COUPLED: the body position is controlled by the calling program.
-- FREE: the body position is free to move, controlled by the hydrodynamic forces implemented in MoorDyn
-- FIXED: the body is fixed, either to a particular location or to a connected, moving entity.
+- **Fixed**: the body is fixed, either to a particular location or to a connected, moving entity.
+- **Coupled**: the body position is controlled by the calling program.
+  See :ref:`the coupling documentation <coupling>`.
+- **Free**: the body position is free to move, controlled by the hydrodynamic forces implemented in MoorDyn
 
 Body objects have the following data members:
 
