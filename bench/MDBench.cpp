@@ -65,6 +65,8 @@ MoordynStep(benchmark::State& state, std::string input_file)
 	state.counters["OuterTimeStep"] = dt;
 }
 
+BENCHMARK_CAPTURE(MoordynStep, FloatingRods, "Mooring/floating_rods.txt")
+    ->Unit(benchmark::kMicrosecond);
 BENCHMARK_CAPTURE(MoordynStep, WaveKin0, "Mooring/wavekin_0/wavekin_0.txt")
     ->Unit(benchmark::kMicrosecond);
 
