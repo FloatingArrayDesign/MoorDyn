@@ -314,13 +314,12 @@ Rod::initialize()
 	// matters if it's an independent Rod)
 
 	// copy over state values for potential use during derivative calculations
+	// Regarding the angles, they are always initialized as zeroes, considering
+	// q0 as the reference for the orientation-related transformations
 	XYZQuat pos = XYZQuat::Zero();
 	vec6 vel = vec6::Zero();
 	if (type == FREE)
 		pos.pos = r[0];
-	// Regarding the angles, they are always initialized as zeroes, considering
-	// q0 as the reference for the orientation-related transformations
-	// pos(Eigen::seqN(3, 3)) = vec::Zero();
 
 	LOGMSG << "Initialized Rod " << number << endl;
 	return std::make_pair(pos, vel);
@@ -418,8 +417,6 @@ Rod::updateFairlead(real time)
 		// set Rod kinematics based on BCs (linear model for now)
 		r7 = XYZQuat::fromVec6(r_ves + rd_ves * time);
 		v6 = rd_ves;
-		// enforce direction vector to be a unit vector
-		// r6(Eigen::seqN(3, 3)) = r6(Eigen::seqN(3, 3)).normalized();
 
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
@@ -479,7 +476,7 @@ Rod::setDependentStates()
 
 	// from state values, set positions of end nodes
 	r[0] = r7.pos;
-	rd[0] = v6(Eigen::seqN(0, 3));
+	rd[0] = v6.head<3>();
 
 	if (N > 0) {
 		// set end B nodes only if the rod isn't zero length
@@ -487,7 +484,7 @@ Rod::setDependentStates()
 		q = r7.quat.toRotationMatrix() * q0;
 		const vec rRel = UnstrLen * q;
 		r[N] = r[0] + rRel;
-		const vec w = v6(Eigen::seqN(3, 3));
+		const vec w = v6.tail<3>();
 		rd[N] = rd[0] + w.cross(rRel);
 	}
 
@@ -655,8 +652,8 @@ Rod::getFnet()
 		vec6 F6_i; // 6dof force-moment from rod about body ref point (but
 		           // global orientation frame of course)
 		// convert segment net force into 6dof force about body ref point
-		F6_i(Eigen::seqN(0, 3)) = Fnet[i];
-		F6_i(Eigen::seqN(3, 3)) = rRel.cross(Fnet[i]);
+		F6_i.head<3>() = Fnet[i];
+		F6_i.tail<3>() = rRel.cross(Fnet[i]);
 
 		Fnet_out(Eigen::seqN(0, nDOF)) += F6_i(Eigen::seqN(0, nDOF));
 	}
@@ -1132,8 +1129,8 @@ Rod::doRHS()
 		// 6dof force-moment from rod about body ref point (but global
 		// orientation frame of course)
 		vec6 F6_i;
-		F6_i(Eigen::seqN(0, 3)) = Fnet[i];
-		F6_i(Eigen::seqN(3, 3)) = rRel.cross(Fnet[i]);
+		F6_i.head<3>() = Fnet[i];
+		F6_i.tail<3>() = rRel.cross(Fnet[i]);
 
 		// mass matrix of each rod to be added
 		const mat6 M6_i = translateMass(rRel, M[i]);
@@ -1188,7 +1185,7 @@ Rod::doRHS()
 	const mat Imat = rotateMass(OrMat, Imat_l);
 	// these supplementary inertias can then be added the matrix (these are the
 	// terms ASIDE from the parallel axis terms)
-	M6net(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) += Imat;
+	M6net.bottomRightCorner<3, 3>() += Imat;
 
 	// now add centripetal and gyroscopic forces/moments, and that should be
 	// everything
@@ -1209,8 +1206,7 @@ Rod::doRHS()
 
 	// add centripetal force/moment, gyroscopic moment, and any moments applied
 	// from lines at either end (might be zero)
-	// F6net(Eigen::seqN(0, 3)) += Fcentripetal
-	F6net(Eigen::seqN(3, 3)) += Mext; // + Mcentripetal
+	F6net.tail<3>() += Mext; // + Mcentripetal
 
 	// NOTE: F6net saves the Rod's net forces and moments (excluding inertial
 	// ones) for use in later output

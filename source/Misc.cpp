@@ -232,15 +232,15 @@ translateMass(vec r, mat M)
 
 	// break input matrix into 3x3 quadrants
 	mat6 Mout;
-	Mout(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = M;
+	Mout.topLeftCorner<3, 3>() = M;
 
 	// product of inertia matrix  [J'] = [m][H] + [J]
 	const mat tempM1 = M * H;
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1;
-	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
+	Mout.bottomLeftCorner<3, 3>() = tempM1;
+	Mout.topRightCorner<3, 3>() = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = H.transpose() * M * H;
+	Mout.bottomRightCorner<3, 3>() = H.transpose() * M * H;
 
 	return Mout;
 }
@@ -253,21 +253,21 @@ translateMass6(vec r, mat6 M)
 
 	// break input matrix into 3x3 quadrants
 	mat6 Mout;
-	const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
-	Mout(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = m;
-	const mat J = M(Eigen::seqN(3, 3), Eigen::seqN(0, 3));
-	const mat I = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+	const mat m = M.topLeftCorner<3, 3>();
+	Mout.topLeftCorner<3, 3>() = m;
+	const mat J = M.bottomLeftCorner<3, 3>();
+	const mat I = M.bottomRightCorner<3, 3>();
 
 	// product of inertia matrix  [J'] = [m][H] + [J]
 	const mat tempM1 = m * H + J;
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1;
-	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
+	Mout.bottomLeftCorner<3, 3>() = tempM1;
+	Mout.topRightCorner<3, 3>() = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
 	const mat tempM2 = H * m * H.transpose(); // [H][m][H]^T
 	const mat tempM3 = J.transpose() * H;     // [J]^T[H]
 	const mat tempM4 = H.transpose() * J;     // [H]^T[J]
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = tempM2 + tempM3 + tempM4 + I;
+	Mout.bottomRightCorner<3, 3>() = tempM2 + tempM3 + tempM4 + I;
 
 	return Mout;
 }
