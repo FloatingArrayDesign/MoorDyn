@@ -101,6 +101,7 @@ typedef Eigen::Matrix3f mat3;
 typedef Eigen::Matrix4f mat4;
 typedef Eigen::Matrix6f mat6;
 typedef mat3 mat;
+typedef Eigen::Quaternionf quaternion;
 #else
 typedef double real;
 typedef Eigen::Vector2d vec2;
@@ -113,6 +114,7 @@ typedef Eigen::Matrix3d mat3;
 typedef Eigen::Matrix4d mat4;
 typedef Eigen::Matrix6d mat6;
 typedef mat3 mat;
+typedef Eigen::Quaterniond quaternion;
 #endif
 typedef Eigen::Vector2i ivec2;
 typedef Eigen::Vector3i ivec3;
@@ -121,6 +123,45 @@ typedef Eigen::Vector6i ivec6;
 typedef ivec3 ivec;
 
 typedef std::complex<real> complex;
+
+vec3
+Quat2Euler(const quaternion& q);
+
+quaternion
+Euler2Quat(const vec3& angles);
+
+struct XYZQuat
+{
+	vec3 pos;
+	quaternion quat;
+
+	static XYZQuat Zero()
+	{
+		return XYZQuat{ vec3::Zero(), quaternion::Identity() };
+	}
+	static XYZQuat fromVec6(const vec6& vec)
+	{
+		return XYZQuat{ vec.head<3>(), Euler2Quat(vec.tail<3>()) };
+	}
+	vec6 toVec6() const
+	{
+		vec6 out;
+		out.head<3>() = this->pos;
+		out.tail<3>() = Quat2Euler(this->quat);
+		return out;
+	}
+	Eigen::Vector<real, 7> toVec7() const
+	{
+		Eigen::Vector<real, 7> out;
+		out.head<3>() = pos;
+		out.tail<4>() = quat.coeffs();
+		return out;
+	}
+
+	XYZQuat operator+(const XYZQuat& visitor) const;
+	XYZQuat operator-(const XYZQuat& visitor) const;
+	XYZQuat operator*(const real& visitor) const;
+};
 
 /// The imaginary unit
 const complex i1(0., 1.);
@@ -618,6 +659,9 @@ scalevector(const vec& u, T newlength, vec& y)
 
 /** @brief Produce alternator matrix
  *
+ * This is the cross product represented as a matrix
+ * r x a = getH(r) * a
+ *
  * See "anti-symmetric tensor components" from Sadeghi and Incecik
  * @param r Offset vector
  * @return Alternator matrix
@@ -627,9 +671,9 @@ getH(vec r)
 {
 	mat H;
 	// clang-format off
-	H <<     0,  r[2],  r[1],
-	     -r[2],     0,  r[0],
-	     -r[1], -r[0],     0;
+	H <<   0, -r[2], r[1],
+		r[2],     0, -r[0],
+		-r[1], r[0], 0;
 	// clang-format on
 	return H;
 }

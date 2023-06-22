@@ -170,6 +170,48 @@ fileToLines(const std::filesystem::path& path)
 
 } // ::moordyn::fileIO
 
+vec3
+Quat2Euler(const quaternion& q)
+{
+	return q.toRotationMatrix().eulerAngles(0, 1, 2);
+}
+
+quaternion
+Euler2Quat(const vec3& angles)
+{
+	using AngleAxis = Eigen::AngleAxis<real>;
+	quaternion q = AngleAxis(angles.x(), vec3::UnitX()) *
+	               AngleAxis(angles.y(), vec3::UnitY()) *
+	               AngleAxis(angles.z(), vec3::UnitZ());
+	return q;
+}
+
+XYZQuat
+XYZQuat::operator+(const XYZQuat& visitor) const
+{
+	XYZQuat result;
+	result.pos = this->pos + visitor.pos;
+	result.quat = this->quat.coeffs() + visitor.quat.coeffs();
+	return result;
+}
+XYZQuat
+XYZQuat::operator-(const XYZQuat& visitor) const
+{
+
+	XYZQuat result;
+	result.pos = this->pos - visitor.pos;
+	result.quat = this->quat.coeffs() - visitor.quat.coeffs();
+	return result;
+}
+XYZQuat
+XYZQuat::operator*(const real& visitor) const
+{
+
+	XYZQuat result;
+	result.pos = this->pos * visitor;
+	result.quat = this->quat.coeffs() * visitor;
+	return result;
+}
 vec6
 solveMat6(const mat6& mat, const vec6& vec)
 {
@@ -198,7 +240,7 @@ translateMass(vec r, mat M)
 	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = H * M * H.transpose();
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = H.transpose() * M * H;
 
 	return Mout;
 }

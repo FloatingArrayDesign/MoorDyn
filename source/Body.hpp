@@ -30,7 +30,7 @@
 
 /** @file Body.hpp
  * C++ API for the moordyn::Body object
- * 
+ *
  * Body objects provide generic 6DOF rigid-body representations based on a
  * lumped-parameter model of translational and rotational properties. Rod
  * and Line objects may be added to body objects at any location. This allows
@@ -68,9 +68,9 @@ class Rod;
  * In the configuration file the options are:
  *
  * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
- * 
- * moordyn::Body exctends the io::IO class, allowing it to perform input/output in a
- * consistent manner.
+ *
+ * moordyn::Body extends the io::IO class, allowing it to perform input/output
+ * in a consistent manner.
  */
 class Body final : public io::IO
 {
@@ -120,7 +120,8 @@ class Body final : public io::IO
 
 	// degrees of freedom (or states)
 	/// body 6dof position [x/y/z]
-	vec6 r6;
+	XYZQuat r7;
+	// vec6 r6;
 	/// body 6dof velocity[x/y/z]
 	vec6 v6;
 
@@ -184,7 +185,8 @@ class Body final : public io::IO
 	/// Type of body
 	types type;
 
-	/** @brief Setup/initialize a rigid body. Called after instantiating a new Body in MoorDyn2.cpp
+	/** @brief Setup/initialize a rigid body. Called after instantiating a new
+	 * Body in MoorDyn2.cpp
 	 * @param number Body number
 	 * @param type Body type
 	 * @param r6 6dof position
@@ -216,7 +218,8 @@ class Body final : public io::IO
 
 	/** @brief Attach a rod to the body
 	 * @param rod The rod
-	 * @param coords vector indicating start (vals 0-2) and end (valse 3-5) of rod
+	 * @param coords vector indicating start (vals 0-2) and end (valse 3-5) of
+	 * rod
 	 * @throw moordyn::invalid_value_error If @p rod is NULL
 	 */
 	void addRod(Rod* rod, vec6 coords);
@@ -239,7 +242,7 @@ class Body final : public io::IO
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 */
-	std::pair<vec6, vec6> initialize();
+	std::pair<XYZQuat, vec6> initialize();
 
 	/** @brief Initialize the free body
 	 *
@@ -251,7 +254,7 @@ class Body final : public io::IO
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 */
-	void initializeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero());
+	void initializeBody(XYZQuat r = XYZQuat::Zero(), vec6 rd = vec6::Zero());
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
@@ -270,9 +273,9 @@ class Body final : public io::IO
 	 * @param pos The output position
 	 * @param vel The output velocity
 	 */
-	inline void getState(vec6& pos, vec6& vel) const
+	inline void getState(XYZQuat& pos, vec6& vel) const
 	{
-		pos = r6;
+		pos = r7;
 		vel = v6;
 	}
 
@@ -280,20 +283,21 @@ class Body final : public io::IO
 	 * @param pos The output position
 	 * @param vel The output velocity
 	 */
-	inline std::pair<vec6, vec6> getState() const
+	inline std::pair<XYZQuat, vec6> getState() const
 	{
-		return std::make_pair(r6, v6);
+		return std::make_pair(r7, v6);
 	}
 
 	/** @brief Get the body position
 	 * @return The body position
 	 */
-	inline vec getPosition() const { return r6(Eigen::seqN(0, 3)); }
+	inline vec getPosition() const { return r7.pos; }
 
 	/** @brief Get the body Euler XYZ angles
 	 * @return The body Euler XYZ angles
 	 */
-	inline vec getAngles() const { return r6(Eigen::seqN(3, 3)); }
+	inline vec getAngles() const { return Quat2Euler(r7.quat); }
+	// inline vec getAngles() const { return r6(Eigen::seqN(3, 3)); }
 
 	/** @brief Get the body velocity
 	 * @return The body velocity
@@ -337,7 +341,8 @@ class Body final : public io::IO
 	 */
 	void initiateStep(vec6 r, vec6 rd);
 
-	/** @brief Sets the kinematics based on the position and velocity of the fairlead.
+	/** @brief Sets the kinematics based on the position and velocity of the
+	 * fairlead.
 	 *
 	 * This function is meant only for coupled or fixed bodies
 	 * @param time Local time within the time step (from 0 to dt)
@@ -350,7 +355,7 @@ class Body final : public io::IO
 	 * @param r The position
 	 * @param rd The velocity
 	 */
-	void setState(vec6 r, vec6 rd);
+	void setState(XYZQuat r, vec6 rd);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *
@@ -360,7 +365,7 @@ class Body final : public io::IO
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	std::pair<vec6, vec6> getStateDeriv();
+	std::pair<XYZQuat, vec6> getStateDeriv();
 
 	/** @brief calculates the forces on the body
 	 * @throw moordyn::invalid_value_error If the body is of type

@@ -56,6 +56,16 @@ StateVar<vec6>::AsString() const
 
 template<>
 string
+StateVar<XYZQuat, vec6>::AsString() const
+{
+	stringstream s;
+	s << "pos = [" << pos.toVec7().transpose() << "]; ";
+	s << "vel = [" << vel.transpose() << "]" << endl;
+	return s.str();
+}
+
+template<>
+string
 StateVar<std::vector<vec>>::AsString() const
 {
 	stringstream s;
@@ -85,6 +95,26 @@ StateVar<vec6>
 StateVar<vec6>::operator+(const StateVar<vec6>& rhs)
 {
 	StateVar<vec6> out;
+	out.pos = pos + rhs.pos;
+	out.vel = vel + rhs.vel;
+	return out;
+}
+
+template<>
+StateVar<XYZQuat, vec6>
+StateVar<XYZQuat, vec6>::operator+(const StateVar<XYZQuat, vec6>& rhs)
+{
+	StateVar<XYZQuat, vec6> out;
+	out.pos = pos + rhs.pos;
+	out.vel = vel + rhs.vel;
+	return out;
+}
+
+template<>
+StateVar<XYZQuat, vec6>
+StateVar<XYZQuat, vec6>::operator-(const StateVar<XYZQuat, vec6>& rhs)
+{
+	StateVar<XYZQuat, vec6> out;
 	out.pos = pos + rhs.pos;
 	out.vel = vel + rhs.vel;
 	return out;
@@ -168,6 +198,16 @@ StateVarDeriv<vec6>::AsString() const
 
 template<>
 string
+StateVarDeriv<XYZQuat, vec6>::AsString() const
+{
+	stringstream s;
+	s << "vel = [" << vel.toVec7().transpose() << "]; ";
+	s << "acc = [" << acc.transpose() << "]" << endl;
+	return s.str();
+}
+
+template<>
+string
 StateVarDeriv<std::vector<vec>>::AsString() const
 {
 	stringstream s;
@@ -197,6 +237,16 @@ StateVar<vec6>
 StateVarDeriv<vec6>::operator*(const real& dt)
 {
 	StateVar<vec6> out;
+	out.pos = vel * dt;
+	out.vel = acc * dt;
+	return out;
+}
+
+template<>
+StateVar<XYZQuat, vec6>
+StateVarDeriv<XYZQuat, vec6>::operator*(const real& dt)
+{
+	StateVar<XYZQuat, vec6> out;
 	out.pos = vel * dt;
 	out.vel = acc * dt;
 	return out;
@@ -239,6 +289,16 @@ StateVarDeriv<vec6>::operator+(const StateVarDeriv<vec6>& rhs)
 }
 
 template<>
+StateVarDeriv<XYZQuat, vec6>
+StateVarDeriv<XYZQuat, vec6>::operator+(const StateVarDeriv<XYZQuat, vec6>& rhs)
+{
+	StateVarDeriv<XYZQuat, vec6> out;
+	out.vel = vel + rhs.vel;
+	out.acc = acc + rhs.acc;
+	return out;
+}
+
+template<>
 StateVarDeriv<std::vector<vec>>
 StateVarDeriv<std::vector<vec>>::operator+(
     const StateVarDeriv<std::vector<vec>>& rhs)
@@ -272,6 +332,16 @@ StateVarDeriv<vec6>
 StateVarDeriv<vec6>::operator-(const StateVarDeriv<vec6>& rhs)
 {
 	StateVarDeriv<vec6> out;
+	out.vel = vel - rhs.vel;
+	out.acc = acc - rhs.acc;
+	return out;
+}
+
+template<>
+StateVarDeriv<XYZQuat, vec6>
+StateVarDeriv<XYZQuat, vec6>::operator-(const StateVarDeriv<XYZQuat, vec6>& rhs)
+{
+	StateVarDeriv<XYZQuat, vec6> out;
 	out.vel = vel - rhs.vel;
 	out.acc = acc - rhs.acc;
 	return out;
