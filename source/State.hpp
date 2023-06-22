@@ -156,10 +156,10 @@ typedef StateVar<vec> ConnState;
 typedef StateVarDeriv<vec> DConnStateDt;
 
 /// The state variables for rods
-typedef StateVar<vec6> RodState;
+typedef StateVar<XYZQuat, vec6> RodState;
 
 /// The state variables derivative for rods
-typedef StateVarDeriv<vec6> DRodStateDt;
+typedef StateVarDeriv<XYZQuat, vec6> DRodStateDt;
 
 /// The state variables for bodies
 typedef StateVar<XYZQuat, vec6> BodyState;

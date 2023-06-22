@@ -126,7 +126,8 @@ class Rod final : public io::IO
 
 	/// Rod 6dof position [x,y,z,u1,u2,u3] (end A coordinates and direction unit
 	/// vector)
-	vec6 r6;
+	// vec6 r6;
+	XYZQuat r7;
 	/// Rod 6dof velocity[vx,vy,vz,wx,wy,wz] (end A velocity and rotational
 	/// velocities about unrotated axes)
 	vec6 v6;
@@ -204,9 +205,11 @@ class Rod final : public io::IO
 	 * env->WtrDpth or the 3D seafloor if available
 	 * @param x x coordinate
 	 * @param y y coordinate
-	 * @return A negative number representing the sea floor depth at the given location
-	*/
-	inline real getWaterDepth(real x, real y) {
+	 * @return A negative number representing the sea floor depth at the given
+	 * location
+	 */
+	inline real getWaterDepth(real x, real y)
+	{
 		return seafloor ? seafloor->getDepthAt(x, y) : -env->WtrDpth;
 	}
 
@@ -323,7 +326,7 @@ class Rod final : public io::IO
 	 * @note In the case of pinned rods, just the rod directions and angular
 	 * velocites shall be considered
 	 */
-	std::pair<vec6, vec6> initialize();
+	std::pair<XYZQuat, vec6> initialize();
 
 	/** @brief Number of segments
 	 *
@@ -420,7 +423,7 @@ class Rod final : public io::IO
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
 	 */
-	void setState(vec6 pos, vec6 vel);
+	void setState(XYZQuat pos, vec6 vel);
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps
@@ -470,7 +473,7 @@ class Rod final : public io::IO
 	 * @note The returned linear velocity and accelerations for pinned rods
 	 * should be ignored
 	 */
-	std::pair<vec6, vec6> getStateDeriv();
+	std::pair<XYZQuat, vec6> getStateDeriv();
 
 	/** @brief function to return net force on rod (and possibly moment at end A
 	 * if it's not pinned)

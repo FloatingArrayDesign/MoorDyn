@@ -145,13 +145,13 @@ Rod::setup(int number_in,
 	// set Rod positions if applicable
 	if (type == FREE) {
 		// For an independent rod, set the position right off the bat
-		r6(Eigen::seqN(0, 3)) = endCoords(Eigen::seqN(0, 3));
-		r6(Eigen::seqN(3, 3)) = vec::Zero();
+		r7.pos = endCoords.head<3>();
+		r7.quat = quaternion::Identity();
 		v6 = vec6::Zero();
 	} else if ((type == PINNED) || (type == CPLDPIN)) {
 		// for a pinned rod, just set the orientation (position will be set
 		// later by parent object)
-		r6(Eigen::seqN(3, 3)) = vec::Zero();
+		r7 = XYZQuat::Zero();
 		v6(Eigen::seqN(3, 3)) = vec::Zero();
 	}
 	// otherwise (for a fixed rod) the positions will be set by the parent body
@@ -223,7 +223,7 @@ Rod::removeLine(EndPoints end_point, Line* line)
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
-std::pair<vec6, vec6>
+std::pair<XYZQuat, vec6>
 Rod::initialize()
 {
 	LOGDBG << "Initializing Rod " << number << " (type '" << TypeName(type)
@@ -314,13 +314,13 @@ Rod::initialize()
 	// matters if it's an independent Rod)
 
 	// copy over state values for potential use during derivative calculations
-	vec6 pos = vec6::Zero();
+	XYZQuat pos = XYZQuat::Zero();
 	vec6 vel = vec6::Zero();
 	if (type == FREE)
-		pos(Eigen::seqN(0, 3)) = r[0];
+		pos.pos = r[0];
 	// Regarding the angles, they are always initialized as zeroes, considering
 	// q0 as the reference for the orientation-related transformations
-	pos(Eigen::seqN(3, 3)) = vec::Zero();
+	// pos(Eigen::seqN(3, 3)) = vec::Zero();
 
 	LOGMSG << "Initialized Rod " << number << endl;
 	return std::make_pair(pos, vel);
@@ -358,19 +358,16 @@ Rod::GetRodOutput(OutChanProps outChan)
 }
 
 void
-Rod::setState(vec6 pos, vec6 vel)
+Rod::setState(XYZQuat pos, vec6 vel)
 {
 	// copy over state values for potential use during derivative calculations
 	if (type == FREE) {
 		// end A coordinates & Rod direction unit vector
-		r6(Eigen::seqN(0, 3)) = pos(Eigen::seqN(0, 3));
-		const mat OrMat = RotXYZ(pos(Eigen::seqN(3, 3)));
-		r6(Eigen::seqN(3, 3)) = OrMat * q0;
+		r7 = pos;
 		// end A velocities & rotational velocities
 		v6 = vel;
 	} else if ((type == CPLDPIN) || (type == PINNED)) {
-		const mat OrMat = RotXYZ(pos(Eigen::seqN(3, 3)));
-		r6(Eigen::seqN(3, 3)) = OrMat * q0;
+		r7.quat = pos.quat;
 		v6(Eigen::seqN(3, 3)) = vel(Eigen::seqN(3, 3));
 	} else {
 		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
@@ -381,13 +378,14 @@ Rod::setState(vec6 pos, vec6 vel)
 	if (N == 0) {
 		// for zero-length Rod case, set orientation stuff to zero
 		// (maybe not necessary...)
-		r6(Eigen::seqN(3, 3)) = vec::Zero();
+		r7.quat = quaternion::Identity();
 		v6(Eigen::seqN(3, 3)) = vec::Zero();
 	}
 
 	// update Rod direction unit vector (simply equal to last three entries of
 	// r6)
-	q = r6(Eigen::seqN(3, 3));
+	const mat OrMat = r7.quat.toRotationMatrix();
+	q = OrMat * q0;
 }
 
 void
@@ -418,18 +416,17 @@ Rod::updateFairlead(real time)
 {
 	if (type == COUPLED) {
 		// set Rod kinematics based on BCs (linear model for now)
-		r6 = r_ves + rd_ves * time;
+		r7 = XYZQuat::fromVec6(r_ves + rd_ves * time);
 		v6 = rd_ves;
 		// enforce direction vector to be a unit vector
-		r6(Eigen::seqN(3, 3)) = r6(Eigen::seqN(3, 3)).normalized();
+		// r6(Eigen::seqN(3, 3)) = r6(Eigen::seqN(3, 3)).normalized();
 
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
 		setDependentStates();
 	} else if (type == CPLDPIN) {
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
-		r6(Eigen::seqN(0, 3)) =
-		    r_ves(Eigen::seqN(0, 3)) + rd_ves(Eigen::seqN(0, 3)) * time;
+		r7.pos = r_ves(Eigen::seqN(0, 3)) + rd_ves(Eigen::seqN(0, 3)) * time;
 		v6(Eigen::seqN(0, 3)) = rd_ves(Eigen::seqN(0, 3));
 
 		// Rod is pinned so only end A is specified, rotations are left alone
@@ -445,11 +442,10 @@ void
 Rod::setKinematics(vec6 r_in, vec6 rd_in)
 {
 	if (type == FIXED) {
-		r6 = r_in;
-		v6 = rd_in;
+		r7.pos = r_in.head<3>();
+		r7.quat = quaternion::FromTwoVectors(q0, r_in.tail<3>());
 
-		// enforce direction vector to be a unit vector
-		r6(Eigen::seqN(3, 3)) = r6(Eigen::seqN(3, 3)).normalized();
+		v6 = rd_in;
 
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
@@ -457,7 +453,7 @@ Rod::setKinematics(vec6 r_in, vec6 rd_in)
 	} else if (type == PINNED) // rod end A pinned to a body
 	{
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
-		r6(Eigen::seqN(0, 3)) = r_in(Eigen::seqN(0, 3));
+		r7.pos = r_in(Eigen::seqN(0, 3));
 		v6(Eigen::seqN(0, 3)) = rd_in(Eigen::seqN(0, 3));
 
 		// Rod is pinned so only end A is specified, rotations are left alone
@@ -468,9 +464,11 @@ Rod::setKinematics(vec6 r_in, vec6 rd_in)
 		throw moordyn::invalid_value_error("Invalid rod type");
 	}
 
-	// update Rod direction unit vector (simply equal to last three entries of
-	// r6, presumably these were set elsewhere for pinned Rods)
-	q = r6(Eigen::seqN(3, 3));
+	// update Rod direction unit vector (presumably these were set elsewhere for
+	// pinned Rods)
+	// TODO - don't recalculate OrMat here
+	const mat OrMat = r7.quat.toRotationMatrix();
+	q = OrMat * q0;
 }
 
 void
@@ -480,12 +478,14 @@ Rod::setDependentStates()
 	// to avoid calling uninitialized lines during initialization <<<
 
 	// from state values, set positions of end nodes
-	r[0] = r6(Eigen::seqN(0, 3));
+	r[0] = r7.pos;
 	rd[0] = v6(Eigen::seqN(0, 3));
 
 	if (N > 0) {
 		// set end B nodes only if the rod isn't zero length
-		const vec rRel = UnstrLen * r6(Eigen::seqN(3, 3));
+		// TODO - determine if q has been calculated here
+		q = r7.quat.toRotationMatrix() * q0;
+		const vec rRel = UnstrLen * q;
 		r[N] = r[0] + rRel;
 		const vec w = v6(Eigen::seqN(3, 3));
 		rd[N] = rd[0] + w.cross(rRel);
@@ -518,8 +518,10 @@ Rod::setDependentStates()
 
 		// solve for line unit vector that balances all moments (unit vector of
 		// summation of qEnd*EI/dl_stretched over each line)
+		// TODO - figure out what's going on here
 		q = qMomentSum.normalized();
-		r6(Eigen::seqN(3, 3)) = q; // set orientation angles (maybe not used)
+		// r6(Eigen::seqN(3, 3)) = q; // set orientation angles (maybe not used)
+		// TODO - figure out how to replace that
 	}
 
 	// pass Rod orientation to any attached lines
@@ -529,7 +531,7 @@ Rod::setDependentStates()
 		attached.line->setEndOrientation(q, attached.end_point, ENDPOINT_B);
 }
 
-std::pair<vec6, vec6>
+std::pair<XYZQuat, vec6>
 Rod::getStateDeriv()
 {
 	// attempting error handling <<<<<<<<
@@ -558,12 +560,13 @@ Rod::getStateDeriv()
 
 	// supplement mass matrix with rotational inertia terms for axial rotation
 	// of rod (this is based on assigning Jaxial * cos^2(theta) to each axis...
-	const vec q2 = r6(Eigen::seqN(3, 3)).cwiseProduct(r6(Eigen::seqN(3, 3)));
-	M_out6(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) +=
-	    rho * d * d * d * d / 64.0 * q2.asDiagonal();
+	// const vec q2 = r6(Eigen::seqN(3, 3)).cwiseProduct(r6(Eigen::seqN(3, 3)));
+	// M_out6(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) +=
+	//     rho * d * d * d * d / 64.0 * q2.asDiagonal();
 
 	// solve for accelerations in [M]{a}={f}, then fill in state derivatives
-	vec6 vel6, acc6;
+	vec6 acc6;
+	XYZQuat vel;
 	if (type == FREE) {
 		if (N == 0) {
 			// special zero-length Rod case, where orientation rate of change is
@@ -577,8 +580,9 @@ Rod::getStateDeriv()
 			const vec acc = M_out3.inverse() * Fnet_out3;
 
 			// dxdt = V   (velocities)
-			vel6(Eigen::seqN(0, 3)) = v6(Eigen::seqN(0, 3));
-			vel6(Eigen::seqN(3, 3)) = vec::Zero();
+			vel.pos = v6.head<3>();
+			vel.quat = quaternion::Identity();
+
 			// dVdt = a   (accelerations)
 			acc6(Eigen::seqN(0, 3)) = acc;
 			acc6(Eigen::seqN(3, 3)) = vec::Zero();
@@ -586,7 +590,9 @@ Rod::getStateDeriv()
 			// Regular rod case, 6DOF
 
 			// dxdt = V   (velocities)
-			vel6 = v6;
+			vel.pos = v6.head<3>();
+			vel.quat =
+			    0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
 			// dVdt = a   (accelerations)
 			acc6 = solveMat6(M_out6, Fnet_out);
 		}
@@ -601,14 +607,15 @@ Rod::getStateDeriv()
 		const vec acc = M_out3.inverse() * Fnet_out3;
 
 		// dxdt = V   (velocities)
-		vel6(Eigen::seqN(0, 3)) = vec::Zero();
-		vel6(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
+		vel.pos = vec::Zero();
+		vel.quat =
+		    0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
 		// dVdt = a   (accelerations)
 		acc6(Eigen::seqN(0, 3)) = vec::Zero();
 		acc6(Eigen::seqN(3, 3)) = acc;
 	}
 
-	return std::make_pair(vel6, acc6);
+	return std::make_pair(vel, acc6);
 }
 
 vec6
@@ -800,10 +807,8 @@ Rod::doRHS()
 
 	// save to internal roll and pitch variables for use in output <<< should
 	// check these, make Euler angles isntead of independent <<<
-	// roll = -180.0 / pi * phi * sinBeta;
-	roll = phi;
-	// pitch = 180.0 / pi * phi * cosBeta;
-	pitch = beta;
+	roll = -180.0 / pi * phi * sinBeta;
+	pitch = 180.0 / pi * phi * cosBeta;
 
 	// set interior node positions and velocities (stretch the nodes between the
 	// endpoints linearly) (skipped for zero-length Rods)
@@ -1267,7 +1272,7 @@ Rod::Serialize(void)
 	std::vector<uint64_t> data, subdata;
 
 	data.push_back(io::IO::Serialize(t));
-	subdata = io::IO::Serialize(r6);
+	subdata = io::IO::Serialize(r7);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(v6);
 	data.insert(data.end(), subdata.begin(), subdata.end());
@@ -1327,7 +1332,7 @@ Rod::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
 	ptr = io::IO::Deserialize(ptr, t);
-	ptr = io::IO::Deserialize(ptr, r6);
+	ptr = io::IO::Deserialize(ptr, r7);
 	ptr = io::IO::Deserialize(ptr, v6);
 	ptr = io::IO::Deserialize(ptr, r);
 	ptr = io::IO::Deserialize(ptr, rd);

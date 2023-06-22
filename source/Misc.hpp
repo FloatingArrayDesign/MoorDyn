@@ -135,6 +135,14 @@ struct XYZQuat
 	vec3 pos;
 	quaternion quat;
 
+	XYZQuat() {}
+
+	XYZQuat(vec3 pos, quaternion quat)
+	  : pos(pos)
+	  , quat(quat)
+	{
+	}
+
 	static XYZQuat Zero()
 	{
 		return XYZQuat{ vec3::Zero(), quaternion::Identity() };
