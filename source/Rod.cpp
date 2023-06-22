@@ -904,9 +904,9 @@ Rod::doRHS()
 
 		real VOF;
 		if (i == 0) {
-			VOF = 0.5 * F[i];
+			VOF = F[i];
 		} else if (i == N) {
-			VOF = 0.5 * F[i - 1];
+			VOF = F[i - 1];
 		} else {
 			VOF = 0.5 * (F[i] + F[i - 1]);
 		}
@@ -923,7 +923,7 @@ Rod::doRHS()
 		// make node mass matrix  (will be zero for zero-length Rods)
 		const mat I = mat::Identity();
 		const mat Q = q * q.transpose();
-		M[i] = m_i * I + env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
+		M[i] = env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
 
 		// mass matrices will be summed up before inversion, near end of this
 		// function
@@ -1147,18 +1147,30 @@ Rod::doRHS()
 	// real mass = UnstrLen * 0.25 * pi * pi * rho;
 	real mass = UnstrLen * 0.25 * pi * d * d * rho;
 
+	// Because the individual nodes mass matricies just include
+	// the added mass, we have to manually compensate for the mass
+	vec3 cg = 0.5 * UnstrLen * q;
+	mat H = getH(cg);
+	mat massMat = mass * mat::Identity();
+	M6net.topLeftCorner<3, 3>() += massMat;
+	const mat tempM1 = massMat * H;
+	M6net.bottomLeftCorner<3, 3>() += tempM1;
+	M6net.topRightCorner<3, 3>() += tempM1.transpose();
+	// this mass doesn't affect the inertia matrix because
+	// that gets handled below
+
 	// add inertia terms for the Rod assuming it is uniform density (radial
 	// terms add to existing matrix which contains parallel-axis-theorem
 	// components only)
 	mat Imat_l = mat::Zero();
 	if (N > 0) {
 		// axial moment of inertia
-		// real I_l = mass / 2.0 * d * d;
 		real I_l = mass / 8.0 * d * d;
-		// summed radial moment of inertia for each segment individually
-		// i.e. we are summing up N elements of mass / N.
-		// real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2));
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
+		// this is just the analytical equation for moment of inertia of
+		// a uniform cylinder around its end.
+		auto r = d / 2.0;
+		real I_r =
+		    0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
 
 		Imat_l(0, 0) = I_l;
 		Imat_l(1, 1) = I_r;
