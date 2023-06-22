@@ -31,7 +31,9 @@ else:
     subprocess.call('make clean', shell=True)
     subprocess.call('doxygen', shell=True)
 os.makedirs("_build/doxygen/out", exist_ok=True)
-shutil.move('_build/doxygen/html', '_build/doxygen/out/doxygen')
+if os.path.exists('_build/doxygen/out/doxygen/html'):
+    os.remove('_build/doxygen/out/doxygen/html')
+shutil.rmtree('_build/doxygen/html', '_build/doxygen/out/doxygen')
 
 breathe_projects['MoorDyn'] = "_build/doxygen/xml"
 breathe_default_project = "MoorDyn"

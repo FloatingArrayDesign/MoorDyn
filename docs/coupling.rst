@@ -48,6 +48,30 @@ Note: You would probably read first the :ref:`"Getting Started" <starting>`
 documentation to learn more about how to install MoorDyn with support for each
 language.
 
+Note: As it is documented on :ref:`the model structure <structure>`, several
+entities can be fully controled by the user.
+Namely points, rods and bodies.
+To this end, the user should pass their positions and velocities when calling
+
+.. doxygenfunction:: MoorDyn_Step
+
+More specifically, the vectors **x** and **xd**, which are the states and the
+variation rates respectively, should contain:
+
+- 6 components for each coupled body, containing the 3 spatial coordinates and
+  the 3 angles at the center of the body.
+- 6 for each coupled rod, containing the 3 spatial coordinates of the first
+  point of the rod and the 3 components of the normalized director vector.
+- 3 components for each coupled point, containing the spatial coordinates.
+
+They shall be provided on that specific order. Thus **xd** is just the time
+derivative of **x**.
+
+For optimal results, **x** ( **t** ) and **xd** ( **t** + **dt** )  should be
+provided.
+However, with a small enough time step, **dt**, **xd** ( **t** ) can be safely
+applied.
+
 C
 ^^^^^^
 
