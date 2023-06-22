@@ -23,7 +23,7 @@ set(TESTS
     time_schemes
     io
     rods
-    # bodies_and_rods TODO - renable when bodies and rods are working properly
+    bodies_and_rods
     quasi_static_chain
     wavekin_4
     tripod
@@ -48,7 +48,7 @@ function(make_cpp_executable test_name)
 endfunction()
 
 if(USE_VTK)
-    # set(TESTS "${TESTS};vtk") TODO - renable when bodies and rods are working properly
+    set(TESTS "${TESTS};vtk")
 
     make_cpp_executable(wave_surface)
 endif()

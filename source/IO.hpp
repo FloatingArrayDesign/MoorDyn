@@ -150,6 +150,18 @@ class IO : public LogUser
 	 */
 	std::vector<uint64_t> Serialize(const mat6& m);
 
+	/** @brief Pack a quaternion to make it writtable
+	 * @param m The quaternion
+	 * @return The packed quaternion
+	 */
+	std::vector<uint64_t> Serialize(const quaternion& m);
+
+	/** @brief Pack an XYZQuat to make it writtable
+	 * @param m The XYZQuat
+	 * @return The packed XYZQuat
+	 */
+	std::vector<uint64_t> Serialize(const XYZQuat& m);
+
 	/** @brief Pack a list of floating point numbers to make it writtable
 	 * @param l The list
 	 * @return The packed list
@@ -246,6 +258,20 @@ class IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	uint64_t* Deserialize(const uint64_t* in, mat6& out);
+
+	/** @brief Unpack a loaded quaternion
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, quaternion& out);
+
+	/** @brief Unpack a loaded XYZQuat
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, XYZQuat& out);
 
 	/** @brief Unpack a loaded list of floating point numbers
 	 * @param in The pointer to the next unread value

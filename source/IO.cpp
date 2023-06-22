@@ -364,6 +364,26 @@ IO::Serialize(const mat6& m)
 }
 
 std::vector<uint64_t>
+IO::Serialize(const quaternion& m)
+{
+	std::vector<uint64_t> data;
+	auto coeffs = m.coeffs();
+	data.reserve(coeffs.size());
+	for (unsigned int i = 0; i < 4; i++)
+		data.push_back(Serialize(coeffs(i)));
+	return data;
+}
+
+std::vector<uint64_t>
+IO::Serialize(const XYZQuat& m)
+{
+	std::vector<uint64_t> data = Serialize(m.pos);
+	auto subdata = Serialize(m.quat);
+	data.insert(data.end(), subdata.begin(), subdata.end());
+	return data;
+}
+
+std::vector<uint64_t>
 IO::Serialize(const std::vector<real>& l)
 {
 	std::vector<uint64_t> data;
@@ -494,6 +514,23 @@ IO::Deserialize(const uint64_t* in, mat6& out)
 	for (unsigned int i = 0; i < 6; i++)
 		for (unsigned int j = 0; j < 6; j++)
 			remaining = Deserialize(remaining, out(i, j));
+	return remaining;
+}
+
+uint64_t*
+IO::Deserialize(const uint64_t* in, quaternion& out)
+{
+	uint64_t* remaining = (uint64_t*)in;
+	for (unsigned int i = 0; i < 4; i++)
+		remaining = Deserialize(remaining, out.coeffs()(i));
+	return remaining;
+}
+
+uint64_t*
+IO::Deserialize(const uint64_t* in, XYZQuat& out)
+{
+	uint64_t* remaining = Deserialize(in, out.pos);
+	remaining = Deserialize(in, out.quat);
 	return remaining;
 }
 

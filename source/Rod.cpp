@@ -614,6 +614,7 @@ Rod::getStateDeriv()
 vec6
 Rod::getFnet()
 {
+	return F6net;
 	// >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global
 	// to save comp time and code?  >>>>>>>> this function likely not used
 	// >>>>>>>>>>>
@@ -738,6 +739,49 @@ Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
 	*/
 }
 
+real
+calcSubSeg(vec p1, vec p2, real surface_height, real diameter)
+{
+	// real firstNodeZ = r[firstNodeIdx][2] - surface_height;
+	real firstNodeZ = p1.z() - surface_height;
+	// real secondNodeZ = r[secondNodeIdx][2] - surface_height;
+	real secondNodeZ = p2.z() - surface_height;
+
+	if (firstNodeZ <= 0.0 && secondNodeZ < 0.0) {
+		return 1.0; // Both nodes below water; segment must be too
+	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
+		return 0.0; // Both nodes above water; segment must be too
+	} else {
+		// Segment partially submerged - figure out which node is above water
+		vec lowerEnd = firstNodeZ < 0.0 ? p1 : p2;
+		vec upperEnd = firstNodeZ < 0.0 ? p2 : p1;
+		lowerEnd.z() -= surface_height;
+		upperEnd.z() -= surface_height;
+
+		// segment submergence is calculated by calculating submergence of
+		// hypotenuse across segment from upper corner to lower corner
+		// To calculate this, we need the coordinates of these corners.
+		// first step is to get vector from lowerEnd to upperEnd
+		vec segmentAxis = upperEnd - lowerEnd;
+
+		// Next, find normal vector in z-plane, i.e. the normal vecto that
+		// points "up" the most. See the following stackexchange:
+		// https://math.stackexchange.com/questions/2283842/
+		vec upVec(0, 0, 1); // the global up-unit vector
+		vec normVec = segmentAxis.cross(upVec.cross(segmentAxis));
+		normVec.normalize();
+
+		// make sure normal vector has length equal to radius of segment
+		real radius = diameter / 2;
+		scalevector(normVec, radius, normVec);
+
+		// Calculate and return submerged ratio:
+		lowerEnd = lowerEnd - normVec;
+		upperEnd = upperEnd + normVec;
+
+		return fabs(lowerEnd[2]) / (fabs(lowerEnd[2]) + upperEnd[2]);
+	}
+}
 void
 Rod::doRHS()
 {
@@ -756,8 +800,10 @@ Rod::doRHS()
 
 	// save to internal roll and pitch variables for use in output <<< should
 	// check these, make Euler angles isntead of independent <<<
-	roll = -180.0 / pi * phi * sinBeta;
-	pitch = 180.0 / pi * phi * cosBeta;
+	// roll = -180.0 / pi * phi * sinBeta;
+	roll = phi;
+	// pitch = 180.0 / pi * phi * cosBeta;
+	pitch = beta;
 
 	// set interior node positions and velocities (stretch the nodes between the
 	// endpoints linearly) (skipped for zero-length Rods)
@@ -788,41 +834,43 @@ Rod::doRHS()
 
 	auto [zeta, U, Ud, PDyn] = waves->getWaveKinRod(rodId);
 
-	for (unsigned int i = 0; i <= N; i++) {
+	for (unsigned int i = 0; i < N; i++) {
 		// >>> add Pd variable for dynamic pressure, which will be applied
 		// on Rod surface
 
-		F[i] = 1.0; // set VOF value to one for now (everything submerged -
-		            // eventually this should be element-based!!!) <<<<
+		auto surface_height = 0.5 * (zeta[i] + zeta[i + 1]);
+		F[i] = calcSubSeg(r[i], r[i + 1], surface_height, d);
+		// F[i] = 1.0; // set VOF value to one for now (everything submerged -
+		//             // eventually this should be element-based!!!) <<<<
 	}
 
 	// >>> remember to check for violated conditions, if there are any... <<<
 
 	// just use the wave elevation computed at the location of the top node for
 	// now
-	vec r_top, r_bottom;
+	// vec r_top, r_bottom;
 	real zeta_i;
 	if (r[N][2] > r[0][2]) {
-		r_top = r[N];
-		r_bottom = r[0];
+		// 	r_top = r[N];
+		// 	r_bottom = r[0];
 		zeta_i = zeta[N];
 	} else {
-		r_top = r[0];
-		r_bottom = r[N];
+		// 	r_top = r[0];
+		// 	r_bottom = r[N];
 		zeta_i = zeta[0];
 	}
 
-	if ((r_bottom[2] < zeta_i) && (r_top[2] > zeta_i)) {
-		// the water plane is crossing the rod
-		// (should also add some limits to avoid near-horizontals at some point)
-		h0 = (zeta_i - r_bottom[2]) / fabs(q[2]);
-	} else if (r[0][2] < zeta_i) {
-		// fully submerged case
-		h0 = UnstrLen;
-	} else {
-		// fully unsubmerged case (ever applicable?)
-		h0 = 0.0;
-	}
+	// if ((r_bottom[2] < zeta_i) && (r_top[2] > zeta_i)) {
+	// 	// the water plane is crossing the rod
+	// 	// (should also add some limits to avoid near-horizontals at some point)
+	// 	h0 = (zeta_i - r_bottom[2]) / fabs(q[2]);
+	// } else if (r[0][2] < zeta_i) {
+	// 	// fully submerged case
+	// 	h0 = UnstrLen;
+	// } else {
+	// 	// fully unsubmerged case (ever applicable?)
+	// 	h0 = 0.0;
+	// }
 
 	Mext = vec::Zero();
 
@@ -853,13 +901,22 @@ Rod::doRHS()
 		}
 
 		// get scalar for submerged portion
-		double VOF;
-		if (Lsum + dL <= h0) // if fully submerged
-			VOF = 1.0;
-		else if (Lsum < h0) // if partially below waterline
-			VOF = (h0 - Lsum) / dL;
-		else // must be out of water
-			VOF = 0.0;
+
+		real VOF;
+		if (i == 0) {
+			VOF = 0.5 * F[i];
+		} else if (i == N) {
+			VOF = 0.5 * F[i - 1];
+		} else {
+			VOF = 0.5 * (F[i] + F[i - 1]);
+		}
+
+		// if (Lsum + dL <= h0) // if fully submerged
+		// 	VOF = 1.0;
+		// else if (Lsum < h0) // if partially below waterline
+		// 	VOF = (h0 - Lsum) / dL;
+		// else // must be out of water
+		// 	VOF = 0.0;
 
 		Lsum = Lsum + dL; // add length attributed to this node to the total
 
@@ -988,12 +1045,14 @@ Rod::doRHS()
 	} // i - done looping through nodes
 
 	// ----- add waterplane moment of inertia moment if applicable -----
-	if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i)) {
-		// the water plane is crossing the rod
-		real Mtemp = 1.0 / 16.0 * pi * d * d * d * d * env->rho_w * env->g *
-		             sinPhi * (1.0 + 0.5 * tanPhi * tanPhi);
-		Mext += Mtemp * vec(sinBeta, -cosBeta, 0.0);
-	}
+	// if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i)) {
+	// 	// the water plane is crossing the rod
+	// 	// real Mtemp = 1.0 / 16.0 * pi * d * d * d * d * env->rho_w * env->g *
+	// 	//              sinPhi * (1.0 + 0.5 * tanPhi * tanPhi);
+	// 	real Mtemp = 1.0 / 16.0 * pi * d * d * d * d * env->rho_w * env->g *
+	// 	             sinPhi * cosPhi;
+	// 	Mext += Mtemp * vec(sinBeta, -cosBeta, 0.0);
+	// }
 
 	// ============ now add in forces on end nodes from attached lines
 	// =============
@@ -1085,7 +1144,8 @@ Rod::doRHS()
 	// >>> could some of these be precalculated just once? <<<
 
 	// rod total mass, used to help with making generic inertia coefficients
-	real mass = UnstrLen * 0.25 * pi * pi * rho;
+	// real mass = UnstrLen * 0.25 * pi * pi * rho;
+	real mass = UnstrLen * 0.25 * pi * d * d * rho;
 
 	// add inertia terms for the Rod assuming it is uniform density (radial
 	// terms add to existing matrix which contains parallel-axis-theorem
@@ -1093,10 +1153,12 @@ Rod::doRHS()
 	mat Imat_l = mat::Zero();
 	if (N > 0) {
 		// axial moment of inertia
-		real I_l = mass / 2.0 * d * d;
+		// real I_l = mass / 2.0 * d * d;
+		real I_l = mass / 8.0 * d * d;
 		// summed radial moment of inertia for each segment individually
 		// i.e. we are summing up N elements of mass / N.
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2));
+		// real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2));
+		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
 
 		Imat_l(0, 0) = I_l;
 		Imat_l(1, 1) = I_r;

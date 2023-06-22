@@ -46,7 +46,7 @@ namespace moordyn {
  *
  * This is holding the position and velocitites
  */
-template<typename T>
+template<typename T, typename V = T>
 class StateVar
 {
   public:
@@ -59,7 +59,7 @@ class StateVar
 	/// The position
 	T pos;
 	/// The velocity
-	T vel;
+	V vel;
 
 	/** @brief Give a string representation of the state variables
 	 *
@@ -71,7 +71,7 @@ class StateVar
 	/** @brief Copy operator
 	 * @param visitor The entity to copy
 	 */
-	StateVar<T>& operator=(const StateVar<T>& visitor)
+	StateVar<T, V>& operator=(const StateVar<T, V>& visitor)
 	{
 		pos = visitor.pos;
 		vel = visitor.vel;
@@ -81,12 +81,12 @@ class StateVar
 	/** @brief Sum operator
 	 * @param visitor The entity to sum
 	 */
-	StateVar<T> operator+(const StateVar<T>& visitor);
+	StateVar<T, V> operator+(const StateVar<T, V>& visitor);
 
 	/** @brief Sum operator
 	 * @param visitor The entity to sum
 	 */
-	StateVar<T> operator-(const StateVar<T>& visitor);
+	StateVar<T, V> operator-(const StateVar<T, V>& visitor);
 };
 
 /** @class StateVarDeriv Time.hpp
@@ -94,7 +94,7 @@ class StateVar
  *
  * This is holding the velocities and accelerations
  */
-template<class T>
+template<class T, class V = T>
 class StateVarDeriv
 {
   public:
@@ -107,7 +107,7 @@ class StateVarDeriv
 	/// The velocity
 	T vel;
 	/// The acceleration
-	T acc;
+	V acc;
 
 	/** @brief Give a string representation of the state variables
 	 *
@@ -119,7 +119,7 @@ class StateVarDeriv
 	/** @brief Copy operator
 	 * @param visitor The entity to copy
 	 */
-	StateVarDeriv<T>& operator=(const StateVarDeriv<T>& visitor)
+	StateVarDeriv<T, V>& operator=(const StateVarDeriv<T, V>& visitor)
 	{
 		vel = visitor.vel;
 		acc = visitor.acc;
@@ -130,17 +130,17 @@ class StateVarDeriv
 	 * @param dt The time step
 	 * @return The state variables increment
 	 */
-	StateVar<T> operator*(const real& dt);
+	StateVar<T, V> operator*(const real& dt);
 
 	/** @brief Sum operator
 	 * @param visitor The entity to sum
 	 */
-	StateVarDeriv<T> operator+(const StateVarDeriv<T>& visitor);
+	StateVarDeriv<T, V> operator+(const StateVarDeriv<T, V>& visitor);
 
 	/** @brief Subtract operator
 	 * @param visitor The entity to subtract
 	 */
-	StateVarDeriv<T> operator-(const StateVarDeriv<T>& visitor);
+	StateVarDeriv<T, V> operator-(const StateVarDeriv<T, V>& visitor);
 };
 
 /// The state variables for lines
@@ -162,10 +162,10 @@ typedef StateVar<vec6> RodState;
 typedef StateVarDeriv<vec6> DRodStateDt;
 
 /// The state variables for bodies
-typedef StateVar<vec6> BodyState;
+typedef StateVar<XYZQuat, vec6> BodyState;
 
 /// The state variables derivative for bodies
-typedef StateVarDeriv<vec6> DBodyStateDt;
+typedef StateVarDeriv<XYZQuat, vec6> DBodyStateDt;
 
 /** @class MoorDynState Time.hpp
  * @brief The collection of state variables of the whole system

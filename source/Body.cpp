@@ -103,11 +103,13 @@ Body::setup(int number_in,
 
 	// --------------- if this is an independent body (not coupled) ----------
 	// set initial position and orientation of body from input file
-	r6 = body_r6;
+	r7.pos = body_r6.head<3>();
+	r7.quat = Euler2Quat(body_r6.tail<3>());
+
 	v6 = vec6::Zero();
 
 	// calculate orientation matrix based on latest angles
-	OrMat = RotZYX(r6(Eigen::seqN(3, 3)).reverse());
+	OrMat = r7.quat.toRotationMatrix();
 
 	LOGDBG << "Set up Body " << number << ", type " << TypeName(type) << ". "
 	       << endl;
@@ -164,7 +166,7 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in)
 		attached->initialize();
 }
 
-std::pair<vec6, vec6>
+std::pair<XYZQuat, vec6>
 Body::initialize()
 {
 	if (type != FREE) {
@@ -222,7 +224,7 @@ Body::initialize()
 
 	LOGDBG << "Initialized Body " << number << endl;
 
-	return std::make_pair(r6, v6);
+	return std::make_pair(r7, v6);
 };
 
 void
@@ -247,7 +249,7 @@ Body::setDependentStates()
 		// kinematics of the Body:
 		transformKinematics(rConnectRel[i],
 		                    OrMat,
-		                    r6(Eigen::seqN(0, 3)),
+		                    r7.pos,
 		                    v6,
 		                    rConnect,
 		                    rdConnect); //<<< should double check this function
@@ -273,7 +275,7 @@ Body::setDependentStates()
 		vec tmpr, tmprd;
 		transformKinematics(r6RodRel[i](Eigen::seqN(0, 3)),
 		                    OrMat,
-		                    r6(Eigen::seqN(0, 3)),
+		                    r7.pos,
 		                    v6,
 		                    tmpr,
 		                    tmprd); // set first three entires (end A
@@ -291,6 +293,8 @@ Body::setDependentStates()
 		rdRod(Eigen::seqN(3, 3)) = v6(Eigen::seqN(3, 3));
 
 		// pass above to the rod and get it to calculate the forces
+		// rRod = [baseX, baseY, baseZ, dirX, dirY, dirZ]
+		// rdRod = [baseDX, baseDY, baseDZ, endDX, endDY, endDZ]
 		try {
 			attachedR[i]->setKinematics(rRod, rdRod);
 		} catch (moordyn::invalid_value_error& exception) {
@@ -304,11 +308,11 @@ real
 Body::GetBodyOutput(OutChanProps outChan)
 {
 	if (outChan.QType == PosX)
-		return r6[0];
+		return r7.pos.x();
 	else if (outChan.QType == PosY)
-		return r6[1];
+		return r7.pos.y();
 	else if (outChan.QType == PosZ)
-		return r6[2];
+		return r7.pos.z();
 	else if (outChan.QType == VelX)
 		return v6[0];
 	else if (outChan.QType == VelY)
@@ -356,11 +360,11 @@ Body::updateFairlead(real time)
 	if ((type == COUPLED) || (type == FIXED)) // if coupled OR GROUND BODY
 	{
 		// set Body kinematics based on BCs (linear model for now)
-		r6 = r_ves + rd_ves * time;
+		r7 = XYZQuat::fromVec6(r_ves + rd_ves * time);
 		v6 = rd_ves;
 
 		// calculate orientation matrix based on latest angles
-		OrMat = RotZYX(r6(Eigen::seqN(3, 3)).reverse());
+		OrMat = r7.quat.toRotationMatrix();
 
 		// set positions of any dependent connections and rods
 		setDependentStates();
@@ -372,20 +376,20 @@ Body::updateFairlead(real time)
 }
 
 void
-Body::setState(vec6 pos, vec6 vel)
+Body::setState(XYZQuat pos, vec6 vel)
 {
 	// set position and velocity vectors from state vector
-	r6 = pos;
+	r7 = pos;
 	v6 = vel;
 
 	// calculate orientation matrix based on latest angles
-	OrMat = RotZYX(r6[5], r6[4], r6[3]);
+	OrMat = r7.quat.toRotationMatrix();
 
 	// set positions of any dependent connections and rods
 	setDependentStates();
 }
 
-std::pair<vec6, vec6>
+std::pair<XYZQuat, vec6>
 Body::getStateDeriv()
 {
 	if (type != FREE) {
@@ -401,7 +405,12 @@ Body::getStateDeriv()
 	const vec6 acc = solveMat6(M, F6net);
 
 	// NOTE; is the above still valid even though it includes rotational DOFs?
-	return std::make_pair(v6, acc);
+	XYZQuat dPos;
+	dPos.pos = v6.head<3>();
+	// this assumes that the angular velocity is about the global coordinates
+	// which is true for bodies
+	dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
+	return std::make_pair(dPos, acc);
 };
 
 //  this is the big function that calculates the forces on the body
@@ -456,7 +465,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r6(Eigen::seqN(0, 3)));
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
 
 		// sum quantitites
 		F6net += F6_i;
@@ -469,7 +478,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r6(Eigen::seqN(0, 3)));
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];
@@ -508,10 +517,11 @@ Body::Output(real time)
 		*outfile << time << "\t ";
 
 		for (int J = 0; J < 3; J++)
-			*outfile << r6[J] << "\t ";
+			*outfile << r7.pos[J] << "\t ";
 
-		*outfile << r6[3] * rad2deg << "\t " << r6[4] * rad2deg << "\t "
-		         << r6[5] * rad2deg << "\n";
+		vec3 angles = rad2deg * Quat2Euler(r7.quat);
+		*outfile << angles[0] << "\t " << angles[1] << "\t " << angles[2]
+		         << "\n";
 	}
 	return;
 };
@@ -521,7 +531,7 @@ Body::Serialize(void)
 {
 	std::vector<uint64_t> data, subdata;
 
-	subdata = io::IO::Serialize(r6);
+	subdata = io::IO::Serialize(r7);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(v6);
 	data.insert(data.end(), subdata.begin(), subdata.end());
@@ -543,7 +553,7 @@ uint64_t*
 Body::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
-	ptr = io::IO::Deserialize(ptr, r6);
+	ptr = io::IO::Deserialize(ptr, r7);
 	ptr = io::IO::Deserialize(ptr, v6);
 	ptr = io::IO::Deserialize(ptr, r_ves);
 	ptr = io::IO::Deserialize(ptr, rd_ves);
@@ -560,11 +570,13 @@ Body::getVTK() const
 {
 	auto transform = vtkSmartPointer<vtkTransform>::New();
 	// The VTK object is already centered on 0,0,0, so we can rotate it
-	transform->RotateX(r6[3]);
-	transform->RotateY(r6[4]);
-	transform->RotateZ(r6[5]);
+	vec3 angles = Quat2Euler(r7.quat);
+	transform->RotateX(angles[0]);
+	transform->RotateY(angles[1]);
+	transform->RotateZ(angles[2]);
 	// And then we can move it to the appropriate position
-	transform->Translate(r6[0], r6[1], r6[2]);
+	vec3 pos = r7.pos;
+	transform->Translate(pos.x(), pos.y(), pos.z());
 
 	auto transformer = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
 	transformer->SetInputData(vtk_body);
@@ -680,9 +692,10 @@ int DECLDIR
 MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6])
 {
 	CHECK_BODY(b);
-	moordyn::vec6 pos, vel;
+	moordyn::XYZQuat pos;
+	moordyn::vec6 vel;
 	std::tie(pos, vel) = ((moordyn::Body*)b)->getState();
-	moordyn::vec62array(pos, r);
+	moordyn::vec62array(pos.toVec6(), r);
 	moordyn::vec62array(vel, rd);
 	return MOORDYN_SUCCESS;
 }
