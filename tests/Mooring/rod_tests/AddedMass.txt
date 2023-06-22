@@ -1,0 +1,30 @@
+--------------------- MoorDyn Input File -------------------------------------------------------
+Put a buoyant rod with no drag but added mass 10 meters under water.
+We can watch its position as it takes ~2.3 seconds to get to z = -1 
+to ensure that is has the correct total inertia 
+----------------------- LINE TYPES --------------------------------------------------------------
+TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
+(name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
+chain       13.332E-3  1.1        7.51E6     -0.5        0        0.0    0.0      0.0     1.0
+---------------------- ROD TYPES ------------------------------------
+TypeName  Diam   Mass/m    Cd     Ca    CdEnd      CaEnd
+(name)    (m)    (kg/m)    (-)    (-)   (-)        (-)
+floatRod   0.5  100.0      0.0    1.0    0.0       0.0
+---------------------- RODS ----------------------------------------
+ID     RodType   Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs   RodOutputs
+(#)    (name)    (#/key)     (m)   (m)   (m)   (m)   (m)   (m)  (-)       (-)
+1      floatRod  free        0     -1    -10   0   1.0   -10    4       -
+-------------------------- SOLVER    OPTIONS----------------------------------------------------------
+0         writeLog     - Write a log file
+0.0005  dtM          - time step to use in mooring integration
+rk4       tScheme      - Solver
+3.0e6     kb           - bottom stiffness
+3.0e5     cb           - bottom damping
+16.0      WtrDpth      - water depth
+2.0       ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
+0.0015 threshIC     - threshold for IC convergence
+0.0       TmaxIC       - threshold for IC convergence
+0.0001   dtIC         - Time lapse between convergence tests (s)
+0         Currents     - Whether or not to pull in currents
+0         WaveKin      - Whether or not to pull in waves
+------------------------- need this line -------------------------------------- 

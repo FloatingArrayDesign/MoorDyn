@@ -402,13 +402,13 @@ class TimeSchemeBase : public TimeScheme
 		}
 		// Build up the states and states derivatives
 		RodState state;
-		state.pos = vec6::Zero();
+		state.pos = XYZQuat::Zero();
 		state.vel = vec6::Zero();
 		for (unsigned int i = 0; i < r.size(); i++) {
 			r[i].rods.push_back(state);
 		}
 		DRodStateDt dstate;
-		dstate.vel = vec6::Zero();
+		dstate.vel = XYZQuat::Zero();
 		dstate.acc = vec6::Zero();
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].rods.push_back(dstate);
