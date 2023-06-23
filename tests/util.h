@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include "Misc.hpp"
 
 #ifdef USE_VTK
 
@@ -136,3 +137,26 @@ multidim_arr_to_file(std::string filename, T* thing)
 // 	file.close();
 
 // }
+
+template<typename DerivedA, typename DerivedB>
+bool
+allclose(const Eigen::DenseBase<DerivedA>& a,
+         const Eigen::DenseBase<DerivedB>& b,
+         const typename DerivedA::RealScalar& rtol =
+             Eigen::NumTraits<typename DerivedA::RealScalar>::dummy_precision(),
+         const typename DerivedA::RealScalar& atol =
+             Eigen::NumTraits<typename DerivedA::RealScalar>::epsilon())
+{
+	return ((a.derived() - b.derived()).array().abs() <=
+	        (atol + rtol * b.derived().array().abs()))
+	    .all();
+}
+
+bool
+isclose(const double& a,
+        const double& b,
+        const double& rtol = 0.0,
+        const double& atol = std::numeric_limits<double>::epsilon())
+{
+	return std::abs(a - b) <= (atol + rtol * std::abs(b));
+}
