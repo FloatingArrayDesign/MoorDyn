@@ -33,18 +33,28 @@ set(TESTS
 set(CPP_TESTS 
     wavekin
     wavekin_7
+)
+
+set(CATCH2_TESTS 
+    math_tests
     testDecomposeString
 )
 
 function(make_executable test_name)
     add_executable(${test_name} ${test_name}.cpp)
-    target_link_libraries(${test_name} moordyn)
+    target_link_libraries(${test_name} PRIVATE moordyn)
     add_dependencies(${test_name} Test_MooringConfigFiles)
 endfunction()
 
 function(make_cpp_executable test_name)
     make_executable(${test_name})
     target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
+endfunction()
+
+function(make_catch2_executable test_name)
+    make_cpp_executable(${test_name})
+    target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
+    target_link_libraries(${test_name} PRIVATE Catch2::Catch2WithMain)
 endfunction()
 
 if(USE_VTK)
@@ -61,6 +71,12 @@ endforeach()
 
 foreach(TEST ${CPP_TESTS})
     make_cpp_executable(${TEST})
+    add_test(NAME ${TEST}
+             COMMAND ${TEST})
+endforeach()
+
+foreach(TEST ${CATCH2_TESTS})
+    make_catch2_executable(${TEST})
     add_test(NAME ${TEST}
              COMMAND ${TEST})
 endforeach()
