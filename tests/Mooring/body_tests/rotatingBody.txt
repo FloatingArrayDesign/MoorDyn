@@ -1,0 +1,45 @@
+MoorDyn v2 input file for RM3 WEC - added in a cable too
+------------------------- LINE TYPES --------------------------------------------------
+LineType  Diam    MassDenInAir    EA       BA/-zeta    EI    tbd   Can   Cat  Cdn   Cdt 
+(-)       (m)       (kg/m)        (N)      (Pa-s/-)  (n-m^2) (-)   (-)   (-)  (-)   (-)  
+nylon      0.124      13.76    25152.0     -0.4      0.0   0.0   1.0   0.0  1.6   0.05
+---------------------------- BODIES -----------------------------------------------------
+ID   Attachment  X0     Y0    Z0     r0      p0     y0     Mass  CG*   I*      Volume   CdA*   Ca
+(#)     (-)      (m)    (m)   (m)   (deg)   (deg)  (deg)   (kg)  (m)  (kg-m^2)  (m^3)   (m^2)  (-)
+1       free      0     0      5     0       0      0      1e1     0    5        0       0      0
+----------------------- POINTS ----------------------------------------------
+Node      Type       X         Y          Z        M        V          CdA    CA
+(-)       (-)        (m)       (m)        (m)      (kg)     (m^3)      (m^2)  (-)
+1         Body1      0.0       0          0        0        0          0      0
+2         Fixed      1.0       0          5        0        0          0      0
+3         Fixed      -1.0      0          5        0        0          0      0
+4         Fixed      0.0       1          5        0        0          0      0
+5         Fixed      0.0       -1         5        0        0          0      0
+6         Fixed      0.0       0          6        0        0          0      0
+7         Fixed      0.0       0          4        0        0          0      0
+8         Body1      1         0          0        0        0          0      0
+9         CPLD       2         0          5        0        0          0      0
+-------------------------- LINES -------------------------------------------------
+Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
+(-)      (-)       (-)       (-)   (m)         (-)          (-)
+1        nylon      1         2    0.9        1           -
+2        nylon      1         3    0.9        1           -
+3        nylon      1         4    0.9        1           -
+4        nylon      1         5    0.9        1           -
+5        nylon      1         6    0.9        1           -
+6        nylon      1         7    0.9        1           -
+7        nylon      8         9    1.0        1           pT
+-------------------------- SOLVER OPTIONS---------------------------------------------------
+2        writeLog     - Write a log file
+0        g            - No gravity
+0.0005   dtM          - time step to use in mooring integration
+3.0e6    kb           - bottom stiffness
+3.0e5    cb           - bottom damping
+70       WtrDpth      - water depth
+3.0      ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
+0.015    threshIC     - threshold for IC convergence
+0.0    TmaxIC       - threshold for IC convergence
+0.01     dtIC         - Time lapse between convergence tests (s)
+------------------------------ OUTPUTS -----------------------------------------------------
+Con8px Con8py Con8pz
+--------------------------- need this line -------------------------------------------------

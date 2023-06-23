@@ -24,6 +24,7 @@ set(TESTS
     io
     rods
     bodies_and_rods
+    bodies
     quasi_static_chain
     wavekin_4
     tripod
