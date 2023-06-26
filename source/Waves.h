@@ -35,6 +35,8 @@
 #ifndef WAVES_H
 #define WAVES_H
 
+#include "MoorDynAPI.h"
+
 #ifdef __cplusplus
 extern "C"
 {
