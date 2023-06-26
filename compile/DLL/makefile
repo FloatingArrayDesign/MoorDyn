@@ -59,7 +59,7 @@ Waves/%.o: ../../source/Waves/%.cpp $(HEADERS)
 	${CXX} $(CPPFLAGS) -o $@ $<
 
 clean:
-	$(RM) *.exe.manifest *.exe *.obj *.o *.dll
+	$(RM) *.exe.manifest *.exe *.obj *.o ./*/*.o *.dll
 
 test_minimal.exe: ../../tests/minimal.cpp libmoordyn2.dll
 	$(CXX) $(EXEFLAGS) -L./ -lmoordyn2 -I../../source/ -o test_minimal.exe ../../tests/minimal.cpp

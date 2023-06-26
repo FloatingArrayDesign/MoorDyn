@@ -68,7 +68,7 @@ Waves/%.o: ../../source/Waves/%.cpp $(HEADERS)
 	${CXX} $(CPPFLAGS) -o $@ $<
 
 clean:
-	rm -f *.o *.dylib *.dylib.*
+	rm -f *.o ./*/*.o *.dylib *.dylib.*
 	rm -f test_*
 
 test_minimal: ../../tests/minimal.cpp libmoordyn2.dylib
