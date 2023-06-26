@@ -23,8 +23,8 @@ main(int, char**)
 		return 3;
 	}
 
-	double dt = 0.01;                 // Set time increment
-	const unsigned int nts = 15 / dt; // Number of time steps
+	double dt = 0.1;                 // Set time increment
+	const unsigned int nts = 3 / dt; // Number of time steps
 
 	for (unsigned int i = 0; i < nts; i++) {
 		// This deals with the type mismatch between nts (int) and time
