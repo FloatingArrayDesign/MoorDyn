@@ -64,7 +64,7 @@ Waves/%.o: ../../source/Waves/%.cpp $(HEADERS)
 	${CXX} $(CPPFLAGS) -o $@ $<
 
 clean:
-	rm -f *.o *.so *.so.*
+	rm -f *.o ./*/*.o *.so *.so.*
 	rm -f test_*
 
 test_minimal: ../../tests/minimal.cpp libmoordyn.so
