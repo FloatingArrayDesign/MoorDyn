@@ -1485,8 +1485,10 @@ moordyn::MoorDyn::readRodProps(string inputText)
 	obj->w = atof(entries[2].c_str());
 	obj->Cdn = atof(entries[3].c_str());
 	obj->Can = atof(entries[4].c_str());
-	obj->Cdt = atof(entries[5].c_str());
-	obj->Cat = atof(entries[6].c_str());
+	obj->CdEnd = atof(entries[5].c_str());
+	obj->CaEnd = atof(entries[6].c_str());
+	obj->Cdt = 0.0;
+	obj->Cat = 0.0;
 
 	LOGDBG << "\t'" << obj->type << "'"
 	       << " - with id " << RodPropList.size() << endl
@@ -1494,8 +1496,8 @@ moordyn::MoorDyn::readRodProps(string inputText)
 	       << "\t\tw   : " << obj->w << endl
 	       << "\t\tCdn : " << obj->Cdn << endl
 	       << "\t\tCan : " << obj->Can << endl
-	       << "\t\tCdt : " << obj->Cdt << endl
-	       << "\t\tCat : " << obj->Cat << endl;
+	       << "\t\tCdEnd : " << obj->CdEnd << endl
+	       << "\t\tCaEnd : " << obj->CaEnd << endl;
 	return obj;
 }
 

@@ -909,6 +909,8 @@ typedef struct _RodProps // (matching Rod Dictionary inputs)
 	double Cat;
 	double Cdn;
 	double Cdt;
+	double CaEnd;
+	double CdEnd;
 } RodProps;
 
 typedef struct _ConnectProps // matching node input stuff

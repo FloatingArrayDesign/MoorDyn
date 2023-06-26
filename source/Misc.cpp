@@ -194,8 +194,8 @@ translateMass(vec r, mat M)
 
 	// product of inertia matrix  [J'] = [m][H] + [J]
 	const mat tempM1 = M * H;
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1;
-	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
+	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1;
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
 	Mout(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = H * M * H.transpose();
@@ -213,13 +213,13 @@ translateMass6(vec r, mat6 M)
 	mat6 Mout;
 	const mat m = M(Eigen::seqN(0, 3), Eigen::seqN(0, 3));
 	Mout(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = m;
-	const mat J = M(Eigen::seqN(3, 3), Eigen::seqN(0, 3));
+	const mat J = M(Eigen::seqN(0, 3), Eigen::seqN(3, 3));
 	const mat I = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
 
 	// product of inertia matrix  [J'] = [m][H] + [J]
 	const mat tempM1 = m * H + J;
-	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1;
-	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1.transpose();
+	Mout(Eigen::seqN(0, 3), Eigen::seqN(3, 3)) = tempM1;
+	Mout(Eigen::seqN(3, 3), Eigen::seqN(0, 3)) = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
 	const mat tempM2 = H * m * H.transpose(); // [H][m][H]^T
@@ -294,7 +294,7 @@ orientationAngles(vec v)
 
 	// inclination angle. 0.0 for horizontal vectors (v[2] = 0), growing in
 	// clockwise direction at the XZ plane
-	const real phi = -atan2(v[2], l);
+	const real phi = atan2(l, v[2]);
 	// heading angle. 0.0 for vectors pointing towards x, growing in
 	// counter-clockwise direction at the XY plane
 	const real beta = (fabs(l) < 1.e-6) ? 0.0 : atan2(v[1], v[0]);

@@ -123,6 +123,11 @@ class Rod final : public io::IO
 	/// axial drag coefficient [-]
 	/// with respect to surface area, \f$ \pi d l \f$
 	moordyn::real Cdt;
+	// values from input files
+	moordyn::real CdEnd;
+	// values from input files
+	moordyn::real CaEnd;
+
 
 	/// Rod 6dof position [x,y,z,u1,u2,u3] (end A coordinates and direction unit
 	/// vector)

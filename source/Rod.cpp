@@ -86,8 +86,8 @@ Rod::setup(int number_in,
 	Cat = props->Cat;
 	Cdn = props->Cdn;
 	Cdt = props->Cdt;
-
-	t = 0.;
+	CdEnd = props->CdEnd;
+	CaEnd = props->CaEnd;
 
 	attachedA.clear();
 	attachedB.clear();
@@ -829,6 +829,7 @@ Rod::doRHS()
 	// -------------------------- loop through all the nodes
 	// -----------------------------------
 	real Lsum = 0.0;
+	double VOF, VOF0, A, zA, G, al, z1hi, z1lo;
 	for (unsigned int i = 0; i <= N; i++) {
 		// calculate mass matrix   <<<< can probably simplify/eliminate this...
 		real dL;  // segment length corresponding to the node
@@ -849,24 +850,63 @@ Rod::doRHS()
 			m_i = Area * dL * rho;
 			v_i = 0.5 *
 			      (F[i - 1] * V[i - 1] +
-			       F[i] * V[i]); // <<< remove F term here and above 2 cases??
+			       F[i] * V[i]);
 		}
 
 		// get scalar for submerged portion
-		double VOF;
-		if (Lsum + dL <= h0) // if fully submerged
-			VOF = 1.0;
-		else if (Lsum < h0) // if partially below waterline
-			VOF = (h0 - Lsum) / dL;
-		else // must be out of water
-			VOF = 0.0;
+		
+		if (h0 < 0.0) { // Upside down case
+			if (Lsum + dL >= h0) // if fully submerged
+				VOF0 = 1.0;
+			else if (Lsum > h0) // if partially below waterline
+				VOF0 = (h0 - Lsum) / dL;
+			else // must be out of water
+				VOF0 = 0.0;
+		}
+		else {
+			if (Lsum + dL <= h0) // if fully submerged
+				VOF0 = 1.0;
+			else if (Lsum < h0) // if partially below waterline
+				VOF0 = (h0 - Lsum) / dL;
+			else // must be out of water
+				VOF0 = 0.0;
+		}
 
 		Lsum = Lsum + dL; // add length attributed to this node to the total
+
+
+		// get submerged cross sectional area and centroid for each node
+		z1hi = r[i][2] + 0.5*d*abs(sinPhi);  // highest elevation of cross section at node
+		z1lo = r[i][2] - 0.5*d*abs(sinPhi);  // lowest  elevation of cross section at node
+		
+		if (z1lo > zeta_i){ // fully out of water 
+			A = 0.0;  // area
+			zA = 0;   // centroid depth
+		}
+		else if (z1hi < zeta_i){ // fully submerged
+			A = pi*0.25*d*d;
+			zA = r[i][2];
+		}
+		else {  // if cross section crosses waterplane
+			if (abs(sinPhi) < 0.001){ // if cylinder is near vertical, i.e. end is horizontal
+				A = 0.5;  // <<< shouldn't this just be zero? <<<
+				zA = 0.0;
+			}
+			else {
+				G = (r[i][2]-zeta_i)/abs(sinPhi); //!(-z1lo+Rod%zeta(I))/abs(sinPhi)   ! distance from node to waterline cross at same axial location [m]
+				//A = 0.25*Rod%d**2*acos((Rod%d - 2.0*G)/Rod%d) - (0.5*Rod%d-G)*sqrt(Rod%d*G-G**2)  ! area of circular cross section that is below waterline [m^2]
+				//zA = (z1lo-Rod%zeta(I))/2  ! very crude approximation of centroid for now... <<< need to double check zeta bit <<<
+				al = acos(2.0*G/d);
+				A = d*d/8.0 * (2.0*al - sin(2.0*al));
+				zA = r[i][2] - 0.6666666666 * d * pow(sin(al), 3.0) / (2.0*al - sin(2.0*al));
+			}
+		}
+        VOF = VOF0*cosPhi*cosPhi + A/(0.25*pi*d*d)*sinPhi*sinPhi;
 
 		// make node mass matrix  (will be zero for zero-length Rods)
 		const mat I = mat::Identity();
 		const mat Q = q * q.transpose();
-		M[i] = m_i * I + env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
+		M[i] = m_i * I + VOF * env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
 
 		// mass matrices will be summed up before inversion, near end of this
 		// function
@@ -889,6 +929,9 @@ Rod::doRHS()
 		    Ud[i].dot(q) * q;      // tangential component of fluid acceleration
 		const vec ap = Ud[i] - aq; // normal component of fluid acceleration
 
+		
+		moordyn::real Ftemp, Mtemp;
+
 		if (N > 0) {
 			// this is only nonzero for finite-length rods (skipped for
 			// zero-length Rods)
@@ -907,11 +950,13 @@ Rod::doRHS()
 			// NOTE: There are though some unhandled situations, like free
 			// floating rods, which would horizontally surface. This is
 			// documented on docs/structure.rst
-			Bo[i] = vec(0.0, 0.0, VOF * Area * dL * env->rho_w * env->g);
+			Ftemp = -VOF * v_i * env->rho_w * env->g * sinPhi;   // magnitude of radial buoyancy force at this node
+            Bo[i] = vec(Ftemp*cosBeta*cosPhi, Ftemp*sinBeta*cosPhi, -Ftemp*sinPhi);            
 
 			// transverse and tangential drag
 			Dp[i] = VOF * 0.5 * env->rho_w * Cdn * d * dL * vp_mag * vp;
-			Dq[i] = VOF * 0.5 * env->rho_w * Cdt * pi * d * dL * vq_mag * vq;
+			Dq[i] = vec::Zero();
+			// Dq[i] = VOF * 0.5 * env->rho_w * Cdt * pi * d * dL * vq_mag * vq; // TODO: axial side loads not included in fortran (line 776 Rod.f90)
 
 			// transverse and axial Froude-Krylov force
 			Ap[i] = VOF * env->rho_w * (1. + Can) * v_i * ap;
@@ -952,8 +997,16 @@ Rod::doRHS()
 		// end A
 		if ((i == 0) && (h0 > 0.0)) // if this is end A and it is submerged
 		{
+			// buoyancy force
+            Ftemp = -VOF * Area * env->rho_w * env->g * zA;
+            Bo[i] += vec(Ftemp * cosBeta * sinPhi, Ftemp * sinBeta * sinPhi, Ftemp * cosPhi); 
+                  
+            // buoyancy moment
+            Mtemp = -VOF * 1.0/64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
+            Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0); 
+
 			// axial drag
-			Dq[i] += VOF * Area * env->rho_w * Cdt * vq_mag * vq;
+			Dq[i] += VOF * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// Froud-Krylov force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
@@ -968,8 +1021,17 @@ Rod::doRHS()
 		}
 
 		if ((i == N) && (h0 >= UnstrLen)) {
+			
+			// buoyancy force
+            Ftemp = VOF * Area * env->rho_w * env->g * zA;
+            Bo[i] += vec(Ftemp*cosBeta*sinPhi, Ftemp*sinBeta*sinPhi, Ftemp*cosPhi); 
+         
+            // buoyancy moment
+            Mtemp = VOF * 1.0 / 64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
+            Mext += vec(Mtemp*sinBeta, -Mtemp*cosBeta, 0.0); 
+           
 			// axial drag
-			Dq[i] += VOF * Area * env->rho_w * Cdt * vq_mag * vq;
+			Dq[i] += VOF * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// Froud-Krylov force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
@@ -991,7 +1053,7 @@ Rod::doRHS()
 	if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i)) {
 		// the water plane is crossing the rod
 		real Mtemp = 1.0 / 16.0 * pi * d * d * d * d * env->rho_w * env->g *
-		             sinPhi * (1.0 + 0.5 * tanPhi * tanPhi);
+		             sinPhi * (1.0 + 0.5 * tanPhi * tanPhi); // TODO: fortran uses sin * cos (line 893 Rod.f90)
 		Mext += Mtemp * vec(sinBeta, -cosBeta, 0.0);
 	}
 
@@ -1093,14 +1155,14 @@ Rod::doRHS()
 	mat Imat_l = mat::Zero();
 	if (N > 0) {
 		// axial moment of inertia
-		real I_l = mass / 2.0 * d * d;
+		real I_l = mass / 8.0 * d * d;
 		// summed radial moment of inertia for each segment individually
 		// i.e. we are summing up N elements of mass / N.
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2));
+		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2))*N;
 
-		Imat_l(0, 0) = I_l;
+		Imat_l(0, 0) = I_r;
 		Imat_l(1, 1) = I_r;
-		Imat_l(2, 2) = I_r;
+		Imat_l(2, 2) = I_l;
 	}
 
 	// get rotation matrix to put things in global rather than rod-axis
