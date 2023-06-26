@@ -63,16 +63,23 @@ in the future, breaking your program
 shutil.rmtree('moordyn', ignore_errors=True)
 shutil.copytree(os.path.join('wrappers', 'python', 'moordyn'), 'moordyn')
 
+
 # Collect the source code files
+def get_sources(folder, sources=[]):
+    for f in os.listdir(folder):
+        if os.path.isdir(os.path.join(folder, f)):
+            sources += get_sources(os.path.join(folder, f), sources=[])
+        if not os.path.isfile(os.path.join(folder, f)):
+            continue
+        if not f.lower().endswith(".c") and not f.lower().endswith(".cpp"):
+            continue
+        sources.append(os.path.join(folder, f))
+    return sources
+
+
 MOORDYN_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'source')
-MOORDYN_SRCS = []
-for f in os.listdir(MOORDYN_PATH):
-    if not os.path.isfile(os.path.join(MOORDYN_PATH, f)):
-        continue
-    if not f.lower().endswith(".c") and not f.lower().endswith(".cpp"):
-        continue
-    MOORDYN_SRCS.append(os.path.join('source', f))
+MOORDYN_SRCS = get_sources('source')
 MOORDYN_SRCS.append(os.path.join('wrappers', 'python', 'cmoordyn.cpp'))
 
 # Read the version from the CMakeLists.txt
