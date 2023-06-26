@@ -569,11 +569,18 @@ vtkSmartPointer<vtkPolyData>
 Body::getVTK() const
 {
 	auto transform = vtkSmartPointer<vtkTransform>::New();
+	// default behavior is for vtkTransform to internally concatenate transform
+	// like M' = M * A where A is the additional transform specified, which is
+	// the opposite order from what we expect (M' = A * M, so A happens last)
+	transform->PostMultiply();
 	// The VTK object is already centered on 0,0,0, so we can rotate it
-	vec3 angles = Quat2Euler(r7.quat);
-	transform->RotateX(angles[0]);
-	transform->RotateY(angles[1]);
-	transform->RotateZ(angles[2]);
+	// Going through angle axis is both faster from quaternion, and avoids
+	// any issues of euler angle conventions
+	Eigen::AngleAxis<real> angleAxis(r7.quat);
+	// vtk uses degrees
+	real angle = rad2deg * angleAxis.angle();
+	transform->RotateWXYZ(angle, angleAxis.axis().data());
+
 	// And then we can move it to the appropriate position
 	vec3 pos = r7.pos;
 	transform->Translate(pos.x(), pos.y(), pos.z());
