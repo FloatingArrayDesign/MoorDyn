@@ -41,19 +41,11 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include "util.h"
 
 #define TOL 1e-2
 
 using namespace std;
-
-bool
-isclose(const double& a,
-        const double& b,
-        const double& rtol = 0.0,
-        const double& atol = std::numeric_limits<double>::epsilon())
-{
-	return std::abs(a - b) <= (atol + rtol * std::abs(b));
-}
 
 bool
 added_mass()
@@ -277,12 +269,9 @@ hanging()
 	}
 	cout << posb[0] << ", " << posb[1] << ", " << posb[2] << endl;
 
-	if (((posa[0] + 0.5 * l) / l > TOL)
-		|| ((posb[0] - 0.5 * l) / l > TOL)
-		|| (fabs(posa[1]) / l > TOL)
-		|| (fabs(posb[1]) / l > TOL)
-		|| (fabs(posa[2] - posb[2]) / l > TOL)
-	) {
+	if (((posa[0] + 0.5 * l) / l > TOL) || ((posb[0] - 0.5 * l) / l > TOL) ||
+	    (fabs(posa[1]) / l > TOL) || (fabs(posb[1]) / l > TOL) ||
+	    (fabs(posa[2] - posb[2]) / l > TOL)) {
 		cerr << "The rod is rotating" << endl;
 		return false;
 	}
