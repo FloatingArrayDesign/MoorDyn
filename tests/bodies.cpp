@@ -47,6 +47,8 @@
 
 using namespace std;
 
+#ifdef USE_VTK
+
 bool
 write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
 {
@@ -70,6 +72,17 @@ write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
 	system->saveVTK(full_path.c_str());
 	return true;
 }
+
+#else
+class SeriesWriter;
+
+bool
+write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
+{
+	return true;
+}
+
+#endif
 
 /**
  * @brief Represents a number of times and data for coupled DOFs
