@@ -8,9 +8,9 @@ MoorDyn Objects
 ---------------
 MoorDyn models the dynamics of mooring structures in an object-oriented programming (OOP) approach.
 The overall simulation is managed by the MoorDyn2 class. This class reads inputs, allows models to
-be loaded and saved, contains various environmental parameters (e.g. time-steps sizes and filepaths)
-and most importantly contains pointers to all the Objects representing physical parts of the model
-(Lines, Bodies, Rods, Connections). 
+be loaded and saved, contains various environmental parameters (e.g. time-steps sizes and filepaths),
+contains pointers to all the Objects representing physical parts of the model
+(Lines, Bodies, Rods, Connections), and allow the main output file to be written. 
 
 
 Lines
@@ -29,10 +29,10 @@ Hydrodynamic loads are calculated directly at the node points rather than at the
 transverse cable vibrations having a wavelength of twice the cable segment length.  To approximate the cable direction at 
 the node points, the cable tangent at each node is assumed to be the average of the tangent directions of the two 
 adjacent cable elements.  Aside from this detail, the formulation of the mooring model is fairly standard.  
-Further technical details and some validation results are available in :ref:`some papers <theory>`.
+Further technical details and some validation results are available in the :ref:`theory section <theory>`.
 
 Bending stiffness is a recent capability addition in MoorDyn v2 (it is not yet implemented in MoorDyn-F). 
-In the explanations that follow, the word cable is used to refer to a Line object with nonzero bending stiffness.
+The word cable is used to refer to a Line object with nonzero bending stiffness.
 
 MoorDyn keeps a dictionary of line types to describe the cross-sectional 
 (or per-meter) properties of the mooring lines. Each line type has an alphanumeric name
@@ -43,73 +43,73 @@ Line objects maintain the following Data Members:
 
 General:
 
-- env: a pointer to the global environment object
-- waves: a pointer to the global object storing information about waves/currents
-- t: the simulation time, as a real
+- *env*: a pointer to the global environment object
+- *waves*: a pointer to the global object storing information about waves/currents
+- *t*: the simulation time, as a real
 
 Specific to each Line:
 
-- N: int indicating the number of line segments in N
-- UnstrLen: real indicating the unstretched length of the line
-- d: real describing the line diameter
-- rho: real describing the linear density of the line
-- E: Young's modulus of the line (Pa)
-- EI: real Bending stiffness (Nm^2)
-- c: real damping coefficient (Ns). This can be the literal damping coefficient, or a negative value representing
-fraction of critical damping
-- Can: real normal added mass coefficient
-- Cat: real axial added mass coefficient
-- Cdn: real normal drag coefficient w/r/t frontal area
-- Cdt: real axial drag coefficient w/r/t surface area
-- BAin: real axial-internal damping
-- A: real cross sectional area
-- nEApoints: number of values in stress-strain lookup table
-- stiffXs: x-array for stress-strain lookup table
-- stiffYs: y-array of reals for stress-strain lookup table
-- nEIpoints: number of values in bent-stiffness lookup table
-- bstiffXs: x-array for bent-stiffness lookup table
-- bstiffYs: y-array of reals for bent-stiffness lookup table
+- *N*: int indicating the number of line segments in N
+- *UnstrLen*: real indicating the unstretched length of the line
+- *d*: real describing the line diameter
+- *rho*: real describing the linear density of the line
+- *E*: Young's modulus of the line (Pa)
+- *EI*: real Bending stiffness (Nm^2)
+- *c*: real damping coefficient (Ns). This can be the literal damping coefficient, or a negative value representing
+  fraction of critical damping
+- *Can*: real normal added mass coefficient
+- *Cat*: real axial added mass coefficient
+- *Cdn*: real normal drag coefficient w/r/t frontal area
+- *Cdt*: real axial drag coefficient w/r/t surface area
+- *BAin*: real axial-internal damping
+- *A*: real cross sectional area
+- *nEApoints*: number of values in stress-strain lookup table
+- *stiffXs*: x-array for stress-strain lookup table
+- *stiffYs*: y-array of reals for stress-strain lookup table
+- *nEIpoints*: number of values in bent-stiffness lookup table
+- *bstiffXs*: x-array for bent-stiffness lookup table
+- *bstiffYs*: y-array of reals for bent-stiffness lookup table
 
 State:
 
-- r: a vector of 3D node positions for the nodes representing the line.
-- rd: a vector of 3D velocities for each of the nodes representing the line
-- q: a vector of 3D tangent vectors for each node
-- qs: a vector of 3D tangent vectors for each segment
-- l: a vector of unstretched line segment lengths (as reals)
-- lstr: a vector of stretched segment lengths (as reals)
-- ldstr: a vector of reals describing the rate of stretch for each segment
-- Kurv: a vector of reals describing the curvature at node points
-- M: a vector of 3x3 matrices describing the mass+added mass of each node in the line
-- V: a vector of line-segment volumes as reals
+- *r*: a vector of 3D node positions for the nodes representing the line.
+- *rd*: a vector of 3D velocities for each of the nodes representing the line
+- *q*: a vector of 3D tangent vectors for each node
+- *qs*: a vector of 3D tangent vectors for each segment
+- *l*: a vector of unstretched line segment lengths (as reals)
+- *lstr*: a vector of stretched segment lengths (as reals)
+- *ldstr*: a vector of reals describing the rate of stretch for each segment
+- *Kurv*: a vector of reals describing the curvature at node points
+- *M*: a vector of 3x3 matrices describing the mass+added mass of each node in the line
+- *V*: a vector of line-segment volumes as reals
 
 Forces are computed at every node in the line. Hence, all line forces are represented as std::vectors of 3D force vectors:
 
-- T: a vector of 3D vectors describing segment tensions
-- Td: a vector of 3D vectors describing segment Damping forces
-- Bs: a vector of 3D vectors describing bending stiffness forces
-- W: a vector of 3D vectors describing weight (gravity) forces
-- Dp: a vector of 3D vectors describing node drag (transversal)
-- Dq: a vector of 3D vectors describing node drag (axial)
-- Ap: a vector of 3D vectors describing added-mass forcing (Transversal)
-- Aq: a vector of 3D vectors describing mass-forcing (axial)
-- B: a vector of 3D vectors describing node bottom contact force
-- Fnet: a vector of 3D vectors describing total force on each node in the line
+- *T*: a vector of 3D vectors describing segment tensions
+- *Td*: a vector of 3D vectors describing segment Damping forces
+- *Bs*: a vector of 3D vectors describing bending stiffness forces
+- *W*: a vector of 3D vectors describing weight (gravity) forces
+- *Dp*: a vector of 3D vectors describing node drag (transversal)
+- *Dq*: a vector of 3D vectors describing node drag (axial)
+- *Ap*: a vector of 3D vectors describing added-mass forcing (Transversal)
+- *Aq*: a vector of 3D vectors describing mass-forcing (axial)
+- *B*: a vector of 3D vectors describing node bottom contact force
+- *Fnet*: a vector of 3D vectors describing total force on each node in the line
 
 Waves:
 
-- F: a vector of reals indicating volume of each segment submerged (1 = fully submerged, 0 = out of water)
-- zeta: vector of reals describing free-surface elevations
-- PDyn: vecctor of reals describing dynamic pressures
-- U: vector of 3D vectors describing wave velocities
-- Ud: vector of 3D vectors describing wave accelerations
+- *F*: a vector of reals indicating volume of each segment submerged (1 = fully submerged, 0 = out of water)
+- *zeta*: vector of reals describing free-surface elevations
+- *PDyn*: vector of reals describing dynamic pressures
+- *U*: vector of 3D vectors describing wave velocities
+- *Ud*: vector of 3D vectors describing wave accelerations
 
-Misc.
+Misc:
 
-- endTypeA, endTypeB: indicates whether ends are pinned or cantilevered to rod
-- endMomentA, endMomentB: 3D moment vectors at ends, to be applied to attached Rod/Body
-- outfile: pointer to outfile to write to
-- channels: which channels to write to the outfile
+- *endTypeA, endTypeB*: indicates whether ends are pinned or cantilevered to rod
+- *endMomentA, endMomentB*: 3D moment vectors at ends, to be applied to attached Rod/Body
+- *outfile*: pointer to outfile to write to
+- *channels*: which channels to write to the outfile
 
 Points
 ^^^^^^
@@ -120,7 +120,7 @@ or to each other. (In MAP and older versions of MoorDyn, these objects were call
 A Point has three degrees of freedom and can have any number of Lines attached to it. 
 There are three types of Points:
 
-- **Fixed**: their location is fixed to ground (stationary) or a Body object. 
+- **Fixed**: their location is fixed to an XYZ coordinate (stationary) or a Body object. 
   They can be used as anchor points or as a way to attach mooring Lines to a Body.
 - **Coupled**: they move under the control of the calling program/script.  
   They can be used as fairlead connections when the platform is modeled externally.
@@ -143,37 +143,37 @@ Connections Objects have the following data members:
 
 General:
 
-- env: a pointer to a global struct holding environmental settings
-- waves: a pointer to a global object representing Waves in the system
+- *env*: a pointer to a global struct holding environmental settings
+- *waves*: a pointer to a global object representing Waves in the system
 
 Specific to each Connection:
 
-- attached: a vector of attachments, describing all lines attached to the Connection
-- conM: the mass of the connection as a real
-- conV: the volume of the connection as a real
-- conF: a 3D vector of forces on the connection
-- conCdA: Drag coefficient of the connection
-- conCa: Added mass coefficient of the connection
+- *attached*: a vector of attachments, describing all lines attached to the Connection
+- *conM*: the mass of the connection as a real
+- *conV*: the volume of the connection as a real
+- *conF*: a 3D vector of forces on the connection
+- *conCdA*: Drag coefficient of the connection
+- *conCa*: Added mass coefficient of the connection
 
 State:
 
-- r: 3D node position
-- rd: 3D node velocity
-- FNet: 3D force vector on node
-- M: 3x3 mass + added mass matrix
+- *r*: 3D node position
+- *rd*: 3D node velocity
+- *FNet*: 3D force vector on node
+- *M*: 3x3 mass + added mass matrix
 
 Waves:
 
-- zeta: real representing free-surface elevation
-- PDyn: dynamic pressure
-- U: Wave velocities
-- Ud: Wave accelerations
+- *zeta*: real representing free-surface elevation
+- *PDyn*: dynamic pressure
+- *U*: Wave velocities
+- *Ud*: Wave accelerations
 
 Misc:
 
-- number: connection ID (unique int)
-- type: Connection type, one of moordyn::Connection::types
-- WaterKin: Flag indicating whether wave/current kinematics will be considered:
+- *number*: connection ID (unique int)
+- *type*: Connection type, one of moordyn::Connection::types
+- *WaterKin*: Flag indicating whether wave/current kinematics will be considered:
 
 Rods 
 ^^^^
@@ -219,13 +219,13 @@ allowing a wide variety of submerged structures to be integrated into the moorin
 Aside from contributions which might come from incorporated Rod objects or attached Connection 
 and Line objects, the core Body object properties are as follows:
 
-- mass, and center of mass
-- volumetric displacement (assumed to be at reference point)
-- mass moment of inertia about each axis
-- hydrodynamic drag coefficient in each direction
-- rotational hydrodynamic drag coefficient about each axis
-- added mass coefficient in each direction
-- added mass moment of inertia coefficient about each axis
+- *mass, and center of mass*
+- *volumetric displacement (assumed to be at reference point)*
+- *mass moment of inertia about each axis*
+- *hydrodynamic drag coefficient in each direction*
+- *rotational hydrodynamic drag coefficient about each axis*
+- *added mass coefficient in each direction*
+- *added mass moment of inertia coefficient about each axis*
 
 In the C++ API, Bodies are represented as a standalone class. This class can have different behaviors
 depending on it's "type" (in the intuitive sense, not in the C++ sense) - there are three possible types 
@@ -240,57 +240,55 @@ Body objects have the following data members:
 
 General:
 
-- env: a pointer to a global struct holding environmental settings
-- waves: a pointer to a global object representing Waves in the system
-
-Unique to Body:
+- *env*: a pointer to a global struct holding environmental settings
+- *waves*: a pointer to a global object representing Waves in the system
 
 Attachments:
 
-- attachedC: a vector of pointers to Connection objects, indicating all the connections attached to the body
-- attachedR: a vector of pointers to Rod objects attached to the body. 
-- rConnectRel: a vector<vec> of 3d vectors describing the attachment points locations for Connections
-- r6RodRel: a vector<vec6> of 6D vectors describing the attachment points and orientation of eac rod.
+- *attachedC*: a vector of pointers to Connection objects, indicating all the connections attached to the body
+- *attachedR*: a vector of pointers to Rod objects attached to the body. 
+- *rConnectRel*: a vector<vec> of 3d vectors describing the attachment points locations for Connections
+- *r6RodRel*: a vector<vec6> of 6D vectors describing the attachment points and orientation of eac rod.
 
 Body Properties (set upon call to Body::setup()). Note that these are all set to zero for all Body types
 other than FREE, as they are not relevant to COUPLED or FIXED scenarios:
 
-- body_r6: 6D reference point for the body.
-- body_rCG: 3D location of body center-of-gravity
-- bodyM: real number describing the body's mass
-- bodyV: real number describing the body's volume
-- bodyI: 3d Vector describing the inertia diagonal components of the body
-- bodyCdA: 6D vector describing the body's drag coefficients
-- bodyCa: 6D vector describing added-mass coefficients
+- *body_r6*: 6D reference point for the body.
+- *body_rCG*: 3D location of body center-of-gravity
+- *bodyM*: real number describing the body's mass
+- *bodyV*: real number describing the body's volume
+- *bodyI*: 3d Vector describing the inertia diagonal components of the body
+- *bodyCdA*: 6D vector describing the body's drag coefficients
+- *bodyCa*: 6D vector describing added-mass coefficients
 
 Values describing the body's state:
 
-- r6: 6D vector describing body's position
-- v6: 6D vector describing body's velocity
-- r_ves: 6D vector describing fairlead position if a coupled body (may be different than overall r6)
-- rd_ves: 6D vector describing fairlead velocity if a coupled body (may be different than overall v6)
-- F6net: 6D vector describing total force/moment vector on node
-- M: 6x6 matrix representing total body mass + added mass
-- m0: 6x6 matrix representing 'starting mass' matrix of body, not taking into accound rod elements.
-- OrMat: 3x3 matrix representing orientation of the body
-- U: 3D vector of wave velocity at reference point
-- Ud: 3D vector of wave acceleration at reference point
-- outfile: pointer to the main output file for the body
+- *r6*: 6D vector describing body's position
+- *v6*: 6D vector describing body's velocity
+- *r_ves*: 6D vector describing fairlead position if a coupled body (may be different than overall r6)
+- *rd_ves*: 6D vector describing fairlead velocity if a coupled body (may be different than overall v6)
+- *F6net*: 6D vector describing total force/moment vector on node
+- *M*: 6x6 matrix representing total body mass + added mass
+- *m0*: 6x6 matrix representing 'starting mass' matrix of body, not taking into accound rod elements.
+- *OrMat*: 3x3 matrix representing orientation of the body
+- *U*: 3D vector of wave velocity at reference point
+- *Ud*: 3D vector of wave acceleration at reference point
+- *outfile*: pointer to the main output file for the body
 
 Misc:
 
-- number: a unique int id identifying the body
-- type: FREE, COUPLED, or FIXED, describing the "type" of body to be modeled
+- *number*: a unique int id identifying the body
+- *type*: FREE, COUPLED, or FIXED, describing the "type" of body to be modeled
 
 Angles criteria
 ---------------
 
-In the following figure the angles criteria is schematically depicted:
+In the following figure the 6DOF object orentation angles convention is depicted:
 
 .. figure:: angles.svg
    :alt: Angles criteria schematic view
 
-Indeed, the roll and heading angles, :math:`\phi` and :math:`\psi`, follow the
+The roll and yaw angles, :math:`\phi` and :math:`\psi`, follow the
 right hand criteria, while the pitch angle, :math:`\theta`, follows the left
 hand criteria.
 This way the classic rotation matrices can be considered,

@@ -117,7 +117,7 @@ Rod::setup(int number_in,
 	Fnet.assign(N + 1, vec(0., 0., 0.)); // total force on node
 
 	// wave things
-	F.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
+	VOF.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
 	                      // segments) (1 = fully submerged, 0 = out of water)
 
 	// get Rod axis direction vector and Rod length
@@ -296,7 +296,7 @@ Rod::initialize()
 	//	cout << "   Error: water depth is shallower than Line " << number << "
 	// anchor." << endl; 	return;
 
-	F.assign(N + 1, 1.0);
+	VOF.assign(N + 1, 1.0);
 
 	// the r6 and v6 vectors should have already been set
 	// r and rd of ends have already been set by setup function or by parent
@@ -788,14 +788,6 @@ Rod::doRHS()
 
 	auto [zeta, U, Ud, PDyn] = waves->getWaveKinRod(rodId);
 
-	for (unsigned int i = 0; i <= N; i++) {
-		// >>> add Pd variable for dynamic pressure, which will be applied
-		// on Rod surface
-
-		F[i] = 1.0; // set VOF value to one for now (everything submerged -
-		            // eventually this should be element-based!!!) <<<<
-	}
-
 	// >>> remember to check for violated conditions, if there are any... <<<
 
 	// just use the wave elevation computed at the location of the top node for
@@ -829,7 +821,7 @@ Rod::doRHS()
 	// -------------------------- loop through all the nodes
 	// -----------------------------------
 	real Lsum = 0.0;
-	double VOF, VOF0, A, zA, G, al, z1hi, z1lo;
+	double VOF0, A, zA, G, al, z1hi, z1lo;
 	for (unsigned int i = 0; i <= N; i++) {
 		// calculate mass matrix   <<<< can probably simplify/eliminate this...
 		real dL;  // segment length corresponding to the node
@@ -840,17 +832,17 @@ Rod::doRHS()
 		if (i == 0) {
 			dL = 0.5 * l[i];
 			m_i = Area * dL * rho; //  (will be zero for zero-length Rods)
-			v_i = 0.5 * F[i] * V[i];
+			v_i = 0.5 * VOF[i] * V[i];
 		} else if (i == N) {
 			dL = 0.5 * l[i - 1];
 			m_i = Area * dL * rho;
-			v_i = 0.5 * F[i - 1] * V[i - 1];
+			v_i = 0.5 * VOF[i - 1] * V[i - 1];
 		} else {
 			dL = 0.5 * (l[i - 1] + l[i]);
 			m_i = Area * dL * rho;
 			v_i = 0.5 *
-			      (F[i - 1] * V[i - 1] +
-			       F[i] * V[i]);
+			      (VOF[i - 1] * V[i - 1] +
+			       VOF[i] * V[i]);
 		}
 
 		// get scalar for submerged portion
@@ -901,12 +893,12 @@ Rod::doRHS()
 				zA = r[i][2] - 0.6666666666 * d * pow(sin(al), 3.0) / (2.0*al - sin(2.0*al));
 			}
 		}
-        VOF = VOF0*cosPhi*cosPhi + A/(0.25*pi*d*d)*sinPhi*sinPhi;
+        VOF[i] = VOF0*cosPhi*cosPhi + A/(0.25*pi*d*d)*sinPhi*sinPhi;
 
 		// make node mass matrix  (will be zero for zero-length Rods)
 		const mat I = mat::Identity();
 		const mat Q = q * q.transpose();
-		M[i] = m_i * I + VOF * env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
+		M[i] = m_i * I + VOF[i] * env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
 
 		// mass matrices will be summed up before inversion, near end of this
 		// function
@@ -950,17 +942,17 @@ Rod::doRHS()
 			// NOTE: There are though some unhandled situations, like free
 			// floating rods, which would horizontally surface. This is
 			// documented on docs/structure.rst
-			Ftemp = -VOF * v_i * env->rho_w * env->g * sinPhi;   // magnitude of radial buoyancy force at this node
+			Ftemp = -VOF[i] * v_i * env->rho_w * env->g * sinPhi;   // magnitude of radial buoyancy force at this node
             Bo[i] = vec(Ftemp*cosBeta*cosPhi, Ftemp*sinBeta*cosPhi, -Ftemp*sinPhi);            
 
 			// transverse and tangential drag
-			Dp[i] = VOF * 0.5 * env->rho_w * Cdn * d * dL * vp_mag * vp;
+			Dp[i] = VOF[i] * 0.5 * env->rho_w * Cdn * d * dL * vp_mag * vp;
 			Dq[i] = vec::Zero();
-			// Dq[i] = VOF * 0.5 * env->rho_w * Cdt * pi * d * dL * vq_mag * vq; // TODO: axial side loads not included in fortran (line 776 Rod.f90)
+			// Dq[i] = VOF[i] * 0.5 * env->rho_w * Cdt * pi * d * dL * vq_mag * vq; // TODO: axial side loads not included in fortran (line 776 Rod.f90)
 
 			// transverse and axial Froude-Krylov force
-			Ap[i] = VOF * env->rho_w * (1. + Can) * v_i * ap;
-			Aq[i] = vec::Zero(); // VOF * env->rho_w*(1.+Cat)* v_i * aq[J]; <<<
+			Ap[i] = VOF[i] * env->rho_w * (1. + Can) * v_i * ap;
+			Aq[i] = vec::Zero(); // VOF[i] * env->rho_w*(1.+Cat)* v_i * aq[J]; <<<
 			                     // should anything here be included?
 
 			// dynamic pressure
@@ -998,51 +990,51 @@ Rod::doRHS()
 		if ((i == 0) && (h0 > 0.0)) // if this is end A and it is submerged
 		{
 			// buoyancy force
-            Ftemp = -VOF * Area * env->rho_w * env->g * zA;
+            Ftemp = -VOF[i] * Area * env->rho_w * env->g * zA;
             Bo[i] += vec(Ftemp * cosBeta * sinPhi, Ftemp * sinBeta * sinPhi, Ftemp * cosPhi); 
                   
             // buoyancy moment
-            Mtemp = -VOF * 1.0/64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
+            Mtemp = -VOF[i] * 1.0/64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
             Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0); 
 
 			// axial drag
-			Dq[i] += VOF * Area * env->rho_w * CdEnd * vq_mag * vq;
+			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// Froud-Krylov force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
-			Aq[i] += VOF * env->rho_w * (1.0 + Cat) * V_temp * aq;
+			Aq[i] += VOF[i] * env->rho_w * (1.0 + Cat) * V_temp * aq;
 
 			// dynamic pressure force
-			Pd[i] += VOF * Area * PDyn[i] * q;
+			Pd[i] += VOF[i] * Area * PDyn[i] * q;
 
 			// added mass
 			const mat Q = q * q.transpose();
-			M[i] += VOF * env->rho_w * V_temp * Cat * Q;
+			M[i] += VOF[i] * env->rho_w * V_temp * Cat * Q;
 		}
 
 		if ((i == N) && (h0 >= UnstrLen)) {
 			
 			// buoyancy force
-            Ftemp = VOF * Area * env->rho_w * env->g * zA;
+            Ftemp = VOF[i] * Area * env->rho_w * env->g * zA;
             Bo[i] += vec(Ftemp*cosBeta*sinPhi, Ftemp*sinBeta*sinPhi, Ftemp*cosPhi); 
          
             // buoyancy moment
-            Mtemp = VOF * 1.0 / 64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
+            Mtemp = VOF[i] * 1.0 / 64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
             Mext += vec(Mtemp*sinBeta, -Mtemp*cosBeta, 0.0); 
            
 			// axial drag
-			Dq[i] += VOF * Area * env->rho_w * CdEnd * vq_mag * vq;
+			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// Froud-Krylov force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
-			Aq[i] += VOF * env->rho_w * (1.0 + Cat) * V_temp * aq;
+			Aq[i] += VOF[i] * env->rho_w * (1.0 + Cat) * V_temp * aq;
 
 			// dynamic pressure force
-			Pd[i] += -VOF * Area * PDyn[i] * q;
+			Pd[i] += -VOF[i] * Area * PDyn[i] * q;
 
 			// added mass
 			const mat Q = q * q.transpose();
-			M[i] += VOF * env->rho_w * V_temp * Cat * Q;
+			M[i] += VOF[i] * env->rho_w * V_temp * Cat * Q;
 		}
 
 		// ----------------- total forces for this node --------------------
@@ -1299,7 +1291,7 @@ Rod::Serialize(void)
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	subdata = io::IO::Serialize(Fnet);
 	data.insert(data.end(), subdata.begin(), subdata.end());
-	subdata = io::IO::Serialize(F);
+	subdata = io::IO::Serialize(VOF);
 	data.insert(data.end(), subdata.begin(), subdata.end());
 	data.push_back(io::IO::Serialize(h0));
 	subdata = io::IO::Serialize(r_ves);
@@ -1337,7 +1329,7 @@ Rod::Deserialize(const uint64_t* data)
 	ptr = io::IO::Deserialize(ptr, Aq);
 	ptr = io::IO::Deserialize(ptr, B);
 	ptr = io::IO::Deserialize(ptr, Fnet);
-	ptr = io::IO::Deserialize(ptr, F);
+	ptr = io::IO::Deserialize(ptr, VOF);
 	ptr = io::IO::Deserialize(ptr, h0);
 	ptr = io::IO::Deserialize(ptr, r_ves);
 	ptr = io::IO::Deserialize(ptr, rd_ves);

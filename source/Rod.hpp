@@ -186,7 +186,7 @@ class Rod final : public io::IO
 
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	std::vector<moordyn::real> F;
+	std::vector<moordyn::real> VOF;
 	/// instantaneous axial submerged length [m]
 	real h0;
 

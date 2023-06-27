@@ -182,32 +182,6 @@ custom values for the sake of consistency.`
 
 The bottom contact parameters, kBot and cBot, result in a pressure which is then applied to the cross-sectional area (d*l) 
 of each contacting line segment to give a resulting vertical contact force for each segment.
- 
-Seafloor File
-^^^^^^^^^^^^^
-
-If you need the seafloor have different depths at different locations, it is possible to create and use a 3D Seafloor file.
-This file allows you to define a square grid of points and define depths at each of these points.
-
-code-block:: none
-  num_x_points num_y_points
-  x_1 x_2 ... x_num_x_points
-  y_1 y_2 ... y_num_y_points
-  x_pos y_pos depth
-  x_pos y_pos depth
-  x_pos y_pos depth
-  etc, etc
-
-The two values on the first line define the number of points in each axis of the grid.
-The second line defines the actual locations along the x axis for the x grid points.
-The third line defines the locations along the y axis for the y grid points.
-The remaining lines are (x, y, z) coordinates for the seafloor on grid points.
-The order of these points is not important.
-It is also important that the x_pos be a value found in line 2 and y_pos be a value found in line 3.
-What happens if one of these points does not fall on the grid is not defined and may overwrite other depth values.
-
-If some part of the simulation fall outside of the defined grid area, it will use the depth of the nearest grid edge.
-
 
 Outputs
 ^^^^^^^
@@ -264,7 +238,7 @@ requiring changes.
 This file is divided into sections, some of which are optional. Each section is
 identified (and detected) by a header line consisting of a key phrase (e.g. Line
 Types) surrounded by dashes. While a couple sections are optional, the order of
-the sections should never be changed.
+the sections should not be changed.
 
 Most of the sections are set up to contain a table of input information. These
 tables begin with two preset lines that contain the column names and the
@@ -287,8 +261,9 @@ There is not a limit on the number of lines you can write here.
 Line Types
 ^^^^^^^^^^
 
-This section (required if there are any mooring lines) describes the list of mooring line property sets
-that will be used in the simulation 
+This section (required) describes the list of mooring line property sets that will be used in the simulation. 
+MoorDyn requires line objects to be present in simulations. If you have a system with no lines, 
+an easy work-around is to create a 1 segment line between 2 fixed points located far from  your system. 
 
 .. code-block:: none
 
@@ -297,7 +272,7 @@ that will be used in the simulation
  (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
  Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5           
 
-The columns in order are as follows:
+The columns are as follows:
 
  - Name – an identifier word for the line type
  - Diam –  the volume-equivalent diameter of the line – the diameter of a cylinder having the same displacement per unit length (m)
@@ -305,14 +280,14 @@ The columns in order are as follows:
  - EA – the line stiffness, product of elasticity modulus and cross-sectional area (N)
  - BA/-zeta –  the line internal damping (measured in N-s) or, if a negative value is entered, the desired damping ratio (in fraction of critical) for the line type (and MoorDyn will set the BA of each line accordingly – see Section 4.1 for more information)
  - EI – the line bent stiffness, product of elasticity modulus and inertia of the cross-sectional area (N)
- - Cd –  transverse drag coefficient (with respect to frontal area, d*l)
- - Ca –  transverse added mass coefficient (with respect to line displacement)
- - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
- - CaAx – tangential added mass coefficient (with respect to line displacement)
+ - Cd or Cdn –  transverse drag coefficient (with respect to frontal area, d*l)
+ - Ca or Can –  transverse added mass coefficient (with respect to line displacement)
+ - CdAx or Cdt – tangential drag coefficient (with respect to surface area, π*d*l)
+ - CaAx or Cat – tangential added mass coefficient (with respect to line displacement)
 
 Non-linear values for the stiffness (EA), internal damping (BA/-zeta) and bent
 stiffness (EI) are accepted.
-To this end, a file can be provided (to be located in the same folder than the
+To this end, a file can be provided (located in the same folder than the
 main MoorDyn input file) instead of a number.
 Such file is simply a tabulated file with 2 columns, separated by a blank space.
 The columns to be provided for each non-linear magnitude are the followings:
@@ -321,11 +296,12 @@ The columns to be provided for each non-linear magnitude are the followings:
  - Internal damping: Curvature - EI/Curvature (N-m^2)
  - Bent stiffness: Stretching rate - Damping coefficient/Stretching rate (N-s^2/s)
 
+.. TODO: continue working on non-linear input file defintion
 
 Rod Types
 ^^^^^^^^^
 
-This section (required if there are any rod objects) describes the list of rod property sets
+This section (required if there are any rod objects) describes the list of rod properties
 that will be used in the simulation 
 
 .. code-block:: none
@@ -335,6 +311,15 @@ that will be used in the simulation
  (name)        (m)      (kg/m)    (-)    (-)     (-)      (-)         
  Buoy          10       1.0e3     0.6    1.0     1.2      1.0        
 
+The columns are as follows:
+
+ - Name – an identifier word for the line type
+ - Diam –  the volume-equivalent diameter of the line – the diameter of a cylinder having the same displacement per unit length (m)
+ - MassDen –  the mass per unit length of the line (kg/m)
+ - Cd or Cdn –  transverse drag coefficient (with respect to frontal area, d*l)
+ - Ca or Can –  transverse added mass coefficient (with respect to line displacement)
+ - CdEnd
+ - CaEnd
 
 Bodies list
 ^^^^^^^^^^^
@@ -348,6 +333,17 @@ This section (optional) describes the 6DOF body objects to be simulated.
  (#)   (word)     (m)    (m)   (m)   (deg)   (deg)  (deg)   (kg)  (m)  (kg-m^2)  (m^3)   (m^2)  (-)
  1     coupled     0     0      0     0       0      0       0     0     0        0       0      0
  
+The columns are as follows:
+
+  - ID -
+  - Attachment - 
+  - X0, Y0, Z0, r0, p0, y0 - 
+  - Mass - 
+  - CG - 
+  - I - 
+  - Volume - 
+  - CdA - 
+  - Ca -
 
 Rods list
 ^^^^^^^^^
@@ -362,6 +358,15 @@ This section (optional) describes the rigid Rod objects
  1      Can      Body1      0     0     2     0     0     15   8         p
  2      Can   Body1Pinned   2     0     2     5     0     15   8         p
  
+The columns are as follows:
+
+  - ID -
+  - Type - 
+  - Attachment - 
+  - X/Y/Z a - 
+  - X/Y/Z b - 
+  - NumSegs - 
+  - RodOutputs - 
  
 Points list
 ^^^^^^^^^^^
@@ -377,7 +382,16 @@ This section (optional) describes the Point objects
  4     Coupled    0       0     -9      0      0       0      0
  11    Body2      0       0     1.0     0      0       0      0
  
- 
+The columns are as follows:
+
+  - ID -
+  - Attachment - 
+  - X/Y/Z - 
+  - Mass - 
+  - Volume -
+  - CdA - 
+  - Ca - 
+
 Lines list
 ^^^^^^^^^^
 
@@ -390,6 +404,14 @@ This section (optional) describes the Line objects, typically used for mooring l
  (#)   (name)     (ID)     (ID)      (m)       (-)      (-)
  1     Chain       1        2        300        20       p
 									  
+The columns are as follows:
+
+  - ID -
+  - Type - 
+  - AttachA/B - Either ID number for one of the connections or R#A/B
+  - UnstrLen - 
+  - NumSegs - 
+  - LineOutputs -
 
 Options
 ^^^^^^^
@@ -406,13 +428,17 @@ This section (required) describes the simulation options
  10            TmaxIC        max time for ic gen (s)
  0.001         threshIC      threshold for IC convergence (-)
  
-Any of these lines can be omitted, in which case default values will be used.
+Any of these lines can be omitted, in which case default values will be used, shown in parenthesis.
 As such, they are all optional settings, although some of them (such as time
-step size) often need to be set by the user for proper operation.
-The list of possible options is:
+step size) often need to be set by the user for proper operation. Settings that are not avaible in MoorDynF are highlighted. 
+In those cases MoorDynF will default to .... 
+
+The list of possible options is: 
+
+.. TODO: highlight flags that dont work in Fortran 
 
  - writeLog (0): If >0 a log file is written recording information. The bigger the number the more verbose. Please, be mindful that big values would critically reduce the performance!
- - DT (0.001): The time step (s)
+ - dtM (0.001): The time step (s)
  - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for Runge-Kutta while AB stands for Adams-Bashforth
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
@@ -431,7 +457,7 @@ The list of possible options is:
  - FrictionCoefficient (0.0): The seabed friction coefficient
  - FricDamp (200.0): The seabed friction damping, to scale from no friction at null velocity to full friction when the velocity is large
  - StatDynFricScale (1.0): Rate between Static and Dynamic friction coefficients
- - dtOut (0.0): Time lapse between the ouput files printing (s)
+ - dtOut (0.0): Timestep size desired in ouput files (s)
 
 Outputs
 ^^^^^^^
@@ -468,9 +494,11 @@ Roll/Pitch/Yaw Orientation angles       [deg]                  X      X
 Sub            Fraction of submergence  [0-1]                  X      
 ============== ======================== =======  =====  =====  =====  =====
 
-The v2 snapshot file
---------------------
+Other v2 files
+--------------
 
+The v2 snapshot file
+^^^^^^^^^^^^^^^^^^^^
 In MoorDyn v2 two new functions have been added:
 
 .. doxygenfunction:: MoorDyn_Save
@@ -481,13 +509,74 @@ be resumed in a different session using the latter function.
 It is anyway required to create the system using the same input file in both
 sessions.
 But the initial condition computation could be skip in the second session
-calling
+calling.
 
 .. doxygenfunction:: MoorDyn_Init_NoIC
 
+Seafloor File - v2
+^^^^^^^^^^^^^^^^^^
+
+If you need the seafloor have different depths at different locations, it is possible to create and use a 3D Seafloor file.
+This file allows you to define a square grid of points and define depths at each of these points.
+
+code-block:: none
+  num_x_points num_y_points
+  x_1 x_2 ... x_num_x_points
+  y_1 y_2 ... y_num_y_points
+  x_pos y_pos depth
+  x_pos y_pos depth
+  x_pos y_pos depth
+  etc, etc
+
+The two values on the first line define the number of points in each axis of the grid.
+The second line defines the actual locations along the x axis for the x grid points.
+The third line defines the locations along the y axis for the y grid points.
+The remaining lines are (x, y, z) coordinates for the seafloor on grid points.
+The order of these points is not important.
+It is also important that the x_pos be a value found in line 2 and y_pos be a value found in line 3.
+What happens if one of these points does not fall on the grid is not defined and may overwrite other depth values.
+
+If some part of the simulation fall outside of the defined grid area, it will use the depth of the nearest grid edge.
+
+MoorDyn drivers
+---------------
+
+See the :ref:`driver section <.. _starting_using>` in getting started. If you are running MoorDynF, follow the compile
+instructions in the OpenFAST documentation for installing modules. Note that you will want to run 
+.. code-block:: none
+  make moordyn_driver
+from within the build file. This will compile the driver function which takes both a MoorDyn input file and a driver file. 
+
+MoorDynF driver file
+^^^^^^^^^^^^^^^^^^^^
+
+The MoorDynF driver function requires the following input file format:
+.. code-block:: none
+  MoorDyn driver input file 
+  another comment line
+  FALSE               Echo             - Echo the input file data (flag) 
+  ---------------------- ENVIRONMENTAL CONDITIONS ------------------------------- 
+  9.80665            Gravity          - Gravity (m/s^2) 
+  1025.0             rhoW             - Water density (kg/m^3) 
+  75.0              WtrDpth          - Water depth (m) 
+  ---------------------- MOORDYN ------------------------------------------------ 
+  "lines.dat"      MDInputFile      - Primary HydroDyn input file name (quoted string) 
+  "Moorings/F"            OutRootName      - The name which prefixes all HydroDyn generated files (quoted string) 
+  50                  TMax             - Number of time steps in the simulations (-) 
+  0.001                 dtC              - TimeInterval for the simulation (sec) (same as dtM)
+  0                   InputsMode       - MoorDyn coupled object inputs (0: all inputs are zero for every timestep, 1: time-series inputs) (switch) 
+  "PtfmMotions.dat"   InputsFile       - Filename for the MoorDyn platform position file for when InputsMod = 1 (quoted string) 
+  0                   NumTurbines      - Number of wind turbines (-) [>=1 to use FAST.Farm mode. 0 to use OpenFAST mode.] 
+  ---------------------- Initial Positions -------------------------------------- 
+  ref_X    ref_Y    surge_init   sway_init  heave_init  roll_init  pitch_init   yaw_init 
+  (m)      (m)        (m)          (m)        (m)       (rad)       (rad)        (rad)         [followed by MAX(1,NumTurbines) rows of data] 
+  0         0         0.0          0.0        0.0        0.0         0.0          0.0   
+  END of driver input file 
 
 
-
+Once the driver is compiled and the driver file made, MoorDynF is run with  the following command (assuming the  driver and driver file are in the same directory)
+.. code-block:: none
+  moordyn_driver MoorDyn.dvr
 
 MoorDyn with FAST.Farm
 ----------------------
@@ -509,7 +598,6 @@ instance is not associated with any turbine but instead is called at a higher le
 to different turbines within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the type
 for any connections that are attached to a turbine, where "N" is the specific turbine number as listed in the 
 FAST.Farm input file.
-
 
 MoorDyn Input File
 ^^^^^^^^^^^^^^^^^^

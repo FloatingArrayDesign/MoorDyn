@@ -40,24 +40,26 @@ and rigid-body objects to enable simulation of a wide variety of mooring and
 cabling arrangements. Hydrodynamics are included using a version of the Morison
 equation.
 
-There are two main forms. The standalone form is coded in C++, is very easy to
-couple with a variety of models and programming languages, and is released under
-the `3-clause BSD license <https://opensource.org/licenses/BSD-3-Clause>`_. This
-is the original form of the model, and it is used with WEC-Sim, DualSPHysics,
-and various :ref:`wrappers in different languages <wrappers>`.
+There are three main forms. Version 1 (MoorDyn V1) is coded in C++, is very easy to couple with
+a variety of models and programming languages, and is released under the GPL. It is 
+the original form of the model, and it is used with WEC-Sim, DualSPHysics, and 
+various :ref:`wrappers in different languages <wrappers>`.
 
-The other form is MoorDyn-F, a full rewrite of MoorDyn in FORTRAN that follows
+Version 2 (MoorDynV2) is also coded in C++. It is an updated version of v1 and contains all the orginal 
+features with some new addtions. It contains wrappers that make it available as a python library and allows
+it to be easily packaged into other languages. It is released under the `3-clause BSD license <https://opensource.org/licenses/BSD-3-Clause>`_. 
+
+The third form is MoorDynF, a full rewrite of MoorDyn in FORTRAN that follows
 the FAST Modularization Framework. This form is a core module in the OpenFAST
 floating wind turbine simulator.
 
 Both forms of MoorDyn have the same underlying physics model, and nearly
 identical input file formats.
 
-This website focuses though on the standalone form.
-
-For information about use of MoorDyn-F in the larger context of OpenFAST
-simulations, refer also to the
-`OpenFAST documentation <https://openfast.readthedocs.io>`_.
+This website serves as a public-facing guide for MoorDyn in all forms. It focuses on MoorDyn’s principles 
+of operation, setup of the input files, common problems, etc. It will also have guidance for coupling with 
+MoorDyn in standalone form, as well as a guide for the API. For information about use of MoorDyn-F in the 
+larger context of OpenFAST simulations, refer also to the `OpenFAST documentation <https://openfast.readthedocs.io>`_.
 
 The MoorDyn source code is available on GitHub. The standalone C++ code is
 `here <https://github.com/mattEhall/MoorDyn>`_ and
