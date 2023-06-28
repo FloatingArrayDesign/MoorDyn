@@ -42,7 +42,7 @@
 #include <cmath>
 
 #define TOL 1.0e-6
-#define COG_Z 0.0
+#define COG_Z -35.0
 #define VX 0.01
 #define VRX 0.01 * M_PI / 180.0
 
@@ -252,9 +252,9 @@ minimal()
 		const double rx = 0.01 * M_PI / 180.0 * dt;
 		const double x_ref = xf_ref[3 * i] + 0.01 * dt;
 		const double y_ref = xf_ref[3 * i + 1] * cos(rx) -
-			xf_ref[3 * i + 2] * sin(rx);
+			(xf_ref[3 * i + 2] - COG_Z) * sin(rx);
 		const double z_ref = xf_ref[3 * i + 1] * sin(rx) +
-			xf_ref[3 * i + 2] * cos(rx);
+			(xf_ref[3 * i + 2] - COG_Z) * cos(rx) + COG_Z;
 		CHECK_VALUE("x3", x_ref, xf[3 * i]);
 		CHECK_VALUE("y3", y_ref, xf[3 * i + 1]);
 		CHECK_VALUE("z3", z_ref, xf[3 * i + 2]);
