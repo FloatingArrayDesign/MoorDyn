@@ -17,6 +17,7 @@ endif()
 
 set(TESTS 
     minimal
+    minimal_body
     lifting
     pendulum
     beam
