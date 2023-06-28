@@ -115,7 +115,6 @@ minimal()
 			MoorDyn_Close(system);
 			return false;
 		}
-		cout << xf_ref[3 * i] << ", " << xf_ref[3 * i + 1] << ", " << xf_ref[3 * i + 2] << endl;
 	}
 	err = MoorDyn_Init(system, x, dx);
 	if (err != MOORDYN_SUCCESS) {

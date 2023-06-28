@@ -65,11 +65,12 @@ Body::setup(int number_in,
 	type = type_in;
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 
+	body_r6 = r6_in;
+
 	if (type == FREE) {
 		bodyM = M_in;
 		bodyV = V_in;
 
-		body_r6 = r6_in;
 		body_rCG = rCG_in;
 		bodyI = I_in;
 		bodyCdA = CdA_in;
@@ -79,7 +80,6 @@ Body::setup(int number_in,
 		bodyM = 0.0;
 		bodyV = 0.0;
 
-		body_r6 = vec6::Zero();
 		body_rCG = vec::Zero();
 		bodyI = vec::Zero();
 		bodyCdA = vec6::Zero();
@@ -122,7 +122,8 @@ Body::addConnection(moordyn::Connection* conn, vec coords)
 	attachedC.push_back(conn);
 
 	// store Connection relative location
-	rConnectRel.push_back(coords);
+	vec rel_coords = OrMat.transpose() * (coords - r6(Eigen::seqN(0, 3)));
+	rConnectRel.push_back(rel_coords);
 };
 
 void
@@ -134,12 +135,14 @@ Body::addRod(Rod* rod, vec6 coords)
 	attachedR.push_back(rod);
 
 	// store Rod end A relative position and unit vector from end A to B
+	vec rel_coords = OrMat.transpose() *
+		(coords(Eigen::seqN(0, 3)) - r6(Eigen::seqN(0, 3)));
 	vec tempUnitVec;
 	unitvector(
 	    tempUnitVec, coords(Eigen::seqN(0, 3)), coords(Eigen::seqN(3, 3)));
 	vec6 r6Rod;
-	r6Rod(Eigen::seqN(0, 3)) = coords(Eigen::seqN(0, 3));
-	r6Rod(Eigen::seqN(3, 3)) = tempUnitVec;
+	r6Rod(Eigen::seqN(0, 3)) = rel_coords;
+	r6Rod(Eigen::seqN(3, 3)) = OrMat.transpose() * tempUnitVec;
 	r6RodRel.push_back(r6Rod);
 };
 
