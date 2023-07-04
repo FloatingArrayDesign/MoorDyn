@@ -98,32 +98,27 @@ Rod::setup(int number_in,
 
 	// ------------------------- size vectors -------------------------
 
-	r.assign(N + 1, vec(0., 0., 0.));  // node positions [i][x/y/z]
-	rd.assign(N + 1, vec(0., 0., 0.)); // node positions [i][x/y/z]
+	r.assign(N + 1, vec::Zero());  // node positions [i][x/y/z]
+	rd.assign(N + 1, vec::Zero()); // node positions [i][x/y/z]
 	l.assign(N, 0.0);                  // line unstretched segment lengths
 
-	M.assign(N + 1, mat()); // mass matrices (3x3) for each node
+	M.assign(N + 1, mat::Zero()); // mass matrices (3x3) for each node
 	V.assign(N, 0.0);       // segment volume?
 
 	// forces
-	W.assign(N + 1, vec(0., 0., 0.));    // node weights
-	Bo.assign(N + 1, vec(0., 0., 0.));   // node boyancy
-	Pd.assign(N + 1, vec(0., 0., 0.));   // dynamic pressure
-	Dp.assign(N + 1, vec(0., 0., 0.));   // node drag (transverse)
-	Dq.assign(N + 1, vec(0., 0., 0.));   // node drag (axial)
-	Ap.assign(N + 1, vec(0., 0., 0.));   // node added mass forcing (transverse)
-	Aq.assign(N + 1, vec(0., 0., 0.));   // node added mass forcing (axial)
-	B.assign(N + 1, vec(0., 0., 0.));    // node bottom contact force
-	Fnet.assign(N + 1, vec(0., 0., 0.)); // total force on node
+	W.assign(N + 1, vec::Zero());    // node weights
+	Bo.assign(N + 1, vec::Zero());   // node boyancy
+	Pd.assign(N + 1, vec::Zero());   // dynamic pressure
+	Dp.assign(N + 1, vec::Zero());   // node drag (transverse)
+	Dq.assign(N + 1, vec::Zero());   // node drag (axial)
+	Ap.assign(N + 1, vec::Zero());   // node added mass forcing (transverse)
+	Aq.assign(N + 1, vec::Zero());   // node added mass forcing (axial)
+	B.assign(N + 1, vec::Zero());    // node bottom contact force
+	Fnet.assign(N + 1, vec::Zero()); // total force on node
 
 	// wave things
 	F.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
 	                      // segments) (1 = fully submerged, 0 = out of water)
-
-	// get Rod axis direction vector and Rod length
-	UnstrLen = unitvector(
-	    q0, endCoords(Eigen::seqN(0, 3)), endCoords(Eigen::seqN(3, 3)));
-	q = q0;
 
 	if (N == 0) {
 		// special case of zero-length rod, which is denoted by numsegs=0 in the
@@ -131,12 +126,17 @@ Rod::setup(int number_in,
 		l.assign(1, 0.); // line unstretched segment lengths
 		V.assign(1, 0.); // segment volume?
 		UnstrLen = 0.0;  // set Rod length to zero
+		q = vec::Zero();
 	} else {
 		// normal finite-length case
 		const real lseg =
 		    UnstrLen / N;  // distribute line length evenly over segments
 		l.assign(N, lseg); // line unstretched segment lengths
 		V.assign(N, lseg * 0.25 * pi * d * d); // segment volume?
+		// get Rod axis direction vector and Rod length
+		UnstrLen = unitvector(
+			q0, endCoords.head<3>(), endCoords.tail<3>());
+		q = q0;
 	}
 
 	// ------------------------- set starting kinematics
@@ -536,7 +536,7 @@ Rod::getStateDeriv()
 		if (isnan(r[i].sum())) {
 			stringstream s;
 			s << "NaN detected" << endl
-			  << "Line " << number << " node positions:" << endl;
+			  << "Rod " << number << " node positions:" << endl;
 			for (unsigned int j = 0; j <= N; j++)
 				s << j << " : " << r[j] << ";" << endl;
 			throw moordyn::nan_error(s.str().c_str());
