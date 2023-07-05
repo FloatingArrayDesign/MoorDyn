@@ -177,37 +177,37 @@ Line::setup(int number_in,
 
 	// ------------------------- size vectors -------------------------
 
-	r.assign(N + 1, vec(0., 0., 0.));  // node positions [i][x/y/z]
-	rd.assign(N + 1, vec(0., 0., 0.)); // node positions [i][x/y/z]
-	q.assign(N + 1, vec(0., 0., 0.));  // unit tangent vectors for each node
-	qs.assign(N, vec(0., 0., 0.));     // unit tangent vectors for each segment
+	r.assign(N + 1, vec::Zero());  // node positions [i][x/y/z]
+	rd.assign(N + 1, vec::Zero()); // node positions [i][x/y/z]
+	q.assign(N + 1, vec::Zero());  // unit tangent vectors for each node
+	qs.assign(N, vec::Zero());     // unit tangent vectors for each segment
 	l.assign(N, 0.0);                  // line unstretched segment lengths
 	lstr.assign(N, 0.0);               // stretched lengths
 	ldstr.assign(N, 0.0);              // rate of stretch
 	Kurv.assign(N + 1, 0.0);           // curvatures at node points (1/m)
 
-	M.assign(N + 1, mat()); // mass matrices (3x3) for each node
+	M.assign(N + 1, mat::Zero()); // mass matrices (3x3) for each node
 	V.assign(N, 0.0);       // segment volume?
 
 	// forces
-	T.assign(N, vec(0., 0., 0.));        // segment tensions
-	Td.assign(N, vec(0., 0., 0.));       // segment damping forces
-	Bs.assign(N + 1, vec(0., 0., 0.));   // bending stiffness forces
-	W.assign(N + 1, vec(0., 0., 0.));    // node weights
-	Dp.assign(N + 1, vec(0., 0., 0.));   // node drag (transverse)
-	Dq.assign(N + 1, vec(0., 0., 0.));   // node drag (axial)
-	Ap.assign(N + 1, vec(0., 0., 0.));   // node added mass forcing (transverse)
-	Aq.assign(N + 1, vec(0., 0., 0.));   // node added mass forcing (axial)
-	B.assign(N + 1, vec(0., 0., 0.));    // node bottom contact force
-	Fnet.assign(N + 1, vec(0., 0., 0.)); // total force on node
+	T.assign(N, vec::Zero());        // segment tensions
+	Td.assign(N, vec::Zero());       // segment damping forces
+	Bs.assign(N + 1, vec::Zero());   // bending stiffness forces
+	W.assign(N + 1, vec::Zero());    // node weights
+	Dp.assign(N + 1, vec::Zero());   // node drag (transverse)
+	Dq.assign(N + 1, vec::Zero());   // node drag (axial)
+	Ap.assign(N + 1, vec::Zero());   // node added mass forcing (transverse)
+	Aq.assign(N + 1, vec::Zero());   // node added mass forcing (axial)
+	B.assign(N + 1, vec::Zero());    // node bottom contact force
+	Fnet.assign(N + 1, vec::Zero()); // total force on node
 
 	// wave things
 	F.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
 	                      // segments) (1 = fully submerged, 0 = out of water)
 
 	// ensure end moments start at zero
-	endMomentA = vec(0., 0., 0.);
-	endMomentB = vec(0., 0., 0.);
+	endMomentA = vec::Zero();
+	endMomentB = vec::Zero();
 
 	// set the number of preset wave kinematic time steps to zero (flagging
 	// disabled) to start with

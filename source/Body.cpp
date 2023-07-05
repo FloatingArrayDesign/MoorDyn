@@ -454,10 +454,12 @@ Body::doRHS()
 	vec6 vi = -v6;
 	vi(Eigen::seqN(0, 3)) += U[0];
 
-	// NOTE:, for body this should be fixed to account for orientation!!
-	// what about drag in rotational DOFs???
+	// Rotational DOFs drag coefficients are also defined on bodyCdA
+	vec6 cda;
+	cda(Eigen::seqN(0, 3)) = OrMat.transpose() * bodyCdA.head<3>();
+	cda(Eigen::seqN(3, 3)) = OrMat.transpose() * bodyCdA.tail<3>();
 	F6net +=
-	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(bodyCdA);
+	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(cda);
 
 	// Get contributions from any connections attached to the body
 	for (auto attached : attachedC) {
