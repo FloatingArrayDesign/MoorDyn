@@ -368,9 +368,8 @@ IO::Serialize(const quaternion& m)
 {
 	std::vector<uint64_t> data;
 	auto coeffs = m.coeffs();
-	data.reserve(coeffs.size() + 1);
-	data.push_back(Serialize((uint64_t)coeffs.size()));
-	for (unsigned int i = 0; i < coeffs.size(); i++)
+	data.reserve(4);
+	for (unsigned int i = 0; i < 4; i++)
 		data.push_back(Serialize(coeffs(i)));
 	return data;
 }
@@ -522,11 +521,8 @@ uint64_t*
 IO::Deserialize(const uint64_t* in, quaternion& out)
 {
 	uint64_t* remaining = (uint64_t*)in;
-	uint64_t n_coeffs;
-	remaining = Deserialize(remaining, n_coeffs);
-	for (unsigned int i = 0; i < n_coeffs; i++) {
+	for (unsigned int i = 0; i < 4; i++)
 		remaining = Deserialize(remaining, out.coeffs()(i));
-	}
 	return remaining;
 }
 
