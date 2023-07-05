@@ -455,7 +455,7 @@ Body::doRHS()
 	vi(Eigen::seqN(0, 3)) += U[0];
 
 	// NOTE:, for body this should be fixed to account for orientation!!
-	// what about drag in rotational DOFs???
+	// Rotational DOFs drag coefficients are also defined on bodyCdA
 	F6net +=
 	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(bodyCdA);
 

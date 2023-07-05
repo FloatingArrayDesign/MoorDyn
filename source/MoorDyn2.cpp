@@ -1589,16 +1589,28 @@ moordyn::MoorDyn::readBody(string inputText)
 	if (entries_CdA.size() == 1) {
 		// if only one entry, use it for all directions
 		CdA[0] = atof(entries_CdA[0].c_str());
-		CdA[1] = CdA[0];
-		CdA[2] = CdA[0];
-	} else if (entries_CdA.size() == 3) {
+		for (unsigned int i = 1; i < 6; i++)
+			CdA[i] = CdA[0];
+	} else if (entries_CdA.size() == 2) {
 		CdA[0] = atof(entries_CdA[0].c_str());
-		CdA[1] = atof(entries_CdA[1].c_str());
-		CdA[2] = atof(entries_CdA[2].c_str());
+		CdA[3] = atof(entries_CdA[1].c_str());
+		for (unsigned int i = 1; i < 3; i++) {
+			CdA[i] = CdA[0];
+			CdA[i + 3] = CdA[3];
+		}
+	} else if (entries_CdA.size() == 3) {
+		for (unsigned int i = 1; i < 3; i++) {
+			CdA[i] = atof(entries_CdA[i].c_str());
+			CdA[i + 3] = CdA[i];
+		}
+	} else if (entries_CdA.size() == 6) {
+		for (unsigned int i = 1; i < 6; i++) {
+			CdA[i] = atof(entries_CdA[i].c_str());
+		}
 	} else {
 		LOGERR << "Error in " << _filepath << endl
 		       << "'" << inputText << "'" << endl
-		       << "CdA entry (col 13) must have 1 or 3 numbers" << endl;
+		       << "CdA entry (col 13) must have 1, 2, 3 or 6 numbers" << endl;
 		return nullptr;
 	}
 
