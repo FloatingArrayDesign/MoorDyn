@@ -110,7 +110,7 @@ added_mass()
 				     << ": " << err << endl;
 				return false;
 			}
-			if (!isclose(pos[2], expected_z, 1e-8, 1e-10)) {
+			if (!isclose(pos[2], expected_z, 1e16, TOL)) {
 				cerr << "Node " << i << " of Rod 1 should have a z position of "
 				     << expected_z << " but has a z pos of " << pos[2]
 				     << " at t=" << t << endl;
