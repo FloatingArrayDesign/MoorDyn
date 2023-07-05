@@ -197,8 +197,8 @@ swap_endian(T u)
 IO::IO(moordyn::Log* log)
   : LogUser(log)
   , _is_big_endian(false)
-  , _min_major_version(0)
-  , _min_minor_version(0)
+  , _min_major_version(2)
+  , _min_minor_version(1)
 {
 	_is_big_endian = is_big_endian();
 }
@@ -368,8 +368,9 @@ IO::Serialize(const quaternion& m)
 {
 	std::vector<uint64_t> data;
 	auto coeffs = m.coeffs();
-	data.reserve(coeffs.size());
-	for (unsigned int i = 0; i < 4; i++)
+	data.reserve(coeffs.size() + 1);
+	data.push_back(Serialize((uint64_t)coeffs.size()));
+	for (unsigned int i = 0; i < coeffs.size(); i++)
 		data.push_back(Serialize(coeffs(i)));
 	return data;
 }
@@ -521,8 +522,11 @@ uint64_t*
 IO::Deserialize(const uint64_t* in, quaternion& out)
 {
 	uint64_t* remaining = (uint64_t*)in;
-	for (unsigned int i = 0; i < 4; i++)
+	uint64_t n_coeffs;
+	remaining = Deserialize(remaining, n_coeffs);
+	for (unsigned int i = 0; i < n_coeffs; i++) {
 		remaining = Deserialize(remaining, out.coeffs()(i));
+	}
 	return remaining;
 }
 
@@ -530,7 +534,7 @@ uint64_t*
 IO::Deserialize(const uint64_t* in, XYZQuat& out)
 {
 	uint64_t* remaining = Deserialize(in, out.pos);
-	remaining = Deserialize(in, out.quat);
+	remaining = Deserialize(remaining, out.quat);
 	return remaining;
 }
 
