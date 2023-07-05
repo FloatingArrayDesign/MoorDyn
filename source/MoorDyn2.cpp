@@ -373,17 +373,19 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		iic++;
 	}
 
-	if (converged) {
-		LOGMSG << "Fairlead tensions converged" << endl;
-	} else {
-		LOGWRN << "Fairlead tensions did not converged" << endl;
-	}
-	LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
-	       << "% on line " << max_error_line << endl;
-	if (!converged) {
-		LOGMSG << "Best score at " << best_score_t
-		       << " s = " << 100.0 * best_score << "% on line "
-		       << best_score_line << endl;
+	if (!skip_ic) {
+		if (converged) {
+			LOGMSG << "Fairlead tensions converged" << endl;
+		} else {
+			LOGWRN << "Fairlead tensions did not converged" << endl;
+		}
+		LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
+			<< "% on line " << max_error_line << endl;
+		if (!converged) {
+			LOGMSG << "Best score at " << best_score_t
+				<< " s = " << 100.0 * best_score << "% on line "
+				<< best_score_line << endl;
+		}
 	}
 
 	// restore drag coefficients to normal values and restart time counter of
@@ -592,6 +594,23 @@ MoorDyn::Serialize(void)
 	subdata = _t_integrator->Serialize();
 	data.insert(data.end(), subdata.begin(), subdata.end());
 
+	for (auto body : BodyList) {
+		subdata = body->Serialize();
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	for (auto rod : RodList) {
+		subdata = rod->Serialize();
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	for (auto conn : ConnectionList) {
+		subdata = conn->Serialize();
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	for (auto line : LineList) {
+		subdata = line->Serialize();
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+
 	return data;
 }
 
@@ -605,6 +624,18 @@ MoorDyn::Deserialize(const uint64_t* data)
 
 	// Load the children data also
 	ptr = _t_integrator->Deserialize(ptr);
+	for (auto body : BodyList) {
+		ptr = body->Deserialize(ptr);
+	}
+	for (auto rod : RodList) {
+		ptr = rod->Deserialize(ptr);
+	}
+	for (auto conn : ConnectionList) {
+		ptr = conn->Deserialize(ptr);
+	}
+	for (auto line : LineList) {
+		ptr = line->Deserialize(ptr);
+	}
 
 	return ptr;
 }
