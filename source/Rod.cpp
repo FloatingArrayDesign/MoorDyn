@@ -129,13 +129,13 @@ Rod::setup(int number_in,
 		q = vec::Zero();
 	} else {
 		// normal finite-length case
+		UnstrLen = unitvector(
+			q0, endCoords.head<3>(), endCoords.tail<3>());
 		const real lseg =
 		    UnstrLen / N;  // distribute line length evenly over segments
 		l.assign(N, lseg); // line unstretched segment lengths
 		V.assign(N, lseg * 0.25 * pi * d * d); // segment volume?
 		// get Rod axis direction vector and Rod length
-		UnstrLen = unitvector(
-			q0, endCoords.head<3>(), endCoords.tail<3>());
 		q = q0;
 	}
 
