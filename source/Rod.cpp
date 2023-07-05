@@ -172,6 +172,9 @@ Rod::setup(int number_in,
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 	channels = channels_in;          // copy string of output channels to object
 
+	// Flag for writing output headers
+	if ((channels.size() > 0) && (outfile)) openedoutfile = 0;
+
 	LOGDBG << "   Set up Rod " << number << ", type '" << TypeName(type)
 	       << "'. " << endl;
 };
@@ -223,12 +226,9 @@ Rod::removeLine(EndPoints end_point, Line* line)
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
-std::pair<vec6, vec6>
-Rod::initialize()
+void
+Rod::openoutput()
 {
-	LOGDBG << "Initializing Rod " << number << " (type '" << TypeName(type)
-	       << "') now." << endl;
-
 	if (outfile) {
 		if (!outfile->is_open()) {
 			LOGERR << "Unable to write file Line" << number << ".out" << endl;
@@ -239,27 +239,27 @@ Rod::initialize()
 
 		// output time
 		*outfile << "Time"
-		         << "\t ";
+		         	<< "\t ";
 
 		// output positions
 		if (channels.find("p") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				*outfile << "Node" << i << "px \t Node" << i << "py \t Node"
-				         << i << "pz \t ";
+							<< i << "pz \t ";
 			}
 		}
 		// output velocities
 		if (channels.find("v") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				*outfile << "Node" << i << "vx \t Node" << i << "vy \t Node"
-				         << i << "vz \t ";
+							<< i << "vz \t ";
 			}
 		}
 		// output net node force
 		if (channels.find("f") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				*outfile << "Node" << i << "Fx \t Node" << i << "Fy \t Node"
-				         << i << "Fz \t ";
+							<< i << "Fz \t ";
 			}
 		}
 
@@ -270,7 +270,7 @@ Rod::initialize()
 
 			// output time
 			*outfile << "(s)"
-			         << "\t ";
+						<< "\t ";
 
 			// output positions
 			if (channels.find("p") != string::npos) {
@@ -290,7 +290,17 @@ Rod::initialize()
 
 			*outfile << "\n";
 		}
+		openedoutfile = 1;
 	}
+};
+
+std::pair<vec6, vec6>
+Rod::initialize()
+{
+	LOGDBG << "Initializing Rod " << number << " (type '" << TypeName(type)
+	       << "') now." << endl;
+
+	openoutput();
 
 	// if (-env->WtrDpth > r[0][2]) {
 	//	cout << "   Error: water depth is shallower than Line " << number << "
@@ -329,30 +339,76 @@ Rod::initialize()
 real
 Rod::GetRodOutput(OutChanProps outChan)
 {
-	if (outChan.QType == PosX)
-		return r[outChan.NodeID][0];
-	else if (outChan.QType == PosY)
-		return r[outChan.NodeID][1];
-	else if (outChan.QType == PosZ)
-		return r[outChan.NodeID][2];
-	else if (outChan.QType == VelX)
-		return rd[outChan.NodeID][0];
-	else if (outChan.QType == VelY)
-		return rd[outChan.NodeID][1];
-	else if (outChan.QType == VelZ)
-		return rd[outChan.NodeID][2];
-	else if (outChan.QType == Ten) {
-		// for Rods, this option provides the net force applied by attached
-		// lines at end A (if 0) or end B (if >0)
-		if (outChan.NodeID > 0)
+	if (outChan.NodeID == -1){
+		if (outChan.QType == PosX)
+			return r6[0];
+		else if (outChan.QType == PosY)
+			return r6[1];
+		else if (outChan.QType == PosZ)
+			return r6[2];
+		else if (outChan.QType == RX)
+			return roll*180.0/pi;
+		else if (outChan.QType == RY)
+			return pitch*180.0/pi;
+		else if (outChan.QType == VelX)
+			return vel6[0];
+		else if (outChan.QType == VelY)
+			return vel6[1];
+		else if (outChan.QType == VelZ)
+			return vel6[2];
+		else if (outChan.QType == RVelX)
+			return vel6[3]*180.0/pi;
+		else if (outChan.QType == RVelY)
+			return vel6[4]*180.0/pi;
+		else if (outChan.QType == AccX)
+			return acc6[0];
+		else if (outChan.QType == AccY)
+			return acc6[1];
+		else if (outChan.QType == AccZ)
+			return acc6[2];
+		else if (outChan.QType == RAccX)
+			return acc6[3]*180.0/pi;
+		else if (outChan.QType == RAccY)
+			return acc6[4]*180.0/pi;
+		else if (outChan.QType == TenA)
+			return FextA.norm();
+		else if (outChan.QType == TenB)
 			return FextB.norm();
-		return FextA.norm();
-	} else if (outChan.QType == FX)
-		return Fnet[outChan.NodeID][0];
-	else if (outChan.QType == FY)
-		return Fnet[outChan.NodeID][1];
-	else if (outChan.QType == FZ)
-		return Fnet[outChan.NodeID][2];
+		else if (outChan.QType == FX)
+			return F6net[0];
+		else if (outChan.QType == FY)
+			return F6net[1];
+		else if (outChan.QType == FZ)
+			return F6net[2];
+		else if (outChan.QType == MX)
+			return F6net[3];
+		else if (outChan.QType == MY)
+			return F6net[4];
+		else if (outChan.QType == MZ)
+			return F6net[5];
+		else if (outChan.QType == Sub)
+			return h0/UnstrLen;
+	}
+	else {
+		if (outChan.QType == PosX)
+			return r[outChan.NodeID][0];
+		else if (outChan.QType == PosY)
+			return r[outChan.NodeID][1];
+		else if (outChan.QType == PosZ)
+			return r[outChan.NodeID][2];
+		else if (outChan.QType == VelX)
+			return rd[outChan.NodeID][0];
+		else if (outChan.QType == VelY)
+			return rd[outChan.NodeID][1];
+		else if (outChan.QType == VelZ)
+			return rd[outChan.NodeID][2];
+		else if (outChan.QType == FX)
+			return Fnet[outChan.NodeID][0];
+		else if (outChan.QType == FY)
+			return Fnet[outChan.NodeID][1];
+		else if (outChan.QType == FZ)
+			return Fnet[outChan.NodeID][2];
+	}
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
 }
@@ -563,7 +619,6 @@ Rod::getStateDeriv()
 	    rho * d * d * d * d / 64.0 * q2.asDiagonal();
 
 	// solve for accelerations in [M]{a}={f}, then fill in state derivatives
-	vec6 vel6, acc6;
 	if (type == FREE) {
 		if (N == 0) {
 			// special zero-length Rod case, where orientation rate of change is
@@ -756,8 +811,8 @@ Rod::doRHS()
 
 	// save to internal roll and pitch variables for use in output <<< should
 	// check these, make Euler angles isntead of independent <<<
-	roll = -180.0 / pi * phi * sinBeta;
-	pitch = 180.0 / pi * phi * cosBeta;
+	roll = -phi * sinBeta;
+	pitch = phi * cosBeta;
 
 	// set interior node positions and velocities (stretch the nodes between the
 	// endpoints linearly) (skipped for zero-length Rods)
@@ -1045,7 +1100,7 @@ Rod::doRHS()
 	if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i)) {
 		// the water plane is crossing the rod
 		real Mtemp = 1.0 / 16.0 * pi * d * d * d * d * env->rho_w * env->g *
-		             sinPhi * (1.0 + 0.5 * tanPhi * tanPhi); // TODO: fortran uses sin * cos (line 893 Rod.f90)
+		             sinPhi * cosPhi; 
 		Mext += Mtemp * vec(sinBeta, -cosBeta, 0.0);
 	}
 
@@ -1206,6 +1261,10 @@ Rod::Output(real time)
 
 	if (outfile) // if not a null pointer (indicating no output)
 	{
+		if (openedoutfile == 0){
+			// Writes headers and channels to output file for fixed rods or rods fixed to bodies
+			openoutput();
+		}
 		if (!outfile->is_open()) {
 			LOGWRN << "Unable to write to output file " << endl;
 			return;

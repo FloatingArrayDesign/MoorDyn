@@ -309,20 +309,50 @@ Body::GetBodyOutput(OutChanProps outChan)
 		return r6[1];
 	else if (outChan.QType == PosZ)
 		return r6[2];
+	else if (outChan.QType == RX)
+		return r6[3]*180.0/pi;
+	else if (outChan.QType == RY)
+		return r6[4]*180.0/pi;
+	else if (outChan.QType == RZ)
+		return r6[5]*180.0/pi;
 	else if (outChan.QType == VelX)
 		return v6[0];
 	else if (outChan.QType == VelY)
 		return v6[1];
 	else if (outChan.QType == VelZ)
 		return v6[2];
-	// else if (outChan.QType == Ten )  return  sqrt(Fnet[0]*Fnet[0] +
-	// Fnet[1]*Fnet[1] + Fnet[2]*Fnet[2]);
+	else if (outChan.QType == RVelX)
+		return v6[3]*180.0/pi;
+	else if (outChan.QType == RVelY)
+		return v6[4]*180.0/pi;
+	else if (outChan.QType == RVelZ)
+		return v6[5]*180.0/pi;
+	else if (outChan.QType == AccX)
+		return a6[0];
+	else if (outChan.QType == AccY)
+		return a6[1];
+	else if (outChan.QType == AccZ)
+		return a6[2];
+	else if (outChan.QType == RAccX)
+		return a6[3]*180.0/pi;
+	else if (outChan.QType == RAccY)
+		return a6[4]*180.0/pi;
+	else if (outChan.QType == RAccZ)
+		return a6[5]*180.0/pi;
+	else if (outChan.QType == Ten)  
+		return  sqrt(F6net[0]*F6net[0] + F6net[1]*F6net[1] + F6net[2]*F6net[2]);
 	else if (outChan.QType == FX)
-		return F6net[0]; // added Oct 20
+		return F6net[0];
 	else if (outChan.QType == FY)
 		return F6net[1];
 	else if (outChan.QType == FZ)
 		return F6net[2];
+	else if (outChan.QType == MX)
+		return F6net[3];
+	else if (outChan.QType == MY)
+		return F6net[4];
+	else if (outChan.QType == MZ)
+		return F6net[5];
 	else {
 		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 		return 0.0;
@@ -398,10 +428,10 @@ Body::getStateDeriv()
 	doRHS();
 
 	// solve for accelerations in [M]{a}={f}
-	const vec6 acc = solveMat6(M, F6net);
+	a6 = solveMat6(M, F6net);
 
 	// NOTE; is the above still valid even though it includes rotational DOFs?
-	return std::make_pair(v6, acc);
+	return std::make_pair(v6, a6);
 };
 
 //  this is the big function that calculates the forces on the body

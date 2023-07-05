@@ -129,8 +129,11 @@ class Body final : public io::IO
 	/// fairlead velocity for coupled bodies [x/y/z]
 	vec6 rd_ves;
 
-	/// total force and moment vector on node
+	/// total force and moment vector on body
 	vec6 F6net;
+
+	/// total acceleration of body
+	vec6 a6;
 
 	/// total body mass + added mass matrix including all elements
 	mat6 M;
