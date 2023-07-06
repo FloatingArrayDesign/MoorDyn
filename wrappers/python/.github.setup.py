@@ -114,7 +114,7 @@ if platform.system() == "Windows":
     extra_compile_args.append("/std:c++17")
 elif platform.system() == "Darwin":
     # To avoid errors with std::filesystem::path
-    extra_compile_args.append("-mmacosx-version-min=10.5")
+    extra_compile_args.append("-mmacosx-version-min=10.9")
 definitions = [('MoorDyn_EXPORTS', '1'), ('USE_VTK', '1')]
 include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
 library_dirs = ["vtk/lib"]
