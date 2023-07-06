@@ -198,9 +198,14 @@ IO::IO(moordyn::Log* log)
   : LogUser(log)
   , _is_big_endian(false)
   , _min_major_version(2)
-  , _min_minor_version(1)
+  , _min_minor_version(2)
 {
 	_is_big_endian = is_big_endian();
+	if (_min_major_version <= MOORDYN_MAJOR_VERSION) {
+		_min_major_version = MOORDYN_MAJOR_VERSION;
+		if (_min_minor_version <= MOORDYN_MINOR_VERSION)
+			_min_minor_version = MOORDYN_MINOR_VERSION;
+	}
 }
 
 IO::~IO() {}
