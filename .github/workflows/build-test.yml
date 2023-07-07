@@ -72,7 +72,7 @@ jobs:
         major=`cat CMakeLists.txt | grep MOORDYN_MAJOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         minor=`cat CMakeLists.txt | grep MOORDYN_MINOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
-        echo "::set-output name=moordyn_version::$major.$minor.$patch"
+        echo "moordyn_version=$major.$minor.$patch" >> $GITHUB_OUTPUT
 
     - name: Setup GCC Fortran (Linux & Mac)
       uses: awvwgk/setup-fortran@main
@@ -85,8 +85,8 @@ jobs:
       id: set-resources-windows
       shell: pwsh
       run: |
-        echo "::set-output name=hpckit_url::https://registrationcenter-download.intel.com/akdlm/IRC_NAS/18680/w_HPCKit_p_2022.2.0.173_offline.exe"
-        echo "::set-output name=components::intel.oneapi.win.ifort-compiler"
+        echo "hpckit_url=https://registrationcenter-download.intel.com/akdlm/IRC_NAS/18680/w_HPCKit_p_2022.2.0.173_offline.exe" >> $GITHUB_OUTPUT
+        echo "components=intel.oneapi.win.ifort-compiler" >> $GITHUB_OUTPUT
       if: runner.os == 'Windows'
 
     - name: Install ifort (Windows)
