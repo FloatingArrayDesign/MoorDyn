@@ -68,10 +68,14 @@ ui_size(const std::vector<T>& a)
 namespace moordyn {
 
 /// The list of units for the output
-const char* UnitList[] = { "(s)     ", "(m)     ", "(m)     ", "(m)     ",
-	                       "(m/s)   ", "(m/s)   ", "(m/s)   ", "(m/s2)  ",
-	                       "(m/s2)  ", "(m/s2)  ", "(N)     ", "(N)     ",
-	                       "(N)     ", "(N)     " };
+const char* UnitList[] = { "(s)       ","(m)       ","(m)       ","(m)       ",
+                            "(deg)     ","(deg)     ","(deg)     ",
+                            "(m/s)     ","(m/s)     ","(m/s)     ",
+                            "(deg/s)   ","(deg/s)   ","(deg/s)   ",
+                            "(m/s2)    ","(m/s2)    ","(m/s2)    ",
+                            "(deg/s2)  ","(deg/s2)  ","(deg/s2)  ",
+                            "(N)       ","(N)       ","(N)       ","(N)       ",
+                            "(Nm)      ","(Nm)      ","(Nm)      ","(frac)    " };
 
 moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   : io::IO(NULL)
@@ -1216,84 +1220,173 @@ moordyn::MoorDyn::ReadInFile()
 					dummy.NodeID = 0;
 				}
 				// more general case
-				else {
-					// get object type and node number if applicable
-					// Line case:  L?N?xxxx
-					if (let1 == "L") {
-						dummy.OType = 1;
-						dummy.NodeID = atoi(num2.c_str());
-					}
-					// Connect case:   C?xxx or Con?xxx
-					else if (str::isOneOf(let1, { "C", "CON" })) {
+ 				else {
 
-						dummy.OType = 2;
-						dummy.NodeID = -1;
-						let3 = let2;
-					}
-					// Rod case:   R?xxx or Rod?xxx
-					else if (str::isOneOf(let1, { "R", "ROD" })) {
-						dummy.OType = 3;
-						dummy.NodeID = atoi(num2.c_str());
-					}
-					// should do fairlead option also!
+ 					// object number
+ 					dummy.ObjID = atoi(num1.c_str());
 
-					else {
-						LOGWRN << "Warning in " << _filepath << ":" << i + 1
-						       << "..." << endl
-						       << "'" << in_txt[i] << "'" << endl
-						       << "invalid output specifier: " << let1
-						       << ".  Type must be oneof L, C/Con or R/Rod"
-						       << endl;
-						dummy.OType = -1;
-						continue;
-					}
+ 					// get object type and node number if applicable
+ 					// Line case:  L?N?xxxx
+ 					if (str::isOneOf(let1, { "L", "LINE" })) {
+ 						dummy.OType = 1;
+ 						if (let3.empty()){
+ 							if (let2.substr(0,2) == "NA"){
+ 								dummy.NodeID = 0;
+ 								let2.erase(0,2);
+ 							}
+ 							else if (let2.substr(0,2) == "NB"){
+ 								dummy.NodeID = LineList[dummy.ObjID - 1]->getN();
+ 								let2.erase(0,2);
+ 							}
+ 							else if (num2.empty()) dummy.NodeID = 0;
+ 							else {
+ 							LOGWRN << "Warning in " << _filepath << ":" << i + 1
+ 						       << "..." << endl
+ 						       << "'" << in_txt[i] << "'" << endl
+ 						       << "invalid output specifier: " << let1
+ 						       << ".  Line ID or Node ID missing."
+ 						       << endl;
+ 							dummy.OType = -1;
+ 							}
+ 						}
+ 						else dummy.NodeID = atoi(num2.c_str());
+ 					}
+ 					// Point case:   P?xxx or Point?xxx
+ 					else if (str::isOneOf(let1, { "P", "POINT" })) {
+ 						dummy.OType = 2;
+ 						dummy.NodeID = -1;
+ 					}
+ 					// Rod case:   R?xxx or Rod?xxx
+ 					else if (str::isOneOf(let1, { "R", "ROD" })) {
+ 						dummy.OType = 3;
+ 						if (let3.empty()){
+ 							if (let2.substr(0,2) == "NA"){
+ 								dummy.NodeID = 0;
+ 								let2.erase(0,2);
+ 							}
+ 							else if (let2.substr(0,2) == "NB"){
+ 								dummy.NodeID = RodList[dummy.ObjID - 1]->getN();
+ 								let2.erase(0,2);
+ 							}
+ 							else dummy.NodeID = -1;
+ 						}
+ 						else if (not num2.empty()) dummy.NodeID = atoi(num2.c_str());
+ 						else {
+ 							LOGWRN << "Warning in " << _filepath << ":" << i + 1
+ 						       << "..." << endl
+ 						       << "'" << in_txt[i] << "'" << endl
+ 						       << "invalid output specifier: " << let1
+ 						       << ".  Rod ID or Node ID missing."
+ 						       << endl;
+ 							dummy.OType = -1;
+ 						}
+ 					}
+ 					// Body case:   B?xxx or Body?xxx
+ 					else if (str::isOneOf(let1, { "B", "BODY" })) {
+ 						dummy.OType = 4;
+ 						dummy.NodeID = -1;
+ 						}
+ 					// should do fairlead option also!
+ 					else {
+ 						LOGWRN << "Warning in " << _filepath << ":" << i + 1
+ 						       << "..." << endl
+ 						       << "'" << in_txt[i] << "'" << endl
+ 						       << "invalid output specifier: " << let1
+ 						       << ".  Type must be oneof L/Line, C/Con, R/Rod, or B/Body"
+ 						       << endl;
+ 						dummy.OType = -1;
+ 						continue;
+ 					}
 
-					// object number
-					dummy.ObjID = atoi(num1.c_str());
+ 					if (let3.empty()) let3 = let2;
 
-					if (let3 == "PX") {
-						// cout << "SETTING QTYPE to " << PosX << endl;
+ 					if (let3 == "PX") {
 						dummy.QType = PosX;
 						dummy.Units = moordyn::UnitList[PosX];
 					} else if (let3 == "PY") {
 						dummy.QType = PosY;
 						dummy.Units = moordyn::UnitList[PosY];
-					} else if (let3 == "PZ") {
-						dummy.QType = PosZ;
-						dummy.Units = moordyn::UnitList[PosZ];
-					} else if (let3 == "VX") {
-						dummy.QType = VelX;
-						dummy.Units = moordyn::UnitList[VelX];
+ 					} else if (let3 == "PZ") {
+ 						dummy.QType = PosZ;
+ 						dummy.Units = moordyn::UnitList[PosZ];
+ 					} else if (let3 == "RX") {
+ 						dummy.QType = RX;
+ 						dummy.Units = moordyn::UnitList[RX];
+ 					} else if (let3 == "RY") {
+ 						dummy.QType = RY;
+ 						dummy.Units = moordyn::UnitList[RY];
+ 					} else if (let3 == "RZ") {
+ 						dummy.QType = RZ;
+ 						dummy.Units = moordyn::UnitList[RZ];
+ 					} else if (let3 == "VX") {
+ 						dummy.QType = VelX;
+ 						dummy.Units = moordyn::UnitList[VelX];
 					} else if (let3 == "VY") {
 						dummy.QType = VelY;
 						dummy.Units = moordyn::UnitList[VelY];
-					} else if (let3 == "VZ") {
-						dummy.QType = VelZ;
-						dummy.Units = moordyn::UnitList[VelZ];
-					} else if (let3 == "AX") {
-						dummy.QType = AccX;
-						dummy.Units = moordyn::UnitList[AccX];
+ 					} else if (let3 == "VZ") {
+ 						dummy.QType = VelZ;
+ 						dummy.Units = moordyn::UnitList[VelZ];
+ 					} else if (let3 == "RVX") {
+ 						dummy.QType = RVelX;
+ 						dummy.Units = moordyn::UnitList[RVelX];
+ 					} else if (let3 == "RVY") {
+ 						dummy.QType = RVelY;
+ 						dummy.Units = moordyn::UnitList[RVelY];
+ 					} else if (let3 == "RVZ") {
+ 						dummy.QType = RVelZ;
+ 						dummy.Units = moordyn::UnitList[RVelZ];
+ 					} else if (let3 == "AX") {
+ 						dummy.QType = AccX;
+ 						dummy.Units = moordyn::UnitList[AccX];
 					} else if (let3 == "Ay") {
 						dummy.QType = AccY;
 						dummy.Units = moordyn::UnitList[AccY];
-					} else if (let3 == "AZ") {
-						dummy.QType = AccZ;
-						dummy.Units = moordyn::UnitList[AccZ];
-					} else if (let3 == "T" || let3 == "TEN") {
-						dummy.QType = Ten;
-						dummy.Units = moordyn::UnitList[Ten];
-					} else if (let3 == "FX") {
-						dummy.QType = FX;
-						dummy.Units = moordyn::UnitList[FX];
+ 					} else if (let3 == "AZ") {
+ 						dummy.QType = AccZ;
+ 						dummy.Units = moordyn::UnitList[AccZ];
+ 					} else if (let3 == "RAX") {
+ 						dummy.QType = RAccX;
+ 						dummy.Units = moordyn::UnitList[RAccX];
+ 					} else if (let3 == "RAY") {
+ 						dummy.QType = RAccY;
+ 						dummy.Units = moordyn::UnitList[RAccY];
+ 					} else if (let3 == "RAZ") {
+ 						dummy.QType = RAccZ;
+ 						dummy.Units = moordyn::UnitList[RAccZ];
+ 					} else if (let3 == "T" || let3 == "TEN") {
+ 						dummy.QType = Ten;
+ 						dummy.Units = moordyn::UnitList[Ten];
+ 					} else if (let3 == "TA" || let3 == "TENA") {
+ 						dummy.QType = TenA;
+ 						dummy.Units = moordyn::UnitList[Ten];
+ 					} else if (let3 == "TB" || let3 == "TENB") {
+ 						dummy.QType = TenB;
+ 						dummy.Units = moordyn::UnitList[Ten];
+ 					} else if (let3 == "FX") {
+ 						dummy.QType = FX;
+ 						dummy.Units = moordyn::UnitList[FX];
 					} else if (let3 == "FY") {
 						dummy.QType = FY;
 						dummy.Units = moordyn::UnitList[FY];
-					} else if (let3 == "FZ") {
-						dummy.QType = FZ;
-						dummy.Units = moordyn::UnitList[FZ];
-					} else {
-						LOGWRN << "Warning in " << _filepath << ":" << i + 1
-						       << "..." << endl
+ 					} else if (let3 == "FZ") {
+ 						dummy.QType = FZ;
+ 						dummy.Units = moordyn::UnitList[FZ];
+ 					} else if (let3 == "MX") {
+ 						dummy.QType = MX;
+ 						dummy.Units = moordyn::UnitList[MX];
+ 					} else if (let3 == "MY") {
+ 						dummy.QType = MY;
+ 						dummy.Units = moordyn::UnitList[MY];
+ 					} else if (let3 == "MZ") {
+ 						dummy.QType = MZ;
+ 						dummy.Units = moordyn::UnitList[MZ];
+ 					} else if (let3 == "SUB") {
+ 						dummy.QType = Sub;
+ 						dummy.Units = moordyn::UnitList[Sub];
+ 					} else {
+ 						LOGWRN << "Warning in " << _filepath << ":" << i + 1
+ 						       << "..." << endl
 						       << "'" << in_txt[i] << "'" << endl
 						       << "invalid quantity specifier: " << let3
 						       << endl;
@@ -1513,11 +1606,13 @@ moordyn::MoorDyn::readRodProps(string inputText)
 	RodProps* obj = new RodProps();
 	obj->type = entries[0];
 	obj->d = atof(entries[1].c_str());
-	obj->w = atof(entries[2].c_str());
-	obj->Cdn = atof(entries[3].c_str());
-	obj->Can = atof(entries[4].c_str());
-	obj->Cdt = atof(entries[5].c_str());
-	obj->Cat = atof(entries[6].c_str());
+ 	obj->w = atof(entries[2].c_str());
+ 	obj->Cdn = atof(entries[3].c_str());
+ 	obj->Can = atof(entries[4].c_str());
+ 	obj->CdEnd = atof(entries[5].c_str());
+ 	obj->CaEnd = atof(entries[6].c_str());
+ 	obj->Cdt = 0.0;
+ 	obj->Cat = 0.0;
 
 	LOGDBG << "\t'" << obj->type << "'"
 	       << " - with id " << RodPropList.size() << endl
@@ -1525,8 +1620,8 @@ moordyn::MoorDyn::readRodProps(string inputText)
 	       << "\t\tw   : " << obj->w << endl
 	       << "\t\tCdn : " << obj->Cdn << endl
 	       << "\t\tCan : " << obj->Can << endl
-	       << "\t\tCdt : " << obj->Cdt << endl
-	       << "\t\tCat : " << obj->Cat << endl;
+	       << "\t\tCdEnd : " << obj->CdEnd << endl
+ 	       << "\t\tCaEnd : " << obj->CaEnd << endl;
 	return obj;
 }
 

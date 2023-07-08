@@ -69,10 +69,10 @@ TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 	}
 
 	for (unsigned int i = 0; i < rods.size(); i++) {
+		rods[i]->setTime(this->t);
 		if ((rods[i]->type != Rod::PINNED) && (rods[i]->type != Rod::CPLDPIN) &&
 		    (rods[i]->type != Rod::FREE))
 			continue;
-		rods[i]->setTime(this->t);
 		rods[i]->setState(r[substep].rods[i].pos, r[substep].rods[i].vel);
 	}
 

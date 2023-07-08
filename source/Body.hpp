@@ -124,13 +124,17 @@ class Body final : public io::IO
 	// vec6 r6;
 	/// body 6dof velocity[x/y/z]
 	vec6 v6;
+	/// body quaternion position derivative
+	XYZQuat dPos;
+	/// body 6dof acceleration[x/y/z]
+ 	vec6 a6;
 
 	/// fairlead position for coupled bodies [x/y/z]
 	vec6 r_ves;
 	/// fairlead velocity for coupled bodies [x/y/z]
 	vec6 rd_ves;
 
-	/// total force and moment vector on node
+	/// total force and moment vector on body
 	vec6 F6net;
 
 	/// total body mass + added mass matrix including all elements

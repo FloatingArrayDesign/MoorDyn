@@ -334,9 +334,9 @@ orientationAngles(vec v)
 		throw nan_error("Supplied vector is near zero");
 	real l = v(Eigen::seqN(0, 2)).norm();
 
-	// inclination angle. 0.0 for horizontal vectors (v[2] = 0), growing in
-	// clockwise direction at the XZ plane
-	const real phi = -atan2(v[2], l);
+	// inclination angle. pi/2 for horizontal vectors (v[2] = 0), growing in
+	// counter-clockwise direction at the XZ plane
+	const real phi = atan2(l, v[2]);
 	// heading angle. 0.0 for vectors pointing towards x, growing in
 	// counter-clockwise direction at the XY plane
 	const real beta = (fabs(l) < 1.e-6) ? 0.0 : atan2(v[1], v[0]);

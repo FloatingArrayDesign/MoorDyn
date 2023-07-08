@@ -145,6 +145,9 @@ class Connection final : public io::IO
 	/// node mass + added mass matrices
 	mat M;
 
+	/// node acceleration
+ 	vec acc; 
+
   public:
 	/** @brief Types of connections
 	 */

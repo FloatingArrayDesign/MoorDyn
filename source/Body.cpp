@@ -307,29 +307,62 @@ Body::setDependentStates()
 real
 Body::GetBodyOutput(OutChanProps outChan)
 {
+
+	vec3 rotations = Quat2Euler(r7.quat);
+
 	if (outChan.QType == PosX)
 		return r7.pos.x();
 	else if (outChan.QType == PosY)
 		return r7.pos.y();
 	else if (outChan.QType == PosZ)
 		return r7.pos.z();
+	else if (outChan.QType == RX)
+		return rotations[0];
+	else if (outChan.QType == RY)
+		return rotations[1];
+	else if (outChan.QType == RZ)
+		return rotations[2];
 	else if (outChan.QType == VelX)
-		return v6[0];
-	else if (outChan.QType == VelY)
-		return v6[1];
-	else if (outChan.QType == VelZ)
-		return v6[2];
-	// else if (outChan.QType == Ten )  return  sqrt(Fnet[0]*Fnet[0] +
-	// Fnet[1]*Fnet[1] + Fnet[2]*Fnet[2]);
-	else if (outChan.QType == FX)
-		return F6net[0]; // added Oct 20
-	else if (outChan.QType == FY)
-		return F6net[1];
-	else if (outChan.QType == FZ)
-		return F6net[2];
-	else {
-		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
-		return 0.0;
+ 		return v6[0];
+ 	else if (outChan.QType == VelY)
+ 		return v6[1];
+ 	else if (outChan.QType == VelZ)
+ 		return v6[2];
+ 	else if (outChan.QType == RVelX)
+ 		return v6[3]*180.0/pi;
+ 	else if (outChan.QType == RVelY)
+ 		return v6[4]*180.0/pi;
+ 	else if (outChan.QType == RVelZ)
+ 		return v6[5]*180.0/pi;
+ 	else if (outChan.QType == AccX)
+ 		return a6[0];
+ 	else if (outChan.QType == AccY)
+ 		return a6[1];
+ 	else if (outChan.QType == AccZ)
+ 		return a6[2];
+ 	else if (outChan.QType == RAccX)
+ 		return a6[3]*180.0/pi;
+ 	else if (outChan.QType == RAccY)
+ 		return a6[4]*180.0/pi;
+ 	else if (outChan.QType == RAccZ)
+ 		return a6[5]*180.0/pi;
+ 	else if (outChan.QType == Ten)  
+ 		return  sqrt(F6net[0]*F6net[0] + F6net[1]*F6net[1] + F6net[2]*F6net[2]);
+ 	else if (outChan.QType == FX)
+ 		return F6net[0];
+ 	else if (outChan.QType == FY)
+ 		return F6net[1];
+ 	else if (outChan.QType == FZ)
+ 		return F6net[2];
+ 	else if (outChan.QType == MX)
+ 		return F6net[3];
+ 	else if (outChan.QType == MY)
+ 		return F6net[4];
+ 	else if (outChan.QType == MZ)
+ 		return F6net[5];
+ 	else {
+ 		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
+ 		return 0.0;
 	}
 }
 
@@ -402,15 +435,14 @@ Body::getStateDeriv()
 	doRHS();
 
 	// solve for accelerations in [M]{a}={f}
-	const vec6 acc = solveMat6(M, F6net);
+	a6 = solveMat6(M, F6net);
 
 	// NOTE; is the above still valid even though it includes rotational DOFs?
-	XYZQuat dPos;
 	dPos.pos = v6.head<3>();
 	// this assumes that the angular velocity is about the global coordinates
 	// which is true for bodies
 	dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
-	return std::make_pair(dPos, acc);
+	return std::make_pair(dPos, a6);
 };
 
 //  this is the big function that calculates the forces on the body
