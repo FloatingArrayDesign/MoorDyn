@@ -552,6 +552,10 @@ Line::GetLineOutput(OutChanProps outChan)
 		return rd[outChan.NodeID][2];
 	else if (outChan.QType == Ten)
 		return getNodeTen(outChan.NodeID).norm();
+	else if (outChan.QType == TenA)
+ 		return getNodeTen(0).norm();
+ 	else if (outChan.QType == TenB)
+ 		return getNodeTen(N).norm();
 	else if (outChan.QType == FX)
 		return Fnet[outChan.NodeID][0];
 	else if (outChan.QType == FY)

@@ -673,6 +673,8 @@ class MoorDyn final : public io::IO
 			    channel);
 		else if (channel.OType == 3)
 			return RodList[channel.ObjID - 1]->GetRodOutput(channel);
+		else if (channel.OType == 4)
+ 			return BodyList[channel.ObjID - 1]->GetBodyOutput(channel);
 		stringstream s;
 		s << "Error: output type of " << channel.Name
 		  << " does not match a supported object type";

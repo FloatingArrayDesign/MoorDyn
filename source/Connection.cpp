@@ -186,8 +186,14 @@ Connection::GetConnectionOutput(OutChanProps outChan)
 		return rd[1];
 	else if (outChan.QType == VelZ)
 		return rd[2];
-	else if (outChan.QType == Ten)
-		return Fnet.squaredNorm();
+	else if (outChan.QType == AccX)
+ 		return acc[0];
+ 	else if (outChan.QType == AccY)
+ 		return acc[1];
+ 	else if (outChan.QType == AccZ)
+ 		return acc[2];
+ 	else if (outChan.QType == Ten)
+ 		return Fnet.norm();
 	else if (outChan.QType == FX)
 		return Fnet[0]; // added Oct 20
 	else if (outChan.QType == FY)
@@ -299,7 +305,7 @@ Connection::getStateDeriv()
 	doRHS();
 
 	// solve for accelerations in [M]{a}={f}
-	const vec acc = M.inverse() * Fnet;
+	acc = M.inverse() * Fnet;
 
 	// update states
 	return std::make_pair(rd, acc);
