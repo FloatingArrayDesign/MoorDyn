@@ -82,7 +82,8 @@ jobs:
       if: runner.os == 'Linux'
 
     - name: Setup Intel Fortran
-      uses: modflowpy/install-intelfortran-action@v1      
+      uses: modflowpy/install-intelfortran-action@v1
+      if: runner.os == 'Windows'
 
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.0.1
