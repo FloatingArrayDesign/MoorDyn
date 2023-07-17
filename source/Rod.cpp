@@ -955,18 +955,18 @@ Rod::doRHS()
 
 		// >>> add Pd variable for dynamic pressure, which will be applied
 		// on Rod surface
-		if (N == 0) { 
+		if (N == 0) {
 			VOF0 = r[i].z() < zeta[i] ? 1.0 : 0.0;
 		} else {
 			if (i == N) {
 				auto surface_height = 0.5 * (zeta[i - 1] + zeta[i]);
 				VOF0 = calcSubSeg(r[i - 1], r[i], surface_height, d);
+
 			} else {
 				auto surface_height = 0.5 * (zeta[i] + zeta[i + 1]);
 				VOF0 = calcSubSeg(r[i], r[i + 1], surface_height, d);
 			}
 		}
-
 		Lsum = Lsum + dL; // add length attributed to this node to the total
 
 		// get submerged cross sectional area and centroid for each node
@@ -991,8 +991,8 @@ Rod::doRHS()
 			} else {
 				G = (r[i][2] - zeta_i) /
 				    abs(sinPhi); //!(-z1lo+Rod%zeta(I))/abs(sinPhi)   ! distance
-				                 //!from node to waterline cross at same axial
-				                 //!location [m]
+				                 //! from node to waterline cross at same axial
+				                 //! location [m]
 				// A = 0.25*Rod%d**2*acos((Rod%d - 2.0*G)/Rod%d) -
 				// (0.5*Rod%d-G)*sqrt(Rod%d*G-G**2)  ! area of circular cross
 				// section that is below waterline [m^2] zA =
