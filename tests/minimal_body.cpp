@@ -156,7 +156,7 @@ TEST_CASE("Minimal body with attached entities")
 	REQUIRE(isclose(x_new[0], VX * dt));
 	REQUIRE(isclose(x_new[1], 0));
 	REQUIRE(isclose(x_new[2], COG_Z));
-	REQUIRE(isclose(x_new[3], 0));
+	REQUIRE(isclose(x_new[3], VRX * dt));
 	REQUIRE(isclose(x_new[4], 0));
 	REQUIRE(isclose(x_new[5], 0));
 	REQUIRE(isclose(dx_new[0], 0));
