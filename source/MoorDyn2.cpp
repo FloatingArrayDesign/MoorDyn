@@ -1268,7 +1268,7 @@ moordyn::MoorDyn::ReadInFile()
 								let2.erase(0, 2);
 							} else
 								dummy.NodeID = -1;
-						} else if (not num2.empty())
+						} else if (!num2.empty())
 							dummy.NodeID = atoi(num2.c_str());
 						else {
 							LOGWRN << "Warning in " << _filepath << ":" << i + 1
