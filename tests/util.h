@@ -160,3 +160,71 @@ isclose(const double& a,
 {
 	return std::abs(a - b) <= (atol + rtol * std::abs(b));
 }
+
+#ifdef USE_CATCH
+
+#include <catch2/catch_test_macros.hpp>
+#include "catch2/catch_tostring.hpp"
+#include "catch2/matchers/catch_matchers_templated.hpp"
+
+namespace Catch {
+
+template<typename T, int N>
+struct StringMaker<Eigen::Vector<T, N>>
+{
+	static std::string convert(const Eigen::Vector<T, N>& value)
+	{
+		Eigen::IOFormat testFmt(4, Eigen::DontAlignCols, ", ", "\n", "[", "]");
+		std::stringstream ss;
+		ss << (value.transpose()).format(testFmt);
+		return ss.str();
+	}
+};
+
+template<typename DerivedA>
+struct IsCloseMatcher : Catch::Matchers::MatcherGenericBase
+{
+	IsCloseMatcher(
+	    const Eigen::Ref<const DerivedA> a,
+	    const typename DerivedA::RealScalar rtol =
+	        Eigen::NumTraits<typename DerivedA::RealScalar>::dummy_precision(),
+	    const typename DerivedA::RealScalar atol =
+	        Eigen::NumTraits<typename DerivedA::RealScalar>::epsilon())
+	  : a(a)
+	  , rtol(rtol)
+	  , atol(atol)
+	{
+	}
+
+	template<typename DerivedB>
+	bool match(const Eigen::DenseBase<DerivedB>& b) const
+	{
+		return ((a.derived() - b.derived()).array().abs() <=
+		        (atol + rtol * b.derived().array().abs()))
+		    .all();
+	}
+
+	std::string describe() const override
+	{
+		std::stringstream ss;
+		ss << "Is close to: " << StringMaker<DerivedA>::convert(a)
+		   << "\nrtol = " << rtol << ", atol = " << atol;
+		return ss.str();
+	}
+
+  private:
+	const Eigen::Ref<const DerivedA> a;
+	const typename DerivedA::RealScalar rtol;
+	const typename DerivedA::RealScalar atol;
+};
+
+template<typename T>
+IsCloseMatcher<T>
+IsClose(T value)
+{
+	return IsCloseMatcher<T>(value, 1e-10, 1e-12);
+}
+
+}  // namespace Catch
+
+#endif

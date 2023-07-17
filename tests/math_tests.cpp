@@ -2,68 +2,7 @@
 #include <sstream>
 
 #include "Misc.hpp"
-#include <catch2/catch_test_macros.hpp>
-#include "catch2/catch_tostring.hpp"
-#include "catch2/matchers/catch_matchers_templated.hpp"
 #include "util.h"
-
-namespace Catch {
-template<typename T, int N>
-struct StringMaker<Eigen::Vector<T, N>>
-{
-	static std::string convert(const Eigen::Vector<T, N>& value)
-	{
-		Eigen::IOFormat testFmt(4, Eigen::DontAlignCols, ", ", "\n", "[", "]");
-		std::stringstream ss;
-		ss << (value.transpose()).format(testFmt);
-		return ss.str();
-	}
-};
-}
-
-template<typename DerivedA>
-struct IsCloseMatcher : Catch::Matchers::MatcherGenericBase
-{
-	IsCloseMatcher(
-	    const Eigen::Ref<const DerivedA> a,
-	    const typename DerivedA::RealScalar rtol =
-	        Eigen::NumTraits<typename DerivedA::RealScalar>::dummy_precision(),
-	    const typename DerivedA::RealScalar atol =
-	        Eigen::NumTraits<typename DerivedA::RealScalar>::epsilon())
-	  : a(a)
-	  , rtol(rtol)
-	  , atol(atol)
-	{
-	}
-
-	template<typename DerivedB>
-	bool match(const Eigen::DenseBase<DerivedB>& b) const
-	{
-		return ((a.derived() - b.derived()).array().abs() <=
-		        (atol + rtol * b.derived().array().abs()))
-		    .all();
-	}
-
-	std::string describe() const override
-	{
-		std::stringstream ss;
-		ss << "Is close to: " << Catch::StringMaker<DerivedA>::convert(a)
-		   << "\nrtol = " << rtol << ", atol = " << atol;
-		return ss.str();
-	}
-
-  private:
-	const Eigen::Ref<const DerivedA> a;
-	const typename DerivedA::RealScalar rtol;
-	const typename DerivedA::RealScalar atol;
-};
-
-template<typename T>
-IsCloseMatcher<T>
-IsClose(T value)
-{
-	return IsCloseMatcher<T>(value, 1e-10, 1e-12);
-}
 
 // md::real is faster to type
 namespace md = moordyn;
@@ -78,7 +17,7 @@ TEST_CASE("getH gives the cross product matrix")
 	vec v{ 0.3, 0.2, 0.1 };
 	// getH() should create a matrix that replicates the behavior of the cross
 	// product such that getH(v) * a == v.cross(a)
-	REQUIRE_THAT(getH(v) * testVec, IsClose(v.cross(testVec)));
+	REQUIRE_THAT(getH(v) * testVec, Catch::IsClose(v.cross(testVec)));
 }
 
 TEST_CASE("translateMass linear acceleration")
@@ -123,7 +62,7 @@ TEST_CASE("translateMass linear acceleration")
 	// no angular acceleration
 	vec6 expectedAcc = vec6::Zero();
 	expectedAcc.head<3>() = f3 / m;
-	REQUIRE_THAT(acc, IsClose(expectedAcc));
+	REQUIRE_THAT(acc, Catch::IsClose(expectedAcc));
 }
 
 TEST_CASE("translateMass6 linear acceleration")
@@ -147,7 +86,7 @@ TEST_CASE("translateMass6 linear acceleration")
 
 	M6 = translateMass6(offset2, M6);
 
-	REQUIRE_THAT(translateMass((offset + offset2), mass), IsClose(M6));
+	REQUIRE_THAT(translateMass((offset + offset2), mass), Catch::IsClose(M6));
 
 	// we add some moment of inertia to prevent a singular matrix.
 	// presume it's a sphere with radius 1
@@ -170,7 +109,7 @@ TEST_CASE("translateMass6 linear acceleration")
 	vec6 expectedAcc = vec6::Zero();
 	expectedAcc.head<3>() = f3 / m;
 
-	REQUIRE_THAT(acc, IsClose(expectedAcc));
+	REQUIRE_THAT(acc, Catch::IsClose(expectedAcc));
 }
 
 TEST_CASE("rotateMass simple")
@@ -192,8 +131,8 @@ TEST_CASE("rotateMass simple")
 	// this offset represents the offset after rotation
 	vec newOffset{ 1, -1, 0.0 };
 
-	REQUIRE_THAT(rot.toRotationMatrix() * offset, IsClose(newOffset));
-	REQUIRE_THAT(translateMass(newOffset, mass), IsClose(rotatedMass));
+	REQUIRE_THAT(rot.toRotationMatrix() * offset, Catch::IsClose(newOffset));
+	REQUIRE_THAT(translateMass(newOffset, mass), Catch::IsClose(rotatedMass));
 
 	// add some moment of inertia to prevent singular mass matrix
 	mat sphereIRef = sphereI - mass * getH(newOffset) * getH(newOffset);
@@ -209,5 +148,5 @@ TEST_CASE("rotateMass simple")
 	vec6 expectedAcc = vec6::Zero();
 	expectedAcc.head<3>() = f3 / m;
 
-	REQUIRE_THAT(acc, IsClose(expectedAcc));
+	REQUIRE_THAT(acc, Catch::IsClose(expectedAcc));
 }

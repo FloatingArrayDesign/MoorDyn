@@ -22,7 +22,6 @@ set(TESTS
     beam
     time_schemes
     io
-    rods
     bodies_and_rods
     bodies
     quasi_static_chain
@@ -38,6 +37,7 @@ set(CPP_TESTS
 
 set(CATCH2_TESTS 
     math_tests
+    rods
     testDecomposeString
 )
 
@@ -54,6 +54,7 @@ endfunction()
 
 function(make_catch2_executable test_name)
     make_cpp_executable(${test_name})
+    target_compile_definitions(${test_name} PUBLIC USE_CATCH)
     target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
     target_link_libraries(${test_name} PRIVATE Catch2::Catch2WithMain)
 endfunction()
