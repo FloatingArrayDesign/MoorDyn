@@ -37,8 +37,9 @@ set(CPP_TESTS
 
 set(CATCH2_TESTS 
     math_tests
-    rods
     testDecomposeString
+    rods
+    minimal_body
 )
 
 function(make_executable test_name)
