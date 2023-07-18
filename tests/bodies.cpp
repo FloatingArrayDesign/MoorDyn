@@ -282,8 +282,8 @@ rotatingBody(SeriesWriter* series_writer)
 		moordyn::vec3 expected_pos{ 0, 0, 1.0 };
 		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
 			cerr << "Connection 8 relative to body center should be "
-			     << expected_pos.transpose() << "but was "
-			     << rel_pos.transpose() << " at t=" << t << endl;
+			     << expected_pos.transpose() << " but was "
+			     << rel_pos.transpose() << " at t = " << t << endl;
 		}
 	}
 
@@ -325,8 +325,8 @@ rotatingBody(SeriesWriter* series_writer)
 		moordyn::vec3 expected_pos{ 0, 1.0, 0.0 };
 		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
 			cerr << "Connection 8 relative to body center should be "
-			     << expected_pos.transpose() << "but was "
-			     << rel_pos.transpose() << " at t=" << t << endl;
+			     << expected_pos.transpose() << " but was "
+			     << rel_pos.transpose() << " at t = " << t << endl;
 		}
 	}
 
@@ -385,8 +385,8 @@ rotatingBody(SeriesWriter* series_writer)
 	double denom = (sqrt(1 - q.w() * q.w()));
 	moordyn::vec3 axis{ q.x() / denom, q.y() / denom, q.z() / denom };
 	if (!(axis.x() > 0.85 && axis.y() < 0.2 && axis.z() < 0.2)) {
-		cerr << "The final rotation of the body in angle axis form should have "
-		        "an axis in the x direction, but axis is "
+		cerr << "The final rotation of the body in angle axis form should "
+		        "have an axis in the x direction, but axis is "
 		     << axis.transpose() << endl;
 		return false;
 	}
@@ -398,15 +398,15 @@ rotatingBody(SeriesWriter* series_writer)
 		angle += 360;
 	}
 	if (!(abs(angle - (-90)) < 10)) {
-		cerr << "The final rotation of the body in angle-axis form should have "
-		        "a angle near 90 degrees but angle is "
+		cerr << "The final rotation of the body in angle-axis form should "
+		        "have a angle near 90 degrees but angle is "
 		     << angle << endl;
 		return false;
 	}
 
 	cout << "Body r = " << r.transpose() << endl;
 	cout << "Axis-Angle rotation: axis = " << axis.transpose()
-	     << ", angle = " << angle << "degrees" << endl;
+	     << ", angle = " << angle << " degrees" << endl;
 	err = MoorDyn_Close(system);
 	if (err != MOORDYN_SUCCESS) {
 		cerr << "Failure closing Moordyn: " << err << endl;
