@@ -878,7 +878,7 @@ class ABScheme : public TimeSchemeBase<5, 1>
  * evaluated somewhere inside the time step. Obviously, since that point depends
  * on the derivative itself, a fixed point problem shall be solved
  */
-class ImplicitEulerScheme : public TimeSchemeBase<2, 2>
+class ImplicitEulerScheme : public TimeSchemeBase<2, 3>
 {
   public:
 	/** @brief Costructor
@@ -903,25 +903,23 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 2>
 	virtual void Step(real& dt);
 
 	/** @brief Relax the time derivative to the optimal one
-	 * 
+	 *
 	 * The relaxed acceleration for the substep \f$s\f$ is defined as:
 	 * \f[
-		\frac{du}{dt}_s =
-			k \frac{du}{dt}\left(
-				r_{s-1} + \frac{\Delta t}{2} u_{s-1},
-				u_{s-1} + \frac{\Delta t}{2} \frac{du}{dt}_{s-1}
-			\right) +
-			(1 - k) \frac{du}{dt}_{s-1}
+	    \frac{du}{dt}_s =
+	        k \frac{du}{dt}\left(
+	            r_{s-1} + \frac{\Delta t}{2} u_{s-1},
+	            u_{s-1} + \frac{\Delta t}{2} \frac{du}{dt}_{s-1}
+	        \right) +
+	        (1 - k) \frac{du}{dt}_{s-1}
 	   \f]
 	 * with \f$k\f$ the relaxation factor
 	 *
 	 * The relaxation factor is computed as a bell shaped function, with its
 	 * maximum at 0.75 times the maximum number of iterations
 	 * @param iter The current iteration
-	 * @return The maximum error between the relaxed accelerations and the
-	 * computed ones
 	 */
-	const real Relax(const unsigned int iter);
+	void Relax(const unsigned int iter);
 
   private:
 	/// The number of iterations
@@ -930,12 +928,8 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 2>
 	real _dt_factor;
 	/// Auxiliar renormalization factor for the relaxation factor
 	real _k_renorm;
-	/// Stack of errors on the relaxed accelerations
-	std::vector<real> _error;
-	/// Overshoting factor which reduces the relaxation factor to avoid growing
-	/// errors. It always starts at 1 and steadily decrease when growing errors
-	/// are found
-	real _overshot;
+	/// List of overshot factors to decrease the relaxation factors
+	std::vector<real> _overshot;
 };
 
 /** @brief Create a time scheme

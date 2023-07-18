@@ -309,10 +309,24 @@ opt_relax_factor(const unsigned int iter,
 }
 
 template<typename T>
+const real
+opt_relax_error(const T acc_relaxed, const T acc)
+{
+	return (acc_relaxed - acc).norm();
+}
+
+template<typename T>
 void
 opt_relax(const T acc_next, const T acc_prev, T& acc, const real k)
 {
-	acc = k * acc_next + (1.0 - k) * acc_prev;
+	auto error_prev = opt_relax_error(acc, acc_prev);
+	auto error_next = opt_relax_error(acc, acc_next);
+	real derror = error_next - error_prev;
+	real relax = k;
+	if (derror > 0.0)
+		relax *= 0.5 * error_prev / error_next;
+
+	acc = relax * acc_next + (1.0 - relax) * acc;
 }
 
 template<typename T>
@@ -322,27 +336,8 @@ opt_relax(const std::vector<T> acc_next,
           std::vector<T>& acc,
           const real k)
 {
-	for (unsigned int i = 0; i < acc.size(); i++) {
-		acc[i] = k * acc_next[i] + (1.0 - k) * acc_prev[i];
-	}
-}
-
-template<typename T>
-const real
-opt_relax_error(const T acc_relaxed, const T acc)
-{
-	return (acc_relaxed - acc).norm();
-}
-
-template<typename T>
-const real
-opt_relax_error(const std::vector<T> acc_relaxed,
-                const std::vector<T> acc)
-{
-	real error = 0.0;
-	for (unsigned int i = 0; i < acc_relaxed.size(); i++)
-		error = std::max(error, opt_relax_error(acc_relaxed[i], acc[i]));
-	return error;
+	for (unsigned int i = 0; i < acc.size(); i++)
+		opt_relax(acc_next[i], acc_prev[i], acc[i], k);
 }
 
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
@@ -358,25 +353,22 @@ ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
 	s << "k=" << dt_factor << " implicit Euler (" << iters << " iterations)";
 	name = s.str();
 	// Compute the renormalization factor
-	for (unsigned int i = 0; i < iters; i++) {
-		_k_renorm += opt_relax_factor(i, iters);
-	}
-	// We start allowing an overshot of x2 in order to converge faster
-	_k_renorm = 2.0 / _k_renorm;
-	_error = std::vector<real>(iters, 0.0);
+	for (unsigned int i = 0; i < iters; i++)
+		_k_renorm = std::max(_k_renorm, opt_relax_factor(i, iters));
 }
 
 void
 ImplicitEulerScheme::Step(real& dt)
 {
+	Update(0.0, 0);
+	CalcStateDeriv(0);
 	t += _dt_factor * dt;
-	std::fill(std::begin(_error), std::end(_error), 0.0);
-	_overshot = 1.0;
 	for (unsigned int i = 0; i < _iters; i++) {
 		r[1] = r[0] + rd[0] * (_dt_factor * dt);
 		Update(_dt_factor * dt, 1);
-		CalcStateDeriv(1);
-		real error = Relax(i);
+		rd[1] = rd[2];
+		CalcStateDeriv(2);
+		Relax(i);
 	}
 
 	// Apply
@@ -386,63 +378,41 @@ ImplicitEulerScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
-const real
+void
 ImplicitEulerScheme::Relax(const unsigned int iter)
 {
-	if (iter >= 2) {
-		real error_prev = _error[iter - 1];
-		real error_prev2 = _error[iter - 2];
-		real derror = error_prev - error_prev2;
-		if (derror > 0.0)
-			_overshot *= 0.75 * error_prev2 / error_prev;
-	}
-	const auto k = _overshot * _k_renorm * opt_relax_factor(iter, _iters);
-	// cout << "iter = " << iter << ": " << endl;
-	// cout << "    k = " << k << " (overshot = " << _overshot << ")" << endl;
-	real error = 0.0;
+	const auto k = _k_renorm * opt_relax_factor(iter, _iters);
 	for (unsigned int i = 0; i < lines.size(); i++) {
-		opt_relax(rd[1].lines[i].acc,
-		          rd[0].lines[i].acc,
+		opt_relax(rd[2].lines[i].acc,
+		          rd[1].lines[i].acc,
 		          rd[0].lines[i].acc,
 		          k);
-		rd[0].lines[i].vel = rd[1].lines[i].vel;
-		error = std::max(error, opt_relax_error(rd[0].lines[i].acc,
-		                                        rd[1].lines[i].acc));
+		rd[0].lines[i].vel = rd[2].lines[i].vel;
 	}
 
 	for (unsigned int i = 0; i < conns.size(); i++) {
-		opt_relax(rd[1].conns[i].acc,
-		          rd[0].conns[i].acc,
+		opt_relax(rd[2].conns[i].acc,
+		          rd[1].conns[i].acc,
 		          rd[0].conns[i].acc,
 		          k);
-		rd[0].conns[i].vel = rd[1].conns[i].vel;
-		error = std::max(error, opt_relax_error(rd[0].conns[i].acc,
-		                                        rd[1].conns[i].acc));
+		rd[0].conns[i].vel = rd[2].conns[i].vel;
 	}
 
 	for (unsigned int i = 0; i < rods.size(); i++) {
-		opt_relax(rd[1].rods[i].acc,
-		          rd[0].rods[i].acc,
+		opt_relax(rd[2].rods[i].acc,
+		          rd[1].rods[i].acc,
 		          rd[0].rods[i].acc,
 		          k);
-		rd[0].rods[i].vel = rd[1].rods[i].vel;
-		error = std::max(error, opt_relax_error(rd[0].rods[i].acc,
-		                                        rd[1].rods[i].acc));
+		rd[0].rods[i].vel = rd[2].rods[i].vel;
 	}
 
 	for (unsigned int i = 0; i < bodies.size(); i++) {
-		opt_relax(rd[1].bodies[i].acc,
-		          rd[0].bodies[i].acc,
+		opt_relax(rd[2].bodies[i].acc,
+		          rd[1].bodies[i].acc,
 		          rd[0].bodies[i].acc,
 		          k);
-		rd[0].bodies[i].vel = rd[1].bodies[i].vel;
-		error = std::max(error, opt_relax_error(rd[0].bodies[i].acc,
-		                                        rd[1].bodies[i].acc));
+		rd[0].bodies[i].vel = rd[2].bodies[i].vel;
 	}
-
-	// cout << "    error = " << error << endl;
-	_error[iter] = error;
-	return error;
 }
 
 TimeScheme*
