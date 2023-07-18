@@ -30,7 +30,7 @@ api()
 
 	// int err;
 	double x[3], dx[3];
-	// Set the fairlead connections, as they are in the config file
+	// Set the fairlead points, as they are in the config file
 	std::fill(x, x + 3, 0.0);
 	std::fill(dx, dx + 3, 0.0);
 	auto err = system.Init(x, dx);

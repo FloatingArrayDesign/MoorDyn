@@ -42,7 +42,7 @@
 #include "Waves.hpp"
 #include "MoorDyn.h"
 #include "Line.hpp"
-#include "Connection.hpp"
+#include "Point.hpp"
 #include "Rod.hpp"
 #include "Body.hpp"
 #include "Seafloor.hpp"
@@ -108,17 +108,17 @@ class MoorDyn final : public io::IO
 	moordyn::error_id DECLDIR
 	Step(const double* x, const double* xd, double* f, double& t, double& dt);
 
-	/** @brief Get the connections
+	/** @brief Get the points
 	 */
 	inline vector<Body*> GetBodies() const { return BodyList; }
 
-	/** @brief Get the connections
+	/** @brief Get the points
 	 */
 	inline vector<Rod*> GetRods() const { return RodList; }
 
-	/** @brief Get the connections
+	/** @brief Get the points
 	 */
-	inline vector<Connection*> GetConnections() const { return ConnectionList; }
+	inline vector<Point*> GetPoints() const { return PointList; }
 
 	/** @brief Get the lines
 	 */
@@ -131,17 +131,17 @@ class MoorDyn final : public io::IO
 	 *
 	 * The number of coupled DOF is computed as
 	 *
-	 * \f$n_{dof} = 6 * n_{body} + 3 * n_{conn} + 6 * n_{rod} + 3 * n_{pinn}\f$
+	 * \f$n_{dof} = 6 * n_{body} + 3 * n_{point} + 6 * n_{rod} + 3 * n_{pinn}\f$
 	 *
-	 * with \f$n_{body}\f$ the number of coupled bodies, \f$n_{conn}\f$ the
-	 * number of coupled connections, \f$n_{rod}\f$ the number of cantilevered
+	 * with \f$n_{body}\f$ the number of coupled bodies, \f$n_{point}\f$ the
+	 * number of coupled points, \f$n_{rod}\f$ the number of cantilevered
 	 * coupled rods, and \f$n_{pinn}\f$ the number of pinned coupled rods
 	 *
 	 * @return The number of coupled DOF
 	 */
 	inline unsigned int NCoupledDOF() const
 	{
-		std::size_t n = 6 * CpldBodyIs.size() + 3 * CpldConIs.size();
+		std::size_t n = 6 * CpldBodyIs.size() + 3 * CpldPointIs.size();
 		for (auto rodi : CpldRodIs) {
 			if (RodList[rodi]->type == Rod::COUPLED)
 				n += 6; // cantilevered rods
@@ -400,9 +400,9 @@ class MoorDyn final : public io::IO
 				ix += 3; // for pinned rods 3 entries will be taken
 			}
 		}
-		for (auto l : CpldConIs) {
+		for (auto l : CpldPointIs) {
 			vec fnet;
-			ConnectionList[l]->getFnet(fnet);
+			PointList[l]->getFnet(fnet);
 			moordyn::vec2array(fnet, f + ix);
 			ix += 3;
 		}
@@ -454,19 +454,19 @@ class MoorDyn final : public io::IO
 	vector<RodProps*> RodPropList;
 	/// array of pointers to hold failure condition structs
 	vector<FailProps*> FailList;
-	/// array of pointers to connection objects (line joints or ends)
+	/// array of pointers to point objects (line joints or ends)
 	vector<Body*> BodyList;
 	/// array of pointers to Rod objects
 	vector<Rod*> RodList;
-	/// array of pointers to connection objects (line joints or ends)
-	vector<moordyn::Connection*> ConnectionList;
+	/// array of pointers to point objects (line joints or ends)
+	vector<moordyn::Point*> PointList;
 	/// array of pointers to line objects
 	vector<moordyn::Line*> LineList;
 
 	/// array of starting indices for Lines in "states" array
 	vector<unsigned int> LineStateIs;
-	/// array of starting indices for indendent Connections in "states" array
-	vector<unsigned int> ConnectStateIs;
+	/// array of starting indices for indendent Points in "states" array
+	vector<unsigned int> PointStateIs;
 	/// array of starting indices for independent Rods in "states" array
 	vector<unsigned int> RodStateIs;
 	/// array of starting indices for Bodies in "states" array
@@ -483,15 +483,15 @@ class MoorDyn final : public io::IO
 	/// vector of coupled/fairlead rod indices in RodList vector
 	vector<unsigned int> CpldRodIs;
 
-	/// vector of free connection indices in ConnectionList vector
-	vector<unsigned int> FreeConIs;
-	/// vector of coupled/fairlead connection indices in ConnectionList vector
-	vector<unsigned int> CpldConIs;
+	/// vector of free point indices in PointList vector
+	vector<unsigned int> FreePointIs;
+	/// vector of coupled/fairlead point indices in PointList vector
+	vector<unsigned int> CpldPointIs;
 
 	/// Number of used state vector components
 	unsigned int nX;
 	/// full size of state vector array including extra space for detaching up
-	/// to all line ends, each which could get its own 6-state connect
+	/// to all line ends, each which could get its own 6-state point
 	/// (nXtra = nX + 6 * 2 * LineList.size())
 	unsigned int nXtra;
 
@@ -669,7 +669,7 @@ class MoorDyn final : public io::IO
 		if (channel.OType == 1)
 			return LineList[channel.ObjID - 1]->GetLineOutput(channel);
 		else if (channel.OType == 2)
-			return ConnectionList[channel.ObjID - 1]->GetConnectionOutput(
+			return PointList[channel.ObjID - 1]->GetPointOutput(
 			    channel);
 		else if (channel.OType == 3)
 			return RodList[channel.ObjID - 1]->GetRodOutput(channel);
@@ -682,7 +682,7 @@ class MoorDyn final : public io::IO
 		return 0.0;
 	}
 
-	/** @brief Detach lines from a failed connection
+	/** @brief Detach lines from a failed point
 	 * @param failure The failure structure
 	 */
 	void detachLines(FailProps* failure);

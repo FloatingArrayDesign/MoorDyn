@@ -12,29 +12,29 @@ class GeneratorTests(TestCase):
             "main", 0.09, 77.7066, 384.243E6, -0.8, 0, 1.6, 1.0, 0.1, 0.0)
         system.AddLineMaterial(line_type)
 
-        conns = [
-            moordyn.Generator.Connection(
+        points = [
+            moordyn.Generator.Point(
                 "Fixed", [853.87, 0, -320.0], 0, 0, 0, 0),
-            moordyn.Generator.Connection(
+            moordyn.Generator.Point(
                 "Fixed", [-426.94, 739.47, -320.0], 0, 0, 0, 0),
-            moordyn.Generator.Connection(
+            moordyn.Generator.Point(
                 "Fixed", [-426.94, -739.47, -320.0], 0, 0, 0, 0),
-            moordyn.Generator.Connection(
+            moordyn.Generator.Point(
                 "Coupled", [5.2, 0, -70.0], 0, 0, 0, 0),
-            moordyn.Generator.Connection(
+            moordyn.Generator.Point(
                 "Coupled", [-2.6, 4.5, -70.0], 0, 0, 0, 0),
-            moordyn.Generator.Connection(
+            moordyn.Generator.Point(
                 "Coupled", [-2.6, -4.5, -70.0], 0, 0, 0, 0),
         ]
-        for conn in conns:
-            system.AddConnection(conn)
+        for point in points:
+            system.AddPoint(point)
 
         lines = []
         for i in range(3):
             lines.append(moordyn.Generator.Line(
                 line_type,
-                moordyn.Generator.LineConnection(conns[i]),
-                moordyn.Generator.LineConnection(conns[i + 3]),
+                moordyn.Generator.LinePoint(points[i]),
+                moordyn.Generator.LinePoint(points[i + 3]),
                 902.2,
                 20
             ))
@@ -56,8 +56,8 @@ class GeneratorTests(TestCase):
 
         x = []
         for i in range(4, 7):
-            conn = moordyn.GetConnection(system, i)
-            x = x + list(moordyn.GetConnectPos(conn))
+            point = moordyn.GetPoint(system, i)
+            x = x + list(moordyn.GetPointPos(point))
         v = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.assertEqual(moordyn.Init(system, x, v), 0,
                          "Failure initializing the lines")

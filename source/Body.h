@@ -50,17 +50,17 @@ extern "C"
 	/** @brief Get the body identifier
 	 * @param b The Moordyn body
 	 * @param id The output id
-	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
 	 * MOORDYN_SUCCESS otherwise
 	 */
 	int DECLDIR MoorDyn_GetBodyID(MoorDynBody b, int* id);
 
-	/** @brief Get the connection type
+	/** @brief Get the point type
 	 * @param b The Moordyn body
 	 * @param t The output type
-	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
 	 * MOORDYN_SUCCESS otherwise
-	 * @see Connection::types
+	 * @see Point::types
 	 */
 	int DECLDIR MoorDyn_GetBodyType(MoorDynBody b, int* t);
 
@@ -73,7 +73,7 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6]);
 
-	/** @brief Save the connection to a VTK (.vtp) file
+	/** @brief Save the point to a VTK (.vtp) file
 	 * @param b The Moordyn body
 	 * @param filename The output maximum tension module
 	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code

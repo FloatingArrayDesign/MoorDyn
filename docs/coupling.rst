@@ -99,14 +99,14 @@ controlling:
         if (!system)
             return 1;
 
-        // 3 coupled connections x 3 components per connection = 9 DoF
+        // 3 coupled points x 3 components per point = 9 DoF
         double x[9], dx[9];
         memset(dx, 0.0, sizeof(double));
         // Get the initial positions from the system itself
         for (unsigned int i = 0; i < 3; i++) {
             // 4 = first fairlead id
-            MoorDynConnection conn = MoorDyn_GetConnection(system, i + 4);
-            err = MoorDyn_GetConnectPos(conn, x + 3 * i);
+            MoorDynPoint point = MoorDyn_GetPoint(system, i + 4);
+            err = MoorDyn_GetConnectPos(point, x + 3 * i);
             if (err != MOORDYN_SUCCESS) {
                 MoorDyn_Close(system);
                 return 1;
@@ -120,7 +120,7 @@ controlling:
             return 1;
         }
 
-        // Make the connections move at 0.5 m/s to the positive x direction
+        // Make the points move at 0.5 m/s to the positive x direction
         for (unsigned int i = 0; i < 3; i++)
             dx[3 * i] = 0.5;
         double t = 0.0, dt = 0.5;
@@ -200,7 +200,7 @@ Anyway, the next step is initializing the system, that is computing the
 static solution. But to this end, we need first to know the positions of the
 coupled fairleads, so we use the functions
 
-.. doxygenfunction:: MoorDyn_GetConnection
+.. doxygenfunction:: MoorDyn_GetPoint
 .. doxygenfunction:: MoorDyn_GetConnectPos
 
 As you can appreciate, the :ref:`C API <api_c>` is always returning either an
@@ -246,19 +246,19 @@ this time developed in Python:
 
     system = moordyn.Create("Mooring/lines.txt")
 
-    # 3 coupled connections x 3 components per connection = 9 DoF
+    # 3 coupled points x 3 components per point = 9 DoF
     dx = [0] * 9
     # Get the initial positions from the system itself
     x = []
     for i in range(3):
         # 4 = first fairlead id
-        conn = moordyn.GetConnection(system, i + 4)
-        x = x + moordyn.GetConnectPos(conn)
+        point = moordyn.GetPoint(system, i + 4)
+        x = x + moordyn.GetConnectPos(point)
 
     # Setup the initial condition
     moordyn.Init(system, x, dx)
 
-    # Make the connections move at 0.5 m/s to the positive x direction
+    # Make the points move at 0.5 m/s to the positive x direction
     for i in range(3):
         dx[3 * i] = 0.5
     t, dt = 0.0, 0.5
@@ -329,8 +329,8 @@ again, this time in Fortran:
       real(real64), allocatable, target :: f(:)
       real(real64), allocatable, target :: r(:)
       real(real64) :: t, dt
-      integer :: err, n_dof, n_conns, i_conn. n_lines, i_line, n_nodes, i_node
-      type(c_ptr) :: system, conn, line
+      integer :: err, n_dof, n_points, i_point. n_lines, i_line, n_nodes, i_node
+      type(c_ptr) :: system, point, line
 
       infile = 'Mooring/lines.txt'
 
@@ -353,19 +353,19 @@ again, this time in Fortran:
       xd = 0.0
       f = 0.0
 
-      ! Get the positions from the connections
-      err = MD_GetNumberConnections( system, n_conns )
+      ! Get the positions from the points
+      err = MD_GetNumberPoints( system, n_points )
       if ( err /= MD_SUCESS ) then
         stop 1
-      elseif ( n_conns /= 6 ) then
-        print *,"6 connections were expected, not ", n_conns
+      elseif ( n_points /= 6 ) then
+        print *,"6 points were expected, not ", n_points
       end if
-      do i_conn = 1, 3
-        conn = MD_GetConnection( system, i_conn + 3 )
-        if ( .not.c_associated(conn) ) then
+      do i_point = 1, 3
+        point = MD_GetPoint( system, i_point + 3 )
+        if ( .not.c_associated(point) ) then
           stop 1
         end if
-        err = MD_GetConnectPos( conn, r )
+        err = MD_GetConnectPos( point, r )
         if ( err /= MD_SUCESS ) then
           stop 1
         end if
@@ -418,7 +418,7 @@ again, this time in Fortran:
     end program main
 
 It is again very similar to the C code, although the functions have a different
-prefix. On top of that, all the objects (the simulator, the connections, the
+prefix. On top of that, all the objects (the simulator, the points, the
 lines...) take the type type(c_ptr), from the iso_c_binding module. The rest of
 differences are just caused by the language.
 
@@ -442,20 +442,20 @@ the following:
 
     system = MoorDynM_Create('Mooring/lines.txt');
 
-    %% 3 coupled connections x 3 components per connection = 9 DoF
+    %% 3 coupled points x 3 components per point = 9 DoF
     x = zeros(9,1);
     dx = zeros(9,1);
     %% Get the initial positions from the system itself
     for i=1:3
         %% 4 = first fairlead id
-        conn = MoorDynM_GetConnection(system, i + 3);
-        x(1 + 3 * (i - 1):3 * i) = MoorDynM_GetConnectPos(conn);
+        point = MoorDynM_GetPoint(system, i + 3);
+        x(1 + 3 * (i - 1):3 * i) = MoorDynM_GetConnectPos(point);
     end
 
     %% Setup the initial condition
     MoorDynM_Init(system, x, dx);
 
-    %% Make the connections move at 0.5 m/s to the positive x direction
+    %% Make the points move at 0.5 m/s to the positive x direction
     for i=1:3
         dx(1 + 3 * (i - 1)) = 0.5;
     end

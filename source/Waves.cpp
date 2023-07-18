@@ -554,18 +554,18 @@ Waves::addBody(moordyn::Body* body)
 }
 
 void
-Waves::addConn(moordyn::Connection* conn)
+Waves::addPoint(moordyn::Point* point)
 {
-	if (conn->connId ==
-	    static_cast<int>(nodeKin.connections.structures.size())) {
+	if (point->pointId ==
+	    static_cast<int>(nodeKin.points.structures.size())) {
 		auto num_nodes = 1;
-		genericAdd(conn, num_nodes, nodeKin.connections);
+		genericAdd(point, num_nodes, nodeKin.points);
 
 		// TODO - only do this when needed, see comment in addLIne
-		genericAdd(conn, num_nodes, waveKin.connections);
+		genericAdd(point, num_nodes, waveKin.points);
 	} else {
-		throw "the connection id should be equal to its index in the "
-		      "connection array";
+		throw "the point id should be equal to its index in the "
+		      "point array";
 	}
 }
 
@@ -592,9 +592,9 @@ Waves::getWaveKinBody(size_t bodyId)
 }
 
 Waves::NodeKinReturnType
-Waves::getWaveKinConn(size_t connId)
+Waves::getWaveKinPoint(size_t pointId)
 {
-	return nodeKin.connections[connId];
+	return nodeKin.points[pointId];
 }
 
 real
@@ -735,15 +735,15 @@ Waves::kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f)
 		}
 	}
 
-	auto& connections = nodeKinematics.connections;
-	for (const auto& conn : connections.structures) {
-		const vec& pos = conn->getPosition();
-		const auto id = conn->connId;
+	auto& points = nodeKinematics.points;
+	for (const auto& point : points.structures) {
+		const vec& pos = point->getPosition();
+		const auto id = point->pointId;
 		real pdyn;
 		f(pos,
-		  connections.U[id][0],
-		  connections.Ud[id][0],
-		  connections.zetas[id][0],
+		  points.U[id][0],
+		  points.Ud[id][0],
+		  points.zetas[id][0],
 		  pdyn);
 	}
 
@@ -798,10 +798,10 @@ Waves::updateWaves()
 			}
 		}
 
-		auto& connections = nodeKin.connections;
-		for (const auto& conn : connections.structures) {
-			const vec& pos = conn->getPosition();
-			const auto id = conn->connId;
+		auto& points = nodeKin.points;
+		for (const auto& point : points.structures) {
+			const vec& pos = point->getPosition();
+			const auto id = point->pointId;
 
 			vec3 curr_U{}, curr_Ud{};
 			currentKinematics->getCurrentKin(pos,
@@ -809,8 +809,8 @@ Waves::updateWaves()
 			                                 floorProvider,
 			                                 &curr_U,
 			                                 &curr_Ud);
-			connections.U[id][0] = waveKin.connections.U[id][0] + curr_U;
-			connections.Ud[id][0] = waveKin.connections.Ud[id][0] + curr_Ud;
+			points.U[id][0] = waveKin.points.U[id][0] + curr_U;
+			points.Ud[id][0] = waveKin.points.Ud[id][0] + curr_Ud;
 		}
 
 		auto& bodies = nodeKin.bodies;

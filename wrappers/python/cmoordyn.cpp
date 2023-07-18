@@ -37,7 +37,7 @@ const char moordyn_capsule_name[] = "MoorDyn";
 const char waves_capsule_name[] = "MoorDynWaves";
 const char body_capsule_name[] = "MoorDynBody";
 const char rod_capsule_name[] = "MoorDynRod";
-const char conn_capsule_name[] = "MoorDynConnection";
+const char point_capsule_name[] = "MoorDynPoint";
 const char line_capsule_name[] = "MoorDynLine";
 
 /** @brief Allocates and fill a C array with doubles
@@ -669,12 +669,12 @@ get_rod(PyObject*, PyObject* args)
 	return PyCapsule_New((void*)rod, rod_capsule_name, NULL);
 }
 
-/** @brief Wrapper to MoorDyn_GetNumberConnections() function
+/** @brief Wrapper to MoorDyn_GetNumberPoints() function
  * @param args Python passed arguments
- * @return The number of connections
+ * @return The number of points
  */
 static PyObject*
-get_number_connections(PyObject*, PyObject* args)
+get_number_points(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
@@ -687,7 +687,7 @@ get_number_connections(PyObject*, PyObject* args)
 		return NULL;
 
 	unsigned int n;
-	const int err = MoorDyn_GetNumberConnections(system, &n);
+	const int err = MoorDyn_GetNumberPoints(system, &n);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -695,12 +695,12 @@ get_number_connections(PyObject*, PyObject* args)
 	return PyLong_FromLong(n);
 }
 
-/** @brief Wrapper to MoorDyn_GetConnection() function
+/** @brief Wrapper to MoorDyn_GetPoint() function
  * @param args Python passed arguments
  * @return A Python capsule
  */
 static PyObject*
-get_connection(PyObject*, PyObject* args)
+get_point(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 	unsigned int i;
@@ -713,13 +713,13 @@ get_connection(PyObject*, PyObject* args)
 	if (!system)
 		return NULL;
 
-	MoorDynConnection conn = MoorDyn_GetConnection(system, i);
-	if (!conn) {
-		PyErr_SetString(PyExc_RuntimeError, "MoorDyn_GetConnection() failed");
+	MoorDynPoint point = MoorDyn_GetPoint(system, i);
+	if (!point) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn_GetPoint() failed");
 		return NULL;
 	}
 
-	return PyCapsule_New((void*)conn, conn_capsule_name, NULL);
+	return PyCapsule_New((void*)point, point_capsule_name, NULL);
 }
 
 /** @brief Wrapper to MoorDyn_GetNumberLines() function
@@ -1299,28 +1299,28 @@ rod_save_vtk(PyObject*, PyObject* args)
 	return PyLong_FromLong(MoorDyn_SaveRodVTK(instance, filepath));
 }
 
-//                              Connection.h
+//                              Point.h
 // =============================================================================
 
-/** @brief Wrapper to MoorDyn_GetConnectID() function
+/** @brief Wrapper to MoorDyn_GetPointID() function
  * @param args Python passed arguments
- * @return The connection id
+ * @return The point id
  */
 static PyObject*
-conn_get_id(PyObject*, PyObject* args)
+point_get_id(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
 	if (!PyArg_ParseTuple(args, "O", &capsule))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	int n;
-	const int err = MoorDyn_GetConnectID(instance, &n);
+	const int err = MoorDyn_GetPointID(instance, &n);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1329,25 +1329,25 @@ conn_get_id(PyObject*, PyObject* args)
 	return PyLong_FromLong(n);
 }
 
-/** @brief Wrapper to MoorDyn_GetConnectType() function
+/** @brief Wrapper to MoorDyn_GetPointType() function
  * @param args Python passed arguments
- * @return The connection type
+ * @return The point type
  */
 static PyObject*
-conn_get_type(PyObject*, PyObject* args)
+point_get_type(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
 	if (!PyArg_ParseTuple(args, "O", &capsule))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	int t;
-	const int err = MoorDyn_GetConnectType(instance, &t);
+	const int err = MoorDyn_GetPointType(instance, &t);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1356,25 +1356,25 @@ conn_get_type(PyObject*, PyObject* args)
 	return PyLong_FromLong(t);
 }
 
-/** @brief Wrapper to MoorDyn_GetConnectPos() function
+/** @brief Wrapper to MoorDyn_GetPointPos() function
  * @param args Python passed arguments
  * @return The position
  */
 static PyObject*
-conn_get_pos(PyObject*, PyObject* args)
+point_get_pos(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
 	if (!PyArg_ParseTuple(args, "O", &capsule))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	double r[3];
-	const int err = MoorDyn_GetConnectPos(instance, r);
+	const int err = MoorDyn_GetPointPos(instance, r);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1387,25 +1387,25 @@ conn_get_pos(PyObject*, PyObject* args)
 	return pyr;
 }
 
-/** @brief Wrapper to MoorDyn_GetConnectVel() function
+/** @brief Wrapper to MoorDyn_GetPointVel() function
  * @param args Python passed arguments
  * @return The velocity
  */
 static PyObject*
-conn_get_vel(PyObject*, PyObject* args)
+point_get_vel(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
 	if (!PyArg_ParseTuple(args, "O", &capsule))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	double r[3];
-	const int err = MoorDyn_GetConnectVel(instance, r);
+	const int err = MoorDyn_GetPointVel(instance, r);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1418,25 +1418,25 @@ conn_get_vel(PyObject*, PyObject* args)
 	return pyr;
 }
 
-/** @brief Wrapper to MoorDyn_GetConnectForce() function
+/** @brief Wrapper to MoorDyn_GetPointForce() function
  * @param args Python passed arguments
  * @return The velocity
  */
 static PyObject*
-conn_get_force(PyObject*, PyObject* args)
+point_get_force(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
 	if (!PyArg_ParseTuple(args, "O", &capsule))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	double r[3];
-	const int err = MoorDyn_GetConnectForce(instance, r);
+	const int err = MoorDyn_GetPointForce(instance, r);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1449,25 +1449,25 @@ conn_get_force(PyObject*, PyObject* args)
 	return pyr;
 }
 
-/** @brief Wrapper to MoorDyn_GetConnectNAttached() function
+/** @brief Wrapper to MoorDyn_GetPointNAttached() function
  * @param args Python passed arguments
  * @return The number of attached lines
  */
 static PyObject*
-conn_get_nattached(PyObject*, PyObject* args)
+point_get_nattached(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 
 	if (!PyArg_ParseTuple(args, "O", &capsule))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	unsigned int n;
-	const int err = MoorDyn_GetConnectNAttached(instance, &n);
+	const int err = MoorDyn_GetPointNAttached(instance, &n);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1476,12 +1476,12 @@ conn_get_nattached(PyObject*, PyObject* args)
 	return PyLong_FromLong(n);
 }
 
-/** @brief Wrapper to MoorDyn_GetConnectNAttached() function
+/** @brief Wrapper to MoorDyn_GetPointNAttached() function
  * @param args Python passed arguments
  * @return The number of attached lines
  */
 static PyObject*
-conn_get_attached(PyObject*, PyObject* args)
+point_get_attached(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 	unsigned int i;
@@ -1489,14 +1489,14 @@ conn_get_attached(PyObject*, PyObject* args)
 	if (!PyArg_ParseTuple(args, "Oi", &capsule, &i))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
 	MoorDynLine l;
 	int e;
-	const int err = MoorDyn_GetConnectAttached(instance, i, &l, &e);
+	const int err = MoorDyn_GetPointAttached(instance, i, &l, &e);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1508,12 +1508,12 @@ conn_get_attached(PyObject*, PyObject* args)
 	return pyv;
 }
 
-/** @brief Wrapper to MoorDyn_SaveConnectVTK() function
+/** @brief Wrapper to MoorDyn_SavePointVTK() function
  * @param args Python passed arguments
  * @return 0 in case of success, an error code otherwise
  */
 static PyObject*
-conn_save_vtk(PyObject*, PyObject* args)
+point_save_vtk(PyObject*, PyObject* args)
 {
 	PyObject* capsule;
 	char* filepath = NULL;
@@ -1521,12 +1521,12 @@ conn_save_vtk(PyObject*, PyObject* args)
 	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
 		return NULL;
 
-	MoorDynConnection instance =
-	    (MoorDynConnection)PyCapsule_GetPointer(capsule, conn_capsule_name);
+	MoorDynPoint instance =
+	    (MoorDynPoint)PyCapsule_GetPointer(capsule, point_capsule_name);
 	if (!instance)
 		return NULL;
 
-	return PyLong_FromLong(MoorDyn_SaveConnectVTK(instance, filepath));
+	return PyLong_FromLong(MoorDyn_SavePointVTK(instance, filepath));
 }
 
 //                                 Line.h
@@ -1891,11 +1891,11 @@ static PyMethodDef moordyn_methods[] = {
 	  METH_VARARGS,
 	  "Get the number of rods" },
 	{ "get_rod", get_rod, METH_VARARGS, "Get a rod" },
-	{ "get_number_connections",
-	  get_number_connections,
+	{ "get_number_points",
+	  get_number_points,
 	  METH_VARARGS,
-	  "Get the number of connections" },
-	{ "get_connection", get_connection, METH_VARARGS, "Get a connection" },
+	  "Get the number of points" },
+	{ "get_point", get_point, METH_VARARGS, "Get a point" },
 	{ "get_number_lines",
 	  get_number_lines,
 	  METH_VARARGS,
@@ -1942,32 +1942,32 @@ static PyMethodDef moordyn_methods[] = {
 	  rod_save_vtk,
 	  METH_VARARGS,
 	  "Save a .vtp file of the rod" },
-	{ "conn_get_id", conn_get_id, METH_VARARGS, "Get the connection id" },
-	{ "conn_get_type", conn_get_type, METH_VARARGS, "Get the connection type" },
-	{ "conn_get_pos",
-	  conn_get_pos,
+	{ "point_get_id", point_get_id, METH_VARARGS, "Get the point id" },
+	{ "point_get_type", point_get_type, METH_VARARGS, "Get the point type" },
+	{ "point_get_pos",
+	  point_get_pos,
 	  METH_VARARGS,
-	  "Get the connection position" },
-	{ "conn_get_vel",
-	  conn_get_vel,
+	  "Get the point position" },
+	{ "point_get_vel",
+	  point_get_vel,
 	  METH_VARARGS,
-	  "Get the connection velocity" },
-	{ "conn_get_force",
-	  conn_get_force,
+	  "Get the point velocity" },
+	{ "point_get_force",
+	  point_get_force,
 	  METH_VARARGS,
-	  "Get the connection force" },
-	{ "conn_get_nattached",
-	  conn_get_nattached,
+	  "Get the point force" },
+	{ "point_get_nattached",
+	  point_get_nattached,
 	  METH_VARARGS,
 	  "Get the number of attached lines" },
-	{ "conn_get_attached",
-	  conn_get_attached,
+	{ "point_get_attached",
+	  point_get_attached,
 	  METH_VARARGS,
 	  "Get an attached line" },
-	{ "conn_save_vtk",
-	  conn_save_vtk,
+	{ "point_save_vtk",
+	  point_save_vtk,
 	  METH_VARARGS,
-	  "Save a .vtp file of the connection" },
+	  "Save a .vtp file of the point" },
 	{ "line_get_id", line_get_id, METH_VARARGS, "Get the line id" },
 	{ "line_get_n",
 	  line_get_n,

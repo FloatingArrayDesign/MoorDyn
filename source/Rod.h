@@ -50,7 +50,7 @@ extern "C"
 	/** @brief Get the line identifier
 	 * @param l The Moordyn rod
 	 * @param id The output id
-	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
 	 * MOORDYN_SUCCESS otherwise
 	 */
 	int DECLDIR MoorDyn_GetRodID(MoorDynRod l, int* id);
@@ -58,7 +58,7 @@ extern "C"
 	/** @brief Get the line type
 	 * @param l The Moordyn rod
 	 * @param t The output type
-	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
 	 * MOORDYN_SUCCESS otherwise
 	 */
 	int DECLDIR MoorDyn_GetRodType(MoorDynRod l, int* t);

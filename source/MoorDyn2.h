@@ -38,7 +38,7 @@
 #include "MoorDynAPI.h"
 #include "Waves.h"
 #include "Seafloor.h"
-#include "Connection.h"
+#include "Point.h"
 #include "Rod.h"
 #include "Line.h"
 #include "Body.h"
@@ -146,9 +146,9 @@ extern "C"
 	 *
 	 * @param system The Moordyn system
 	 * @param x Position vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @param xd Velocity vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @return MOORDYN_SUCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 * @note MoorDyn_NCoupledDOF() can be used to know the number of components
@@ -164,9 +164,9 @@ extern "C"
 	 *
 	 * @param system The Moordyn system
 	 * @param x Position vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @param xd Velocity vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @return MOORDYN_SUCESS If the mooring system is correctly initialized,
 	 * an error code otherwise (see @ref moordyn_errors)
 	 * @note MoorDyn_NCoupledDOF() can be used to know the number of components
@@ -360,22 +360,22 @@ extern "C"
 	 */
 	MoorDynRod DECLDIR MoorDyn_GetRod(MoorDyn system, unsigned int r);
 
-	/** @brief Get the number of connections
+	/** @brief Get the number of points
 	 *
-	 * Remember that the first connection index is 1
+	 * Remember that the first point index is 1
 	 * @param system The Moordyn system
-	 * @param n The output number of connections
+	 * @param n The output number of points
 	 * @return MOORDYN_SUCESS If the number is successfully got, an error code
 	 * otherwise (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetNumberConnections(MoorDyn system, unsigned int* n);
+	int DECLDIR MoorDyn_GetNumberPoints(MoorDyn system, unsigned int* n);
 
-	/** @brief Get a connection
+	/** @brief Get a point
 	 * @param system The Moordyn system
-	 * @param c The connection
-	 * @return The connection instance, NULL if errors happened
+	 * @param c The point
+	 * @return The point instance, NULL if errors happened
 	 */
-	MoorDynConnection DECLDIR MoorDyn_GetConnection(MoorDyn system,
+	MoorDynPoint DECLDIR MoorDyn_GetPoint(MoorDyn system,
 	                                                unsigned int c);
 
 	/** @brief Get the number of lines
@@ -471,7 +471,7 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_Load(MoorDyn system, const char* filepath);
 
-	/** @brief Draw the lines and connections in the active OpenGL context
+	/** @brief Draw the lines and points in the active OpenGL context
 	 *
 	 * The OpenGL context is assumed to be created by the caller before calling
 	 * this function

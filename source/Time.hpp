@@ -38,7 +38,7 @@
 #include "IO.hpp"
 #include "State.hpp"
 #include "Line.hpp"
-#include "Connection.hpp"
+#include "Point.hpp"
 #include "Rod.hpp"
 #include "Body.hpp"
 #include <vector>
@@ -96,36 +96,36 @@ class TimeScheme : public io::IO
 		return i;
 	}
 
-	/** @brief Add a connection
-	 * @param obj The connection
+	/** @brief Add a point
+	 * @param obj The point
 	 * @throw moordyn::invalid_value_error If it has been already registered
 	 */
-	virtual void AddConnection(Connection* obj)
+	virtual void AddPoint(Point* obj)
 	{
-		if (std::find(conns.begin(), conns.end(), obj) != conns.end()) {
-			LOGERR << "The connection " << obj->number
+		if (std::find(points.begin(), points.end(), obj) != points.end()) {
+			LOGERR << "The point " << obj->number
 			       << " was already registered" << endl;
 			throw moordyn::invalid_value_error("Repeated object");
 		}
-		conns.push_back(obj);
+		points.push_back(obj);
 	}
 
-	/** @brief Remove a connection
-	 * @param obj The connection
+	/** @brief Remove a point
+	 * @param obj The point
 	 * @return The index of the removed entity
-	 * @throw moordyn::invalid_value_error If the connection has not been
+	 * @throw moordyn::invalid_value_error If the point has not been
 	 * registered, or it was already removed
 	 */
-	virtual unsigned int RemoveConnection(Connection* obj)
+	virtual unsigned int RemovePoint(Point* obj)
 	{
-		auto it = std::find(conns.begin(), conns.end(), obj);
-		if (it == conns.end()) {
-			LOGERR << "The connection " << obj->number << " was not registered"
+		auto it = std::find(points.begin(), points.end(), obj);
+		if (it == points.end()) {
+			LOGERR << "The point " << obj->number << " was not registered"
 			       << endl;
 			throw moordyn::invalid_value_error("Missing object");
 		}
-		const unsigned int i = std::distance(conns.begin(), it);
-		conns.erase(it);
+		const unsigned int i = std::distance(points.begin(), it);
+		points.erase(it);
 		return i;
 	}
 
@@ -260,8 +260,8 @@ class TimeScheme : public io::IO
 	/// The lines
 	std::vector<Line*> lines;
 
-	/// The connections
-	std::vector<Connection*> conns;
+	/// The points
+	std::vector<Point*> points;
 
 	/// The rods
 	std::vector<Rod*> rods;
@@ -342,50 +342,50 @@ class TimeSchemeBase : public TimeScheme
 		return i;
 	}
 
-	/** @brief Add a connection
-	 * @param obj The connection
+	/** @brief Add a point
+	 * @param obj The point
 	 * @throw moordyn::invalid_value_error If it has been already registered
 	 */
-	virtual void AddConnection(Connection* obj)
+	virtual void AddPoint(Point* obj)
 	{
 		try {
-			TimeScheme::AddConnection(obj);
+			TimeScheme::AddPoint(obj);
 		} catch (...) {
 			throw;
 		}
 		// Build up the states and states derivatives
-		ConnState state;
+		PointState state;
 		state.pos = vec::Zero();
 		state.vel = vec::Zero();
 		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].conns.push_back(state);
+			r[i].points.push_back(state);
 		}
-		DConnStateDt dstate;
+		DPointStateDt dstate;
 		dstate.vel = vec::Zero();
 		dstate.acc = vec::Zero();
 		for (unsigned int i = 0; i < rd.size(); i++) {
-			rd[i].conns.push_back(dstate);
+			rd[i].points.push_back(dstate);
 		}
 	}
 
-	/** @brief Remove a connection
-	 * @param obj The connection
+	/** @brief Remove a point
+	 * @param obj The point
 	 * @return The index of the removed entity
-	 * @throw moordyn::invalid_value_error If the connection has not been
+	 * @throw moordyn::invalid_value_error If the point has not been
 	 * registered, or it was already removed
 	 */
-	virtual unsigned int RemoveConnection(Connection* obj)
+	virtual unsigned int RemovePoint(Point* obj)
 	{
 		unsigned int i;
 		try {
-			i = TimeScheme::RemoveConnection(obj);
+			i = TimeScheme::RemovePoint(obj);
 		} catch (...) {
 			throw;
 		}
 		for (unsigned int i = 0; i < r.size(); i++)
-			r[i].conns.erase(r[i].conns.begin() + i);
+			r[i].points.erase(r[i].points.begin() + i);
 		for (unsigned int i = 0; i < rd.size(); i++)
-			rd[i].conns.erase(rd[i].conns.begin() + i);
+			rd[i].points.erase(rd[i].points.begin() + i);
 		return i;
 	}
 
@@ -507,11 +507,11 @@ class TimeSchemeBase : public TimeScheme
 			    rods[i]->initialize();
 		}
 
-		for (unsigned int i = 0; i < conns.size(); i++) {
-			if (conns[i]->type != Connection::FREE)
+		for (unsigned int i = 0; i < points.size(); i++) {
+			if (points[i]->type != Point::FREE)
 				continue;
-			std::tie(r[0].conns[i].pos, r[0].conns[i].vel) =
-			    conns[i]->initialize();
+			std::tie(r[0].points[i].pos, r[0].points[i].vel) =
+			    points[i]->initialize();
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
@@ -559,10 +559,10 @@ class TimeSchemeBase : public TimeScheme
 				subdata = io::IO::Serialize(r[substep].rods[i].vel);
 				data.insert(data.end(), subdata.begin(), subdata.end());
 			}
-			for (unsigned int i = 0; i < conns.size(); i++) {
-				subdata = io::IO::Serialize(r[substep].conns[i].pos);
+			for (unsigned int i = 0; i < points.size(); i++) {
+				subdata = io::IO::Serialize(r[substep].points[i].pos);
 				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(r[substep].conns[i].vel);
+				subdata = io::IO::Serialize(r[substep].points[i].vel);
 				data.insert(data.end(), subdata.begin(), subdata.end());
 			}
 			for (unsigned int i = 0; i < lines.size(); i++) {
@@ -585,10 +585,10 @@ class TimeSchemeBase : public TimeScheme
 				subdata = io::IO::Serialize(rd[substep].rods[i].acc);
 				data.insert(data.end(), subdata.begin(), subdata.end());
 			}
-			for (unsigned int i = 0; i < conns.size(); i++) {
-				subdata = io::IO::Serialize(rd[substep].conns[i].vel);
+			for (unsigned int i = 0; i < points.size(); i++) {
+				subdata = io::IO::Serialize(rd[substep].points[i].vel);
 				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(rd[substep].conns[i].acc);
+				subdata = io::IO::Serialize(rd[substep].points[i].acc);
 				data.insert(data.end(), subdata.begin(), subdata.end());
 			}
 			for (unsigned int i = 0; i < lines.size(); i++) {
@@ -627,9 +627,9 @@ class TimeSchemeBase : public TimeScheme
 				ptr = io::IO::Deserialize(ptr, r[substep].rods[i].pos);
 				ptr = io::IO::Deserialize(ptr, r[substep].rods[i].vel);
 			}
-			for (unsigned int i = 0; i < conns.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, r[substep].conns[i].pos);
-				ptr = io::IO::Deserialize(ptr, r[substep].conns[i].vel);
+			for (unsigned int i = 0; i < points.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, r[substep].points[i].pos);
+				ptr = io::IO::Deserialize(ptr, r[substep].points[i].vel);
 			}
 			for (unsigned int i = 0; i < lines.size(); i++) {
 				ptr = io::IO::Deserialize(ptr, r[substep].lines[i].pos);
@@ -645,9 +645,9 @@ class TimeSchemeBase : public TimeScheme
 				ptr = io::IO::Deserialize(ptr, rd[substep].rods[i].vel);
 				ptr = io::IO::Deserialize(ptr, rd[substep].rods[i].acc);
 			}
-			for (unsigned int i = 0; i < conns.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, rd[substep].conns[i].vel);
-				ptr = io::IO::Deserialize(ptr, rd[substep].conns[i].acc);
+			for (unsigned int i = 0; i < points.size(); i++) {
+				ptr = io::IO::Deserialize(ptr, rd[substep].points[i].vel);
+				ptr = io::IO::Deserialize(ptr, rd[substep].points[i].acc);
 			}
 			for (unsigned int i = 0; i < lines.size(); i++) {
 				ptr = io::IO::Deserialize(ptr, rd[substep].lines[i].vel);

@@ -374,9 +374,9 @@ MoorDynState::AsString() const
 		s << "Line " << i << ":" << endl;
 		s << lines[i].AsString();
 	}
-	for (unsigned int i = 0; i < conns.size(); i++) {
-		s << "Conn " << i << ":" << endl;
-		s << conns[i].AsString();
+	for (unsigned int i = 0; i < points.size(); i++) {
+		s << "Point " << i << ":" << endl;
+		s << points[i].AsString();
 	}
 	for (unsigned int i = 0; i < rods.size(); i++) {
 		s << "Rod " << i << ":" << endl;
@@ -397,10 +397,10 @@ MoorDynState::operator=(const MoorDynState& rhs)
 	lines.reserve(rhs.lines.size());
 	for (auto l : rhs.lines)
 		lines.push_back(l);
-	conns.clear();
-	conns.reserve(rhs.conns.size());
-	for (auto l : rhs.conns)
-		conns.push_back(l);
+	points.clear();
+	points.reserve(rhs.points.size());
+	for (auto l : rhs.points)
+		points.push_back(l);
 	rods.clear();
 	rods.reserve(rhs.rods.size());
 	for (auto l : rhs.rods)
@@ -423,11 +423,11 @@ MoorDynState::operator+(const MoorDynState& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] + rhs.lines[i]);
-	if (conns.size() != rhs.conns.size())
+	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
-	out.conns.reserve(conns.size());
-	for (unsigned int i = 0; i < conns.size(); i++)
-		out.conns.push_back(conns[i] + rhs.conns[i]);
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i] + rhs.points[i]);
 	if (rods.size() != rhs.rods.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.rods.reserve(rods.size());
@@ -452,11 +452,11 @@ MoorDynState::operator-(const MoorDynState& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] - rhs.lines[i]);
-	if (conns.size() != rhs.conns.size())
+	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
-	out.conns.reserve(conns.size());
-	for (unsigned int i = 0; i < conns.size(); i++)
-		out.conns.push_back(conns[i] - rhs.conns[i]);
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i] - rhs.points[i]);
 	if (rods.size() != rhs.rods.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.rods.reserve(rods.size());
@@ -479,9 +479,9 @@ DMoorDynStateDt::AsString() const
 		s << "Line " << i << ":" << endl;
 		s << lines[i].AsString();
 	}
-	for (unsigned int i = 0; i < conns.size(); i++) {
-		s << "Conn " << i << ":" << endl;
-		s << conns[i].AsString();
+	for (unsigned int i = 0; i < points.size(); i++) {
+		s << "Point " << i << ":" << endl;
+		s << points[i].AsString();
 	}
 	for (unsigned int i = 0; i < rods.size(); i++) {
 		s << "Rod " << i << ":" << endl;
@@ -502,10 +502,10 @@ DMoorDynStateDt::operator=(const DMoorDynStateDt& rhs)
 	lines.reserve(rhs.lines.size());
 	for (auto l : rhs.lines)
 		lines.push_back(l);
-	conns.clear();
-	conns.reserve(rhs.conns.size());
-	for (auto l : rhs.conns)
-		conns.push_back(l);
+	points.clear();
+	points.reserve(rhs.points.size());
+	for (auto l : rhs.points)
+		points.push_back(l);
 	rods.clear();
 	rods.reserve(rhs.rods.size());
 	for (auto l : rhs.rods)
@@ -526,9 +526,9 @@ DMoorDynStateDt::operator*(const real& dt)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] * dt);
-	out.conns.reserve(conns.size());
-	for (unsigned int i = 0; i < conns.size(); i++)
-		out.conns.push_back(conns[i] * dt);
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i] * dt);
 	out.rods.reserve(rods.size());
 	for (unsigned int i = 0; i < rods.size(); i++)
 		out.rods.push_back(rods[i] * dt);
@@ -549,11 +549,11 @@ DMoorDynStateDt::operator+(const DMoorDynStateDt& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] + rhs.lines[i]);
-	if (conns.size() != rhs.conns.size())
+	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
-	out.conns.reserve(conns.size());
-	for (unsigned int i = 0; i < conns.size(); i++)
-		out.conns.push_back(conns[i] + rhs.conns[i]);
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i] + rhs.points[i]);
 	if (rods.size() != rhs.rods.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.rods.reserve(rods.size());
@@ -578,11 +578,11 @@ DMoorDynStateDt::operator-(const DMoorDynStateDt& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] - rhs.lines[i]);
-	if (conns.size() != rhs.conns.size())
+	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
-	out.conns.reserve(conns.size());
-	for (unsigned int i = 0; i < conns.size(); i++)
-		out.conns.push_back(conns[i] - rhs.conns[i]);
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i] - rhs.points[i]);
 	if (rods.size() != rhs.rods.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.rods.reserve(rods.size());

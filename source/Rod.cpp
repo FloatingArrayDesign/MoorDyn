@@ -50,8 +50,8 @@ namespace moordyn {
 
 // here is the new numbering scheme (N segments per line)
 
-//   [connect (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] ---
-//   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [connect (node N)]
+//   [point (node 0)]  --- segment 0 --- [ node 1 ] --- seg 1 --- [node2] ---
+//   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [point (node N)]
 
 Rod::Rod(moordyn::Log* log, size_t rodId)
   : io::IO(log)
@@ -310,7 +310,7 @@ Rod::initialize()
 	// object   <<<<< right? <<<<<
 
 	// Pass kinematics to any attached lines (this is just like what a
-	// Connection does, except for both ends) so that they have the correct
+	// Point does, except for both ends) so that they have the correct
 	// initial positions at this initialization stage.
 	if (type != COUPLED) {
 		// don't call this for type -2 coupled Rods as it's already been called
@@ -545,7 +545,7 @@ Rod::setDependentStates()
 	}
 
 	// pass end node kinematics to any attached lines (this is just like what a
-	// Connection does, except for both ends)
+	// Point does, except for both ends)
 	for (auto attached : attachedA)
 		attached.line->setEndKinematics(r[0], rd[0], attached.end_point);
 	for (auto attached : attachedB)
@@ -1184,14 +1184,14 @@ Rod::doRHS()
 		// get quantities
 		attached.line->getEndStuff(Fnet_i, Mnet_i, M_i, attached.end_point);
 
-		// Process outline for line failure, similar to as done for connections
+		// Process outline for line failure, similar to as done for points
 		// (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if
 		// failure time has elapsed for line
-		// 2. create new massless connect with same instantaneous kinematics as
+		// 2. create new massless point with same instantaneous kinematics as
 		// current Rod end
 		// 3. disconnect line end from current Rod end and instead attach to new
-		// connect The above may require rearrangement of connection indices,
+		// point The above may require rearrangement of point indices,
 		// expansion of state vector, etc.
 
 		// sum quantitites
@@ -1208,14 +1208,14 @@ Rod::doRHS()
 		// get quantities
 		attached.line->getEndStuff(Fnet_i, Mnet_i, M_i, attached.end_point);
 
-		// Process outline for line failure, similar to as done for connections
+		// Process outline for line failure, similar to as done for points
 		// (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if
 		// failure time has elapsed for line
-		// 2. create new massless connect with same instantaneous kinematics as
+		// 2. create new massless point with same instantaneous kinematics as
 		// current Rod end
 		// 3. disconnect line end from current Rod end and instead attach to new
-		// connect The above may require rearrangement of connection indices,
+		// point The above may require rearrangement of point indices,
 		// expansion of state vector, etc.
 
 		// sum quantitites

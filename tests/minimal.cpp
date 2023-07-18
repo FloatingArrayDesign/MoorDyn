@@ -112,7 +112,7 @@ minimal()
 
 	int err;
 	double x[9], dx[9];
-	// Set the fairlead connections, as they are in the config file
+	// Set the fairlead points, as they are in the config file
 	x[0] = 5.2;
 	x[1] = 0.0;
 	x[2] = -70.0;
@@ -198,8 +198,8 @@ minimal()
 	// Get the initial positions from the config file
 	for (unsigned int i = 0; i < 3; i++) {
 		// 4 = first fairlead id
-		auto conn = MoorDyn_GetConnection(system, i + 4);
-		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
+		auto point = MoorDyn_GetPoint(system, i + 4);
+		err = MoorDyn_GetPointPos(point, x + 3 * i);
 		if (err != MOORDYN_SUCCESS) {
 			cerr << "Failure retrieving the fairlead " << i + 4
 			     << " position: " << err << endl;

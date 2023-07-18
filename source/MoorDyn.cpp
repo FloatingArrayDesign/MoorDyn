@@ -256,21 +256,21 @@ GetFASTtens(int* numLines,
 }
 
 int DECLDIR
-GetConnectPos(int l, double pos[3])
+GetPointPos(int l, double pos[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	auto conn = MoorDyn_GetConnection(md_singleton, (unsigned int)l);
-	return MoorDyn_GetConnectPos(conn, pos);
+	auto point = MoorDyn_GetPoint(md_singleton, (unsigned int)l);
+	return MoorDyn_GetPointPos(point, pos);
 }
 
 int DECLDIR
-GetConnectForce(int l, double force[3])
+GetPointForce(int l, double force[3])
 {
 	if (!md_singleton)
 		return MOORDYN_MEM_ERROR;
-	auto conn = MoorDyn_GetConnection(md_singleton, (unsigned int)l);
-	return MoorDyn_GetConnectForce(conn, force);
+	auto point = MoorDyn_GetPoint(md_singleton, (unsigned int)l);
+	return MoorDyn_GetPointForce(point, force);
 }
 
 int DECLDIR

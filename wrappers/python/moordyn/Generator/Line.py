@@ -145,8 +145,8 @@ class LineMaterial(Entity):
                          self.__cat])
 
 
-class LineConnection():
-    """The line connection
+class LinePoint():
+    """The line point
     """
     def __init__(self, obj, end_point="A"):
         self.__obj = obj
@@ -173,7 +173,7 @@ class LineConnection():
 
         Returns
         -------
-        str: The connection string
+        str: The point string
         """
         if isinstance(self.__obj, Rod):
             return "R" + str(self.__obj.name)
@@ -183,14 +183,14 @@ class LineConnection():
 class Line(Entity):
     """A line
     """
-    def __init__(self, material, con0, con1, l, n):
+    def __init__(self, material, point0, point1, l, n):
         """Constructor
 
         Parameters
         ----------
         material (LineMaterial): The line material
-        con0 (LineConnection): The line connection
-        con1 (LineConnection): The line connection
+        point0 (LinePoint): The line point
+        point1 (LinePoint): The line point
         l (float): Unstretched length
         n (int): Number of segments
         """
@@ -202,8 +202,8 @@ class Line(Entity):
             field_units=["(#)", "(name)", "(#)", "(#)", "(m)", "(-)", "(-)"])
         self.__name = 0
         self.__mat = material
-        self.__con0 = con0
-        self.__con1 = con1
+        self.__point0 = point0
+        self.__point1 = point1
         self.__l = l
         self.__n = n
         self.__set_values()
@@ -227,21 +227,21 @@ class Line(Entity):
         self.__set_values()
 
     @property
-    def con0(self):
-        return self.__con0
+    def point0(self):
+        return self.__point0
 
-    @con0.setter
-    def con0(self, connection):
-        self.__con0 = connection
+    @point0.setter
+    def point0(self, point):
+        self.__point0 = point
         self.__set_values()
 
     @property
-    def con1(self):
-        return self.__con1
+    def point1(self):
+        return self.__point1
 
-    @con1.setter
-    def con1(self, connection):
-        self.__con1 = connection
+    @point1.setter
+    def point1(self, point):
+        self.__point1 = point
         self.__set_values()
 
     @property
@@ -265,8 +265,8 @@ class Line(Entity):
     def __set_values(self):
         self.set_values([self.__name,
                          self.__mat.name,
-                         self.__con0,
-                         self.__con1,
+                         self.__point0,
+                         self.__point1,
                          self.__l,
                          self.__n,
                          "-"])

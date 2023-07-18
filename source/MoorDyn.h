@@ -61,9 +61,9 @@ extern "C"
 	 * structures, and calculating the initial conditions
 	 *
 	 * @param x Position vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @param xd Velocity vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
 	 * @return 0 If the mooring system is correctly initialized, an error code
@@ -78,11 +78,11 @@ extern "C"
 
 	/** @brief Runs a time step of the MoorDyn system
 	 * @param x Position vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @param xd Velocity vector (6 components per coupled body or cantilevered
-	 * rod and 3 components per pinned rod or coupled connection)
+	 * rod and 3 components per pinned rod or coupled point)
 	 * @param f Output forces (6 components per coupled body or cantilevered rod
-	 * and 3 components per pinned rod or coupled connection)
+	 * and 3 components per pinned rod or coupled point)
 	 * @param t Simulation time
 	 * @param dt Time step
 	 * @return 0 if the mooring system has correctly evolved, an error code
@@ -138,8 +138,8 @@ extern "C"
 	                        float AnchHTen[],
 	                        float AnchVTen[]);
 
-	int DECLDIR GetConnectPos(int l, double pos[3]);
-	int DECLDIR GetConnectForce(int l, double force[3]);
+	int DECLDIR GetPointPos(int l, double pos[3]);
+	int DECLDIR GetPointForce(int l, double force[3]);
 	int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3]);
 
 	int DECLDIR DrawWithGL(void);

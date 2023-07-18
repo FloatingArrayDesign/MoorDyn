@@ -130,30 +130,30 @@ write_vtk_by_instances()
 		}
 	}
 
-	unsigned int n_conns;
-	err = MoorDyn_GetNumberConnections(system, &n_conns);
+	unsigned int n_points;
+	err = MoorDyn_GetNumberPoints(system, &n_points);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure getting the number of conns: " << err
+		std::cerr << "Failure getting the number of points: " << err
 		          << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
-	for (unsigned int conn_i = 1; conn_i <= n_conns; conn_i++) {
-		auto conn = MoorDyn_GetConnection(system, conn_i);
-		if (!conn) {
-			std::cerr << "Failure getting the conn " << conn_i << std::endl;
+	for (unsigned int point_i = 1; point_i <= n_points; point_i++) {
+		auto point = MoorDyn_GetPoint(system, point_i);
+		if (!point) {
+			std::cerr << "Failure getting the point " << point_i << std::endl;
 			MoorDyn_Close(system);
 			return false;
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_conn_" << conn_i << ".00000.vtp";
+		         << "vtk_point_" << point_i << ".00000.vtp";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
-		err = MoorDyn_SaveConnectVTK(conn, filepath.str().c_str());
+		err = MoorDyn_SavePointVTK(point, filepath.str().c_str());
 		if (err != MOORDYN_SUCCESS) {
-			std::cerr << "Failure saving the conn file '"
+			std::cerr << "Failure saving the point file '"
 			          << filepath.str().c_str() << "':" << err << std::endl;
 			MoorDyn_Close(system);
 			return false;

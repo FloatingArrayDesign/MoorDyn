@@ -1,8 +1,8 @@
 from .Entity import Entity, PropsList
 
 
-class BodyConnection():
-    """The body connection
+class BodyPoint():
+    """The body point
     """
     def __init__(self):
         self.__fixed = True
@@ -33,7 +33,7 @@ class BodyConnection():
 
         Returns
         -------
-        str: The connection string
+        str: The point string
         """
         if self.__fixed:
             return "FIXED"
@@ -50,7 +50,7 @@ class Body(Entity):
 
         Parameters
         ----------
-        t (BodyConnection): The type of body connection
+        t (BodyPoint): The type of body point
         p (list): Point (3 components)
         r (list): Rotation (3 components, radians)
         m (float): Node mass in the case of clump weights (kg)

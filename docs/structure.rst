@@ -10,7 +10,7 @@ MoorDyn models the dynamics of mooring structures in an object-oriented programm
 The overall simulation is managed by the MoorDyn2 class. This class reads inputs, allows models to
 be loaded and saved, contains various environmental parameters (e.g. time-steps sizes and filepaths)
 and most importantly contains pointers to all the Objects representing physical parts of the model
-(Lines, Bodies, Rods, Connections). 
+(Lines, Bodies, Rods, Points). 
 
 
 Lines
@@ -116,14 +116,14 @@ Points
 .. _points:
 
 Point objects attach to the ends of Lines and can be used to connect Lines to other things
-or to each other. (In MAP and older versions of MoorDyn, these objects were called Connections).
+or to each other. (In MAP and older versions of MoorDyn, these objects were called Points).
 A Point has three degrees of freedom and can have any number of Lines attached to it. 
 There are three types of Points:
 
 - **Fixed**: their location is fixed to ground (stationary) or a Body object. 
   They can be used as anchor points or as a way to attach mooring Lines to a Body.
 - **Coupled**: they move under the control of the calling program/script.  
-  They can be used as fairlead connections when the platform is modeled externally.
+  They can be used as fairlead points when the platform is modeled externally.
   See :ref:`the coupling documentation <coupling>`.
 - **Free**: they are free to move according to the forces acting on them, which includes
   the tensions of attached lines as well as their own self weight and buoyancy, if applicable.  
@@ -133,27 +133,27 @@ or more mooring lines together, to create multi-segmented lines or junctions suc
 bridle mooring configuration. If a free Point is given nonzero volume or mass properties,
 it can also represent a clump weight or float. 
 
-In the C++ API, "Points" are represented as Connection objects (as their principle purpose
+In the C++ API, "Points" are represented as Point objects (as their principle purpose
 is to connect different lines/bodies/rods together). Currently, every line must have 2
-Connections at each endpoint. Connection objects expose a public member, Connection::attachment,
+Points at each endpoint. Point objects expose a public member, Point::attachment,
 that contains 1. a pointer to the Line object attached to the point and 2. a field indicating
 which "end" (A or B) of the line is attached to the point.
 
-Connections Objects have the following data members:
+Points Objects have the following data members:
 
 General:
 
 - env: a pointer to a global struct holding environmental settings
 - waves: a pointer to a global object representing Waves in the system
 
-Specific to each Connection:
+Specific to each Point:
 
-- attached: a vector of attachments, describing all lines attached to the Connection
-- conM: the mass of the connection as a real
-- conV: the volume of the connection as a real
-- conF: a 3D vector of forces on the connection
-- conCdA: Drag coefficient of the connection
-- conCa: Added mass coefficient of the connection
+- attached: a vector of attachments, describing all lines attached to the Point
+- conM: the mass of the point as a real
+- conV: the volume of the point as a real
+- conF: a 3D vector of forces on the point
+- conCdA: Drag coefficient of the point
+- conCa: Added mass coefficient of the point
 
 State:
 
@@ -171,8 +171,8 @@ Waves:
 
 Misc:
 
-- number: connection ID (unique int)
-- type: Connection type, one of moordyn::Connection::types
+- number: point ID (unique int)
+- type: Point type, one of moordyn::Point::types
 - WaterKin: Flag indicating whether wave/current kinematics will be considered:
 
 Rods 
@@ -204,8 +204,8 @@ external solver.
 
 A special case exists if a Rod is specified with zero elements: in that case it is given zero length, and
 its end B input coordinates are instead interpreted as vector components to describe its direction vector. 
-This case is meant for convenience when making cantilever connections of a line with bending stiffness. 
-A fixed zero-length rod can be used to make a cantilever connection of a power cable to the ground, a body, or a coupling point.
+This case is meant for convenience when making cantilever points of a line with bending stiffness. 
+A fixed zero-length rod can be used to make a cantilever point of a power cable to the ground, a body, or a coupling point.
 A free zero-length rod can be used to join two different types of power cable segments, and it will pass moments 
 between the cable segments without adding any mass or other characteristics.
 
@@ -216,7 +216,7 @@ Body objects provide a generic 6 DOF rigid-body representation based on a lumped
 and rotational properties (e.g. hydrodynamic drag and added mass coefficients). 
 Rod elements can be added to bodies and mooring lines can be attached at any location, 
 allowing a wide variety of submerged structures to be integrated into the mooring system. 
-Aside from contributions which might come from incorporated Rod objects or attached Connection 
+Aside from contributions which might come from incorporated Rod objects or attached Point 
 and Line objects, the core Body object properties are as follows:
 
 - mass, and center of mass
@@ -247,9 +247,9 @@ Unique to Body:
 
 Attachments:
 
-- attachedC: a vector of pointers to Connection objects, indicating all the connections attached to the body
+- attachedC: a vector of pointers to Point objects, indicating all the points attached to the body
 - attachedR: a vector of pointers to Rod objects attached to the body. 
-- rConnectRel: a vector<vec> of 3d vectors describing the attachment points locations for Connections
+- rConnectRel: a vector<vec> of 3d vectors describing the attachment points locations for Points
 - r6RodRel: a vector<vec6> of 6D vectors describing the attachment points and orientation of eac rod.
 
 Body Properties (set upon call to Body::setup()). Note that these are all set to zero for all Body types

@@ -227,7 +227,7 @@ rotatingBody(SeriesWriter* series_writer)
 		return false;
 	}
 
-	MoorDynConnection conn = MoorDyn_GetConnection(system, 8);
+	MoorDynPoint point = MoorDyn_GetPoint(system, 8);
 
 	if (!write_system_vtk(system, 0, series_writer)) {
 		return false;
@@ -275,13 +275,13 @@ rotatingBody(SeriesWriter* series_writer)
 		}
 	}
 
-	moordyn::vec3 conn_pos;
-	MoorDyn_GetConnectPos(conn, conn_pos.data());
+	moordyn::vec3 point_pos;
+	MoorDyn_GetPointPos(point, point_pos.data());
 	{
-		moordyn::vec3 rel_pos = conn_pos - body_center;
+		moordyn::vec3 rel_pos = point_pos - body_center;
 		moordyn::vec3 expected_pos{ 0, 0, 1.0 };
 		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
-			cerr << "Connection 8 relative to body center should be "
+			cerr << "Point 8 relative to body center should be "
 			     << expected_pos.transpose() << " but was "
 			     << rel_pos.transpose() << " at t = " << t << endl;
 		}
@@ -318,13 +318,13 @@ rotatingBody(SeriesWriter* series_writer)
 		}
 	}
 
-	MoorDyn_GetConnectPos(conn, conn_pos.data());
+	MoorDyn_GetPointPos(point, point_pos.data());
 	{
 
-		moordyn::vec3 rel_pos = conn_pos - body_center;
+		moordyn::vec3 rel_pos = point_pos - body_center;
 		moordyn::vec3 expected_pos{ 0, 1.0, 0.0 };
 		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
-			cerr << "Connection 8 relative to body center should be "
+			cerr << "Point 8 relative to body center should be "
 			     << expected_pos.transpose() << " but was "
 			     << rel_pos.transpose() << " at t = " << t << endl;
 		}
@@ -361,13 +361,13 @@ rotatingBody(SeriesWriter* series_writer)
 		}
 	}
 
-	MoorDyn_GetConnectPos(conn, conn_pos.data());
+	MoorDyn_GetPointPos(point, point_pos.data());
 	{
 
-		moordyn::vec3 rel_pos = conn_pos - body_center;
+		moordyn::vec3 rel_pos = point_pos - body_center;
 		moordyn::vec3 expected_pos{ 1.0, 0.0, 0.0 };
 		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
-			cerr << "Connection 8 relative to body center should be "
+			cerr << "Point 8 relative to body center should be "
 			     << expected_pos.transpose() << "but was "
 			     << rel_pos.transpose() << " at t=" << t << endl;
 		}

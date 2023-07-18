@@ -32,8 +32,8 @@ module moordyn
              MoorDyn_Load, MoorDyn_SaveVTK, &
              MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, MoorDyn_SaveBodyVTK, MoorDyn_UseBodyVTK, &
-             MoorDyn_GetConnectPos, MoorDyn_GetConnectVel, &
-             MoorDyn_GetConnectForce, MoorDyn_SaveConnectVTK, &
+             MoorDyn_GetPointPos, MoorDyn_GetPointVel, &
+             MoorDyn_GetPointForce, MoorDyn_SavePointVTK, &
              MoorDyn_GetRodNodePos, MoorDyn_SaveRodVTK, &
              MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen, &
              MoorDyn_SaveLineVTK
@@ -43,14 +43,14 @@ module moordyn
             MD_GetWaves, MD_ExternalWaveKinInit, MD_ExternalWaveKinGetN, &
             MD_ExternalWaveKinGetCoordinates, MD_ExternalWaveKinSet, &
             MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
-            MD_GetNumberConnections, MD_GetConnection, MD_GetNumberLines, &
+            MD_GetNumberPoints, MD_GetPoint, MD_GetNumberLines, &
             MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, MD_SaveVTK, &
             MD_GetWavesKin, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, MD_SaveBodyVTK, &
             MD_UseBodyVTK, &
-            MD_GetConnectID, MD_GetConnectType, MD_GetConnectPos, &
-            MD_GetConnectVel, MD_GetConnectForce, MD_GetConnectNAttached, &
-            MD_GetConnectAttached, MD_SaveConnectVTK, &
+            MD_GetPointID, MD_GetPointType, MD_GetPointPos, &
+            MD_GetPointVel, MD_GetPointForce, MD_GetPointNAttached, &
+            MD_GetPointAttached, MD_SavePointVTK, &
             MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
             MD_GetRodNodePos, MD_SaveRodVTK, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
@@ -191,17 +191,17 @@ module moordyn
       integer(c_int), value, intent(in) :: n
     end function MD_GetRod
 
-    integer(c_int) function MD_GetNumberConnections(instance, n) bind(c, name='MoorDyn_GetNumberConnections')
+    integer(c_int) function MD_GetNumberPoints(instance, n) bind(c, name='MoorDyn_GetNumberPoints')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-    end function MD_GetNumberConnections
+    end function MD_GetNumberPoints
 
-    type(c_ptr) function MD_GetConnection(instance, n) bind(c, name='MoorDyn_GetConnection')
+    type(c_ptr) function MD_GetPoint(instance, n) bind(c, name='MoorDyn_GetPoint')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), value, intent(in) :: n
-    end function MD_GetConnection
+    end function MD_GetPoint
 
     integer(c_int) function MD_GetNumberLines(instance, n) bind(c, name='MoorDyn_GetNumberLines')
       import :: c_ptr, c_int
@@ -343,62 +343,62 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_SaveRodVTK
 
-    !                                Connection.h
+    !                                Point.h
     ! ==========================================================================
 
-    integer(c_int) function MD_GetConnectID(instance, n) bind(c, name='MoorDyn_GetConnectID')
+    integer(c_int) function MD_GetPointID(instance, n) bind(c, name='MoorDyn_GetPointID')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-    end function MD_GetConnectID
+    end function MD_GetPointID
 
-    integer(c_int) function MD_GetConnectType(instance, n) bind(c, name='MoorDyn_GetConnectType')
+    integer(c_int) function MD_GetPointType(instance, n) bind(c, name='MoorDyn_GetPointType')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-    end function MD_GetConnectType
+    end function MD_GetPointType
 
-    function MoorDyn_GetConnectPos(instance, r) bind(c, name='MoorDyn_GetConnectPos') result(rc)
+    function MoorDyn_GetPointPos(instance, r) bind(c, name='MoorDyn_GetPointPos') result(rc)
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
-    end function MoorDyn_GetConnectPos
+    end function MoorDyn_GetPointPos
 
-    function MoorDyn_GetConnectVel(instance, r) bind(c, name='MoorDyn_GetConnectVel') result(rc)
+    function MoorDyn_GetPointVel(instance, r) bind(c, name='MoorDyn_GetPointVel') result(rc)
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
-    end function MoorDyn_GetConnectVel
+    end function MoorDyn_GetPointVel
 
-    function MoorDyn_GetConnectForce(instance, r) bind(c, name='MoorDyn_GetConnectForce') result(rc)
+    function MoorDyn_GetPointForce(instance, r) bind(c, name='MoorDyn_GetPointForce') result(rc)
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
-    end function MoorDyn_GetConnectForce
+    end function MoorDyn_GetPointForce
 
-    integer(c_int) function MD_GetConnectNAttached(instance, n) bind(c, name='MoorDyn_GetConnectNAttached')
+    integer(c_int) function MD_GetPointNAttached(instance, n) bind(c, name='MoorDyn_GetPointNAttached')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), intent(out) :: n
-    end function MD_GetConnectNAttached
+    end function MD_GetPointNAttached
 
-    integer(c_int) function MD_GetConnectAttached(instance, i, l, e) bind(c, name='MoorDyn_GetConnectAttached')
+    integer(c_int) function MD_GetPointAttached(instance, i, l, e) bind(c, name='MoorDyn_GetPointAttached')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), value, intent(in) :: i
       type(c_ptr), intent(out) :: l
       integer(c_int), intent(out) :: e
-    end function MD_GetConnectAttached
+    end function MD_GetPointAttached
 
-    function MoorDyn_SaveConnectVTK(instance, f) bind(c, name='MoorDyn_SaveConnectVTK') result(rc)
+    function MoorDyn_SavePointVTK(instance, f) bind(c, name='MoorDyn_SavePointVTK') result(rc)
       import :: c_ptr, c_char, c_int
       type(c_ptr), value, intent(in) :: instance
       character(kind=c_char), intent(in) :: f(*)
       integer(c_int) :: rc
-    end function MoorDyn_SaveConnectVTK
+    end function MoorDyn_SavePointVTK
 
     !                                Line.h
     ! ==========================================================================
@@ -632,36 +632,36 @@ contains
     MD_SaveRodVTK = MoorDyn_SaveRodVTK(instance, trim(f) // c_null_char)
   end function MD_SaveRodVTK
 
-  !                                Connection.h
+  !                                Point.h
   ! ============================================================================
 
-  integer function MD_GetConnectPos(instance, r)
+  integer function MD_GetPointPos(instance, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
     real(c_double), intent(in), target :: r(:)
-    MD_GetConnectPos = MoorDyn_GetConnectPos(instance, c_loc(r))
-  end function MD_GetConnectPos
+    MD_GetPointPos = MoorDyn_GetPointPos(instance, c_loc(r))
+  end function MD_GetPointPos
 
-  integer function MD_GetConnectVel(instance, r)
+  integer function MD_GetPointVel(instance, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
     real(c_double), intent(in), target :: r(:)
-    MD_GetConnectVel = MoorDyn_GetConnectVel(instance, c_loc(r))
-  end function MD_GetConnectVel
+    MD_GetPointVel = MoorDyn_GetPointVel(instance, c_loc(r))
+  end function MD_GetPointVel
 
-  integer function MD_GetConnectForce(instance, r)
+  integer function MD_GetPointForce(instance, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
     real(c_double), intent(in), target :: r(:)
-    MD_GetConnectForce = MoorDyn_GetConnectForce(instance, c_loc(r))
-  end function MD_GetConnectForce
+    MD_GetPointForce = MoorDyn_GetPointForce(instance, c_loc(r))
+  end function MD_GetPointForce
 
-  integer function MD_SaveConnectVTK(instance, f)
+  integer function MD_SavePointVTK(instance, f)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
     character(*), intent(in) :: f
-    MD_SaveConnectVTK = MoorDyn_SaveConnectVTK(instance, trim(f) // c_null_char)
-  end function MD_SaveConnectVTK
+    MD_SavePointVTK = MoorDyn_SavePointVTK(instance, trim(f) // c_null_char)
+  end function MD_SavePointVTK
 
   !                                Line.h
   ! ============================================================================

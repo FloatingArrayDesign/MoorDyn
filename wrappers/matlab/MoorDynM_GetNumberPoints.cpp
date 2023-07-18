@@ -37,10 +37,10 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnection, 1, 1)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 1)
 {
 	unsigned int n;
-	const int err = MoorDyn_GetConnectNAttached(instance, &n);
+	const int err = MoorDyn_GetNumberPoints(instance, &n);
 	MOORDYNM_CHECK_ERROR(err);
 	outputs[0] = factory.createScalar<uint64_t>(n);
 }

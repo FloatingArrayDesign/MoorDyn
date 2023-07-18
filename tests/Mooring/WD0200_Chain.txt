@@ -4,7 +4,7 @@ MoorDyn input file of the mooring system for FD validation cases
 TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
 (name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
 chain      0.252   390        1.674e9    -1.0        0          1.37   1.0    0.64    0.0
----------------------- CONNECTION PROPERTIES --------------------------------
+---------------------- POINT PROPERTIES --------------------------------
 ID    Type      X       Y       Z       Mass   Volume  CdA    Ca
 (#)   (-)       (m)     (m)     (m)     (kg)   (mˆ3)   (m^2)  (-)
 1     Fixed     700    0.0     -200.0  0      0       0      0

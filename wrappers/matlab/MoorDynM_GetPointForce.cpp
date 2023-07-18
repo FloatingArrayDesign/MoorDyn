@@ -37,10 +37,10 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnection, 1, 1)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynPoint, 1, 1)
 {
 	std::vector<double> v(3, 0.0);
-	const int err = MoorDyn_GetConnectVel(instance, v.data());
+	const int err = MoorDyn_GetPointForce(instance, v.data());
 	MOORDYNM_CHECK_ERROR(err);
 
 	outputs[0] = factory.createArray<double>(

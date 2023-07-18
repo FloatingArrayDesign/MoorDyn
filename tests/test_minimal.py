@@ -45,8 +45,8 @@ class MinimalTests(TestCase):
         system = moordyn.Create()
         x = []
         for i in range(4, 7):
-            conn = moordyn.GetConnection(system, i)
-            x = x + list(moordyn.GetConnectPos(conn))
+            point = moordyn.GetPoint(system, i)
+            x = x + list(moordyn.GetPointPos(point))
         v = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.assertEqual(moordyn.Init(system, x, v), 0,
                          "Failure initializing the lines")

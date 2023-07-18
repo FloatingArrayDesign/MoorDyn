@@ -23,7 +23,7 @@ class Mooring:
         self.__rod_materials = []
         self.__bodies = []
         self.__rods = []
-        self.__connections = []
+        self.__points = []
         self.__lines = []
         self.__failures = []
         self.__options = []
@@ -44,9 +44,9 @@ class Mooring:
         self.__rods.append(rod)
         rod.name = len(self.__rods)
 
-    def AddConnection(self, con):
-        self.__connections.append(con)
-        con.name = len(self.__connections)
+    def AddPoint(self, point):
+        self.__points.append(point)
+        point.name = len(self.__points)
 
     def AddLine(self, line):
         self.__lines.append(line)
@@ -65,7 +65,7 @@ class Mooring:
             self.__write_section(f, self.__rod_materials)
             self.__write_section(f, self.__bodies)
             self.__write_section(f, self.__rods)
-            self.__write_section(f, self.__connections)
+            self.__write_section(f, self.__points)
             self.__write_section(f, self.__lines)
             self.__write_section(f, self.__failures)
             self.__write_section(f, self.__options)

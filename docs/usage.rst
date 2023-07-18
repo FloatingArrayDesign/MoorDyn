@@ -72,16 +72,16 @@ The columns in order are as follows:
  - Cdt –  tangential drag coefficient (with respect to surface area, π*d*l) 
 
 
-Connection Properties
+Point Properties
 ^^^^^^^^^^^^^^^^^^^^^
 
-The Connection Properties section defines the connection node points which mooring lines can be connected to.
+The Point Properties section defines the point node points which mooring lines can be connected to.
 
 .. code-block:: none
  :emphasize-lines: 2
  
- ----------------------- CONNECTION PROPERTIES ----------------------------------------------
- 3     NConnections - the number of connections
+ ----------------------- POINT PROPERTIES ----------------------------------------------
+ 3     NPoints - the number of points
  Node      Type      X        Y         Z        M        V        FX       FY      FZ     CdA   CA
  (-)       (-)      (m)      (m)       (m)      (kg)     (m^3)    (kN)     (kN)    (kN)   (m^2)  (-)
  1         Vessel     0.0     0      -10.00       0        0        0        0       0       0     0
@@ -90,10 +90,10 @@ The Connection Properties section defines the connection node points which moori
 
 The columns are as follows:
 
- - Node –  the ID number of the connection (must be sequential starting with 1)
+ - Node –  the ID number of the point (must be sequential starting with 1)
  - Type –  one of “Fixed”, “Vessel”, or “Connect”, as described :ref:`here <points>`
- - X, Y, Z –  Coordinates of the connection (relative to inertial reference frame if “fixed” or “connect”, 
-   relative to platform reference frame if “vessel”).  In the case of “connect” nodes, it is simply an 
+ - X, Y, Z –  Coordinates of the point (relative to inertial reference frame if “fixed” or “point”, 
+   relative to platform reference frame if “vessel”).  In the case of “point” nodes, it is simply an 
    initial guess for position before MoorDyn calculates the equilibrium initial position.  (m)
  - M – node mass in the case of clump weights (kg)
  - V –  node displacement in the case of floats (m^3)
@@ -124,8 +124,8 @@ The columns are as follows:
  - LineType - a string matching a Line Dictionary entry, specifying which physical properties it uses
  - UnstrLen - the unstretched length of the line
  - NumSegs - how many segments the line is discretized into (it will have NumSegs+1 nodes total, including its two end nodes)
- - NodeA - the ID number of the connection that the first (anchor) end of the line is attached to
- - NodeB - the ID number of the connection that the final (fairlead) end of the line is attached to
+ - NodeA - the ID number of the point that the first (anchor) end of the line is attached to
+ - NodeB - the ID number of the point that the final (fairlead) end of the line is attached to
  - flags/outputs - any data to be output in a dedicated output file for that line. 
    
 This last entry expects a string of one or more characters without spaces, each character activating a given output property.  
@@ -240,11 +240,11 @@ There are currently five supported types of output quantities:
  - T or Ten – tension (N)
  - fX, fY, fZ – net force in x/y/z direction (N)
 
-These can be produced at a connection object, denoted by the prefix Con#, where # is the connect number.  
+These can be produced at a point object, denoted by the prefix Con#, where # is the point number.  
 Or, they can be produced at a node along a line, denoted by the prefix L#N@, where # is the line number 
 and @ is the number of the node along that line.  For example,
 
- - Con3vY outputs the connection 3 y velocity,
+ - Con3vY outputs the point 3 y velocity,
  - L2N4pX outputs the line 2, node 4 x position.
 
 
@@ -507,17 +507,17 @@ ability can be used for any non-shared mooring lines in all cases. To enable sim
 which are coupled with multiple turbines, an additional farm-level MoorDyn instance has been added. This MoorDyn
 instance is not associated with any turbine but instead is called at a higher level by FAST.Farm. Attachments
 to different turbines within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the type
-for any connections that are attached to a turbine, where "N" is the specific turbine number as listed in the 
+for any points that are attached to a turbine, where "N" is the specific turbine number as listed in the 
 FAST.Farm input file.
 
 
 MoorDyn Input File
 ^^^^^^^^^^^^^^^^^^
 
-The following input file excerpt shows how connections can be specified as attached to specific turbines (turbines 
-3 and 4 in this example). When a connection has "TurbineN" as its type, it acts similarly to a "Vessel" type, where
+The following input file excerpt shows how points can be specified as attached to specific turbines (turbines 
+3 and 4 in this example). When a point has "TurbineN" as its type, it acts similarly to a "Vessel" type, where
 the X/Y/Z inputs specify the relative location of the fairlead on the platform. In the farm-level MoorDyn input 
-file, "Vessel" connection types cannot be used because it is ambiguous which turbine they attach to.
+file, "Vessel" point types cannot be used because it is ambiguous which turbine they attach to.
 
 .. code-block:: none
  :emphasize-lines: 5,6,12
@@ -535,7 +535,7 @@ file, "Vessel" connection types cannot be used because it is ambiguous which tur
  1     sharedchain  300.0        20        1         2        p
  2     anchorchain  300.0        20        1         3        p
  
-In this example, Line 1 is a shared mooring line and Line 2 is an anchored mooring line that has a fairlead connection
+In this example, Line 1 is a shared mooring line and Line 2 is an anchored mooring line that has a fairlead point
 in common with the shared line. Individual mooring systems can be modeled in the farm-level MoorDyn instance as well.
 
 

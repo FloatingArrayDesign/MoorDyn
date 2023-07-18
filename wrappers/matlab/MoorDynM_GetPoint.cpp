@@ -37,11 +37,16 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynConnection, 1, 1)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 2, 1)
 {
-	int n;
-	const int err = MoorDyn_GetConnectType(instance, &n);
-	MOORDYNM_CHECK_ERROR(err);
-	outputs[0] = factory.createScalar<int64_t>(n);
+	const unsigned int i = inputs[1][0];
+	MoorDynPoint out = MoorDyn_GetPoint(instance, i);
+	if (!out) {
+		matlabPtr->feval(u"error",
+		                 0,
+		                 std::vector<Array>({ factory.createScalar(
+		                     "MoorDyn reported an error") }));
+	}
+	outputs[0] = factory.createScalar<uint64_t>(encode_ptr((void*)out));
 }
 MOORDYNM_MEX_FUNCTION_END

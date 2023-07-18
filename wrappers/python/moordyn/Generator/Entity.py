@@ -117,7 +117,7 @@ def to_list(v):
 
 
 class PropsList:
-    """The line connection
+    """The line point
     """
     def __init__(self, l, sep):
         """Constructor

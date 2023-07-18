@@ -149,11 +149,11 @@ typedef StateVar<std::vector<vec>> LineState;
 /// The state variables derivative for lines
 typedef StateVarDeriv<std::vector<vec>> DLineStateDt;
 
-/// The state variables for connections
-typedef StateVar<vec> ConnState;
+/// The state variables for points
+typedef StateVar<vec> PointState;
 
-/// The state variables derivative for connections
-typedef StateVarDeriv<vec> DConnStateDt;
+/// The state variables derivative for points
+typedef StateVarDeriv<vec> DPointStateDt;
 
 /// The state variables for rods
 typedef StateVar<XYZQuat, vec6> RodState;
@@ -182,8 +182,8 @@ class MoorDynState
 	/// The states of the lines
 	std::vector<LineState> lines;
 
-	/// The states of the connections
-	std::vector<ConnState> conns;
+	/// The states of the points
+	std::vector<PointState> points;
 
 	/// The states of the rods
 	std::vector<RodState> rods;
@@ -229,8 +229,8 @@ class DMoorDynStateDt
 	/// The state derivatives of the lines
 	std::vector<DLineStateDt> lines;
 
-	/// The state derivatives of the connections
-	std::vector<DConnStateDt> conns;
+	/// The state derivatives of the points
+	std::vector<DPointStateDt> points;
 
 	/// The state derivatives of the rods
 	std::vector<DRodStateDt> rods;

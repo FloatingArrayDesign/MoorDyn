@@ -1,7 +1,7 @@
 from .Mooring import Mooring
-from .Body import BodyConnection, Body
-from .Connection import Connection
+from .Body import BodyPoint, Body
+from .Point import Point
 from .Failure import Failure
-from .Line import LineMaterial, LineConnection, Line
+from .Line import LineMaterial, LinePoint, Line
 from .Option import Option
-from .Rod import RodMaterial, RodConnection, Rod
+from .Rod import RodMaterial, RodPoint, Rod

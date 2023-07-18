@@ -55,9 +55,9 @@ typedef std::shared_ptr<Waves> WavesRef;
  * @brief A mooring line
  *
  * Each mooring line is divided on a set of nodes connected by segments, with
- * two connections at the end points
+ * two points at the end points
  *
- * [connect (node 0)] - seg 0 - [node 1] - ... - seg n-1 - [connect (node N)]
+ * [point (node 0)] - seg 0 - [node 1] - ... - seg n-1 - [point (node N)]
  *
  * Depending on the length of the line, \f$ l \f$, the number of segments,
  * \f$ n \f$, and the material density and Young's modulus, \f$ \rho \f$ &
@@ -246,19 +246,19 @@ class Line final : public io::IO
 	 */
 	typedef enum
 	{
-		/// Pinned to Connection
+		/// Pinned to Point
 		PINNED = 0,
 		/// Cantilevered to Rod
 		CANTILEVERED = 1,
 		// Some aliases
-		CONNECTION = PINNED,
+		POINT = PINNED,
 		ROD = CANTILEVERED,
 	} endTypes;
 
-	/// type of connection at end A: 0=pinned to Connection, 1=cantilevered to
+	/// type of point at end A: 0=pinned to Point, 1=cantilevered to
 	/// Rod.
 	endTypes endTypeA;
-	/// type of connection at end B: 0=pinned to Connection, 1=cantilevered to
+	/// type of point at end B: 0=pinned to Point, 1=cantilevered to
 	/// Rod.
 	endTypes endTypeB;
 	/// moment at end A from bending, to be applied on attached Rod/Body

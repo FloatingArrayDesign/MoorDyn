@@ -77,12 +77,12 @@ write_individual_vtk(moordyn::MoorDyn& system,
 		rod_i++;
 	}
 
-	int conn_i = 1;
-	for (auto& conn : system.GetConnections()) {
+	int point_i = 1;
+	for (auto& point : system.GetPoints()) {
 		std::string filepath = "../../vtk_out/";
 		std::stringstream filename;
 		std::stringstream element_name;
-		element_name << "vtk_conn_" << conn_i;
+		element_name << "vtk_point_" << point_i;
 		auto& vtp_series = series_writer.getSeries(element_name.str());
 		auto step_num = vtp_series.time_steps.size();
 
@@ -91,8 +91,8 @@ write_individual_vtk(moordyn::MoorDyn& system,
 		// std::cout << "***     Saving on '" << full_path << "'..." <<
 		// std::endl;
 		vtp_series.time_steps.push_back({ filename.str(), time });
-		conn->saveVTK(full_path.c_str());
-		conn_i++;
+		point->saveVTK(full_path.c_str());
+		point_i++;
 	}
 
 	int line_i = 1;

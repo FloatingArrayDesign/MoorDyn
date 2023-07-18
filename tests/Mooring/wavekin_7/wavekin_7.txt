@@ -5,7 +5,7 @@ TypeName   Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     Cd
 (name)     (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
 chain      0.252   70        1.674e9    -1.0        0          1.37   1.0    0.64    0.0
 chain2  13.332E-3  1.1        7.51E6     -0.5        0        1.37    1.0      0.64     1.0
----------------------- CONNECTION PROPERTIES --------------------------------
+---------------------- POINT PROPERTIES --------------------------------
 ID    Type      X       Y       Z       Mass   Volume  CdA    Ca
 (#)   (-)       (m)     (m)     (m)     (kg)   (mˆ3)   (m^2)  (-)
 1     Fixed     -400    0.0     -50.0    0      0       0      0

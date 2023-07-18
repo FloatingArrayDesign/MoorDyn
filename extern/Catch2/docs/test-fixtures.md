@@ -10,9 +10,9 @@ class UniqueTestsFixture {
   private:
    static int uniqueID;
   protected:
-   DBConnection conn;
+   DBPoint point;
   public:
-   UniqueTestsFixture() : conn(DBConnection::createConnection("myDB")) {
+   UniqueTestsFixture() : point(DBPoint::createPoint("myDB")) {
    }
   protected:
    int getID() {
@@ -23,14 +23,14 @@ class UniqueTestsFixture {
  int UniqueTestsFixture::uniqueID = 0;
 
  TEST_CASE_METHOD(UniqueTestsFixture, "Create Employee/No Name", "[create]") {
-   REQUIRE_THROWS(conn.executeSQL("INSERT INTO employee (id, name) VALUES (?, ?)", getID(), ""));
+   REQUIRE_THROWS(point.executeSQL("INSERT INTO employee (id, name) VALUES (?, ?)", getID(), ""));
  }
  TEST_CASE_METHOD(UniqueTestsFixture, "Create Employee/Normal", "[create]") {
-   REQUIRE(conn.executeSQL("INSERT INTO employee (id, name) VALUES (?, ?)", getID(), "Joe Bloggs"));
+   REQUIRE(point.executeSQL("INSERT INTO employee (id, name) VALUES (?, ?)", getID(), "Joe Bloggs"));
  }
 ```
 
-The two test cases here will create uniquely-named derived classes of UniqueTestsFixture and thus can access the `getID()` protected method and `conn` member variables. This ensures that both the test cases are able to create a DBConnection using the same method (DRY principle) and that any ID's created are unique such that the order that tests are executed does not matter.
+The two test cases here will create uniquely-named derived classes of UniqueTestsFixture and thus can access the `getID()` protected method and `point` member variables. This ensures that both the test cases are able to create a DBPoint using the same method (DRY principle) and that any ID's created are unique such that the order that tests are executed does not matter.
 
 
 Catch2 also provides `TEMPLATE_TEST_CASE_METHOD` and

@@ -175,7 +175,7 @@ moordyn::MoorDyn::~MoorDyn()
 		delete obj;
 	for (auto obj : RodList)
 		delete obj;
-	for (auto obj : ConnectionList)
+	for (auto obj : PointList)
 		delete obj;
 	for (auto obj : LineList)
 		delete obj;
@@ -247,28 +247,28 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		RodList[l]->initialize();
 	}
 
-	for (auto l : CpldConIs) {
-		LOGMSG << "Initializing coupled Connection " << l << " in " << x[ix]
+	for (auto l : CpldPointIs) {
+		LOGMSG << "Initializing coupled Point " << l << " in " << x[ix]
 		       << ", " << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
 		moordyn::array2vec(xd + ix, rd);
-		ConnectionList[l]->initiateStep(r, rd);
+		PointList[l]->initiateStep(r, rd);
 
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			ConnectionList[l]->updateFairlead(0.0);
+			PointList[l]->updateFairlead(0.0);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Error initializing coupled connection" << l << ": "
+			LOGERR << "Error initializing coupled point" << l << ": "
 			       << err_msg << endl;
 			return err;
 		}
 		// call this just to set WaterKin (may also set up output file in
 		// future)
-		ConnectionList[l]->initialize();
+		PointList[l]->initialize();
 		ix += 3;
 	}
 
@@ -285,7 +285,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// boost drag coefficients to speed static equilibrium convergence
 	for (auto obj : LineList)
 		obj->scaleDrag(ICDfac);
-	for (auto obj : ConnectionList)
+	for (auto obj : PointList)
 		obj->scaleDrag(ICDfac);
 	for (auto obj : RodList)
 		obj->scaleDrag(ICDfac);
@@ -336,7 +336,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			FairTensLast[lf][0] = FairTens[lf];
 		}
 
-		// go through connections to get fairlead forces
+		// go through points to get fairlead forces
 		for (unsigned int lf = 0; lf < LineList.size(); lf++)
 			FairTens[lf] =
 			    LineList[lf]->getNodeTen(LineList[lf]->getN()).norm();
@@ -399,7 +399,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
 	}
-	for (auto obj : ConnectionList)
+	for (auto obj : PointList)
 		obj->scaleDrag(1.0 / ICDfac);
 	for (auto obj : RodList) {
 		obj->scaleDrag(1.0 / ICDfac);
@@ -497,7 +497,7 @@ moordyn::MoorDyn::Step(const double* x,
 	unsigned int ix = 0;
 
 	// ---------------- set positions and velocities -----------------------
-	// ... of any coupled bodies, rods, and connections at this instant, to be
+	// ... of any coupled bodies, rods, and points at this instant, to be
 	// used later for extrapolating motions
 	for (auto l : CpldBodyIs) {
 		// BUG: These conversions will not be needed in the future
@@ -525,11 +525,11 @@ moordyn::MoorDyn::Step(const double* x,
 		}
 		RodList[l]->initiateStep(r, rd);
 	}
-	for (auto l : CpldConIs) {
+	for (auto l : CpldPointIs) {
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
 		moordyn::array2vec(xd + ix, rd);
-		ConnectionList[l]->initiateStep(r, rd);
+		PointList[l]->initiateStep(r, rd);
 		ix += 3;
 	}
 
@@ -606,8 +606,8 @@ MoorDyn::Serialize(void)
 		subdata = rod->Serialize();
 		data.insert(data.end(), subdata.begin(), subdata.end());
 	}
-	for (auto conn : ConnectionList) {
-		subdata = conn->Serialize();
+	for (auto point : PointList) {
+		subdata = point->Serialize();
 		data.insert(data.end(), subdata.begin(), subdata.end());
 	}
 	for (auto line : LineList) {
@@ -634,8 +634,8 @@ MoorDyn::Deserialize(const uint64_t* data)
 	for (auto rod : RodList) {
 		ptr = rod->Deserialize(ptr);
 	}
-	for (auto conn : ConnectionList) {
-		ptr = conn->Deserialize(ptr);
+	for (auto point : PointList) {
+		ptr = point->Deserialize(ptr);
 	}
 	for (auto line : LineList) {
 		ptr = line->Deserialize(ptr);
@@ -650,14 +650,14 @@ MoorDyn::getVTK() const
 {
 	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
 	out->SetNumberOfBlocks(static_cast<unsigned int>(
-	    RodList.size() + ConnectionList.size() + LineList.size()));
+	    RodList.size() + PointList.size() + LineList.size()));
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < BodyList.size(); i++)
 		out->SetBlock(n + i, BodyList[i]->getVTK());
 	n += ui_size(BodyList);
-	for (unsigned int i = 0; i < ConnectionList.size(); i++)
-		out->SetBlock(n + i, ConnectionList[i]->getVTK());
-	n += ui_size(ConnectionList);
+	for (unsigned int i = 0; i < PointList.size(); i++)
+		out->SetBlock(n + i, PointList[i]->getVTK());
+	n += ui_size(PointList);
 	for (unsigned int i = 0; i < RodList.size(); i++)
 		out->SetBlock(n + i, RodList[i]->getVTK());
 	n += ui_size(RodList);
@@ -722,7 +722,7 @@ moordyn::MoorDyn::ReadInFile()
 	}
 
 	// make a "ground body" that will be the parent of all fixed objects
-	// (connections and rods)
+	// (points and rods)
 	LOGDBG << "Creating the ground body of type " << Body::TypeName(Body::FIXED)
 	       << "..." << endl;
 	// GroundBody always get id of zero
@@ -800,7 +800,8 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt,
 	                            { "POINTS",
 	                              "POINT LIST",
-	                              "CONNECTION PROPERTIES",
+	                              "POINT PROPERTIES",
+								  "CONNECTION PROPERTIES",
 	                              "NODE PROPERTIES" })) != -1) {
 		LOGDBG << "   Reading point list:" << endl;
 
@@ -841,16 +842,16 @@ moordyn::MoorDyn::ReadInFile()
 				Ca = atof(entries[8].c_str());
 			}
 
-			Connection::types type;
+			Point::types type;
 			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
 			str::decomposeString(entries[1], let1, num1, let2, num2, let3);
 			if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" })) {
 				// it is fixed  (this would just be used if someone wanted
 				// to temporarly fix a body that things were attached to)
-				type = Connection::FIXED;
+				type = Point::FIXED;
 			} else if (let1 == "BODY") {
-				type = Connection::FIXED;
+				type = Point::FIXED;
 				if (num1.empty()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
@@ -874,20 +875,20 @@ moordyn::MoorDyn::ReadInFile()
 			                          "COUPLED",
 			                          "CPLD" })) {
 				// if a fairlead, add to list and add
-				type = Connection::COUPLED;
-				CpldConIs.push_back(ui_size(ConnectionList));
-			} else if (str::isOneOf(let1, { "CONNECT", "CON", "FREE" })) {
-				// if a connect, add to list and add states for it
-				type = Connection::FREE;
-				FreeConIs.push_back(ui_size(ConnectionList));
-				ConnectStateIs.push_back(
-				    nX); // assign start index of this connect's states
-				nX += 6; // add 6 state variables for each connect
+				type = Point::COUPLED;
+				CpldPointIs.push_back(ui_size(PointList));
+			} else if (str::isOneOf(let1, { "POINT", "CONNECT", "CON", "FREE" })) {
+				// if a point, add to list and add states for it
+				type = Point::FREE;
+				FreePointIs.push_back(ui_size(PointList));
+				PointStateIs.push_back(
+				    nX); // assign start index of this point's states
+				nX += 6; // add 6 state variables for each point
 			} else {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
-				       << "Unrecognized connection type '" << let1 << "'"
+				       << "Unrecognized point type '" << let1 << "'"
 				       << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
@@ -899,21 +900,21 @@ moordyn::MoorDyn::ReadInFile()
 				env->WtrDpth = -r0[2];
 
 			LOGDBG << "\t'" << number << "'"
-			       << " - of type " << Connection::TypeName(type) << " with id "
-			       << ConnectionList.size() << endl;
+			       << " - of type " << Point::TypeName(type) << " with id "
+			       << PointList.size() << endl;
 
-			// now make Connection object!
-			Connection* obj = new Connection(_log, ConnectionList.size());
+			// now make Point object!
+			Point* obj = new Point(_log, PointList.size());
 			obj->setup(number, type, r0, M, V, F, CdA, Ca);
-			ConnectionList.push_back(obj);
+			PointList.push_back(obj);
 
-			// depending on type, assign the Connection to its respective
+			// depending on type, assign the Point to its respective
 			// parent body
 			if (str::isOneOf(let1, { "ANCHOR", "FIXED", "FIX" }))
-				GroundBody->addConnection(obj, r0);
+				GroundBody->addPoint(obj, r0);
 			else if (let1 == "BODY") {
 				int bodyID = stoi(num1);
-				BodyList[bodyID - 1]->addConnection(obj, r0);
+				BodyList[bodyID - 1]->addPoint(obj, r0);
 			}
 			LOGDBG << endl;
 
@@ -942,8 +943,8 @@ moordyn::MoorDyn::ReadInFile()
 			LOGERR << "Reading lines without defined line types" << endl;
 			return MOORDYN_INVALID_INPUT;
 		}
-		if (!ConnectionList.size()) {
-			LOGERR << "Reading lines without defined connections" << endl;
+		if (!PointList.size()) {
+			LOGERR << "Reading lines without defined points" << endl;
 			return MOORDYN_INVALID_INPUT;
 		}
 
@@ -1022,7 +1023,7 @@ moordyn::MoorDyn::ReadInFile()
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
-					       << "No number provided for the 1st connection index"
+					       << "No number provided for the 1st point index"
 					       << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
@@ -1047,21 +1048,21 @@ moordyn::MoorDyn::ReadInFile()
 						       << "Rod end (A or B) must be specified" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
-				} else if (let1.empty() || str::isOneOf(let1, { "C", "CON" })) {
-					if (!id || id > ConnectionList.size()) {
+				} else if (let1.empty() || str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
+					if (!id || id > PointList.size()) {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
 						       << "..." << endl
 						       << "'" << in_txt[i] << "'" << endl
-						       << "There are not " << id << " connections"
+						       << "There are not " << id << " points"
 						       << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
-					ConnectionList[id - 1]->addLine(obj, end_point);
+					PointList[id - 1]->addLine(obj, end_point);
 				} else {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
-					       << "Unrecognized connection type " << let1 << endl;
+					       << "Unrecognized point type " << let1 << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
 			}
@@ -1087,7 +1088,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			FailProps* obj = new FailProps();
 			obj->rod = NULL;
-			obj->conn = NULL;
+			obj->point = NULL;
 			obj->status = false;
 			FailList.push_back(obj);
 
@@ -1124,21 +1125,21 @@ moordyn::MoorDyn::ReadInFile()
 					       << "Failure end (A or B) must be specified" << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-			} else if (let1.empty() || str::isOneOf(let1, { "C", "CON" })) {
-				if (!id || id > ConnectionList.size()) {
+			} else if (let1.empty() || str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
+				if (!id || id > PointList.size()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
-					       << "There are not " << id << " connections" << endl;
+					       << "There are not " << id << " points" << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-				obj->conn = ConnectionList[id - 1];
+				obj->point = PointList[id - 1];
 				;
 			} else {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
-				       << "Unrecognized connection type " << let1 << endl;
+				       << "Unrecognized point type " << let1 << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
 
@@ -1290,7 +1291,7 @@ moordyn::MoorDyn::ReadInFile()
 						       << "..." << endl
 						       << "'" << in_txt[i] << "'" << endl
 						       << "invalid output specifier: " << let1
-						       << ".  Type must be oneof L/Line, C/Con, R/Rod, "
+						       << ".  Type must be oneof L/Line, P/Point, R/Rod, "
 						          "or B/Body"
 						       << endl;
 						dummy.OType = -1;
@@ -1425,17 +1426,17 @@ moordyn::MoorDyn::ReadInFile()
 	LOGMSG << "Generated entities:" << endl
 	       << "\tnLineTypes  = " << LinePropList.size() << endl
 	       << "\tnRodTypes   = " << RodPropList.size() << endl
-	       << "\tnPoints     = " << ConnectionList.size() << endl
+	       << "\tnPoints     = " << PointList.size() << endl
 	       << "\tnBodies     = " << BodyList.size() << endl
 	       << "\tnRods       = " << RodList.size() << endl
 	       << "\tnLines      = " << LineList.size() << endl
 	       << "\tnFails      = " << FailList.size() << endl
 	       << "\tnFreeBodies = " << FreeBodyIs.size() << endl
 	       << "\tnFreeRods   = " << FreeRodIs.size() << endl
-	       << "\tnFreePonts  = " << FreeConIs.size() << endl
+	       << "\tnFreePoints  = " << FreePointIs.size() << endl
 	       << "\tnCpldBodies = " << CpldBodyIs.size() << endl
 	       << "\tnCpldRods   = " << CpldRodIs.size() << endl
-	       << "\tnCpldPoints = " << CpldConIs.size() << endl;
+	       << "\tnCpldPoints = " << CpldPointIs.size() << endl;
 
 	// write system description
 	LOGDBG << "----- MoorDyn Model Summary (to be written) -----" << endl;
@@ -1459,8 +1460,8 @@ moordyn::MoorDyn::ReadInFile()
 		_t_integrator->AddBody(obj);
 	for (auto obj : RodList)
 		_t_integrator->AddRod(obj);
-	for (auto obj : ConnectionList)
-		_t_integrator->AddConnection(obj);
+	for (auto obj : PointList)
+		_t_integrator->AddPoint(obj);
 	for (auto obj : LineList)
 		_t_integrator->AddLine(obj);
 
@@ -1491,9 +1492,9 @@ moordyn::MoorDyn::ReadInFile()
 		obj->setEnv(env, waves, seafloor);
 		waves->addRod(obj);
 	}
-	for (auto obj : ConnectionList) {
+	for (auto obj : PointList) {
 		obj->setEnv(env, waves, seafloor);
-		waves->addConn(obj);
+		waves->addPoint(obj);
 	}
 	for (auto obj : LineList) {
 		obj->setEnv(env, waves, seafloor);
@@ -1839,7 +1840,7 @@ moordyn::MoorDyn::readRod(string inputText)
 		                          // list because it is half free
 		RodStateIs.push_back(nX); // assign start index of this rod's states
 		nX += 6;                  // add 6 state variables for each pinned rod
-	} else if (str::isOneOf(let1, { "CONNECT", "CON", "FREE" })) {
+	} else if (str::isOneOf(let1, { "POINT", "CON", "FREE" })) {
 		type = Rod::FREE;
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // add this free rod to the free list
@@ -1848,7 +1849,7 @@ moordyn::MoorDyn::readRod(string inputText)
 	} else {
 		LOGERR << "Error in " << _filepath << ":"
 		       << "'" << inputText << "'" << endl
-		       << "Unrecognized connection type '" << let1 << "'" << endl;
+		       << "Unrecognized point type '" << let1 << "'" << endl;
 		return nullptr;
 	}
 
@@ -2018,36 +2019,36 @@ void
 moordyn::MoorDyn::detachLines(FailProps* failure)
 {
 	failure->status = true;
-	if (failure->rod && failure->conn) {
-		LOGERR << "The failure criteria considers both a rod and a connection"
+	if (failure->rod && failure->point) {
+		LOGERR << "The failure criteria considers both a rod and a point"
 		       << endl;
 		throw moordyn::unhandled_error("Invalid failure data");
-	} else if (!failure->rod && !failure->conn) {
+	} else if (!failure->rod && !failure->point) {
 		LOGERR << "The failure criteria is missing either a rod or a "
-		          "connection"
+		          "point"
 		       << endl;
 		throw moordyn::unhandled_error("Invalid failure data");
 	}
 
-	// create new massless connection for detached end(s) of line(s)
+	// create new massless point for detached end(s) of line(s)
 	const real M = 0.0;
 	const real V = 0.0;
 	const vec r0 = vec::Zero();
 	const vec F = vec::Zero();
 	const real CdA = 0.0;
 	const real Ca = 0.0;
-	const Connection::types type = Connection::FREE;
+	const Point::types type = Point::FREE;
 
-	nX += 6; // add 6 state variables for each connect
+	nX += 6; // add 6 state variables for each point
 
-	// add connect to list of free ones and add states for it
-	FreeConIs.push_back(ui_size(ConnectionList));
-	// assign start index of this connect's states
-	ConnectStateIs.push_back(nX);
+	// add point to list of free ones and add states for it
+	FreePointIs.push_back(ui_size(PointList));
+	// assign start index of this point's states
+	PointStateIs.push_back(nX);
 
-	// now make Connection object!
-	Connection* obj = new Connection(_log, ConnectionList.size());
-	obj->setup(static_cast<int>(ConnectionList.size() + 1),
+	// now make Point object!
+	Point* obj = new Point(_log, PointList.size());
+	obj->setup(static_cast<int>(PointList.size() + 1),
 	           type,
 	           r0,
 	           M,
@@ -2056,7 +2057,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	           CdA,
 	           Ca);
 	obj->setEnv(env, waves, seafloor);
-	ConnectionList.push_back(obj);
+	PointList.push_back(obj);
 
 	// Kinematics of old attachment point
 	vec pos, vel;
@@ -2066,10 +2067,10 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 		pos = failure->rod->getNodePos(node);
 		vel = failure->rod->getNodeVel(node);
 	} else {
-		std::tie(pos, vel) = failure->conn->getState();
+		std::tie(pos, vel) = failure->point->getState();
 	}
 
-	// detach lines from old Rod or Connection, and get kinematics of the
+	// detach lines from old Rod or Point, and get kinematics of the
 	// old attachment point
 	for (unsigned int i = 0; i < failure->lines.size(); i++) {
 		if (failure->rod)
@@ -2077,12 +2078,12 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 			    failure->rod_end_point, failure->lines[i]);
 		else
 			failure->line_end_points[i] =
-			    failure->conn->removeLine(failure->lines[i]);
+			    failure->point->removeLine(failure->lines[i]);
 
 		obj->addLine(failure->lines[i], failure->line_end_points[i]);
 	}
 
-	// update connection kinematics to match old line attachment point
+	// update point kinematics to match old line attachment point
 	// kinematics and set positions of attached line ends
 	obj->setState(pos, vel);
 }
@@ -2373,25 +2374,25 @@ MoorDyn_GetRod(MoorDyn system, unsigned int l)
 }
 
 int DECLDIR
-MoorDyn_GetNumberConnections(MoorDyn system, unsigned int* n)
+MoorDyn_GetNumberPoints(MoorDyn system, unsigned int* n)
 {
 	CHECK_SYSTEM(system);
-	*n = ui_size(((moordyn::MoorDyn*)system)->GetConnections());
+	*n = ui_size(((moordyn::MoorDyn*)system)->GetPoints());
 	return MOORDYN_SUCCESS;
 }
 
-MoorDynConnection DECLDIR
-MoorDyn_GetConnection(MoorDyn system, unsigned int l)
+MoorDynPoint DECLDIR
+MoorDyn_GetPoint(MoorDyn system, unsigned int l)
 {
 	if (!system)
 		return NULL;
-	auto conns = ((moordyn::MoorDyn*)system)->GetConnections();
-	if (!l || (l > conns.size())) {
-		cerr << "Error: There is not such connection " << l << endl
+	auto points = ((moordyn::MoorDyn*)system)->GetPoints();
+	if (!l || (l > points.size())) {
+		cerr << "Error: There is not such point " << l << endl
 		     << "while calling " << __FUNC_NAME__ << "()" << endl;
 		return NULL;
 	}
-	return (MoorDynConnection)(conns[l - 1]);
+	return (MoorDynPoint)(points[l - 1]);
 }
 
 int DECLDIR
@@ -2528,8 +2529,8 @@ MoorDyn_DrawWithGL(MoorDyn system)
 	// been created by the calling program)
 	for (auto line : ((moordyn::MoorDyn*)system)->GetLines())
 		line->drawGL2();
-	for (auto conn : ((moordyn::MoorDyn*)system)->GetConnections())
-		conn->drawGL();
+	for (auto point : ((moordyn::MoorDyn*)system)->GetPoints())
+		point->drawGL();
 #endif
 	return MOORDYN_SUCCESS;
 }

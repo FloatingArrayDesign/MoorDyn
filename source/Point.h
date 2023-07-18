@@ -28,12 +28,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file Connection.h
- * C API for the moordyn::Connection object
+/** @file Point.h
+ * C API for the moordyn::Point object
  */
 
-#ifndef CONNECTION_H
-#define CONNECTION_H
+#ifndef POINT_H
+#define POINT_H
 
 #include "Line.h"
 
@@ -46,65 +46,65 @@ extern "C"
 	 *  @{
 	 */
 
-	/// A mooring connection instance
-	typedef struct __MoorDynConnection* MoorDynConnection;
+	/// A mooring point instance
+	typedef struct __MoorDynPoint* MoorDynPoint;
 
-	/** @brief Get the connection identifier
-	 * @param conn The Moordyn connection
+	/** @brief Get the point identifier
+	 * @param point The Moordyn point
 	 * @param id The output id
-	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
 	 * MOORDYN_SUCCESS otherwise
 	 */
-	int DECLDIR MoorDyn_GetConnectID(MoorDynConnection conn, int* id);
+	int DECLDIR MoorDyn_GetPointID(MoorDynPoint point, int* id);
 
-	/** @brief Get the connection type
-	 * @param conn The Moordyn connection
+	/** @brief Get the point type
+	 * @param point The Moordyn point
 	 * @param t The output type
-	 * @return MOORDYN_INVALID_VALUE if a NULL connection is provided,
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
 	 * MOORDYN_SUCCESS otherwise
-	 * @see Connection::types
+	 * @see Point::types
 	 */
-	int DECLDIR MoorDyn_GetConnectType(MoorDynConnection conn, int* t);
+	int DECLDIR MoorDyn_GetPointType(MoorDynPoint point, int* t);
 
-	/** @brief Get the position of a connection
-	 * @param conn The Moordyn connection
+	/** @brief Get the position of a point
+	 * @param point The Moordyn point
 	 * @param pos The output position
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetConnectPos(MoorDynConnection conn, double pos[3]);
+	int DECLDIR MoorDyn_GetPointPos(MoorDynPoint point, double pos[3]);
 
-	/** @brief Get the velocity of a connection
-	 * @param conn The Moordyn connection
+	/** @brief Get the velocity of a point
+	 * @param point The Moordyn point
 	 * @param v The output velocity
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetConnectVel(MoorDynConnection conn, double v[3]);
+	int DECLDIR MoorDyn_GetPointVel(MoorDynPoint point, double v[3]);
 
-	/** @brief Get the force at a connection
-	 * @param conn The Moordyn connection
+	/** @brief Get the force at a point
+	 * @param point The Moordyn point
 	 * @param f The output force
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetConnectForce(MoorDynConnection conn, double f[3]);
+	int DECLDIR MoorDyn_GetPointForce(MoorDynPoint point, double f[3]);
 
 	/** @brief Get the number of connected lines
-	 * @param conn The Moordyn connection
+	 * @param point The Moordyn point
 	 * @param n The output number of connected lines
 	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
 	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetConnectNAttached(MoorDynConnection conn,
+	int DECLDIR MoorDyn_GetPointNAttached(MoorDynPoint point,
 	                                        unsigned int* n);
 
 	/** @brief Get the number of connected lines
-	 * @param conn The Moordyn connection
+	 * @param point The Moordyn point
 	 * @param i The index of the attached line
 	 * @param l The output attached line
 	 * @param e The output endpoint, see moordyn::EndPoints
@@ -112,13 +112,13 @@ extern "C"
 	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetConnectAttached(MoorDynConnection conn,
+	int DECLDIR MoorDyn_GetPointAttached(MoorDynPoint point,
 	                                       unsigned int i,
 	                                       MoorDynLine* l,
 	                                       int* e);
 
-	/** @brief Save the connection to a VTK (.vtp) file
-	 * @param conn The Moordyn connection
+	/** @brief Save the point to a VTK (.vtp) file
+	 * @param point The Moordyn point
 	 * @param filename The output maximum tension module
 	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
 	 * otherwise
@@ -126,7 +126,7 @@ extern "C"
 	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
 	 * anyway
 	 */
-	int DECLDIR MoorDyn_SaveConnectVTK(MoorDynConnection conn,
+	int DECLDIR MoorDyn_SavePointVTK(MoorDynPoint point,
 	                                   const char* filename);
 
 	/**

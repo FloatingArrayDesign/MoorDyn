@@ -37,7 +37,7 @@
 #include "Misc.hpp"
 #include "Log.hpp"
 #include "Line.hpp"
-#include "Connection.hpp"
+#include "Point.hpp"
 #include "Body.hpp"
 #include "Rod.hpp"
 #include "Waves/SpectrumKin.hpp"
@@ -373,7 +373,7 @@ class CurrentGrid
 /** @class Waves Waves.hpp
  * @brief Class that handles wave and current kinematics
  *
- * This class keep track of all the structures (lines, connections, rods,
+ * This class keep track of all the structures (lines, points, rods,
  * bodies, etc) being simulated. For each of these structures, it stores the
  * water and wave kinematics for each node of the structure. The Waves class is
  * in charge of understanding the wave/current settings and following through
@@ -398,7 +398,7 @@ class Waves : public LogUser
 	/**
 	 * @brief Get the positions of all the nodes with wave kinematics
 	 *
-	 * Returns a vector of the positions of all the line nodes, connections, rod
+	 * Returns a vector of the positions of all the line nodes, points, rod
 	 * nodes, bodies, etc at the current time.
 	 * @return std::vector<vec3> Position of all the structural nodes with wave
 	 * kinematics
@@ -450,13 +450,13 @@ class Waves : public LogUser
 	void addBody(moordyn::Body* body);
 
 	/**
-	 * @brief Adds a connection to the list of structures we calculate water
+	 * @brief Adds a point to the list of structures we calculate water
 	 * kinematics for
 	 *
 	 * Should be called after Waves::setup
-	 * @param conn
+	 * @param point
 	 */
-	void addConn(moordyn::Connection* conn);
+	void addPoint(moordyn::Point* point);
 
 	using NodeKinReturnType = std::tuple<const std::vector<real>&,
 	                                     const std::vector<vec3>&,
@@ -496,14 +496,14 @@ class Waves : public LogUser
 	NodeKinReturnType getWaveKinBody(size_t bodyId);
 
 	/**
-	 * @brief Get the water kinematics for the connection with given Id
+	 * @brief Get the water kinematics for the point with given Id
 	 *
 	 * The vectors should all be of length 1
 	 *
-	 * @param connId Id of the connections
+	 * @param pointId Id of the points
 	 * @return NodeKinReturnType (zeta, U, Ud)
 	 */
-	NodeKinReturnType getWaveKinConn(size_t connId);
+	NodeKinReturnType getWaveKinPoint(size_t pointId);
 
 	/**
 	 * @brief Gets the surface height at a given (x, y) point
@@ -571,7 +571,7 @@ class Waves : public LogUser
 		// so this kind of lives on its own
 		std::vector<std::vector<real>> rodPdyn;
 
-		NodeKinematics<moordyn::Connection> connections;
+		NodeKinematics<moordyn::Point> points;
 	};
 
 	/// The final computed water kinematics at each node

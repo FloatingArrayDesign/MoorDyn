@@ -37,11 +37,13 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 1)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynPoint, 1, 1)
 {
-	unsigned int n;
-	const int err = MoorDyn_GetNumberConnections(instance, &n);
+	std::vector<double> v(3, 0.0);
+	const int err = MoorDyn_GetPointVel(instance, v.data());
 	MOORDYNM_CHECK_ERROR(err);
-	outputs[0] = factory.createScalar<uint64_t>(n);
+
+	outputs[0] = factory.createArray<double>(
+	    { 1, v.size() }, v.data(), v.data() + v.size());
 }
 MOORDYNM_MEX_FUNCTION_END
