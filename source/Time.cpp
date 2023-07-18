@@ -354,7 +354,7 @@ ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
 	name = s.str();
 	// Compute the renormalization factor
 	for (unsigned int i = 0; i < iters; i++)
-		_k_renorm = std::max(_k_renorm, opt_relax_factor(i, iters));
+		_k_renorm = (std::max)(_k_renorm, opt_relax_factor(i, iters));
 }
 
 void
