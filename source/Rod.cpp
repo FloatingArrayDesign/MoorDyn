@@ -956,9 +956,15 @@ Rod::doRHS()
 		// >>> add Pd variable for dynamic pressure, which will be applied
 		// on Rod surface
 		auto surface_height = 0.5 * (zeta[i] + zeta[i + 1]);
-		
-		if (i == N) VOF0 = calcSubSeg(r[i-1], r[i], surface_height, d);
-		else VOF0 = calcSubSeg(r[i], r[i + 1], surface_height, d);
+
+		if (N == 0) {
+			VOF0 = 1.0 ? r[i].z() < surface_height : 0.0;
+		} else {
+			if (i == N)
+				VOF0 = calcSubSeg(r[i-1], r[i], surface_height, d);
+			else
+				VOF0 = calcSubSeg(r[i], r[i + 1], surface_height, d);
+		}
 
 		Lsum = Lsum + dL; // add length attributed to this node to the total
 
