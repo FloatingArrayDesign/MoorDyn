@@ -127,7 +127,7 @@ class Body final : public io::IO
 	/// body quaternion position derivative
 	XYZQuat dPos;
 	/// body 6dof acceleration[x/y/z]
- 	vec6 a6;
+	vec6 a6;
 
 	/// fairlead position for coupled bodies [x/y/z]
 	vec6 r_ves;

@@ -87,7 +87,7 @@ Rod::setup(int number_in,
 	Cdn = props->Cdn;
 	Cdt = props->Cdt;
 	CdEnd = props->CdEnd;
- 	CaEnd = props->CaEnd;
+	CaEnd = props->CaEnd;
 
 	attachedA.clear();
 	attachedB.clear();
@@ -100,10 +100,10 @@ Rod::setup(int number_in,
 
 	r.assign(N + 1, vec::Zero());  // node positions [i][x/y/z]
 	rd.assign(N + 1, vec::Zero()); // node positions [i][x/y/z]
-	l.assign(N, 0.0);                  // line unstretched segment lengths
+	l.assign(N, 0.0);              // line unstretched segment lengths
 
 	M.assign(N + 1, mat::Zero()); // mass matrices (3x3) for each node
-	V.assign(N, 0.0);       // segment volume?
+	V.assign(N, 0.0);             // segment volume?
 
 	// forces
 	W.assign(N + 1, vec::Zero());    // node weights
@@ -117,8 +117,9 @@ Rod::setup(int number_in,
 	Fnet.assign(N + 1, vec::Zero()); // total force on node
 
 	// wave things
-	VOF.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
-	                      // segments) (1 = fully submerged, 0 = out of water)
+	VOF.assign(N + 1,
+	           0.0); // VOF scaler for each NODE (mean of two half adjacent
+	                 // segments) (1 = fully submerged, 0 = out of water)
 
 	if (N == 0) {
 		// special case of zero-length rod, which is denoted by numsegs=0 in the
@@ -129,8 +130,7 @@ Rod::setup(int number_in,
 		q = vec::Zero();
 	} else {
 		// normal finite-length case
-		UnstrLen = unitvector(
-			q0, endCoords.head<3>(), endCoords.tail<3>());
+		UnstrLen = unitvector(q0, endCoords.head<3>(), endCoords.tail<3>());
 		const real lseg =
 		    UnstrLen / N;  // distribute line length evenly over segments
 		l.assign(N, lseg); // line unstretched segment lengths
@@ -236,27 +236,27 @@ Rod::openoutput()
 
 		// output time
 		*outfile << "Time"
-		         	<< "\t ";
+		         << "\t ";
 
 		// output positions
 		if (channels.find("p") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				*outfile << "Node" << i << "px \t Node" << i << "py \t Node"
-							<< i << "pz \t ";
+				         << i << "pz \t ";
 			}
 		}
 		// output velocities
 		if (channels.find("v") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				*outfile << "Node" << i << "vx \t Node" << i << "vy \t Node"
-							<< i << "vz \t ";
+				         << i << "vz \t ";
 			}
 		}
 		// output net node force
 		if (channels.find("f") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				*outfile << "Node" << i << "Fx \t Node" << i << "Fy \t Node"
-							<< i << "Fz \t ";
+				         << i << "Fz \t ";
 			}
 		}
 
@@ -267,7 +267,7 @@ Rod::openoutput()
 
 			// output time
 			*outfile << "(s)"
-						<< "\t ";
+			         << "\t ";
 
 			// output positions
 			if (channels.find("p") != string::npos) {
@@ -335,7 +335,7 @@ Rod::initialize()
 real
 Rod::GetRodOutput(OutChanProps outChan)
 {
-	if (outChan.NodeID == -1){
+	if (outChan.NodeID == -1) {
 		if (outChan.QType == PosX)
 			return r7.pos.x();
 		else if (outChan.QType == PosY)
@@ -343,9 +343,9 @@ Rod::GetRodOutput(OutChanProps outChan)
 		else if (outChan.QType == PosZ)
 			return r7.pos.z();
 		else if (outChan.QType == RX)
-			return roll*180.0/pi;
+			return roll * 180.0 / pi;
 		else if (outChan.QType == RY)
-			return pitch*180.0/pi;
+			return pitch * 180.0 / pi;
 		else if (outChan.QType == VelX)
 			return v6[0];
 		else if (outChan.QType == VelY)
@@ -353,9 +353,9 @@ Rod::GetRodOutput(OutChanProps outChan)
 		else if (outChan.QType == VelZ)
 			return v6[2];
 		else if (outChan.QType == RVelX)
-			return v6[3]*180.0/pi;
+			return v6[3] * 180.0 / pi;
 		else if (outChan.QType == RVelY)
-			return v6[4]*180.0/pi;
+			return v6[4] * 180.0 / pi;
 		else if (outChan.QType == AccX)
 			return acc6[0];
 		else if (outChan.QType == AccY)
@@ -363,9 +363,9 @@ Rod::GetRodOutput(OutChanProps outChan)
 		else if (outChan.QType == AccZ)
 			return acc6[2];
 		else if (outChan.QType == RAccX)
-			return acc6[3]*180.0/pi;
+			return acc6[3] * 180.0 / pi;
 		else if (outChan.QType == RAccY)
-			return acc6[4]*180.0/pi;
+			return acc6[4] * 180.0 / pi;
 		else if (outChan.QType == TenA)
 			return FextA.norm();
 		else if (outChan.QType == TenB)
@@ -382,13 +382,13 @@ Rod::GetRodOutput(OutChanProps outChan)
 			return F6net[4];
 		else if (outChan.QType == MZ)
 			return F6net[5];
-		else if (outChan.QType == Sub){
+		else if (outChan.QType == Sub) {
 			real VOFsum = 0.0;
-			for (unsigned int i = 0; i <= N; i++) VOFsum += VOF[i];
-			return VOFsum/VOF.size();
+			for (unsigned int i = 0; i <= N; i++)
+				VOFsum += VOF[i];
+			return VOFsum / VOF.size();
 		}
-	}
-	else {
+	} else {
 		if (outChan.QType == PosX)
 			return r[outChan.NodeID][0];
 		else if (outChan.QType == PosY)
@@ -890,7 +890,6 @@ Rod::doRHS()
 
 	auto [zeta, U, Ud, PDyn] = waves->getWaveKinRod(rodId);
 
-
 	// >>> remember to check for violated conditions, if there are any... <<<
 
 	// just use the wave elevation computed at the location of the top node for
@@ -920,7 +919,8 @@ Rod::doRHS()
 		real v_i; // node submerged volume
 		const real Area = 0.25 * pi * d * d;
 
-		if (i == 0) { // TODO: Talk to Matt about these, should these include VOF calculation?
+		if (i == 0) { // TODO: Talk to Matt about these, should these include
+			          // VOF calculation?
 			dL = 0.5 * l[i];
 			m_i = Area * dL * rho; //  (will be zero for zero-length Rods)
 			v_i = 0.5 * V[i];
@@ -931,27 +931,27 @@ Rod::doRHS()
 		} else {
 			dL = 0.5 * (l[i - 1] + l[i]);
 			m_i = Area * dL * rho;
-			v_i = 0.5 * (V[i-1]+V[i]);
+			v_i = 0.5 * (V[i - 1] + V[i]);
 		}
 
 		// // get scalar for submerged portion
 
- 		// if (h0 < 0.0) { // Upside down case
- 		// 	if (Lsum + dL >= h0) // if fully submerged
- 		// 		VOF0 = 1.0;
- 		// 	else if (Lsum > h0) // if partially below waterline
- 		// 		VOF0 = (h0 - Lsum) / dL;
- 		// 	else // must be out of water
- 		// 		VOF0 = 0.0;
- 		// }
- 		// else {
- 		// 	if (Lsum + dL <= h0) // if fully submerged
- 		// 		VOF0 = 1.0;
- 		// 	else if (Lsum < h0) // if partially below waterline
- 		// 		VOF0 = (h0 - Lsum) / dL;
- 		// 	else // must be out of water
- 		// 		VOF0 = 0.0;
- 		// }
+		// if (h0 < 0.0) { // Upside down case
+		// 	if (Lsum + dL >= h0) // if fully submerged
+		// 		VOF0 = 1.0;
+		// 	else if (Lsum > h0) // if partially below waterline
+		// 		VOF0 = (h0 - Lsum) / dL;
+		// 	else // must be out of water
+		// 		VOF0 = 0.0;
+		// }
+		// else {
+		// 	if (Lsum + dL <= h0) // if fully submerged
+		// 		VOF0 = 1.0;
+		// 	else if (Lsum < h0) // if partially below waterline
+		// 		VOF0 = (h0 - Lsum) / dL;
+		// 	else // must be out of water
+		// 		VOF0 = 0.0;
+		// }
 
 		// >>> add Pd variable for dynamic pressure, which will be applied
 		// on Rod surface
@@ -961,7 +961,7 @@ Rod::doRHS()
 			VOF0 = 1.0 ? r[i].z() < surface_height : 0.0;
 		} else {
 			if (i == N)
-				VOF0 = calcSubSeg(r[i-1], r[i], surface_height, d);
+				VOF0 = calcSubSeg(r[i - 1], r[i], surface_height, d);
 			else
 				VOF0 = calcSubSeg(r[i], r[i + 1], surface_height, d);
 		}
@@ -969,32 +969,42 @@ Rod::doRHS()
 		Lsum = Lsum + dL; // add length attributed to this node to the total
 
 		// get submerged cross sectional area and centroid for each node
- 		z1hi = r[i][2] + 0.5*d*abs(sinPhi);  // highest elevation of cross section at node
- 		z1lo = r[i][2] - 0.5*d*abs(sinPhi);  // lowest  elevation of cross section at node
+		z1hi =
+		    r[i][2] +
+		    0.5 * d * abs(sinPhi); // highest elevation of cross section at node
+		z1lo =
+		    r[i][2] -
+		    0.5 * d * abs(sinPhi); // lowest  elevation of cross section at node
 
- 		if (z1lo > zeta_i){ // fully out of water
- 			A = 0.0;  // area
- 			zA = 0;   // centroid depth
- 		}
- 		else if (z1hi < zeta_i){ // fully submerged
- 			A = pi*0.25*d*d;
- 			zA = r[i][2];
- 		}
- 		else {  // if cross section crosses waterplane
- 			if (abs(sinPhi) < 0.001){ // if cylinder is near vertical, i.e. end is horizontal
- 				A = 0.5;  // <<< shouldn't this just be zero? <<<
- 				zA = 0.0;
- 			}
- 			else {
- 				G = (r[i][2]-zeta_i)/abs(sinPhi); //!(-z1lo+Rod%zeta(I))/abs(sinPhi)   ! distance from node to waterline cross at same axial location [m]
- 				//A = 0.25*Rod%d**2*acos((Rod%d - 2.0*G)/Rod%d) - (0.5*Rod%d-G)*sqrt(Rod%d*G-G**2)  ! area of circular cross section that is below waterline [m^2]
- 				//zA = (z1lo-Rod%zeta(I))/2  ! very crude approximation of centroid for now... <<< need to double check zeta bit <<<
- 				al = acos(2.0*G/d);
- 				A = d*d/8.0 * (2.0*al - sin(2.0*al));
- 				zA = r[i][2] - 0.6666666666 * d * pow(sin(al), 3.0) / (2.0*al - sin(2.0*al));
- 			}
- 		}
-        VOF[i] = VOF0*cosPhi*cosPhi + A/(0.25*pi*d*d)*sinPhi*sinPhi;
+		if (z1lo > zeta_i) {        // fully out of water
+			A = 0.0;                // area
+			zA = 0;                 // centroid depth
+		} else if (z1hi < zeta_i) { // fully submerged
+			A = pi * 0.25 * d * d;
+			zA = r[i][2];
+		} else { // if cross section crosses waterplane
+			if (abs(sinPhi) <
+			    0.001) { // if cylinder is near vertical, i.e. end is horizontal
+				A = 0.5; // <<< shouldn't this just be zero? <<<
+				zA = 0.0;
+			} else {
+				G = (r[i][2] - zeta_i) /
+				    abs(sinPhi); //!(-z1lo+Rod%zeta(I))/abs(sinPhi)   ! distance
+				                 //!from node to waterline cross at same axial
+				                 //!location [m]
+				// A = 0.25*Rod%d**2*acos((Rod%d - 2.0*G)/Rod%d) -
+				// (0.5*Rod%d-G)*sqrt(Rod%d*G-G**2)  ! area of circular cross
+				// section that is below waterline [m^2] zA =
+				// (z1lo-Rod%zeta(I))/2  ! very crude approximation of centroid
+				// for now... <<< need to double check zeta bit <<<
+				al = acos(2.0 * G / d);
+				A = d * d / 8.0 * (2.0 * al - sin(2.0 * al));
+				zA = r[i][2] - 0.6666666666 * d * pow(sin(al), 3.0) /
+				                   (2.0 * al - sin(2.0 * al));
+			}
+		}
+		VOF[i] =
+		    VOF0 * cosPhi * cosPhi + A / (0.25 * pi * d * d) * sinPhi * sinPhi;
 
 		// make node mass matrix  (will be zero for zero-length Rods)
 		const mat I = mat::Identity();
@@ -1022,7 +1032,7 @@ Rod::doRHS()
 		    Ud[i].dot(q) * q;      // tangential component of fluid acceleration
 		const vec ap = Ud[i] - aq; // normal component of fluid acceleration
 
- 		moordyn::real Ftemp, Mtemp;
+		moordyn::real Ftemp, Mtemp;
 
 		if (N > 0) {
 			// this is only nonzero for finite-length rods (skipped for
@@ -1042,13 +1052,18 @@ Rod::doRHS()
 			// NOTE: There are though some unhandled situations, like free
 			// floating rods, which would horizontally surface. This is
 			// documented on docs/structure.rst
-			Ftemp = -VOF[i] * v_i * env->rho_w * env->g * sinPhi;   // magnitude of radial buoyancy force at this node
-            Bo[i] = vec(Ftemp*cosBeta*cosPhi, Ftemp*sinBeta*cosPhi, -Ftemp*sinPhi);  
+			Ftemp = -VOF[i] * v_i * env->rho_w * env->g *
+			        sinPhi; // magnitude of radial buoyancy force at this node
+			Bo[i] = vec(Ftemp * cosBeta * cosPhi,
+			            Ftemp * sinBeta * cosPhi,
+			            -Ftemp * sinPhi);
 
 			// transverse and tangential drag
 			Dp[i] = VOF[i] * 0.5 * env->rho_w * Cdn * d * dL * vp_mag * vp;
 			Dq[i] = vec::Zero();
- 			// Dq[i] = VOF * 0.5 * env->rho_w * Cdt * pi * d * dL * vq_mag * vq; // TODO: axial side loads not included in fortran (line 776 Rod.f90)
+			// Dq[i] = VOF * 0.5 * env->rho_w * Cdt * pi * d * dL * vq_mag * vq;
+			// // TODO: axial side loads not included in fortran (line 776
+			// Rod.f90)
 
 			// transverse and axial Froude-Krylov force
 			Ap[i] = VOF[i] * env->rho_w * (1. + Can) * v_i * ap;
@@ -1090,15 +1105,18 @@ Rod::doRHS()
 		if ((i == 0) && (z1lo < zeta_i)) // if this is end A and it is submerged
 		{
 			// buoyancy force
-            Ftemp = -VOF[i] * Area * env->rho_w * env->g * zA;
-            Bo[i] += vec(Ftemp * cosBeta * sinPhi, Ftemp * sinBeta * sinPhi, Ftemp * cosPhi); 
+			Ftemp = -VOF[i] * Area * env->rho_w * env->g * zA;
+			Bo[i] += vec(Ftemp * cosBeta * sinPhi,
+			             Ftemp * sinBeta * sinPhi,
+			             Ftemp * cosPhi);
 
-            // buoyancy moment
-            Mtemp = -VOF[i] * 1.0/64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
-            Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0); 
+			// buoyancy moment
+			Mtemp = -VOF[i] * 1.0 / 64.0 * pi * d * d * d * d * env->rho_w *
+			        env->g * sinPhi;
+			Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0);
 
- 			// axial drag
- 			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
+			// axial drag
+			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// Froud-Krylov force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
@@ -1114,15 +1132,18 @@ Rod::doRHS()
 
 		if ((i == N) && (z1lo < zeta_i)) {
 			// buoyancy force
-            Ftemp = VOF[i] * Area * env->rho_w * env->g * zA;
-            Bo[i] += vec(Ftemp*cosBeta*sinPhi, Ftemp*sinBeta*sinPhi, Ftemp*cosPhi); 
+			Ftemp = VOF[i] * Area * env->rho_w * env->g * zA;
+			Bo[i] += vec(Ftemp * cosBeta * sinPhi,
+			             Ftemp * sinBeta * sinPhi,
+			             Ftemp * cosPhi);
 
-            // buoyancy moment
-            Mtemp = VOF[i] * 1.0 / 64.0 * pi * d * d * d * d * env->rho_w * env->g * sinPhi; 
-            Mext += vec(Mtemp*sinBeta, -Mtemp*cosBeta, 0.0); 
+			// buoyancy moment
+			Mtemp = VOF[i] * 1.0 / 64.0 * pi * d * d * d * d * env->rho_w *
+			        env->g * sinPhi;
+			Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0);
 
- 			// axial drag
- 			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
+			// axial drag
+			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// Froud-Krylov force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
@@ -1241,7 +1262,8 @@ Rod::doRHS()
 	// real mass = UnstrLen * 0.25 * pi * pi * rho;
 	real mass = UnstrLen * 0.25 * pi * d * d * rho;
 
-	// Below is not needed becasue node mass matricies include node masses (lines 920-932)
+	// Below is not needed becasue node mass matricies include node masses
+	// (lines 920-932)
 	// // Because the individual nodes mass matricies just include
 	// // the added mass, we have to manually compensate for the mass
 	// vec3 cg = 0.5 * UnstrLen * q;
@@ -1266,7 +1288,7 @@ Rod::doRHS()
 		auto r = d / 2.0;
 		// real I_r =
 		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2))*N;
+		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
 
 		Imat_l(0, 0) = I_l;
 		Imat_l(1, 1) = I_r;
@@ -1321,11 +1343,12 @@ Rod::Output(real time)
 
 	if (outfile) // if not a null pointer (indicating no output)
 	{
-		if (openedoutfile == 0){
- 			// Writes headers and channels to output file for fixed rods or rods fixed to bodies
- 			openoutput();
- 		}
-	
+		if (openedoutfile == 0) {
+			// Writes headers and channels to output file for fixed rods or rods
+			// fixed to bodies
+			openoutput();
+		}
+
 		if (!outfile->is_open()) {
 			LOGWRN << "Unable to write to output file " << endl;
 			return;

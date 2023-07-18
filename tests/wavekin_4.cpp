@@ -3,9 +3,9 @@
 #include <iostream>
 
 /** @brief Check that we can initialize a mooring system with Beta_n
-* and Beta_t defined in the input file and run a step.
-* @return true if the test passed
-*/
+ * and Beta_t defined in the input file and run a step.
+ * @return true if the test passed
+ */
 bool
 test_4d_currents()
 {
@@ -19,7 +19,8 @@ test_4d_currents()
 	err = MoorDyn_Init(system, NULL, NULL);
 	if (err != MOORDYN_SUCCESS) {
 		MoorDyn_Close(system);
-		std::cerr << "Failure during the mooring initialization: " << err << std::endl;
+		std::cerr << "Failure during the mooring initialization: " << err
+		          << std::endl;
 		return false;
 	}
 
@@ -30,7 +31,8 @@ test_4d_currents()
 		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
 		if (err != MOORDYN_SUCCESS) {
 			MoorDyn_Close(system);
-			std::cerr << "Failure during the mooring step: " << err << std::endl;
+			std::cerr << "Failure during the mooring step: " << err
+			          << std::endl;
 			return false;
 		}
 	}
@@ -45,8 +47,8 @@ test_4d_currents()
 }
 
 /** @brief Run all tests
-* @return 0 if the tests ran fine. Index of failing test otherwise.
-*/
+ * @return 0 if the tests ran fine. Index of failing test otherwise.
+ */
 int
 main(int, char**)
 {

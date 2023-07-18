@@ -56,8 +56,8 @@ write_vtk_by_instances()
 		return false;
 	}
 	if (n_dof) {
-		std::cerr << "No DOFs were expected, but " << n_dof
-		          << " were reported" << std::endl;
+		std::cerr << "No DOFs were expected, but " << n_dof << " were reported"
+		          << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
@@ -104,8 +104,7 @@ write_vtk_by_instances()
 	unsigned int n_rods;
 	err = MoorDyn_GetNumberRods(system, &n_rods);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure getting the number of rods: " << err
-		          << std::endl;
+		std::cerr << "Failure getting the number of rods: " << err << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
@@ -217,8 +216,8 @@ write_vtk_system()
 		return false;
 	}
 	if (n_dof) {
-		std::cerr << "No DOFs were expected, but " << n_dof
-		          << " were reported" << std::endl;
+		std::cerr << "No DOFs were expected, but " << n_dof << " were reported"
+		          << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
@@ -242,20 +241,21 @@ write_vtk_system()
 	err = MoorDyn_UseBodyVTK(body, "Mooring/ship.stl");
 	if (err != MOORDYN_SUCCESS) {
 		std::cerr << "Failure loading the body model '"
-					<< "Mooring/ship.stl" << "':" << err << std::endl;
+		          << "Mooring/ship.stl"
+		          << "':" << err << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
 
 	std::stringstream filepath;
 	filepath << fs::temp_directory_path().string() << "/"
-				<< "vtk_system.00000.vtm";
+	         << "vtk_system.00000.vtm";
 	std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
-				<< std::endl;
+	          << std::endl;
 	err = MoorDyn_SaveVTK(system, filepath.str().c_str());
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure saving the file '"
-					<< filepath.str().c_str() << "':" << err << std::endl;
+		std::cerr << "Failure saving the file '" << filepath.str().c_str()
+		          << "':" << err << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}

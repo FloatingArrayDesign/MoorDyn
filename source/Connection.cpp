@@ -143,7 +143,8 @@ Connection::initialize()
 		pos = r;
 		vel = rd;
 
-		const real waterDepth = seafloor ? seafloor->getDepthAt(r[0], r[1]) : -env->WtrDpth;
+		const real waterDepth =
+		    seafloor ? seafloor->getDepthAt(r[0], r[1]) : -env->WtrDpth;
 		if (waterDepth > r[2]) {
 			LOGERR << "Error: water depth is shallower than Point " << number
 			       << "." << endl;
@@ -187,13 +188,13 @@ Connection::GetConnectionOutput(OutChanProps outChan)
 	else if (outChan.QType == VelZ)
 		return rd[2];
 	else if (outChan.QType == AccX)
- 		return acc[0];
- 	else if (outChan.QType == AccY)
- 		return acc[1];
- 	else if (outChan.QType == AccZ)
- 		return acc[2];
- 	else if (outChan.QType == Ten)
- 		return Fnet.norm();
+		return acc[0];
+	else if (outChan.QType == AccY)
+		return acc[1];
+	else if (outChan.QType == AccZ)
+		return acc[2];
+	else if (outChan.QType == Ten)
+		return Fnet.norm();
 	else if (outChan.QType == FX)
 		return Fnet[0]; // added Oct 20
 	else if (outChan.QType == FY)

@@ -181,13 +181,13 @@ Line::setup(int number_in,
 	rd.assign(N + 1, vec::Zero()); // node positions [i][x/y/z]
 	q.assign(N + 1, vec::Zero());  // unit tangent vectors for each node
 	qs.assign(N, vec::Zero());     // unit tangent vectors for each segment
-	l.assign(N, 0.0);                  // line unstretched segment lengths
-	lstr.assign(N, 0.0);               // stretched lengths
-	ldstr.assign(N, 0.0);              // rate of stretch
-	Kurv.assign(N + 1, 0.0);           // curvatures at node points (1/m)
+	l.assign(N, 0.0);              // line unstretched segment lengths
+	lstr.assign(N, 0.0);           // stretched lengths
+	ldstr.assign(N, 0.0);          // rate of stretch
+	Kurv.assign(N + 1, 0.0);       // curvatures at node points (1/m)
 
 	M.assign(N + 1, mat::Zero()); // mass matrices (3x3) for each node
-	V.assign(N, 0.0);       // segment volume?
+	V.assign(N, 0.0);             // segment volume?
 
 	// forces
 	T.assign(N, vec::Zero());        // segment tensions
@@ -503,10 +503,10 @@ Line::initialize()
 			// It might happens that the output solution does not respect the
 			// queried final point. See the pendulum example
 			if (abs(Zl[N] - ZF) > Tol) {
-				LOGWRN << "Wrong catenary initial profile for Line, intializing as linear " << number
-				       << endl;
-			}
-			else {
+				LOGWRN << "Wrong catenary initial profile for Line, "
+				          "intializing as linear "
+				       << number << endl;
+			} else {
 				// the catenary solve is successful, update the node positions
 				LOGDBG << "Catenary initial profile available for Line "
 				       << number << endl;
@@ -515,17 +515,13 @@ Line::initialize()
 					r[i] = r[0] + l;
 				}
 			}
-		}
-		else {
+		} else {
 			LOGWRN << "Catenary initial profile failed for Line " << number
-					<< endl;
+			       << endl;
 		}
+	} else {
+		LOGDBG << "Vertical initial profile for Line " << number << endl;
 	}
-	else {
-		LOGDBG << "Vertical initial profile for Line " << number
-		       << endl;
-	}
-	
 
 	LOGMSG << "Initialized Line " << number << endl;
 
@@ -553,9 +549,9 @@ Line::GetLineOutput(OutChanProps outChan)
 	else if (outChan.QType == Ten)
 		return getNodeTen(outChan.NodeID).norm();
 	else if (outChan.QType == TenA)
- 		return getNodeTen(0).norm();
- 	else if (outChan.QType == TenB)
- 		return getNodeTen(N).norm();
+		return getNodeTen(0).norm();
+	else if (outChan.QType == TenB)
+		return getNodeTen(N).norm();
 	else if (outChan.QType == FX)
 		return Fnet[outChan.NodeID][0];
 	else if (outChan.QType == FY)

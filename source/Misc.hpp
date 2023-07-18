@@ -962,7 +962,7 @@ typedef struct _RodProps // (matching Rod Dictionary inputs)
 	double Cdn;
 	double Cdt;
 	double CaEnd;
- 	double CdEnd;
+	double CdEnd;
 } RodProps;
 
 typedef struct _ConnectProps // matching node input stuff
@@ -1010,31 +1010,31 @@ enum QTypeEnum : int
 	PosY = 2,
 	PosZ = 3,
 	RX = 4,
- 	RY = 5,
- 	RZ = 6,
- 	VelX = 7,
- 	VelY = 8,
- 	VelZ = 9,
- 	RVelX = 10,
- 	RVelY = 11,
- 	RVelZ = 12,
- 	AccX = 13,
- 	AccY = 14,
- 	AccZ = 15,
- 	RAccX = 16,
- 	RAccY = 17,
- 	RAccZ = 18,
- 	Ten = 19,
- 	FX = 20,
- 	FY = 21,
- 	FZ = 22,
- 	MX = 23,
- 	MY = 24,
- 	MZ = 25,
- 	Sub = 26,
- 	TenA = 27,
- 	TenB = 28
- };
+	RY = 5,
+	RZ = 6,
+	VelX = 7,
+	VelY = 8,
+	VelZ = 9,
+	RVelX = 10,
+	RVelY = 11,
+	RVelZ = 12,
+	AccX = 13,
+	AccY = 14,
+	AccZ = 15,
+	RAccX = 16,
+	RAccY = 17,
+	RAccZ = 18,
+	Ten = 19,
+	FX = 20,
+	FY = 21,
+	FZ = 22,
+	MX = 23,
+	MY = 24,
+	MZ = 25,
+	Sub = 26,
+	TenA = 27,
+	TenB = 28
+};
 
 // The following are some definitions for use with the output options in
 // MoorDyn. These are for the global output quantities specified by OutList, not
@@ -1064,7 +1064,8 @@ typedef struct _OutChanProps
 	string Units;    // "units string"
 	QTypeEnum QType; // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
 	int OType;       // "type of object - 1=line, 2=connect, 3=rod, 4=body"
- 	int NodeID;      // "node number if OType = 1 or 3. -1 indicated whole rod or fairlead for line"
-	int ObjID; // "number of Connect or Line object", subtract 1 to get the
-	           // index in the LineList or ConnectList
+	int NodeID; // "node number if OType = 1 or 3. -1 indicated whole rod or
+	            // fairlead for line"
+	int ObjID;  // "number of Connect or Line object", subtract 1 to get the
+	            // index in the LineList or ConnectList
 } OutChanProps;
