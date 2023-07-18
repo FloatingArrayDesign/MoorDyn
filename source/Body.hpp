@@ -92,7 +92,7 @@ class Body final : public io::IO
 
 	// unique to Body:
 	/// Points attached to this body
-	std::vector<moordyn::Point*> attachedC;
+	std::vector<moordyn::Point*> attachedP;
 	/// Rods attached to this body
 	std::vector<Rod*> attachedR;
 

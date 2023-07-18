@@ -247,7 +247,7 @@ Unique to Body:
 
 Attachments:
 
-- attachedC: a vector of pointers to Point objects, indicating all the points attached to the body
+- attachedP: a vector of pointers to Point objects, indicating all the points attached to the body
 - attachedR: a vector of pointers to Rod objects attached to the body. 
 - rConnectRel: a vector<vec> of 3d vectors describing the attachment points locations for Points
 - r6RodRel: a vector<vec6> of 6D vectors describing the attachment points and orientation of eac rod.

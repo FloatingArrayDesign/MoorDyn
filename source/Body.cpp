@@ -86,7 +86,7 @@ Body::setup(int number_in,
 		bodyCa = vec6::Zero();
 	}
 
-	attachedC.clear();
+	attachedP.clear();
 	attachedR.clear();
 	rPointRel.clear();
 	r6RodRel.clear();
@@ -121,7 +121,7 @@ Body::addPoint(moordyn::Point* point, vec coords)
 	LOGDBG << "P" << point->number << "->B" << number << " " << endl;
 
 	// store Point address
-	attachedC.push_back(point);
+	attachedP.push_back(point);
 
 	// store Point relative location
 	rPointRel.push_back(coords);
@@ -162,7 +162,7 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in)
 			attached->initialize();
 	// If there's an attached Point, initialize it now because it won't be
 	// initialized otherwise
-	for (auto attached : attachedC)
+	for (auto attached : attachedP)
 		attached->initialize();
 }
 
@@ -186,7 +186,7 @@ Body::initialize()
 			attached->initialize();
 	// If there's an attached Point, initialize it now because it won't be
 	// initialized otherwise
-	for (auto attached : attachedC)
+	for (auto attached : attachedP)
 		attached->initialize();
 
 	// create output file for writing output (and write channel header and units
@@ -239,7 +239,7 @@ Body::setDependentStates()
 {
 	// set kinematics of any dependent points (this is relevant for the
 	// dependent lines, yeah?)
-	for (unsigned int i = 0; i < attachedC.size(); i++) {
+	for (unsigned int i = 0; i < attachedP.size(); i++) {
 		// this is making a "fake" state vector for the point, describing its
 		// position (rPoint) and velocity (rdPoint)
 		vec rPoint, rdPoint;
@@ -256,7 +256,7 @@ Body::setDependentStates()
 
 		// pass above to the point and get it to calculate the forces
 		try {
-			attachedC[i]->setKinematics(rPoint, rdPoint);
+			attachedP[i]->setKinematics(rPoint, rdPoint);
 		} catch (moordyn::invalid_value_error& exception) {
 			// Just rethrow the exception
 			throw;
@@ -495,7 +495,7 @@ Body::doRHS()
 	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(cda);
 
 	// Get contributions from any points attached to the body
-	for (auto attached : attachedC) {
+	for (auto attached : attachedP) {
 		// get net force and mass from Point on body ref point (global
 		// orientation)
 		vec6 F6_i;
