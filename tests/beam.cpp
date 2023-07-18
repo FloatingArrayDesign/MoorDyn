@@ -73,7 +73,8 @@ using namespace std;
 /** @brief Simply supported beam analytic solution
  * @param x x position of the node
  * @return z position of the node
- * @see https://www.efunda.com/formulae/solid_mechanics/beams/casestudy_display.cfm?case=simple_uniformload
+ * @see
+ * https://www.efunda.com/formulae/solid_mechanics/beams/casestudy_display.cfm?case=simple_uniformload
  */
 double
 simply_supported_solution(double x)
@@ -138,7 +139,8 @@ simply_supported()
 /** @brief Cantilevered beam analytic solution
  * @param x x position of the node
  * @return z position of the node
- * @see https://www.efunda.com/formulae/solid_mechanics/beams/casestudy_display.cfm?case=cantilever_uniformload
+ * @see
+ * https://www.efunda.com/formulae/solid_mechanics/beams/casestudy_display.cfm?case=cantilever_uniformload
  */
 double
 cantilevered_solution(double x)

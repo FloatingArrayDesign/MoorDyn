@@ -132,8 +132,9 @@ lifting()
 			return false;
 		}
 		if (fabs(line_len - (line_len0 - lift_vel * t)) > TOL) {
-			cerr << "Line unstretched length error (t = " << t << "): "
-			     << line_len << " vs. " << line_len0 - lift_vel * t << endl;
+			cerr << "Line unstretched length error (t = " << t
+			     << "): " << line_len << " vs. " << line_len0 - lift_vel * t
+			     << endl;
 			return false;
 		}
 

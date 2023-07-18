@@ -465,11 +465,11 @@ restore()
 
 	// We backup the system now
 	size_t backup_size = 0;
-	uint64_t *backup = NULL;
+	uint64_t* backup = NULL;
 	err = MoorDyn_Serialize(system, &backup_size, NULL);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure getting the serialization size: "
-		          << err << std::endl;
+		std::cerr << "Failure getting the serialization size: " << err
+		          << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
@@ -495,13 +495,12 @@ restore()
 	// Now we restore the system and run again
 	err = MoorDyn_Deserialize(system, backup);
 	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure while restoring the system: " << err
-		          << std::endl;
+		std::cerr << "Failure while restoring the system: " << err << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
 	double f2[9];
-	t=0.0;
+	t = 0.0;
 	err = MoorDyn_Step(system, x, dx, f2, &t, &dt);
 	if (err != MOORDYN_SUCCESS) {
 		std::cerr << "Failure during the repeated mooring step: " << err
@@ -511,8 +510,8 @@ restore()
 	}
 	for (unsigned int i = 0; i < 9; i++) {
 		if (f[i] != f2[i]) {
-			std::cerr << "Force missmatch at component " << i
-			          << ": " << f[i] << " != " << f2[i] << std::endl;
+			std::cerr << "Force missmatch at component " << i << ": " << f[i]
+			          << " != " << f2[i] << std::endl;
 			MoorDyn_Close(system);
 			return false;
 		}

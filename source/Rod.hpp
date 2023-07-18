@@ -124,9 +124,9 @@ class Rod final : public io::IO
 	/// with respect to surface area, \f$ \pi d l \f$
 	moordyn::real Cdt;
 	// values from input files
- 	moordyn::real CdEnd;
- 	// values from input files
- 	moordyn::real CaEnd;
+	moordyn::real CdEnd;
+	// values from input files
+	moordyn::real CaEnd;
 
 	/// Rod 6dof position [x,y,z,u1,u2,u3] (end A coordinates and direction unit
 	/// vector)
@@ -136,9 +136,9 @@ class Rod final : public io::IO
 	/// velocities about unrotated axes)
 	vec6 v6;
 	/// Final 6dof rod velocity (for output)
- 	XYZQuat vel7;
- 	/// Final 6dof rod accelration (for output)
- 	vec6 acc6;
+	XYZQuat vel7;
+	/// Final 6dof rod accelration (for output)
+	vec6 acc6;
 
 	// kinematics
 	/// node positions
@@ -209,7 +209,7 @@ class Rod final : public io::IO
 	/// A copy of moordyn::MoorDyn::outChans
 	string channels;
 	/// Flag for printing channels and units in rod outfile
- 	int openedoutfile;
+	int openedoutfile;
 
 	/** @brief Finds the depth of the water at some (x, y) point. Either using
 	 * env->WtrDpth or the 3D seafloor if available
@@ -328,8 +328,8 @@ class Rod final : public io::IO
 	}
 
 	/** @brief Opens rod output file
- 	*/
- 	inline void openoutput();
+	 */
+	inline void openoutput();
 
 	/** @brief Initialize the rod state
 	 * @return The position and orientation angles (first) and the linear and

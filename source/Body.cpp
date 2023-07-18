@@ -323,46 +323,47 @@ Body::GetBodyOutput(OutChanProps outChan)
 	else if (outChan.QType == RZ)
 		return rotations[2];
 	else if (outChan.QType == VelX)
- 		return v6[0];
- 	else if (outChan.QType == VelY)
- 		return v6[1];
- 	else if (outChan.QType == VelZ)
- 		return v6[2];
- 	else if (outChan.QType == RVelX)
- 		return v6[3]*180.0/pi;
- 	else if (outChan.QType == RVelY)
- 		return v6[4]*180.0/pi;
- 	else if (outChan.QType == RVelZ)
- 		return v6[5]*180.0/pi;
- 	else if (outChan.QType == AccX)
- 		return a6[0];
- 	else if (outChan.QType == AccY)
- 		return a6[1];
- 	else if (outChan.QType == AccZ)
- 		return a6[2];
- 	else if (outChan.QType == RAccX)
- 		return a6[3]*180.0/pi;
- 	else if (outChan.QType == RAccY)
- 		return a6[4]*180.0/pi;
- 	else if (outChan.QType == RAccZ)
- 		return a6[5]*180.0/pi;
- 	else if (outChan.QType == Ten)  
- 		return  sqrt(F6net[0]*F6net[0] + F6net[1]*F6net[1] + F6net[2]*F6net[2]);
- 	else if (outChan.QType == FX)
- 		return F6net[0];
- 	else if (outChan.QType == FY)
- 		return F6net[1];
- 	else if (outChan.QType == FZ)
- 		return F6net[2];
- 	else if (outChan.QType == MX)
- 		return F6net[3];
- 	else if (outChan.QType == MY)
- 		return F6net[4];
- 	else if (outChan.QType == MZ)
- 		return F6net[5];
- 	else {
- 		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
- 		return 0.0;
+		return v6[0];
+	else if (outChan.QType == VelY)
+		return v6[1];
+	else if (outChan.QType == VelZ)
+		return v6[2];
+	else if (outChan.QType == RVelX)
+		return v6[3] * 180.0 / pi;
+	else if (outChan.QType == RVelY)
+		return v6[4] * 180.0 / pi;
+	else if (outChan.QType == RVelZ)
+		return v6[5] * 180.0 / pi;
+	else if (outChan.QType == AccX)
+		return a6[0];
+	else if (outChan.QType == AccY)
+		return a6[1];
+	else if (outChan.QType == AccZ)
+		return a6[2];
+	else if (outChan.QType == RAccX)
+		return a6[3] * 180.0 / pi;
+	else if (outChan.QType == RAccY)
+		return a6[4] * 180.0 / pi;
+	else if (outChan.QType == RAccZ)
+		return a6[5] * 180.0 / pi;
+	else if (outChan.QType == Ten)
+		return sqrt(F6net[0] * F6net[0] + F6net[1] * F6net[1] +
+		            F6net[2] * F6net[2]);
+	else if (outChan.QType == FX)
+		return F6net[0];
+	else if (outChan.QType == FY)
+		return F6net[1];
+	else if (outChan.QType == FZ)
+		return F6net[2];
+	else if (outChan.QType == MX)
+		return F6net[3];
+	else if (outChan.QType == MY)
+		return F6net[4];
+	else if (outChan.QType == MZ)
+		return F6net[5];
+	else {
+		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
+		return 0.0;
 	}
 }
 

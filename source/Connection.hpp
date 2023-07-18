@@ -146,7 +146,7 @@ class Connection final : public io::IO
 	mat M;
 
 	/// node acceleration
- 	vec acc; 
+	vec acc;
 
   public:
 	/** @brief Types of connections
