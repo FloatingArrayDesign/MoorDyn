@@ -273,8 +273,8 @@ skip_ic()
 	// Get the initial positions from the config file
 	for (unsigned int i = 0; i < 3; i++) {
 		// 4 = first fairlead id
-		auto conn = MoorDyn_GetConnection(system, i + 4);
-		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
+		auto point = MoorDyn_GetPoint(system, i + 4);
+		err = MoorDyn_GetPointPos(point, x + 3 * i);
 		if (err != MOORDYN_SUCCESS) {
 			std::cerr << "Failure retrieving the fairlead " << i + 4
 			          << " position: " << err << std::endl;
@@ -445,8 +445,8 @@ restore()
 	// Get the initial positions from the config file
 	for (unsigned int i = 0; i < 3; i++) {
 		// 4 = first fairlead id
-		auto conn = MoorDyn_GetConnection(system, i + 4);
-		err = MoorDyn_GetConnectPos(conn, x + 3 * i);
+		auto point = MoorDyn_GetPoint(system, i + 4);
+		err = MoorDyn_GetPointPos(point, x + 3 * i);
 		if (err != MOORDYN_SUCCESS) {
 			std::cerr << "Failure retrieving the fairlead " << i + 4
 			          << " position: " << err << std::endl;

@@ -60,8 +60,8 @@ pendulum()
 
 	int err;
 	double pos[3];
-	const auto conn = MoorDyn_GetConnection(system, 2);
-	err = MoorDyn_GetConnectPos(conn, pos);
+	const auto point = MoorDyn_GetPoint(system, 2);
+	err = MoorDyn_GetPointPos(point, pos);
 	if (err != MOORDYN_SUCCESS) {
 		cerr << "Failure getting the mass position: " << err << endl;
 		return false;
@@ -122,7 +122,7 @@ pendulum()
 			cerr << "Failure during the mooring step: " << err << endl;
 			return false;
 		}
-		err = MoorDyn_GetConnectPos(conn, pos);
+		err = MoorDyn_GetPointPos(point, pos);
 		if (err != MOORDYN_SUCCESS) {
 			cerr << "Failure getting the mass position: " << err << endl;
 			return false;

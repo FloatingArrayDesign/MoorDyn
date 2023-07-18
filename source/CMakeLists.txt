@@ -1,6 +1,6 @@
 set(MOORDYN_SRCS
     Body.cpp
-    Connection.cpp
+    Point.cpp
     IO.cpp
     Line.cpp
     Log.cpp
@@ -22,7 +22,7 @@ set(MOORDYN_SRCS
 
 set(MOORDYN_HEADERS
     Body.hpp
-    Connection.hpp
+    Point.hpp
     IO.hpp
     Line.hpp
     Log.hpp
@@ -34,7 +34,7 @@ set(MOORDYN_HEADERS
     Time.hpp
     Waves.hpp
     Body.h
-    Connection.h
+    Point.h
     Line.h
     MoorDyn2.h
     MoorDynAPI.h

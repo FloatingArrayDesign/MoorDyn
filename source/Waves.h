@@ -48,7 +48,7 @@ extern "C"
 	 *  @{
 	 */
 
-	/// A mooring connection instance
+	/// A mooring point instance
 	typedef struct __MoorDynWaves* MoorDynWaves;
 
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure

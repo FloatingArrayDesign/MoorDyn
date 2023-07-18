@@ -97,9 +97,9 @@ lifting()
 		cerr << "Failure getting the line" << endl;
 		return false;
 	}
-	const auto conn = MoorDyn_GetConnection(system, 2);
-	if (!conn) {
-		cerr << "Failure getting the connection" << endl;
+	const auto point = MoorDyn_GetPoint(system, 2);
+	if (!point) {
+		cerr << "Failure getting the point" << endl;
 		return false;
 	}
 
@@ -139,7 +139,7 @@ lifting()
 		}
 
 		double pos[3];
-		err = MoorDyn_GetConnectPos(conn, pos);
+		err = MoorDyn_GetPointPos(point, pos);
 		if (err != MOORDYN_SUCCESS) {
 			cerr << "Failure getting the mass position: " << err << endl;
 			return false;

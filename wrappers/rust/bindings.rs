@@ -19,7 +19,7 @@ pub const MOORDYN_UNHANDLED_ERROR: i32 = -255;
 pub struct __MoorDynWaves {
     _unused: [u8; 0],
 }
-#[doc = " A mooring connection instance"]
+#[doc = " A mooring point instance"]
 pub type MoorDynWaves = *mut __MoorDynWaves;
 extern "C" {
     #[doc = " @brief Get the velocity, acceleration, wave height and dynamic pressure\n at a specific positon and time\n @param waves The Waves instance\n @param x The point x coordinate\n @param y The point y coordinate\n @param z The point z coordinate\n @param U The output velocity\n @param Ud The output acceleration\n @param zeta The output wave height\n @param PDyn The output dynamic pressure\n @return 0 If the data is correctly set, an error code otherwise\n (see @ref moordyn_errors)"]
@@ -46,7 +46,7 @@ pub struct __MoorDynLine {
 #[doc = " A mooring line instance"]
 pub type MoorDynLine = *mut __MoorDynLine;
 extern "C" {
-    #[doc = " @brief Get the line identifier\n @param l The Moordyn line\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise"]
+    #[doc = " @brief Get the line identifier\n @param l The Moordyn line\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise"]
     pub fn MoorDyn_GetLineID(
         l: MoorDynLine,
         id: *mut ::std::os::raw::c_int,
@@ -111,48 +111,48 @@ extern "C" {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct __MoorDynConnection {
+pub struct __MoorDynPoint {
     _unused: [u8; 0],
 }
-#[doc = " A mooring connection instance"]
-pub type MoorDynConnection = *mut __MoorDynConnection;
+#[doc = " A mooring point instance"]
+pub type MoorDynPoint = *mut __MoorDynPoint;
 extern "C" {
-    #[doc = " @brief Get the connection identifier\n @param conn The Moordyn connection\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise"]
-    pub fn MoorDyn_GetConnectID(
-        conn: MoorDynConnection,
+    #[doc = " @brief Get the point identifier\n @param point The Moordyn point\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise"]
+    pub fn MoorDyn_GetPointID(
+        point: MoorDynPoint,
         id: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the connection type\n @param conn The Moordyn connection\n @param t The output type\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise\n @see Connection::types"]
-    pub fn MoorDyn_GetConnectType(
-        conn: MoorDynConnection,
+    #[doc = " @brief Get the point type\n @param point The Moordyn point\n @param t The output type\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise\n @see Point::types"]
+    pub fn MoorDyn_GetPointType(
+        point: MoorDynPoint,
         t: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the position of a connection\n @param conn The Moordyn connection\n @param pos The output position\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
-    pub fn MoorDyn_GetConnectPos(conn: MoorDynConnection, pos: *mut f64) -> ::std::os::raw::c_int;
+    #[doc = " @brief Get the position of a point\n @param point The Moordyn point\n @param pos The output position\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
+    pub fn MoorDyn_GetPointPos(point: MoorDynPoint, pos: *mut f64) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the velocity of a connection\n @param conn The Moordyn connection\n @param v The output velocity\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
-    pub fn MoorDyn_GetConnectVel(conn: MoorDynConnection, v: *mut f64) -> ::std::os::raw::c_int;
+    #[doc = " @brief Get the velocity of a point\n @param point The Moordyn point\n @param v The output velocity\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
+    pub fn MoorDyn_GetPointVel(point: MoorDynPoint, v: *mut f64) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the force at a connection\n @param conn The Moordyn connection\n @param f The output force\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
-    pub fn MoorDyn_GetConnectForce(conn: MoorDynConnection, f: *mut f64) -> ::std::os::raw::c_int;
+    #[doc = " @brief Get the force at a point\n @param point The Moordyn point\n @param f The output force\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
+    pub fn MoorDyn_GetPointForce(point: MoorDynPoint, f: *mut f64) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the number of connected lines\n @param conn The Moordyn connection\n @param n The output number of connected lines\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
-    pub fn MoorDyn_GetConnectNAttached(
-        conn: MoorDynConnection,
+    #[doc = " @brief Get the number of connected lines\n @param point The Moordyn point\n @param n The output number of connected lines\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
+    pub fn MoorDyn_GetPointNAttached(
+        point: MoorDynPoint,
         n: *mut ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the number of connected lines\n @param conn The Moordyn connection\n @param i The index of the attached line\n @param l The output attached line\n @param e The output endpoint, see moordyn::EndPoints\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
-    pub fn MoorDyn_GetConnectAttached(
-        conn: MoorDynConnection,
+    #[doc = " @brief Get the number of connected lines\n @param point The Moordyn point\n @param i The index of the attached line\n @param l The output attached line\n @param e The output endpoint, see moordyn::EndPoints\n @return MOORDYN_SUCCESS If the data is correctly set, an error code\n otherwise\n (see @ref moordyn_errors)"]
+    pub fn MoorDyn_GetPointAttached(
+        point: MoorDynPoint,
         i: ::std::os::raw::c_uint,
         l: *mut MoorDynLine,
         e: *mut ::std::os::raw::c_int,
@@ -166,12 +166,12 @@ pub struct __MoorDynRod {
 #[doc = " A mooring line instance"]
 pub type MoorDynRod = *mut __MoorDynRod;
 extern "C" {
-    #[doc = " @brief Get the line identifier\n @param l The Moordyn line\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise"]
+    #[doc = " @brief Get the line identifier\n @param l The Moordyn line\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise"]
     pub fn MoorDyn_GetRodID(l: MoorDynRod, id: *mut ::std::os::raw::c_int)
         -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the line type\n @param l The Moordyn line\n @param t The output type\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise"]
+    #[doc = " @brief Get the line type\n @param l The Moordyn line\n @param t The output type\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise"]
     pub fn MoorDyn_GetRodType(
         l: MoorDynRod,
         t: *mut ::std::os::raw::c_int,
@@ -204,14 +204,14 @@ pub struct __MoorDynBody {
 #[doc = " A mooring line instance"]
 pub type MoorDynBody = *mut __MoorDynBody;
 extern "C" {
-    #[doc = " @brief Get the body identifier\n @param b The Moordyn body\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise"]
+    #[doc = " @brief Get the body identifier\n @param b The Moordyn body\n @param id The output id\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise"]
     pub fn MoorDyn_GetBodyID(
         b: MoorDynBody,
         id: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get the connection type\n @param b The Moordyn body\n @param t The output type\n @return MOORDYN_INVALID_VALUE if a NULL connection is provided,\n MOORDYN_SUCCESS otherwise\n @see Connection::types"]
+    #[doc = " @brief Get the point type\n @param b The Moordyn body\n @param t The output type\n @return MOORDYN_INVALID_VALUE if a NULL point is provided,\n MOORDYN_SUCCESS otherwise\n @see Point::types"]
     pub fn MoorDyn_GetBodyType(
         b: MoorDynBody,
         t: *mut ::std::os::raw::c_int,
@@ -270,11 +270,11 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Compute the initial condition of a MoorDyn system\n\n At the time of creating a new MoorDyn instance, the input file is read\n and all the objects and structures are created. You must call afterwards\n MoorDyn_Init() to compute the initial conditions\n\n @param system The Moordyn system\n @param x Position vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled connection)\n @param xd Velocity vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled connection)\n @return MOORDYN_SUCESS If the mooring system is correctly initialized,\n an error code otherwise (see @ref moordyn_errors)\n @note MoorDyn_NCoupledDOF() can be used to know the number of components\n required for \\p x and \\p xd"]
+    #[doc = " @brief Compute the initial condition of a MoorDyn system\n\n At the time of creating a new MoorDyn instance, the input file is read\n and all the objects and structures are created. You must call afterwards\n MoorDyn_Init() to compute the initial conditions\n\n @param system The Moordyn system\n @param x Position vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled point)\n @param xd Velocity vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled point)\n @return MOORDYN_SUCESS If the mooring system is correctly initialized,\n an error code otherwise (see @ref moordyn_errors)\n @note MoorDyn_NCoupledDOF() can be used to know the number of components\n required for \\p x and \\p xd"]
     pub fn MoorDyn_Init(system: MoorDyn, x: *const f64, xd: *const f64) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief The same than MoorDyn_Init(), but the initial condition is not\n computed at all.\n\n This is of use when you are loading a state file afterwards with\n Moordyn_Load()\n\n @param system The Moordyn system\n @param x Position vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled connection)\n @param xd Velocity vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled connection)\n @return MOORDYN_SUCESS If the mooring system is correctly initialized,\n an error code otherwise (see @ref moordyn_errors)\n @note MoorDyn_NCoupledDOF() can be used to know the number of components\n required for \\p x and \\p xd"]
+    #[doc = " @brief The same than MoorDyn_Init(), but the initial condition is not\n computed at all.\n\n This is of use when you are loading a state file afterwards with\n Moordyn_Load()\n\n @param system The Moordyn system\n @param x Position vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled point)\n @param xd Velocity vector (6 components per coupled body or cantilevered\n rod and 3 components per pinned rod or coupled point)\n @return MOORDYN_SUCESS If the mooring system is correctly initialized,\n an error code otherwise (see @ref moordyn_errors)\n @note MoorDyn_NCoupledDOF() can be used to know the number of components\n required for \\p x and \\p xd"]
     pub fn MoorDyn_Init_NoIC(
         system: MoorDyn,
         x: *const f64,
@@ -353,15 +353,15 @@ extern "C" {
     pub fn MoorDyn_GetRod(system: MoorDyn, r: ::std::os::raw::c_uint) -> MoorDynRod;
 }
 extern "C" {
-    #[doc = " @brief Get the number of connections\n\n Remember that the first connection index is 1\n @param system The Moordyn system\n @param n The output number of connections\n @return MOORDYN_SUCESS If the number is successfully got, an error code\n otherwise (see @ref moordyn_errors)"]
-    pub fn MoorDyn_GetNumberConnections(
+    #[doc = " @brief Get the number of points\n\n Remember that the first point index is 1\n @param system The Moordyn system\n @param n The output number of points\n @return MOORDYN_SUCESS If the number is successfully got, an error code\n otherwise (see @ref moordyn_errors)"]
+    pub fn MoorDyn_GetNumberPoints(
         system: MoorDyn,
         n: *mut ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Get a connection\n @param system The Moordyn system\n @param c The connection\n @return The connection instance, NULL if errors happened"]
-    pub fn MoorDyn_GetConnection(system: MoorDyn, c: ::std::os::raw::c_uint) -> MoorDynConnection;
+    #[doc = " @brief Get a point\n @param system The Moordyn system\n @param c The point\n @return The point instance, NULL if errors happened"]
+    pub fn MoorDyn_GetPoint(system: MoorDyn, c: ::std::os::raw::c_uint) -> MoorDynPoint;
 }
 extern "C" {
     #[doc = " @brief Get the number of lines\n\n Remember that the first line index is 1\n @param system The Moordyn system\n @param n The output number of lines\n @return MOORDYN_SUCESS If the number is successfully got, an error code\n otherwise (see @ref moordyn_errors)"]
@@ -400,6 +400,6 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Draw the lines and connections in the active OpenGL context\n\n The OpenGL context is assumed to be created by the caller before calling\n this function\n @param system The Moordyn system\n @return MOORDYN_SUCESS If the data is correctly set, an error code\n otherwise (see @ref moordyn_errors)"]
+    #[doc = " @brief Draw the lines and points in the active OpenGL context\n\n The OpenGL context is assumed to be created by the caller before calling\n this function\n @param system The Moordyn system\n @return MOORDYN_SUCESS If the data is correctly set, an error code\n otherwise (see @ref moordyn_errors)"]
     pub fn MoorDyn_DrawWithGL(system: MoorDyn) -> ::std::os::raw::c_int;
 }

@@ -45,9 +45,9 @@ ERRCODE_NON_IMPLEMENTED = -7
 ERRCODE_UNHANDLED_ERROR = -255
 
 
-BODY_TYPE_COUPLED = CONN_TYPE_COUPLED = -1
-BODY_TYPE_FREE = CONN_TYPE_FREE = 0
-BODY_TYPE_FIXED = CONN_TYPE_FIXED = 1
+BODY_TYPE_COUPLED = POINT_TYPE_COUPLED = -1
+BODY_TYPE_FREE = POINT_TYPE_FREE = 0
+BODY_TYPE_FIXED = POINT_TYPE_FIXED = 1
 ROD_TYPE_COUPLED = -2
 ROD_TYPE_CPLDPIN = -1
 ROD_TYPE_FREE = 0
@@ -176,14 +176,14 @@ def Log(instance, level, msg):
 
 def Init(instance, x, v):
     """Initializes the MoorDyn sytem, calculating initial conditions based on
-    connection positions specified by array x and their velocities in array v
+    point positions specified by array x and their velocities in array v
 
     Parameters:
     instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Keyword arguments:
-    x (list): Position of the coupled connections
-    v (list): Velocity of the coupled connections
+    x (list): Position of the coupled points
+    v (list): Velocity of the coupled points
 
     Returns:
     int: 0 uppon success, an error code otherwise
@@ -201,8 +201,8 @@ def Init_NoIC(instance, x, v):
     instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Keyword arguments:
-    x (list): Position of the coupled connections
-    v (list): Velocity of the coupled connections
+    x (list): Position of the coupled points
+    v (list): Velocity of the coupled points
 
     Returns:
     int: 0 uppon success, an error code otherwise
@@ -216,13 +216,13 @@ def Step(instance, x, v, t, dt):
 
     Parameters:
     instance (cmoordyn.MoorDyn): The MoorDyn instance
-    x (list): Position of the coupled connections
-    v (list): Velocity of the coupled connections
+    x (list): Position of the coupled points
+    v (list): Velocity of the coupled points
     t (float): The time instant
     dt (float): The time step
 
     Returns:
-    list: The forces acting on the coupled connections
+    list: The forces acting on the coupled points
     """
     import cmoordyn
     return cmoordyn.step(instance, list(x), list(v), t, dt)
@@ -399,35 +399,35 @@ def GetRod(instance, rod):
     return cmoordyn.get_rod(instance, rod)
 
 
-def GetNumberConnections(instance):
-    """Get the number of connections
+def GetNumberPoints(instance):
+    """Get the number of points
 
-    Remember that the first connection index is 1
+    Remember that the first point index is 1
 
     Parameters:
     instance (cmoordyn.MoorDyn): The MoorDyn instance
 
     Returns:
-    int: The number of connections
+    int: The number of points
     """
     import cmoordyn
-    return cmoordyn.get_number_connections(instance)
+    return cmoordyn.get_number_points(instance)
 
 
-def GetConnection(instance, conn):
-    """ Get a connection
+def GetPoint(instance, point):
+    """ Get a point
 
-    Remember that the first connection index is 1
+    Remember that the first point index is 1
 
     Parameters:
     instance (cmoordyn.MoorDyn): The MoorDyn instance
-    conn (int): The connection index, starting at 1
+    point (int): The point index, starting at 1
 
     Returns:
-    cmoordyn.MoorDynConnection: The connection instance
+    cmoordyn.MoorDynPoint: The point instance
     """
     import cmoordyn
-    return cmoordyn.get_connection(instance, conn)
+    return cmoordyn.get_point(instance, point)
 
 
 def GetNumberLines(instance):
@@ -718,93 +718,93 @@ def SaveRodVTK(instance, filename):
     import cmoordyn
     return cmoordyn.rod_save_vtk(instance, filename)
 
-#                                Connection.h
+#                                Point.h
 #  =============================================================================
 
 
-def GetConnectID(instance):
-    """ Get the connection id
+def GetPointID(instance):
+    """ Get the point id
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
-    i: The connection id
+    i: The point id
     """
     import cmoordyn
-    return cmoordyn.conn_get_id(instance)
+    return cmoordyn.point_get_id(instance)
 
 
-def GetConnectType(instance):
-    """ Get the connection type
+def GetPointType(instance):
+    """ Get the point type
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
-    t: The connection type
+    t: The point type
     """
     import cmoordyn
-    return cmoordyn.conn_get_type(instance)
+    return cmoordyn.point_get_type(instance)
 
 
-def GetConnectPos(instance):
-    """ Get the connection position
+def GetPointPos(instance):
+    """ Get the point position
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
-    v: The connection position
+    v: The point position
     """
     import cmoordyn
-    return cmoordyn.conn_get_pos(instance)
+    return cmoordyn.point_get_pos(instance)
 
 
-def GetConnectVel(instance):
-    """ Get the connection velocity
+def GetPointVel(instance):
+    """ Get the point velocity
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
-    v: The connection velocity
+    v: The point velocity
     """
     import cmoordyn
-    return cmoordyn.conn_get_vel(instance)
+    return cmoordyn.point_get_vel(instance)
 
 
-def GetConnectForce(instance):
-    """ Get the connection force
+def GetPointForce(instance):
+    """ Get the point force
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
-    v: The connection force
+    v: The point force
     """
     import cmoordyn
-    return cmoordyn.conn_get_force(instance)
+    return cmoordyn.point_get_force(instance)
 
 
-def GetConnectNAttached(instance):
+def GetPointNAttached(instance):
     """ Get the number of attached lines
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
     n: The number of attached lines
     """
     import cmoordyn
-    return cmoordyn.conn_get_nattached(instance)
+    return cmoordyn.point_get_nattached(instance)
 
 
-def GetConnectAttached(instance, i):
+def GetPointAttached(instance, i):
     """ Get an attached line
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
     i (int): The index of the attachment
 
     Returns:
@@ -812,21 +812,21 @@ def GetConnectAttached(instance, i):
     e: The endpoint
     """
     import cmoordyn
-    return cmoordyn.conn_get_attached(instance, i)
+    return cmoordyn.point_get_attached(instance, i)
 
 
-def SaveConnectVTK(instance, filename):
-    """ Save the connection to a VTK (.vtp) file
+def SavePointVTK(instance, filename):
+    """ Save the point to a VTK (.vtp) file
 
     Parameters:
-    instance (cmoordyn.MoorDynConnection): The connection instance
+    instance (cmoordyn.MoorDynPoint): The point instance
     filepath (str): The file path
 
     Returns:
     int: 0 uppon success, an error code otherwise
     """
     import cmoordyn
-    return cmoordyn.conn_save_vtk(instance, filename)
+    return cmoordyn.point_save_vtk(instance, filename)
 
 #                                  Line.h
 #  =============================================================================

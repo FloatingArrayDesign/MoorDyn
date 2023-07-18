@@ -2,8 +2,8 @@ from .Entity import Entity, PropsList
 from .Body import Body
 
 
-class Connection(Entity):
-    """A connection
+class Point(Entity):
+    """A point
     """
     def __init__(self, t, p, m, v, cda, ca):
         """Constructor
@@ -22,7 +22,7 @@ class Connection(Entity):
         """
         Entity.__init__(
             self,
-            "CONNECTION PROPERTIES",
+            "POINT PROPERTIES",
             field_names=["ID", "Type", "X   Y   Z", "Mass", "Volume", "CdA", "Ca"],
             field_units=["(#)", "(name)", "(m) (m) (m)", "(kg)", "(m^3)", "(m^2)", "(-)"])
         self.__name = 0

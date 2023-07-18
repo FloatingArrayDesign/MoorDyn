@@ -17,7 +17,7 @@
 
 #include "Body.hpp"
 #include "Body.h"
-#include "Connection.hpp"
+#include "Point.hpp"
 #include "Rod.hpp"
 #include "Waves.hpp"
 #include <tuple>
@@ -88,7 +88,7 @@ Body::setup(int number_in,
 
 	attachedC.clear();
 	attachedR.clear();
-	rConnectRel.clear();
+	rPointRel.clear();
 	r6RodRel.clear();
 
 	// set up body initial mass matrix (excluding any rods or attachements)
@@ -116,15 +116,15 @@ Body::setup(int number_in,
 };
 
 void
-Body::addConnection(moordyn::Connection* conn, vec coords)
+Body::addPoint(moordyn::Point* point, vec coords)
 {
-	LOGDBG << "C" << conn->number << "->B" << number << " " << endl;
+	LOGDBG << "P" << point->number << "->B" << number << " " << endl;
 
-	// store Connection address
-	attachedC.push_back(conn);
+	// store Point address
+	attachedC.push_back(point);
 
-	// store Connection relative location
-	rConnectRel.push_back(coords);
+	// store Point relative location
+	rPointRel.push_back(coords);
 };
 
 void
@@ -175,7 +175,7 @@ Body::initialize()
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
 
-	// set positions of any dependent connections and rods now (before they are
+	// set positions of any dependent points and rods now (before they are
 	// initialized)
 	setDependentStates();
 
@@ -237,26 +237,26 @@ Body::setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in)
 void
 Body::setDependentStates()
 {
-	// set kinematics of any dependent connections (this is relevant for the
+	// set kinematics of any dependent points (this is relevant for the
 	// dependent lines, yeah?)
 	for (unsigned int i = 0; i < attachedC.size(); i++) {
-		// this is making a "fake" state vector for the connect, describing its
-		// position (rConnect) and velocity (rdConnect)
-		vec rConnect, rdConnect;
+		// this is making a "fake" state vector for the point, describing its
+		// position (rPoint) and velocity (rdPoint)
+		vec rPoint, rdPoint;
 
-		// Get connection location from rConnectRel for ith connected Connection
-		// and calculate the kinematics of that connection based on the
+		// Get point location from rPointRel for ith connected Point
+		// and calculate the kinematics of that point based on the
 		// kinematics of the Body:
-		transformKinematics(rConnectRel[i],
+		transformKinematics(rPointRel[i],
 		                    OrMat,
 		                    r7.pos,
 		                    v6,
-		                    rConnect,
-		                    rdConnect); //<<< should double check this function
+		                    rPoint,
+		                    rdPoint); //<<< should double check this function
 
-		// pass above to the connection and get it to calculate the forces
+		// pass above to the point and get it to calculate the forces
 		try {
-			attachedC[i]->setKinematics(rConnect, rdConnect);
+			attachedC[i]->setKinematics(rPoint, rdPoint);
 		} catch (moordyn::invalid_value_error& exception) {
 			// Just rethrow the exception
 			throw;
@@ -400,7 +400,7 @@ Body::updateFairlead(real time)
 		// calculate orientation matrix based on latest angles
 		OrMat = r7.quat.toRotationMatrix();
 
-		// set positions of any dependent connections and rods
+		// set positions of any dependent points and rods
 		setDependentStates();
 
 		return;
@@ -419,7 +419,7 @@ Body::setState(XYZQuat pos, vec6 vel)
 	// calculate orientation matrix based on latest angles
 	OrMat = r7.quat.toRotationMatrix();
 
-	// set positions of any dependent connections and rods
+	// set positions of any dependent points and rods
 	setDependentStates();
 }
 
@@ -431,7 +431,7 @@ Body::getStateDeriv()
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
 
-	// Get contributions from attached connections (and lines attached to
+	// Get contributions from attached points (and lines attached to
 	// them) and store in FNet:
 	doRHS();
 
@@ -494,9 +494,9 @@ Body::doRHS()
 	F6net +=
 	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(cda);
 
-	// Get contributions from any connections attached to the body
+	// Get contributions from any points attached to the body
 	for (auto attached : attachedC) {
-		// get net force and mass from Connection on body ref point (global
+		// get net force and mass from Point on body ref point (global
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
@@ -690,7 +690,7 @@ Body::defaultVTK()
 void
 Body::drawGL(void)
 {
-	double radius = pow(BodyV / (4 / 3 * pi), 0.33333); // conV
+	double radius = pow(BodyV / (4 / 3 * pi), 0.33333); // pointV
 	Sphere(r[0], r[1], r[2], radius);
 };
 #endif

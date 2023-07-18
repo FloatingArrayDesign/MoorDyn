@@ -395,7 +395,7 @@ Line::initialize()
 	}
 
 	// The end node kinematics should already have been set by the
-	// corresponding Connection or Rod objects calling "setEndState",
+	// corresponding Point or Rod objects calling "setEndState",
 	// so now we can proceed with figuring out the positions of the nodes along
 	// the line.
 	if (getWaterDepth(r[0][0], r[0][1]) > r[0][2]) {
@@ -412,7 +412,7 @@ Line::initialize()
 	vec dir = r[N] - r[0];
 	if (UnstrLen < 0) {
 		// Interpret as scaler relative to distance between initial line end
-		// points (which have now been set by the relevant Connection objects)
+		// points (which have now been set by the relevant Point objects)
 		UnstrLen = -UnstrLen * dir.norm();
 		LOGMSG << "Line " << number << " unstretched length set to " << UnstrLen
 		       << " m" << endl;
@@ -886,10 +886,10 @@ Line::getStateDeriv()
 			// calculate force on each node due to bending stiffness!
 
 			// end node A case (only if attached to a Rod, i.e. a cantilever
-			// rather than pinned connection)
+			// rather than pinned point)
 			if (i == 0) {
 				if (endTypeA == CANTILEVERED) // if attached to Rod i.e.
-				                              // cantilever connection
+				                              // cantilever point
 				{
 					// curvature <<< check if this approximation works for an
 					// end (assuming rod angle is node angle which is middle of
@@ -923,10 +923,10 @@ Line::getStateDeriv()
 				}
 			}
 			// end node A case (only if attached to a Rod, i.e. a cantilever
-			// rather than pinned connection)
+			// rather than pinned point)
 			else if (i == N) {
 				if (endTypeB == CANTILEVERED) // if attached to Rod i.e.
-				                              // cantilever connection
+				                              // cantilever point
 				{
 					// curvature <<< check if this approximation
 					// works for an end (assuming rod angle is node

@@ -243,7 +243,7 @@ class Rod final : public io::IO
 		// Some aliases
 		VESSEL = COUPLED,
 		VESPIN = CPLDPIN,
-		CONNECT = FREE,
+		POINT = FREE,
 		ANCHOR = FIXED,
 	} types;
 
@@ -497,7 +497,7 @@ class Rod final : public io::IO
 	 */
 	vec6 getFnet();
 
-	/** @brief Calculate the force and mass contributions of the connect on the
+	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
@@ -505,7 +505,7 @@ class Rod final : public io::IO
 	 */
 	void getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody);
 
-	/** @brief Calculate the force and mass contributions of the connect on the
+	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point

@@ -56,7 +56,7 @@ namespace moordyn {
 class Waves;
 typedef std::shared_ptr<Waves> WavesRef;
 
-class Connection;
+class Point;
 class Rod;
 
 /** @class Body Body.hpp
@@ -91,13 +91,13 @@ class Body final : public io::IO
 	WavesRef waves;
 
 	// unique to Body:
-	/// Connections attached to this body
-	std::vector<moordyn::Connection*> attachedC;
+	/// Points attached to this body
+	std::vector<moordyn::Point*> attachedC;
 	/// Rods attached to this body
 	std::vector<Rod*> attachedR;
 
-	/// Attachment points of each connection
-	std::vector<vec> rConnectRel;
+	/// Attachment points of each point
+	std::vector<vec> rPointRel;
 	/// Attachment points of each rod
 	std::vector<vec6> r6RodRel;
 
@@ -213,12 +213,12 @@ class Body final : public io::IO
 	           vec6 Ca,
 	           shared_ptr<ofstream> outfile);
 
-	/** @brief Attach a connection to the body
-	 * @param conn The connection
+	/** @brief Attach a point to the body
+	 * @param point The point
 	 * @param coords The fixation point
-	 * @throw moordyn::invalid_value_error If @p conn is NULL
+	 * @throw moordyn::invalid_value_error If @p point is NULL
 	 */
-	void addConnection(moordyn::Connection* conn, vec coords);
+	void addPoint(moordyn::Point* point, vec coords);
 
 	/** @brief Attach a rod to the body
 	 * @param rod The rod
@@ -239,7 +239,7 @@ class Body final : public io::IO
 	 */
 	void initializeUnfreeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero());
 
-	/** @brief Initialize the FREE connection state
+	/** @brief Initialize the FREE point state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
 	 * @throw moordyn::invalid_value_error If the body is not of type
 	 * moordyn::Body::FREE
@@ -268,7 +268,7 @@ class Body final : public io::IO
 
 	/** @brief set the states (positions and velocities) to all the attached
 	 * entities
-	 * @throws moordyn::invalid_value_error If a non FIXED connection is tried
+	 * @throws moordyn::invalid_value_error If a non FIXED point is tried
 	 * to be edited
 	 */
 	void setDependentStates();

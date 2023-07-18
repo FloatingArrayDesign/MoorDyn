@@ -61,7 +61,7 @@
 #endif
 
 // note: this file contains the struct definitions for environmental and
-// line/connect properties
+// line/point properties
 
 // from Iñaki Zabala
 #ifdef _MSC_VER
@@ -851,7 +851,7 @@ const real rad2deg = 180.0 / pi;
  */
 
 class Rod;
-class Connection;
+class Point;
 class Line;
 
 /** @brief Failure conditions
@@ -862,8 +862,8 @@ typedef struct _FailProps
 	Rod* rod;
 	/// The rod attachment end point, useless if rod is NULL
 	EndPoints rod_end_point;
-	/// The connection the lines are attached to, if any. Otherwise it is NULL
-	Connection* conn;
+	/// The point the lines are attached to, if any. Otherwise it is NULL
+	Point* point;
 	/// The attached lines
 	std::vector<Line*> lines;
 	/// The attached line end points. This is actually an array to be filled
@@ -965,7 +965,7 @@ typedef struct _RodProps // (matching Rod Dictionary inputs)
 	double CdEnd;
 } RodProps;
 
-typedef struct _ConnectProps // matching node input stuff
+typedef struct _PointProps // matching node input stuff
 {
 	int number;
 	string type;
@@ -980,7 +980,7 @@ typedef struct _ConnectProps // matching node input stuff
 	double
 	    CdA;   // added 2015/1/15 - product of drag coefficient and frontal area
 	double Ca; // added 2015/1/15  - added mass coefficient
-} ConnectProps;
+} PointProps;
 
 typedef struct _BodyProps // matching body input stuff
 {
@@ -1043,13 +1043,13 @@ enum QTypeEnum : int
 // fields:
 //  Name   - (string) what appears at the top of the output column
 //  Units  - (string) selected from UnitList (see below) based on index QType
-//  OType  - (int) the type of object the output is from. 1=line, 2=connect
-//  (0=invalid) ObjID  - (int) the ID number of the line or connect QType  -
+//  OType  - (int) the type of object the output is from. 1=line, 2=point
+//  (0=invalid) ObjID  - (int) the ID number of the line or point QType  -
 //  (int) the type of quantity to output.  0=tension, 1=x pos, etc.  see the
 //  parameters below NodeID - (int) the ID number of the node of the output
 //  quantity
 //
-// These are the "OTypes": 0=Connect object, 1=Line Object
+// These are the "OTypes": 0=Point object, 1=Line Object
 // (will just use 0 and 1 rather than parameter names)
 //
 // Indices for computing output channels:  - customized for the MD_OutParmType
@@ -1063,9 +1063,9 @@ typedef struct _OutChanProps
 	string Name;     // "name of output channel"
 	string Units;    // "units string"
 	QTypeEnum QType; // "type of quantity - 0=tension, 1=x, 2=y, 3=z..."
-	int OType;       // "type of object - 1=line, 2=connect, 3=rod, 4=body"
+	int OType;       // "type of object - 1=line, 2=point, 3=rod, 4=body"
 	int NodeID; // "node number if OType = 1 or 3. -1 indicated whole rod or
 	            // fairlead for line"
-	int ObjID;  // "number of Connect or Line object", subtract 1 to get the
-	            // index in the LineList or ConnectList
+	int ObjID;  // "number of Point or Line object", subtract 1 to get the
+	            // index in the LineList or PointList
 } OutChanProps;

@@ -53,8 +53,8 @@ TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 			continue;
 		obj->updateFairlead(t_local);
 	}
-	for (auto obj : conns) {
-		if (obj->type != Connection::COUPLED)
+	for (auto obj : points) {
+		if (obj->type != Point::COUPLED)
 			continue;
 		obj->updateFairlead(t_local);
 	}
@@ -76,10 +76,10 @@ TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 		rods[i]->setState(r[substep].rods[i].pos, r[substep].rods[i].vel);
 	}
 
-	for (unsigned int i = 0; i < conns.size(); i++) {
-		if (conns[i]->type != Connection::FREE)
+	for (unsigned int i = 0; i < points.size(); i++) {
+		if (points[i]->type != Point::FREE)
 			continue;
-		conns[i]->setState(r[substep].conns[i].pos, r[substep].conns[i].vel);
+		points[i]->setState(r[substep].points[i].pos, r[substep].points[i].vel);
 	}
 
 	for (unsigned int i = 0; i < lines.size(); i++) {
@@ -99,11 +99,11 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 		    lines[i]->getStateDeriv();
 	}
 
-	for (unsigned int i = 0; i < conns.size(); i++) {
-		if (conns[i]->type != Connection::FREE)
+	for (unsigned int i = 0; i < points.size(); i++) {
+		if (points[i]->type != Point::FREE)
 			continue;
-		std::tie(rd[substep].conns[i].vel, rd[substep].conns[i].acc) =
-		    conns[i]->getStateDeriv();
+		std::tie(rd[substep].points[i].vel, rd[substep].points[i].acc) =
+		    points[i]->getStateDeriv();
 	}
 
 	for (unsigned int i = 0; i < rods.size(); i++) {
@@ -121,8 +121,8 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 		    bodies[i]->getStateDeriv();
 	}
 
-	for (auto obj : conns) {
-		if (obj->type != Connection::COUPLED)
+	for (auto obj : points) {
+		if (obj->type != Point::COUPLED)
 			continue;
 		obj->doRHS();
 	}

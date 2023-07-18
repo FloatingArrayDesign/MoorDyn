@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file Connection.hpp
- * C++ API for the moordyn::Connection object
+/** @file Point.hpp
+ * C++ API for the moordyn::Point object
  */
 
 #pragma once
@@ -52,33 +52,33 @@ class Line;
 class Waves;
 typedef std::shared_ptr<Waves> WavesRef;
 
-/** @class Connection Connection.hpp
- * @brief A connection for a line endpoint
+/** @class Point Point.hpp
+ * @brief A point for a line endpoint
  *
- * Each line must have 2 connections at each endpoint, which are used to define
- * how those points are moving. There are 3 basic types of connections:
+ * Each line must have 2 points at each endpoint, which are used to define
+ * how those points are moving. There are 3 basic types of points:
  *
  *  - Fixed: The point is fixed, either to a unmovable point (i.e. an anchor
  *           or to a Body
  *  - Free: The point freely moves, with its own translational degrees of
- * freedom, to provide a connection point between multiple mooring lines or an
+ * freedom, to provide a point point between multiple mooring lines or an
  *          unconnected termination point of a Line, which could have a clump
  *          weight or float via the point's mass and volume parameters
- *  - Coupled: The connection position and velocity is externally imposed
+ *  - Coupled: The point position and velocity is externally imposed
  */
-class Connection final : public io::IO
+class Point final : public io::IO
 {
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
 	 */
-	Connection(moordyn::Log* log, size_t id);
+	Point(moordyn::Log* log, size_t id);
 
 	/** @brief Destructor
 	 */
-	~Connection();
+	~Point();
 
-	/// Attached lines to the connection
+	/// Attached lines to the point
 	typedef struct _attachment
 	{
 		/// The attached line
@@ -95,29 +95,29 @@ class Connection final : public io::IO
 	moordyn::WavesRef waves;
 	moordyn::SeafloorRef seafloor;
 
-	/// Lines attached to this connection node
+	/// Lines attached to this point node
 	std::vector<attachment> attached;
 
-	/** @defgroup conn_constants Constants set at startup from input file
+	/** @defgroup point_constants Constants set at startup from input file
 	 * @{
 	 */
 
 	/// Mass [kg]
-	real conM;
+	real pointM;
 	/// Volume [m3]
-	real conV;
+	real pointV;
 	/// Force [N]
-	vec conF;
+	vec pointF;
 	/// Drag coefficient
-	real conCdA;
+	real pointCdA;
 	/// Added mass coefficient
-	real conCa;
+	real pointCa;
 
 	/**
 	 * @}
 	 */
 
-	/** @defgroup conn_common_line Common properties with line internal nodes
+	/** @defgroup point_common_line Common properties with line internal nodes
 	 * @{
 	 */
 
@@ -149,7 +149,7 @@ class Connection final : public io::IO
 	vec acc;
 
   public:
-	/** @brief Types of connections
+	/** @brief Types of points
 	 */
 	typedef enum
 	{
@@ -162,7 +162,7 @@ class Connection final : public io::IO
 		// Some aliases
 		VESSEL = COUPLED,
 		FAIRLEAD = COUPLED,
-		CONNECT = FREE,
+		POINT = FREE,
 		ANCHOR = FIXED,
 	} types;
 
@@ -183,12 +183,12 @@ class Connection final : public io::IO
 		return "UNKNOWN";
 	}
 
-	/// Connection ID
-	size_t connId;
+	/// Point ID
+	size_t pointId;
 
-	/// Connection number
+	/// Point number
 	int number;
-	/// Connection type
+	/// Point type
 	types type;
 
 	/** @brief Set the line  simulation time
@@ -196,10 +196,10 @@ class Connection final : public io::IO
 	 */
 	inline void setTime(real time) { t = time; }
 
-	/** @brief Setup the connection
+	/** @brief Setup the point
 	 *
 	 * Always call this function after the construtor
-	 * @param number_in The connection identifier. The identifiers starts at 1,
+	 * @param number_in The point identifier. The identifiers starts at 1,
 	 * not at 0.
 	 * @param type_in One of COUPLED, FREE or FIXED
 	 * @param r0_in The initial position
@@ -219,7 +219,7 @@ class Connection final : public io::IO
 	           double CdA_in,
 	           double Ca_in);
 
-	/** @brief Attach a line endpoint to this connection
+	/** @brief Attach a line endpoint to this point
 	 * @param theLine The line to be attached
 	 * @param end_point The line endpoint
 	 */
@@ -227,7 +227,7 @@ class Connection final : public io::IO
 
 	/** @brief Dettach a line
 	 * @param line The line
-	 * @return The line end point that was attached to the connection
+	 * @return The line end point that was attached to the point
 	 * @throws moordyn::invalid_value_error If there is no an attached line
 	 * with the provided @p lineID
 	 */
@@ -238,14 +238,14 @@ class Connection final : public io::IO
 	 */
 	inline std::vector<attachment> getLines() const { return attached; }
 
-	/** @brief Initialize the FREE connection state
+	/** @brief Initialize the FREE point state
 	 * @return The position (first) and the velocity (second)
-	 * @throws moordyn::invalid_value_error If it is not a FREE connection
+	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
 	std::pair<vec, vec> initialize();
 
 	inline const vec& getPosition() const { return r; }
-	/** @brief Get the connection state
+	/** @brief Get the point state
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
 	 */
@@ -255,13 +255,13 @@ class Connection final : public io::IO
 		rd_out = rd;
 	};
 
-	/** @brief Get the connection state
+	/** @brief Get the point state
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
 	 */
 	inline std::pair<vec, vec> getState() { return std::make_pair(r, rd); }
 
-	/** @brief Get the force on the connection
+	/** @brief Get the force on the point
 	 * @param Fnet_out The output force [x,y,z]
 	 */
 	void getFnet(vec& Fnet_out);
@@ -275,7 +275,7 @@ class Connection final : public io::IO
 	 * @param outChan The query
 	 * @return The data, 0.0 if no such data can be found
 	 */
-	real GetConnectionOutput(OutChanProps outChan);
+	real GetPointOutput(OutChanProps outChan);
 
 	/** @brief Set the environmental data
 	 * @param env_in Global struct that holds environmental settings
@@ -290,7 +290,7 @@ class Connection final : public io::IO
 	 * function for boosting drag coefficients during IC generation
 	 * @param scaler Drag factor
 	 */
-	inline void scaleDrag(real scaler) { conCdA *= scaler; }
+	inline void scaleDrag(real scaler) { pointCdA *= scaler; }
 
 	/** @brief Initialize the time step integration
 	 *
@@ -299,47 +299,47 @@ class Connection final : public io::IO
 	 * @param rFairIn Fairlead position
 	 * @param rdFairIn Fairlead velocity
 	 * @param time Simulation time
-	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
+	 * @throws moordyn::invalid_value_error If it is not a COUPLED point
 	 */
 	void initiateStep(vec rFairIn, vec rdFairIn);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
-	 * Sets Connection states and ends of attached lines ONLY if this Connection
+	 * Sets Point states and ends of attached lines ONLY if this Point
 	 * is driven externally, i.e. type = COUPLED (otherwise shouldn't be called)
 	 * @param time Local time within the time step (from 0 to dt)
-	 * @throws moordyn::invalid_value_error If it is not a COUPLED connection
+	 * @throws moordyn::invalid_value_error If it is not a COUPLED point
 	 */
 	void updateFairlead(real time);
 
 	/** @brief Take the kinematics from the fairlead information
 	 *
-	 * sets Connection states and ends of attached lines ONLY if this Connection
+	 * sets Point states and ends of attached lines ONLY if this Point
 	 * is attached to a body, i.e. type = FIXED (otherwise shouldn't be called)
 	 * @param r_in Position
 	 * @param rd_in Velocity
-	 * @throws moordyn::invalid_value_error If it is not a FIXED connection
+	 * @throws moordyn::invalid_value_error If it is not a FIXED point
 	 */
 	void setKinematics(vec r_in, vec rd_in);
 
 	/** @brief Set the state variables
 	 *
-	 * sets Connection states and ends of attached lines ONLY if this Connection
+	 * sets Point states and ends of attached lines ONLY if this Point
 	 * is free, i.e. type = FREE (otherwise shouldn't be called)
 	 * @param pos Position
 	 * @param vel Velocity
-	 * @throws moordyn::invalid_value_error If it is not a FREE connection
+	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
 	void setState(vec pos, vec vel);
 
-	/** @brief Calculate the forces and state derivatives of the connection
+	/** @brief Calculate the forces and state derivatives of the point
 	 * @param return The states derivatives, i.e. the velocity (first) and the
 	 * acceleration (second)
-	 * @throws moordyn::invalid_value_error If it is not a FREE connection
+	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
 	std::pair<vec, vec> getStateDeriv();
 
-	/** @brief Calculate the force and mass contributions of the connect on the
+	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
@@ -349,7 +349,7 @@ class Connection final : public io::IO
 	                        mat6& M_out,
 	                        vec rBody = vec::Zero());
 
-	/** @brief Calculates the forces and mass on the connection, including from
+	/** @brief Calculates the forces and mass on the point, including from
 	 * attached lines
 	 *
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
@@ -381,7 +381,7 @@ class Connection final : public io::IO
 	 */
 	vtkSmartPointer<vtkPolyData> getVTK() const;
 
-	/** @brief Save the connection on a VTK (.vtp) file
+	/** @brief Save the point on a VTK (.vtp) file
 	 * @param filename The output file name
 	 * @throws output_file_error If VTK reports
 	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError

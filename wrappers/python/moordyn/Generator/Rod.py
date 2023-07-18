@@ -105,8 +105,8 @@ class RodMaterial(Entity):
                          self.__cat])
 
 
-class RodConnection():
-    """The rod connection
+class RodPoint():
+    """The rod point
     """
     def __init__(self):
         self.__fixed = True
@@ -158,7 +158,7 @@ class RodConnection():
 
         Returns
         -------
-        str: The connection string
+        str: The point string
         """
         if self.__body:
             value = "BODY" + str(self.__body.name)
@@ -179,13 +179,13 @@ class RodConnection():
 class Rod(Entity):
     """A rod
     """
-    def __init__(self, material, connection, p0, p1, n):
+    def __init__(self, material, point, p0, p1, n):
         """Constructor
 
         Parameters
         ----------
         material (RodMaterial): The rod material
-        connection (RodConnection): The rod connection
+        point (RodPoint): The rod point
         p0 (list): First point (3 components)
         p1 (list): Last point (3 components)
         n (int): Number of segments
@@ -198,7 +198,7 @@ class Rod(Entity):
             field_units=["(#)", "(name)", "(-)", "(m) (m) (m)", "(m) (m) (m)", "(-)", "(-)"])
         self.__name = 0
         self.__mat = material
-        self.__con = connection
+        self.__point = point
         self.__p0 = PropsList(p0, " ")
         self.__p1 = PropsList(p1, " ")
         self.__n = n
@@ -223,12 +223,12 @@ class Rod(Entity):
         self.__set_values()
 
     @property
-    def connection(self):
-        return self.__connection
+    def point(self):
+        return self.__point
 
-    @connection.setter
-    def connection(self, connection):
-        self.__con = connection
+    @point.setter
+    def point(self, point):
+        self.__point = point
         self.__set_values()
 
     @property
@@ -261,7 +261,7 @@ class Rod(Entity):
     def __set_values(self):
         self.set_values([self.__name,
                          self.__mat.name,
-                         self.__con,
+                         self.__point,
                          self.__p0,
                          self.__p1,
                          self.__n,

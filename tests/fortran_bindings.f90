@@ -9,8 +9,8 @@ program main
   real(real64), allocatable, target :: f(:)
   real(real64), allocatable, target :: r(:)
   real(real64) :: t, dt
-  integer :: err, n_dof, n_conns, i_conn, n_lines, i_line, n_nodes, i_node
-  type(c_ptr) :: system, conn, line
+  integer :: err, n_dof, n_points, i_point, n_lines, i_line, n_nodes, i_node
+  type(c_ptr) :: system, point, line
 
   infile = 'Mooring/lines.txt'
 
@@ -33,19 +33,19 @@ program main
   xd = 0.0
   f = 0.0
 
-  ! Get the positions from the connections
-  err = MD_GetNumberConnections( system, n_conns )
+  ! Get the positions from the points
+  err = MD_GetNumberPoints( system, n_points )
   if ( err /= MD_SUCESS ) then
     stop 1
-  elseif ( n_conns /= 6 ) then
-    print *,"6 connections were expected, not ", n_conns
+  elseif ( n_points /= 6 ) then
+    print *,"6 points were expected, not ", n_points
   end if
-  do i_conn = 1, 3
-    conn = MD_GetConnection( system, i_conn + 3 )
-    if ( .not.c_associated(conn) ) then
+  do i_point = 1, 3
+    point = MD_GetPoint( system, i_point + 3 )
+    if ( .not.c_associated(point) ) then
       stop 1
     end if
-    err = MD_GetConnectPos( conn, r )
+    err = MD_GetPointPos( point, r )
     if ( err /= MD_SUCESS ) then
       stop 1
     end if

@@ -1,16 +1,16 @@
 from .Entity import Entity, PropsList
-from .Line import LineConnection
+from .Line import LinePoint
 
 
 class Failure(Entity):
     """A failure criteria
     """
-    def __init__(self, con, lines, time, ten):
+    def __init__(self, point, lines, time, ten):
         """Constructor
 
         Parameters
         ----------
-        con (LineConnection): The Line connection
+        point (LinePoint): The Line point
         lines (list): The lines affected
         time (float): The failure tme delay
         ten (float): The failure tension
@@ -21,19 +21,19 @@ class Failure(Entity):
             "FAILURE",
             field_names=["Attach", "Lines", "FailTime", "FailTen"],
             field_units=["(#)", "(#)", "(s)", "(N)"])
-        self.__con = con
+        self.__point = point
         self.__lines = lines
         self.__time = time
         self.__ten = ten
         self.__set_values()
 
     @property
-    def con(self):
+    def point(self):
         return self.__con
 
-    @con.setter
-    def con(self, connection):
-        self.__con = connection
+    @point.setter
+    def point(self, point):
+        self.__con = point
         self.__set_values()
 
     @property

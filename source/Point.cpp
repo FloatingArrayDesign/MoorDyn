@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Connection.hpp"
-#include "Connection.h"
+#include "Point.hpp"
+#include "Point.h"
 #include "Line.hpp"
 #include "Waves.hpp"
 #include <tuple>
@@ -45,17 +45,17 @@
 
 namespace moordyn {
 
-Connection::Connection(moordyn::Log* log, size_t id)
+Point::Point(moordyn::Log* log, size_t id)
   : io::IO(log)
   , seafloor(nullptr)
-  , connId(id)
+  , pointId(id)
 {
 }
 
-Connection::~Connection() {}
+Point::~Point() {}
 
 void
-Connection::setup(int number_in,
+Point::setup(int number_in,
                   types type_in,
                   vec r0_in,
                   double M_in,
@@ -71,27 +71,27 @@ Connection::setup(int number_in,
 	type = type_in;
 
 	// store passed rod properties  >>>(and convert to numbers)<<<
-	conM = M_in;
-	conV = V_in;
-	conF = F_in;
-	conCdA = CdA_in;
-	conCa = Ca_in;
+	pointM = M_in;
+	pointV = V_in;
+	pointF = F_in;
+	pointCdA = CdA_in;
+	pointCa = Ca_in;
 
 	// beta = 0.0;
 
 	// Start off at position specified in input file (will be overwritten for
-	// fairleads). This is the starting point for connects and the permanent
+	// fairleads). This is the starting point for points and the permanent
 	// location of anchors.
 	r = r0_in;
 	rd = { 0.0, 0.0, 0.0 };
 
-	LOGDBG << "   Set up Connection " << number << ", type '" << TypeName(type)
+	LOGDBG << "   Set up Point " << number << ", type '" << TypeName(type)
 	       << "'. " << endl;
 }
 
-// this function handles assigning a line to a connection node
+// this function handles assigning a line to a point node
 void
-Connection::addLine(Line* theLine, EndPoints end_point)
+Point::addLine(Line* theLine, EndPoints end_point)
 {
 	LOGDBG << "L" << theLine->number << end_point_name(end_point) << "->P"
 	       << number << " ";
@@ -101,7 +101,7 @@ Connection::addLine(Line* theLine, EndPoints end_point)
 };
 
 EndPoints
-Connection::removeLine(Line* line)
+Point::removeLine(Line* line)
 {
 	EndPoints end_point;
 	// look through attached lines
@@ -112,20 +112,20 @@ Connection::removeLine(Line* line)
 		end_point = it->end_point;
 		attached.erase(it);
 
-		LOGMSG << "Detached line " << line->number << " from Connection "
+		LOGMSG << "Detached line " << line->number << " from Point "
 		       << number << endl;
 		return end_point;
 	}
 
 	// line not found
 	LOGERR << "Error: failed to find line to remove during "
-	       << __PRETTY_FUNC_NAME__ << " call to connection " << number
+	       << __PRETTY_FUNC_NAME__ << " call to point " << number
 	       << ". Line " << line->number << endl;
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
 std::pair<vec, vec>
-Connection::initialize()
+Point::initialize()
 {
 	// the default is for no water kinematics to be considered (or to be set
 	// externally on each node)
@@ -152,28 +152,28 @@ Connection::initialize()
 		}
 	}
 
-	LOGDBG << "   Initialized Connection " << number << endl;
+	LOGDBG << "   Initialized Point " << number << endl;
 
 	return std::make_pair(pos, vel);
 };
 
-// function to return net force on connection (just to allow public reading of
+// function to return net force on point (just to allow public reading of
 // Fnet)
 void
-Connection::getFnet(vec& Fnet_out)
+Point::getFnet(vec& Fnet_out)
 {
 	Fnet_out = Fnet;
 };
 
-// function to return mass matrix of connection
+// function to return mass matrix of point
 void
-Connection::getM(mat& M_out)
+Point::getM(mat& M_out)
 {
 	M_out = M;
 };
 
 real
-Connection::GetConnectionOutput(OutChanProps outChan)
+Point::GetPointOutput(OutChanProps outChan)
 {
 	if (outChan.QType == PosX)
 		return r[0];
@@ -207,7 +207,7 @@ Connection::GetConnectionOutput(OutChanProps outChan)
 }
 
 void
-Connection::setEnv(EnvCondRef env_in,
+Point::setEnv(EnvCondRef env_in,
                    moordyn::WavesRef waves_in,
                    moordyn::SeafloorRef seafloor_in)
 {
@@ -217,12 +217,12 @@ Connection::setEnv(EnvCondRef env_in,
 }
 
 void
-Connection::initiateStep(vec rFairIn, vec rdFairIn)
+Point::initiateStep(vec rFairIn, vec rdFairIn)
 {
 	if (type != COUPLED) {
-		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		LOGERR << "Invalid Point " << number << " type " << TypeName(type)
 		       << endl;
-		throw moordyn::invalid_value_error("Invalid connection type");
+		throw moordyn::invalid_value_error("Invalid point type");
 	}
 
 	// update values to fairlead position and velocity functions
@@ -235,12 +235,12 @@ Connection::initiateStep(vec rFairIn, vec rdFairIn)
 };
 
 void
-Connection::updateFairlead(real time)
+Point::updateFairlead(real time)
 {
 	if (type != COUPLED) {
-		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		LOGERR << "Invalid Point " << number << " type " << TypeName(type)
 		       << endl;
-		throw moordyn::invalid_value_error("Invalid connection type");
+		throw moordyn::invalid_value_error("Invalid point type");
 	}
 
 	// set fairlead position and velocity based on BCs (linear model for now)
@@ -253,12 +253,12 @@ Connection::updateFairlead(real time)
 }
 
 void
-Connection::setKinematics(vec r_in, vec rd_in)
+Point::setKinematics(vec r_in, vec rd_in)
 {
 	if (type != FIXED) {
-		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		LOGERR << "Invalid Point " << number << " type " << TypeName(type)
 		       << endl;
-		throw moordyn::invalid_value_error("Invalid connection type");
+		throw moordyn::invalid_value_error("Invalid point type");
 	}
 
 	// set position and velocity
@@ -271,14 +271,14 @@ Connection::setKinematics(vec r_in, vec rd_in)
 }
 
 void
-Connection::setState(vec pos, vec vel)
+Point::setState(vec pos, vec vel)
 {
 	// the kinematics should only be set with this function of it's an
-	// independent/free connection
+	// independent/free point
 	if (type != FREE) {
-		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		LOGERR << "Invalid Point " << number << " type " << TypeName(type)
 		       << endl;
-		throw moordyn::invalid_value_error("Invalid connection type");
+		throw moordyn::invalid_value_error("Invalid point type");
 	}
 
 	// from state values, get r and rdot values
@@ -291,17 +291,17 @@ Connection::setState(vec pos, vec vel)
 }
 
 std::pair<vec, vec>
-Connection::getStateDeriv()
+Point::getStateDeriv()
 {
 	// the RHS is only relevant (there are only states to worry about) if it is
-	// a Connect type of Connection
+	// a Point type of Point
 	if (type != FREE) {
-		LOGERR << "Invalid Connection " << number << " type " << TypeName(type)
+		LOGERR << "Invalid Point " << number << " type " << TypeName(type)
 		       << endl;
-		throw moordyn::invalid_value_error("Invalid connection type");
+		throw moordyn::invalid_value_error("Invalid point type");
 	}
 
-	// cout << "ConRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " <<
+	// cout << "PointRHS: m: " << M[0][0] << ", f: " << Fnet[0] << " " <<
 	// Fnet[1] << " " << Fnet[2] << endl;
 	doRHS();
 
@@ -313,11 +313,11 @@ Connection::getStateDeriv()
 };
 
 void
-Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
+Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 {
 	doRHS();
 
-	// position of connection relative to the body reference point (global
+	// position of point relative to the body reference point (global
 	// orientation frame)
 	const vec rRel = r - rBody;
 
@@ -330,14 +330,14 @@ Connection::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 }
 
 moordyn::error_id
-Connection::doRHS()
+Point::doRHS()
 {
-	// start with the Connection's own forces including buoyancy and weight, and
+	// start with the Point's own forces including buoyancy and weight, and
 	// its own mass
-	Fnet = conF + vec(0.0, 0.0, env->g * (conV * env->rho_w - conM));
+	Fnet = pointF + vec(0.0, 0.0, env->g * (pointV * env->rho_w - pointM));
 
 	// start with physical mass
-	M = conM * mat::Identity();
+	M = pointM * mat::Identity();
 
 	// loop through attached lines, adding force and mass contributions
 	for (auto a : attached) {
@@ -350,10 +350,10 @@ Connection::doRHS()
 		// Process outline for line failure (yet to be coded):
 		// 1. check if tension (of Fnet_i) exceeds line's breaking limit or if
 		// failure time has elapsed for line
-		// 2. create new massless connect with same instantaneous kinematics as
-		// current connection
-		// 3. disconnect line end from current connection and instead attach to
-		// new connect The above may require rearrangement of connection
+		// 2. create new massless point with same instantaneous kinematics as
+		// current point
+		// 3. disconnect line end from current point and instead attach to
+		// new point The above may require rearrangement of point
 		// indices, expansion of state vector, etc.
 
 		// sum quantitites
@@ -364,7 +364,7 @@ Connection::doRHS()
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
-	auto [zeta, U, Ud] = waves->getWaveKinConn(connId);
+	auto [zeta, U, Ud] = waves->getWaveKinPoint(pointId);
 	// env->waves->getU(r, t, U); // call generic function to get water
 	// velocities  <<<<<<<<<<<<<<<< all needs updating
 
@@ -374,13 +374,13 @@ Connection::doRHS()
 	// viscous drag calculation
 	const vec vi = U[0] - rd; // relative water velocity
 	const vec dir = vi.normalized();
-	Fnet += 0.5 * env->rho_w * dir * vi.squaredNorm() * conCdA;
+	Fnet += 0.5 * env->rho_w * dir * vi.squaredNorm() * pointCdA;
 
 	// TODO <<<<<<<<< add Ud to inertia force calcuation!!
 
 	// if (abs(r[0]) > 40)
 	//{
-	//	cout <<"Connection going crazy at t=" << t << endl;
+	//	cout <<"Point going crazy at t=" << t << endl;
 	//	cout << r << endl;
 	//	cout << Fnet << endl;
 	//
@@ -389,13 +389,13 @@ Connection::doRHS()
 	// }
 
 	// added mass calculation
-	M += conV * env->rho_w * conCa * mat::Identity();
+	M += pointV * env->rho_w * pointCa * mat::Identity();
 
 	return MOORDYN_SUCCESS;
 }
 
 std::vector<uint64_t>
-Connection::Serialize(void)
+Point::Serialize(void)
 {
 	std::vector<uint64_t> data, subdata;
 
@@ -416,7 +416,7 @@ Connection::Serialize(void)
 }
 
 uint64_t*
-Connection::Deserialize(const uint64_t* data)
+Point::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
 	ptr = io::IO::Deserialize(ptr, r);
@@ -431,7 +431,7 @@ Connection::Deserialize(const uint64_t* data)
 
 #ifdef USE_VTK
 vtkSmartPointer<vtkPolyData>
-Connection::getVTK() const
+Point::getVTK() const
 {
 	auto points = vtkSmartPointer<vtkPoints>::New();
 	points->InsertNextPoint(r[0], r[1], r[2]);
@@ -469,7 +469,7 @@ Connection::getVTK() const
 }
 
 void
-Connection::saveVTK(const char* filename) const
+Point::saveVTK(const char* filename) const
 {
 	auto obj = this->getVTK();
 	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -490,9 +490,9 @@ Connection::saveVTK(const char* filename) const
 // new function to draw instantaneous line positions in openGL context
 #ifdef USEGL
 void
-Connection::drawGL(void)
+Point::drawGL(void)
 {
-	double radius = pow(conV / (4 / 3 * pi), 0.33333); // conV
+	double radius = pow(pointV / (4 / 3 * pi), 0.33333); // pointV
 	Sphere(r[0], r[1], r[2], radius);
 };
 #endif
@@ -509,75 +509,75 @@ Connection::drawGL(void)
 // =============================================================================
 
 /// Check that the provided system is not Null
-#define CHECK_CONNECTION(c)                                                    \
+#define CHECK_POINT(c)                                                    \
 	if (!c) {                                                                  \
-		cerr << "Null connection received in " << __FUNC_NAME__ << " ("        \
+		cerr << "Null point received in " << __FUNC_NAME__ << " ("        \
 		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
 		return MOORDYN_INVALID_VALUE;                                          \
 	}
 
 int DECLDIR
-MoorDyn_GetConnectID(MoorDynConnection conn, int* id)
+MoorDyn_GetPointID(MoorDynPoint point, int* id)
 {
-	CHECK_CONNECTION(conn);
-	*id = ((moordyn::Connection*)conn)->number;
+	CHECK_POINT(point);
+	*id = ((moordyn::Point*)point)->number;
 	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetConnectType(MoorDynConnection conn, int* t)
+MoorDyn_GetPointType(MoorDynPoint point, int* t)
 {
-	CHECK_CONNECTION(conn);
-	*t = ((moordyn::Connection*)conn)->type;
+	CHECK_POINT(point);
+	*t = ((moordyn::Point*)point)->type;
 	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetConnectPos(MoorDynConnection conn, double pos[3])
+MoorDyn_GetPointPos(MoorDynPoint point, double pos[3])
 {
-	CHECK_CONNECTION(conn);
+	CHECK_POINT(point);
 	moordyn::vec r, rd;
-	((moordyn::Connection*)conn)->getState(r, rd);
+	((moordyn::Point*)point)->getState(r, rd);
 	moordyn::vec2array(r, pos);
 	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetConnectVel(MoorDynConnection conn, double v[3])
+MoorDyn_GetPointVel(MoorDynPoint point, double v[3])
 {
-	CHECK_CONNECTION(conn);
+	CHECK_POINT(point);
 	moordyn::vec r, rd;
-	((moordyn::Connection*)conn)->getState(r, rd);
+	((moordyn::Point*)point)->getState(r, rd);
 	moordyn::vec2array(rd, v);
 	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetConnectForce(MoorDynConnection conn, double f[3])
+MoorDyn_GetPointForce(MoorDynPoint point, double f[3])
 {
-	CHECK_CONNECTION(conn);
+	CHECK_POINT(point);
 	moordyn::vec fnet;
-	((moordyn::Connection*)conn)->getFnet(fnet);
+	((moordyn::Point*)point)->getFnet(fnet);
 	moordyn::vec2array(fnet, f);
 	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetConnectNAttached(MoorDynConnection conn, unsigned int* n)
+MoorDyn_GetPointNAttached(MoorDynPoint point, unsigned int* n)
 {
-	CHECK_CONNECTION(conn);
-	*n = ((moordyn::Connection*)conn)->getLines().size();
+	CHECK_POINT(point);
+	*n = ((moordyn::Point*)point)->getLines().size();
 	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR
-MoorDyn_GetConnectAttached(MoorDynConnection conn,
+MoorDyn_GetPointAttached(MoorDynPoint point,
                            unsigned int i,
                            MoorDynLine* l,
                            int* e)
 {
-	CHECK_CONNECTION(conn);
-	auto attached = ((moordyn::Connection*)conn)->getLines();
+	CHECK_POINT(point);
+	auto attached = ((moordyn::Point*)point)->getLines();
 	if (i >= attached.size()) {
 		cerr << "Invalid line index " << i << ", just " << attached.size()
 		     << " are available" << __FUNC_NAME__ << " (" << XSTR(__FILE__)
@@ -590,14 +590,14 @@ MoorDyn_GetConnectAttached(MoorDynConnection conn,
 }
 
 int DECLDIR
-MoorDyn_SaveConnectVTK(MoorDynConnection conn, const char* filename)
+MoorDyn_SavePointVTK(MoorDynPoint point, const char* filename)
 {
 #ifdef USE_VTK
-	CHECK_CONNECTION(conn);
+	CHECK_POINT(point);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		((moordyn::Connection*)conn)->saveVTK(filename);
+		((moordyn::Point*)point)->saveVTK(filename);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
