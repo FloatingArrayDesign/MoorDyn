@@ -390,12 +390,12 @@ ImplicitEulerScheme::Relax(const unsigned int iter)
 		rd[0].lines[i].vel = rd[2].lines[i].vel;
 	}
 
-	for (unsigned int i = 0; i < conns.size(); i++) {
-		opt_relax(rd[2].conns[i].acc,
-		          rd[1].conns[i].acc,
-		          rd[0].conns[i].acc,
+	for (unsigned int i = 0; i < points.size(); i++) {
+		opt_relax(rd[2].points[i].acc,
+		          rd[1].points[i].acc,
+		          rd[0].points[i].acc,
 		          k);
-		rd[0].conns[i].vel = rd[2].conns[i].vel;
+		rd[0].points[i].vel = rd[2].points[i].vel;
 	}
 
 	for (unsigned int i = 0; i < rods.size(); i++) {
