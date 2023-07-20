@@ -302,7 +302,7 @@ opt_relax_factor(const unsigned int iter,
                  const unsigned int max_iter) 
 {
 	// const real sigma = 0.25 * max_iter;
-	// const real x = iter - 0.5 * max_iter;
+	// const real x = iter - 0.75 * max_iter;
 	// return exp(-(x * x) / (sigma * sigma));
 	const real x = iter / (real)max_iter;
 	return std::atan(x);
@@ -340,6 +340,9 @@ opt_relax(const std::vector<T> acc_next,
 		opt_relax(acc_next[i], acc_prev[i], acc[i], k);
 }
 
+#define MAX_RELAX_FACTOR 0.5
+#define MIN_RELAX_FACTOR 0.1
+
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
                                          moordyn::WavesRef waves,
                                          unsigned int iters,
@@ -355,6 +358,8 @@ ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
 	// Compute the renormalization factor
 	for (unsigned int i = 0; i < iters; i++)
 		_k_renorm = (std::max)(_k_renorm, opt_relax_factor(i, iters));
+	const real k_max = (iters <= 2) ? 1.0 : MAX_RELAX_FACTOR;
+	_k_renorm = k_max / _k_renorm;
 }
 
 void
@@ -381,7 +386,8 @@ ImplicitEulerScheme::Step(real& dt)
 void
 ImplicitEulerScheme::Relax(const unsigned int iter)
 {
-	const auto k = _k_renorm * opt_relax_factor(iter, _iters);
+	const auto k = (std::max)(_k_renorm * opt_relax_factor(iter, _iters),
+	                          MIN_RELAX_FACTOR);
 	for (unsigned int i = 0; i < lines.size(); i++) {
 		opt_relax(rd[2].lines[i].acc,
 		          rd[1].lines[i].acc,

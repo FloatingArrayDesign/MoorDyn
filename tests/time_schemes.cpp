@@ -87,7 +87,7 @@ static std::vector<std::string> dts({ "6.5E-5",
                                       "3.0E-4",
                                       "5.0E-4",
                                       "5.0E-4",
-                                      "8.0E-4" });
+                                      "8.5E-4" });
 
 using namespace std;
 
