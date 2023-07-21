@@ -54,6 +54,7 @@ endfunction()
 
 function(make_catch2_executable test_name)
     make_cpp_executable(${test_name})
+    target_compile_definitions(${test_name} PUBLIC USE_CATCH2)
     target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
     target_link_libraries(${test_name} PRIVATE Catch2::Catch2WithMain)
 endfunction()
