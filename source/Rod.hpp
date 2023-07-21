@@ -150,7 +150,7 @@ class Rod final : public io::IO
 	/// unstretched rod segment lengths
 	std::vector<moordyn::real> l;
 
-	/// added mass matrix (doesn't contain node masses)
+	/// added mass matrix
 	std::vector<mat> M;
 	// line segment volumes
 	std::vector<moordyn::real> V;

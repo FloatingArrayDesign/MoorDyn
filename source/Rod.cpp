@@ -1271,20 +1271,6 @@ Rod::doRHS()
 	// real mass = UnstrLen * 0.25 * pi * pi * rho;
 	real mass = UnstrLen * 0.25 * pi * d * d * rho;
 
-	// Below is not needed becasue node mass matricies include node masses
-	// (lines 920-932)
-	// // Because the individual nodes mass matricies just include
-	// // the added mass, we have to manually compensate for the mass
-	// vec3 cg = 0.5 * UnstrLen * q;
-	// mat H = getH(cg);
-	// mat massMat = mass * mat::Identity();
-	// M6net.topLeftCorner<3, 3>() += massMat;
-	// const mat tempM1 = massMat * H;
-	// M6net.bottomLeftCorner<3, 3>() += tempM1;
-	// M6net.topRightCorner<3, 3>() += tempM1.transpose();
-	// // this mass doesn't affect the inertia matrix because
-	// // that gets handled below
-
 	// add inertia terms for the Rod assuming it is uniform density (radial
 	// terms add to existing matrix which contains parallel-axis-theorem
 	// components only)
@@ -1292,16 +1278,40 @@ Rod::doRHS()
 	if (N > 0) {
 		// axial moment of inertia
 		real I_l = mass / 8.0 * d * d;
-		// this is just the analytical equation for moment of inertia of
-		// a uniform cylinder around its end.
-		auto r = d / 2.0;
-		// real I_r =
-		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
 
-		Imat_l(0, 0) = I_l;
-		Imat_l(1, 1) = I_r;
-		Imat_l(2, 2) = I_r;
+		auto r = d / 2.0;
+		/**
+		 * The lumped mass approximation of rods tends to incorrectly calculate
+		 * the moment of inertia of a cylinder. Generally it is close but for
+		 * small N tends to overestimate, and for large N will underestimate.
+		 * The exact moment of inertia for a rod around a diameter of the end is
+		 * I_exact = 1/4 * mass * r^2 + 1/3 * mass * length^2
+		 * The lumped mass approximation can be found by using the fact
+		 * that a point mass distance r from the coordinate center had a moment
+		 * of inertia of m * r^2.
+		 * A rod of length L with N segments has N+1 nodes whose distance from
+		 * the rod end is given by dist(n) = (n-1) * (L/N). (Assuming that node
+		 * 1 is the first node)
+		 * If the rod has a total mass M, then the mass of the inner nodes is
+		 * M/N and the mass of the two outer nodes is M/2N.
+		 * We can ignore node 1 since it is at distance zero and so adds no
+		 * moment of inertia.
+		 * Therefore we can write the total moment of inertia as
+		 * (sum from n=2 to N of (M/N)*dist(n)^2) + M/2N * dist(N+1)
+		 * Through the use of wolfram alpha and some algebra that can be
+		 * transformed into
+		 * I_lumped = (M/N) * L^2 * ((1-3N+2N^2)/6N) + 1/2)
+		 * After much simplification the correction amount given by
+		 * I_correction = I_exact - I_lumped = M * (r^2/4 - L/(6N^2))
+		 * This can be thought of as the radial component of the exact
+		 * equation minus the overestimation caused by the lumped mass model
+		 */
+		real I_r_correction =
+		    mass * ((r * r) / 4 - (UnstrLen * UnstrLen) / (6 * N * N));
+
+		Imat_l(0, 0) = I_r_correction;
+		Imat_l(1, 1) = I_r_correction;
+		Imat_l(2, 2) = I_l;
 	}
 
 	// get rotation matrix to put things in global rather than rod-axis
