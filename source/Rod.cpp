@@ -976,20 +976,25 @@ Rod::doRHS()
 		z1lo =
 		    r[i][2] -
 		    0.5 * d * abs(sinPhi); // lowest  elevation of cross section at node
-
-		if (z1lo > zeta_i) {        // fully out of water
-			A = 0.0;                // area
-			zA = 0;                 // centroid depth
-		} else if (z1hi < zeta_i) { // fully submerged
+		// TODO - it is an open question in my mind about what this should be
+		// need to do something that "correctly" handles the case of a rod fully
+		// submerged in the angled part of a wave, as well as the case of a rod
+		// tangent to the water surface in the angled part of a wave.
+		real local_z = r[i][2] - zeta_i;
+		if (z1lo > zeta[i]) {        // fully out of water
+			A = 0.0;                 // area
+			zA = 0;                  // centroid depth
+		} else if (z1hi < zeta[i]) { // fully submerged
 			A = pi * 0.25 * d * d;
-			zA = r[i][2];
+			// zA = r[i][2];
+			zA = local_z;
 		} else { // if cross section crosses waterplane
 			if (abs(sinPhi) <
 			    0.001) { // if cylinder is near vertical, i.e. end is horizontal
 				A = 0.5; // <<< shouldn't this just be zero? <<<
 				zA = 0.0;
 			} else {
-				G = (r[i][2] - zeta_i) /
+				G = (r[i][2] - zeta[i]) /
 				    abs(sinPhi); //!(-z1lo+Rod%zeta(I))/abs(sinPhi)   ! distance
 				                 //! from node to waterline cross at same axial
 				                 //! location [m]
@@ -1000,7 +1005,9 @@ Rod::doRHS()
 				// for now... <<< need to double check zeta bit <<<
 				al = acos(2.0 * G / d);
 				A = d * d / 8.0 * (2.0 * al - sin(2.0 * al));
-				zA = r[i][2] - 0.6666666666 * d * pow(sin(al), 3.0) /
+				// zA = r[i][2] - 0.6666666666 * d * pow(sin(al), 3.0) /
+				//                    (2.0 * al - sin(2.0 * al));
+				zA = local_z - 0.6666666666 * d * pow(sin(al), 3.0) /
 				                   (2.0 * al - sin(2.0 * al));
 			}
 		}
@@ -1103,7 +1110,8 @@ Rod::doRHS()
 		// (these can exist even if N==0) -------
 
 		// end A
-		if ((i == 0) && (z1lo < zeta_i)) // if this is end A and it is submerged
+		if ((i == 0) &&
+		    (z1lo < zeta[i])) // if this is end A and it is submerged
 		{
 			// buoyancy force
 			Ftemp = -VOF[i] * Area * env->rho_w * env->g * zA;
@@ -1131,7 +1139,7 @@ Rod::doRHS()
 			M[i] += VOF[i] * env->rho_w * CaEnd * V_temp * Q;
 		}
 
-		if ((i == N) && (z1lo < zeta_i)) {
+		if ((i == N) && (z1lo < zeta[i])) {
 			// buoyancy force
 			Ftemp = VOF[i] * Area * env->rho_w * env->g * zA;
 			Bo[i] += vec(Ftemp * cosBeta * sinPhi,
