@@ -13,6 +13,7 @@ SpectrumKin::setup(const std::vector<FrequencyComponent>& freqComps,
                    EnvCondRef env,
                    SeafloorRef seafloor)
 {
+	this->env = env;
 	auto num_freqs = freqComps.size();
 
 	omegas = Eigen::ArrayX<real>::Zero(num_freqs);
@@ -43,7 +44,8 @@ SpectrumKin::getWaveKin(vec3 pos,
                         real actualDepth,
                         real* zeta,
                         vec3* vel,
-                        vec3* acc) const
+                        vec3* acc,
+                        real* pdyn) const
 {
 	// const real beta = 0.0;
 
@@ -69,6 +71,14 @@ SpectrumKin::getWaveKin(vec3 pos,
 		if (acc) {
 			*acc = vec3::Zero();
 		}
+		if (pdyn) {
+			// if the node is above the water surface, return the dynamic
+			// pressure at the water surface this means that code using dynamic
+			// pressure needs to have its own handling for surface piercing but
+			// allows rods to calculate the dynamic pressure on partially
+			// submerged ends where the central node is out of the water
+			*pdyn = env->rho_w * env->g * sin_waves.sum();
+		}
 		return;
 	}
 	const real bottom = actualDepth;
@@ -79,9 +89,10 @@ SpectrumKin::getWaveKin(vec3 pos,
 	if (zeta) {
 		*zeta = surface_height;
 	}
-	if (vel || acc) {
+	if (vel || acc || pdyn) {
 		vec3 vel_sum = vec3::Zero();
 		vec3 acc_sum = vec3::Zero();
+		real pdyn_sum = 0.0;
 
 		for (unsigned int I = 0; I < omegas.size(); I++) {
 			real SINHNumOvrSIHNDen;
@@ -121,6 +132,7 @@ SpectrumKin::getWaveKin(vec3 pos,
 				COSHNumOvrCOSHDen =
 				    cosh(k * (stretched_z + -avgDepth)) / cosh(k * -avgDepth);
 			}
+			pdyn_sum += env->rho_w * env->g * sin_waves[I] * COSHNumOvrCOSHDen;
 			real u_xy = w * sin_waves[I] * COSHNumOvrSIHNDen;
 			real ux = u_xy * betas_x[I];
 			real uy = u_xy * betas_y[I];
@@ -138,6 +150,8 @@ SpectrumKin::getWaveKin(vec3 pos,
 			*vel = vel_sum;
 		if (acc)
 			*acc = acc_sum;
+		if (pdyn)
+			*pdyn = pdyn_sum;
 	}
 }
 }

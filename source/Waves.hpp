@@ -204,14 +204,11 @@ class SpectrumKinWrapper : public AbstractWaveKin
 	                vec3* acc,
 	                real* pdyn) override
 	{
-		if (pdyn) {
-			*pdyn = 0.0;
-		}
 
 		real avgDepth = seafloor.getAverageDepth();
 		real actualDepth = seafloor.getDepth(pos.head<2>());
 		spectrumKin.getWaveKin(
-		    pos, time, avgDepth, actualDepth, zeta, vel, acc);
+		    pos, time, avgDepth, actualDepth, zeta, vel, acc, pdyn);
 	}
 };
 /**

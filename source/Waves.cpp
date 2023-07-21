@@ -159,7 +159,13 @@ WaveGrid::getWaveKin(const vec3& pos,
 			*acc = vec::Zero();
 		}
 		if (pdyn) {
-			*pdyn = 0;
+			// When above the wave surface, return the dynamic pressure at the
+			// wave surface.
+			// This allows something like a rod to have an end node
+			// that is just out of the water and still calculate dynamic
+			// pressure on the end face given the submergence.
+			auto iz = interp_factor(pz, 0.0, fz);
+			*pdyn = interp4(pDyn, ix, iy, iz, it, fx, fy, fz, ft);
 		}
 		return;
 	}

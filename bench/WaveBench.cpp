@@ -41,8 +41,14 @@ BM_SpectrumKinZeta(benchmark::State& state)
 	moordyn::real t = 0.0;
 	moordyn::real zeta;
 	for (auto _ : state) {
-		spectrumKin.getWaveKin(
-		    moordyn::vec3(x, y, z), t, -50, -50, &zeta, nullptr, nullptr);
+		spectrumKin.getWaveKin(moordyn::vec3(x, y, z),
+		                       t,
+		                       -50,
+		                       -50,
+		                       &zeta,
+		                       nullptr,
+		                       nullptr,
+		                       nullptr);
 	}
 }
 
@@ -67,8 +73,14 @@ BM_SpectrumKinVel(benchmark::State& state)
 	moordyn::real t = 0.0;
 	moordyn::vec3 vel;
 	for (auto _ : state) {
-		spectrumKin.getWaveKin(
-		    moordyn::vec3(x, y, z), t, -50, -50, nullptr, &vel, nullptr);
+		spectrumKin.getWaveKin(moordyn::vec3(x, y, z),
+		                       t,
+		                       -50,
+		                       -50,
+		                       nullptr,
+		                       &vel,
+		                       nullptr,
+		                       nullptr);
 	}
 }
 

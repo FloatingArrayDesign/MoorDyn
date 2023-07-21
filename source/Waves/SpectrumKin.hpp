@@ -51,9 +51,11 @@ class SpectrumKin
 	                real actualDepth,
 	                real* zeta,
 	                vec3* vel,
-	                vec3* acc) const;
+	                vec3* acc,
+	                real* pdyn) const;
 
   private:
+	EnvCondRef env;
 	/// Angular velocities of the spectrum components
 	Eigen::ArrayX<real> omegas;
 	/// Real amplitudes of spectrum components
