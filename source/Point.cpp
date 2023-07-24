@@ -83,7 +83,14 @@ Point::setup(int number_in,
 	// fairleads). This is the starting point for points and the permanent
 	// location of anchors.
 	r = r0_in;
-	rd = { 0.0, 0.0, 0.0 };
+	rd = vec::Zero();
+	r_ves = r;
+	rd_ves = rd;
+
+	// Start also the variables that will be serialized, just to avoid floating
+	// point exceptions
+	Fnet = vec::Zero();
+	M = pointM * mat::Identity();
 
 	LOGDBG << "   Set up Point " << number << ", type '" << TypeName(type)
 	       << "'. " << endl;
