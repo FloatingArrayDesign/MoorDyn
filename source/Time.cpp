@@ -338,10 +338,13 @@ opt_relax(const std::vector<T> acc_next,
 {
 	for (unsigned int i = 0; i < acc.size(); i++)
 		opt_relax(acc_next[i], acc_prev[i], acc[i], k);
+	if (acc.size())
+		cout << "acc = " << acc[acc.size() - 1] << endl;
+
 }
 
 #define MAX_RELAX_FACTOR 0.5
-#define MIN_RELAX_FACTOR 0.1
+#define MIN_RELAX_FACTOR 0.0
 
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
                                          moordyn::WavesRef waves,
@@ -388,6 +391,7 @@ ImplicitEulerScheme::Relax(const unsigned int iter)
 {
 	const auto k = (std::max)(_k_renorm * opt_relax_factor(iter, _iters),
 	                          MIN_RELAX_FACTOR);
+	cout << "k = " << k << endl;
 	for (unsigned int i = 0; i < lines.size(); i++) {
 		opt_relax(rd[2].lines[i].acc,
 		          rd[1].lines[i].acc,

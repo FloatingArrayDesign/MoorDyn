@@ -39,6 +39,7 @@ set(CPP_TESTS
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    stability
 )
 
 function(make_executable test_name)
