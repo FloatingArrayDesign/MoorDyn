@@ -1302,7 +1302,7 @@ Rod::doRHS()
 		 * transformed into
 		 * I_lumped = (M/N) * L^2 * ((1-3N+2N^2)/6N) + 1/2)
 		 * After much simplification the correction amount given by
-		 * I_correction = I_exact - I_lumped = M * (r^2/4 - L/(6N^2))
+		 * I_correction = I_exact - I_lumped = M * (r^2/4 - L^2/(6N^2))
 		 * This can be thought of as the radial component of the exact
 		 * equation minus the overestimation caused by the lumped mass model
 		 */
