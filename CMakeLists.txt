@@ -64,6 +64,13 @@ endif()
 if(${PYTHON_WRAPPER})
     find_package(Python
                  COMPONENTS Interpreter Development REQUIRED)
+    execute_process(COMMAND ${Python_EXECUTABLE} -m build -h
+                    OUTPUT_VARIABLE PYTHON_HAS_BUILD_OUTPUT
+                    RESULT_VARIABLE PYTHON_HAS_BUILD
+                    ERROR_QUIET)
+    if(PYTHON_HAS_BUILD AND NOT PYTHON_HAS_BUILD EQUAL 0)
+        message(FATAL_ERROR "PyPA’s build package is required. Please install it typing '${Python_EXECUTABLE} -m pip install --upgrade build'")
+    endif()
 endif()
 
 if(${RUST_WRAPPER})
