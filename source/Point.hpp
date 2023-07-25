@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Util/CFL.hpp"
 #include "Seafloor.hpp"
 #include <utility>
 
@@ -66,7 +67,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class Point final : public io::IO
+class Point final : public io::IO, public CFL
 {
   public:
 	/** @brief Costructor
@@ -355,6 +356,15 @@ class Point final : public io::IO
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
 	moordyn::error_id doRHS();
+
+	/** @brief Compute the CFL number
+	 *
+	 * A CFL bigger than 1.0 means that the physics cannot be correctly
+	 * represented
+	 * @param a Acceleration
+	 * @param dt Time step
+	 */
+	real CFLNumber(const real& a, const real& dt) const;
 
 	/** @brief Produce the packed data to be saved
 	 *

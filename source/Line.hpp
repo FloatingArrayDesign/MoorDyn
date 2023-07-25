@@ -36,6 +36,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Util/CFL.hpp"
 #include "Seafloor.hpp"
 #include <utility>
 
@@ -68,7 +69,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
  * this natural period to avoid numerical instabilities
  */
-class Line final : public io::IO
+class Line final : public io::IO, public CFL
 {
   public:
 	/** @brief Constructor
@@ -630,8 +631,14 @@ class Line final : public io::IO
 	 */
 	std::pair<std::vector<vec>, std::vector<vec>> getStateDeriv();
 
-	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
-	// double time);
+	/** @brief Compute the CFL number
+	 *
+	 * A CFL bigger than 1.0 means that the physics cannot be correctly
+	 * represented
+	 * @param a Maximum acceleration
+	 * @param dt Time step
+	 */
+	real CFLNumber(const real& a, const real& dt) const;
 
 	void Output(real);
 

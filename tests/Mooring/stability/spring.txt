@@ -20,7 +20,7 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 ---------------------- OPTIONS -----------------------------------------
 2             writeLog      Write a log file
 1e-3          dtM           time step to use in mooring integration (s)
-Midpoint25    tScheme       The time integration Scheme (-)
+Midpoint50    tScheme       The time integration Scheme (-)
 1.0           WtrDnsty      water density (kg/m^3)
 500           WtrDpth       water depth (m)
 1.0           dtIC          time interval for analyzing convergence during IC gen (s)

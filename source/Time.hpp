@@ -919,7 +919,7 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 3>
 	 * maximum at 0.75 times the maximum number of iterations
 	 * @param iter The current iteration
 	 */
-	void Relax(const unsigned int iter);
+	void Relax(const unsigned int& iter, const real& dt);
 
   private:
 	/// The number of iterations

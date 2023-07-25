@@ -1232,6 +1232,16 @@ Line::getStateDeriv()
 	return make_pair(u, a);
 };
 
+real
+Line::CFLNumber(const real& a, const real& dt) const
+{
+	const real l_min = *(std::min_element(lstr.begin(), lstr.end()));
+	real v_max = 0.0;
+	for (auto v : rd)
+		v_max = (std::max)(v.norm(), v_max);
+	return CFL::CFLNumber(l_min, v_max, a, dt);
+}
+
 // write output file for line  (accepts time parameter since retained time value
 // (t) will be behind by one line time step
 void

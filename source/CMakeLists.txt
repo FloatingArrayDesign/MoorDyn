@@ -47,6 +47,7 @@ set(MOORDYN_HEADERS
     Waves/SpectrumKin.hpp
     Waves/WaveOptions.hpp
     Waves/WaveGrid.hpp
+    Util/CFL.hpp
     Util/Interp.hpp
 )
 

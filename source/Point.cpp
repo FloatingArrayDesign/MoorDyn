@@ -394,6 +394,15 @@ Point::doRHS()
 	return MOORDYN_SUCCESS;
 }
 
+real
+Point::CFLNumber(const real& a, const real& dt) const
+{
+	real cfl = 0.0;
+	for (auto att : attached)
+		cfl = (std::max)(att.line->CFLNumber(a, dt), cfl);
+	return cfl;
+}
+
 std::vector<uint64_t>
 Point::Serialize(void)
 {

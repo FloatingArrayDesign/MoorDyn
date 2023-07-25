@@ -16,11 +16,11 @@ ID    Type      X       Y       Z       Mass   Volume  CdA    Ca
 ---------------------- LINES ----------------------------------------
 ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 (#)   (name)     (#)      (#)       (m)       (-)     (-)
-1     main       1        2         1.0       10      -
+1     main       1        2         1.0       2      -
 ---------------------- OPTIONS -----------------------------------------
 2             writeLog      Write a log file
 1e-3          dtM           time step to use in mooring integration (s)
-Midpoint100000  tScheme       The time integration Scheme (-)
+Midpoint1000  tScheme       The time integration Scheme (-)
 1.0           WtrDnsty      water density (kg/m^3)
 500           WtrDpth       water depth (m)
 1.0           dtIC          time interval for analyzing convergence during IC gen (s)

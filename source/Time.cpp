@@ -297,6 +297,10 @@ ABScheme<order>::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
+#define MAX_RELAX_FACTOR 0.5
+#define MIN_RELAX_FACTOR 0.0
+#define MAX_CFL 0.2
+
 const real
 opt_relax_factor(const unsigned int iter,
                  const unsigned int max_iter) 
@@ -317,7 +321,7 @@ opt_relax_error(const T acc_relaxed, const T acc)
 
 template<typename T>
 void
-opt_relax(const T acc_next, const T acc_prev, T& acc, const real k)
+opt_relax(const T acc_next, const T acc_prev, T& acc, const real& k)
 {
 	auto error_prev = opt_relax_error(acc, acc_prev);
 	auto error_next = opt_relax_error(acc, acc_next);
@@ -329,22 +333,38 @@ opt_relax(const T acc_next, const T acc_prev, T& acc, const real k)
 	acc = relax * acc_next + (1.0 - relax) * acc;
 }
 
-template<typename T>
 void
-opt_relax(const std::vector<T> acc_next,
-          const std::vector<T> acc_prev,
-          std::vector<T>& acc,
-          const real k)
+opt_relax(const CFL* obj,
+          const vec& acc_next,
+          const vec& acc_prev,
+          vec& acc,
+          const real& dt,
+          const real& k)
 {
-	for (unsigned int i = 0; i < acc.size(); i++)
-		opt_relax(acc_next[i], acc_prev[i], acc[i], k);
-	if (acc.size())
-		cout << "acc = " << acc[acc.size() - 1] << endl;
-
+	const real cfl = (std::max)(MAX_CFL, obj->CFLNumber(acc_next.norm(), dt));
+	const real kcfl = k * MAX_CFL / cfl;
+	opt_relax(acc_next, acc_prev, acc, kcfl);
 }
 
-#define MAX_RELAX_FACTOR 0.5
-#define MIN_RELAX_FACTOR 0.0
+void
+opt_relax(const CFL* obj,
+          const std::vector<vec>& acc_next,
+          const std::vector<vec>& acc_prev,
+          std::vector<vec>& acc,
+          const real& dt,
+          const real& k)
+{
+	real max_acc = 0.0;
+	for (auto a : acc_next) {
+		max_acc = (std::max)(a.norm(), max_acc);
+	}
+	const real cfl = (std::max)(MAX_CFL, obj->CFLNumber(max_acc, dt));
+	const real kcfl = k * MAX_CFL / cfl;
+	for (unsigned int i = 0; i < acc.size(); i++) {
+		opt_relax(acc_next[i], acc_prev[i], acc[i], kcfl);
+	}
+
+}
 
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
                                          moordyn::WavesRef waves,
@@ -368,15 +388,13 @@ ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
 void
 ImplicitEulerScheme::Step(real& dt)
 {
-	Update(0.0, 0);
-	CalcStateDeriv(0);
 	t += _dt_factor * dt;
 	for (unsigned int i = 0; i < _iters; i++) {
 		r[1] = r[0] + rd[0] * (_dt_factor * dt);
 		Update(_dt_factor * dt, 1);
 		rd[1] = rd[2];
 		CalcStateDeriv(2);
-		Relax(i);
+		Relax(i, dt);
 	}
 
 	// Apply
@@ -387,23 +405,26 @@ ImplicitEulerScheme::Step(real& dt)
 }
 
 void
-ImplicitEulerScheme::Relax(const unsigned int iter)
+ImplicitEulerScheme::Relax(const unsigned int& iter, const real& dt)
 {
 	const auto k = (std::max)(_k_renorm * opt_relax_factor(iter, _iters),
 	                          MIN_RELAX_FACTOR);
-	cout << "k = " << k << endl;
 	for (unsigned int i = 0; i < lines.size(); i++) {
-		opt_relax(rd[2].lines[i].acc,
+		opt_relax(lines[i],
+		          rd[2].lines[i].acc,
 		          rd[1].lines[i].acc,
 		          rd[0].lines[i].acc,
+		          dt,
 		          k);
 		rd[0].lines[i].vel = rd[2].lines[i].vel;
 	}
 
 	for (unsigned int i = 0; i < points.size(); i++) {
-		opt_relax(rd[2].points[i].acc,
+		opt_relax(points[i],
+		          rd[2].points[i].acc,
 		          rd[1].points[i].acc,
 		          rd[0].points[i].acc,
+		          dt,
 		          k);
 		rd[0].points[i].vel = rd[2].points[i].vel;
 	}
