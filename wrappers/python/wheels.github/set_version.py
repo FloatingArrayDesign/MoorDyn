@@ -27,29 +27,22 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+# Read the version from the CMakeLists.txt
+version = ""
+with open('CMakeLists.txt', 'r') as f:
+    txt = f.read()
+    for name in ('MAJOR', 'MINOR', 'PATCH'):
+        prefix = 'set(MOORDYN_{}_VERSION '.format(name)
+        subtxt = txt[txt.find(prefix) + len(prefix):]
+        subtxt = subtxt[:subtxt.find(')\n')]
+        version = version + subtxt + '.'
+    version = version[:-1]
 
-import sys
-import os
-from setuptools import setup, find_packages, Extension
-import sysconfig
 
+with open('pyproject.toml', 'r') as f:
+    txt = f.read()
 
-def cmakepath(p):
-    if sys.platform == "win32":
-        return p.replace('/', r'\\')
-    return p
+txt = txt.replace(r"${MOORDYN_VERSION}", version)
 
-cmoordyn = Extension(
-    'cmoordyn',
-    sources=[cmakepath('${CMAKE_CURRENT_BINARY_DIR}/cmoordyn.cpp'), ],
-    language='c++',
-    include_dirs=[cmakepath('${CMAKE_SOURCE_DIR}/source'), ],
-    library_dirs=[cmakepath('${CMAKE_BINARY_DIR}/source'), ],
-    extra_link_args=['-lmoordyn', ],
-)
-
-setup(
-    packages=find_packages(include=['moordyn', 'moordyn.*']),
-    package_dir={ '': cmakepath('./') },
-    ext_modules=[cmoordyn],
-)
+with open('pyproject.toml', 'w') as f:
+    f.write(txt)

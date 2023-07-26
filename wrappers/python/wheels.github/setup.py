@@ -37,27 +37,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import shutil
 from setuptools import setup, find_packages, Extension
-import sysconfig
 import platform
 
-
-DESC = """Python version of MoorDyn, a lumped-mass mooring dynamics model
-intended for coupling with floating structure codes.
-
-This is not a wrapper of MoorDyn, but an stand-alone version. Thus you can
-just install and use this package, no need of the MoorDyn library in your
-system.
-
-Please, visit https://moordyn-v2.readthedocs.io to learn more about this package,
-and MoorDyn in general.
-
-If you detect any problem, please feel free to report the issue on the GitHub
-page:
-https://github.com/mattEhall/MoorDyn
-
-WARNING: This is a pre-release version of MoorDyn v2. The API may be changed
-in the future, breaking your program
-"""
 
 # We better copy here the moordyn module
 shutil.rmtree('moordyn', ignore_errors=True)
@@ -81,17 +62,6 @@ MOORDYN_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'source')
 MOORDYN_SRCS = get_sources('source')
 MOORDYN_SRCS.append(os.path.join('wrappers', 'python', 'cmoordyn.cpp'))
-
-# Read the version from the CMakeLists.txt
-version = ""
-with open('CMakeLists.txt', 'r') as f:
-    txt = f.read()
-    for name in ('MAJOR', 'MINOR', 'PATCH'):
-        prefix = 'set(MOORDYN_{}_VERSION '.format(name)
-        subtxt = txt[txt.find(prefix) + len(prefix):]
-        subtxt = subtxt[:subtxt.find(')\n')]
-        version = version + subtxt + '.'
-    version = version[:-1]
 
 # Get everything required to compile with VTK support
 vtk_version = '9.2'
@@ -139,16 +109,10 @@ cmoordyn = Extension('cmoordyn',
                      )
 
 setup(
-    name='moordyn',
-    version=version,
-    author='Jose Luis Cercos-Pita',
-    author_email='jlc@core-marine.com',
-    url = 'https://github.com/mattEhall/MoorDyn',
-    description='MoorDyn for Python',
-    long_description = DESC,
-    ext_modules = [cmoordyn],
     packages=find_packages(include=['moordyn', 'moordyn.*']),
-    install_requires=[],
-    setup_requires=['cython', 'pytest-runner'],
-    tests_require=['pytest'],
+    ext_modules=[cmoordyn],
+    package_data={"source": ["*.hpp", "*.h"],
+                  "source.Util": ["*.hpp", "*.h"],
+                  "source.Waves": ["*.hpp", "*.h"],
+                  ${EIGEN_PACKAGE_DATA}}
 )

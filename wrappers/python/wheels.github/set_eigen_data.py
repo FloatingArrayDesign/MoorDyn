@@ -27,29 +27,20 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-
-import sys
+# Read the version from the CMakeLists.txt
 import os
-from setuptools import setup, find_packages, Extension
-import sysconfig
 
 
-def cmakepath(p):
-    if sys.platform == "win32":
-        return p.replace('/', r'\\')
-    return p
+eigen_packages = []
+for root, dirs, files in os.walk('source/Eigen'):
+    package = root.replace(os.sep, ".")
+    eigen_packages.append(f'                  "{package}": ["*"],\n')
+eigen_packages = ''.join(eigen_packages).strip()
 
-cmoordyn = Extension(
-    'cmoordyn',
-    sources=[cmakepath('${CMAKE_CURRENT_BINARY_DIR}/cmoordyn.cpp'), ],
-    language='c++',
-    include_dirs=[cmakepath('${CMAKE_SOURCE_DIR}/source'), ],
-    library_dirs=[cmakepath('${CMAKE_BINARY_DIR}/source'), ],
-    extra_link_args=['-lmoordyn', ],
-)
+with open('setup.py', 'r') as f:
+    txt = f.read()
 
-setup(
-    packages=find_packages(include=['moordyn', 'moordyn.*']),
-    package_dir={ '': cmakepath('./') },
-    ext_modules=[cmoordyn],
-)
+txt = txt.replace(r"${EIGEN_PACKAGE_DATA}", eigen_packages)
+
+with open('setup.py', 'w') as f:
+    f.write(txt)
