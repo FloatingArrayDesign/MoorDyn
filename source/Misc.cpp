@@ -236,11 +236,11 @@ translateMass(vec r, mat M)
 
 	// product of inertia matrix  [J'] = [m][H] + [J]
 	const mat tempM1 = M * H;
-	Mout.bottomLeftCorner<3, 3>() = tempM1;
-	Mout.topRightCorner<3, 3>() = tempM1.transpose();
+	Mout.topRightCorner<3, 3>() = tempM1;
+	Mout.bottomLeftCorner<3, 3>() = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
-	Mout.bottomRightCorner<3, 3>() = H.transpose() * M * H;
+	Mout.bottomRightCorner<3, 3>() = H * M * H.transpose();
 
 	return Mout;
 }
@@ -255,13 +255,13 @@ translateMass6(vec r, mat6 M)
 	mat6 Mout;
 	const mat m = M.topLeftCorner<3, 3>();
 	Mout.topLeftCorner<3, 3>() = m;
-	const mat J = M.bottomLeftCorner<3, 3>();
+	const mat J = M.topRightCorner<3, 3>();
 	const mat I = M.bottomRightCorner<3, 3>();
 
 	// product of inertia matrix  [J'] = [m][H] + [J]
 	const mat tempM1 = m * H + J;
-	Mout.bottomLeftCorner<3, 3>() = tempM1;
-	Mout.topRightCorner<3, 3>() = tempM1.transpose();
+	Mout.topRightCorner<3, 3>() = tempM1;
+	Mout.bottomLeftCorner<3, 3>() = tempM1.transpose();
 
 	// moment of inertia matrix  [I'] = [H][m][H]^T + [J]^T[H] + [H]^T[J] + [I]
 	const mat tempM2 = H * m * H.transpose(); // [H][m][H]^T

@@ -286,6 +286,7 @@ class Rod final : public io::IO
 	 * @param props Rod properties
 	 * @param endCoords The coordinates of both end points
 	 * @param n Number of segments
+	 * @param env_in Global struct that holds environmental settings
 	 * @param outfile The outfile where information shall be witten
 	 * @param channels The channels/fields that shall be printed in the file
 	 */
@@ -294,6 +295,7 @@ class Rod final : public io::IO
 	           RodProps* props,
 	           vec6 endCoords,
 	           unsigned int n,
+			   EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile,
 	           string channels);
 
@@ -315,14 +317,12 @@ class Rod final : public io::IO
 	EndPoints removeLine(EndPoints end_point, Line* line);
 
 	/** @brief Set the environmental data
-	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	inline void setEnv(EnvCondRef env_in,
+	inline void setWaves(
 	                   moordyn::WavesRef waves_in,
 	                   moordyn::SeafloorRef seafloor_in)
 	{
-		env = env_in;
 		waves = waves_in;
 		seafloor = seafloor_in;
 	}

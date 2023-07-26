@@ -699,7 +699,8 @@ moordyn::MoorDyn::ReadInFile()
 	}
 	// Skip until we find the options header line
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
-		// Look for writeLog option entries until the end of section or file
+		LOGDBG << "   Reading options:" << endl;
+		// Parse options until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 2) {
@@ -708,16 +709,18 @@ moordyn::MoorDyn::ReadInFile()
 			}
 			const string value = entries[0];
 			const string name = entries[1];
-			if (name != "writeLog") {
-				i++;
-				continue;
-			}
-			env->writeLog = atoi(entries[0].c_str());
-			const moordyn::error_id err = SetupLog();
-			if (err != MOORDYN_SUCCESS)
-				return err;
 
-			i++;
+			if (name == "writeLog") {
+				env->writeLog = atoi(entries[0].c_str());
+				const moordyn::error_id err = SetupLog();
+				if (err != MOORDYN_SUCCESS)
+					return err;
+				i++;
+
+			} else {
+				readOptionsLine(in_txt, i);
+				i++;
+			}
 		}
 	}
 
@@ -736,6 +739,7 @@ moordyn::MoorDyn::ReadInFile()
 	                  vec::Zero(),
 	                  vec6::Zero(),
 	                  vec6::Zero(),
+					  env,
 	                  NULL);
 
 	// Make sure the state vector counter starts at zero
@@ -905,7 +909,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			// now make Point object!
 			Point* obj = new Point(_log, PointList.size());
-			obj->setup(number, type, r0, M, V, F, CdA, Ca);
+			obj->setup(number, type, r0, M, V, F, CdA, Ca, env);
 			PointList.push_back(obj);
 
 			// depending on type, assign the Point to its respective
@@ -1004,6 +1008,7 @@ moordyn::MoorDyn::ReadInFile()
 			           LinePropList[TypeNum],
 			           UnstrLen,
 			           NumSegs,
+					   env,
 			           outfiles.back(),
 			           outchannels);
 			LineList.push_back(obj);
@@ -1169,14 +1174,7 @@ moordyn::MoorDyn::ReadInFile()
 		}
 	}
 
-	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
-		LOGDBG << "   Reading options:" << endl;
-		// Parse options until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
-			readOptionsLine(in_txt, i);
-			i++;
-		}
-	}
+	// Options read in at start
 
 	if ((i = findStartOfSection(in_txt, { "OUTPUT" })) != -1) {
 		LOGDBG << "   Reading output options:" << endl;
@@ -1482,22 +1480,22 @@ moordyn::MoorDyn::ReadInFile()
 	if (err != MOORDYN_SUCCESS)
 		return err;
 
-	GroundBody->setEnv(env, waves);
+	GroundBody->setWaves(waves);
 	waves->addBody(GroundBody);
 	for (auto obj : BodyList) {
-		obj->setEnv(env, waves);
+		obj->setWaves(waves);
 		waves->addBody(obj);
 	}
 	for (auto obj : RodList) {
-		obj->setEnv(env, waves, seafloor);
+		obj->setWaves(waves, seafloor);
 		waves->addRod(obj);
 	}
 	for (auto obj : PointList) {
-		obj->setEnv(env, waves, seafloor);
+		obj->setWaves(waves, seafloor);
 		waves->addPoint(obj);
 	}
 	for (auto obj : LineList) {
-		obj->setEnv(env, waves, seafloor);
+		obj->setWaves(waves, seafloor);
 		waves->addLine(obj);
 	}
 
@@ -1760,7 +1758,7 @@ moordyn::MoorDyn::readBody(string inputText)
 	LOGDBG << "\t'" << number << "'"
 	       << " - of type " << Body::TypeName(type) << " with id "
 	       << BodyList.size() << endl;
-	obj->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, outfiles.back());
+	obj->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, env, outfiles.back());
 	return obj;
 }
 
@@ -1890,6 +1888,7 @@ moordyn::MoorDyn::readRod(string inputText)
 	           RodPropList[TypeNum],
 	           endCoords,
 	           NumSegs,
+			   env,
 	           outfiles.back(),
 	           outchannels);
 
@@ -2055,8 +2054,9 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	           V,
 	           F,
 	           CdA,
-	           Ca);
-	obj->setEnv(env, waves, seafloor);
+	           Ca,
+			   env);
+	obj->setWaves(waves, seafloor);
 	PointList.push_back(obj);
 
 	// Kinematics of old attachment point
