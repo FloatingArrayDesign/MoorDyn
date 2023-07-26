@@ -305,6 +305,7 @@ class Line final : public io::IO
 	 * @param props Line properties
 	 * @param l Unstretched line length
 	 * @param n Number of segments
+	 * @param env_in Global struct that holds environmental settings
 	 * @param outfile The outfile where information shall be written
 	 * @param channels The channels/fields that shall be printed in the file
 	 */
@@ -312,17 +313,22 @@ class Line final : public io::IO
 	           LineProps* props,
 	           real l,
 	           unsigned int n,
+			   EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile,
 	           string channels);
 
 	/** @brief Set the environmental data
-	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCondRef env_in,
-	            moordyn::WavesRef waves_in,
-	            moordyn::SeafloorRef seafloor_in);
+	
+	inline void setWaves(
+				moordyn::WavesRef waves_in,
+				moordyn::SeafloorRef seafloor_in)
+	{
+		waves = waves_in;
+		seafloor = seafloor_in;
+	}
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @param return The states, i.e. the positions of the internal nodes

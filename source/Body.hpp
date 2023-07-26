@@ -200,6 +200,7 @@ class Body final : public io::IO
 	 * @param I Inertia (diagonal matrix components)
 	 * @param CdA Drag coefficient
 	 * @param Ca Added mass coefficient
+	 * @param env_in Global struct that holds environmental settings
 	 * @param outfile The outfile where information shall be witten
 	 */
 	void setup(int number,
@@ -211,6 +212,7 @@ class Body final : public io::IO
 	           vec I,
 	           vec6 CdA,
 	           vec6 Ca,
+			   EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile);
 
 	/** @brief Attach a point to the body
@@ -261,10 +263,13 @@ class Body final : public io::IO
 	void initializeBody(XYZQuat r = XYZQuat::Zero(), vec6 rd = vec6::Zero());
 
 	/** @brief Set the environmental data
-	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
 	 */
-	void setEnv(EnvCondRef env_in, moordyn::WavesRef waves_in);
+	inline void setWaves(moordyn::WavesRef waves_in)
+	{
+		waves = waves_in;
+	}
+
 
 	/** @brief set the states (positions and velocities) to all the attached
 	 * entities

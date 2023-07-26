@@ -62,11 +62,13 @@ Point::setup(int number_in,
                   double V_in,
                   vec F_in,
                   double CdA_in,
-                  double Ca_in)
+                  double Ca_in,
+				  EnvCondRef env_in)
 {
 	// props contains:
-	// Node, Type, X, Y, Z, M, V, FX, FY, FZ, CdA, Ca
+	// Node, Type, X, Y, Z, M, V, FX, FY, FZ, CdA, Ca, env
 
+	env = env_in;     // set pointer to environment settings object
 	number = number_in;
 	type = type_in;
 
@@ -211,16 +213,6 @@ Point::GetPointOutput(OutChanProps outChan)
 	else {
 		return 0.0;
 	}
-}
-
-void
-Point::setEnv(EnvCondRef env_in,
-                   moordyn::WavesRef waves_in,
-                   moordyn::SeafloorRef seafloor_in)
-{
-	env = env_in;     // set pointer to environment settings object
-	waves = waves_in; // set pointer to Waves  object
-	seafloor = seafloor_in;
 }
 
 void

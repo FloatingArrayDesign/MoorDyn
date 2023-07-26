@@ -68,10 +68,12 @@ Rod::setup(int number_in,
            RodProps* props,
            vec6 endCoords,
            unsigned int NumSegs,
+		   EnvCondRef env_in,
            shared_ptr<ofstream> outfile_pointer,
            string channels_in)
 {
 	// ================== set up properties ===========
+	env = env_in;     // set pointer to environment settings object
 	number = number_in;
 	type = type_in;
 
@@ -809,6 +811,8 @@ calcSubSeg(vec p1, vec p2, real surface_height, real diameter)
 		return 1.0; // Both nodes below water; segment must be too
 	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
 		return 0.0; // Both nodes above water; segment must be too
+	} else if (firstNodeZ == -secondNodeZ) {
+		return 0.5; // Segment halfway submerged
 	} else {
 		// Segment partially submerged - figure out which node is above water
 		vec lowerEnd = firstNodeZ <= 0.0 ? p1 : p2;
@@ -917,7 +921,7 @@ Rod::doRHS()
 		real dL;  // segment length corresponding to the node
 		real m_i; // node mass
 		real v_i; // node submerged volume
-		const real Area = 0.25 * pi * d * d;
+		const real Area = 0.25 * pi * d * d; // Area = 0.25 * pi * d * d
 
 		if (i == 0) { // TODO: Talk to Matt about these, should these include
 			          // VOF calculation?
@@ -1066,7 +1070,7 @@ Rod::doRHS()
 			// // TODO: axial side loads not included in fortran (line 776
 			// Rod.f90)
 
-			// transverse and axial Froude-Krylov force
+			// transverse and axial fluid inertia force
 			Ap[i] = VOF[i] * env->rho_w * (1. + Can) * v_i * ap;
 			Aq[i] = vec::Zero(); // VOF * env->rho_w*(1.+Cat)* v_i * aq[J]; <<<
 			                     // should anything here be included?
@@ -1119,11 +1123,11 @@ Rod::doRHS()
 			// axial drag
 			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
-			// Froud-Krylov force
+			// long-wave diffraction force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
-			Aq[i] += VOF[i] * env->rho_w * (1.0 + CaEnd) * V_temp * aq;
+			Aq[i] += VOF[i] * env->rho_w * CaEnd * V_temp * aq;
 
-			// dynamic pressure force
+			// Froude-Krylov force
 			Pd[i] += VOF[i] * Area * PDyn[i] * q;
 
 			// added mass
@@ -1146,11 +1150,11 @@ Rod::doRHS()
 			// axial drag
 			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
-			// Froud-Krylov force
+			// long-wave diffraction force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
-			Aq[i] += VOF[i] * env->rho_w * (1.0 + CaEnd) * V_temp * aq;
+			Aq[i] += VOF[i] * env->rho_w * CaEnd * V_temp * aq;
 
-			// dynamic pressure force
+			// Froud-Krylov force
 			Pd[i] += -VOF[i] * Area * PDyn[i] * q;
 
 			// added mass
@@ -1288,12 +1292,12 @@ Rod::doRHS()
 		// a uniform cylinder around its end.
 		auto r = d / 2.0;
 		// real I_r =
-		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
-		real I_r = mass / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
+		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen; // From Hydrodyn theory paper per segment I_r
+		real I_r = (mass / N) / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
 
-		Imat_l(0, 0) = I_l;
+		Imat_l(0, 0) = I_r;
 		Imat_l(1, 1) = I_r;
-		Imat_l(2, 2) = I_r;
+		Imat_l(2, 2) = I_l;
 	}
 
 	// get rotation matrix to put things in global rather than rod-axis

@@ -125,9 +125,11 @@ Line::setup(int number_in,
             LineProps* props,
             real UnstrLen_in,
             unsigned int NumSegs,
+			EnvCondRef env_in,
             shared_ptr<ofstream> outfile_pointer,
             string channels_in)
 {
+	env = env_in;     // set pointer to environment settings object
 	number = number_in;
 	// Note, this is a temporary value that will be processed depending on sign
 	// during initializeLine
@@ -219,16 +221,6 @@ Line::setup(int number_in,
 
 	LOGDBG << "   Set up Line " << number << ". " << endl;
 };
-
-void
-Line::setEnv(EnvCondRef env_in,
-             moordyn::WavesRef waves_in,
-             moordyn::SeafloorRef seafloor_in)
-{
-	env = env_in;
-	waves = waves_in;
-	seafloor = seafloor_in;
-}
 
 std::pair<std::vector<vec>, std::vector<vec>>
 Line::initialize()
@@ -613,6 +605,8 @@ Line::calcSubSeg(unsigned int firstNodeIdx,
 		return 1.0; // Both nodes below water; segment must be too
 	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
 		return 0.0; // Both nodes above water; segment must be too
+	} else if (firstNodeZ == -secondNodeZ) {
+		return 0.5; // Segment halfway submerged
 	} else {
 		// Segment partially submerged - figure out which node is above water
 		vec lowerEnd = firstNodeZ < 0.0 ? r[firstNodeIdx] : r[secondNodeIdx];

@@ -209,6 +209,7 @@ class Point final : public io::IO
 	 * @param CdA_in Product of drag coefficient and projected area
 	 * @param Ca_in Added mass coefficient used along with V to calculate added
 	 * mass on node
+	 * @param env_in Global struct that holds environmental settings
 	 */
 	void setup(int number_in,
 	           types type_in,
@@ -217,7 +218,8 @@ class Point final : public io::IO
 	           double V_in,
 	           vec F_in,
 	           double CdA_in,
-	           double Ca_in);
+	           double Ca_in,
+			   EnvCondRef env_in);
 
 	/** @brief Attach a line endpoint to this point
 	 * @param theLine The line to be attached
@@ -278,12 +280,16 @@ class Point final : public io::IO
 	real GetPointOutput(OutChanProps outChan);
 
 	/** @brief Set the environmental data
-	 * @param env_in Global struct that holds environmental settings
 	 * @param waves_in Global Waves object
+	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	void setEnv(EnvCondRef env_in,
-	            moordyn::WavesRef waves_in,
-	            moordyn::SeafloorRef seafloor_in);
+	inline void setWaves(
+                   moordyn::WavesRef waves_in,
+                   moordyn::SeafloorRef seafloor_in)
+	{
+		waves = waves_in; // set pointer to Waves  object
+		seafloor = seafloor_in;
+	}
 
 	/** @brief Multiply the drag by a factor
 	 *
