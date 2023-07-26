@@ -23,7 +23,7 @@ classifiers = [
 "Documentation" = "https://moordyn-v2.readthedocs.io" 
 
 [tool.setuptools]
-package-dir = {"" = "./"}
+package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-where = ["./"]
+where = ["."]
