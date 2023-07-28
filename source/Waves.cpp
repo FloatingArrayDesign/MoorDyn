@@ -556,8 +556,7 @@ Waves::addBody(moordyn::Body* body)
 void
 Waves::addPoint(moordyn::Point* point)
 {
-	if (point->pointId ==
-	    static_cast<int>(nodeKin.points.structures.size())) {
+	if (point->pointId == static_cast<int>(nodeKin.points.structures.size())) {
 		auto num_nodes = 1;
 		genericAdd(point, num_nodes, nodeKin.points);
 
@@ -740,11 +739,7 @@ Waves::kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f)
 		const vec& pos = point->getPosition();
 		const auto id = point->pointId;
 		real pdyn;
-		f(pos,
-		  points.U[id][0],
-		  points.Ud[id][0],
-		  points.zetas[id][0],
-		  pdyn);
+		f(pos, points.U[id][0], points.Ud[id][0], points.zetas[id][0], pdyn);
 	}
 
 	auto& bodies = nodeKinematics.bodies;

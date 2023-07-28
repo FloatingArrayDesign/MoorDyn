@@ -219,7 +219,7 @@ class Point final : public io::IO
 	           vec F_in,
 	           double CdA_in,
 	           double Ca_in,
-			   EnvCondRef env_in);
+	           EnvCondRef env_in);
 
 	/** @brief Attach a line endpoint to this point
 	 * @param theLine The line to be attached
@@ -283,9 +283,8 @@ class Point final : public io::IO
 	 * @param waves_in Global Waves object
 	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	inline void setWaves(
-                   moordyn::WavesRef waves_in,
-                   moordyn::SeafloorRef seafloor_in)
+	inline void setWaves(moordyn::WavesRef waves_in,
+	                     moordyn::SeafloorRef seafloor_in)
 	{
 		waves = waves_in; // set pointer to Waves  object
 		seafloor = seafloor_in;

@@ -295,7 +295,7 @@ class Rod final : public io::IO
 	           RodProps* props,
 	           vec6 endCoords,
 	           unsigned int n,
-			   EnvCondRef env_in,
+	           EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile,
 	           string channels);
 
@@ -319,9 +319,8 @@ class Rod final : public io::IO
 	/** @brief Set the environmental data
 	 * @param waves_in Global Waves object
 	 */
-	inline void setWaves(
-	                   moordyn::WavesRef waves_in,
-	                   moordyn::SeafloorRef seafloor_in)
+	inline void setWaves(moordyn::WavesRef waves_in,
+	                     moordyn::SeafloorRef seafloor_in)
 	{
 		waves = waves_in;
 		seafloor = seafloor_in;

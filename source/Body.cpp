@@ -59,10 +59,10 @@ Body::setup(int number_in,
             vec I_in,
             vec6 CdA_in,
             vec6 Ca_in,
-			EnvCondRef env_in, 
+            EnvCondRef env_in,
             shared_ptr<ofstream> outfile_pointer)
 {
-	env = env_in;     // set pointer to environment settings object
+	env = env_in; // set pointer to environment settings object
 	number = number_in;
 	type = type_in;
 	outfile = outfile_pointer.get(); // make outfile point to the right place
@@ -101,7 +101,8 @@ Body::setup(int number_in,
 	M0 = translateMass6(body_rCG, Mtemp);
 
 	// add added mass in each direction about ref point (so only diagonals)
-	M0 += bodyV * bodyCa.asDiagonal() * env->rho_w; // Values are only non-zero if free body
+	M0 += bodyV * bodyCa.asDiagonal() *
+	      env->rho_w; // Values are only non-zero if free body
 
 	// --------------- if this is an independent body (not coupled) ----------
 	// set initial position and orientation of body from input file

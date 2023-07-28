@@ -669,8 +669,7 @@ class MoorDyn final : public io::IO
 		if (channel.OType == 1)
 			return LineList[channel.ObjID - 1]->GetLineOutput(channel);
 		else if (channel.OType == 2)
-			return PointList[channel.ObjID - 1]->GetPointOutput(
-			    channel);
+			return PointList[channel.ObjID - 1]->GetPointOutput(channel);
 		else if (channel.OType == 3)
 			return RodList[channel.ObjID - 1]->GetRodOutput(channel);
 		else if (channel.OType == 4)

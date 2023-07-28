@@ -313,7 +313,7 @@ class Line final : public io::IO
 	           LineProps* props,
 	           real l,
 	           unsigned int n,
-			   EnvCondRef env_in,
+	           EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile,
 	           string channels);
 
@@ -321,10 +321,9 @@ class Line final : public io::IO
 	 * @param waves_in Global Waves object
 	 * @param seafloor_in Global 3D Seafloor object
 	 */
-	
-	inline void setWaves(
-				moordyn::WavesRef waves_in,
-				moordyn::SeafloorRef seafloor_in)
+
+	inline void setWaves(moordyn::WavesRef waves_in,
+	                     moordyn::SeafloorRef seafloor_in)
 	{
 		waves = waves_in;
 		seafloor = seafloor_in;

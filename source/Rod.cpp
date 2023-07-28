@@ -68,12 +68,12 @@ Rod::setup(int number_in,
            RodProps* props,
            vec6 endCoords,
            unsigned int NumSegs,
-		   EnvCondRef env_in,
+           EnvCondRef env_in,
            shared_ptr<ofstream> outfile_pointer,
            string channels_in)
 {
 	// ================== set up properties ===========
-	env = env_in;     // set pointer to environment settings object
+	env = env_in; // set pointer to environment settings object
 	number = number_in;
 	type = type_in;
 
@@ -959,7 +959,7 @@ Rod::doRHS()
 
 		// >>> add Pd variable for dynamic pressure, which will be applied
 		// on Rod surface
-		if (N == 0) { 
+		if (N == 0) {
 			VOF0 = r[i].z() < zeta[i] ? 1.0 : 0.0;
 		} else {
 			if (i == N) {
@@ -995,8 +995,8 @@ Rod::doRHS()
 			} else {
 				G = (r[i][2] - zeta_i) /
 				    abs(sinPhi); //!(-z1lo+Rod%zeta(I))/abs(sinPhi)   ! distance
-				                 //!from node to waterline cross at same axial
-				                 //!location [m]
+				                 //! from node to waterline cross at same axial
+				                 //! location [m]
 				// A = 0.25*Rod%d**2*acos((Rod%d - 2.0*G)/Rod%d) -
 				// (0.5*Rod%d-G)*sqrt(Rod%d*G-G**2)  ! area of circular cross
 				// section that is below waterline [m^2] zA =
@@ -1292,8 +1292,10 @@ Rod::doRHS()
 		// a uniform cylinder around its end.
 		auto r = d / 2.0;
 		// real I_r =
-		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen; // From Hydrodyn theory paper per segment I_r
-		real I_r = (mass / N) / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
+		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
+		//     // From Hydrodyn theory paper per segment I_r
+		real I_r =
+		    (mass / N) / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
 
 		Imat_l(0, 0) = I_r;
 		Imat_l(1, 1) = I_r;

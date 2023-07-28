@@ -212,7 +212,7 @@ class Body final : public io::IO
 	           vec I,
 	           vec6 CdA,
 	           vec6 Ca,
-			   EnvCondRef env_in,
+	           EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile);
 
 	/** @brief Attach a point to the body
@@ -265,11 +265,7 @@ class Body final : public io::IO
 	/** @brief Set the environmental data
 	 * @param waves_in Global Waves object
 	 */
-	inline void setWaves(moordyn::WavesRef waves_in)
-	{
-		waves = waves_in;
-	}
-
+	inline void setWaves(moordyn::WavesRef waves_in) { waves = waves_in; }
 
 	/** @brief set the states (positions and velocities) to all the attached
 	 * entities

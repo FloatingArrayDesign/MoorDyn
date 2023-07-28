@@ -125,11 +125,11 @@ Line::setup(int number_in,
             LineProps* props,
             real UnstrLen_in,
             unsigned int NumSegs,
-			EnvCondRef env_in,
+            EnvCondRef env_in,
             shared_ptr<ofstream> outfile_pointer,
             string channels_in)
 {
-	env = env_in;     // set pointer to environment settings object
+	env = env_in; // set pointer to environment settings object
 	number = number_in;
 	// Note, this is a temporary value that will be processed depending on sign
 	// during initializeLine

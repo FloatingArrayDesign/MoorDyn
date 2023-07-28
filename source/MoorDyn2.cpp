@@ -248,8 +248,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	for (auto l : CpldPointIs) {
-		LOGMSG << "Initializing coupled Point " << l << " in " << x[ix]
-		       << ", " << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
+		LOGMSG << "Initializing coupled Point " << l << " in " << x[ix] << ", "
+		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
 		moordyn::array2vec(xd + ix, rd);
@@ -262,8 +262,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Error initializing coupled point" << l << ": "
-			       << err_msg << endl;
+			LOGERR << "Error initializing coupled point" << l << ": " << err_msg
+			       << endl;
 			return err;
 		}
 		// call this just to set WaterKin (may also set up output file in
@@ -739,7 +739,7 @@ moordyn::MoorDyn::ReadInFile()
 	                  vec::Zero(),
 	                  vec6::Zero(),
 	                  vec6::Zero(),
-					  env,
+	                  env,
 	                  NULL);
 
 	// Make sure the state vector counter starts at zero
@@ -805,7 +805,7 @@ moordyn::MoorDyn::ReadInFile()
 	                            { "POINTS",
 	                              "POINT LIST",
 	                              "POINT PROPERTIES",
-								  "CONNECTION PROPERTIES",
+	                              "CONNECTION PROPERTIES",
 	                              "NODE PROPERTIES" })) != -1) {
 		LOGDBG << "   Reading point list:" << endl;
 
@@ -881,7 +881,8 @@ moordyn::MoorDyn::ReadInFile()
 				// if a fairlead, add to list and add
 				type = Point::COUPLED;
 				CpldPointIs.push_back(ui_size(PointList));
-			} else if (str::isOneOf(let1, { "POINT", "CONNECT", "CON", "FREE" })) {
+			} else if (str::isOneOf(let1,
+			                        { "POINT", "CONNECT", "CON", "FREE" })) {
 				// if a point, add to list and add states for it
 				type = Point::FREE;
 				FreePointIs.push_back(ui_size(PointList));
@@ -892,8 +893,7 @@ moordyn::MoorDyn::ReadInFile()
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
-				       << "Unrecognized point type '" << let1 << "'"
-				       << endl;
+				       << "Unrecognized point type '" << let1 << "'" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
 
@@ -1008,7 +1008,7 @@ moordyn::MoorDyn::ReadInFile()
 			           LinePropList[TypeNum],
 			           UnstrLen,
 			           NumSegs,
-					   env,
+			           env,
 			           outfiles.back(),
 			           outchannels);
 			LineList.push_back(obj);
@@ -1053,13 +1053,13 @@ moordyn::MoorDyn::ReadInFile()
 						       << "Rod end (A or B) must be specified" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
-				} else if (let1.empty() || str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
+				} else if (let1.empty() ||
+				           str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
 					if (!id || id > PointList.size()) {
 						LOGERR << "Error in " << _filepath << ":" << i + 1
 						       << "..." << endl
 						       << "'" << in_txt[i] << "'" << endl
-						       << "There are not " << id << " points"
-						       << endl;
+						       << "There are not " << id << " points" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
 					PointList[id - 1]->addLine(obj, end_point);
@@ -1130,7 +1130,8 @@ moordyn::MoorDyn::ReadInFile()
 					       << "Failure end (A or B) must be specified" << endl;
 					return MOORDYN_INVALID_INPUT;
 				}
-			} else if (let1.empty() || str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
+			} else if (let1.empty() ||
+			           str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
 				if (!id || id > PointList.size()) {
 					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 					       << endl
@@ -1285,13 +1286,14 @@ moordyn::MoorDyn::ReadInFile()
 					}
 					// should do fairlead option also!
 					else {
-						LOGWRN << "Warning in " << _filepath << ":" << i + 1
-						       << "..." << endl
-						       << "'" << in_txt[i] << "'" << endl
-						       << "invalid output specifier: " << let1
-						       << ".  Type must be oneof L/Line, P/Point, R/Rod, "
-						          "or B/Body"
-						       << endl;
+						LOGWRN
+						    << "Warning in " << _filepath << ":" << i + 1
+						    << "..." << endl
+						    << "'" << in_txt[i] << "'" << endl
+						    << "invalid output specifier: " << let1
+						    << ".  Type must be oneof L/Line, P/Point, R/Rod, "
+						       "or B/Body"
+						    << endl;
 						dummy.OType = -1;
 						continue;
 					}
@@ -1758,7 +1760,8 @@ moordyn::MoorDyn::readBody(string inputText)
 	LOGDBG << "\t'" << number << "'"
 	       << " - of type " << Body::TypeName(type) << " with id "
 	       << BodyList.size() << endl;
-	obj->setup(number, type, r6, rCG, M, V, Inert, CdA, Ca, env, outfiles.back());
+	obj->setup(
+	    number, type, r6, rCG, M, V, Inert, CdA, Ca, env, outfiles.back());
 	return obj;
 }
 
@@ -1888,7 +1891,7 @@ moordyn::MoorDyn::readRod(string inputText)
 	           RodPropList[TypeNum],
 	           endCoords,
 	           NumSegs,
-			   env,
+	           env,
 	           outfiles.back(),
 	           outchannels);
 
@@ -2055,7 +2058,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	           F,
 	           CdA,
 	           Ca,
-			   env);
+	           env);
 	obj->setWaves(waves, seafloor);
 	PointList.push_back(obj);
 

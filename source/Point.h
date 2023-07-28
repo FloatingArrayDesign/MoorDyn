@@ -100,8 +100,7 @@ extern "C"
 	 * otherwise
 	 * (see @ref moordyn_errors)
 	 */
-	int DECLDIR MoorDyn_GetPointNAttached(MoorDynPoint point,
-	                                        unsigned int* n);
+	int DECLDIR MoorDyn_GetPointNAttached(MoorDynPoint point, unsigned int* n);
 
 	/** @brief Get the number of connected lines
 	 * @param point The Moordyn point
@@ -113,9 +112,9 @@ extern "C"
 	 * (see @ref moordyn_errors)
 	 */
 	int DECLDIR MoorDyn_GetPointAttached(MoorDynPoint point,
-	                                       unsigned int i,
-	                                       MoorDynLine* l,
-	                                       int* e);
+	                                     unsigned int i,
+	                                     MoorDynLine* l,
+	                                     int* e);
 
 	/** @brief Save the point to a VTK (.vtp) file
 	 * @param point The Moordyn point
@@ -126,8 +125,7 @@ extern "C"
 	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
 	 * anyway
 	 */
-	int DECLDIR MoorDyn_SavePointVTK(MoorDynPoint point,
-	                                   const char* filename);
+	int DECLDIR MoorDyn_SavePointVTK(MoorDynPoint point, const char* filename);
 
 	/**
 	 * @}

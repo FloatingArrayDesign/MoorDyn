@@ -56,19 +56,19 @@ Point::~Point() {}
 
 void
 Point::setup(int number_in,
-                  types type_in,
-                  vec r0_in,
-                  double M_in,
-                  double V_in,
-                  vec F_in,
-                  double CdA_in,
-                  double Ca_in,
-				  EnvCondRef env_in)
+             types type_in,
+             vec r0_in,
+             double M_in,
+             double V_in,
+             vec F_in,
+             double CdA_in,
+             double Ca_in,
+             EnvCondRef env_in)
 {
 	// props contains:
 	// Node, Type, X, Y, Z, M, V, FX, FY, FZ, CdA, Ca, env
 
-	env = env_in;     // set pointer to environment settings object
+	env = env_in; // set pointer to environment settings object
 	number = number_in;
 	type = type_in;
 
@@ -121,15 +121,15 @@ Point::removeLine(Line* line)
 		end_point = it->end_point;
 		attached.erase(it);
 
-		LOGMSG << "Detached line " << line->number << " from Point "
-		       << number << endl;
+		LOGMSG << "Detached line " << line->number << " from Point " << number
+		       << endl;
 		return end_point;
 	}
 
 	// line not found
 	LOGERR << "Error: failed to find line to remove during "
-	       << __PRETTY_FUNC_NAME__ << " call to point " << number
-	       << ". Line " << line->number << endl;
+	       << __PRETTY_FUNC_NAME__ << " call to point " << number << ". Line "
+	       << line->number << endl;
 	throw moordyn::invalid_value_error("Invalid line");
 };
 
@@ -508,9 +508,9 @@ Point::drawGL(void)
 // =============================================================================
 
 /// Check that the provided system is not Null
-#define CHECK_POINT(c)                                                    \
+#define CHECK_POINT(c)                                                         \
 	if (!c) {                                                                  \
-		cerr << "Null point received in " << __FUNC_NAME__ << " ("        \
+		cerr << "Null point received in " << __FUNC_NAME__ << " ("             \
 		     << XSTR(__FILE__) << ":" << __LINE__ << ")" << endl;              \
 		return MOORDYN_INVALID_VALUE;                                          \
 	}
@@ -571,9 +571,9 @@ MoorDyn_GetPointNAttached(MoorDynPoint point, unsigned int* n)
 
 int DECLDIR
 MoorDyn_GetPointAttached(MoorDynPoint point,
-                           unsigned int i,
-                           MoorDynLine* l,
-                           int* e)
+                         unsigned int i,
+                         MoorDynLine* l,
+                         int* e)
 {
 	CHECK_POINT(point);
 	auto attached = ((moordyn::Point*)point)->getLines();

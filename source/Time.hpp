@@ -103,8 +103,8 @@ class TimeScheme : public io::IO
 	virtual void AddPoint(Point* obj)
 	{
 		if (std::find(points.begin(), points.end(), obj) != points.end()) {
-			LOGERR << "The point " << obj->number
-			       << " was already registered" << endl;
+			LOGERR << "The point " << obj->number << " was already registered"
+			       << endl;
 			throw moordyn::invalid_value_error("Repeated object");
 		}
 		points.push_back(obj);

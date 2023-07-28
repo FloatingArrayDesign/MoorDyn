@@ -375,8 +375,7 @@ extern "C"
 	 * @param c The point
 	 * @return The point instance, NULL if errors happened
 	 */
-	MoorDynPoint DECLDIR MoorDyn_GetPoint(MoorDyn system,
-	                                                unsigned int c);
+	MoorDynPoint DECLDIR MoorDyn_GetPoint(MoorDyn system, unsigned int c);
 
 	/** @brief Get the number of lines
 	 *
