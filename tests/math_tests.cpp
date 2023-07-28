@@ -77,8 +77,8 @@ TEST_CASE("getH gives the cross product matrix")
 
 	vec v{ 0.3, 0.2, 0.1 };
 	// getH() should create a matrix that replicates the behavior of the cross
-	// product such that getH(v) * a == v.cross(a)
-	REQUIRE_THAT(getH(v) * testVec, IsClose(v.cross(testVec)));
+	// product such that getH(v) * a == -v.cross(a)
+	REQUIRE_THAT(getH(v) * testVec, IsClose(v.cross(-testVec)));
 }
 
 TEST_CASE("translateMass linear acceleration")
