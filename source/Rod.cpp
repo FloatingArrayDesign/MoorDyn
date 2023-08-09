@@ -898,16 +898,28 @@ Rod::doRHS()
 
 	// just use the wave elevation computed at the location of the top node for
 	// now
-	// vec r_top, r_bottom;
+	vec r_top, r_bottom;
 	real zeta_i;
 	if (r[N][2] > r[0][2]) {
-		// 	r_top = r[N];
-		// 	r_bottom = r[0];
+			r_top = r[N];
+			r_bottom = r[0];
 		zeta_i = zeta[N];
 	} else {
-		// 	r_top = r[0];
-		// 	r_bottom = r[N];
+			r_top = r[0];
+			r_bottom = r[N];
 		zeta_i = zeta[0];
+	}
+
+	if ((r_bottom[2] < zeta_i) && (r_top[2] > zeta_i)) {
+		// the water plane is crossing the rod
+		// (should also add some limits to avoid near-horizontals at some point)
+		h0 = (zeta_i - r_bottom[2]) / fabs(q[2]);
+	} else if (r[0][2] < zeta_i) {
+		// fully submerged case
+		h0 = UnstrLen;
+	} else {
+		// fully unsubmerged case (ever applicable?)
+		h0 = 0.0;
 	}
 
 	Mext = vec::Zero();
@@ -923,8 +935,7 @@ Rod::doRHS()
 		real v_i; // node submerged volume
 		const real Area = 0.25 * pi * d * d; // Area = 0.25 * pi * d * d
 
-		if (i == 0) { // TODO: Talk to Matt about these, should these include
-			          // VOF calculation?
+		if (i == 0) {
 			dL = 0.5 * l[i];
 			m_i = Area * dL * rho; //  (will be zero for zero-length Rods)
 			v_i = 0.5 * V[i];
@@ -938,38 +949,38 @@ Rod::doRHS()
 			v_i = 0.5 * (V[i - 1] + V[i]);
 		}
 
-		// // get scalar for submerged portion
+		// get scalar for submerged portion
 
-		// if (h0 < 0.0) { // Upside down case
-		// 	if (Lsum + dL >= h0) // if fully submerged
-		// 		VOF0 = 1.0;
-		// 	else if (Lsum > h0) // if partially below waterline
-		// 		VOF0 = (h0 - Lsum) / dL;
-		// 	else // must be out of water
-		// 		VOF0 = 0.0;
-		// }
-		// else {
-		// 	if (Lsum + dL <= h0) // if fully submerged
-		// 		VOF0 = 1.0;
-		// 	else if (Lsum < h0) // if partially below waterline
-		// 		VOF0 = (h0 - Lsum) / dL;
-		// 	else // must be out of water
-		// 		VOF0 = 0.0;
-		// }
-
-		// >>> add Pd variable for dynamic pressure, which will be applied
-		// on Rod surface
-		if (N == 0) {
-			VOF0 = r[i].z() < zeta[i] ? 1.0 : 0.0;
-		} else {
-			if (i == N) {
-				auto surface_height = 0.5 * (zeta[i - 1] + zeta[i]);
-				VOF0 = calcSubSeg(r[i - 1], r[i], surface_height, d);
-			} else {
-				auto surface_height = 0.5 * (zeta[i] + zeta[i + 1]);
-				VOF0 = calcSubSeg(r[i], r[i + 1], surface_height, d);
-			}
+		if (h0 < 0.0) { // Upside down case
+			if (Lsum + dL >= h0) // if fully submerged
+				VOF0 = 1.0;
+			else if (Lsum > h0) // if partially below waterline
+				VOF0 = (h0 - Lsum) / dL;
+			else // must be out of water
+				VOF0 = 0.0;
 		}
+		else {
+			if (Lsum + dL <= h0) // if fully submerged
+				VOF0 = 1.0;
+			else if (Lsum < h0) // if partially below waterline
+				VOF0 = (h0 - Lsum) / dL;
+			else // must be out of water
+				VOF0 = 0.0;
+		}
+
+		// // >>> add Pd variable for dynamic pressure, which will be applied
+		// // on Rod surface
+		// if (N == 0) {
+		// 	VOF0 = r[i].z() < zeta[i] ? 1.0 : 0.0;
+		// } else {
+		// 	if (i == N) {
+		// 		auto surface_height = 0.5 * (zeta[i - 1] + zeta[i]);
+		// 		VOF0 = calcSubSeg(r[i - 1], r[i], surface_height, d);
+		// 	} else {
+		// 		auto surface_height = 0.5 * (zeta[i] + zeta[i + 1]);
+		// 		VOF0 = calcSubSeg(r[i], r[i + 1], surface_height, d);
+		// 	}
+		// }
 
 		Lsum = Lsum + dL; // add length attributed to this node to the total
 
@@ -1286,20 +1297,20 @@ Rod::doRHS()
 	// components only)
 	mat Imat_l = mat::Zero();
 	if (N > 0) {
+		auto r = d / 2.0;
 		// axial moment of inertia
-		real I_l = mass / 8.0 * d * d;
+		real I_l = mass / 2.0 * r * r;
 		// this is just the analytical equation for moment of inertia of
 		// a uniform cylinder around its end.
-		auto r = d / 2.0;
 		// real I_r =
 		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
 		//     // From Hydrodyn theory paper per segment I_r
-		real I_r =
-		    (mass / N) / 12.0 * (0.75 * d * d + pow(UnstrLen / N, 2)) * N;
+		real I_r_correction =
+ 		    mass * ((r * r) / 4 - (UnstrLen * UnstrLen) / (6 * N * N));
 
-		Imat_l(0, 0) = I_r;
-		Imat_l(1, 1) = I_r;
-		Imat_l(2, 2) = I_l;
+ 		Imat_l(0, 0) = I_r_correction;
+ 		Imat_l(1, 1) = I_r_correction;
+ 		Imat_l(2, 2) = I_l;
 	}
 
 	// get rotation matrix to put things in global rather than rod-axis
