@@ -845,6 +845,9 @@ const real pi = 3.141592653589793238462643383279502884197169399375105820974944;
 /// Constant to convert radians into degrees
 const real rad2deg = 180.0 / pi;
 
+/// Constant to convert degrees into radians
+const real deg2rad = pi / 180.0;
+
 /** \defgroup entities_properties Properties readed from the input file, used
  * to define the entities handled during the simulation
  *  @{
