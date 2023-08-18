@@ -71,7 +71,8 @@ Body::setup(int number_in,
 		bodyM = M_in;
 		bodyV = V_in;
 
-		body_r6 = r6_in;
+		body_r6.head<3>() = r6_in.head<3>();
+		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		body_rCG = rCG_in;
 		bodyI = I_in;
 		bodyCdA = CdA_in;
