@@ -1115,18 +1115,20 @@ Line::getStateDeriv()
 
 		// transverse Froude-Krylov force
 		if (i == 0)
-			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (V[i]) * ap;
+			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (F[i] * V[i]) * ap;
 		else if (i == N)
-			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (V[i - 1]) * ap;
+			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (F[i - 1] * V[i - 1]) * ap;
 		else
-			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (V[i] + V[i - 1]) * ap;
+			Ap[i] = env->rho_w * (1. + Can) * 0.5 *
+			        (F[i] * V[i] + F[i - 1] * V[i - 1]) * ap;
 		// tangential Froude-Krylov force
 		if (i == 0)
-			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (V[i]) * aq;
+			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (F[i] * V[i]) * aq;
 		else if (i == N)
-			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (V[i - 1]) * aq;
+			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (F[i - 1] * V[i - 1]) * aq;
 		else
-			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (V[i] + V[i - 1]) * aq;
+			Aq[i] = env->rho_w * (1. + Cat) * 0.5 *
+			        (F[i] * V[i] + F[i - 1] * V[i - 1]) * aq;
 
 		// bottom contact (stiffness and damping, vertical-only for now) -
 		// updated for general case of potentially anchor or fairlead end in
