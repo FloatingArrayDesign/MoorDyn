@@ -129,7 +129,7 @@ SpectrumKin::getWaveKin(vec3 pos,
 			real a_xy = w * w * cos_waves[I] * COSHNumOvrSIHNDen;
 			real ax = a_xy * betas_x[I];
 			real ay = a_xy * betas_y[I];
-			real az = w * w * sin_waves[I] * SINHNumOvrSIHNDen;
+			real az = -w * w * sin_waves[I] * SINHNumOvrSIHNDen;
 			acc_sum += vec3(ax, ay, az);
 			// TODO Waves - calculate the dynamic pressure (rods use it)
 		}
