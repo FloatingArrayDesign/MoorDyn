@@ -151,18 +151,6 @@ WaveGrid::getWaveKin(const vec3& pos,
 	if (zeta) {
 		*zeta = wave_elev;
 	}
-	if (pos.z() > wave_elev) {
-		if (vel) {
-			*vel = vec::Zero();
-		}
-		if (acc) {
-			*acc = vec::Zero();
-		}
-		if (pdyn) {
-			*pdyn = 0;
-		}
-		return;
-	}
 
 	real stretched_z = 0.0;
 	const real bottom = seafloor.getDepth(vec2(pos.x(), pos.y()));
@@ -171,6 +159,14 @@ WaveGrid::getWaveKin(const vec3& pos,
 	const real avgDepth = seafloor.getAverageDepth();
 
 	stretched_z = (-avgDepth * (pos.z() - bottom)) / actual_depth + avgDepth;
+
+	// If the point is above the water surface, return the values at the water
+	// surface. This is important for situations where a point is out of the
+	// water but the object itself may have significant submergence (sideway
+	// floating line, top node of buoy, etc)
+	if (stretched_z > 0.0) {
+		stretched_z = 0.0;
+	}
 	// LOGMSG << "WaveGrid::getWaveKin - stretched_z = " << stretched_z << endl;
 
 	auto iz = interp_factor(pz, stretched_z, fz);

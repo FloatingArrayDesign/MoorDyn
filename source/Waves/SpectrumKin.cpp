@@ -57,25 +57,22 @@ SpectrumKin::getWaveKin(vec3 pos,
 	    amplitudes * (omegas * t - kValues * distances + phases).sin();
 	const Eigen::ArrayX<real> cos_waves =
 	    amplitudes * (omegas * t - kValues * distances + phases).cos();
-	const real surface_height = sin_waves.sum();
 
-	if (pos.z() > surface_height) {
-		if (zeta) {
-			*zeta = surface_height;
-		}
-		if (vel) {
-			*vel = vec3::Zero();
-		}
-		if (acc) {
-			*acc = vec3::Zero();
-		}
-		return;
-	}
+	const real surface_height = sin_waves.sum();
 	const real bottom = actualDepth;
 	const real actual_depth = surface_height - bottom;
 
-	const real stretched_z =
+	real stretched_z =
 	    (-avgDepth * (pos.z() - bottom)) / actual_depth + avgDepth;
+
+	// If the point is above the water surface, return the values at the water
+	// surface. This is important for situations where a point is out of the
+	// water but the object itself may have significant submergence (sideway
+	// floating line, top node of buoy, etc)
+	if (stretched_z > 0.0) {
+		stretched_z = 0.0;
+	}
+
 	if (zeta) {
 		*zeta = surface_height;
 	}
