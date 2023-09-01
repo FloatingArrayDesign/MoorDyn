@@ -633,7 +633,7 @@ typedef enum
  * @param vec 6x1 Vector (b in M * a = b)
  * @return vec6 Resulting solution (a in M * a = b)
  */
-vec6
+vec6 DECLDIR
 solveMat6(const mat6& mat, const vec6& vec);
 
 /** \defgroup transformations 3D transformations
@@ -701,7 +701,7 @@ getH(vec r)
  * @param M Mass matrix
  * @return Translated Mass & Inertia matrix
  */
-mat6
+mat6 DECLDIR
 translateMass(vec r, mat M);
 
 /** @brief Compute the mass matrix on an offset point
@@ -709,7 +709,7 @@ translateMass(vec r, mat M);
  * @param M Mass & Inertia matrix
  * @return Translated Mass & Inertia matrix
  */
-mat6
+mat6 DECLDIR
 translateMass6(vec r, mat6 M);
 
 /** @brief rotation to a 3x3 mass matrix or any other second order tensor
@@ -732,7 +732,7 @@ rotateMass(mat R, mat M)
  * @param M Mass & Inertia matrix
  * @return Rotated mass
  */
-mat6
+mat6 DECLDIR
 rotateMass6(mat R, mat6 M);
 
 /** @brief calculate position and velocity of point based on its position
