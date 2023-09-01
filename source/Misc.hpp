@@ -124,11 +124,21 @@ typedef ivec3 ivec;
 
 typedef std::complex<real> complex;
 
-vec3
-Quat2Euler(const quaternion& q);
+inline vec3
+Quat2Euler(const quaternion& q)
+{
+	return q.toRotationMatrix().eulerAngles(0, 1, 2);
+}
 
-quaternion
-Euler2Quat(const vec3& angles);
+inline quaternion
+Euler2Quat(const vec3& angles)
+{
+	using AngleAxis = Eigen::AngleAxis<real>;
+	quaternion q = AngleAxis(angles.x(), vec3::UnitX()) *
+	               AngleAxis(angles.y(), vec3::UnitY()) *
+	               AngleAxis(angles.z(), vec3::UnitZ());
+	return q;
+}
 
 struct XYZQuat
 {
@@ -179,7 +189,7 @@ const complex i1(0., 1.);
  * @param a The output array
  */
 template<typename T>
-void
+inline void
 vec2array(const vec& v, T* a)
 {
 	a[0] = (T)v[0];
@@ -205,7 +215,7 @@ array2vec(const T* a, vec& v)
  * @param a The output array
  */
 template<typename T>
-void
+inline void
 vec62array(const vec6& v, T* a)
 {
 	a[0] = (T)v[0];
