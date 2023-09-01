@@ -2,9 +2,10 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch, master, v2-make-wheels ]
+    branches: [ $default-branch, master, v2, v2-make-wheels ]
   pull_request:
-    branches: [ $default-branch, master, v2 ]
+    branches:
+      - "**"
 
 permissions: write-all
 
@@ -114,7 +115,6 @@ jobs:
 
     - name: Build
       id: build
-      # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Test (Linux)
