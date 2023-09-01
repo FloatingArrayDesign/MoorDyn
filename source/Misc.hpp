@@ -579,7 +579,7 @@ rtrim(string& s);
 
 /** @brief Split a string into separate letter strings and integers
  */
-int
+int DECLDIR
 decomposeString(const std::string& outWord,
                 std::string& let1,
                 std::string& num1,
