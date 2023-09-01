@@ -170,22 +170,6 @@ fileToLines(const std::filesystem::path& path)
 
 } // ::moordyn::fileIO
 
-vec3
-Quat2Euler(const quaternion& q)
-{
-	return q.toRotationMatrix().eulerAngles(0, 1, 2);
-}
-
-quaternion
-Euler2Quat(const vec3& angles)
-{
-	using AngleAxis = Eigen::AngleAxis<real>;
-	quaternion q = AngleAxis(angles.x(), vec3::UnitX()) *
-	               AngleAxis(angles.y(), vec3::UnitY()) *
-	               AngleAxis(angles.z(), vec3::UnitZ());
-	return q;
-}
-
 XYZQuat
 XYZQuat::operator+(const XYZQuat& visitor) const
 {
