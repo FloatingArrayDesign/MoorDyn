@@ -24,7 +24,6 @@ set(TESTS
     io
     rods
     bodies_and_rods
-    bodies
     quasi_static_chain
     wavekin_4
     tripod
@@ -34,6 +33,7 @@ set(TESTS
 set(CPP_TESTS 
     wavekin
     wavekin_7
+    bodies
 )
 
 set(CATCH2_TESTS 
