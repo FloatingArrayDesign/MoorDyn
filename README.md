@@ -1,70 +1,38 @@
 MoorDyn v2
 ==========
 
-MoorDyn v2 is a lumped-mass mooring dynamics model intended for coupling with
-floating structure codes. As of 2022 it is available under the BSD 3-Clause
+MoorDyn is a lumped-mass model for simulating the dynamics of mooring systems connected to floating offshore structures. As of 2022 it is available under the BSD 3-Clause
 license.
 
-More information about MoorDyn is now available at moordyn-v2.readthedocs.io
+Read the docs here: moordyn.readthedocs.io
 
-## Roadmap
+It accounts for internal axial stiffness and damping forces, weight and buoyancy forces, hydrodynamic forces from Morison's equation (assuming calm water so far), and vertical spring-damper forces from contact with the seabed. MoorDyn's input file format is based on that of [MAP](https://www.nrel.gov/wind/nwtc/map-plus-plus.html). The model supports arbitrary line interconnections, clump weights and floats, different line properties, and six degree of freedom rods.
 
-The version 2 is currently under development:
+MoorDyn is implemented both in Fortran and in C++. The Fortran version of MoorDyn (MoorDyn-F) is a core module in [OpenFAST](https://github.com/OpenFAST/openfast) and can be used as part of an OpenFAST or FAST.Farm simulation, or used in a standalone form. The C++ version of MoorDyn (MoorDyn-C) is more adaptable to different use cases and couplings. It can be compiled as a dynamically-linked library or wrapped for use in Python (as a module), Fortran, or Matlab. It features simpler functions for easy coupling with models or scripts coded in C/C++, Fortran, Matlab/Simulink, etc., including a coupling with [WEC-Sim](https://wec-sim.github.io/WEC-Sim/master/index.html).
 
- - [X] BSD-3 license
- - [X] Rigid bodies
- - [X] Rigid cylindrical Rod objects, with surface-piercing capabilities
- - [ ] Wave kinematics
- - [X] Bending stiffness for power cable simulation
- - [X] pinned (3 DOF) and rigid (6 DOF) coupling options
- - [X] Replace the custom algebra code by [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
- - [X] Different time integrators
- - [X] Save/load
- - [X] VTK exporter
- - [X] New C API
- - [ ] New C++ API
- - [X] Standarize code styling with [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
- - [X] Replace the custom compilation scripts by [CMake](https://cmake.org/) autotools
- - [X] FORTRAN wrappers
- - [X] Python wrappers
- - [X] MATLAB mex files
- - [X] Rust wrappers
- - [ ] Documentation for users
- - [X] Documentation for developers
- - [ ] Tests
+Both forms of MoorDyn feature the same underlying mooring model, use the same input and output conventions, and are being updated and improved in parallel. They follow the same version numbering, with a "C" or "F" suffix for differentiation.
 
-There are also some other additional tasks to be carried out prior to the final
-release:
+Further information on MoorDyn can be found on the [documentation site](https://moordyn.readthedocs.io/en/latest/). MoorDyn-F is available in the [OpenFAST repository](https://github.com/OpenFAST/openfast/tree/main/modules/moordyn). MoorDyn-C is available in this repository.
 
- - [X] Test in Linux with GCC
- - [X] Test in Linux with Clang
- - [X] Test in Windows with MinGW
- - [X] Test in Windows with CLang (No Fortran)
- - [X] Test in Windows with Visual Studio CE (No C++, no Fortran)
- - [X] Make a windows installer (CMake + CPack + NSIS)
- - [X] Upload the doxygen documentation somewhere (ideally in readthedocs)
- - [X] Fix the SCUDS missiles bug
- - [ ] Ask DualSphysics devs to join back the mainstream
- - [X] pip package (with wheels?)
-
-## Aknowledgments
+## Acknowledgments
 
 Many thanks to all the team of the
 [National Renewable Energy Laboratory (NREL)](https://www.nrel.gov/):
 
   - [Matt Hall](http://matt-hall.ca/moordyn.html)
+  - Ryan Davies
+  - Andy Platt
+  - Stein Housner
+  - Lu Wang
   - Jason Jonkman
 
-Thanks also to [CoreMarine](https://www.core-marine.com/) for the help with the
-version 2 development:
+[CoreMarine](https://www.core-marine.com/) [MoorDyn-C v2]:
 
   - Jose Luis Cercos-Pita
   - Aymeric Devulder
   - Elena Gridasova
 
-We must also express our gratitude to some other developers that have
-contributed
+[Kelson Marine](https://kelsonmarine.com) [MoorDyn-C v2]:
 
-From [Kelson Marine](https://kelsonmarine.com):
   - [David Joseph Anderson](https://davidjosephanderson.com/)
   - [Alex Kinley](https://github.com/AlexWKinley)
