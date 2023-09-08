@@ -87,7 +87,7 @@ jobs:
       if: runner.os == 'Windows'
 
     - name: download pre-built VTK static library
-      uses: suisei-cn/actions-download-file@v1.0.1
+      uses: suisei-cn/actions-download-file@v1.4.0
       with:
         url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
         target: ${{github.workspace}}/

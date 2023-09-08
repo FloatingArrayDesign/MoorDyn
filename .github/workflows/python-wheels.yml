@@ -47,42 +47,42 @@ jobs:
         run: python -m pip install cibuildwheel
 
       - name: download pre-built VTK static library (non-Linux)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os != 'Linux'
 
       - name: download pre-built VTK static library (Linux-x86_64)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-aarch64)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-aarch64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-armv7)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-armv7.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-ppc64le)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-ppc64le.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-s390x)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-s390x.tar.gz
           target: ${{github.workspace}}/
