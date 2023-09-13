@@ -32,8 +32,21 @@ jobs:
       run: cmake -B ${{github.workspace}}/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=OFF -DBUILD_TESTING=ON
 
     - name: Build
-      id: build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    # We do a little hack here. We install the library so we perfectly know the
+    # path. Then we set the environment variable to let the OS find the
+    # libraries
+
+    - name: Install
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target INSTALL
+
+    - name: List DLLs
+      run: ls ${{github.workspace}}/install/bin
+      shell: bash
+
+    - name: Set $PATH
+      run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
 
     - name: Test
       working-directory: ${{github.workspace}}/build
