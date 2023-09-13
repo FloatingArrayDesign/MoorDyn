@@ -82,10 +82,6 @@ jobs:
         compiler: gcc
       if: runner.os == 'Linux'
 
-    - name: Setup Intel Fortran
-      uses: modflowpy/install-intelfortran-action@v1
-      if: runner.os == 'Windows'
-
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.4.0
       with:
@@ -106,7 +102,7 @@ jobs:
       if: runner.os == 'Linux'
 
     - name: Configure CMake (Windows)
-      run: cmake -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=ON
+      run: cmake -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=ON
       if: runner.os == 'Windows'
 
     - name: Configure CMake (Mac)
