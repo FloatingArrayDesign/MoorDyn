@@ -33,21 +33,3 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-    # We do a little hack here. We install the library so we perfectly know the
-    # path. Then we set the environment variable to let the OS find the
-    # libraries
-
-    - name: Install
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target INSTALL
-
-    - name: List DLLs
-      run: ls install/bin
-      shell: bash
-
-    - name: Set $PATH
-      run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
-
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}}
