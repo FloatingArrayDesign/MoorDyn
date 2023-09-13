@@ -2,7 +2,7 @@ name: MinGW
 
 on:
   push:
-    branches: [ $default-branch, master, dev ]
+    branches: [ $default-branch, master ]
   pull_request:
     branches:
       - "**"

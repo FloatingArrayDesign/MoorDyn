@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch, master, dev ]
+    branches: [ $default-branch, master ]
   pull_request:
     branches:
       - "**"
@@ -119,7 +119,6 @@ jobs:
 
     - name: Install
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      if: runner.os != 'Linux'
 
     - name: Set $PATH (Windows)
       run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
