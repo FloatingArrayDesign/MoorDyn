@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch, master, v2 ]
+    branches: [ $default-branch, master, dev ]
   pull_request:
     branches:
       - "**"
@@ -117,11 +117,23 @@ jobs:
       id: build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    # We do a little hack here. We install the library so we perfectly know the
+    # path. Then we set the environment variable to let the OS find the
+    # libraries
+
+    - name: Install
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target INSTALL
+      if: runner.os == 'Windows'
+
+    - name: Set $PATH
+      run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
+      if: runner.os == 'Windows'
+
     - name: Test (Linux)
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
       run: ctest -C ${{env.BUILD_TYPE}}
-      if: runner.os == 'Linux'
+      if: runner.os != 'macOS'
 
     - name: Install
       working-directory: ${{github.workspace}}/build
