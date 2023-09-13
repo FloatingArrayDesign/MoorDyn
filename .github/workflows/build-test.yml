@@ -121,7 +121,7 @@ jobs:
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
       if: runner.os != 'Linux'
 
-    - name: Set $PATH
+    - name: Set $PATH (Windows)
       run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
       if: runner.os == 'Windows'
 
@@ -129,7 +129,6 @@ jobs:
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
       run: ctest -C ${{env.BUILD_TYPE}}
-      if: runner.os != 'macOS'
 
     - name: Install
       working-directory: ${{github.workspace}}/build
