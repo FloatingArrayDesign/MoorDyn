@@ -45,11 +45,6 @@ function(make_executable test_name)
     add_executable(${test_name} ${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE moordyn)
     add_dependencies(${test_name} Test_MooringConfigFiles)
-    if(WIN32)
-        add_custom_command(TARGET ${test_name} POST_BUILD
-                           COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:${test_name}> $<TARGET_FILE_DIR:${test_name}>
-                           COMMAND_EXPAND_LISTS)
-    endif()
 endfunction()
 
 function(make_cpp_executable test_name)
