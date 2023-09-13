@@ -75,7 +75,7 @@ jobs:
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         echo "moordyn_version=$major.$minor.$patch" >> $GITHUB_OUTPUT
 
-    - name: Setup GCC Fortran (Linux & Mac)
+    - name: Setup GCC Fortran (Linux)
       uses: awvwgk/setup-fortran@main
       id: setup-fortran
       with:
@@ -106,11 +106,11 @@ jobs:
       if: runner.os == 'Linux'
 
     - name: Configure CMake (Windows)
-      run: cmake -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=OFF
+      run: cmake -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=ON
       if: runner.os == 'Windows'
 
     - name: Configure CMake (Mac)
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=OFF
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=ON
       if: runner.os == 'macOS'
 
     - name: Build
@@ -123,7 +123,7 @@ jobs:
 
     - name: Install
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      if: runner.os == 'Windows'
+      if: runner.os != 'Linux'
 
     - name: Set $PATH
       run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
