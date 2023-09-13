@@ -42,7 +42,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target INSTALL
 
     - name: List DLLs
-      run: ls ${{github.workspace}}/install/bin
+      run: ls install/bin
       shell: bash
 
     - name: Set $PATH
