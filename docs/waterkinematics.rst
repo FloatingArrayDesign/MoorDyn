@@ -23,10 +23,10 @@ This gives you the ability to set and change the wave kinematics as part of the 
 This uses the ``Moordyn_ExternalWaveKin*`` family of functions to initialize
 and set the wave kinematics as frequently as you want.
 
-.. doxygenfunction:: MoorDyn_ExternalWaveKinInit()
-.. doxygenfunction:: MoorDyn_ExternalWaveKinGetN()
-.. doxygenfunction:: MoorDyn_ExternalWaveKinGetCoordinates()
-.. doxygenfunction:: MoorDyn_ExternalWaveKinSet()
+.. doxygenfunction:: MoorDyn_ExternalWaveKinInit
+.. doxygenfunction:: MoorDyn_ExternalWaveKinGetN
+.. doxygenfunction:: MoorDyn_ExternalWaveKinGetCoordinates
+.. doxygenfunction:: MoorDyn_ExternalWaveKinSet
 
 A standard usage of external wave kinematics would be in some situations where you have your own 
 code or an external program computing the fluid dynamics and you want MoorDyn to use those values.

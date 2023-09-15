@@ -405,8 +405,8 @@ This section (optional) describes the Point objects
  ID   Attachment  X       Y     Z      Mass   Volume  CdA    Ca
  (#)   (word/ID) (m)     (m)   (m)    (kg)   (mˆ3)   (m^2)  (-)
  1     Fixed      -500    0     -150    0      0       0      0
- 4     Coupled    0       0     -9      0      0       0      0
- 11    Body2      0       0     1.0     0      0       0      0
+ 2     Coupled    0       0     -9      0      0       0      0
+ 3    Body2      0       0     1.0     0      0       0      0
  
 The columns are as follows:
 
@@ -638,15 +638,15 @@ loads. When no node number is specified, the output pertains to the object as a 
 values are of the object’s reference point (about the reference point for rotations). Reference 
 Points:
 
-*	Rods: End A (Node 0)
+-	Rods: End A (Node 0)
 
-  * No z rotations for rods (rotations along axis of rod negligible)
-  * A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
+  - No z rotations for rods (rotations along axis of rod negligible)
+  - A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
     will be zero for this case. 
 
-*	Bodies: Center of Mass
-*	Points: Center of Mass
-*	Lines: End A (Node 0)
+-	Bodies: Center of Mass
+-	Points: Center of Mass
+-	Lines: End A (Node 0)
 
 Footnotes:
 
@@ -768,8 +768,8 @@ The V2 snapshot file
 
 In MoorDyn-C v2 two new functions have been added:
 
-.. doxygenfunction:: MoorDyn_Save()
-.. doxygenfunction:: MoorDyn_Load()
+.. doxygenfunction:: MoorDyn_Save
+.. doxygenfunction:: MoorDyn_Load
 
 With the former a snapshot of the simulation can be saved, so that it can
 be resumed in a different session using the latter function.
@@ -778,7 +778,7 @@ sessions.
 However, the initial equilibrium condition computation can be skipped in the second session by 
 calling
 
-.. doxygenfunction:: MoorDyn_Init_NoIC()
+.. doxygenfunction:: MoorDyn_Init_NoIC
 
 Wave Kinematics file (MoorDyn-C)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

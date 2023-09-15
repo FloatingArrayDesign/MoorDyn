@@ -22,10 +22,10 @@ MoorDyn to be run simultaneously, while MoorDyn-F v2 and MoorDyn-C/F v1 only all
 instance at a time. Any driver function will call at least the following MoorDyn 
 functions:
 
- - Create (MoorDyn-C v2 only)
- - Initialize
- - Step
- - Close
+* Create (MoorDyn-C v2 only)
+* Initialize
+* Step
+* Close
 
 The initialize function takes the state vectors at time 0 and sets up MoorDyn for a time 
 series simulation. It will also find the steady state of the system if the input file 
@@ -55,6 +55,8 @@ Driving MoorDyn-C v1 is a similar process as MoorDyn v2. MoorDyn-C v1 has no bui
 couplings and needs to be driven based on the C API in the MoorDyn.h file. An example on 
 how to do this in python is provided at the end of the 
 :ref:`python section <python_wrapper>`.
+
+Note: the dt value that you give to the step function needs to be the same value that you specify as dtM in the input file. 
 
 MoorDyn-C Coupling
 ------------------
@@ -370,7 +372,7 @@ this time developed in C:
 
 In the example above everything starts calling
 
-.. doxygenfunction:: MoorDyn_Create()
+.. doxygenfunction:: MoorDyn_Create
 
 and checking that it returned a non-NULL system. A NULL system would mean that
 there were an error building up the system. You can learn more about the
@@ -388,8 +390,8 @@ The next step is initializing the system, which computes the
 static solution if the TmaxIC flag in the options section is greater than 0. This 
 requires the position of the coupled fairleads.
 
-.. doxygenfunction:: MoorDyn_GetPoint()
-.. doxygenfunction:: MoorDyn_GetPointPos()
+.. doxygenfunction:: MoorDyn_GetPoint
+.. doxygenfunction:: MoorDyn_GetPointPos
 
 The :ref:`C API <api_c>` always returns either an
 object or an error code:
@@ -400,11 +402,11 @@ Thus, you can always check that everything properly worked.
 
 With the information of the initial positions of the fairlead, you can initialize MoorDyn:
 
-.. doxygenfunction:: MoorDyn_Init()
+.. doxygenfunction:: MoorDyn_Init
 
 Afterwards you can run MoorDyn by calling:
 
-.. doxygenfunction:: MoorDyn_Step()
+.. doxygenfunction:: MoorDyn_Step
 
 In this example, we are just calling it once. In a more complex application the
 function will be called in a loop over a time series. In the API there are a number of 
@@ -414,7 +416,7 @@ complex drivers. The full list of functions can be found in the
 
 It is important to close the MoorDyn system, so that the allocated resources are released:
 
-.. doxygenfunction:: MoorDyn_Close()
+.. doxygenfunction:: MoorDyn_Close
 
 Fortran
 ^^^^^^^
