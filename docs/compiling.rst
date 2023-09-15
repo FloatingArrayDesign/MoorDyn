@@ -129,7 +129,7 @@ shown below, and add them to the PATH:
 
 The same holds for CMake:
 
-.. figure:: win_CMake_install.png
+.. figure:: win_cmake_install.png
    :alt: Installing CMake in Windows
 
    Recommended options while installing CMake in Windows
@@ -141,13 +141,11 @@ the following command
 
 .. code-block:: bash
 
-  pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip mingw64/mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb mingw-w64-x86_64-CMake
+  pacman -S mingw-w64-x86_64-python-setuptools mingw-w64-x86_64-python-pip mingw64/mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb mingw-w64-x86_64-cmake
 
 Now we need to make the MinGW stack available across the whole system by adding
 it to the PATH environment variable.
-To achieve this, execute "System" from the Windows Init menu, and look for
-"environment".
-Then click on "Edit the system environment variables" and in the
+To achieve this, run "Edit the system environment variables" from the windows start menu and in the
 Window the pops up, click on "Environment Variables..."
 Double click on Path (in the System variables box), and add a new entry:
 "C:\msys64\mingw64\bin"
@@ -176,7 +174,7 @@ We are starting with Eigen3, so in the first box of the window that pops up set
    Cloning Eigen3 repository
 
 Press "Clone" and let Git download the repository.
-Now you can repeat, setting "https://github.com/mattEhall/MoorDyn.git", and
+Now you can repeat, setting "https://github.com/FloatingArrayDesign/MoorDyn.git", and
 "C:\MoorDyn\MoorDyn" to download MoorDyn:
 
 .. figure:: win_git_moordyn.png
@@ -195,7 +193,7 @@ binaries box, and press "Configure".
 The first time you configure a new project, CMake will ask you for the toolchain
 to use. Select "MinGW Makefiles":
 
-.. figure:: win_CMake_selectcompiler.png
+.. figure:: win_cmake_selectcompiler.png
    :alt: Selecting the MinGW generator
 
    Selecting the MinGW toolchain as generator
@@ -210,7 +208,7 @@ as to run the built program through a debugger).
 It is also recommended to disable BUILD_TESTING, EIGEN_BUILD_DOC and
 EIGEN_BUILD_TESTING:
 
-.. figure:: win_CMake_eigen.png
+.. figure:: win_cmake_eigen.png
    :alt: Configuration options for Eigen3
 
    Configuration options for Eigen3
@@ -244,7 +242,7 @@ Select again the "MinGW Makefiles" for the generator.
 When the configuration options appear, set CMAKE_BUILD_TYPE as "Release", and
 enable FORTRAN_WRAPPER and PYTHON_WRAPPER:
 
-.. figure:: win_CMake_moordyn.png
+.. figure:: win_cmake_moordyn.png
    :alt: Configuration options for MoorDyn
 
    Configuration options for MoorDyn
@@ -276,6 +274,16 @@ option and type
   mingw32-make
   cpack -C Release
 
+NOTE: If you are working on a proxy serveryou may need to add the .crt file for your proxy 
+configuration to the folder ``C:/msys64/etc/pki/ca-trust/source/anchors`` or equivalent for your 
+system.
+
+NOTE: You may need to upgrade or install the build tool using pip
+
+.. code-block:: bash
+  
+  \<path-to-python>/python<version>.exe -m pip install --upgrade build
+
 Linux and Mac
 ^^^^^^^^^^^^^
 
@@ -305,7 +313,7 @@ First, download the MoorDyn source code from the repository using git:
 .. code-block:: bash
 
    cd $HOME
-   git clone https://github.com/mattEhall/MoorDyn.git
+   git clone https://github.com/FloatingArrayDesign/MoorDyn.git
    cd MoorDyn
 
 Now, ask CMake to configure everything by typing
@@ -368,4 +376,8 @@ release at https://pypi.org/project/moordyn/. To install, type
 in your system terminal. Pip will take care of everything by you.
 
 **If you want to use the most up to date version of MoorDyn-C as a python module**, follow the 
-instructions in the :ref:`CMake compile section <CMake_compile>`.
+instructions in the :ref:`CMake compile section <CMake_compile>`. Once you have succesfully 
+compiled MoorDyn on your system, change to `MoorDyn/build/wrappers/python/` and execute the 
+following command `python3 setup.py install`. This will build the python module locally from 
+the source code you have installed. In order to update this module in the future you will need 
+to update your local source code and follow the same steps above.

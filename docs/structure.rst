@@ -56,10 +56,10 @@ Line objects have the following variables:
 
 General:
 
-- *env*: a pointer to the global environment object
-- *waves*: a pointer to the global object storing information about waves/currents
-- *t*: the simulation time, as a real
-- *seafloor*: a pointer to the global object storing the 3d seafloor information
+* *env*: a pointer to the global environment object
+* *waves*: a pointer to the global object storing information about waves/currents
+* *t*: the simulation time, as a real
+* *seafloor*: a pointer to the global object storing the 3d seafloor information
 
 
 Specific to each Line:

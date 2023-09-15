@@ -16,7 +16,6 @@ Further information on MoorDyn can be found on the [documentation site](https://
 
 ## Acknowledgments
 
-Many thanks to all the team of the
 [National Renewable Energy Laboratory (NREL)](https://www.nrel.gov/):
 
   - [Matt Hall](http://matt-hall.ca/moordyn.html)

@@ -109,9 +109,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	}
 
 	LOGMSG << "\n Running MoorDyn (v2.a10, 2022-01-01)" << endl
-	       << "   NOTE: This is an alpha version of MoorDyn v2, intended for "
-	          "testing and debugging."
-	       << endl
 	       << "         MoorDyn v2 has significant ongoing input file changes "
 	          "from v1."
 	       << endl
@@ -248,7 +245,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	for (auto l : CpldPointIs) {
-		LOGMSG << "Initializing coupled Point " << l << " in " << x[ix] << ", "
+		LOGMSG << "Initializing coupled Point " << l+1 << " at " << x[ix] << ", "
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
