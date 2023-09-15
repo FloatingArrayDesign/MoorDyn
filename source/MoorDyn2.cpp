@@ -2091,8 +2091,8 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 moordyn::error_id
 moordyn::MoorDyn::AllOutput(double t, double dt)
 {
-	if (env->writeLog == 0)
-		return MOORDYN_SUCCESS;
+	// if (env->writeLog == 0)
+	// 	return MOORDYN_SUCCESS;
 
 	if (dtOut > 0)
 		if (t < (floor((t - dt) / dtOut) + 1.0) * dtOut)

@@ -495,9 +495,8 @@ Line::initialize()
 			// It might happens that the output solution does not respect the
 			// queried final point. See the pendulum example
 			if (abs(Zl[N] - ZF) > Tol) {
-				LOGWRN << "Wrong catenary initial profile for Line, "
-				          "intializing as linear "
-				       << number << endl;
+				LOGWRN << "Wrong catenary initial profile for Line "
+					   << number << ", intializing as linear " <<  endl;
 			} else {
 				// the catenary solve is successful, update the node positions
 				LOGDBG << "Catenary initial profile available for Line "
