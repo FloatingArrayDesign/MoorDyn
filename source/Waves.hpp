@@ -49,12 +49,15 @@ class TimeScheme;
 class Seafloor;
 typedef std::shared_ptr<Seafloor> SeafloorRef;
 
+/// STL std::vector of 2 dimensions
 template<class T>
 using Vec2D = std::vector<std::vector<T>>;
 
+/// STL std::vector of 3 dimensions
 template<class T>
 using Vec3D = std::vector<std::vector<std::vector<T>>>;
 
+/// STL std::vector of 4 dimensions
 template<class T>
 using Vec4D = std::vector<std::vector<std::vector<std::vector<T>>>>;
 
@@ -107,6 +110,8 @@ init4DArray(unsigned int nx, unsigned int ny, unsigned int nz, unsigned int nw)
 	return Vec4D<real>(nx, init3DArray(ny, nz, nw));
 }
 
+/** @brief Helper for moordyn::AbstractCurrentKin
+ */
 struct SeafloorProvider
 {
 	real waterDepth;
@@ -118,7 +123,6 @@ struct SeafloorProvider
 /**
  * @brief An abstract class representing the capability of providing water
  * current data at some point and time.
- *
  */
 class AbstractCurrentKin
 {

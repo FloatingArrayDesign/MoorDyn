@@ -89,6 +89,7 @@
 #ifdef _MSC_VER
 #define __FUNC_NAME__ __FUNCTION__
 #else
+/// Macro that is substituted by the function name
 #define __FUNC_NAME__ __func__
 #endif
 #endif
@@ -97,14 +98,17 @@
 #ifdef _MSC_VER
 #define __PRETTY_FUNC_NAME__ __FUNCSIG__
 #else
+/// Macro that is substituted by the beautified function name
 #define __PRETTY_FUNC_NAME__ __PRETTY_FUNCTION__
 #endif
 #endif
 
 #ifndef XSTR
+/// Wrapper on STR macro to can stringify the content of some other macros
 #define XSTR(s) STR(s)
 #endif
 #ifndef STR
+/// Stringfication on a macro
 #define STR(s) #s
 #endif
 

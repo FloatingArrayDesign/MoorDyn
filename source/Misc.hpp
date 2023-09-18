@@ -103,25 +103,43 @@ typedef Eigen::Matrix6f mat6;
 typedef mat3 mat;
 typedef Eigen::Quaternionf quaternion;
 #else
+/// Real numbers wrapper. It is either double or float
 typedef double real;
+/// 2-D vector of real numbers
 typedef Eigen::Vector2d vec2;
+/// 3-D vector of real numbers
 typedef Eigen::Vector3d vec3;
+/// 4-D vector of real numbers
 typedef Eigen::Vector4d vec4;
+/// 6-D vector of real numbers
 typedef Eigen::Vector6d vec6;
+/// vec3 renaming
 typedef vec3 vec;
+/// 2x2 matrix of real numbers
 typedef Eigen::Matrix2d mat2;
+/// 3x3 matrix of real numbers
 typedef Eigen::Matrix3d mat3;
+/// 4x4 matrix of real numbers
 typedef Eigen::Matrix4d mat4;
+/// 6x6 matrix of real numbers
 typedef Eigen::Matrix6d mat6;
+/// mat3 renaming
 typedef mat3 mat;
+/// Quaternion of real numbers
 typedef Eigen::Quaterniond quaternion;
 #endif
+/// 2-D vector of integers
 typedef Eigen::Vector2i ivec2;
+/// 3-D vector of integers
 typedef Eigen::Vector3i ivec3;
+/// 4-D vector of integers
 typedef Eigen::Vector4i ivec4;
+/// 6-D vector of integers
 typedef Eigen::Vector6i ivec6;
+/// Renaming of ivec3
 typedef ivec3 ivec;
 
+/// COmplex numbers
 typedef std::complex<real> complex;
 
 inline vec3
@@ -140,6 +158,11 @@ Euler2Quat(const vec3& angles)
 	return q;
 }
 
+/** @brief Joint of a point and a quaternion
+ *
+ * Some entities are defined just by its position and orientation, so this class
+ * makes it happen on a simpler way
+ */
 struct XYZQuat
 {
 	vec3 pos;
@@ -610,6 +633,8 @@ fileToLines(const std::filesystem::path& path);
  *  @{
  */
 
+/** Bathymetry specification alternatives
+ */
 typedef enum
 {
 	/// Flat seafloor:
@@ -795,7 +820,7 @@ RotZ(real rads)
 }
 
 // clang-format off
-// Create the Euler rotations of the type RotXYZ, RotXZX, RotZYX...
+/// Create the Euler rotations, like RotXYZ, RotXZX, RotZYX...
 #define MAKE_EULER_ROT(a,b,c)                                                  \
 inline mat Rot ## a ## b ## c(real a1, real a2, real a3)                       \
 {                                                                              \

@@ -706,6 +706,7 @@ class EulerScheme : public TimeSchemeBase<1, 1>
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves Waves instance
 	 */
 	EulerScheme(moordyn::Log* log, WavesRef waves);
 
@@ -732,6 +733,7 @@ class HeunScheme : public TimeSchemeBase<1, 2>
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves Waves instance
 	 */
 	HeunScheme(moordyn::Log* log, WavesRef waves);
 
@@ -756,6 +758,7 @@ class RK2Scheme : public TimeSchemeBase<2, 2>
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves Waves instance
 	 */
 	RK2Scheme(moordyn::Log* log, WavesRef waves);
 
@@ -783,6 +786,7 @@ class RK4Scheme : public TimeSchemeBase<5, 4>
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves Waves instance
 	 */
 	RK4Scheme(moordyn::Log* log, WavesRef waves);
 
@@ -813,6 +817,7 @@ class ABScheme : public TimeSchemeBase<5, 1>
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves Waves instance
 	 */
 	ABScheme(moordyn::Log* log, WavesRef waves);
 
@@ -883,6 +888,7 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
 	 * @param dt_factor The inner evaluation point factor. 0.5 for the midpoint
 	 * method, 1.0 for the backward Euler method
@@ -913,6 +919,7 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
  * @param name The time scheme name, one of the following:
  * "Euler", "Heun", "RK2", "RK4", "AB3", "AB4"
  * @param log The log handler
+ * @param waves Waves instance
  * @return The time scheme
  * @throw moordyn::invalid_value_error If there is not a time scheme named after
  * @p name

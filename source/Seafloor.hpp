@@ -42,8 +42,11 @@
 #include <map>
 
 namespace moordyn {
+
 /** @class Seafloor Seafloor.hpp
- * @brief
+ * @brief Bathymetry description for MoorDyn
+ *
+ * Seafloor can provide a 2-D map of depths for MoorDyn
  */
 class Seafloor : LogUser
 {
@@ -55,16 +58,15 @@ class Seafloor : LogUser
 	 *
 	 * Always call this function after the construtor
 	 * @param env The enviromental options
-	 * @param folder The root folder where the wave data can be found
+	 * @param filepath The depths map file
 	 * @throws moordyn::input_file_error If an input file cannot be read, or if
 	 * a file is ill-formatted
 	 * @throws moordyn::invalid_value_error If invalid values are found
-	 * @throws moordyn::mem_error If there were roblems allocating memory
-	 * @throws moordyn::output_file_error If data cannot be written in \p folder
 	 */
 	void setup(EnvCondRef env, const string& filepath);
 
 	/** @brief Get the depth at a particular x/y coordinate
+	 *
 	 * This should default to nearest edge depth if beyond the
 	 * grid where depths have been explicitly defined.
 	 *
@@ -103,5 +105,6 @@ class Seafloor : LogUser
 	real minDepth;
 };
 
+/// Shared pointer
 typedef std::shared_ptr<Seafloor> SeafloorRef;
 }
