@@ -77,6 +77,7 @@ class Body final : public io::IO
   public:
 	/** @brief Costructor
 	 * @param log Logging handler defining where/how results should be logged.
+	 * @param id U nique identifier of this body
 	 */
 	Body(moordyn::Log* log, size_t id);
 
@@ -285,8 +286,7 @@ class Body final : public io::IO
 	}
 
 	/** @brief Get the body kinematics
-	 * @param pos The output position
-	 * @param vel The output velocity
+	 * @return Position and velocity
 	 */
 	inline std::pair<XYZQuat, vec6> getState() const
 	{
@@ -365,7 +365,7 @@ class Body final : public io::IO
 	/** @brief calculate the forces and state derivatives of the body
 	 *
 	 * This function is only meant for free bodies
-	 * @param return The states derivatives, i.e. the velocity (first) and the
+	 * @return The states derivatives, i.e. the velocity (first) and the
 	 * acceleration (second)
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE

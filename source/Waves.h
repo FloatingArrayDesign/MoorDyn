@@ -42,11 +42,12 @@ extern "C"
 {
 #endif
 
-	typedef struct __MoorDynSeafloor* MoorDynSeafloor;
-
 	/** @addtogroup new_c_api
 	 *  @{
 	 */
+
+	/// A seafloor descriptor
+	typedef struct __MoorDynSeafloor* MoorDynSeafloor;
 
 	/// A mooring point instance
 	typedef struct __MoorDynWaves* MoorDynWaves;
@@ -61,6 +62,7 @@ extern "C"
 	 * @param Ud The output acceleration
 	 * @param zeta The output wave height
 	 * @param PDyn The output dynamic pressure
+	 * @param seafloor The seafloor instance, see MoorDyn_GetSeafloor()
 	 * @return 0 If the data is correctly set, an error code otherwise
 	 * (see @ref moordyn_errors)
 	 */

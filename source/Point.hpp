@@ -71,6 +71,7 @@ class Point final : public io::IO
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param id Unique identifier of this instance
 	 */
 	Point(moordyn::Log* log, size_t id);
 
@@ -258,8 +259,7 @@ class Point final : public io::IO
 	};
 
 	/** @brief Get the point state
-	 * @param r_out The output position [x,y,z]
-	 * @param rd_out The output velocity [x,y,z]
+	 * @return The position and velocity
 	 */
 	inline std::pair<vec, vec> getState() { return std::make_pair(r, rd); }
 
@@ -303,7 +303,6 @@ class Point final : public io::IO
 	 * conditions (fairlead kinematics) for the proceeding line time steps
 	 * @param rFairIn Fairlead position
 	 * @param rdFairIn Fairlead velocity
-	 * @param time Simulation time
 	 * @throws moordyn::invalid_value_error If it is not a COUPLED point
 	 */
 	void initiateStep(vec rFairIn, vec rdFairIn);
@@ -338,7 +337,7 @@ class Point final : public io::IO
 	void setState(vec pos, vec vel);
 
 	/** @brief Calculate the forces and state derivatives of the point
-	 * @param return The states derivatives, i.e. the velocity (first) and the
+	 * @return The states derivatives, i.e. the velocity (first) and the
 	 * acceleration (second)
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */

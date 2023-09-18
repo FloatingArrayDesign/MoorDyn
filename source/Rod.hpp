@@ -67,6 +67,7 @@ class Rod final : public io::IO
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
+	 * @param rodId Unique identifier of this rod
 	 */
 	Rod(moordyn::Log* log, size_t rodId);
 
@@ -318,6 +319,7 @@ class Rod final : public io::IO
 
 	/** @brief Set the environmental data
 	 * @param waves_in Global Waves object
+	 * @param seafloor_in Global Seafloor object
 	 */
 	inline void setWaves(moordyn::WavesRef waves_in,
 	                     moordyn::SeafloorRef seafloor_in)
@@ -432,7 +434,6 @@ class Rod final : public io::IO
 	 * rods)
 	 * @param vel The linear and angular velocity (linear one is ignored in
 	 * pinned rods)
-	 * @param time Simulation time
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
 	 */
@@ -442,7 +443,6 @@ class Rod final : public io::IO
 	 * boundary conditions (rod kinematics) for the proceeding time steps
 	 * @param r The output position
 	 * @param rd The output velocity
-	 * @param time The simulation time
 	 * @throw moordyn::invalid_value_error If the rod is not of type
 	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
 	 * @note If the rod is of type moordyn::Rod::CPLDPIN, then just 3 components
