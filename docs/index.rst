@@ -35,9 +35,9 @@ how to :ref:`drive a simulation <drivers>`, how MoorDyn is :ref:`structured <str
 and its :ref:`theory <theory>`. MoorDyn is available in multiple forms,
 which are outlined below.
 
-.. Note: This documentation is meant for users, a
-.. `Doxygen documentation <./doxygen/index.html>`_ has been deployed for the
-.. developers. (not yet implemented)
+Note: This documentation is meant for users, a
+`Doxygen documentation <./doxygen/html/index.html>`_ has been deployed for the
+developers.
 
 About MoorDyn
 -------------
