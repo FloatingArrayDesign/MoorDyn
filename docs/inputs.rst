@@ -639,11 +639,9 @@ values are of the object’s reference point (about the reference point for rota
 Points:
 
 -	Rods: End A (Node 0)
-
   - No z rotations for rods (rotations along axis of rod negligible)
   - A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
     will be zero for this case. 
-
 -	Bodies: Center of Mass
 -	Points: Center of Mass
 -	Lines: End A (Node 0)
