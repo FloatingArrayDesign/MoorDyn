@@ -24,7 +24,7 @@ jobs:
       release_id: ${{ steps.create_release.outputs.id }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       if: github.event_name == 'push'
 
     - uses: dev-drprasad/delete-tag-and-release@v0.2.1
@@ -64,7 +64,7 @@ jobs:
             os: [ubuntu-22.04, windows-latest, macOS-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: moordyn_version
       id: moordyn_version
