@@ -40,11 +40,6 @@ from setuptools import setup, find_packages, Extension
 import platform
 
 
-# We better copy here the moordyn module
-shutil.rmtree('moordyn', ignore_errors=True)
-shutil.copytree(os.path.join('wrappers', 'python', 'moordyn'), 'moordyn')
-
-
 # Collect the source code files
 def get_sources(folder, sources=[]):
     for f in os.listdir(folder):
@@ -58,10 +53,16 @@ def get_sources(folder, sources=[]):
     return sources
 
 
+MODULE_PATH = os.path.join('wrappers', 'python', 'moordyn')
 MOORDYN_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'source')
 MOORDYN_SRCS = get_sources('source')
 MOORDYN_SRCS.append(os.path.join('wrappers', 'python', 'cmoordyn.cpp'))
+
+if os.path.isdir(MODULE_PATH):
+    # We better copy the moordyn module on the root
+    shutil.rmtree('moordyn', ignore_errors=True)
+    shutil.copytree(MODULE_PATH, 'moordyn')
 
 # Get everything required to compile with VTK support
 vtk_version = '9.2'
