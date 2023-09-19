@@ -27,20 +27,30 @@ jobs:
     - uses: actions/checkout@v4
       if: github.event_name == 'push'
 
-    - uses: dev-drprasad/delete-tag-and-release@v1.0.1
-      continue-on-error: true
-      with:
-        delete_release: true
-        tag_name: "nightly"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: moordyn_tag_name
+      id: moordyn_tag_name
+      shell: bash
+      run: |
+        major=`cat CMakeLists.txt | grep MOORDYN_MAJOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        minor=`cat CMakeLists.txt | grep MOORDYN_MINOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        echo "moordyn_tag_name=v$major.$minor.$patch" >> $GITHUB_OUTPUT
       if: github.event_name == 'push'
+
+    # - uses: dev-drprasad/delete-tag-and-release@v1.0.1
+    #   continue-on-error: true
+    #   with:
+    #     delete_release: true
+    #     tag_name: "nightly"
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   if: github.event_name == 'push'
 
     - uses: rickstaa/action-create-tag@v1
       id: create_tag
       with:
-        tag: "nightly"
-        message: "Latest release"
+        tag: ${{steps.moordyn_tag_name.outputs.moordyn_tag_name}}
+        message: "Latest release (${{steps.moordyn_tag_name.outputs.moordyn_tag_name}})"
         force_push_tag: true
       if: github.event_name == 'push'
 
@@ -50,8 +60,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: "nightly"
-        release_name: "nightly"
+        tag_name: ${{steps.moordyn_tag_name.outputs.moordyn_tag_name}}
+        release_name: ${{steps.moordyn_tag_name.outputs.moordyn_tag_name}}
         draft: false
         prerelease: false
       if: github.event_name == 'push'
