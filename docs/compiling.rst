@@ -378,6 +378,6 @@ in your system terminal. Pip will take care of everything by you.
 **If you want to use the most up to date version of MoorDyn-C as a python module**, follow the 
 instructions in the :ref:`CMake compile section <CMake_compile>`. Once you have succesfully 
 compiled MoorDyn on your system, change to `MoorDyn/build/wrappers/python/` and execute the 
-following command `python3 setup.py install`. This will build the python module locally from 
+following command `pip install ./`. This will build the python module locally from 
 the source code you have installed. In order to update this module in the future you will need 
 to update your local source code and follow the same steps above.

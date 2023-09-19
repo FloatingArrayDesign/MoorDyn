@@ -217,7 +217,7 @@ Notes on the Python C API:
   	 function = functionPROTO(("<function name from C API>", MDdylib), functionParams)
    	
 - Using this method does not call the create function because the v1 API does not allow 
-   for simultaneous MoorDyn instances. 
+  for simultaneous MoorDyn instances. 
 - The initialize function is MDInit.   
 - MoorDyn functions require C data types as inputs.
 
@@ -784,7 +784,8 @@ WEC-Sim
 ^^^^^^^
 
 WEC-Sim is currently coupled with MoorDyn v1. Support for the current version of
-MoorDyn-C v2, is in the process of being developed.
+MoorDyn-C v2, is in the process of being developed. The WEC-Sim source code can be found 
+`here <https://github.com/WEC-Sim/WEC-Sim>`.
 
 DualSPHysics
 ^^^^^^^^^^^^
