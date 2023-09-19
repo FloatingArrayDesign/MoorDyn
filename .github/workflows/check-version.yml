@@ -27,7 +27,7 @@ jobs:
         tag: "v${{steps.moordyn_version.outputs.moordyn_version}}"
 
     - name: Stop if tag exists
-      if: ${{ steps.checkTag.outputs.exists }}
+      if: ${{ steps.checkTag.outputs.exists }} == true
       uses: actions/github-script@v3
       with:
         script: |
