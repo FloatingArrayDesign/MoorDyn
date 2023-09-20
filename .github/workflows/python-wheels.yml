@@ -99,9 +99,9 @@ jobs:
         if: runner.os != 'Linux'
 
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir dist
 
       - uses: actions/upload-artifact@v3
         with:
           name: "Python wheels"
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl
