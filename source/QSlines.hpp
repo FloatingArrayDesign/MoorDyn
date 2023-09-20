@@ -570,5 +570,12 @@ Catenary(T XF,
 	*HAout = HA;
 	*VAout = VA;
 
-	return 1;
+	// It might happens that the output solution does not respect the
+	// queried final point. See the pendulum example
+	if (abs(Z[Nnodes-1] - ZF) > Tol) {
+		if (longwinded == 1)
+			cout << "Fairlead and anchor vertical seperation has changed"
+				 << ", aborting catenary solver ..." <<  endl;
+		return -1;
+	} else return 1;
 }
