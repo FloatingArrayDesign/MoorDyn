@@ -133,5 +133,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.MOORDYN_TESTPYPI_API }}
-          repository-url: https://test.pypi.org/project/moordyn/
+          repository-url: https://test.pypi.org/legacy/
+          # password: ${{ secrets.MOORDYN_PYPI_API }}
+          # repository-url: https://upload.pypi.org/legacy/
           skip-existing: true
