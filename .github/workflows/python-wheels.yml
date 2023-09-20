@@ -114,3 +114,4 @@ jobs:
         with:
           password: ${{ secrets.MOORDYN_TESTPYPI_API }}
           repository-url: https://test.pypi.org/project/moordyn/
+          skip-existing: true
