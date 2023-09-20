@@ -111,7 +111,7 @@ jobs:
         id: build_wheels
         with:
           name: python-package-distributions
-          path: ./dist/*.whl
+          path: ./dist/*
 
   publish:
     runs-on: ${{ matrix.os }}
