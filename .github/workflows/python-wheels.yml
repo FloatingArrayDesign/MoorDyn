@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master, v2-make-wheels ]
+    branches: [ $default-branch, master, releases ]
 
 permissions: write-all
 
@@ -98,6 +98,9 @@ jobs:
             tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
         if: runner.os != 'Linux'
 
+      - name: Build the source distribution
+        run: python setup.py sdist
+
       - name: Build wheels
         run: python -m cibuildwheel --output-dir dist
 
@@ -105,3 +108,9 @@ jobs:
         with:
           name: "Python wheels"
           path: ./dist/*.whl
+
+      - name: Publish package to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.MOORDYN_TESTPYPI_API }}
+          repository-url: https://test.pypi.org/project/moordyn/
