@@ -106,7 +106,7 @@ else:
 
 if arefiles(vtk_libs):
     extra_link_args = vtk_libs + extra_link_args
-    definitions = definition + [('USE_VTK', '1'),]
+    definitions = definitions + [('USE_VTK', '1'),]
 else:
     print("WARNING: Installing without VTK support")
 
