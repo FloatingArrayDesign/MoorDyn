@@ -34,7 +34,7 @@ import os
 eigen_packages = []
 for root, dirs, files in os.walk('source/Eigen'):
     package = root.replace(os.sep, ".")
-    eigen_packages.append('                  "{}": ["*"],\n'.format(package))
+    eigen_packages.append(f'                  "{package}": ["*"],\n')
 eigen_packages = ''.join(eigen_packages).strip()
 
 with open('setup.py', 'r') as f:
