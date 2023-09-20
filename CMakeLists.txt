@@ -21,7 +21,7 @@ set(BUILD_DOCS OFF CACHE BOOL
     "Build the documentation for users and developers")
 set(BUILD_BENCHMARKS OFF CACHE BOOL
     "Build the benchmarks. Makes use of Google's Benchmark library and requires an internet connection to download.")
-set(EXTERNAL_EIGEN ON CACHE BOOL
+set(EXTERNAL_EIGEN OFF CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(USE_VTK OFF CACHE BOOL
     "Link with VTK to produce output binary files")
