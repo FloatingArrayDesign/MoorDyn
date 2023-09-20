@@ -785,7 +785,7 @@ WEC-Sim
 
 WEC-Sim is currently coupled with MoorDyn v1. Support for the current version of
 MoorDyn-C v2, is in the process of being developed. The WEC-Sim source code can be found 
-`here <https://github.com/WEC-Sim/WEC-Sim>`.
+`here <https://github.com/WEC-Sim/WEC-Sim>`_.
 
 DualSPHysics
 ^^^^^^^^^^^^
