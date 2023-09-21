@@ -30,7 +30,7 @@ if not read_the_docs_build:
 subprocess.call('doxygen', shell=True)
 os.makedirs("_build/doxygen/out/doxygen", exist_ok=True)
 if os.path.exists('_build/doxygen/out/doxygen/html'):
-    os.rmdir('_build/doxygen/out/doxygen/html')
+    shutil.rmtree('_build/doxygen/out/doxygen/html')
 shutil.move('_build/doxygen/html', '_build/doxygen/out/doxygen/html')
 
 breathe_projects['MoorDyn'] = "_build/doxygen/xml"
