@@ -43,7 +43,7 @@ breathe_default_project = "MoorDyn"
 # -- Project information -----------------------------------------------------
 
 project = 'MoorDyn'
-copyright = '2021, National Renewable Energy Laboratory'
+copyright = '2023, National Renewable Energy Laboratory'
 author = 'Matt Hall'
 
 # The full version, including alpha/beta/rc tags

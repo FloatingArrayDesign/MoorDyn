@@ -7,6 +7,8 @@ build:
     python: "3.11"
   apt_packages:
     - graphviz
+  commands:
+   - python -m pip install --upgrade --no-cache-dir sphinx readthedocs-sphinx-ext
 
 sphinx:
   configuration: docs/conf.py
