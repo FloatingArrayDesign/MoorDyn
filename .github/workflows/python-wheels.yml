@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master, releases ]
+    branches: [ $default-branch, master ]
 
 permissions: write-all
 
@@ -132,8 +132,8 @@ jobs:
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.MOORDYN_TESTPYPI_API }}
-          repository-url: https://test.pypi.org/legacy/
-          # password: ${{ secrets.MOORDYN_PYPI_API }}
-          # repository-url: https://upload.pypi.org/legacy/
+          # password: ${{ secrets.MOORDYN_TESTPYPI_API }}
+          # repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.MOORDYN_PYPI_API }}
+          repository-url: https://upload.pypi.org/legacy/
           skip-existing: true
