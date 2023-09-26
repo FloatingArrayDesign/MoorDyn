@@ -59,12 +59,15 @@ if(USE_VTK)
                                          VTK::IOXML
                                          VTK::IOGeometry
                                          VTK::FiltersGeneral)
+        get_target_property(MOORDYN_PRIVATE_INCLUDE_DIRS VTK::CommonCore
+                                                         INCLUDE_DIRECTORIES)
     else()
         list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore
                                         VTK::IOCore
                                         VTK::IOXML
                                         VTK::IOGeometry
                                         VTK::FiltersGeneral)
+        set(MOORDYN_PRIVATE_INCLUDE_DIRS "")
     endif()
     list(APPEND MOORDYN_HEADERS Util/VTK_Util.hpp)
     list(APPEND MOORDYN_SRCS Util/VTK_Util.cpp)
@@ -95,8 +98,9 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.15")
   endif()
 endif()
 target_compile_definitions(moordyn PUBLIC MoorDyn_EXPORTS)
-target_link_libraries(moordyn PUBLIC ${MOORDYN_PUBLIC_DEPS})
-target_link_libraries(moordyn PRIVATE ${MOORDYN_PRIVATE_DEPS})
+target_link_libraries(moordyn PUBLIC ${MOORDYN_PUBLIC_DEPS}
+                              PRIVATE ${MOORDYN_PRIVATE_DEPS})
+target_include_directories(moordyn PRIVATE ${MOORDYN_PRIVATE_INCLUDE_DIRS})
 
 install(TARGETS moordyn EXPORT MoorDynTargets
   LIBRARY DESTINATION lib
