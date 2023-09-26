@@ -165,7 +165,65 @@ the Git window select "Clone Existing Repository".
 
    The Git GUI to clone repositories
 
-We are starting with Eigen3, so in the first box of the window that pops up set
+As a default, MoorDyn uses the Egien package that is internal in the source code.
+If you would like to use an external copy of Eigen, please follow the instructions
+in the :ref:`installing with external eigen <external_eigen>` note at this point. 
+
+We will install MoorDyn following a very similar process.
+Launch CMake again, and set "C:\MoorDyn\MoorDyn" in the source box and
+"C:\MoorDyn\MoorDyn.build" in the binaries box, clicking "Configure" afterwards.
+Select again the "MinGW Makefiles" for the generator.
+When the configuration options appear, set CMAKE_BUILD_TYPE as "Release", and
+enable FORTRAN_WRAPPER and PYTHON_WRAPPER:
+
+.. figure:: win_cmake_moordyn.png
+   :alt: Configuration options for MoorDyn
+
+   Configuration options for MoorDyn
+
+You can also enable MATLAB_WRAPPER if you have MATLAB installed in your system.
+We are ready, click "Configure" once more and then "Generate".
+
+Now go back to your Command Prompt from earlier (which has administrative rights), and
+type the following commands:
+
+.. code-block:: bash
+
+  cd C:\MoorDyn\MoorDyn.build
+  mingw32-make
+  mingw32-make install
+
+This will generate three libraries in the MoorDyn/build/source directory labeled 
+libmoordyn, libmoordyn.2, and libmoordyn.2.2. The first two are symbolic links to the 
+latter, setup that way for development purposes. In your project you should use 
+libmoordyn.
+
+
+NOTE: If you want to generate a Windows installer, disable the PYTHON_WRAPPER
+option and type
+
+.. code-block:: bash
+
+  cd C:\MoorDyn\MoorDyn.build
+  mingw32-make
+  cpack -C Release
+
+NOTE: If you are working on a proxy serveryou may need to add the .crt file for your proxy 
+configuration to the folder ``C:/msys64/etc/pki/ca-trust/source/anchors`` or equivalent for your 
+system.
+
+NOTE: You may need to upgrade or install the build tool using pip
+
+.. code-block:: bash
+  
+  \<path-to-python>/python<version>.exe -m pip install --upgrade build
+
+NOTE: Installing External Eigen
+
+.. _external_eigen:
+
+To use an external copy of Eigen, ensure that the DEXTERNAL_EIGEN flag is turned on.
+In the first box of the window that pops up set
 "https://gitlab.com/libeigen/eigen.git", and in the second "C:\MoorDyn\eigen":
 
 .. figure:: win_git_eigen.png
@@ -234,55 +292,6 @@ Now you just need to type the following commands:
   mingw32-make install
 
 We will need to use cmd with administrative rights later on, so do not close it.
-
-Now we will install MoorDyn following a very similar process.
-Launch CMake again, and set "C:\MoorDyn\MoorDyn" in the source box and
-"C:\MoorDyn\MoorDyn.build" in the binaries box, clicking "Configure" afterwards.
-Select again the "MinGW Makefiles" for the generator.
-When the configuration options appear, set CMAKE_BUILD_TYPE as "Release", and
-enable FORTRAN_WRAPPER and PYTHON_WRAPPER:
-
-.. figure:: win_cmake_moordyn.png
-   :alt: Configuration options for MoorDyn
-
-   Configuration options for MoorDyn
-
-You can also enable MATLAB_WRAPPER if you have MATLAB installed in your system.
-We are ready, click "Configure" once more and then "Generate".
-
-Now go back to your Command Prompt from earlier (which has administrative rights), and
-type the following commands:
-
-.. code-block:: bash
-
-  cd C:\MoorDyn\MoorDyn.build
-  mingw32-make
-  mingw32-make install
-
-This will generate three libraries in the MoorDyn/build/source directory labeled 
-libmoordyn, libmoordyn.2, and libmoordyn.2.2. The first two are symbolic links to the 
-latter, setup that way for development purposes. In your project you should use 
-libmoordyn.
-
-
-NOTE: If you want to generate a Windows installer, disable the PYTHON_WRAPPER
-option and type
-
-.. code-block:: bash
-
-  cd C:\MoorDyn\MoorDyn.build
-  mingw32-make
-  cpack -C Release
-
-NOTE: If you are working on a proxy serveryou may need to add the .crt file for your proxy 
-configuration to the folder ``C:/msys64/etc/pki/ca-trust/source/anchors`` or equivalent for your 
-system.
-
-NOTE: You may need to upgrade or install the build tool using pip
-
-.. code-block:: bash
-  
-  \<path-to-python>/python<version>.exe -m pip install --upgrade build
 
 Linux and Mac
 ^^^^^^^^^^^^^
