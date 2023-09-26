@@ -59,8 +59,9 @@ if(USE_VTK)
                                          VTK::IOXML
                                          VTK::IOGeometry
                                          VTK::FiltersGeneral)
-        get_target_property(MOORDYN_PRIVATE_INCLUDE_DIRS VTK::CommonCore
-                                                         INCLUDE_DIRECTORIES)
+        get_target_property(MOORDYN_PRIVATE_INCLUDE_DIRS
+                            VTK::CommonCore
+                            INTERFACE_INCLUDE_DIRECTORIES)
     else()
         list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore
                                         VTK::IOCore
