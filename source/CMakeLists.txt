@@ -51,12 +51,21 @@ set(MOORDYN_HEADERS
 )
 
 set(MOORDYN_PUBLIC_DEPS "")
+set(MOORDYN_PRIVATE_DEPS "")
 if(USE_VTK)
-    list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore
-                                    VTK::IOCore
-                                    VTK::IOXML
-                                    VTK::IOGeometry
-                                    VTK::FiltersGeneral)
+    if(MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
+        list(APPEND MOORDYN_PRIVATE_DEPS VTK::CommonCore
+                                         VTK::IOCore
+                                         VTK::IOXML
+                                         VTK::IOGeometry
+                                         VTK::FiltersGeneral)
+    else()
+        list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore
+                                        VTK::IOCore
+                                        VTK::IOXML
+                                        VTK::IOGeometry
+                                        VTK::FiltersGeneral)
+    endif()
     list(APPEND MOORDYN_HEADERS Util/VTK_Util.hpp)
     list(APPEND MOORDYN_SRCS Util/VTK_Util.cpp)
 endif()
@@ -87,6 +96,7 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.15")
 endif()
 target_compile_definitions(moordyn PUBLIC MoorDyn_EXPORTS)
 target_link_libraries(moordyn PUBLIC ${MOORDYN_PUBLIC_DEPS})
+target_link_libraries(moordyn PRIVATE ${MOORDYN_PRIVATE_DEPS})
 
 install(TARGETS moordyn EXPORT MoorDynTargets
   LIBRARY DESTINATION lib
