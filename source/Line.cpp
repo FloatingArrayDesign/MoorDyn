@@ -485,7 +485,7 @@ Line::initialize()
 		                       &VF,
 		                       &HA,
 		                       &VA,
-		                       N,
+		                       N+1,
 		                       snodes,
 		                       Xl,
 		                       Zl,

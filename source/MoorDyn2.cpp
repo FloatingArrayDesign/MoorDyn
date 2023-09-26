@@ -122,7 +122,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	LOGDBG << "The basename is " << _basename << endl;
 	LOGDBG << "The basepath is " << _basepath << endl;
 
-	env->g = 9.8;
+	env->g = 9.80665;
 	env->WtrDpth = 0.;
 	env->rho_w = 1025.;
 	env->kb = 3.0e6;

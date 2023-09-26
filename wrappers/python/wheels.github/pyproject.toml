@@ -20,7 +20,7 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/FloatingArrayDesign/MoorDyn"
 "Bug Tracker" = "https://github.com/FloatingArrayDesign/MoorDyn/issues" 
-"Documentation" = "https://moordyn-v2.readthedocs.io" 
+"Documentation" = "https://moordyn.readthedocs.io" 
 
 [tool.setuptools]
 package-dir = {"" = "."}

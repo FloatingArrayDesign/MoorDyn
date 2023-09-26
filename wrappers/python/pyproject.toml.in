@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "moordyn"
 version = "${MOORDYN_VERSION}"
 authors = [
-  { name="Jose Luis Cercos-Pita", email="jlc@core-marine.com" },
+  { name="Jose Luis Cercos-Pita", email="jlc@core-marine.com" }, 
+  { name="Matt Hall", email="matthew.hall@nrel.gov"}
 ]
 description = "Python wrapper for MoorDyn library"
 readme = "README.md"
@@ -20,7 +21,7 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/FloatingArrayDesign/MoorDyn"
 "Bug Tracker" = "https://github.com/FloatingArrayDesign/MoorDyn/issues" 
-"Documentation" = "https://moordyn-v2.readthedocs.io" 
+"Documentation" = "https://moordyn.readthedocs.io" 
 
 [tool.setuptools]
 package-dir = {"" = "."}
