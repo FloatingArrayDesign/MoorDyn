@@ -25,6 +25,8 @@ set(EXTERNAL_EIGEN OFF CACHE BOOL
     "Use the Eigen3 installed in the system")
 set(USE_VTK OFF CACHE BOOL
     "Link with VTK to produce output binary files")
+set(MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY OFF CACHE BOOL
+    "Specifically tells MoorDyn to ignore the VTK dependency on the exported package. This can be useful if VTK was linked statically")
 set(FORTRAN_WRAPPER OFF CACHE BOOL
     "Build the Fortran module")
 set(MATLAB_WRAPPER OFF CACHE BOOL
@@ -40,6 +42,8 @@ set(MOORDYN_SINGLEPRECISSION OFF CACHE BOOL
 set(MOORDYN_SSE "OFF" CACHE STRING "Use enhanced instructions set")
 set_property(CACHE MOORDYN_SSE PROPERTY STRINGS OFF SSE SSE2 SSE4 AVX AVX2 AVX512)
 set(MOORDYN_FASTMATH OFF CACHE BOOL "Enhances performance at the cost of accuracy")
+
+mark_as_advanced(MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
 mark_as_advanced(PYTHON_WRAPPER_USERINSTALL)
 mark_as_advanced(MOORDYN_SINGLEPRECISSION)
 mark_as_advanced(MOORDYN_SSE)
