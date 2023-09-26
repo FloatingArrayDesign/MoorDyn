@@ -648,6 +648,8 @@ Points:
 
 Footnotes:
 
+- The tension on the Line n fairlead can be output with the FAIRTEN[n] flag (see examples above)
+- The tension on the Line n anchor can be output with the ANCHTEN[n] flag (see examples above)
 - Object indicates output is for whole object, Node indicates output is for node of object
 - Coupled/fixed bodies and points will output acceleration 0 because no forces are calculated
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
