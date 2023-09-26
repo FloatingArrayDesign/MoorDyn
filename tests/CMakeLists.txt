@@ -42,8 +42,21 @@ set(CATCH2_TESTS
 )
 
 function(make_executable test_name)
+    set(TEST_PRIVATE_DEPS "moordyn;")
     add_executable(${test_name} ${test_name}.cpp)
-    target_link_libraries(${test_name} PRIVATE moordyn)
+    if(USE_VTK AND MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
+        list(APPEND TEST_PRIVATE_DEPS VTK::CommonCore
+                                         VTK::IOCore
+                                         VTK::IOXML
+                                         VTK::IOGeometry
+                                         VTK::FiltersGeneral)
+        get_target_property(TEST_PRIVATE_INCLUDE_DIRS
+                            VTK::CommonCore
+                            INTERFACE_INCLUDE_DIRECTORIES)
+        target_include_directories(${test_name}
+                                   PRIVATE ${TEST_PRIVATE_INCLUDE_DIRS})
+    endif()
+    target_link_libraries(${test_name} PRIVATE ${TEST_PRIVATE_DEPS})
     add_dependencies(${test_name} Test_MooringConfigFiles)
 endfunction()
 
