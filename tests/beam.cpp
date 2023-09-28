@@ -47,7 +47,7 @@
 #define W 100.0
 #define EA 1.5e9
 #define EI 1.0e7
-#define G 9.81
+#define G 9.80665
 
 bool
 compare(double v1, double v2)

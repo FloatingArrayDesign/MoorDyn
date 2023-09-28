@@ -113,7 +113,7 @@ pendulum()
 	const double l = sqrt(x * x + z * z);
 	CHECK_VALUE("L0", l0, l, 0.01 * l0, 0);
 
-	const double w = sqrt(9.81 / l0);
+	const double w = sqrt(9.80665 / l0);
 	const double T = 2.0 * M_PI / w;
 	double dt = T / 100.0;
 	double t = 0.0;
