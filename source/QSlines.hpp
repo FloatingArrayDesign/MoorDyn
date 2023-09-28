@@ -95,7 +95,7 @@ Catenary(T XF,
          T* HAout,
          T* VAout,
          unsigned int Nnodes,
-         const vector<T>& s,
+         vector<T>& s,
          vector<T>& X,
          vector<T>& Z,
          vector<T>& Te)
@@ -108,6 +108,16 @@ Catenary(T XF,
 
 	if (longwinded == 1)
 		cout << "hi" << endl;
+
+	// Checking inverted points at line ends: from catenary.py in MoorPy
+	bool reverseFlag;
+	if ( ZF <  0.0 ){ // True if the fairlead has passed below its anchor
+        ZF = -ZF;
+        reverseFlag = true;
+		if (longwinded == 1)
+     		cout << " Warning from catenary: "
+			 	 << "Anchor point is above the fairlead point" << endl;
+    } else reverseFlag = false;
 
 	// Maximum stretched length of the line with seabed interaction beyond which
 	// the line would have to double-back on itself; here the line forms an "L"
@@ -226,8 +236,8 @@ Catenary(T XF,
 		// The current mooring line must be slack and not vertical
 		Lamda0 = sqrt(3.0 * ((L * L - ZF2) / XF2 - 1.0));
 	}
-	// ! As above, set the lower limit of the guess value of HF to the tolerance
-	HF = max((T)abs(0.5 * W * XF / Lamda0), Tol);
+
+	HF = abs(0.5 * W * XF / Lamda0);
 	VF = 0.5 * W * (ZF / tanh(Lamda0) + L);
 
 	/*
@@ -570,5 +580,25 @@ Catenary(T XF,
 	*HAout = HA;
 	*VAout = VA;
 
-	return 1;
+	if (reverseFlag) { // return values to normal
+		reverse(s.begin(), s.end());
+		reverse(X.begin(), X.end());
+		reverse(Z.begin(), Z.end());
+		reverse(Te.begin(), Te.end());
+		for (unsigned int I = 0; I < Nnodes; I++){
+			s[I] = L - s[I];
+			X[I] = XF - X[I];
+			Z[I] = Z[I] - ZF;
+		}
+		ZF = -ZF;
+	}
+
+	// It might happen that the output solution does not respect the
+	// queried final point. See the pendulum example
+	if (abs(Z[Nnodes-1] - ZF) > Tol) {
+		if (longwinded == 1)
+			cout << "Fairlead and anchor vertical seperation has changed"
+				 << ", aborting catenary solver ..." <<  endl;
+		return -1;
+	} else return 1;
 }

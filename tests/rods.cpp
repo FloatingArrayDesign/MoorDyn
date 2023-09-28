@@ -57,7 +57,7 @@ added_mass()
 	double r = 0.25;
 	double V = length * M_PI * r * r;
 	double rho_w = 1025;
-	double g = 9.8;
+	double g = 9.80665;
 	double buoyancy = rho_w * V * g;
 	double weight = mass * g;
 	double Fnet = buoyancy - weight;

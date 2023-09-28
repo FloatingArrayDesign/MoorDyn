@@ -485,34 +485,27 @@ Line::initialize()
 		                       &VF,
 		                       &HA,
 		                       &VA,
-		                       N,
+		                       N+1,
 		                       snodes,
 		                       Xl,
 		                       Zl,
 		                       Te);
 
 		if (success >= 0) {
-			// It might happens that the output solution does not respect the
-			// queried final point. See the pendulum example
-			if (abs(Zl[N] - ZF) > Tol) {
-				LOGWRN << "Wrong catenary initial profile for Line, "
-				          "intializing as linear "
-				       << number << endl;
-			} else {
-				// the catenary solve is successful, update the node positions
-				LOGDBG << "Catenary initial profile available for Line "
-				       << number << endl;
-				for (unsigned int i = 1; i < N; i++) {
-					vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
-					r[i] = r[0] + l;
-				}
+			
+			// the catenary solve is successful, update the node positions
+			LOGDBG << "Catenary initial profile available for Line "
+					<< number << endl;
+			for (unsigned int i = 1; i < N; i++) {
+				vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
+				r[i] = r[0] + l;
 			}
 		} else {
 			LOGWRN << "Catenary initial profile failed for Line " << number
-			       << endl;
+			       << ", initalizing as linear " << endl;
 		}
 	} else {
-		LOGDBG << "Vertical initial profile for Line " << number << endl;
+		LOGDBG << "Vertical linear initial profile for Line " << number << endl;
 	}
 
 	LOGMSG << "Initialized Line " << number << endl;

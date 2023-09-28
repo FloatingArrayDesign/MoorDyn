@@ -108,7 +108,7 @@ pendulum()
 	double z_max = 5.0;
 	double z_step = 1.0;
 
-	const double w = sqrt(9.81 / l0);
+	const double w = sqrt(9.80665 / l0);
 	const double T = 2.0 * M_PI / w;
 	double dt = T / 20.0;
 	double t = 0.0;

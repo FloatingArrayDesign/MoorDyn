@@ -108,22 +108,21 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 		_basepath = _filepath.substr(0, lastSlash + 1);
 	}
 
-	LOGMSG << "\n Running MoorDyn (v2.a10, 2022-01-01)" << endl
+	LOGMSG << "\n Running MoorDyn (v2.0.0, 2023-09-18)" << endl
 	       << "         MoorDyn v2 has significant ongoing input file changes "
 	          "from v1."
 	       << endl
-	       << "   Copyright: (C) 2021 National Renewable Energy Laboratory, "
+	       << "   Copyright: (C) 2023 National Renewable Energy Laboratory, "
 	          "(C) 2014-2019 Matt Hall"
 	       << endl
-	       << "   This program is released under the GNU General Public "
-	          "License v3."
+	       << "   This program is released under the  BSD 3-Clause license."
 	       << endl;
 
 	LOGMSG << "The filename is " << _filepath << endl;
 	LOGDBG << "The basename is " << _basename << endl;
 	LOGDBG << "The basepath is " << _basepath << endl;
 
-	env->g = 9.8;
+	env->g = 9.80665;
 	env->WtrDpth = 0.;
 	env->rho_w = 1025.;
 	env->kb = 3.0e6;
@@ -956,7 +955,7 @@ moordyn::MoorDyn::ReadInFile()
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
-				       << "7 fields are required, but just " << entries.size()
+				       << "7 fields are required, but only " << entries.size()
 				       << " are provided" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
@@ -2091,8 +2090,8 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 moordyn::error_id
 moordyn::MoorDyn::AllOutput(double t, double dt)
 {
-	if (env->writeLog == 0)
-		return MOORDYN_SUCCESS;
+	// if (env->writeLog == 0)
+	// 	return MOORDYN_SUCCESS;
 
 	if (dtOut > 0)
 		if (t < (floor((t - dt) / dtOut) + 1.0) * dtOut)

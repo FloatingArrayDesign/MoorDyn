@@ -137,7 +137,7 @@ class Line final : public io::IO
 	moordyn::real UnstrLend;
 	/// line diameter
 	moordyn::real d;
-	/// line linear density
+	/// line density (kg/m^3)
 	moordyn::real rho;
 	/// line elasticity modulus (Young's modulus) [Pa]
 	moordyn::real E;
