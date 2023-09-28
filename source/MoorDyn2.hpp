@@ -69,6 +69,7 @@ class MoorDyn final : public io::IO
 	 *
 	 * @param infilename The input file, if either NULL or "", then
 	 * "Mooring/lines.txt" will be considered
+	 * @param log_level The logging level. It can be changed afterwards
 	 */
 	DECLDIR MoorDyn(const char* infilename = NULL,
 	                int log_level = MOORDYN_MSG_LEVEL);

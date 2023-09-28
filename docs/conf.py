@@ -25,15 +25,13 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 breathe_projects = {}
 
 os.makedirs("_build/doxygen", exist_ok=True)
-if read_the_docs_build:
-    subprocess.call('doxygen', shell=True)
-else:
+if not read_the_docs_build:
     subprocess.call('make clean', shell=True)
-    subprocess.call('doxygen', shell=True)
-os.makedirs("_build/doxygen/out", exist_ok=True)
+subprocess.call('doxygen', shell=True)
+os.makedirs("_build/doxygen/out/doxygen", exist_ok=True)
 if os.path.exists('_build/doxygen/out/doxygen/html'):
-    os.remove('_build/doxygen/out/doxygen/html')
-shutil.rmtree('_build/doxygen/html', '_build/doxygen/out/doxygen')
+    shutil.rmtree('_build/doxygen/out/doxygen/html')
+shutil.move('_build/doxygen/html', '_build/doxygen/out/doxygen/html')
 
 breathe_projects['MoorDyn'] = "_build/doxygen/xml"
 breathe_default_project = "MoorDyn"
@@ -45,7 +43,7 @@ breathe_default_project = "MoorDyn"
 # -- Project information -----------------------------------------------------
 
 project = 'MoorDyn'
-copyright = '2021, National Renewable Energy Laboratory'
+copyright = '2023, National Renewable Energy Laboratory'
 author = 'Matt Hall'
 
 # The full version, including alpha/beta/rc tags

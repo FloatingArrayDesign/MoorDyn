@@ -1,8 +1,8 @@
-name: CMake
+name: MinGW
 
 on:
   push:
-    branches: [ $default-branch, master, v2 ]
+    branches: [ $default-branch, master ]
   pull_request:
     branches:
       - "**"
@@ -21,7 +21,7 @@ jobs:
             os: [windows-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Create folders
       run: |
@@ -32,5 +32,4 @@ jobs:
       run: cmake -B ${{github.workspace}}/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=OFF -DBUILD_TESTING=ON
 
     - name: Build
-      id: build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}

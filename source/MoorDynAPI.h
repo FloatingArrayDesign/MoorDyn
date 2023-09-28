@@ -64,6 +64,7 @@
 #ifdef WIN32
 #define DECLDIR __declspec(dllimport)
 #else
+/// Prefix to export C functions on the compiled library
 #define DECLDIR
 #endif
 #endif
@@ -71,6 +72,7 @@
 #if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
 #define PARAM_UNUSED __attribute__((__unused__))
 #else
+/// Attribute for unused function parameters
 #define PARAM_UNUSED
 #endif
 
@@ -79,6 +81,7 @@
 #elif defined(__GNUC__) | defined(__clang__)
 #define DEPRECATED __attribute__((__deprecated__))
 #else
+/// Prefix for deprecated functions that will be removed on a future version
 #define DEPRECATED
 #endif
 
@@ -86,6 +89,7 @@
 #ifdef _MSC_VER
 #define __FUNC_NAME__ __FUNCTION__
 #else
+/// Macro that is substituted by the function name
 #define __FUNC_NAME__ __func__
 #endif
 #endif
@@ -94,14 +98,17 @@
 #ifdef _MSC_VER
 #define __PRETTY_FUNC_NAME__ __FUNCSIG__
 #else
+/// Macro that is substituted by the beautified function name
 #define __PRETTY_FUNC_NAME__ __PRETTY_FUNCTION__
 #endif
 #endif
 
 #ifndef XSTR
+/// Wrapper on STR macro to can stringify the content of some other macros
 #define XSTR(s) STR(s)
 #endif
 #ifndef STR
+/// Stringfication on a macro
 #define STR(s) #s
 #endif
 

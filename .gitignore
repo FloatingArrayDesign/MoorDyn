@@ -65,3 +65,4 @@ dist
 
 /source/.vscode
 .vscode/*
+docs/_build/*

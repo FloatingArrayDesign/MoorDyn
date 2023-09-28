@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch, master, v2 ]
+    branches: [ $default-branch, master ]
   pull_request:
     branches:
       - "**"
@@ -24,23 +24,33 @@ jobs:
       release_id: ${{ steps.create_release.outputs.id }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       if: github.event_name == 'push'
 
-    - uses: dev-drprasad/delete-tag-and-release@v0.2.1
-      continue-on-error: true
-      with:
-        delete_release: true
-        tag_name: "nightly"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: moordyn_tag_name
+      id: moordyn_tag_name
+      shell: bash
+      run: |
+        major=`cat CMakeLists.txt | grep MOORDYN_MAJOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        minor=`cat CMakeLists.txt | grep MOORDYN_MINOR_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
+        echo "moordyn_tag_name=v$major.$minor.$patch" >> $GITHUB_OUTPUT
       if: github.event_name == 'push'
+
+    # - uses: dev-drprasad/delete-tag-and-release@v1.0.1
+    #   continue-on-error: true
+    #   with:
+    #     delete_release: true
+    #     tag_name: "nightly"
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   if: github.event_name == 'push'
 
     - uses: rickstaa/action-create-tag@v1
       id: create_tag
       with:
-        tag: "nightly"
-        message: "Latest release"
+        tag: ${{steps.moordyn_tag_name.outputs.moordyn_tag_name}}
+        message: "Latest release (${{steps.moordyn_tag_name.outputs.moordyn_tag_name}})"
         force_push_tag: true
       if: github.event_name == 'push'
 
@@ -50,8 +60,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: "nightly"
-        release_name: "nightly"
+        tag_name: ${{steps.moordyn_tag_name.outputs.moordyn_tag_name}}
+        release_name: ${{steps.moordyn_tag_name.outputs.moordyn_tag_name}}
         draft: false
         prerelease: false
       if: github.event_name == 'push'
@@ -64,7 +74,7 @@ jobs:
             os: [ubuntu-22.04, windows-latest, macOS-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: moordyn_version
       id: moordyn_version
@@ -75,19 +85,15 @@ jobs:
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         echo "moordyn_version=$major.$minor.$patch" >> $GITHUB_OUTPUT
 
-    - name: Setup GCC Fortran (Linux & Mac)
+    - name: Setup GCC Fortran (Linux)
       uses: awvwgk/setup-fortran@main
       id: setup-fortran
       with:
         compiler: gcc
       if: runner.os == 'Linux'
 
-    - name: Setup Intel Fortran
-      uses: modflowpy/install-intelfortran-action@v1
-      if: runner.os == 'Windows'
-
     - name: download pre-built VTK static library
-      uses: suisei-cn/actions-download-file@v1.0.1
+      uses: suisei-cn/actions-download-file@v1.4.0
       with:
         url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
         target: ${{github.workspace}}/
@@ -106,22 +112,32 @@ jobs:
       if: runner.os == 'Linux'
 
     - name: Configure CMake (Windows)
-      run: cmake -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=OFF
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=ON
       if: runner.os == 'Windows'
 
     - name: Configure CMake (Mac)
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=OFF
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DBUILD_TESTING=ON
       if: runner.os == 'macOS'
 
     - name: Build
       id: build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Test (Linux)
+    # We do a little hack here. We install the library so we perfectly know the
+    # path. Then we set the environment variable to let the OS find the
+    # libraries
+
+    - name: Install
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Set $PATH (Windows)
+      run: Add-Content $env:GITHUB_PATH "${{github.workspace}}\install\bin"
+      if: runner.os == 'Windows'
+
+    - name: Test
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
       run: ctest -C ${{env.BUILD_TYPE}}
-      if: runner.os == 'Linux'
 
     - name: Install
       working-directory: ${{github.workspace}}/build

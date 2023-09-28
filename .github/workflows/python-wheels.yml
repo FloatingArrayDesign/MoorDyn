@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master, v2-make-wheels ]
+    branches: [ $default-branch, master ]
 
 permissions: write-all
 
@@ -29,10 +29,12 @@ jobs:
         tar -xvzf vtk-Linux-`uname -m`.tar.gz -C vtk/
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x' 
 
       - name: Create setup.py
         run: |
@@ -47,42 +49,42 @@ jobs:
         run: python -m pip install cibuildwheel
 
       - name: download pre-built VTK static library (non-Linux)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os != 'Linux'
 
       - name: download pre-built VTK static library (Linux-x86_64)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-aarch64)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-aarch64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-armv7)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-armv7.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-ppc64le)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-ppc64le.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Linux-s390x)
-        uses: suisei-cn/actions-download-file@v1.0.1
+        uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-s390x.tar.gz
           target: ${{github.workspace}}/
@@ -98,10 +100,40 @@ jobs:
             tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
         if: runner.os != 'Linux'
 
+      - name: Build the source distribution
+        run: python setup.py sdist
+        if: runner.os == 'Linux'
+
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir dist
 
       - uses: actions/upload-artifact@v3
+        id: build_wheels
         with:
-          name: "Python wheels"
-          path: ./wheelhouse/*.whl
+          name: python-package-distributions
+          path: ./dist/*
+
+  publish:
+    runs-on: ${{ matrix.os }}
+    needs: [build_wheels]
+    strategy:
+        matrix:
+            os: [ubuntu-22.04]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all the dists
+        uses: actions/download-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
+        
+      - name: Publish package to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # password: ${{ secrets.MOORDYN_TESTPYPI_API }}
+          # repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.MOORDYN_PYPI_API }}
+          repository-url: https://upload.pypi.org/legacy/
+          skip-existing: true

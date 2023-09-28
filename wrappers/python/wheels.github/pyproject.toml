@@ -13,14 +13,14 @@ readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: BSD-3-Clause",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/FloatingArrayDesign/MoorDyn"
 "Bug Tracker" = "https://github.com/FloatingArrayDesign/MoorDyn/issues" 
-"Documentation" = "https://moordyn-v2.readthedocs.io" 
+"Documentation" = "https://moordyn.readthedocs.io" 
 
 [tool.setuptools]
 package-dir = {"" = "."}

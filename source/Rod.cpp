@@ -1132,7 +1132,7 @@ Rod::doRHS()
 			Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0);
 
 			// axial drag
-			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
+			Dq[i] += 0.5 * VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// long-wave diffraction force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;
@@ -1159,7 +1159,7 @@ Rod::doRHS()
 			Mext += vec(Mtemp * sinBeta, -Mtemp * cosBeta, 0.0);
 
 			// axial drag
-			Dq[i] += VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
+			Dq[i] += 0.5 * VOF[i] * Area * env->rho_w * CdEnd * vq_mag * vq;
 
 			// long-wave diffraction force
 			const real V_temp = 2.0 / 3.0 * pi * d * d * d / 8.0;

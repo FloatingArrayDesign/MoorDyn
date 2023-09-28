@@ -137,7 +137,7 @@ class Line final : public io::IO
 	moordyn::real UnstrLend;
 	/// line diameter
 	moordyn::real d;
-	/// line linear density
+	/// line density (kg/m^3)
 	moordyn::real rho;
 	/// line elasticity modulus (Young's modulus) [Pa]
 	moordyn::real E;
@@ -330,7 +330,7 @@ class Line final : public io::IO
 	}
 
 	/** @brief Compute the stationary Initial Condition (IC)
-	 * @param return The states, i.e. the positions of the internal nodes
+	 * @return The states, i.e. the positions of the internal nodes
 	 * (first) and the velocities of the internal nodes (second)
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
@@ -369,7 +369,7 @@ class Line final : public io::IO
 	}
 
 	/** @brief Set the unstretched length rate of change of the line
-	 * @param len The unstretched length, moordyn::Line::UnstrLen
+	 * @param v The unstretched length rate of change, moordyn::Line::UnstrLend
 	 * @see moordyn::Line::setUnstretchedLength()
 	 */
 	inline void setUnstretchedLengthVel(const moordyn::real v)
@@ -380,7 +380,7 @@ class Line final : public io::IO
 	/** @brief Update the unstretched length of the line, according to the
 	 * velocity
 	 *
-	 * @param len The unstretched length, moordyn::Line::UnstrLen
+	 * @param dt The time step. If zero, the initial unstretched length is set
 	 * @note This function should be called after moordyn::Line::initialize()
 	 * @warning The lines damping is not changed, which might affect the
 	 * stability
