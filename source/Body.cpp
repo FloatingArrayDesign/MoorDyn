@@ -305,7 +305,7 @@ real
 Body::GetBodyOutput(OutChanProps outChan)
 {
 
-	vec3 rotations = Quat2Euler(r7.quat);
+	vec3 rotations = rad2deg * Quat2Euler(r7.quat);
 
 	if (outChan.QType == PosX)
 		return r7.pos.x();
