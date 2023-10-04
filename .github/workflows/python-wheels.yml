@@ -44,9 +44,6 @@ jobs:
             rm set_version.py set_eigen_data.py            
         shell: bash
 
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-
       - name: download pre-built VTK static library (non-Linux)
         uses: suisei-cn/actions-download-file@v1.4.0
         with:
