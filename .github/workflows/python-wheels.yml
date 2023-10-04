@@ -41,8 +41,7 @@ jobs:
             mv wrappers/python/wheels.github/* ./
             python set_version.py
             python set_eigen_data.py
-            rm set_version.py set_eigen_data.py
-            
+            rm set_version.py set_eigen_data.py            
         shell: bash
 
       - name: Install cibuildwheel
@@ -104,13 +103,26 @@ jobs:
         run: python setup.py sdist
         if: runner.os == 'Linux'
 
-      - name: Build wheels (Linux)
-        run: python -m cibuildwheel --output-dir dist --archs x86_64,i686,aarch64,ppc64le,s390x
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
         if: runner.os == 'Linux'
 
-      - name: Build wheels (Windows & Mac)
-        run: python -m cibuildwheel --output-dir dist
-        if: runner.os != 'Linux'
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        with:
+            output-dir: dist
+        env:
+          # configure cibuildwheel to build native archs ('auto'), and some
+          # emulated ones
+          CIBW_ARCHS_LINUX: auto aarch64 ppc64le s390x
+          # Skip 32-bit wheels builds as well as musllinux
+          CIBW_SKIP: "*-win32 *musllinux*"
+          CIBW_BEFORE_ALL_LINUX: >
+            echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
+            mkdir -p vtk &&
+            tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/
 
       - uses: actions/upload-artifact@v3
         id: build_wheels
