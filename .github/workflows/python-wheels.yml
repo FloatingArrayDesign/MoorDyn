@@ -109,7 +109,7 @@ jobs:
         if: runner.os == 'Linux'
 
       - name: Build wheels (Windows & Mac)
-        run: python -m cibuildwheel --output-dir dist --archs x86_64
+        run: python -m cibuildwheel --output-dir dist
         if: runner.os != 'Linux'
 
       - uses: actions/upload-artifact@v3
