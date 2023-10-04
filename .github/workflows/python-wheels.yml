@@ -104,8 +104,13 @@ jobs:
         run: python setup.py sdist
         if: runner.os == 'Linux'
 
-      - name: Build wheels
+      - name: Build wheels (Linux)
         run: python -m cibuildwheel --output-dir dist --archs x86_64,i686,aarch64,ppc64le,s390x
+        if: runner.os == 'Linux'
+
+      - name: Build wheels (Windows & Mac)
+        run: python -m cibuildwheel --output-dir dist --archs x86_64
+        if: runner.os != 'Linux'
 
       - uses: actions/upload-artifact@v3
         id: build_wheels
