@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master ]
+    branches: [ $default-branch, master, vtk-9.2.6 ]
 
 permissions: write-all
 
@@ -23,7 +23,6 @@ jobs:
     env:
       # Skip 32-bit wheels builds
       CIBW_SKIP: "*-win32 *musllinux*"
-      CIBW_MANYLINUX_*_IMAGE: manylinux2014
       CIBW_BEFORE_ALL_LINUX: >
         echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
         mkdir -p vtk &&
