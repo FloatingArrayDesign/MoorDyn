@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ $default-branch, master, releases ]
+    branches: [ $default-branch, master, vtk-9.2.6 ]
   pull_request:
     branches:
       - "**"
@@ -14,7 +14,7 @@ env:
   BUILD_TYPE: Release
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 2
-  VTK_VERSION_PATCH: 5
+  VTK_VERSION_PATCH: 6
 
 jobs:
   create_release:
@@ -85,6 +85,12 @@ jobs:
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         echo "moordyn_version=$major.$minor.$patch" >> $GITHUB_OUTPUT
 
+    - name: vtk_file_name
+      id: vtk_file_name
+      shell: bash
+      run: |
+        if [[ $runneros = 'Linux' ]]; then echo "vtk_file_name=manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT; else echo "vtk_file_name=${{runner.os}}-x86_64.tar.gz" >> $GITHUB_OUTPUT; fi
+
     - name: Setup GCC Fortran (Linux)
       uses: awvwgk/setup-fortran@main
       id: setup-fortran
@@ -95,7 +101,7 @@ jobs:
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.4.0
       with:
-        url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
+        url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{steps.vtk_file_name.outputs.vtk_file_name}}
         target: ${{github.workspace}}/
 
     - name: Create folders
@@ -105,7 +111,7 @@ jobs:
 
     - name: Extract VTK tgz
       run: |
-          tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
+          tar -xvzf ${{steps.vtk_file_name.outputs.vtk_file_name}} -C vtk/
 
     - name: Configure CMake (Linux)
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=ON
