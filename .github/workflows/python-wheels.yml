@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master, vtk-9.2.6 ]
+    branches: [ $default-branch, master ]
 
 permissions: write-all
 
