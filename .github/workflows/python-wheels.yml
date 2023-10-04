@@ -22,7 +22,6 @@ jobs:
         os: [ubuntu-22.04, windows-latest, macOS-latest]
     env:
       # Skip 32-bit wheels builds as well as musllinux
-      CIBW_BUILD: "cp*macosx* cp*win* cp*manylinux* pp*macosx* pp*win* pp*manylinux*"
       CIBW_SKIP: "*-win32 *musllinux*"
       CIBW_BEFORE_ALL_LINUX: >
         echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
@@ -106,7 +105,7 @@ jobs:
         if: runner.os == 'Linux'
 
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir dist
+        run: python -m cibuildwheel --output-dir dist --archs x86_64,i686,aarch64,ppc64le,s390x
 
       - uses: actions/upload-artifact@v3
         id: build_wheels
