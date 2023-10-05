@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master, vtk-9.2.6 ]
+    branches: [ $default-branch, master ]
 
 permissions: write-all
 
@@ -101,21 +101,21 @@ jobs:
 
   build_aarch64:
     name: Build Python wheels aarch64
-    uses: core-marine-dev/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@vtk-9.2.6
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@master
     with:
       arch: "aarch64"
     secrets: inherit
 
   build_ppc64le:
     name: Build Python wheels ppc64le
-    uses: core-marine-dev/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@vtk-9.2.6
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@master
     with:
       arch: "ppc64le"
     secrets: inherit
     
   build_s390x:
     name: Build Python wheels s390x
-    uses: core-marine-dev/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@vtk-9.2.6
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@master
     with:
       arch: "s390x"
     secrets: inherit
