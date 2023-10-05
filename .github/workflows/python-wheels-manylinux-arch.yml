@@ -1,0 +1,74 @@
+name: Python-manylinux-arch
+
+on:
+  workflow_call:
+    inputs:
+      arch:
+        description: 'Architecture target'
+        required: true
+        type: string
+        
+permissions: write-all
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  VTK_VERSION_MAJOR: 9
+  VTK_VERSION_MINOR: 2
+  VTK_VERSION_PATCH: 6
+
+jobs:
+  build_wheels:
+    name: Build Python wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x' 
+
+      - name: Create setup.py
+        run: |
+            mv wrappers/python/wheels.github/* ./
+            python set_version.py
+            python set_eigen_data.py
+            rm set_version.py set_eigen_data.py            
+        shell: bash
+
+      - name: download pre-built VTK static library
+        uses: suisei-cn/actions-download-file@v1.4.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
+          target: ${{github.workspace}}/
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        with:
+            output-dir: dist
+        env:
+          # configure cibuildwheel to build native archs ('auto'), and some
+          # emulated ones
+          CIBW_ARCHS_LINUX: ${{inputs.arch}}
+          # Skip 32-bit wheels builds as well as musllinux
+          CIBW_SKIP: "*-win32 *musllinux*"
+          CIBW_BEFORE_ALL_LINUX: >
+            echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
+            mkdir -p vtk &&
+            tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/
+
+      - uses: actions/upload-artifact@v3
+        id: build_wheels
+        with:
+          name: python-wheels-${{inputs.arch}}
+          path: ./dist/*
