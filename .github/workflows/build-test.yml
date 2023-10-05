@@ -89,7 +89,7 @@ jobs:
       id: vtk_file_name
       shell: bash
       run: |
-        if [[ ${{runner.os}} = 'Linux' ]]; then echo "vtk_file_name=manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT; else echo "vtk_file_name=${{runner.os}}-x86_64.tar.gz" >> $GITHUB_OUTPUT; fi
+        if [[ ${{runner.os}} = 'Linux' ]]; then echo "vtk_file_name=vtk-manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT; else echo "vtk_file_name=vtk-${{runner.os}}-x86_64.tar.gz" >> $GITHUB_OUTPUT; fi
 
     - name: Setup GCC Fortran (Linux)
       uses: awvwgk/setup-fortran@main
