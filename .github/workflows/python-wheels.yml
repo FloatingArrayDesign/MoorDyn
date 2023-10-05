@@ -15,18 +15,11 @@ env:
 
 jobs:
   build_wheels:
-    name: Build Python wheels
+    name: Build Python wheels x86_64
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-22.04, windows-latest, macOS-latest]
-    env:
-      # Skip 32-bit wheels builds as well as musllinux
-      CIBW_SKIP: "*-win32 *musllinux*"
-      CIBW_BEFORE_ALL_LINUX: >
-        echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
-        mkdir -p vtk &&
-        tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/
 
     steps:
       - uses: actions/checkout@v4
@@ -44,47 +37,12 @@ jobs:
             rm set_version.py set_eigen_data.py            
         shell: bash
 
-      - name: download pre-built VTK static library (non-Linux)
+      - name: download pre-built VTK static library
         uses: suisei-cn/actions-download-file@v1.4.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os != 'Linux'
-
-      - name: download pre-built VTK static library (Linux-x86_64)
-        uses: suisei-cn/actions-download-file@v1.4.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_x86_64.tar.gz
-          target: ${{github.workspace}}/
-        if: runner.os == 'Linux'
-
-      - name: download pre-built VTK static library (Linux-i686)
-        uses: suisei-cn/actions-download-file@v1.4.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_i686.tar.gz
-          target: ${{github.workspace}}/
-        if: runner.os == 'Linux'
-
-      - name: download pre-built VTK static library (Linux-aarch64)
-        uses: suisei-cn/actions-download-file@v1.4.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_aarch64.tar.gz
-          target: ${{github.workspace}}/
-        if: runner.os == 'Linux'
-
-      - name: download pre-built VTK static library (Linux-ppc64le)
-        uses: suisei-cn/actions-download-file@v1.4.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_ppc64le.tar.gz
-          target: ${{github.workspace}}/
-        if: runner.os == 'Linux'
-
-      - name: download pre-built VTK static library (Linux-s390x)
-        uses: suisei-cn/actions-download-file@v1.4.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_s390x.tar.gz
-          target: ${{github.workspace}}/
-        if: runner.os == 'Linux'
 
       - name: Create folders
         run: |
@@ -113,7 +71,7 @@ jobs:
         env:
           # configure cibuildwheel to build native archs ('auto'), and some
           # emulated ones
-          CIBW_ARCHS_LINUX: auto aarch64 ppc64le s390x
+          CIBW_ARCHS_LINUX: auto
           # Skip 32-bit wheels builds as well as musllinux
           CIBW_SKIP: "*-win32 *musllinux*"
           CIBW_BEFORE_ALL_LINUX: >
@@ -124,12 +82,33 @@ jobs:
       - uses: actions/upload-artifact@v3
         id: build_wheels
         with:
-          name: python-package-distributions
+          name: python-wheels-x86_64
           path: ./dist/*
+
+  build_aarch64:
+    name: Build Python wheels aarch64
+    uses: core-marine-dev/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@vtk-9.2.6
+    with:
+      arch: "aarch64"
+    secrets: inherit
+
+  build_ppc64le:
+    name: Build Python wheels ppc64le
+    uses: core-marine-dev/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@vtk-9.2.6
+    with:
+      arch: "ppc64le"
+    secrets: inherit
+    
+  build_s390x:
+    name: Build Python wheels s390x
+    uses: core-marine-dev/MoorDyn/.github/workflows/python-wheels-manylinux-arch.yml@vtk-9.2.6
+    with:
+      arch: "s390x"
+    secrets: inherit
 
   publish:
     runs-on: ${{ matrix.os }}
-    needs: [build_wheels]
+    needs: [build_wheels, build_aarch64, build_ppc64le, build_s390x]
     strategy:
         matrix:
             os: [ubuntu-22.04]
@@ -137,12 +116,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all the dists
+      - name: Download x86_64 dists
         uses: actions/download-artifact@v3
         with:
-          name: python-package-distributions
+          name: python-wheels-x86_64
           path: dist/
-        
+
+      - name: Download aarch64 dists
+        uses: actions/download-artifact@v3
+        with:
+          name: python-wheels-aarch64
+          path: dist/
+
+      - name: Download ppc64le dists
+        uses: actions/download-artifact@v3
+        with:
+          name: python-wheels-ppc64le
+          path: dist/
+
+      - name: Download s390x dists
+        uses: actions/download-artifact@v3
+        with:
+          name: python-wheels-s390x
+          path: dist/
+
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
