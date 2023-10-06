@@ -85,12 +85,6 @@ jobs:
         patch=`cat CMakeLists.txt | grep MOORDYN_PATCH_VERSION | head -1 | awk -F' ' '{print $2}' | awk -F')' '{print $1}'`
         echo "moordyn_version=$major.$minor.$patch" >> $GITHUB_OUTPUT
 
-    - name: vtk_file_name
-      id: vtk_file_name
-      shell: bash
-      run: |
-        if [[ ${{runner.os}} = 'Linux' ]]; then echo "vtk_file_name=vtk-manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT; else echo "vtk_file_name=vtk-${{runner.os}}-x86_64.tar.gz" >> $GITHUB_OUTPUT; fi
-
     - name: Setup GCC Fortran (Linux)
       uses: awvwgk/setup-fortran@main
       id: setup-fortran
@@ -98,28 +92,49 @@ jobs:
         compiler: gcc
       if: runner.os == 'Linux'
 
+    - name: Install VTK (Linux)
+      run: |
+        apt-get -qq update
+        apt-get -qq -y install libvtk9-dev
+      if: runner.os == 'Linux'
+
+    - name: Install VTK (MacOS)
+      run: |
+        brew install vtk
+      if: runner.os == 'MacOS'
+
     - name: download pre-built VTK static library
       uses: suisei-cn/actions-download-file@v1.4.0
       with:
-        url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{steps.vtk_file_name.outputs.vtk_file_name}}
+        url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-${{runner.os}}-x86_64.tar.gz
         target: ${{github.workspace}}/
+      if: runner.os == 'Windows'
 
-    - name: Create folders
+    - name: Create VTK folder
       run: |
           mkdir -p ${{github.workspace}}/vtk
-          mkdir -p ${{github.workspace}}/install
+      if: runner.os == 'Windows'
 
     - name: Extract VTK tgz
       run: |
           tar -xvzf ${{steps.vtk_file_name.outputs.vtk_file_name}} -C vtk/
+      if: runner.os == 'Windows'
+
+    - name: Create install folder
+      run: |
+          mkdir -p ${{github.workspace}}/install
 
     - name: Configure CMake (Linux)
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib64/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=ON -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DBUILD_TESTING=ON
       if: runner.os == 'Linux'
 
-    - name: Configure CMake (Windows & MacOS)
+    - name: Configure CMake (MacOS)
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DBUILD_TESTING=ON
+      if: runner.os == 'MacOS'
+
+    - name: Configure CMake (Windows)
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}/ -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=ON
-      if: runner.os != 'Linux'
+      if: runner.os == 'Windows'
 
     - name: Build
       id: build
@@ -141,11 +156,6 @@ jobs:
       # We are just testing in Linux
       run: ctest -C ${{env.BUILD_TYPE}}
 
-    - name: Install
-      working-directory: ${{github.workspace}}/build
-      # We are just testing in Linux
-      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
     - name: Create Installer
       working-directory: ${{github.workspace}}/build
       shell: bash
@@ -164,18 +174,6 @@ jobs:
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'Linux') }}
 
-    - name: Upload Windows installer
-      id: upload-windows-installer
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
-        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
-        asset_content_type: application/exe
-      if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
-
     - name: Upload MacOS installer
       id: upload-macos-installer
       uses: actions/upload-release-asset@v1
@@ -187,3 +185,15 @@ jobs:
         asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-Darwin.sh
         asset_content_type: application/exe
       if: ${{ (github.event_name == 'push') && (runner.os == 'MacOS') }}
+
+    - name: Upload Windows installer
+      id: upload-windows-installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/build/Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
+        asset_name: Moordyn-${{steps.moordyn_version.outputs.moordyn_version}}-win64.exe
+        asset_content_type: application/exe
+      if: ${{ (github.event_name == 'push') && (runner.os == 'Windows') }}
