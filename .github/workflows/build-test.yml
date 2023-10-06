@@ -117,7 +117,7 @@ jobs:
 
     - name: Extract VTK tgz
       run: |
-          tar -xvzf ${{steps.vtk_file_name.outputs.vtk_file_name}} -C vtk/
+          tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
       if: runner.os == 'Windows'
 
     - name: Create install folder
