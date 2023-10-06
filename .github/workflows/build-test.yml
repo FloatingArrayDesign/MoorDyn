@@ -94,8 +94,8 @@ jobs:
 
     - name: Install VTK (Linux)
       run: |
-        apt-get -qq update
-        apt-get -qq -y install libvtk9-dev
+        sudo apt-get -qq update
+        sudo apt-get -qq -y install libvtk9-dev
       if: runner.os == 'Linux'
 
     - name: Install VTK (MacOS)
