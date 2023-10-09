@@ -42,8 +42,14 @@ add_custom_target(python_wrapper ALL DEPENDS ${OUTPUT})
 add_dependencies(python_wrapper moordyn)
 
 # Prepare the installation if eventually required
+set(PY_INSTALL_ARGS "")
 if(${PYTHON_WRAPPER_USERINSTALL})
-    set(PY_INSTALL_ARGS "--user")
+    set(PY_INSTALL_ARGS "${PY_INSTALL_ARGS} --user")
+endif()
+if (UNIX)
+    if((${Python_VERSION_MAJOR} GREATER 3) OR ((${Python_VERSION_MAJOR} EQUAL 3) AND (${Python_VERSION_MINOR} GREATER 10)))
+        set(PY_INSTALL_ARGS "${PY_INSTALL_ARGS} --break-system-packages")
+    endif()
 endif()
 install(CODE "
   execute_process(COMMAND ${Python_EXECUTABLE} -m pip install dist/moordyn-${MOORDYN_VERSION}.tar.gz ${PY_INSTALL_ARGS}
