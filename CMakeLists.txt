@@ -49,6 +49,16 @@ mark_as_advanced(MOORDYN_SINGLEPRECISSION)
 mark_as_advanced(MOORDYN_SSE)
 mark_as_advanced(MOORDYN_FASTMATH)
 
+# Set RelWithDebInfo as the default build type
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE
+      STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel" FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "None" "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
 # Look for the dependencies
 if(${USE_VTK})
     find_package(VTK
@@ -157,7 +167,6 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
     foreach (_variableName ${_variableNames})
         string(FIND "${_variableName}" "CATCH_CONFIG" out)
         if("${out}" EQUAL 0)
-            message(STATUS "mark_as_advanced(${_variableName})")
             mark_as_advanced(${_variableName})
         endif()
     endforeach()
