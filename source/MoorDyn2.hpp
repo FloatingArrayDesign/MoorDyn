@@ -475,6 +475,8 @@ class MoorDyn final : public io::IO
 
 	/// vector of free body indices in BodyList vector
 	vector<unsigned int> FreeBodyIs;
+	/// vector of fixed body indices in BodyList vector
+	vector<unsigned int> FixedBodyIs;
 	/// vector of coupled/fairlead body indices in BodyList vector
 	vector<unsigned int> CpldBodyIs;
 

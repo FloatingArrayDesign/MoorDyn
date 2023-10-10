@@ -77,7 +77,15 @@ Body::setup(int number_in,
 		bodyI = I_in;
 		bodyCdA = CdA_in;
 		bodyCa = Ca_in;
-	} else // other types of bodies have no need for these variables...
+	} else if (type == FIXED){ // fixed bodies have no need for these variables other than position...
+		bodyM = 0.0;
+		bodyV = 0.0;
+		body_r6.head<3>() = r6_in.head<3>();
+		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
+		bodyI = vec::Zero();
+		bodyCdA = vec6::Zero();
+		bodyCa = vec6::Zero();
+    } else // coupled bodies have no need for these variables...
 	{
 		bodyM = 0.0;
 		bodyV = 0.0;
@@ -375,9 +383,10 @@ Body::initiateStep(vec6 r, vec6 rd)
 		rd_ves = rd;
 		return;
 	}
-	if (type == FIXED) // if the ground body, set the BCs to stationary
+	if (type == FIXED) // if fixed body, set the BCs to stationary
 	{
-		r_ves = vec6::Zero();
+		if (bodyId == 0) r_ves = vec6::Zero(); // special ground body case
+		else r_ves = r;
 		rd_ves = vec6::Zero();
 		return;
 	}
