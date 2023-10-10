@@ -157,8 +157,9 @@ library. Below is an example of this on MacOS with MoorDyn compiled as a
    vector_size = 6 # 6DOF coupled object
    size = (len(time), vector_size)
 
-   x = np.zeros(size)
-   xd = np.zeros(size)
+   #specifying correct dtypes for conversion to C types
+   x = np.zeros(size, dtype = float)
+   xd = np.zeros(size, dtype = float)
 
    dylib_path = 'MoorDyn/compile/DYLIB/libmoordyn2.dylib'
    filename = path+rootname+extension

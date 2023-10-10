@@ -205,6 +205,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// call ground body to update all the fixed things...
 	GroundBody->initializeUnfreeBody();
 
+	// intialize fixed bodies and attached objects
+	for (auto l : FixedBodyIs){
+		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, vec6::Zero());
+	}
+
 	// initialize coupled objects based on passed kinematics
 	int ix = 0;
 
@@ -1732,6 +1737,7 @@ moordyn::MoorDyn::readBody(string inputText)
 		// it is fixed  (this would just be used if someone wanted
 		// to temporarly fix a body that things were attached to)
 		type = Body::FIXED;
+		FixedBodyIs.push_back(ui_size(BodyList));
 	} else if (str::isOneOf(let1, { "VESSEL", "VES", "COUPLED", "CPLD" })) {
 		// it is coupled - controlled from outside
 		type = Body::COUPLED;
