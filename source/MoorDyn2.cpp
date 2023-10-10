@@ -207,9 +207,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// intialize fixed bodies and attached objects
 	for (auto l : FixedBodyIs){
-		cout << "Body " << l << endl;
-		cout << BodyList[l]->body_r6 << endl;
-		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, Eigen::DenseBase<Eigen::Vector6d>::Zero());
+		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, vec6::Zero());
 	}
 
 	// initialize coupled objects based on passed kinematics
