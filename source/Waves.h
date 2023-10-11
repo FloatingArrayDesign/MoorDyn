@@ -74,7 +74,7 @@ extern "C"
 	                                double Ud[3],
 	                                double* zeta,
 	                                double* PDyn,
-	                                MoorDynSeafloor seafloor = 0);
+	                                MoorDynSeafloor seafloor);
 
 	/** @brief Compute the wave number
 	 * @param Omega The wave angular frequency
