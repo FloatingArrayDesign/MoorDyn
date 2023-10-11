@@ -37,7 +37,7 @@
 #include <stdio.h>
 
 int
-main(int, char**)
+main(int narg, char** arg)
 {
 	int ret_code;
 	int n;
