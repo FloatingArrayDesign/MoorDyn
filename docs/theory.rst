@@ -129,5 +129,6 @@ Quaternion references:
 4. https://en.wikipedia.org/wiki/Quaternion#Hamilton_product
 
 MoorDyn-C Packages used:
-	Eigen: https://eigen.tuxfamily.org 
-	Catch2: https://github.com/catchorg/Catch2 
+ - Eigen: https://eigen.tuxfamily.org 
+ - Catch2: https://github.com/catchorg/Catch2
+ - KISSFFT: https://github.com/mborgerding/kissfft
