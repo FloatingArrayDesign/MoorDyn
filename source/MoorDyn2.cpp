@@ -192,7 +192,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// Allocate past line fairlead tension array, which is used for convergence
 	// test during IC gen
-	const unsigned int convergence_iters = 10;
+	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
 	vector<real> FairTensLast_col(convergence_iters, 0.0);
 	for (unsigned int i = 0; i < convergence_iters; i++)
 		FairTensLast_col[i] = 1.0 * i;
@@ -296,7 +296,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// vector to store tensions for analyzing convergence
 	vector<real> FairTens(LineList.size(), 0.0);
 
-	unsigned int iic = 0;
+	unsigned int iic = 1; // To match MDF indexing
 	real t = 0;
 	bool converged = true;
 	real max_error = 0.0;
@@ -308,6 +308,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	real best_score = (std::numeric_limits<real>::max)();
 	real best_score_t = 0.0;
 	unsigned int best_score_line = 0;
+
+	// //dtIC set to fraction of input so convergence is over dtIC
+	ICdt = ICdt / (convergence_iters+1);
 	while ((t < ICTmax) && (!skip_ic)) {
 		// Integrate one ICD timestep (ICdt)
 		real t_target = ICdt;
