@@ -311,7 +311,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// //dtIC set to fraction of input so convergence is over dtIC
 	ICdt = ICdt / (convergence_iters+1);
-	while ((t < ICTmax) && (!skip_ic)) {
+	while (((ICTmax-t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
 		// Integrate one ICD timestep (ICdt)
 		real t_target = ICdt;
 		real dt;
@@ -385,7 +385,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		if (converged) {
 			LOGMSG << "Fairlead tensions converged" << endl;
 		} else {
-			LOGWRN << "Fairlead tensions did not converged" << endl;
+			LOGWRN << "Fairlead tensions did not converge" << endl;
 		}
 		LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
 		       << "% on line " << max_error_line << endl;
