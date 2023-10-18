@@ -412,6 +412,7 @@ class Rod final : public io::IO
 	{
 		Cdn = Cdn * scaler;
 		Cdt = Cdt * scaler;
+		CdEnd = CdEnd * scaler;
 	}
 
 	/** @brief Set the line  simulation time
