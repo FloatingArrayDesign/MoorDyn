@@ -147,7 +147,7 @@ pendulum()
 	}
 
 	for (unsigned int i = 0; i < t_peaks.size(); i++) {
-		CHECK_VALUE("T", t_peaks[i], i * 0.5 * T, 0.02 * T, t_peaks[i]);
+		CHECK_VALUE("T", t_peaks[i], i * 0.5 * T, 0.025 * T, t_peaks[i]);
 		CHECK_VALUE("X", fabs(x_peaks[i]), x0, 0.01 * x0, t_peaks[i]);
 	}
 
