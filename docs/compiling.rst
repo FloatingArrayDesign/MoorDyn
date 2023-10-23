@@ -16,48 +16,42 @@ OpenFAST/Fast.Farm or with its own driver), please refer to the
 MoorDyn-F in a standalone form can be compiled as moordyn_driver inside of the build folder.
 
 MoorDyn-C is available on `GitHub <https://github.com/FloatingArrayDesign/moordyn/>`_. The 
-latest version can be found in the V2 branch. MoorDyn-C v1 is currently in the master branch
+latest release can be found in the master branch. MoorDyn-C v1 is currently in the master branch
 of this repo, and it can be compiled using these :ref:`instructions <compile_simple>`. 
 
 The following sections describe how to install MoorDyn-C 
+:ref:`using the pre-compiled libraries <releases>`,
 :ref:`using the python wrapper <compile_python>`, how to 
 :ref:`compile all features <CMake_compile>`, and how to 
 :ref:`compile a simple library <compile_simple>` (version 1 method). These compile instructions
 are broken down by operating system. 
 
-.. Binaries and installers
-.. -----------------------
+Pre-Compiled Releases:
+----------------------
+.. _releases:
 
-.. .. _starting_binaries:
+Pre-compiled releases can be found at the
+`releases page <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_. These releases contain the 
+libraries and header files required by driver scripts. These provide the same libraries as compiling 
+as a :ref:`simple library <compile_simple>` and as compiling with :ref:`cmake <CMake_compile>`. Typically 
+if you are just looking for the compiled libraries, this is the easiest way to obtain them.
 
-.. Two different cases must be considered when installing binaries, the
-.. :ref:`C/C++ libraries <_starting_binaries_lib>` (with the Fortran wrapper), and
-.. the :ref:`Python package <_starting_binaries_python>`.
+The lastest release corresponds to the current state of the master branch of MoorDyn. The releases 
+contain the source code, as well as three executables (OS dependent) that install the libraries and 
+header files. The executables correspond to the following OS:
 
-.. C/C++ Library
-.. ^^^^^^^^^^^^^
+* Windows: Moordyn-X.Y.Z-win64.exe (with X.Y.Z replaced by the specific version)
+* Linux: Moordyn-X.Y.Z-Linux.sh 
+* MacOS: Moordyn-X.Y.Z-Darwin.sh
 
-.. .. _starting_binaries_lib:
+To install the MoorDyn libraries, download the appropriate executable for your library and execute it.  
 
-.. To install the C/C++ library (and the Fortran wrappers), please clone the V2 repository. Pre-compiled releases can be found at
-.. `Releases page <https://github.com/mattEhall/MoorDyn/releases>`_. 
-.. Along this line you would probably want to consider either the latest version
-.. identified with a number, or the one named "nightly".
-.. The former is the latest stable version, while the latter is the latest version
-.. uploaded to the repository, which tends to be a bit less stable.
+NOTE: When you download the self-extracting files for Linux and MacOS they
+cannot be launched until you give them execution permissions. This can be done by executing the following command:
 
-.. Once you already chosen a release, click on the assets and select the most
-.. appropriate one for your platform.
-.. More specifically, if you are in Windows you probably want to download and
-.. execute Moordyn-X.Y.Z-win64.exe (with X.Y.Z replaced by the specific version),
-.. in Linux you can download and execute Moordyn-X.Y.Z-Linux.sh and
-.. in MacOS you can download and execute Moordyn-X.Y.Z-Darwin.sh.
-
-.. NOTE: When you download the self-extracting files for Linux and MacOS they
-.. cannot be launched until you give them execution permissions.
-
-.. Now you can checkout
-.. :ref:`how to integrate MoorDyn in your project <_starting_using>` below.
+.. code-block:: bash
+   
+   chmod u=rwx <executable name>
 
 Compile as a Simple Library
 ---------------------------
