@@ -88,7 +88,7 @@ The columns are as follows:
 
  - Node –  the ID number of the point (must be sequential starting with 1)
  - Type –  one of “Fixed”, “Vessel”, or “Connect”, as described :ref:`here <points>`
- - X, Y, Z –  Coordinates of the point (relative to inertial reference frame if “fixed” or “point”, 
+ - X, Y, Z –  Coordinates of the point (relative to global reference frame if “fixed” or “point”, 
    relative to platform reference frame if “vessel”).  In the case of “point” nodes, it is simply 
    an initial guess for position before MoorDyn calculates the equilibrium initial position.(m)
  - M – node mass in the case of clump weights (kg)
@@ -338,9 +338,9 @@ This section (optional) describes the 6DOF body objects to be simulated.
 The columns are as follows:
  - ID –  the ID number of the Body (must be sequential starting with 1)
  - Attachment –  one of “Fixed”, “Vessel”, “Free”, etc, as described :ref:`here <bodies>`
- - X0/Y0/Z0 – Coordinates of the body relative to the inertial reference frame. Note that bodies 
+ - X0/Y0/Z0 – Coordinates of the body relative to the global reference frame. Note that bodies 
    must have Z0 <= 0 (m)
- - r0/p0/y0 – Orientation of the body relative to the inertial reference frame in Euler angles 
+ - r0/p0/y0 – Orientation of the body relative to the global reference frame in Euler angles 
    (deg)
  - Mass – Body mass not including attached rods and points. Typically used to account for above 
    surface mass such as a turbine (kg)
@@ -351,7 +351,7 @@ The columns are as follows:
    spaces (kg-m^2)
  - Volume – The body displaced volume used in buoyancy calculations excluding attached rod and 
    point volume contributions (m^3)
- - CdA – The body drag coefficient
+ - CdA – The product of drag coefficient and frontal area of body (m^2)
  - Ca – The body added mass coefficient
 
 Rods list
@@ -371,8 +371,10 @@ The columns are as follows:
  - ID –  the ID number of the Rod (must be sequential starting with 1)
  - RodType
  - Attachment –  one of “Fixed”, “Vessel”, “Pinned”, etc, as described :ref:`here <rods>`
- - Xa/Ya/Za – Coordinates of the A end of the relative to the inertial reference frame (m)
- - Xb/Yb/Zb – Coordinates of the A end of the relative to the inertial reference frame (m)
+ - Xa/Ya/Za – Coordinates of the A end (relative to global reference frame if “fixed/point/free”,
+   or relative to platform/body reference frame if "body#"" or “body#pinned”) (m)
+ - Xb/Yb/Zb – Coordinates of the B end (relative to global reference frame if “fixed/free”,
+   or relative to platform/body reference frame if "body#"" or “body#pinned”) (m)
  - NumSegs - how many segments the rod is discretized into (it will have NumSegs+1 nodes total, 
    including its two end nodes)
  - RodOutputs - any data to be output in a dedicated output file for the rod.
@@ -412,8 +414,8 @@ The columns are as follows:
 
  - ID –  the ID number of the point (must be sequential starting with 1)
  - Attachment –  one of “Fixed”, “Vessel”, “Connect”, etc, as described :ref:`here <points>`
- - X, Y, Z –  Coordinates of the point (relative to inertial reference frame if “fixed/point/free”,
-   or relative to platform/body reference frame if “vessel” or “body#”).  In the case of 
+ - X, Y, Z –  Coordinates of the point (relative to global reference frame if “fixed/point/free/coupled”,
+   or relative to body reference frame if “body#”).  In the case of 
    “point/free” nodes, it is simply an initial guess for position before MoorDyn calculates the 
    equilibrium initial position.  (m)
  - Mass – node mass in the case of clump weights (kg)
