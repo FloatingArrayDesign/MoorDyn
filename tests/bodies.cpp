@@ -384,7 +384,7 @@ rotatingBody(SeriesWriter* series_writer)
 	double angle = moordyn::rad2deg * 2 * acos(q.w());
 	double denom = (sqrt(1 - q.w() * q.w()));
 	moordyn::vec3 axis{ q.x() / denom, q.y() / denom, q.z() / denom };
-	if (!(axis.x() > 0.85 && axis.y() < 0.2 && axis.z() < 0.2)) {
+	if (!(abs(axis.x()) > 0.85 && abs(axis.y()) < 0.2 && abs(axis.z()) < 0.2)) { // if we are just checking axis direction then +/- does not matter
 		cerr << "The final rotation of the body in angle axis form should "
 		        "have an axis in the x direction, but axis is "
 		     << axis.transpose() << endl;
@@ -397,7 +397,7 @@ rotatingBody(SeriesWriter* series_writer)
 	while (angle < -180) {
 		angle += 360;
 	}
-	if (!(abs(angle - (-90)) < 10)) {
+	if (!(abs(angle - 90) < 10)) {
 		cerr << "The final rotation of the body in angle-axis form should "
 		        "have a angle near 90 degrees but angle is "
 		     << angle << endl;
