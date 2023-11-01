@@ -1836,7 +1836,7 @@ moordyn::MoorDyn::readRod(string inputText)
 		type = Rod::COUPLED;
 		CpldRodIs.push_back(
 		    ui_size(RodList)); // index of fairlead in RodList vector
-	} else if (str::isOneOf(let1, { "VESPIN", "CPLDPIN" })) {
+	} else if (str::isOneOf(let1, { "VESPIN", "CPLDPIN", "COUPLEDPINNED" })) {
 		// if a pinned fairlead, add to list and add
 		type = Rod::CPLDPIN;
 		CpldRodIs.push_back(
