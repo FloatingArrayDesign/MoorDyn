@@ -413,7 +413,7 @@ This section (optional) describes the Point objects
 The columns are as follows:
 
  - ID –  the ID number of the point (must be sequential starting with 1)
- - Attachment –  one of “Fixed”, “Vessel”, “Connect”, etc, as described :ref:`here <points>`
+ - Attachment –  one of “Fixed”, “Coupled”, “Free”, etc, as described :ref:`here <points>`
  - X, Y, Z –  Coordinates of the point (relative to global reference frame if “fixed/point/free/coupled”,
    or relative to body reference frame if “body#”).  In the case of 
    “point/free” nodes, it is simply an initial guess for position before MoorDyn calculates the 
