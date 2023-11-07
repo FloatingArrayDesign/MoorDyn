@@ -147,10 +147,10 @@ are three types of Points:
 - **Fixed/Anchor/Body**: their location is fixed to an XYZ coordinate (stationary) or a XYZ 
   coordinate in the Body reference frame. They can be used as anchor points or to attach mooring 
   lines to a Body.
-- **Coupled/Fairlead/Vessel**: they move under the control of the driver program/script.  
+- **Coupled/Vessel**: they move under the control of the driver program/script.  
   They can be used as fairlead points when the platform is modeled externally.
   See :ref:`the coupling documentation <coupling>`.
-- **Free/Point/Connect**: they are free to move according to the forces acting on them, which 
+- **Free/Point**: they are free to move according to the forces acting on them, which 
   includes the tensions of attached lines as well as their own self weight and buoyancy, if 
   applicable.  
 
