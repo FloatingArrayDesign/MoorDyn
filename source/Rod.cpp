@@ -446,20 +446,22 @@ Rod::setState(XYZQuat pos, vec6 vel)
 }
 
 void
-Rod::initiateStep(vec6 rFairIn, vec6 rdFairIn)
+Rod::initiateStep(vec6 r_in, vec6 rd_in, vec6 rdd_in)
 {
 	if (type == COUPLED) {
 		// set Rod kinematics based on BCs (linear model for now)
-		r_ves = rFairIn;
-		rd_ves = rdFairIn;
+		r_ves = r_in;
+		rd_ves = rd_in;
+		rdd_ves = rdd_in;
 
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
 		setDependentStates();
 	} else if (type == CPLDPIN) {
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
-		r_ves(Eigen::seqN(0, 3)) = rFairIn(Eigen::seqN(0, 3));
-		rd_ves(Eigen::seqN(0, 3)) = rdFairIn(Eigen::seqN(0, 3));
+		r_ves(Eigen::seqN(0, 3)) = r_in(Eigen::seqN(0, 3));
+		rd_ves(Eigen::seqN(0, 3)) = rd_in(Eigen::seqN(0, 3));
+		rdd_ves(Eigen::seqN(0, 3)) = rdd_in(Eigen::seqN(0, 3));
 	} else {
 		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
 		throw moordyn::invalid_value_error("Invalid rod type");
@@ -475,6 +477,7 @@ Rod::updateFairlead(real time)
 		// set Rod kinematics based on BCs (linear model for now)
 		r7 = XYZQuat::fromVec6(r_ves + rd_ves * time);
 		v6 = rd_ves;
+		acc6 = rdd_ves;
 
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
@@ -483,6 +486,7 @@ Rod::updateFairlead(real time)
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
 		r7.pos = r_ves(Eigen::seqN(0, 3)) + rd_ves(Eigen::seqN(0, 3)) * time;
 		v6(Eigen::seqN(0, 3)) = rd_ves(Eigen::seqN(0, 3));
+		acc6(Eigen::seqN(0, 3)) = rdd_ves(Eigen::seqN(0, 3));
 
 		// Rod is pinned so only end A is specified, rotations are left alone
 		// and will be handled, along with passing kinematics to dependent
@@ -650,22 +654,21 @@ Rod::getStateDeriv()
 			acc6 = solveMat6(M_out6, Fnet_out);
 		}
 	} else {
-		// Pinned rod, where the position rate of change is null (Dirichlet BC)
+		// Pinned rod
+
+		// account for moment in response to end A acceleration due to inertial coupling (off-diagonal sub-matrix terms)
+		const vec Fnet_out3 = Fnet_out(Eigen::seqN(3, 3)) - (M_out6.bottomLeftCorner<3,3>() * acc6(Eigen::seqN(0, 3)));
 
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		const vec Fnet_out3 = Fnet_out(Eigen::seqN(3, 3));
 		const mat M_out3 = M_out6(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
-		const vec acc = M_out3.inverse() * Fnet_out3;
+		acc6(Eigen::seqN(3, 3)) = M_out3.inverse() * Fnet_out3;
 
 		// dxdt = V   (velocities)
 		vel7.pos = vec::Zero();
 		vel7.quat =
 		    0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
-		// dVdt = a   (accelerations)
-		acc6(Eigen::seqN(0, 3)) = vec::Zero();
-		acc6(Eigen::seqN(3, 3)) = acc;
 	}
 
 	return std::make_pair(vel7, acc6);
@@ -674,48 +677,48 @@ Rod::getStateDeriv()
 vec6
 Rod::getFnet()
 {
-	return F6net;
-	// >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global
-	// to save comp time and code?  >>>>>>>> this function likely not used
-	// >>>>>>>>>>>
+	// return F6net;
+	// // >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global
+	// // to save comp time and code?  >>>>>>>> this function likely not used
+	// // >>>>>>>>>>>
 
-	// Fnet_out is assumed to point to a size-3 array if the rod is pinned and
-	// size-6 array if the rod is fixed
+	// // Fnet_out is assumed to point to a size-3 array if the rod is pinned and
+	// // size-6 array if the rod is fixed
 
-	int nDOF = 0;
+	vec6 F6_iner = vec6::Zero();
+	vec6 Fnet_out = vec6::Zero();
 
-	if (type == CPLDPIN) // if coupled pinned
-		nDOF = 3;
-	else if (type == COUPLED) // if coupled rigidly
-		nDOF = 6;
-	else {
+	// this assumes doRHS() has already been called
+	if (type == COUPLED) { // if coupled rigidly
+		F6_iner = - M6net * acc6; // Inertial terms
+		Fnet_out = F6net + F6_iner;
+	} else if (type == CPLDPIN) { // if coupled pinned
+		F6_iner(Eigen::seqN(0,3)) = (- M6net.topRightCorner<3,3>() * acc6(Eigen::seqN(0,3))) - (M6net.topLeftCorner<3,3>() * acc6(Eigen::seqN(3,3))); // Inertial term
+		Fnet_out(Eigen::seqN(0,3)) = F6net(Eigen::seqN(0,3)) + F6_iner(Eigen::seqN(0,3));
+		Fnet_out(Eigen::seqN(3,3)) = vec3::Zero();
+	} else {
 		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
 		throw moordyn::invalid_value_error("Invalid rod type");
 	}
 
-	// this assumes doRHS() has already been called
+	// // now go through each node's contributions, put them in body ref frame, and
+	// // sum them
+	// for (unsigned int i = 0; i <= N; i++) {
+	// 	// position of a given node relative to the body reference point (global
+	// 	// orientation frame)
+	// 	vec rRel = r[i] - r[0];
 
-	// make sure Fnet_out is zeroed first
-	vec6 Fnet_out = vec6::Zero();
+	// 	vec6 F6_i; // 6dof force-moment from rod about body ref point (but
+	// 	           // global orientation frame of course)
+	// 	// convert segment net force into 6dof force about body ref point
+	// 	F6_i.head<3>() = Fnet[i];
+	// 	F6_i.tail<3>() = rRel.cross(Fnet[i]);
 
-	// now go through each node's contributions, put them in body ref frame, and
-	// sum them
-	for (unsigned int i = 0; i <= N; i++) {
-		// position of a given node relative to the body reference point (global
-		// orientation frame)
-		vec rRel = r[i] - r[0];
+	// 	Fnet_out(Eigen::seqN(0, nDOF)) += F6_i(Eigen::seqN(0, nDOF));
+	// }
 
-		vec6 F6_i; // 6dof force-moment from rod about body ref point (but
-		           // global orientation frame of course)
-		// convert segment net force into 6dof force about body ref point
-		F6_i.head<3>() = Fnet[i];
-		F6_i.tail<3>() = rRel.cross(Fnet[i]);
-
-		Fnet_out(Eigen::seqN(0, nDOF)) += F6_i(Eigen::seqN(0, nDOF));
-	}
-
-	// add any moments applied from lines at either end (might be zero)
-	Fnet_out(Eigen::seqN(3, 3)) += Mext;
+	// // add any moments applied from lines at either end (might be zero)
+	// Fnet_out(Eigen::seqN(3, 3)) += Mext;
 
 	//  this is where we'd add inertial loads for coupled rods! <<<<<<<<<<<<
 
