@@ -203,6 +203,8 @@ class Rod final : public io::IO
 	vec6 r_ves;
 	/// fairlead velocity for coupled rods [x/y/z]
 	vec6 rd_ves;
+	/// fairlead acceleration for coupled rods [x/y/z]
+	vec6 rdd_ves;
 
 	// file stuff
 	/// Pointer to moordyn::MoorDyn::outfileMain
@@ -442,14 +444,15 @@ class Rod final : public io::IO
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps
-	 * @param r The output position
-	 * @param rd The output velocity
+	 * @param r The input position
+	 * @param rd The input velocity
+	 * @param rdd The input velocity
 	 * @throw moordyn::invalid_value_error If the rod is not of type
 	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
 	 * @note If the rod is of type moordyn::Rod::CPLDPIN, then just 3 components
 	 * of @p r and @p rd are considered
 	 */
-	void initiateStep(vec6 r, vec6 rd);
+	void initiateStep(vec6 r_in, vec6 rd_in, vec6 rdd_in);
 
 	/** @brief Sets the kinematics
 	 *

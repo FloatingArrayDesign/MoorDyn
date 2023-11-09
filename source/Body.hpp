@@ -134,6 +134,8 @@ class Body final : public io::IO
 	vec6 r_ves;
 	/// fairlead velocity for coupled bodies [x/y/z]
 	vec6 rd_ves;
+	/// fairlead acceleration for coupled bodies [x/y/z]
+	vec6 rdd_ves;
 
 	/// total force and moment vector on body
 	vec6 F6net;
@@ -161,6 +163,8 @@ class Body final : public io::IO
 		FREE = 0,
 		/// Is fixed, either to a location or to another moving entity
 		FIXED = 1,
+		/// Is coupled pinned, i.e. translational dof are controlled by the user
+		CPLDPIN = 2,
 		// Some aliases
 		VESSEL = COUPLED,
 		ANCHOR = FIXED,
@@ -175,6 +179,8 @@ class Body final : public io::IO
 		switch (t) {
 			case COUPLED:
 				return "COUPLED";
+			case CPLDPIN:
+				return "CPLDPIN";	
 			case FREE:
 				return "FREE";
 			case FIXED:
@@ -237,10 +243,11 @@ class Body final : public io::IO
 	 * moordyn::Body::FIXED
 	 * @param r The position (6 dof)
 	 * @param rd The velocity (6 dof)
+	 * @param rdd The acceleration (6 dof)
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	void initializeUnfreeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero());
+	void initializeUnfreeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero(), vec6 rdd = vec6::Zero());
 
 	/** @brief Initialize the FREE point state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
@@ -317,7 +324,7 @@ class Body final : public io::IO
 	/** @brief Get the forces and moments exerted over the body
 	 * @return The net force
 	 */
-	inline vec6 getFnet() const { return F6net; }
+	vec6 getFnet();
 
 	/** @brief Get the mass and intertia matrix
 	 * @return The mass and inertia matrix
@@ -339,12 +346,13 @@ class Body final : public io::IO
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (body kinematics) for the proceeding time steps
-	 * @param r The output position
-	 * @param rd The output velocity
+	 * @param r The input position
+	 * @param rd The input velocity
+	 * @param rdd The input velocity
 	 * @throw moordyn::invalid_value_error If the body is not of type
 	 * moordyn::Body::COUPLED or moordyn::Body::FIXED
 	 */
-	void initiateStep(vec6 r, vec6 rd);
+	void initiateStep(vec6 r_in, vec6 rd_in, vec6 rdd_in);
 
 	/** @brief Sets the kinematics based on the position and velocity of the
 	 * fairlead.
