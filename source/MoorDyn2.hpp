@@ -388,8 +388,13 @@ class MoorDyn final : public io::IO
 		for (auto l : CpldBodyIs) {
 			// BUG: These conversions will not be needed in the future
 			const vec6 f_i = BodyList[l]->getFnet();
-			moordyn::vec62array(f_i, f + ix);
-			ix += 6;
+			if (BodyList[l]->type == Body::COUPLED) {
+				moordyn::vec62array(f_i, f + ix);
+				ix += 6; // for coupled bodies 6 entries will be taken
+			} else {
+				moordyn::vec2array(f_i(Eigen::seqN(0, 3)), f + ix);
+				ix += 3; // for pinned bodies 3 entries will be taken
+			}
 		}
 		for (auto l : CpldRodIs) {
 			const vec6 f_i = RodList[l]->getFnet();
@@ -501,6 +506,12 @@ class MoorDyn final : public io::IO
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
+
+	/// Previous time step velocity for calculating coupled point acceleration (first time step assumed stationary)
+	vec6 rd_b; // body
+	vec6 rd_r; // coupled rod
+	vec3 rd3_r; // coupled pinned rod
+	vec3 rd3_b; // coupled pinned body
 
 	/// main output file
 	ofstream outfileMain;

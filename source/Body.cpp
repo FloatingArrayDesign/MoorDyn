@@ -158,13 +158,13 @@ Body::addRod(Rod* rod, vec6 coords)
 };
 
 void
-Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in)
+Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, vec6 a6_in)
 {
 	if (type == FREE) {
 		LOGERR << "Invalid initializator for a FREE body" << endl;
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
-	initiateStep(r6_in, v6_in);
+	initiateStep(r6_in, v6_in, a6_in);
 	updateFairlead(0.0);
 
 	// If any Rod is fixed to the body (not pinned), initialize it now because
@@ -375,12 +375,20 @@ Body::GetBodyOutput(OutChanProps outChan)
 // called at the beginning of each coupling step to update the boundary
 // conditions (body kinematics) for the proceeding time steps
 void
-Body::initiateStep(vec6 r, vec6 rd)
+Body::initiateStep(vec6 r, vec6 rd, vec6 rdd)
 {
 	if (type == COUPLED) // if coupled, update boundary conditions
 	{
 		r_ves = r;
 		rd_ves = rd;
+		rdd_ves = rdd;
+		return;
+	}
+	if (type == CPLDPIN) // if coupled, update boundary conditions
+	{
+		r_ves(Eigen::seqN(0, 3)) = r(Eigen::seqN(0, 3));
+		rd_ves(Eigen::seqN(0, 3)) = rd(Eigen::seqN(0, 3));
+		rdd_ves(Eigen::seqN(0, 3)) = rdd(Eigen::seqN(0, 3));
 		return;
 	}
 	if (type == FIXED) // if fixed body, set the BCs to stationary
@@ -388,6 +396,7 @@ Body::initiateStep(vec6 r, vec6 rd)
 		if (bodyId == 0) r_ves = vec6::Zero(); // special ground body case
 		else r_ves = r;
 		rd_ves = vec6::Zero();
+		rdd_ves = vec6::Zero();
 		return;
 	}
 	LOGERR << "Body " << number << "is not of type COUPLED or FIXED." << endl;
@@ -402,12 +411,21 @@ Body::updateFairlead(real time)
 		// set Body kinematics based on BCs (linear model for now)
 		r7 = XYZQuat::fromVec6(r_ves + rd_ves * time);
 		v6 = rd_ves;
+		a6 = rdd_ves;
 
 		// calculate orientation matrix based on latest angles
 		OrMat = r7.quat.toRotationMatrix();
 
 		// set positions of any dependent points and rods
 		setDependentStates();
+
+		return;
+	}
+	if (type == CPLDPIN) {
+		// set Body translational kinematics based on BCs (linear model for now)
+		r7.pos = r_ves(Eigen::seqN(0, 3)) + rd_ves(Eigen::seqN(0, 3)) * time;
+		v6(Eigen::seqN(0, 3)) = rd_ves(Eigen::seqN(0, 3));
+		a6(Eigen::seqN(0, 3)) = rdd_ves(Eigen::seqN(0, 3));
 
 		return;
 	}
@@ -418,9 +436,17 @@ Body::updateFairlead(real time)
 void
 Body::setState(XYZQuat pos, vec6 vel)
 {
-	// set position and velocity vectors from state vector
-	r7 = pos;
-	v6 = vel;
+	if (type == FREE) {
+		// set position and velocity vectors from state vector
+		r7 = pos;
+		v6 = vel;
+	} else if (type == CPLDPIN) {
+		r7.quat = pos.quat;
+		v6(Eigen::seqN(3, 3)) = vel(Eigen::seqN(3, 3));
+	} else {
+		LOGERR << "Invalid body type: " << TypeName(type) << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
+	}
 
 	// calculate orientation matrix based on latest angles
 	OrMat = r7.quat.toRotationMatrix();
@@ -432,25 +458,62 @@ Body::setState(XYZQuat pos, vec6 vel)
 std::pair<XYZQuat, vec6>
 Body::getStateDeriv()
 {
-	if (type != FREE) {
-		LOGERR << "The body is not a free one" << endl;
+	if ((type != FREE) && (type != CPLDPIN)) {
+		LOGERR << "getStateDeriv called for non-free body" << endl;
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
 
 	// Get contributions from attached points (and lines attached to
 	// them) and store in FNet:
 	doRHS();
+	if (type == FREE){
+		// solve for accelerations in [M]{a}={f}
+		a6 = solveMat6(M, F6net);
 
-	// solve for accelerations in [M]{a}={f}
-	a6 = solveMat6(M, F6net);
+		// NOTE; is the above still valid even though it includes rotational DOFs?
+		dPos.pos = v6.head<3>();
+		// this assumes that the angular velocity is about the global coordinates
+		// which is true for bodies
+		dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
+	} else { // Pinned body
 
-	// NOTE; is the above still valid even though it includes rotational DOFs?
-	dPos.pos = v6.head<3>();
-	// this assumes that the angular velocity is about the global coordinates
-	// which is true for bodies
-	dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
+		// account for moment in response to acceleration due to inertial coupling (off-diagonal sub-matrix terms)
+		const vec Fnet_out3 = F6net(Eigen::seqN(3, 3)) - (M.bottomLeftCorner<3,3>() * a6(Eigen::seqN(0, 3)));
+
+		// For small systems it is usually faster to compute the inverse
+		// of the matrix. See
+		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
+		const mat M_out3 = M(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+		a6(Eigen::seqN(3, 3)) = M_out3.inverse() * Fnet_out3;
+
+		// dxdt = V   (velocities)
+		dPos.pos = vec::Zero();
+		dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
+	}
 	return std::make_pair(dPos, a6);
 };
+
+vec6
+Body::getFnet()
+{
+	vec6 F6_iner = vec6::Zero();
+	vec6 Fnet_out = vec6::Zero();
+
+	// this assumes doRHS() has already been called
+	if (type == COUPLED) { // if coupled rigidly
+		F6_iner = - M * a6; // Inertial terms
+		Fnet_out = F6net + F6_iner;
+	} else if (type == CPLDPIN) { // if coupled pinned
+		F6_iner(Eigen::seqN(0,3)) = (- M.topRightCorner<3,3>() * a6(Eigen::seqN(0,3))) - (M.topLeftCorner<3,3>() * a6(Eigen::seqN(3,3))); // Inertial term
+		Fnet_out(Eigen::seqN(0,3)) = F6net(Eigen::seqN(0,3)) + F6_iner(Eigen::seqN(0,3));
+		Fnet_out(Eigen::seqN(3,3)) = vec3::Zero();
+	} else {
+		LOGERR << "Invalid body type: " << TypeName(type) << endl;
+		throw moordyn::invalid_value_error("Invalid body type");
+	}
+
+	return Fnet_out;
+}
 
 //  this is the big function that calculates the forces on the body
 void
