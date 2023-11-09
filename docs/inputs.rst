@@ -720,6 +720,8 @@ If there are multiple coupled objects then the general order of columns beyond t
 follows the order of the state vector: Body degrees of freedom, rod degrees of freedom, and points 
 degrees of freedom.
 
+Note: For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational values will be ignored (they can be set to zero)
+
 Seafloor/Bathymetry File 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 .. _seafloor_in:
