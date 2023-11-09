@@ -46,15 +46,16 @@ For both the step and the initialize functions, the input state vector size need
 to correspond to the DOF of the coupled object or objects. The input vector is 1D with a 
 length of: degree of freedom of coupled object * number of coupled objects. If you have 
 multiple different types of coupled objects then the order in the state vector is 
-body (6 DOF), rod (6 DOF for cantilevered/coupled, 3 DOF for pinned), and then 
+body (6 DOF, 3 DOF for pinned), rod (6 DOF for cantilevered/coupled, 3 DOF for pinned), and then 
 points (3 DOF). The same order applies for the state derivative input vector, with each 
 value being the time derivative of the respective value. The degrees of freedom are as 
 follows (all relative to the global reference frame):
 
  - Bodies and cantilevered/coupled Rods: cartesian positions followed by the Euler angles 
-   relative to the global reference frame. 
- - Pinned rods: Euler angles relative to the global reference frame.
- - Coupled points: cartesian positions relative to the global reference frame.  
+   relative to the non-inertial reference frame. 
+ - Pinned bodies and rods: cartesian positions relative to the global reference frame.
+ - Coupled points: cartesian positions relative to the non-inertial reference frame.  
+
 
 For example, the r vector for a coupled body and coupled point would be:
 
@@ -68,7 +69,11 @@ objects orientation is given by R = X(roll)Y(pitch)Z(yaw).
 Driving MoorDyn-C v1 is a similar process as MoorDyn v2. MoorDyn-C v1 has no built in 
 couplings and needs to be driven based on the C API in the MoorDyn.h file. An example on 
 how to do this in python is provided at the end of the 
-:ref:`python section <python_wrapper>`. 
+:ref:`python section <python_wrapper>`.
+
+Note: the dt value that you give to the step function needs to be the same value that you specify as dtM in the input file. 
+Note: For coupled pinned bodies and rods the state vector still needs to be size 6, and MoorDyn will just ignore whatever 
+rotational values are provided. 
 
 MoorDyn-C Coupling
 ------------------

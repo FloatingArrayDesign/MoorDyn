@@ -738,6 +738,8 @@ It is recommended that NumTurbines is set to -1 when using the MoorDyn driver (u
 as it avoids using the super position of reference frames that exists in OpenFAST and FFAST.farm modes. For 
 multiple coupled objects not located at the origin, NumTurbines = -1 is required to obtain the correct results.
 
+Note: For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational values will be ignored (they can be set to zero)
+
 Seafloor/Bathymetry File 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 .. _seafloor_in:
