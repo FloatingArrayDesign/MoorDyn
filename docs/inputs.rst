@@ -652,6 +652,10 @@ Footnotes:
 - The tension on the Line n anchor can be output with the ANCHTEN[n] flag (see examples above)
 - Object indicates output is for whole object, Node indicates output is for node of object
 - Coupled/fixed bodies and points will output acceleration 0 because no forces are calculated
+- When looking at the rotational outputs of coupled pinned rods that are hanging near vertical, 
+  the best approach is to attach a rod to a zero-mass, zero-volume pinned body and output the body 
+  rotations. Hanging pinned rods are inverted (end A over end B) in MoorDyn and the output range 
+  for roll/pitch of rods is +/- 180 degrees. 
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
   same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
   fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
