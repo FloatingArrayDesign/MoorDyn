@@ -602,8 +602,8 @@ shown below) for MoorDyn to know when to stop reading inputs.
  BODY1PX
  BODY1PY
  BODY1PZ
- BODY1ROLL
- BODY1PITCH
+ BODY1RX
+ BODY1RY
  FAIRTEN1
  FAIRTEN2
  FAIRTEN3
