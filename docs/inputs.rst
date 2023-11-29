@@ -712,11 +712,11 @@ one space.
 
 If InputsMode is set to 1, MoorDyn-F will require a platform motions time series dataset of the 
 coupled object movements. For a single coupled body, the order of the data columns would look like 
-the following (the column header names are not read by MoorDyn):
+the following (lines beginning with # are not read by MoorDyn):
 
 .. code-block:: none
 
- Time    PtfmSurge    PtfmSway    PtfmHeave    PtfmRoll    PtfmPitch    PtfmYaw
+# Time    PtfmSurge    PtfmSway    PtfmHeave    PtfmRoll    PtfmPitch    PtfmYaw
 
 If there are multiple coupled objects then the general order of columns beyond the time column 
 follows the order of the state vector: Body degrees of freedom, rod degrees of freedom, and points 
