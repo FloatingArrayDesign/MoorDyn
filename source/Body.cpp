@@ -315,6 +315,8 @@ Body::GetBodyOutput(OutChanProps outChan)
 
 	vec3 rotations = rad2deg * Quat2Euler(r7.quat);
 
+	vec6 Fout = getFnet();
+
 	if (outChan.QType == PosX)
 		return r7.pos.x();
 	else if (outChan.QType == PosY)
@@ -355,17 +357,17 @@ Body::GetBodyOutput(OutChanProps outChan)
 		return sqrt(F6net[0] * F6net[0] + F6net[1] * F6net[1] +
 		            F6net[2] * F6net[2]);
 	else if (outChan.QType == FX)
-		return F6net[0];
+		return Fout[0];
 	else if (outChan.QType == FY)
-		return F6net[1];
+		return Fout[1];
 	else if (outChan.QType == FZ)
-		return F6net[2];
+		return Fout[2];
 	else if (outChan.QType == MX)
-		return F6net[3];
+		return Fout[3];
 	else if (outChan.QType == MY)
-		return F6net[4];
+		return Fout[4];
 	else if (outChan.QType == MZ)
-		return F6net[5];
+		return Fout[5];
 	else {
 		LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 		return 0.0;
@@ -508,8 +510,10 @@ Body::getFnet()
 		Fnet_out(Eigen::seqN(0,3)) = F6net(Eigen::seqN(0,3)) + F6_iner(Eigen::seqN(0,3));
 		Fnet_out(Eigen::seqN(3,3)) = vec3::Zero();
 	} else {
-		LOGERR << "Invalid body type: " << TypeName(type) << endl;
-		throw moordyn::invalid_value_error("Invalid body type");
+		// LOGERR << "Invalid body type: " << TypeName(type) << endl;
+		// throw moordyn::invalid_value_error("Invalid body type");
+
+		Fnet_out = F6net;
 	}
 
 	return Fnet_out;

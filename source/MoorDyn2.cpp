@@ -512,7 +512,8 @@ moordyn::MoorDyn::Step(const double* x,
 	// should check if wave kinematics have been set up if expected!
 	LOGDBG << "t = " << t << "s     \r";
 
-	if (t*10 == int(t*10)) cout << "\rtime: " << t << flush;
+	cout << fixed << setprecision(1);
+	cout << "\rt = " << t << flush;
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
