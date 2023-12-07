@@ -337,6 +337,8 @@ Rod::initialize()
 real
 Rod::GetRodOutput(OutChanProps outChan)
 {
+	vec6 Fout = getFnet();
+
 	if (outChan.NodeID == -1) {
 		if (outChan.QType == PosX)
 			return r7.pos.x();
@@ -373,17 +375,17 @@ Rod::GetRodOutput(OutChanProps outChan)
 		else if (outChan.QType == TenB)
 			return FextB.norm();
 		else if (outChan.QType == FX)
-			return F6net[0];
+			return Fout[0];
 		else if (outChan.QType == FY)
-			return F6net[1];
+			return Fout[1];
 		else if (outChan.QType == FZ)
-			return F6net[2];
+			return Fout[2];
 		else if (outChan.QType == MX)
-			return F6net[3];
+			return Fout[3];
 		else if (outChan.QType == MY)
-			return F6net[4];
+			return Fout[4];
 		else if (outChan.QType == MZ)
-			return F6net[5];
+			return Fout[5];
 		else if (outChan.QType == Sub) {
 			real VOFsum = 0.0;
 			for (unsigned int i = 0; i <= N; i++)
@@ -697,8 +699,10 @@ Rod::getFnet()
 		Fnet_out(Eigen::seqN(0,3)) = F6net(Eigen::seqN(0,3)) + F6_iner(Eigen::seqN(0,3));
 		Fnet_out(Eigen::seqN(3,3)) = vec3::Zero();
 	} else {
-		LOGERR << "Invalid rod type: " << TypeName(type) << endl;
-		throw moordyn::invalid_value_error("Invalid rod type");
+		// LOGERR << "Invalid rod type: " << TypeName(type) << endl;
+		// throw moordyn::invalid_value_error("Invalid rod type");
+
+		Fnet_out = F6net;
 	}
 
 	// // now go through each node's contributions, put them in body ref frame, and
