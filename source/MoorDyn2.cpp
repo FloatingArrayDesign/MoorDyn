@@ -214,7 +214,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	int ix = 0;
 
 	for (auto l : CpldBodyIs) {
-		LOGMSG << "Initializing coupled Body " << l << " in " << x[ix] << ", "
+		LOGMSG << "Initializing coupled Body " << l+1 << " at " << x[ix] << ", "
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 
 		// BUG: These conversions will not be needed in the future
@@ -244,7 +244,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	for (auto l : CpldRodIs) {
-		LOGMSG << "Initializing coupled Rod " << l << " in " << x[ix] << ", "
+		LOGMSG << "Initializing coupled Rod " << l+1 << " at " << x[ix] << ", "
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 		vec6 r, rd, rdd;
 		if (RodList[l]->type == Rod::COUPLED) {
@@ -277,7 +277,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	for (auto l : CpldPointIs) {
 		LOGMSG << "Initializing coupled Point " << l+1 << " at " << x[ix] << ", "
-		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
+		       << x[ix + 1] << ", " << x[ix + 2] << endl;
 		vec r, rd;
 		moordyn::array2vec(x + ix, r);
 		moordyn::array2vec(xd + ix, rd);
@@ -511,6 +511,8 @@ moordyn::MoorDyn::Step(const double* x,
 {
 	// should check if wave kinematics have been set up if expected!
 	LOGDBG << "t = " << t << "s     \r";
+
+	cout << "\rtime: " << t << flush;
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
