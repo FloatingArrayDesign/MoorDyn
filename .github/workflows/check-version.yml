@@ -21,7 +21,7 @@ jobs:
         echo "moordyn_version=$major.$minor.$patch" >> $GITHUB_OUTPUT
 
     - name: Tag check
-      uses: mukunku/tag-exists-action@v1.4.0
+      uses: mukunku/tag-exists-action@v1.5.0
       id: checkTag
       with:
         tag: "v${{steps.moordyn_version.outputs.moordyn_version}}"
