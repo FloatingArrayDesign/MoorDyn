@@ -57,11 +57,11 @@ class CFL
   public:
 	/** @brief Constructor
 	 */
-	CFL();
+	CFL() {};
 
 	/** @brief Destructor
 	 */
-	~CFL();
+	virtual ~CFL() {};
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
@@ -84,15 +84,15 @@ class NatFreqCFL
   public:
 	/** @brief Constructor
 	 */
-	NatFreqCFL();
+	NatFreqCFL() {};
 
 	/** @brief Destructor
 	 */
-	~NatFreqCFL();
+	virtual ~NatFreqCFL() {};
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
-	 * @return The timestep
+	 * @return The timestUtilep
 	 */
 	virtual inline real cfl2dt(const real cfl) const { return cfl * period(); }
 

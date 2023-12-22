@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Util/CFL.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -66,7 +67,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class Point final : public io::IO
+class Point final : public io::IO, public CFL
 {
   public:
 	/** @brief Costructor
