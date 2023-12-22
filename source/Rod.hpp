@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Util/CFL.hpp"
 #include <vector>
 #include <utility>
 
@@ -62,7 +63,7 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class Rod final : public io::IO
+class Rod final : public io::IO, public CFL
 {
   public:
 	/** @brief Costructor
