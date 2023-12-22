@@ -160,6 +160,11 @@ Line::setup(int number_in,
 		stiffYs.push_back(props->stiffYs[I] / A);
 	}
 
+	// Use the last entry on the lookup table. see Line::initialize()
+	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
+	NatFreqCFL::stiffness(EA * N / UnstrLen);
+	NatFreqCFL::mass(props->w * UnstrLen / N);
+
 	// copy in nonlinear bent stiffness data if applicable
 	bstiffXs.clear();
 	bstiffYs.clear();

@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Util/CFL.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -68,7 +69,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
  * this natural period to avoid numerical instabilities
  */
-class Line final : public io::IO
+class Line final : public io::IO, public NatFreqCFL
 {
   public:
 	/** @brief Constructor
