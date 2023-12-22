@@ -41,6 +41,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Util/CFL.hpp"
 #include <vector>
 #include <utility>
 
@@ -72,7 +73,7 @@ class Rod;
  * moordyn::Body extends the io::IO class, allowing it to perform input/output
  * in a consistent manner.
  */
-class Body final : public io::IO
+class Body final : public io::IO, public CFL
 {
   public:
 	/** @brief Costructor

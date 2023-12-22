@@ -87,7 +87,8 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , ICTmax(120.0)
   , ICthresh(0.001)
   , WaveKinTemp(waves::WAVES_NONE)
-  , dtM0(0.001)
+  , dtM0(std::numeric_limits<real>::max())
+  , cfl(0.5)
   , dtOut(0.0)
   , _t_integrator(NULL)
   , env(std::make_shared<EnvCond>())
@@ -301,6 +302,27 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		PointList[l]->initialize();
 		ix += 3;
 	}
+
+	// Compute the timestep
+	for (auto obj : LineList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	for (auto obj : PointList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	for (auto obj : RodList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	for (auto obj : BodyList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	// And get the resulting CFL
+	cfl = 0.0;
+	for (auto obj : LineList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	for (auto obj : PointList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	for (auto obj : RodList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	for (auto obj : BodyList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	LOGMSG << "dtM = " << dtM0 << " s (CFL = " << cfl << ")" << endl;
 
 	// Initialize the system state
 	_t_integrator->init();
@@ -1998,6 +2020,8 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 	// DT is old way, should phase out
 	if ((name == "dtM") || (name == "DT"))
 		dtM0 = atof(entries[0].c_str());
+	else if ((name == "CFL") || (name == "cfl"))
+		cfl = atof(entries[0].c_str());
 	else if (name == "writeLog") {
 		// This was actually already did, so we do not need to do that again
 		// But we really want to have this if to avoid showing a warning for
