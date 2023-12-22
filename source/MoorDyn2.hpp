@@ -435,8 +435,10 @@ class MoorDyn final : public io::IO
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
-	/// (s) desired mooring line model time step
+	/// (s) desired mooring line model maximum time step
 	real dtM0;
+	/// desired mooring line model maximum CFL factor
+	real cfl;
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
 	real dtOut;
