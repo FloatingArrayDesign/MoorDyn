@@ -67,7 +67,7 @@ jobs:
             mkdir -p vtk &&
             tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         id: build_wheels
         with:
           name: python-wheels-${{inputs.arch}}
