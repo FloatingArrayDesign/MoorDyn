@@ -1400,7 +1400,7 @@ moordyn::MoorDyn::ReadInFile()
 					} else if (let3 == "AX") {
 						dummy.QType = AccX;
 						dummy.Units = moordyn::UnitList[AccX];
-					} else if (let3 == "Ay") {
+					} else if (let3 == "AY") {
 						dummy.QType = AccY;
 						dummy.Units = moordyn::UnitList[AccY];
 					} else if (let3 == "AZ") {
