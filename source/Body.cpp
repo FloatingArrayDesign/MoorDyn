@@ -85,6 +85,16 @@ Body::setup(int number_in,
 		bodyI = vec::Zero();
 		bodyCdA = vec6::Zero();
 		bodyCa = vec6::Zero();
+	} else if (type == CPLDPIN){
+		bodyM = M_in;
+		bodyV = V_in;
+
+		body_r6.head<3>() = vec3::Zero();
+		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
+		body_rCG = rCG_in;
+		bodyI = I_in;
+		bodyCdA = CdA_in;
+		bodyCa = Ca_in;
     } else // coupled bodies have no need for these variables...
 	{
 		bodyM = 0.0;
@@ -181,7 +191,7 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, vec6 a6_in)
 std::pair<XYZQuat, vec6>
 Body::initialize()
 {
-	if (type != FREE) {
+	if ((type != FREE) && (type != CPLDPIN)) {
 		LOGERR << "Invalid initializator for a non FREE body ("
 		       << TypeName(type) << ")" << endl;
 		throw moordyn::invalid_value_error("Invalid body type");
