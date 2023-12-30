@@ -15,10 +15,9 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1     beam       1        2         10        19      -
 ---------------------- OPTIONS -----------------------------------------
 2             writeLog             Write a log file
-1e-5          dtM                  time step to use in mooring integration (s)
+0.1           cfl                  CFL to determine the simulation timestep
 10            WtrDpth              water depth (m)
-0.25          dtIC                 time interval for analyzing convergence during IC gen (s)
-20.0          TmaxIC               max time for ic gen (s)
-1.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
-1.0e-3        threshIC             threshold for IC convergence (-)
+1.0           dtIC                 time interval for analyzing convergence during IC gen (s)
+40.0          TmaxIC               max time for ic gen (s)
+1e-5          threshIC             threshold for IC convergence (-)
 ------------------------- need this line -------------------------------------- 

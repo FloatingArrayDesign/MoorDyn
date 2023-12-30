@@ -177,6 +177,40 @@ StateVar<std::vector<vec>>::operator-(const StateVar<std::vector<vec>>& rhs)
 }
 
 template<>
+void
+StateVar<vec>::Mix(const StateVar<vec>& rhs, const real& f)
+{
+	pos = pos * (1.0 - f) + rhs.pos * f;
+	vel = vel * (1.0 - f) + rhs.vel * f;
+}
+
+template<>
+void
+StateVar<vec6>::Mix(const StateVar<vec6>& rhs, const real& f)
+{
+	pos = pos * (1.0 - f) + rhs.pos * f;
+	vel = vel * (1.0 - f) + rhs.vel * f;
+}
+
+template<>
+void
+StateVar<XYZQuat, vec6>::Mix(const StateVar<XYZQuat, vec6>& rhs, const real& f)
+{
+	pos = pos * (1.0 - f) + rhs.pos * f;
+	vel = vel * (1.0 - f) + rhs.vel * f;
+}
+
+template<>
+void
+StateVar<std::vector<vec>>::Mix(const StateVar<std::vector<vec>>& rhs, const real& f)
+{
+	for (unsigned int i = 0; i < pos.size(); i++) {
+		pos[i] = pos[i] * (1.0 - f) + rhs.pos[i] * f;
+		vel[i] = vel[i] * (1.0 - f) + rhs.vel[i] * f;
+	}
+}
+
+template<>
 string
 StateVarDeriv<vec>::AsString() const
 {
@@ -366,6 +400,45 @@ StateVarDeriv<std::vector<vec>>::operator-(
 	return out;
 }
 
+template<>
+real StateVarDeriv<vec>::MakeStationary(const real &dt)
+{
+	real ret = acc.norm();
+	vel = 0.5 * dt * acc;
+	acc = vec::Zero();
+	return ret;
+}
+
+template<>
+real StateVarDeriv<vec6>::MakeStationary(const real &dt)
+{
+	real ret = acc.head<3>().norm();
+	vel = 0.5 * dt * acc;
+	acc = vec6::Zero();
+	return ret;
+}
+
+template<>
+real StateVarDeriv<XYZQuat, vec6>::MakeStationary(const real &dt)
+{
+	real ret = acc.head<3>().norm();
+	vel = XYZQuat::fromVec6(0.5 * dt * acc);
+	acc = vec6::Zero();
+	return ret;
+}
+
+template<>
+real StateVarDeriv<std::vector<vec>>::MakeStationary(const real &dt)
+{
+	real ret = 0.0;
+	for (unsigned int i = 0; i < vel.size(); i++) {
+		ret += acc[i].norm();
+		vel[i] = 0.5 * dt * acc[i];
+		acc[i] = vec::Zero();
+	}
+	return ret;
+}
+
 string
 MoorDynState::AsString() const
 {
@@ -469,6 +542,20 @@ MoorDynState::operator-(const MoorDynState& rhs)
 		out.bodies.push_back(bodies[i] - rhs.bodies[i]);
 
 	return out;
+}
+
+void
+MoorDynState::Mix(const MoorDynState& visitor, const real& f)
+{
+	real ret = 0.0;
+	for (unsigned int i = 0; i < lines.size(); i++)
+		lines[i].Mix(visitor.lines[i], f);
+	for (unsigned int i = 0; i < points.size(); i++)
+		points[i].Mix(visitor.points[i], f);
+	for (unsigned int i = 0; i < rods.size(); i++)
+		rods[i].Mix(visitor.rods[i], f);
+	for (unsigned int i = 0; i < bodies.size(); i++)
+		bodies[i].Mix(visitor.bodies[i], f);
 }
 
 string
@@ -595,6 +682,21 @@ DMoorDynStateDt::operator-(const DMoorDynStateDt& rhs)
 		out.bodies.push_back(bodies[i] - rhs.bodies[i]);
 
 	return out;
+}
+
+real
+DMoorDynStateDt::MakeStationary(const real &dt)
+{
+	real ret = 0.0;
+	for (unsigned int i = 0; i < lines.size(); i++)
+		ret += lines[i].MakeStationary(dt);
+	for (unsigned int i = 0; i < points.size(); i++)
+		ret += points[i].MakeStationary(dt);
+	for (unsigned int i = 0; i < rods.size(); i++)
+		ret += rods[i].MakeStationary(dt);
+	for (unsigned int i = 0; i < bodies.size(); i++)
+		ret += bodies[i].MakeStationary(dt);
+	return ret;
 }
 
 } // ::moordyn

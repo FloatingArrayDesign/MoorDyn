@@ -139,7 +139,7 @@ typedef Eigen::Vector6i ivec6;
 /// Renaming of ivec3
 typedef ivec3 ivec;
 
-/// COmplex numbers
+/// Complex numbers
 typedef std::complex<real> complex;
 
 inline vec3 
@@ -709,7 +709,9 @@ namespace fileIO {
  */
 std::vector<std::string>
 fileToLines(const std::filesystem::path& path);
+
 }
+
 /**
  * @}
  */

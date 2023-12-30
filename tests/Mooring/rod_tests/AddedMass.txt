@@ -16,15 +16,12 @@ ID     RodType   Attachment  Xa    Ya    Za    Xb    Yb    Zb   NumSegs   RodOut
 1      floatRod  free        0     -1    -10   0   1.0   -10    4       -
 -------------------------- SOLVER    OPTIONS----------------------------------------------------------
 0         writeLog     - Write a log file
-0.0005  dtM          - time step to use in mooring integration
+0.0005    dtM          - time step to use in mooring integration
 rk4       tScheme      - Solver
 3.0e6     kb           - bottom stiffness
 3.0e5     cb           - bottom damping
 16.0      WtrDpth      - water depth
-2.0       ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
-0.0015 threshIC     - threshold for IC convergence
-0.0       TmaxIC       - threshold for IC convergence
-0.0001   dtIC         - Time lapse between convergence tests (s)
+0         TmaxIC       - max time for ic gen (s)
 0         Currents     - Whether or not to pull in currents
 0         WaveKin      - Whether or not to pull in waves
 ------------------------- need this line -------------------------------------- 

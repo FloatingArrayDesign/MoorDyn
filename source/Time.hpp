@@ -46,6 +46,8 @@
 
 namespace moordyn {
 
+class StationaryScheme;
+
 /** @class TimeScheme Time.hpp
  * @brief Time scheme abstraction
  *
@@ -215,6 +217,16 @@ class TimeScheme : public io::IO
 		Next();
 	}
 
+	/** @brief Get the CFL factor
+	 * @return The CFL factor
+	 */
+	inline real GetCFL() const { return cfl; }
+
+	/** @brief Set the CFL factor
+	 * @param cfl The CFL factor
+	 */
+	inline void SetCFL(const real& cfl) { this->cfl = cfl; }
+
 	/** @brief Prepare everything for the next outer time step
 	 *
 	 * Always call this method before start calling TimeScheme::Step()
@@ -232,7 +244,7 @@ class TimeScheme : public io::IO
 	 * the derivatives are initialized in any way.
 	 * @note It is assumed that the coupled entities were already initialized
 	 */
-	virtual void init() = 0;
+	virtual void Init() = 0;
 
 	/** @brief Run a time step
 	 *
@@ -242,6 +254,11 @@ class TimeScheme : public io::IO
 	 * @param dt Time step
 	 */
 	virtual void Step(real& dt) { t_local += dt; };
+
+	/** @brief Resume the simulation from the stationary solution
+	 * @param state The stationary solution
+	 */
+	virtual void FromStationary(const StationaryScheme& state) {};
 
   protected:
 	/** @brief Costructor
@@ -276,6 +293,9 @@ class TimeScheme : public io::IO
 	real t;
 	/// The local time, within the outer time step
 	real t_local;
+
+	/// Maximum CFL factor
+	real cfl;
 };
 
 // Forward declare waves
@@ -319,6 +339,8 @@ class TimeSchemeBase : public TimeScheme
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].lines.push_back(dstate);
 		}
+		// Add the mask value
+		_calc_mask.lines.push_back(true);
 	}
 
 	/** @brief Remove a line
@@ -339,6 +361,7 @@ class TimeSchemeBase : public TimeScheme
 			r[i].lines.erase(r[i].lines.begin() + i);
 		for (unsigned int i = 0; i < rd.size(); i++)
 			rd[i].lines.erase(rd[i].lines.begin() + i);
+		_calc_mask.lines.erase(_calc_mask.lines.begin() + i);
 		return i;
 	}
 
@@ -366,6 +389,8 @@ class TimeSchemeBase : public TimeScheme
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].points.push_back(dstate);
 		}
+		// Add the mask value
+		_calc_mask.points.push_back(true);
 	}
 
 	/** @brief Remove a point
@@ -386,6 +411,7 @@ class TimeSchemeBase : public TimeScheme
 			r[i].points.erase(r[i].points.begin() + i);
 		for (unsigned int i = 0; i < rd.size(); i++)
 			rd[i].points.erase(rd[i].points.begin() + i);
+		_calc_mask.points.erase(_calc_mask.points.begin() + i);
 		return i;
 	}
 
@@ -413,6 +439,8 @@ class TimeSchemeBase : public TimeScheme
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].rods.push_back(dstate);
 		}
+		// Add the mask value
+		_calc_mask.rods.push_back(true);
 	}
 
 	/** @brief Remove a rod
@@ -433,6 +461,7 @@ class TimeSchemeBase : public TimeScheme
 			r[i].rods.erase(r[i].rods.begin() + i);
 		for (unsigned int i = 0; i < rd.size(); i++)
 			rd[i].rods.erase(rd[i].rods.begin() + i);
+		_calc_mask.rods.erase(_calc_mask.rods.begin() + i);
 		return i;
 	}
 
@@ -460,6 +489,8 @@ class TimeSchemeBase : public TimeScheme
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].bodies.push_back(dstate);
 		}
+		// Add the mask value
+		_calc_mask.bodies.push_back(true);
 	}
 
 	/** @brief Remove a body
@@ -480,6 +511,7 @@ class TimeSchemeBase : public TimeScheme
 			r[i].bodies.erase(r[i].bodies.begin() + i);
 		for (unsigned int i = 0; i < rd.size(); i++)
 			rd[i].bodies.erase(rd[i].bodies.begin() + i);
+		_calc_mask.bodies.erase(_calc_mask.bodies.begin() + i);
 		return i;
 	}
 
@@ -488,11 +520,12 @@ class TimeSchemeBase : public TimeScheme
 	 * the derivatives are initialized in any way.
 	 * @note It is assumed that the coupled entities were already initialized
 	 */
-	virtual void init()
+	virtual void Init()
 	{
 		// NOTE: Probably is best to populate all the entities to the time
 		// integrator, no matter if they are free or not. Thus they can change
-		// types (mutate) without needing to micromanage them in the time scheme
+		// types (mutate) without needing to micromanage them in the time
+		// scheme
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN)) // Only fully coupled bodies are intialized in MD2.cpp
 				continue;
@@ -528,6 +561,11 @@ class TimeSchemeBase : public TimeScheme
 	 * @param dt Time step
 	 */
 	virtual void Step(real& dt) { TimeScheme::Step(dt); };
+
+	/** @brief Resume the simulation from the stationary solution
+	 * @param state The stationary solution
+	 */
+	void FromStationary(const StationaryScheme& state);
 
 	/** @brief Produce the packed data to be saved
 	 *
@@ -692,7 +730,70 @@ class TimeSchemeBase : public TimeScheme
 	/// The list of state derivatives
 	std::array<DMoorDynStateDt, NDERIV> rd;
 
+	/// The waves instance
 	std::shared_ptr<Waves> waves;
+
+	/** @brief A mask to determine which entities shall be computed.
+	 * 
+	 * Useful for local time steps
+	 */
+	typedef struct _mask {
+		/// The lines mask
+		std::vector<bool> lines;
+		/// The points mask
+		std::vector<bool> points;
+		/// The rods mask
+		std::vector<bool> rods;
+		/// The bodies mask
+		std::vector<bool> bodies;
+	} mask;
+
+	/// The TimeSchemeBase::CalcStateDeriv() mask
+	mask _calc_mask;
+};
+
+/** @class StationaryScheme Time.hpp
+ * @brief A stationary solution
+ *
+ * The stationary solution is featured by the lack of velocity on the system,
+ * i.e. the system positions are integrating directly from the accelerations
+ */
+class StationaryScheme : public TimeSchemeBase<2, 1>
+{
+	template<unsigned int NSTATE, unsigned int NDERIV>
+	friend class TimeSchemeBase;
+
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 */
+	StationaryScheme(moordyn::Log* log, WavesRef waves);
+
+	/// @brief Destructor
+	~StationaryScheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	void Step(real& dt);
+
+	/** @brief Get the error computed at the last time step
+	 * @return The error, StationaryScheme::_error
+	 */
+	inline real Error() const { return _error; }
+
+  private:
+	/** The last computed acceleration module
+	 * @see DMoorDynStateDt::MakeStationary()
+	 * @see StationaryScheme::Error()
+	 */
+	real _error;
+
+	/// The convergence boosting rate
+	real _booster;
 };
 
 /** @class EulerScheme Time.hpp
@@ -711,7 +812,7 @@ class EulerScheme : public TimeSchemeBase<1, 1>
 	EulerScheme(moordyn::Log* log, WavesRef waves);
 
 	/// @brief Destructor
-	~EulerScheme() {}
+	virtual ~EulerScheme() {}
 
 	/** @brief Run a time step
 	 *
@@ -720,6 +821,65 @@ class EulerScheme : public TimeSchemeBase<1, 1>
 	 */
 	virtual void Step(real& dt);
 };
+
+/** @class LocalEulerScheme Time.hpp
+ * @brief A modification of the 1st order Euler's time scheme, which is
+ * considering different time steps for each instance.
+ * 
+ * The local time step of each entity is computed according to the maximum CFL
+ * factor of all entities. Such local time step is indeed an integer times the
+ * time step provided to LocalEulerScheme::Step().
+ * 
+ * Thus, the derivatives recomputation is delayed until those time steps are
+ * fulfilled
+ */
+class LocalEulerScheme : public EulerScheme
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 */
+	LocalEulerScheme(moordyn::Log* log, WavesRef waves);
+
+	/// @brief Destructor
+	~LocalEulerScheme() {}
+
+	/** @brief Run a time step
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+
+  private:
+	/** @brief Set the calculation mask
+	 * @param dt Time step
+	 */
+	void SetCalcMask(real& dt);
+
+	/** @brief The timestep of each instance
+	 */
+	typedef struct _sdeltat {
+		/// The lines mask
+		std::vector<real> lines;
+		/// The points mask
+		std::vector<real> points;
+		/// The rods mask
+		std::vector<real> rods;
+		/// The bodies mask
+		std::vector<real> bodies;
+	} deltat;
+
+	/// Do the time steps have been initialized
+	bool _initialized;
+
+	/// The timestep of each instance
+	deltat _dt0;
+
+	/// The counter of already integrated timestep for each instance.
+	deltat _dt;
+};
+
+
 
 /** @class HeunScheme Time.hpp
  * @brief Quasi 2nd order Heun's time scheme
