@@ -162,6 +162,7 @@ Line::setup(int number_in,
 
 	// Use the last entry on the lookup table. see Line::initialize()
 	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
+	NatFreqCFL::length(UnstrLen / N);
 	NatFreqCFL::stiffness(EA * N / UnstrLen);
 	NatFreqCFL::mass(props->w * UnstrLen / N);
 
@@ -467,7 +468,7 @@ Line::initialize()
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;
 		real CB = 0.;
-		real Tol = 0.00001;
+		real Tol = 1e-5;
 
 		// locations of line nodes along line length - evenly distributed
 		// here

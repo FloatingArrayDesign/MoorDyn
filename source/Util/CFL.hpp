@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include <limits>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
@@ -57,7 +58,7 @@ class CFL
   public:
 	/** @brief Constructor
 	 */
-	CFL() {};
+	CFL() : _l(std::numeric_limits<real>::max()) {};
 
 	/** @brief Destructor
 	 */
@@ -74,12 +75,41 @@ class CFL
 	 * @return CFL factor
 	 */
 	virtual inline real dt2cfl(const real dt) const { return 0.0; }
+
+	/** @brief Get the timestep from a CFL factor and velocity
+	 * @param cfl CFL factor
+	 * @param v velocity
+	 * @return The timestep
+	 */
+	virtual inline real cfl2dt(const real cfl, const real v) const { return cfl * length() / v; }
+
+	/** @brief Get the CFL factor from a timestep and velocity
+	 * @param dt Timestep
+	 * @param v velocity
+	 * @return CFL factor
+	 */
+	virtual inline real dt2cfl(const real dt, const real v) const { return dt * v / length(); }
+
+  protected:
+	/** @brief Set the characteristic length of the system
+	 * @param l lenght
+	 */
+	inline void length(real l) { _l = l; }
+
+	/** @brief Get the characteristic length of the system
+	 * @return lenght
+	 */
+	inline real length() const { return _l; }
+
+  private:
+	/// Length
+	real _l;
 };
 
 /** @class NatFreqCFL CFL.hpp
  * @brief CFL for objects based on a natural frequency
  */
-class NatFreqCFL
+class NatFreqCFL : public CFL
 {
   public:
 	/** @brief Constructor
@@ -94,13 +124,27 @@ class NatFreqCFL
 	 * @param cfl CFL factor
 	 * @return The timestUtilep
 	 */
-	virtual inline real cfl2dt(const real cfl) const { return cfl * period(); }
+	inline real cfl2dt(const real cfl) const { return cfl * period(); }
 
 	/** @brief Get the CFL factor from a timestep
 	 * @param dt Timestep
 	 * @return CFL factor
 	 */
-	virtual inline real dt2cfl(const real dt) const { return dt / period(); }
+	inline real dt2cfl(const real dt) const { return dt / period(); }
+
+	/** @brief Get the timestep from a CFL factor and velocity
+	 * @param cfl CFL factor
+	 * @param v velocity
+	 * @return The timestep
+	 */
+	inline real cfl2dt(const real cfl, const real v) const { return CFL::cfl2dt(cfl, v); }
+
+	/** @brief Get the CFL factor from a timestep and velocity
+	 * @param dt Timestep
+	 * @param v velocity
+	 * @return CFL factor
+	 */
+	inline real dt2cfl(const real dt, const real v) const { return CFL::dt2cfl(dt, v); }
 
   protected:
 	/** @brief Set the stiffness of the system
@@ -139,6 +183,88 @@ class NatFreqCFL
 
 	/// mass
 	real _m;
+};
+
+/** @class SuperCFL CFL.hpp
+ * @brief CFL extracted from connected objects
+ *
+ * Some objects has not an actual CFL definition, but they instead compute it
+ * from the entities attached to it.
+ */
+class SuperCFL : public CFL
+{
+  public:
+	/** @brief Constructor
+	 */
+	SuperCFL() {};
+
+	/** @brief Destructor
+	 */
+	virtual ~SuperCFL() {};
+
+	/** @brief Get the timestep from a CFL factor
+	 * @param cfl CFL factor
+	 * @return The timestUtilep
+	 */
+	inline real cfl2dt(const real cfl) const {
+		auto dt = CFL::cfl2dt(cfl);
+		for (auto obj : _children)
+			dt = (std::min)(dt, obj->cfl2dt(cfl));
+		return dt;
+	}
+
+	/** @brief Get the CFL factor from a timestep
+	 * @param dt Timestep
+	 * @return CFL factor
+	 */
+	inline real dt2cfl(const real dt) const {
+		auto cfl = CFL::dt2cfl(dt);
+		for (auto obj : _children)
+			cfl = (std::max)(cfl, obj->dt2cfl(dt));
+		return cfl;
+	}
+
+	/** @brief Get the timestep from a CFL factor and velocity
+	 * @param cfl CFL factor
+	 * @param v velocity
+	 * @return The timestep
+	 */
+	inline real cfl2dt(const real cfl, const real v) const{
+		auto dt = CFL::cfl2dt(cfl, v);
+		for (auto obj : _children)
+			dt = (std::min)(dt, obj->cfl2dt(cfl, v));
+		return dt;
+	}
+
+	/** @brief Get the CFL factor from a timestep and velocity
+	 * @param dt Timestep
+	 * @param v velocity
+	 * @return CFL factor
+	 */
+	inline real dt2cfl(const real dt, const real v) const {
+		auto cfl = CFL::dt2cfl(dt, v);
+		for (auto obj : _children)
+			cfl = (std::max)(cfl, obj->dt2cfl(dt, v));
+		return cfl;
+	}
+
+  protected:
+	/** @brief Add a child
+	 * @param c child
+	 */
+	inline void AddChild(CFL* c) { _children.push_back(c); }
+
+	/** @brief Remove a child
+	 * @param c child
+	 */
+	inline void RemoveChild(CFL* c) {
+		_children.erase(std::remove(_children.begin(), _children.end(), c),
+		                _children.end());
+	}
+
+  private:
+	/// List of children
+	std::vector<CFL*> _children;
 };
 
 } // ::moordyn

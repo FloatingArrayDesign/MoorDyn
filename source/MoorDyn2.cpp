@@ -193,14 +193,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// <<<<<<<<< need to add bodys
 
-	// Allocate past line fairlead tension array, which is used for convergence
-	// test during IC gen
-	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
-	vector<real> FairTensLast_col(convergence_iters, 0.0);
-	for (unsigned int i = 0; i < convergence_iters; i++)
-		FairTensLast_col[i] = 1.0 * i;
-	vector<vector<real>> FairTensLast(LineList.size(), FairTensLast_col);
-
 	// ------------------ do static bodies and lines ---------------------------
 
 	LOGMSG << "Creating mooring system..." << endl;
@@ -325,7 +317,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	LOGMSG << "dtM = " << dtM0 << " s (CFL = " << cfl << ")" << endl;
 
 	// Initialize the system state
-	_t_integrator->init();
+	_t_integrator->SetCFL(cfl);
+	_t_integrator->Init();
 
 	// ------------------ do dynamic relaxation IC gen --------------------
 
@@ -347,34 +340,45 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// vector to store tensions for analyzing convergence
 	vector<real> FairTens(LineList.size(), 0.0);
 
-	unsigned int iic = 1; // To match MDF indexing
 	real t = 0;
-	bool converged = true;
-	real max_error = 0.0;
-	unsigned int max_error_line = 0;
+	real error_prev = (std::numeric_limits<real>::max)();
+	real error0, error;
 	// The function is enclosed in parenthesis to avoid Windows min() and max()
 	// macros break it
 	// See
 	// https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
 	real best_score = (std::numeric_limits<real>::max)();
 	real best_score_t = 0.0;
-	unsigned int best_score_line = 0;
 
 	// //dtIC set to fraction of input so convergence is over dtIC
-	ICdt = ICdt / (convergence_iters+1);
-	while (((ICTmax-t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
+	StationaryScheme t_integrator(_log, waves);
+	t_integrator.SetGround(GroundBody);
+	for (auto obj : BodyList)
+		t_integrator.AddBody(obj);
+	for (auto obj : RodList)
+		t_integrator.AddRod(obj);
+	for (auto obj : PointList)
+		t_integrator.AddPoint(obj);
+	for (auto obj : LineList)
+		t_integrator.AddLine(obj);
+	t_integrator.SetCFL(cfl);
+	t_integrator.Init();
+	while (((ICTmax - t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
 		// Integrate one ICD timestep (ICdt)
 		real t_target = ICdt;
 		real dt;
-		_t_integrator->Next();
+		t_integrator.Next();
 		while ((dt = t_target) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
 			moordyn::error_id err = MOORDYN_SUCCESS;
 			string err_msg;
 			try {
-				_t_integrator->Step(dt);
-				t = _t_integrator->GetTime();
+				t_integrator.Step(dt);
+				error = t_integrator.Error();
+				if (!t)
+					error0 = error;
+				t = t_integrator.GetTime();
 				t_target -= dt;
 			}
 			MOORDYN_CATCHER(err, err_msg);
@@ -384,72 +388,32 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			}
 		}
 
-		// Roll previous fairlead tensions for comparison
-		for (unsigned int lf = 0; lf < LineList.size(); lf++) {
-			for (int pt = convergence_iters - 1; pt > 0; pt--)
-				FairTensLast[lf][pt] = FairTensLast[lf][pt - 1];
-			FairTensLast[lf][0] = FairTens[lf];
+		if (error < best_score) {
+			best_score = error;
+			best_score_t = t;
 		}
 
-		// go through points to get fairlead forces
-		for (unsigned int lf = 0; lf < LineList.size(); lf++)
-			FairTens[lf] =
-			    LineList[lf]->getNodeTen(LineList[lf]->getN()).norm();
+		const real error_rel = error / error0;
+		const real error_deriv = std::abs(error_prev - error) / error_prev;
+		if (!error || (error_rel < ICthresh) || (error_deriv < ICthresh))
+			break;
+		error_prev = error;
 
-		// check for convergence (compare current tension at each fairlead with
-		// previous convergence_iters-1 values)
-		if (iic > convergence_iters) {
-			// check for any non-convergence, and continue to the next time step
-			// if any occurs
-			converged = true;
-			max_error = 0.0;
-			for (unsigned int lf = 0; lf < LineList.size(); lf++) {
-				for (unsigned int pt = 0; pt < convergence_iters; pt++) {
-					const real error =
-					    abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
-					if (error > max_error) {
-						max_error = error;
-						max_error_line = LineList[lf]->number;
-					}
-				}
-			}
-			if (max_error < best_score) {
-				best_score = max_error;
-				best_score_t = t;
-				best_score_line = max_error_line;
-			}
-			if (max_error > ICthresh) {
-				converged = false;
-				LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
-				       << iic << "), error = " << 100.0 * max_error
-				       << "% on line " << max_error_line << "     \r";
-			}
-
-			if (converged)
-				break;
-		}
-
-		iic++;
+		LOGDBG << "Stationary solution t = " << t << "s, error change = "
+		       << 100.0 * error_deriv << "%     \r";
 	}
 
 	if (!skip_ic) {
-		if (converged) {
-			LOGMSG << "Fairlead tensions converged" << endl;
-		} else {
-			LOGWRN << "Fairlead tensions did not converge" << endl;
-		}
-		LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
-		       << "% on line " << max_error_line << endl;
-		if (!converged) {
-			LOGMSG << "Best score at " << best_score_t
-			       << " s = " << 100.0 * best_score << "% on line "
-			       << best_score_line << endl;
-		}
+		LOGMSG << "Remaining error after " << t << " s = "
+		       << error << " m/s2" << endl;
+		LOGMSG << "Best score at " << best_score_t
+				<< " s = " << best_score << " m/s2" << endl;
 	}
 
 	// restore drag coefficients to normal values and restart time counter of
 	// each object
 	_t_integrator->SetTime(0.0);
+	_t_integrator->FromStationary(t_integrator);
 	for (auto obj : LineList) {
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);

@@ -95,11 +95,15 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	waves->updateWaves();
 
 	for (unsigned int i = 0; i < lines.size(); i++) {
+		if (!_calc_mask.lines[i])
+			continue;
 		std::tie(rd[substep].lines[i].vel, rd[substep].lines[i].acc) =
 		    lines[i]->getStateDeriv();
 	}
 
 	for (unsigned int i = 0; i < points.size(); i++) {
+		if (!_calc_mask.points[i])
+			continue;
 		if (points[i]->type != Point::FREE)
 			continue;
 		std::tie(rd[substep].points[i].vel, rd[substep].points[i].acc) =
@@ -107,6 +111,8 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	}
 
 	for (unsigned int i = 0; i < rods.size(); i++) {
+		if (!_calc_mask.rods[i])
+			continue;
 		if ((rods[i]->type != Rod::PINNED) && (rods[i]->type != Rod::CPLDPIN) &&
 		    (rods[i]->type != Rod::FREE))
 			continue;
@@ -115,6 +121,8 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	}
 
 	for (unsigned int i = 0; i < bodies.size(); i++) {
+		if (!_calc_mask.bodies[i])
+			continue;
 		if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN))
 			continue;
 		std::tie(rd[substep].bodies[i].vel, rd[substep].bodies[i].acc) =
@@ -141,6 +149,87 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	ground->setDependentStates(); // NOTE: (not likely needed)
 }
 
+template<unsigned int NSTATE, unsigned int NDERIV>
+void
+TimeSchemeBase<NSTATE, NDERIV>::FromStationary(const StationaryScheme& state)
+{
+	r[0] = state.r[0];
+}
+
+
+StationaryScheme::StationaryScheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : TimeSchemeBase(log, waves)
+  , _error(0.0)
+  , _booster(1.0)
+{
+	name = "Stationary solution";
+}
+
+#ifndef STATIONARY_BOOSTING
+#define STATIONARY_BOOSTING 1.01
+#endif
+
+#ifndef STATIONARY_MAX_BOOSTING
+#define STATIONARY_MAX_BOOSTING 10.0
+#endif
+
+#ifndef STATIONARY_MIN_BOOSTING
+#define STATIONARY_MIN_BOOSTING 0.1
+#endif
+
+#ifndef STATIONARY_RELAX
+#define STATIONARY_RELAX 0.5
+#endif
+
+void
+StationaryScheme::Step(real& dt)
+{
+	Update(0.0, 0);
+	CalcStateDeriv(0);
+	const real error_prev = _error;
+	_error = rd[0].MakeStationary(dt);
+	if (error_prev != 0.0) {
+		if (error_prev >= _error) {
+			// Let's try to boost the convergence
+			_booster *= STATIONARY_BOOSTING;
+		}
+		else if (error_prev < _error) {
+			// We clearly overshot, so let's relax the solution and reduce the
+			// boosting
+			_booster /= STATIONARY_BOOSTING;
+			r[0].Mix(r[1], STATIONARY_RELAX);
+			Update(0.0, 0);
+			CalcStateDeriv(0);
+			_error = rd[0].MakeStationary(dt);
+		}
+	}
+	if (_booster > STATIONARY_MAX_BOOSTING)
+		_booster = STATIONARY_MAX_BOOSTING;
+	else if (_booster < STATIONARY_MIN_BOOSTING)
+		_booster = STATIONARY_MIN_BOOSTING;
+
+	real new_dt = _booster * dt;
+	// Check that the time step is not too large, or limit it otherwise
+	real v = 0.5 * dt * _error;
+	for (auto obj : lines)
+		new_dt = (std::min)(new_dt, obj->cfl2dt(cfl, v));
+	for (auto obj : points) {
+		new_dt = (std::min)(new_dt, obj->cfl2dt(cfl, v));
+	}
+	for (auto obj : rods) {
+		new_dt = (std::min)(new_dt, obj->cfl2dt(cfl, v));
+	}
+	for (auto obj : bodies) {
+		new_dt = (std::min)(new_dt, obj->cfl2dt(cfl, v));
+	}
+
+	r[1] = r[0];
+	r[0] = r[0] + rd[0] * new_dt;
+	t += dt;
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
+}
+
 EulerScheme::EulerScheme(moordyn::Log* log, moordyn::WavesRef waves)
   : TimeSchemeBase(log, waves)
 {
@@ -156,6 +245,91 @@ EulerScheme::Step(real& dt)
 	t += dt;
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);
+}
+
+LocalEulerScheme::LocalEulerScheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : EulerScheme(log, waves)
+  , _initialized(false)
+{
+	name = "1st order Local-Timestep Euler";
+}
+
+void
+LocalEulerScheme::Step(real& dt)
+{
+	// BUG: We need a way to grant that the first passed dt is actually dtM0
+	if (!_initialized) {
+		LOGMSG << name << ":" << endl;
+		for (auto line : lines) {
+			const real dt_line = line->cfl2dt(cfl);
+			_dt0.lines.push_back(0.999 * dt_line);
+			_dt.lines.push_back(dt_line);
+			LOGMSG << "Line " << line->number << ": dt = " << dt_line
+			       << " s (updated each " << std::ceil(dt_line / dt)
+			       << " timesteps)" << endl;
+		}
+		for (auto point : points) {
+			_dt0.points.push_back(0.0);
+			_dt.points.push_back(0.0);
+		}
+		for (auto rod : rods) {
+			_dt0.rods.push_back(0.0);
+			_dt.rods.push_back(0.0);
+		}
+		for (auto body : bodies) {
+			_dt0.bodies.push_back(0.0);
+			_dt.bodies.push_back(0.0);
+		}
+		_initialized = true;
+	}
+	SetCalcMask(dt);
+	Update(0.0, 0);
+	CalcStateDeriv(0);
+	r[0] = r[0] + rd[0] * dt;
+	t += dt;
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
+}
+
+void LocalEulerScheme::SetCalcMask(real& dt)
+{
+	unsigned int i = 0;
+	for (i = 0; i < lines.size(); i++) {
+		_dt.lines[i] += dt;
+		if (_dt.lines[i] >= _dt0.lines[i]) {
+			_dt.lines[i] = dt;
+			_calc_mask.lines[i] = true;
+		} else {
+			_calc_mask.lines[i] = false;
+		}
+	}
+	for (i = 0; i < points.size(); i++) {
+		_dt.points[i] += dt;
+		if (_dt.points[i] >= _dt0.points[i]) {
+			_dt.points[i] = dt;
+			_calc_mask.points[i] = true;
+		} else {
+			_calc_mask.points[i] = false;
+		}
+	}
+	for (i = 0; i < rods.size(); i++) {
+		_dt.rods[i] += dt;
+		if (_dt.rods[i] >= _dt0.rods[i]) {
+			_dt.rods[i] = dt;
+			_calc_mask.rods[i] = true;
+		} else {
+			_calc_mask.rods[i] = false;
+		}
+	}
+	for (i = 0; i < bodies.size(); i++) {
+		_dt.bodies[i] += dt;
+		if (_dt.bodies[i] >= _dt0.bodies[i]) {
+			_dt.bodies[i] = dt;
+			_calc_mask.bodies[i] = true;
+		} else {
+			_calc_mask.bodies[i] = false;
+		}
+	}
 }
 
 HeunScheme::HeunScheme(moordyn::Log* log, moordyn::WavesRef waves)
@@ -334,6 +508,8 @@ create_time_scheme(const std::string& name,
 	TimeScheme* out = NULL;
 	if (str::lower(name) == "euler") {
 		out = new EulerScheme(log, waves);
+	} else if (str::lower(name) == "leuler") {
+		out = new LocalEulerScheme(log, waves);
 	} else if (str::lower(name) == "heun") {
 		out = new HeunScheme(log, waves);
 	} else if (str::lower(name) == "rk2") {

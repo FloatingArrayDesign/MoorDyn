@@ -107,6 +107,7 @@ Point::addLine(Line* theLine, EndPoints end_point)
 
 	attachment a = { theLine, end_point };
 	attached.push_back(a);
+	SuperCFL::AddChild(theLine);
 };
 
 EndPoints
@@ -120,6 +121,7 @@ Point::removeLine(Line* line)
 		// This is the line's entry in the attachment list
 		end_point = it->end_point;
 		attached.erase(it);
+		SuperCFL::RemoveChild(line);
 
 		LOGMSG << "Detached line " << line->number << " from Point " << number
 		       << endl;

@@ -140,6 +140,7 @@ Body::addPoint(moordyn::Point* point, vec coords)
 
 	// store Point address
 	attachedP.push_back(point);
+	SuperCFL::AddChild(point);
 
 	// store Point relative location
 	rPointRel.push_back(coords);
@@ -152,6 +153,7 @@ Body::addRod(Rod* rod, vec6 coords)
 
 	// store Rod address
 	attachedR.push_back(rod);
+	SuperCFL::AddChild(rod);
 
 	// store Rod end A relative position and unit vector from end A to B
 	vec tempUnitVec;

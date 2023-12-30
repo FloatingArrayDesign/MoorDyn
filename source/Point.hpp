@@ -67,7 +67,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class Point final : public io::IO, public CFL
+class Point final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
