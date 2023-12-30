@@ -196,6 +196,7 @@ Rod::addLine(Line* l, EndPoints l_end_point, EndPoints end_point)
 			LOGERR << "Rod only has end points 'A' or 'B'" << endl;
 			throw moordyn::invalid_value_error("Invalid end point");
 	}
+	SuperCFL::AddChild(l);
 }
 
 EndPoints
@@ -211,6 +212,7 @@ Rod::removeLine(EndPoints end_point, Line* line)
 		// This is the line's entry in the attachment list
 		line_end_point = it->end_point;
 		lines->erase(it);
+		SuperCFL::RemoveChild(line);
 		// TODO Waves - we probably want to clean up the line node wave kin
 		// stores in the waves class
 
