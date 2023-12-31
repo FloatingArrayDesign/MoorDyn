@@ -153,10 +153,6 @@ validation(const char* depth, const char* motion)
 		return false;
 	}
 
-	stringstream vtk_file;
-	vtk_file << depth << ".vtm";
-	MoorDyn_SaveVTK(system, vtk_file.str().c_str());
-
 	// Compute the static tension
 	int num_lines = 1;
 	float fh, fv, ah, av;
