@@ -494,14 +494,14 @@ class TimeSchemeBase : public TimeScheme
 		// integrator, no matter if they are free or not. Thus they can change
 		// types (mutate) without needing to micromanage them in the time scheme
 		for (unsigned int i = 0; i < bodies.size(); i++) {
-			if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN))
+			if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN)) // Only fully coupled bodies are intialized in MD2.cpp
 				continue;
 			std::tie(r[0].bodies[i].pos, r[0].bodies[i].vel) =
 			    bodies[i]->initialize();
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
-			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED) && (rods[i]->type != Rod::CPLDPIN))
+			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
 			std::tie(r[0].rods[i].pos, r[0].rods[i].vel) =
 			    rods[i]->initialize();
