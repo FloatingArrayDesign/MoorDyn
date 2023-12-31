@@ -148,12 +148,13 @@ Rod::setup(int number_in,
 	if (type == FREE) {
 		// For an independent rod, set the position right off the bat
 		r7.pos = endCoords.head<3>();
-		r7.quat = quaternion::Identity();
+		r7.quat = quaternion::FromTwoVectors(q0, endCoords.tail<3>());
 		v6 = vec6::Zero();
 	} else if ((type == PINNED) || (type == CPLDPIN)) {
 		// for a pinned rod, just set the orientation (position will be set
-		// later by parent object)
-		r7 = XYZQuat::Zero();
+		// later by parent object) 
+		r7.pos = vec3::Zero(); 
+		r7.quat = quaternion::FromTwoVectors(q0, endCoords.tail<3>()); // TODO: Check this is right
 		v6(Eigen::seqN(3, 3)) = vec::Zero();
 	}
 	// otherwise (for a fixed rod) the positions will be set by the parent body
@@ -511,7 +512,7 @@ Rod::setKinematics(vec6 r_in, vec6 rd_in)
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
 		setDependentStates();
-	} else if (type == PINNED) // rod end A pinned to a body
+	} else if ((type == PINNED) || (type == CPLDPIN))// rod end A pinned to a body
 	{
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
 		r7.pos = r_in(Eigen::seqN(0, 3));
