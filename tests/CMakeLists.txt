@@ -44,6 +44,7 @@ set(CATCH2_TESTS
     math_tests
     testDecomposeString
     polyester
+    local_euler
 )
 
 function(make_executable test_name, extension)
