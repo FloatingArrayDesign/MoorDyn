@@ -45,6 +45,7 @@ set(CATCH2_TESTS
     beam
     conveying_fluid
     polyester
+    local_euler
 )
 
 function(make_executable test_name, extension)
