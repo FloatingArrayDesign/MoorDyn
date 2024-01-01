@@ -201,15 +201,17 @@ Body::initialize()
 	// initialized)
 	setDependentStates();
 
-	// If any Rod is fixed to the body (not pinned), initialize it now because
-	// otherwise it won't be initialized
-	for (auto attached : attachedR)
-		if (attached->type == Rod::FIXED)
+	if (type == FREE) { // Attached objects already initalized for coupled pinned body
+		// If any Rod is fixed to the body (not pinned), initialize it now because
+		// otherwise it won't be initialized
+		for (auto attached : attachedR)
+			if (attached->type == Rod::FIXED)
+				attached->initialize();
+		// If there's an attached Point, initialize it now because it won't be
+		// initialized otherwise
+		for (auto attached : attachedP)
 			attached->initialize();
-	// If there's an attached Point, initialize it now because it won't be
-	// initialized otherwise
-	for (auto attached : attachedP)
-		attached->initialize();
+	}
 
 	// create output file for writing output (and write channel header and units
 	// lines) if applicable

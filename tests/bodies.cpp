@@ -42,6 +42,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
+#include <numeric>
 
 #include "util.h"
 
@@ -415,6 +417,122 @@ rotatingBody(SeriesWriter* series_writer)
 
 	return true;
 }
+
+/**
+ * @brief Compares inertial deflection of a pinned body to analytical solution
+ *
+ * 
+ * The coupled pinned body that is massless and volumeless with a rod fixed to it
+ * is moved with constant acceleration in a vaccum (0 water density). 
+ * The resulting avg inertial deflection should match an analytical solution of 
+ * theta = arctan(-accel/gravity)
+ * 
+ * This solution was derived both with Newtonian and LaGrangian mechanics. 
+ * It is the same as the pendulum on an accelerating cart problem. 
+ * 
+ * This only tests the inertial properties of pinned bodies, other tests deal 
+ * with hydrodynamics and general body properties
+ *
+ * 
+ * @param series_writer
+ * @return true
+ * @return false
+ */
+bool
+pinnedBody(SeriesWriter* series_writer)
+{
+	int err;
+	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
+
+	MoorDyn system = MoorDyn_Create("Mooring/body_tests/pinnedBody.txt");
+	if (!system) {
+		cerr << "Failure Creating the Mooring system" << endl;
+		return false;
+	}
+
+	unsigned int n_dof;
+	err = MoorDyn_NCoupledDOF(system, &n_dof);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure getting NCoupledDOF: " << err << endl;
+		return false;
+	}
+	if (n_dof != 6) { // rotational DOF are ignored by MDC, same as a coupled pinned rods
+		cerr << "Expected 6 DOFs but got " << n_dof << endl;
+		return false;
+	}
+
+	moordyn::vec6 x{ 0, 0, -5, 0, 0, 0};
+	moordyn::vec6 xd{ 0, 0, 0 , 0, 0, 0};
+	double f[6];
+
+	err = MoorDyn_Init(system, x.data(), xd.data());
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure during the mooring initialization: " << err << endl;
+		return false;
+	}
+
+	if (!write_system_vtk(system, 0, series_writer)) {
+		return false;
+	}
+
+	auto body = MoorDyn_GetBody(system, 1);
+	moordyn::vec6 r, rd;
+	vector<double> roll;
+	int i = 0, j = 0;
+	double t = 0.0, dt = 0.01, accel = 0.5;
+	bool local_min_max;
+
+	if (!write_system_vtk(system, t, series_writer)) {
+		return false;
+	}
+
+	while (t < 50.0) {
+
+		x[1] = 0.5*accel*pow(t, 2);
+		xd[1] = accel*t;
+		err = MoorDyn_Step(system, x.data(), xd.data(), f, &t, &dt);
+		if (err != MOORDYN_SUCCESS) {
+			cerr << "Failure during the mooring initialization: " << err
+			     << endl;
+			return false;
+		}
+		if (!write_system_vtk(system, t, series_writer)) {
+			return false;
+		}
+
+		MoorDyn_GetBodyState(body, r.data(), rd.data());
+		roll.push_back(r[3]);
+
+		if (i >= 30) { // after the simulation has run for a few time steps
+			// When local min or max of oscillation, indicates half of an oscialltion has occured
+			local_min_max = (((roll[i]-roll[i-1])/dt) * ((roll[i-1]-roll[i-2])/dt)) < 0; 
+			if (local_min_max) j++;
+		}
+		if (j > 3) break; // after 2 full oscillations
+
+		t = t + dt;
+		i++;
+	}
+	double theta = atan(-accel/9.80665);
+	double average = reduce(roll.begin(), roll.end()) / roll.size();
+	if (abs(average - theta) > 0.001) {
+		cerr << "Pinned body inertial deflection should be "
+		<< theta << " but it is " << average << endl;
+		return false;
+	}
+
+	err = MoorDyn_Close(system);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Failure closing Moordyn: " << err << endl;
+		return false;
+	}
+
+	cout << setprecision(4) << "Average roll is " << average << endl;
+	cout << setprecision(4) << "Theoretical roll is " << theta << endl;
+
+	return true;
+}
+
 /** @brief Runs all the test
  * @return 0 if the tests have ran just fine. The index of the failing test
  * otherwise
@@ -432,6 +550,19 @@ main(int, char**)
 
 	} catch (std::exception& e) {
 		cerr << "rotatingBody failed with exception " << e.what() << endl;
+		return 3;
+	}
+
+	try {
+		// SeriesWriter series_writer;
+		if (!pinnedBody(NULL)) {
+			// series_writer.writeJson("../../vtk_out/");
+			return 3;
+		}
+		// series_writer.writeJson("../../vtk_out/");
+
+	} catch (std::exception& e) {
+		cerr << "pinnedBody failed with exception " << e.what() << endl;
 		return 3;
 	}
 
