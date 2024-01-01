@@ -1672,8 +1672,8 @@ moordyn::MoorDyn::readRodProps(string inputText)
 	obj->Can = atof(entries[4].c_str());
 	obj->CdEnd = atof(entries[5].c_str());
 	obj->CaEnd = atof(entries[6].c_str());
-	obj->Cdt = 0.0;
-	obj->Cat = 0.0;
+	obj->Cdt = 0.0; // No end effects from internal segments. CdEnd captures end effects.
+	obj->Cat = 0.0; // No end effects from internal segments. CaEnd captures end effects.
 
 	LOGDBG << "\t'" << obj->type << "'"
 	       << " - with id " << RodPropList.size() << endl

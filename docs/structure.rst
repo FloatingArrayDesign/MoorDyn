@@ -144,12 +144,13 @@ or to each other. (In MAP and older versions of MoorDyn, these objects were call
 Nodes). A Point has three degrees of freedom and can have any number of Lines attached to it. There 
 are three types of Points:
 
-- **Fixed/Anchor/Body**: their location is fixed to an XYZ coordinate (stationary) or a Body object. 
-  They can be used as anchor points or to attach mooring Lines to a Body.
-- **Coupled/Fairlead/Vessel**: they move under the control of the driver program/script.  
+- **Fixed/Anchor/Body**: their location is fixed to an XYZ coordinate (stationary) or a XYZ 
+  coordinate in the Body reference frame. They can be used as anchor points or to attach mooring 
+  lines to a Body.
+- **Coupled/Vessel**: they move under the control of the driver program/script.  
   They can be used as fairlead points when the platform is modeled externally.
   See :ref:`the coupling documentation <coupling>`.
-- **Free/Point/Connect**: they are free to move according to the forces acting on them, which 
+- **Free/Point**: they are free to move according to the forces acting on them, which 
   includes the tensions of attached lines as well as their own self weight and buoyancy, if 
   applicable.  
 
@@ -232,7 +233,8 @@ Rods can have 6, 3, or 0 DOF.
 - **Coupled pinned**: The rod end A translational movement is coupled while the rotational movement about end A is free.
 
 Pinned or Fixed Rods attached to a body (e.g. body 1) are labelled "Body1Pinned" or "Body1". 
-Pinned or fixed rods that serve as a coupling point are labelled "CoupledPinned" or "Coupled"
+Rods attached to bodies have their coordinates defined in the body reference frame
+Pinned or fixed rods that serve as a coupling point are labelled "CoupledPinned" or "Coupled".
 
 A special case exists if a Rod is specified with zero elements: in that case it is given zero 
 length, and its end B coordinates in the input file are instead interpreted as vector components to 

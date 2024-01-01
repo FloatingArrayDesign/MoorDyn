@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x' 
 
@@ -93,7 +93,7 @@ jobs:
             mkdir -p vtk &&
             tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         id: build_wheels
         with:
           name: python-wheels-x86_64
@@ -131,25 +131,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download x86_64 dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-wheels-x86_64
           path: dist/
 
       - name: Download aarch64 dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-wheels-aarch64
           path: dist/
 
       - name: Download ppc64le dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-wheels-ppc64le
           path: dist/
 
       - name: Download s390x dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-wheels-s390x
           path: dist/

@@ -114,7 +114,7 @@ class Body final : public io::IO
 	real bodyV;
 	/// The inertia diagonal components
 	vec bodyI;
-	/// The drag coefficients
+	/// The product of the drag coefficient and the frontal area (m^2)
 	vec6 bodyCdA;
 	/// The added mass coefficients
 	vec6 bodyCa;
@@ -232,7 +232,7 @@ class Body final : public io::IO
 	/** @brief Attach a rod to the body
 	 * @param rod The rod
 	 * @param coords vector indicating start (vals 0-2) and end (valse 3-5) of
-	 * rod
+	 * rod in the body reference frame
 	 * @throw moordyn::invalid_value_error If @p rod is NULL
 	 */
 	void addRod(Rod* rod, vec6 coords);
