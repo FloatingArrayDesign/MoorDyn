@@ -166,7 +166,7 @@ size) often need to be set by the user for proper operation. The list of possibl
 default value provided in parentheses) is:
 
  - dtM (0.001) – desired mooring model time step (s)
- - g (9.8) – gravitational constant (m/s^2)
+ - g (9.80665) – gravitational constant (m/s^2)
  - rhoW (1025.0)– water density (kg/m^3)
  - WtrDpth (0.0) – water depth (m)
  - SeafloorFile (none) – Relative path of a 3D Seafloor file
@@ -721,7 +721,7 @@ one space.
  <followed by MAX(1,NumTurbines) rows of data>  
  END of driver input file
 
-If InputsMode is set to 1, MoorDyn-F will require a platform motions time series dataset of the 
+If InputsMode is set to 1, the MoorDyn-F driver will require a platform motions time series dataset of the 
 coupled object movements. The time units are seconds, the translational position units are meters, 
 and the orentation units are radians. For a single coupled body, the order of the data columns 
 would look like the following (lines beginning with # are treated as comments by MoorDyn):
@@ -732,13 +732,12 @@ would look like the following (lines beginning with # are treated as comments by
 
 If there are multiple coupled objects then the general order of columns beyond the time column 
 follows the order of the state vector: Body degrees of freedom, rod degrees of freedom, and points 
-degrees of freedom.
+degrees of freedom. For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational 
+values will be ignored by by the MoorDyn-F driver (they can be set to zero).
 
 It is recommended that NumTurbines is set to -1 when using the MoorDyn driver (unless you have reason not to)
 as it avoids using the super position of reference frames that exists in OpenFAST and FFAST.farm modes. For 
 multiple coupled objects not located at the origin, NumTurbines = -1 is required to obtain the correct results.
-
-Note: For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational values will be ignored (they can be set to zero)
 
 Seafloor/Bathymetry File 
 ^^^^^^^^^^^^^^^^^^^^^^^^
