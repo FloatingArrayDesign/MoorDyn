@@ -513,7 +513,7 @@ moordyn::MoorDyn::Step(const double* x,
 	LOGDBG << "t = " << t << "s     \r";
 
 	cout << fixed << setprecision(1);
-	cout << "\rt = " << t << flush;
+	cout << "\rt = " << t << " " << flush;
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
@@ -552,7 +552,7 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
 			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_b) / dtM0;
+		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_b) / dt;
 			rd3_b = rd3;
 
 			ix += 3;
@@ -566,7 +566,7 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
 			// determine acceleration 
-		    rdd = (rd - rd_r) / dtM0;
+		    rdd = (rd - rd_r) / dt;
 			rd_r = rd;
 
 			ix += 6;
@@ -578,7 +578,7 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
 			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_r) / dtM0;
+		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_r) / dt;
 			rd3_r = rd3;
 
 			ix += 3;
