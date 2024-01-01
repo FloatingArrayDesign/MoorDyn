@@ -166,7 +166,7 @@ size) often need to be set by the user for proper operation. The list of possibl
 default value provided in parentheses) is:
 
  - dtM (0.001) – desired mooring model time step (s)
- - g (9.8) – gravitational constant (m/s^2)
+ - g (9.80665) – gravitational constant (m/s^2)
  - rhoW (1025.0)– water density (kg/m^3)
  - WtrDpth (0.0) – water depth (m)
  - SeafloorFile (none) – Relative path of a 3D Seafloor file
@@ -726,7 +726,8 @@ If there are multiple coupled objects then the general order of columns beyond t
 follows the order of the state vector: Body degrees of freedom, rod degrees of freedom, and points 
 degrees of freedom.
 
-Note: For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational values will be ignored (they can be set to zero)
+Note: For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational 
+values will be ignored (they can be set to zero)
 
 Seafloor/Bathymetry File 
 ^^^^^^^^^^^^^^^^^^^^^^^^

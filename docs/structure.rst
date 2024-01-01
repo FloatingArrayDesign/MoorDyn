@@ -348,7 +348,7 @@ for bodies:
 
 - **Free**: the body kinematics are computed by MoorDyn based on the applied loads and inertia
 - **Fixed**: the body is fixed, either to a particular location or to a connected, moving entity.
-- - **Coupled**: the body kinematics are controlled by the calling program.
+- **Coupled**: the body kinematics are controlled by the calling program.
 - **Coupled pinned**: The body's translational movement is coupled while the rotational movement is free.
 
 Body objects have the following variables:
