@@ -508,10 +508,10 @@ class MoorDyn final : public io::IO
 	unsigned int npW;
 
 	/// Previous time step velocity for calculating coupled point acceleration (first time step assumed stationary)
-	vec6 rd_b; // body
-	vec6 rd_r; // coupled rod
-	vec3 rd3_r; // coupled pinned rod
-	vec3 rd3_b; // coupled pinned body
+	vec6 rd_b = vec6::Zero(); // body
+	vec6 rd_r = vec6::Zero(); // coupled rod
+	vec3 rd3_r = vec3::Zero(); // coupled pinned rod
+	vec3 rd3_b = vec3::Zero(); // coupled pinned body
 
 	/// main output file
 	ofstream outfileMain;
