@@ -696,7 +696,7 @@ Rod::getFnet()
 		F6_iner = - M6net * acc6; // Inertial terms
 		Fnet_out = F6net + F6_iner;
 	} else if (type == CPLDPIN) { // if coupled pinned
-		F6_iner(Eigen::seqN(0,3)) = (- M6net.topRightCorner<3,3>() * acc6(Eigen::seqN(0,3))) - (M6net.topLeftCorner<3,3>() * acc6(Eigen::seqN(3,3))); // Inertial term
+		F6_iner(Eigen::seqN(0,3)) = (- M6net.topLeftCorner<3,3>() * acc6(Eigen::seqN(0,3))) - (M6net.topRightCorner<3,3>() * acc6(Eigen::seqN(3,3))); // Inertial term
 		Fnet_out(Eigen::seqN(0,3)) = F6net(Eigen::seqN(0,3)) + F6_iner(Eigen::seqN(0,3));
 		Fnet_out(Eigen::seqN(3,3)) = vec3::Zero();
 	} else {
