@@ -318,7 +318,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// Initialize the system state
 	_t_integrator->SetCFL(cfl);
-	_t_integrator->Init();
+	// _t_integrator->Init();  // Let the stationary solution deal with this
 
 	// ------------------ do dynamic relaxation IC gen --------------------
 
