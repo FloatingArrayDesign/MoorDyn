@@ -851,6 +851,13 @@ class LocalEulerScheme : public EulerScheme
 	virtual void Step(real& dt);
 
   private:
+	/** @brief Compute the model time step
+	 *
+	 * This can be done since we know the TimeScheme::cfl factor
+	 * @return The model time step
+	 */
+	real ComputeDt() const;
+
 	/** @brief Set the calculation mask
 	 * @param dt Time step
 	 */
