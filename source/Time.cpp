@@ -257,26 +257,32 @@ LocalEulerScheme::LocalEulerScheme(moordyn::Log* log, moordyn::WavesRef waves)
 void
 LocalEulerScheme::Step(real& dt)
 {
-	// BUG: We need a way to grant that the first passed dt is actually dtM0
 	if (!_initialized) {
 		LOGMSG << name << ":" << endl;
+		real dtM = ComputeDt();
 		for (auto line : lines) {
 			const real dt_line = line->cfl2dt(cfl);
 			_dt0.lines.push_back(0.999 * dt_line);
 			_dt.lines.push_back(dt_line);
 			LOGMSG << "Line " << line->number << ": dt = " << dt_line
-			       << " s (updated each " << std::ceil(dt_line / dt)
+			       << " s (updated each " << std::ceil(dt_line / dtM)
 			       << " timesteps)" << endl;
 		}
 		for (auto point : points) {
+			LOGMSG << "Point " << point->number << ": dt = " << dtM
+			       << " s (updated each 1 timesteps)" << endl;
 			_dt0.points.push_back(0.0);
 			_dt.points.push_back(0.0);
 		}
 		for (auto rod : rods) {
+			LOGMSG << "Rod " << rod->number << ": dt = " << dtM
+			       << " s (updated each 1 timesteps)" << endl;
 			_dt0.rods.push_back(0.0);
 			_dt.rods.push_back(0.0);
 		}
 		for (auto body : bodies) {
+			LOGMSG << "Body " << body->number << ": dt = " << dtM
+			       << " s (updated each 1 timesteps)" << endl;
 			_dt0.bodies.push_back(0.0);
 			_dt.bodies.push_back(0.0);
 		}
@@ -291,7 +297,23 @@ LocalEulerScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
-void LocalEulerScheme::SetCalcMask(real& dt)
+real
+LocalEulerScheme::ComputeDt() const
+{
+	real dt = std::numeric_limits<real>::max();
+	for (auto obj : lines)
+		dt = (std::min)(dt, obj->cfl2dt(cfl));
+	for (auto obj : points)
+		dt = (std::min)(dt, obj->cfl2dt(cfl));
+	for (auto obj : rods)
+		dt = (std::min)(dt, obj->cfl2dt(cfl));
+	for (auto obj : bodies)
+		dt = (std::min)(dt, obj->cfl2dt(cfl));
+	return dt;
+}
+
+void
+LocalEulerScheme::SetCalcMask(real& dt)
 {
 	unsigned int i = 0;
 	for (i = 0; i < lines.size(); i++) {

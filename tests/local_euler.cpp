@@ -1,8 +1,10 @@
 #include <cmath>
+#include <iostream>
 #include "MoorDyn2.h"
 #include <catch2/catch_test_macros.hpp>
 
 #define DUPLICATED_TOL 1e-4
+#define HANGING_TOL 1e-1
 
 double compare_lines(MoorDynLine line1, MoorDynLine line2)
 {
@@ -56,6 +58,37 @@ TEST_CASE("Duplicated line with different resolutions")
 
 	auto e = compare_lines(line1, line2);
 	REQUIRE(e / l <= DUPLICATED_TOL);
+
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
+}
+
+TEST_CASE("Hanging split line")
+{
+	MoorDyn system = MoorDyn_Create("Mooring/local_euler/hanging.txt");
+	REQUIRE(system);
+	unsigned int n_dof;
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 6);
+
+	double x[6], dx[6];
+	for (unsigned int i = 0; i < 2; i++) {
+		auto point = MoorDyn_GetPoint(system, i + 1);
+		REQUIRE(point);
+		REQUIRE(MoorDyn_GetPointPos(point, x + 3 * i) == MOORDYN_SUCCESS);
+	}
+	std::fill(dx, dx + 6, 0.0);
+	REQUIRE(MoorDyn_Init(system, x, dx) == MOORDYN_SUCCESS);
+
+	double f[6];
+	double t = 0.0, dt = 1.0;
+	dx[0] = 1.0;
+	dx[3] = -1.0;
+	REQUIRE(MoorDyn_Step(system, x, dx, f, &t, &dt) == MOORDYN_SUCCESS);
+
+	auto joint = MoorDyn_GetPoint(system, 3);
+	REQUIRE(joint);
+	REQUIRE(MoorDyn_GetPointPos(joint, x) == MOORDYN_SUCCESS);
+	REQUIRE(std::abs(x[0]) < HANGING_TOL);
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
