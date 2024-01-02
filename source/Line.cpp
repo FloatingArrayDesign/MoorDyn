@@ -464,11 +464,17 @@ Line::initialize()
 
 	real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 	if (XF > 0.0) {
-
-		real ZF = dir[2];
-		real LW = ((rho - env->rho_w) * A) * env->g;
-		real CB = 0.;
-		real Tol = 1e-5;
+		// Check if the line touches the seabed, so we are modelling it. Just
+		// the end points are checked
+		const real Tol = 1e-5;
+		real CB = -1.0;
+		for (unsigned int i = 0; i <= N; i += N) {
+			const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+			if(r[i][2] <= waterDepth * (1.0 - Tol))
+				CB = 0.0;
+		}
+		const real ZF = dir[2];
+		const real LW = ((rho - env->rho_w) * A) * env->g;
 
 		// locations of line nodes along line length - evenly distributed
 		// here
