@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <chrono>
 #include "MoorDyn2.h"
 #include <catch2/catch_test_macros.hpp>
 
@@ -89,6 +90,39 @@ TEST_CASE("Hanging split line")
 	REQUIRE(joint);
 	REQUIRE(MoorDyn_GetPointPos(joint, x) == MOORDYN_SUCCESS);
 	REQUIRE(std::abs(x[0]) < HANGING_TOL);
+
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
+}
+
+TEST_CASE("Complex system performance test")
+{
+	MoorDyn system = MoorDyn_Create("Mooring/local_euler/complex_system.txt");
+	REQUIRE(system);
+	unsigned int n_dof;
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 3);
+
+	double x[3], dx[3];
+	auto point = MoorDyn_GetPoint(system, 4);
+	REQUIRE(point);
+	REQUIRE(MoorDyn_GetPointPos(point, x) == MOORDYN_SUCCESS);
+	std::fill(dx, dx + 3, 0.0);
+	auto in_init = std::chrono::steady_clock::now();
+	REQUIRE(MoorDyn_Init(system, x, dx) == MOORDYN_SUCCESS);
+	auto out_init = std::chrono::steady_clock::now();
+	auto dt_init = std::chrono::duration_cast<
+		std::chrono::duration<double, std::ratio<1>>>(
+			out_init - in_init).count();
+
+	double f[6];
+	double t = 0.0, dt = 50.0;
+	auto in_step = std::chrono::steady_clock::now();
+	REQUIRE(MoorDyn_Step(system, x, dx, f, &t, &dt) == MOORDYN_SUCCESS);
+	auto out_step = std::chrono::steady_clock::now();
+	auto dt_step = std::chrono::duration_cast<
+		std::chrono::duration<double, std::ratio<1>>>(
+			out_step - in_step).count();
+	REQUIRE(dt_step < dt_init);
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
