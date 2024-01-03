@@ -785,6 +785,22 @@ class StationaryScheme : public TimeSchemeBase<2, 1>
 	 */
 	inline real Error() const { return _error; }
 
+	/** @brief Compute the number of state variables
+	 *
+	 * This can be used to renormalize the error, so it makes more sense to the
+	 * final user
+	 * @return The number of state variables
+	 * @note Each entry on the states is considered a single variable, that is
+	 * no matter if the state is a scalar, a vector or a quaternion, it is
+	 * considered as a single entry
+	 */
+	inline unsigned int NStates() const {
+		unsigned int n = bodies.size() + rods.size() + points.size();
+		for (unsigned int i = 0; i < lines.size(); i++)
+			n += r[0].lines[i].pos.size();
+		return n;
+	}
+
   private:
 	/** The last computed acceleration module
 	 * @see DMoorDynStateDt::MakeStationary()
