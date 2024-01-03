@@ -404,10 +404,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	if (!skip_ic) {
+		auto n_states = t_integrator.NStates();
 		LOGMSG << "Remaining error after " << t << " s = "
-		       << error << " m/s2" << endl;
+		       << error / n_states << " m/s2" << endl;
 		LOGMSG << "Best score at " << best_score_t
-				<< " s = " << best_score << " m/s2" << endl;
+				<< " s = " << best_score / n_states << " m/s2" << endl;
 	}
 
 	// restore drag coefficients to normal values and restart time counter of

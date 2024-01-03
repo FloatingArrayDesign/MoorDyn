@@ -170,7 +170,7 @@ StationaryScheme::StationaryScheme(moordyn::Log* log, moordyn::WavesRef waves)
 #endif
 
 #ifndef STATIONARY_MAX_BOOSTING
-#define STATIONARY_MAX_BOOSTING 10.0
+#define STATIONARY_MAX_BOOSTING 50.0
 #endif
 
 #ifndef STATIONARY_MIN_BOOSTING
