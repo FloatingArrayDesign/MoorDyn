@@ -30,7 +30,6 @@ set(CPP_TESTS
     io
     rods
     bodies_and_rods
-    quasi_static_chain
     wavekin_4
     tripod
     seafloor
@@ -45,6 +44,7 @@ set(CATCH2_TESTS
     beam
     conveying_fluid
     polyester
+    quasi_static_chain
     local_euler
 )
 
