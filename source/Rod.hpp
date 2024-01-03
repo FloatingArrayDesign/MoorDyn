@@ -365,6 +365,14 @@ class Rod final : public io::IO
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
+		if (isnan(r[i].sum())) {
+			stringstream s;
+			s << "NaN detected" << endl
+			  << "Rod " << number << " node positions:" << endl;
+			for (unsigned int j = 0; j <= N; j++)
+				s << j << " : " << r[j] << ";" << endl;
+			throw moordyn::nan_error(s.str().c_str());
+		}
 		return r[i];
 	}
 

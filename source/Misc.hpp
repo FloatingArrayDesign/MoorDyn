@@ -672,7 +672,9 @@ split(const string& str, const char sep);
 inline vector<string>
 split(const string& s)
 {
-	return split(s, ' ');
+	vector<string> sout = split(s, ' ');
+	if (sout.size() == 1) return split(sout[0], '	');
+	else return sout;
 }
 
 /**
