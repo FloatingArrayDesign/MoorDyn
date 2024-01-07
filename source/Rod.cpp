@@ -338,7 +338,11 @@ Rod::initialize()
 real
 Rod::GetRodOutput(OutChanProps outChan)
 {
-	vec6 Fout = getFnet();
+	
+	vec6 Fout;
+	if ((outChan.QType == FX)||(outChan.QType == FY)||(outChan.QType == FZ)||(outChan.QType == MX)||(outChan.QType == MY)||(outChan.QType == MZ))
+		Fout = getFnet();
+
 
 	if (outChan.NodeID == -1) {
 		if (outChan.QType == PosX)
