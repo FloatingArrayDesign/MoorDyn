@@ -325,9 +325,13 @@ real
 Body::GetBodyOutput(OutChanProps outChan)
 {
 
-	vec3 rotations = rad2deg * Quat2Euler(r7.quat);
+	vec3 rotations;
+	vec6 Fout;
 
-	vec6 Fout = getFnet();
+	if ((outChan.QType == RX)||(outChan.QType == RY)||(outChan.QType == RZ))
+		rotations = rad2deg * Quat2Euler(r7.quat);
+	if ((outChan.QType == FX)||(outChan.QType == FY)||(outChan.QType == FZ)||(outChan.QType == MX)||(outChan.QType == MY)||(outChan.QType == MZ))
+		Fout = getFnet();
 
 	if (outChan.QType == PosX)
 		return r7.pos.x();
