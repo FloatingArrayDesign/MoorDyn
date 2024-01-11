@@ -36,7 +36,9 @@ The step function takes the state vectors (r - positions and rd - time dervative
 time, the time, and the time step size. The step function will integrate MoorDyn the ammount you 
 provide with dt. If dt > dtM, then MoorDyn will substep using dtM as the internal timestep to 
 integrate one dt timestep. If dt < dtM then MoorDyn will use dt as the internal timestep to 
-integrate one dt timestep.
+integrate one dt timestep. The value of rd is assumed constant for the dt timestep, as well as the 
+derived acceleration (relevant for the inertial response of coupled objects). For that reason, dt 
+should be set as small as possible to achieve a reasonable runtime.
 
 The close function clears up memory and safely destroys the MoorDyn system. 
 
