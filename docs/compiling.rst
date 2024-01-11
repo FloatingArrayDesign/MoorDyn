@@ -26,8 +26,8 @@ The following sections describe how to install MoorDyn-C
 :ref:`compile a simple library <compile_simple>` (version 1 method). These compile instructions
 are broken down by operating system. 
 
-Pre-Compiled Releases:
-----------------------
+Pre-Compiled Releases
+---------------------
 .. _releases:
 
 Pre-compiled releases can be found at the
