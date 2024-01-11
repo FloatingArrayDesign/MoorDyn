@@ -368,9 +368,8 @@ Install as Python module
 
 .. _compile_python:
 
-MoorDyn-C is available as python module. This module is not always update with the most 
-recent version of MoorDyn-C on GitHub, so it is important to check the date of the last 
-release at https://pypi.org/project/moordyn/. To install, type
+MoorDyn-C is available as python module. This module is up to date with the master branch of
+MoorDyn-C on GitHub and can be found at https://pypi.org/project/moordyn/. To install, type
 
 .. code-block:: bash
 
@@ -379,8 +378,9 @@ release at https://pypi.org/project/moordyn/. To install, type
 in your system terminal. Pip will take care of everything by you.
 
 **If you want to use the most up to date version of MoorDyn-C as a python module**, follow the 
-instructions in the :ref:`CMake compile section <CMake_compile>`. Once you have succesfully 
-compiled MoorDyn on your system, change to `MoorDyn/build/wrappers/python/` and execute the 
-following command `pip install ./`. This will build the python module locally from 
-the source code you have installed. In order to update this module in the future you will need 
-to update your local source code and follow the same steps above.
+instructions in the :ref:`CMake compile section <CMake_compile>` using the dev branch of 
+MoorDyn-C. Once you have succesfully compiled MoorDyn on your system, change to 
+`MoorDyn/build/wrappers/python/` and execute the following command `pip install ./`. This will 
+build the python module locally from the source code you have installed. In order to update 
+this module in the future you will need to update your local source code and follow the same 
+steps above.
