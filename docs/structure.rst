@@ -226,12 +226,11 @@ Rods can have 6, 3, or 0 DOF.
 
 - **Fixed**: Rods are full constrained, and their movement is defined by that of a body, the ground, 
   or a coupling point (0 DOF). 
-- **Pinned**: Rods are attached at end A to something else, whether that is a body, the ground, or 
-  a coupling point (3 DOF, all rotational). This type of Rod only has three rotational degrees of 
-  freedom, about end A.
 - **Coupled**: They move under the control of the calling program/script (constrained in all 6 DOF).
   See :ref:`the coupling documentation <coupling>`.
 - **Free**: Rods are unconstrained to move in all 6 DOF.  
+- **Pinned**: The rod end A translational movement is fixed while the rotational movement about end A is free.
+- **Coupled pinned**: The rod end A translational movement is coupled while the rotational movement about end A is free.
 
 Pinned or Fixed Rods attached to a body (e.g. body 1) are labelled "Body1Pinned" or "Body1". 
 Rods attached to bodies have their coordinates defined in the body reference frame
@@ -347,9 +346,10 @@ properties are as follows:
 There are three possible types 
 for bodies:
 
-- **Coupled**: the body kinematics are controlled by the calling program.
 - **Free**: the body kinematics are computed by MoorDyn based on the applied loads and inertia
 - **Fixed**: the body is fixed, either to a particular location or to a connected, moving entity.
+- **Coupled**: the body kinematics are controlled by the calling program.
+- **Coupled pinned**: The body's translational movement is coupled while the rotational movement is free.
 
 Body objects have the following variables:
 
