@@ -565,7 +565,7 @@ class TimeSchemeBase : public TimeScheme
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
 	 */
-	void FromStationary(const StationaryScheme& state);
+	virtual void FromStationary(const StationaryScheme& state);
 
 	/** @brief Produce the packed data to be saved
 	 *
@@ -838,33 +838,53 @@ class EulerScheme : public TimeSchemeBase<1, 1>
 	virtual void Step(real& dt);
 };
 
-/** @class LocalEulerScheme Time.hpp
- * @brief A modification of the 1st order Euler's time scheme, which is
- * considering different time steps for each instance.
- * 
- * The local time step of each entity is computed according to the maximum CFL
- * factor of all entities. Such local time step is indeed an integer times the
- * time step provided to LocalEulerScheme::Step().
- * 
- * Thus, the derivatives recomputation is delayed until those time steps are
- * fulfilled
+/** @class TimeSchemeBase Time.hpp
+ * @brief A generic abstract integration scheme
+ *
+ * This class can be later overloaded to implement a plethora of time schemes
  */
-class LocalEulerScheme : public EulerScheme
+template<unsigned int NSTATE, unsigned int NDERIV>
+class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 {
   public:
+	/// @brief Destructor
+	virtual ~LocalTimeSchemeBase() {}
+
+	/** @brief Create an initial state for all the entities
+	 * @note Just the first state is written. None of the following states, nor
+	 * the derivatives are initialized in any way.
+	 * @note It is assumed that the coupled entities were already initialized
+	 */
+	inline void Init()
+	{
+		TimeSchemeBase<NSTATE, NDERIV>::Init();
+		ComputeDt();
+	}
+
+	/** @brief Resume the simulation from the stationary solution
+	 * @param state The stationary solution
+	 */
+	inline void FromStationary(const StationaryScheme& state)
+	{
+		TimeSchemeBase<NSTATE, NDERIV>::FromStationary(state);
+		ComputeDt();
+	}
+
+  protected:
 	/** @brief Costructor
 	 * @param log Logging handler
-	 * @param waves Waves instance
+	 * @param waves The simulation waves object, needed so that we can tell it
+	 * about substeps
 	 */
-	LocalEulerScheme(moordyn::Log* log, WavesRef waves);
+	LocalTimeSchemeBase(moordyn::Log* log, moordyn::WavesRef waves)
+	  : TimeSchemeBase<NSTATE, NDERIV>(log, waves)
+	{
+	}
 
-	/// @brief Destructor
-	~LocalEulerScheme() {}
-
-	/** @brief Run a time step
+	/** @brief Set the calculation mask
 	 * @param dt Time step
 	 */
-	virtual void Step(real& dt);
+	void SetCalcMask(real& dt);
 
   private:
 	/** @brief Compute the model time step
@@ -872,12 +892,7 @@ class LocalEulerScheme : public EulerScheme
 	 * This can be done since we know the TimeScheme::cfl factor
 	 * @return The model time step
 	 */
-	real ComputeDt() const;
-
-	/** @brief Set the calculation mask
-	 * @param dt Time step
-	 */
-	void SetCalcMask(real& dt);
+	real ComputeDt();
 
 	/** @brief The timestep of each instance
 	 */
@@ -892,14 +907,40 @@ class LocalEulerScheme : public EulerScheme
 		std::vector<real> bodies;
 	} deltat;
 
-	/// Do the time steps have been initialized
-	bool _initialized;
-
 	/// The timestep of each instance
 	deltat _dt0;
 
 	/// The counter of already integrated timestep for each instance.
 	deltat _dt;
+};
+
+/** @class LocalEulerScheme Time.hpp
+ * @brief A modification of the 1st order Euler's time scheme, which is
+ * considering different time steps for each instance.
+ * 
+ * The local time step of each entity is computed according to the maximum CFL
+ * factor of all entities. Such local time step is indeed an integer times the
+ * time step provided to LocalEulerScheme::Step().
+ * 
+ * Thus, the derivatives recomputation is delayed until those time steps are
+ * fulfilled
+ */
+class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 */
+	LocalEulerScheme(moordyn::Log* log, WavesRef waves);
+
+	/// @brief Destructor
+	~LocalEulerScheme() {}
+
+	/** @brief Run a time step
+	 * @param dt Time step
+	 */
+	void Step(real& dt);
 };
 
 

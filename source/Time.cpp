@@ -247,9 +247,96 @@ EulerScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
+template<unsigned int NSTATE, unsigned int NDERIV>
+void
+LocalTimeSchemeBase<NSTATE, NDERIV>::SetCalcMask(real& dt)
+{
+	unsigned int i = 0;
+	for (i = 0; i < this->lines.size(); i++) {
+		_dt.lines[i] += dt;
+		if (_dt.lines[i] >= _dt0.lines[i]) {
+			_dt.lines[i] = dt;
+			this->_calc_mask.lines[i] = true;
+		} else {
+			this->_calc_mask.lines[i] = false;
+		}
+	}
+	for (i = 0; i < this->points.size(); i++) {
+		_dt.points[i] += dt;
+		if (_dt.points[i] >= _dt0.points[i]) {
+			_dt.points[i] = dt;
+			this->_calc_mask.points[i] = true;
+		} else {
+			this->_calc_mask.points[i] = false;
+		}
+	}
+	for (i = 0; i < this->rods.size(); i++) {
+		_dt.rods[i] += dt;
+		if (_dt.rods[i] >= _dt0.rods[i]) {
+			_dt.rods[i] = dt;
+			this->_calc_mask.rods[i] = true;
+		} else {
+			this->_calc_mask.rods[i] = false;
+		}
+	}
+	for (i = 0; i < this->bodies.size(); i++) {
+		_dt.bodies[i] += dt;
+		if (_dt.bodies[i] >= _dt0.bodies[i]) {
+			_dt.bodies[i] = dt;
+			this->_calc_mask.bodies[i] = true;
+		} else {
+			this->_calc_mask.bodies[i] = false;
+		}
+	}
+}
+
+template<unsigned int NSTATE, unsigned int NDERIV>
+real
+LocalTimeSchemeBase<NSTATE, NDERIV>::ComputeDt()
+{
+	this->LOGMSG << this->name << ":" << endl;
+	real dt = std::numeric_limits<real>::max();
+	for (auto obj : this->lines)
+		dt = (std::min)(dt, obj->cfl2dt(this->cfl));
+	for (auto obj : this->points)
+		dt = (std::min)(dt, obj->cfl2dt(this->cfl));
+	for (auto obj : this->rods)
+		dt = (std::min)(dt, obj->cfl2dt(this->cfl));
+	for (auto obj : this->bodies)
+		dt = (std::min)(dt, obj->cfl2dt(this->cfl));
+
+	for (auto line : this->lines) {
+		const real dt_line = line->cfl2dt(this->cfl);
+		_dt0.lines.push_back(0.999 * dt_line);
+		_dt.lines.push_back(dt_line);
+		this->LOGMSG << "Line " << line->number << ": dt = " << dt_line
+		             << " s (updated each " << std::ceil(dt_line / dt)
+		             << " timesteps)" << endl;
+	}
+	for (auto point : this->points) {
+		this->LOGMSG << "Point " << point->number << ": dt = " << dt
+		             << " s (updated each 1 timesteps)" << endl;
+		_dt0.points.push_back(0.0);
+		_dt.points.push_back(0.0);
+	}
+	for (auto rod : this->rods) {
+		this->LOGMSG << "Rod " << rod->number << ": dt = " << dt
+		             << " s (updated each 1 timesteps)" << endl;
+		_dt0.rods.push_back(0.0);
+		_dt.rods.push_back(0.0);
+	}
+	for (auto body : this->bodies) {
+		this->LOGMSG << "Body " << body->number << ": dt = " << dt
+		             << " s (updated each 1 timesteps)" << endl;
+		_dt0.bodies.push_back(0.0);
+		_dt.bodies.push_back(0.0);
+	}
+
+	return dt;
+}
+
 LocalEulerScheme::LocalEulerScheme(moordyn::Log* log, moordyn::WavesRef waves)
-  : EulerScheme(log, waves)
-  , _initialized(false)
+  : LocalTimeSchemeBase(log, waves)
 {
 	name = "1st order Local-Timestep Euler";
 }
@@ -257,37 +344,6 @@ LocalEulerScheme::LocalEulerScheme(moordyn::Log* log, moordyn::WavesRef waves)
 void
 LocalEulerScheme::Step(real& dt)
 {
-	if (!_initialized) {
-		LOGMSG << name << ":" << endl;
-		real dtM = ComputeDt();
-		for (auto line : lines) {
-			const real dt_line = line->cfl2dt(cfl);
-			_dt0.lines.push_back(0.999 * dt_line);
-			_dt.lines.push_back(dt_line);
-			LOGMSG << "Line " << line->number << ": dt = " << dt_line
-			       << " s (updated each " << std::ceil(dt_line / dtM)
-			       << " timesteps)" << endl;
-		}
-		for (auto point : points) {
-			LOGMSG << "Point " << point->number << ": dt = " << dtM
-			       << " s (updated each 1 timesteps)" << endl;
-			_dt0.points.push_back(0.0);
-			_dt.points.push_back(0.0);
-		}
-		for (auto rod : rods) {
-			LOGMSG << "Rod " << rod->number << ": dt = " << dtM
-			       << " s (updated each 1 timesteps)" << endl;
-			_dt0.rods.push_back(0.0);
-			_dt.rods.push_back(0.0);
-		}
-		for (auto body : bodies) {
-			LOGMSG << "Body " << body->number << ": dt = " << dtM
-			       << " s (updated each 1 timesteps)" << endl;
-			_dt0.bodies.push_back(0.0);
-			_dt.bodies.push_back(0.0);
-		}
-		_initialized = true;
-	}
 	SetCalcMask(dt);
 	Update(0.0, 0);
 	CalcStateDeriv(0);
@@ -295,63 +351,6 @@ LocalEulerScheme::Step(real& dt)
 	t += dt;
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);
-}
-
-real
-LocalEulerScheme::ComputeDt() const
-{
-	real dt = std::numeric_limits<real>::max();
-	for (auto obj : lines)
-		dt = (std::min)(dt, obj->cfl2dt(cfl));
-	for (auto obj : points)
-		dt = (std::min)(dt, obj->cfl2dt(cfl));
-	for (auto obj : rods)
-		dt = (std::min)(dt, obj->cfl2dt(cfl));
-	for (auto obj : bodies)
-		dt = (std::min)(dt, obj->cfl2dt(cfl));
-	return dt;
-}
-
-void
-LocalEulerScheme::SetCalcMask(real& dt)
-{
-	unsigned int i = 0;
-	for (i = 0; i < lines.size(); i++) {
-		_dt.lines[i] += dt;
-		if (_dt.lines[i] >= _dt0.lines[i]) {
-			_dt.lines[i] = dt;
-			_calc_mask.lines[i] = true;
-		} else {
-			_calc_mask.lines[i] = false;
-		}
-	}
-	for (i = 0; i < points.size(); i++) {
-		_dt.points[i] += dt;
-		if (_dt.points[i] >= _dt0.points[i]) {
-			_dt.points[i] = dt;
-			_calc_mask.points[i] = true;
-		} else {
-			_calc_mask.points[i] = false;
-		}
-	}
-	for (i = 0; i < rods.size(); i++) {
-		_dt.rods[i] += dt;
-		if (_dt.rods[i] >= _dt0.rods[i]) {
-			_dt.rods[i] = dt;
-			_calc_mask.rods[i] = true;
-		} else {
-			_calc_mask.rods[i] = false;
-		}
-	}
-	for (i = 0; i < bodies.size(); i++) {
-		_dt.bodies[i] += dt;
-		if (_dt.bodies[i] >= _dt0.bodies[i]) {
-			_dt.bodies[i] = dt;
-			_calc_mask.bodies[i] = true;
-		} else {
-			_calc_mask.bodies[i] = false;
-		}
-	}
 }
 
 HeunScheme::HeunScheme(moordyn::Log* log, moordyn::WavesRef waves)
