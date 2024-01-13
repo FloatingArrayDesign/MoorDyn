@@ -1036,7 +1036,7 @@ class RK4Scheme : public TimeSchemeBase<5, 4>
  * Euler's and Heun's ones
  */
 template<unsigned int order, bool local>
-class ABScheme : public LocalTimeSchemeBase<5, 1>
+class ABScheme : public LocalTimeSchemeBase<1, 5>
 {
   public:
 	/** @brief Costructor

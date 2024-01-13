@@ -464,7 +464,8 @@ ABScheme<order, local>::Step(real& dt)
 	shift();
 
 	// Get the new derivative
-	SetCalcMask(dt);
+	if (local && (n_steps == order))
+		SetCalcMask(dt);
 	CalcStateDeriv(0);
 
 	// Apply different formulas depending on the number of derivatives available
@@ -490,6 +491,7 @@ ABScheme<order, local>::Step(real& dt)
 			       rd[3] * (dt * 637.0 / 360.0) + rd[4] * (dt * 251.0 / 720.0);
 	}
 
+	n_steps = (std::min)(n_steps + 1, order);
 	t += dt;
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);
