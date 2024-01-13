@@ -1035,8 +1035,8 @@ class RK4Scheme : public TimeSchemeBase<5, 4>
  * Actually, the 1st order and the 2nd order are the same schemes than the
  * Euler's and Heun's ones
  */
-template<unsigned int order>
-class ABScheme : public TimeSchemeBase<5, 1>
+template<unsigned int order, bool local>
+class ABScheme : public LocalTimeSchemeBase<5, 1>
 {
   public:
 	/** @brief Costructor
@@ -1092,11 +1092,47 @@ class ABScheme : public TimeSchemeBase<5, 1>
 	unsigned int n_steps;
 
 	/** @brief Shift the derivatives
+	 * @param org Origin derivative that will be assigned to the @p org + 1 one
+	 */
+	inline void shift(unsigned int org)
+	{
+		const unsigned int dst = org + 1;
+		for (unsigned int i = 0; i < lines.size(); i++) {
+			if (!_calc_mask.lines[i])
+				continue;
+			rd[dst].lines[i].vel = rd[org].lines[i].vel;
+			rd[dst].lines[i].acc = rd[org].lines[i].acc;
+		}
+
+		for (unsigned int i = 0; i < points.size(); i++) {
+			if (!_calc_mask.points[i] && (points[i]->type == Point::FREE))
+				continue;
+			rd[dst].points[i].vel = rd[org].points[i].vel;
+			rd[dst].points[i].acc = rd[org].points[i].acc;
+		}
+
+		for (unsigned int i = 0; i < rods.size(); i++) {
+			if (!_calc_mask.rods[i] && ((rods[i]->type != Rod::FREE) ||
+			                            (rods[i]->type != Rod::PINNED)))
+				continue;
+			rd[dst].rods[i].vel = rd[org].rods[i].vel;
+			rd[dst].rods[i].acc = rd[org].rods[i].acc;
+		}
+
+		for (unsigned int i = 0; i < bodies.size(); i++) {
+			if (!_calc_mask.bodies[i] && (bodies[i]->type == Body::FREE))
+				continue;
+			rd[dst].bodies[i].vel = rd[org].bodies[i].vel;
+			rd[dst].bodies[i].acc = rd[org].bodies[i].acc;
+		}
+	}
+
+	/** @brief Shift the derivatives
 	 */
 	inline void shift()
 	{
 		for (unsigned int i = 0; i < rd.size() - 1; i++)
-			rd[i + 1] = rd[i];
+			shift(i);
 	}
 };
 

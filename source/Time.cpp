@@ -438,13 +438,16 @@ RK4Scheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
-template<unsigned int order>
-ABScheme<order>::ABScheme(moordyn::Log* log, moordyn::WavesRef waves)
-  : TimeSchemeBase(log, waves)
+template<unsigned int order, bool local>
+ABScheme<order, local>::ABScheme(moordyn::Log* log, moordyn::WavesRef waves)
+  : LocalTimeSchemeBase(log, waves)
   , n_steps(0)
 {
 	stringstream s;
-	s << order << "th order Adam-Bashforth";
+	s << order << "th order ";
+	if (local)
+		s << "Local-";
+	s << "Adam-Bashforth";
 	name = s.str();
 	if (order > 4) {
 		LOGWRN << name
@@ -453,14 +456,15 @@ ABScheme<order>::ABScheme(moordyn::Log* log, moordyn::WavesRef waves)
 	}
 }
 
-template<unsigned int order>
+template<unsigned int order, bool local>
 void
-ABScheme<order>::Step(real& dt)
+ABScheme<order, local>::Step(real& dt)
 {
 	Update(0.0, 0);
 	shift();
 
 	// Get the new derivative
+	SetCalcMask(dt);
 	CalcStateDeriv(0);
 
 	// Apply different formulas depending on the number of derivatives available
@@ -538,11 +542,17 @@ create_time_scheme(const std::string& name,
 	} else if (str::lower(name) == "rk4") {
 		out = new RK4Scheme(log, waves);
 	} else if (str::lower(name) == "ab2") {
-		out = new ABScheme<2>(log, waves);
+		out = new ABScheme<2, false>(log, waves);
 	} else if (str::lower(name) == "ab3") {
-		out = new ABScheme<3>(log, waves);
+		out = new ABScheme<3, false>(log, waves);
 	} else if (str::lower(name) == "ab4") {
-		out = new ABScheme<4>(log, waves);
+		out = new ABScheme<4, false>(log, waves);
+	} else if (str::lower(name) == "lab2") {
+		out = new ABScheme<2, false>(log, waves);
+	} else if (str::lower(name) == "lab3") {
+		out = new ABScheme<3, false>(log, waves);
+	} else if (str::lower(name) == "lab4") {
+		out = new ABScheme<4, false>(log, waves);
 	} else if (str::startswith(str::lower(name), "beuler")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(6));
