@@ -42,7 +42,7 @@ Line     LineType NodeA     NodeB  UnstrLen   NumSegs     Flags/Outputs
 7        cable     R4B         4    340.0       34           -
 -------------------------- SOLVER OPTIONS---------------------------------------------------
 2          writeLog     - Write a log file
-0.09       cfl          - CFL to determine the simulation timestep
+0.08       cfl          - CFL to determine the simulation timestep
 3.0e6      kb           - bottom stiffness
 3.0e5      cb           - bottom damping
 320        WtrDpth      - water depth
