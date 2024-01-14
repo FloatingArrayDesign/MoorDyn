@@ -558,9 +558,13 @@ The list of possible options is:
    the more verbose. Please, be mindful that big values would critically reduce the performance!
  - dtM (0.001 C): The time step (s). In MoorDyn-F if this is left blank it defaults to the 
    :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.   
- - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, 
-   BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for 
-   Runge-Kutta while AB stands for Adams-Bashforth
+ - tScheme (RK2): The time integrator. It should be one of
+   Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
+   BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4,
+   Midpoint5.
+   RK stands for Runge-Kutta while AB stands for Adams-Bashforth. The
+   integrators with a L prefix are considering different time steps for each
+   object on the simulation, which might result on some performance benefits
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
  - WtrDpth (0.0): The water depth (m). In MoorDyn-F the bathymetry file path can be inputted here.
