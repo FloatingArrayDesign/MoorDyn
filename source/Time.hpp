@@ -943,8 +943,6 @@ class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
 	void Step(real& dt);
 };
 
-
-
 /** @class HeunScheme Time.hpp
  * @brief Quasi 2nd order Heun's time scheme
  *
