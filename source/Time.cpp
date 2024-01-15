@@ -295,7 +295,7 @@ real
 LocalTimeSchemeBase<NSTATE, NDERIV>::ComputeDt()
 {
 	this->LOGMSG << this->name << ":" << endl;
-	real dt = std::numeric_limits<real>::max();
+	real dt = (std::numeric_limits<real>::max)();
 	for (auto obj : this->lines)
 		dt = (std::min)(dt, obj->cfl2dt(this->cfl));
 	for (auto obj : this->points)

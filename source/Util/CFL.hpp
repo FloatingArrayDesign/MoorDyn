@@ -58,7 +58,7 @@ class CFL
   public:
 	/** @brief Constructor
 	 */
-	CFL() : _l(std::numeric_limits<real>::max()) {};
+	CFL() : _l((std::numeric_limits<real>::max)()) {};
 
 	/** @brief Destructor
 	 */
@@ -68,7 +68,7 @@ class CFL
 	 * @param cfl CFL factor
 	 * @return The timestep
 	 */
-	virtual inline real cfl2dt(const real cfl) const { return std::numeric_limits<real>::max(); }
+	virtual inline real cfl2dt(const real cfl) const { return (std::numeric_limits<real>::max)(); }
 
 	/** @brief Get the CFL factor from a timestep
 	 * @param dt Timestep
