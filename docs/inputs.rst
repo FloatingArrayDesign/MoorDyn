@@ -713,7 +713,7 @@ one space.
  0.001                   dtC              - TimeInterval for the simulation (sec) 
  0                       InputsMode       - MoorDyn coupled object inputs (0: all inputs are zero for every timestep, 1: time-series inputs) (switch) 
  "PtfmMotions.dat"       InputsFile       - Filename for the MoorDyn inputs file for when InputsMod = 1 (quoted string) 
- -1                      NumTurbines      - Number of wind turbines (-) [>=1 to use FAST.Farm mode. 0 to use OpenFAST mode. -1 to use standalone mode] 
+ -1                      NumTurbines      - Number of wind turbines (-) [>=1 to use FAST.Farm mode. 0 to use OpenFAST mode] 
  ---------------------- Initial Positions -------------------------------------- 
  ref_X    ref_Y    surge_init   sway_init  heave_init  roll_init  pitch_init  yaw_init 
  (m)      (m)        (m)          (m)        (m)       (rad)       (rad)        (rad)
@@ -735,9 +735,22 @@ follows the order of the state vector: Body degrees of freedom, rod degrees of f
 degrees of freedom. For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational 
 values will be ignored by by the MoorDyn-F driver (they can be set to zero).
 
-It is recommended that NumTurbines is set to -1 when using the MoorDyn driver (unless you have reason not to)
-as it avoids using the super position of reference frames that exists in OpenFAST and FFAST.farm modes. For 
-multiple coupled objects not located at the origin, NumTurbines = -1 is required to obtain the correct results.
+When using the MoorDyn driver in OpenFAST mode, the inital positions represents the offsets to the 
+global frame. When using OpenFAST mode with the positions set to 0's, then MoorDyn objects will be 
+simulated based on the positions defined in the MoorDyn input file. If a non-zero value is provided,
+it will be incorporated into the inital positions of coupled objects. For example, if the following 
+inital positions are given:
+
+.. code-block:: none
+  
+ ---------------------- Initial Positions -------------------------------------- 
+ ref_X    ref_Y    surge_init   sway_init  heave_init  roll_init  pitch_init  yaw_init 
+ (m)      (m)        (m)          (m)        (m)       (rad)       (rad)        (rad)
+ 0         0         10.0         0.0        0.0        0.0        20.0          0.0  
+
+Then a coupled body with a inital state defined in the input file as [0, 0, 0, 0, 0, 0]
+will have an inital state of [10, 0, 0, 20, 0, 0]. It is advised that for using the MoorDyn driver
+in OpenFAST mode that the Inital Positions are set to 0 unless the user has a reason to do otherwise.
 
 Seafloor/Bathymetry File 
 ^^^^^^^^^^^^^^^^^^^^^^^^
