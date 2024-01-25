@@ -713,7 +713,7 @@ one space.
  0.001                   dtC              - TimeInterval for the simulation (sec) 
  0                       InputsMode       - MoorDyn coupled object inputs (0: all inputs are zero for every timestep, 1: time-series inputs) (switch) 
  "PtfmMotions.dat"       InputsFile       - Filename for the MoorDyn inputs file for when InputsMod = 1 (quoted string) 
- -1                      NumTurbines      - Number of wind turbines (-) [>=1 to use FAST.Farm mode. 0 to use OpenFAST mode] 
+ 0                       NumTurbines      - Number of wind turbines (-) [>=1 to use FAST.Farm mode. 0 to use OpenFAST mode] 
  ---------------------- Initial Positions -------------------------------------- 
  ref_X    ref_Y    surge_init   sway_init  heave_init  roll_init  pitch_init  yaw_init 
  (m)      (m)        (m)          (m)        (m)       (rad)       (rad)        (rad)
