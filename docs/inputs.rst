@@ -824,8 +824,7 @@ Water Kinematics file (MoorDyn-F)
 
 The file provided to MoorDyn-F for water Kinematics should have the following format, which 
 specifies the inputted waves and current. MoorDyn-F can handle a maximum of 100 lines of current
-data. For using wave grid input type 1, there is a 120 character limit on the wave grid point 
-data string. Details on this format can be found in the :ref:`water kinematics section <waterkinematics>`.
+data. Details on this format can be found in the :ref:`water kinematics section <waterkinematics>`.
 
 .. code-block:: none
 
