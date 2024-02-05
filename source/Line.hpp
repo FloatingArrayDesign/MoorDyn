@@ -409,6 +409,14 @@ class Line final : public io::IO
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
+		if (isnan(r[i].sum())) {
+			stringstream s;
+			s << "NaN detected" << endl
+			  << "Line " << number << " node positions:" << endl;
+			for (unsigned int j = 0; j <= N; j++)
+				s << j << " : " << r[j] << ";" << endl;
+			throw moordyn::nan_error(s.str().c_str());
+		}
 		return r[i];
 	}
 
@@ -429,9 +437,11 @@ class Line final : public io::IO
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
 		if ((i == 0) || (i == N))
+			// return (
+			//     Fnet[i] +
+			//     vec(0.0, 0.0, M[i](0, 0) * (-env->g))); // <<< update to use W
 			return (
-			    Fnet[i] +
-			    vec(0.0, 0.0, M[i](0, 0) * (-env->g))); // <<< update to use W
+			    Fnet[i]); // <<< update to use W
 
 		// take average of tension in adjacent segments
 		return (0.5 * (T[i] + T[i - 1]));

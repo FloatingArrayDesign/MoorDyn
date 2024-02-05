@@ -22,41 +22,56 @@ MoorDyn to be run simultaneously, while MoorDyn-F v2 and MoorDyn-C/F v1 only all
 instance at a time. Any driver function will call at least the following MoorDyn 
 functions:
 
-* Create (MoorDyn-C v2 only)
-* Initialize
-* Step
+* Create - MoorDyn-C v2 only
+* Initialize (r, rd)
+* Step (r, rd, t ,dt)
 * Close
 
 The initialize function takes the state vectors at time 0 and sets up MoorDyn for a time 
-series simulation. It will also find the steady state of the system if the input file 
-calls for it. The step function takes the state vectors (r - positions and 
-rd - velocities) at a given time, the time, and the time step size. The step function 
-needs to be called for each time step in your timeseries. The close function clears up 
-memory. For both the step and the initialize functions, the input state vector size needs 
+series simulation. It will also find the steady state of the system if the input file calls for it.
+The r and rd vectors in theinitalize function represent the inital status of the system and should 
+match what is defined in the input file. 
+
+The step function takes the state vectors (r - positions and rd - time dervative of r) at a given 
+time, the time, and the time step size. The step function will integrate MoorDyn the ammount you 
+provide with dt. If dt > dtM, then MoorDyn will substep using dtM as the internal timestep to 
+integrate one dt timestep. If dt < dtM then MoorDyn will use dt as the internal timestep to 
+integrate one dt timestep. The value of rd is assumed constant for the dt timestep, as well as the 
+derived acceleration (relevant for the inertial response of coupled objects). For that reason, dt 
+should be set as small as possible to achieve a reasonable runtime.
+
+The close function clears up memory and safely destroys the MoorDyn system. 
+
+For both the step and the initialize functions, the input state vector size needs 
 to correspond to the DOF of the coupled object or objects. The input vector is 1D with a 
 length of: degree of freedom of coupled object * number of coupled objects. If you have 
 multiple different types of coupled objects then the order in the state vector is 
-body (6 DOF), rod (6 DOF for cantilevered/coupled, 3 DOF for pinned), and then 
-points (3 DOF). The same order applies for the state derivative input vector, with each 
-value being the time derivative of the respective value. The degrees of freedom are as 
-follows:
+body (6 DOF), rod (6 DOF), and then points (3 DOF). The same order applies for the state 
+derivative input vector, with each value being the time derivative of the respective value. 
+The degrees of freedom are as follows (all relative to the global reference frame):
 
  - Bodies and cantilevered/coupled Rods: cartesian positions followed by the Euler angles 
-   relative to the non-inertial reference frame. 
- - Pinned rods: Euler angles relative to the non-inertial reference frame.
- - Coupled points: cartesian positions relative to the non-inertial reference frame.  
+   relative to the global reference frame. 
+ - Pinned bodies and rods: cartesian positions relative to the global reference frame.
+ - Coupled points: cartesian positions relative to the global reference frame.  
 
-
-For example, the r vector for a coupled body and coupled point would be:
+For example, the state vector for a coupled body and coupled point would be:
 
    [ x1, y1, z1, roll1, pitch1, yaw1, x2, y2, z2 ]
+
+The state derivative vector represents the time derivate of the values in the state vector. It is multiplied by the 
+internal timestep to get the new positions of the system. For rotational degrees of freedom the state derivative is
+time derivatives of the angles. The rotation matrix in both MD-F and MD-C used to describe the 
+objects orientation is given by R = X(roll)Y(pitch)Z(yaw). In the examples below, the state vector is referred to 
+as x and the state derivative as xd.
 
 Driving MoorDyn-C v1 is a similar process as MoorDyn v2. MoorDyn-C v1 has no built in 
 couplings and needs to be driven based on the C API in the MoorDyn.h file. An example on 
 how to do this in python is provided at the end of the 
-:ref:`python section <python_wrapper>`.
+:ref:`python section <python_wrapper>`. 
 
-Note: the dt value that you give to the step function needs to be the same value that you specify as dtM in the input file. 
+Note: For coupled pinned bodies and rods the state vector still needs to be size 6, and MoorDyn will just 
+ignore the rotational values provided. 
 
 MoorDyn-C Coupling
 ------------------
@@ -85,7 +100,7 @@ control:
     system = moordyn.Create("Mooring/lines.txt")
 
     # 3 coupled points x 3 components per point = 9 DoF
-    dx = [0] * 9
+    xd = [0] * 9
     # Get the initial positions from the system itself
     x = []
     for i in range(3):
@@ -94,13 +109,13 @@ control:
         x = x + moordyn.GetPointPos(point)
 
     # Setup the initial condition
-    moordyn.Init(system, x, dx)
+    moordyn.Init(system, x, xd)
 
     # Make the points move at 0.5 m/s to the positive x direction
     for i in range(3):
-        dx[3 * i] = 0.5
+        xd[3 * i] = 0.5
     t, dt = 0.0, 0.5
-    f = moordyn.Step(system, x, dx, t, dt)
+    f = moordyn.Step(system, x, xd, t, dt)
 
     # Print the position and tension of the line nodes
     n_lines = moordyn.GetNumberLines(system)
@@ -292,8 +307,8 @@ this time developed in C:
             return 1;
 
         // 3 coupled points x 3 components per point = 9 DoF
-        double x[9], dx[9];
-        memset(dx, 0.0, sizeof(double));
+        double x[9], xd[9];
+        memset(xd, 0.0, sizeof(double));
         // Get the initial positions from the system itself
         for (unsigned int i = 0; i < 3; i++) {
             // 4 = first fairlead id
@@ -306,7 +321,7 @@ this time developed in C:
         }
 
         // Setup the initial condition
-        err = MoorDyn_Init(system, x, dx);
+        err = MoorDyn_Init(system, x, xd);
         if (err != MOORDYN_SUCCESS) {
             MoorDyn_Close(system);
             return 1;
@@ -314,10 +329,10 @@ this time developed in C:
 
         // Make the points move at 0.5 m/s to the positive x direction
         for (unsigned int i = 0; i < 3; i++)
-            dx[3 * i] = 0.5;
+            xd[3 * i] = 0.5;
         double t = 0.0, dt = 0.5;
         double f[9];
-        err = MoorDyn_Step(system, x, dx, f, &t, &dt);
+        err = MoorDyn_Step(system, x, xd, f, &t, &dt);
         if (err != MOORDYN_SUCCESS) {
             MoorDyn_Close(system);
             return 1;
@@ -575,7 +590,7 @@ the following:
 
     %% 3 coupled points x 3 components per point = 9 DoF
     x = zeros(9,1);
-    dx = zeros(9,1);
+    xd = zeros(9,1);
     %% Get the initial positions from the system itself
     for i=1:3
         %% 4 = first fairlead id
@@ -584,15 +599,15 @@ the following:
     end
 
     %% Setup the initial condition
-    MoorDynM_Init(system, x, dx);
+    MoorDynM_Init(system, x, xd);
 
     %% Make the points move at 0.5 m/s to the positive x direction
     for i=1:3
-        dx(1 + 3 * (i - 1)) = 0.5;
+        xd(1 + 3 * (i - 1)) = 0.5;
     end
     t = 0.0;
     dt = 0.5;
-    [t, f] = MoorDynM_Step(system, x, dx, t, dt);
+    [t, f] = MoorDynM_Step(system, x, xd, t, dt);
 
     %% Print the position and tension of the line nodes
     n_lines = MoorDynM_GetNumberLines(system);

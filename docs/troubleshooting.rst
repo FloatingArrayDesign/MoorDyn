@@ -70,10 +70,10 @@ time step is a constant of the whole system, and thus should be selected
 considering the minimum natural period of all lines.
 
 Python errors
--------------
+^^^^^^^^^^^^^
 
 ModuleNotFoundError: No module named 'moordyn'
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------------
 
 If you try to import MoorDyn into your Python file or shell and you receive the error 
 above, then the Python wrapper is not properly installed. First, if you compiled MoorDyn 
@@ -85,7 +85,7 @@ wrong version or you upgraded your Python installation. Either way, installing
 the MoorDyn Python wrapper again should fix the problem.
 
 ImportError
-^^^^^^^^^^^
+-----------
 The import error can show up in a number of ways when importing the MoorDyn module into 
 Python:
  
