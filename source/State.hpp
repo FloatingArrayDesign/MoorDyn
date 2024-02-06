@@ -169,6 +169,39 @@ class StateVarDeriv
 	 * of lists of accelerations
 	 */
 	real MakeStationary(const real &dt);
+
+	/** @brief Carry out a Newmark step
+	 *
+	 * The resulting state rate of change will have the following velocity
+	 *
+	 * \f[ u(t_{n+1}) = u(t_{n}) + \Delta t (
+	 *         (1/2 - \beta) \dot{u(t_{n})} +
+	 *         \beta \dot{u(t_{n+1})}) \f]
+	 *
+	 * and the following acceleration
+	 *
+	 * \f[ \dot{u(t_{n+1})} = (1 - \gamma) \dot{u(t_{n})} +
+	 *                        \gamma \dot{u(t_{n+1})}) \f]
+	 *
+	 * @param visitor The acceleration at the next time step
+	 * @param dt Time step.
+	 * @param gamma The Newmark gamma factor.
+	 * @param beta Time Newmark beta factor.
+	 */
+	StateVarDeriv<T, V> Newmark(const StateVarDeriv<T, V>& visitor,
+	                            const real& dt,
+	                            real gamma = 0.5,
+	                            real beta = 0.25);
+
+	/** @brief Mix this state variation rate with another one
+	 *
+	 * This can be used as a relaxation method when looking for stationary
+	 * solutions
+	 * @param visitor The other state variation rate
+	 * @param f The mix factor. If 0.0, the state is not altered at all. If 1.0
+	 * the state is completely replaced by the @p visitor
+	 */
+	void Mix(const StateVarDeriv<T, V>& visitor, const real& f);
 };
 
 /// The state variables for lines
@@ -320,6 +353,39 @@ class DMoorDynStateDt
 	 * @return The sum of the linear acceleration norms
 	 */
 	real MakeStationary(const real &dt);
+
+	/** @brief Carry out a Newmark step
+	 *
+	 * The resulting state rate of change will have the following velocity
+	 *
+	 * \f[ u(t_{n+1}) = u(t_{n}) + \Delta t (
+	 *         (1/2 - \beta) \dot{u(t_{n})} +
+	 *         \beta \dot{u(t_{n+1})}) \f]
+	 *
+	 * and the following acceleration
+	 *
+	 * \f[ \dot{u(t_{n+1})} = (1 - \gamma) \dot{u(t_{n})} +
+	 *                        \gamma \dot{u(t_{n+1})}) \f]
+	 *
+	 * @param visitor The acceleration at the next time step
+	 * @param dt Time step.
+	 * @param gamma The Newmark gamma factor.
+	 * @param beta Time Newmark beta factor.
+	 */
+	DMoorDynStateDt Newmark(const DMoorDynStateDt& visitor,
+	                        const real& dt,
+	                        real gamma = 0.5,
+	                        real beta = 0.25);
+
+	/** @brief Mix this state variation rate with another one
+	 *
+	 * This can be used as a relaxation method when looking for stationary
+	 * solutions
+	 * @param visitor The other state variation rate
+	 * @param f The mix factor. If 0.0, the state is not altered at all. If 1.0
+	 * the state is completely replaced by the @p visitor
+	 */
+	void Mix(const DMoorDynStateDt& visitor, const real& f);
 };
 
 } // ::moordyn
