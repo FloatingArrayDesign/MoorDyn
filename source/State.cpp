@@ -439,6 +439,100 @@ real StateVarDeriv<std::vector<vec>>::MakeStationary(const real &dt)
 	return ret;
 }
 
+template<>
+StateVarDeriv<vec>
+StateVarDeriv<vec>::Newmark(
+	const StateVarDeriv<vec>& visitor, const real& dt,
+	real gamma, real beta)
+{
+	StateVarDeriv<vec> ret;
+	const vec acc_gamma = (1 - gamma) * acc + gamma * visitor.acc;
+	const vec acc_beta = (0.5 - beta) * acc + beta * visitor.acc;
+	ret.vel = vel + dt * acc_beta;
+	ret.acc = acc_gamma;
+	return ret;
+}
+
+template<>
+StateVarDeriv<vec6>
+StateVarDeriv<vec6>::Newmark(
+	const StateVarDeriv<vec6>& visitor, const real& dt,
+	real gamma, real beta)
+{
+	StateVarDeriv<vec6> ret;
+	const vec6 acc_gamma = (1 - gamma) * acc + gamma * visitor.acc;
+	const vec6 acc_beta = (0.5 - beta) * acc + beta * visitor.acc;
+	ret.vel = vel + dt * acc_beta;
+	ret.acc = acc_gamma;
+	return ret;
+}
+
+template<>
+StateVarDeriv<XYZQuat, vec6>
+StateVarDeriv<XYZQuat, vec6>::Newmark(
+	const StateVarDeriv<XYZQuat, vec6>& visitor, const real& dt,
+	real gamma, real beta)
+{
+	StateVarDeriv<XYZQuat, vec6> ret;
+	const vec6 acc_gamma = (1 - gamma) * acc + gamma * visitor.acc;
+	const vec6 acc_beta = (0.5 - beta) * acc + beta * visitor.acc;
+	ret.vel = vel + XYZQuat::fromVec6(dt * acc_beta);
+	ret.acc = acc_gamma;
+	return ret;
+}
+
+template<>
+StateVarDeriv<std::vector<vec>>
+StateVarDeriv<std::vector<vec>>::Newmark(
+	const StateVarDeriv<std::vector<vec>>& visitor, const real& dt,
+	real gamma, real beta)
+{
+	StateVarDeriv<std::vector<vec>> ret;
+	ret.vel.reserve(vel.size());
+	ret.acc.reserve(acc.size());
+	for (unsigned int i = 0; i < vel.size(); i++) {
+		const vec acc_gamma = (1 - gamma) * acc[i] + gamma * visitor.acc[i];
+		const vec acc_beta = (0.5 - beta) * acc[i] + beta * visitor.acc[i];
+		ret.vel.push_back(vel[i] + dt * acc_beta);
+		ret.acc.push_back(acc_gamma);
+	}
+	return ret;
+}
+
+template<>
+void
+StateVarDeriv<vec>::Mix(const StateVarDeriv<vec>& rhs, const real& f)
+{
+	vel = vel * (1.0 - f) + rhs.vel * f;
+	acc = acc * (1.0 - f) + rhs.acc * f;
+}
+
+template<>
+void
+StateVarDeriv<vec6>::Mix(const StateVarDeriv<vec6>& rhs, const real& f)
+{
+	vel = vel * (1.0 - f) + rhs.vel * f;
+	acc = acc * (1.0 - f) + rhs.acc * f;
+}
+
+template<>
+void
+StateVarDeriv<XYZQuat, vec6>::Mix(const StateVarDeriv<XYZQuat, vec6>& rhs, const real& f)
+{
+	vel = vel * (1.0 - f) + rhs.vel * f;
+	acc = acc * (1.0 - f) + rhs.acc * f;
+}
+
+template<>
+void
+StateVarDeriv<std::vector<vec>>::Mix(const StateVarDeriv<std::vector<vec>>& rhs, const real& f)
+{
+	for (unsigned int i = 0; i < vel.size(); i++) {
+		vel[i] = vel[i] * (1.0 - f) + rhs.vel[i] * f;
+		acc[i] = acc[i] * (1.0 - f) + rhs.acc[i] * f;
+	}
+}
+
 string
 MoorDynState::AsString() const
 {
@@ -697,6 +791,52 @@ DMoorDynStateDt::MakeStationary(const real &dt)
 	for (unsigned int i = 0; i < bodies.size(); i++)
 		ret += bodies[i].MakeStationary(dt);
 	return ret;
+}
+
+DMoorDynStateDt
+DMoorDynStateDt::Newmark(const DMoorDynStateDt& rhs,
+	                     const real& dt,
+	                     real gamma,
+	                     real beta)
+{
+	DMoorDynStateDt out;
+
+	if (lines.size() != rhs.lines.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.lines.reserve(lines.size());
+	for (unsigned int i = 0; i < lines.size(); i++)
+		out.lines.push_back(lines[i].Newmark(rhs.lines[i], dt, gamma, beta));
+	if (points.size() != rhs.points.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i].Newmark(rhs.points[i], dt, gamma, beta));
+	if (rods.size() != rhs.rods.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.rods.reserve(rods.size());
+	for (unsigned int i = 0; i < rods.size(); i++)
+		out.rods.push_back(rods[i].Newmark(rhs.rods[i], dt, gamma, beta));
+	if (bodies.size() != rhs.bodies.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.bodies.reserve(bodies.size());
+	for (unsigned int i = 0; i < bodies.size(); i++)
+		out.bodies.push_back(bodies[i].Newmark(rhs.bodies[i], dt, gamma, beta));
+
+	return out;
+}
+
+void
+DMoorDynStateDt::Mix(const DMoorDynStateDt& visitor, const real& f)
+{
+	real ret = 0.0;
+	for (unsigned int i = 0; i < lines.size(); i++)
+		lines[i].Mix(visitor.lines[i], f);
+	for (unsigned int i = 0; i < points.size(); i++)
+		points[i].Mix(visitor.points[i], f);
+	for (unsigned int i = 0; i < rods.size(); i++)
+		rods[i].Mix(visitor.rods[i], f);
+	for (unsigned int i = 0; i < bodies.size(); i++)
+		bodies[i].Mix(visitor.bodies[i], f);
 }
 
 } // ::moordyn
