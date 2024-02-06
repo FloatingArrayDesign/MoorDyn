@@ -1173,6 +1173,57 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
 	real _dt_factor;
 };
 
+/** @class ImplicitNewmarkScheme Time.hpp
+ * @brief Implicit Newmark Scheme
+ *
+ * The implicit Newmark scheme is quite popular because is able to produce
+ * unconditionally stable time integrators for dynamic response of structures
+ * and solids, specifically on its Average Constant Acceleration incarnation
+ * @see https://en.wikipedia.org/wiki/Newmark-beta_method
+ */
+class ImplicitNewmarkScheme : public TimeSchemeBase<2, 3>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 * @param gamma The gamma factor
+	 * @param beta The beta factor
+	 */
+	ImplicitNewmarkScheme(moordyn::Log* log,
+	                    WavesRef waves,
+	                    unsigned int iters = 10,
+	                    real gamma = 0.5,
+	                    real beta = 0.25);
+
+	/// @brief Destructor
+	~ImplicitNewmarkScheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+
+  private:
+	/** @brief Compute the relaxation factor
+	 *
+	 * This method is responsible of avoiding overshooting when computing the
+	 * derivatives
+	 * @param iter The current iteration
+	 */
+	real Relax(const unsigned int& iter);
+
+	/// The number of iterations
+	unsigned int _iters;
+	/// Alpha factor
+	real _gamma;
+	/// Beta factor
+	real _beta;
+};
+
 /** @brief Create a time scheme
  * @param name The time scheme name, one of the following:
  * "Euler", "Heun", "RK2", "RK4", "AB3", "AB4"

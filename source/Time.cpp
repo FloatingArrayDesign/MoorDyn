@@ -527,6 +527,78 @@ ImplicitEulerScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
+ImplicitNewmarkScheme::ImplicitNewmarkScheme(moordyn::Log* log,
+                                             moordyn::WavesRef waves,
+                                             unsigned int iters,
+                                             real gamma,
+                                             real beta)
+  : TimeSchemeBase(log, waves)
+  , _iters(iters)
+  , _gamma(gamma)
+  , _beta(beta)
+{
+	stringstream s;
+	s << "gamma=" << gamma << ",beta=" << beta << " implicit Newmark ("
+	  << iters << " iterations)";
+	name = s.str();
+}
+
+void
+ImplicitNewmarkScheme::Step(real& dt)
+{
+	// Initialize the velocity and acceleration for the next time step as
+	// the ones from the current time step
+	rd[1] = rd[0];
+
+	t += dt;
+	rd[2] = rd[0];  // We use rd[2] just as a tmp storage to compute relaxation
+	for (unsigned int i = 0; i < _iters; i++) {
+		// At the time of computing r acts as an input, and rd as an output.
+		// Thus we just need to apply the Newmark scheme on r[1] and store
+		// the new rates of change on rd[1]
+		r[1] = r[0] + rd[0].Newmark(rd[1], dt, _gamma, _beta) * dt;
+		Update(dt, 1);
+		CalcStateDeriv(1);
+
+		if (i < _iters - 1) {
+			// We cannot relax the last step
+			const real relax = Relax(i);
+			rd[1].Mix(rd[2], relax);
+			rd[2] = rd[1];
+		}
+	}
+
+	// Apply
+	r[1] = r[0] + rd[0].Newmark(rd[1], dt, _gamma, _beta) * dt;
+	r[0] = r[1];
+	rd[0] = rd[1];
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
+}
+
+#ifndef INEWMARK_RELAX_INIT
+#define INEWMARK_RELAX_INIT 0.95
+#endif
+
+#ifndef INEWMARK_RELAX_POW
+#define INEWMARK_RELAX_POW 3
+#endif
+
+#ifndef INEWMARK_RELAX_CFL
+#define INEWMARK_RELAX_CFL 2.0
+#endif
+
+real
+ImplicitNewmarkScheme::Relax(const unsigned int& iter)
+{
+	const real f = (real)iter / _iters;
+	const real relax = INEWMARK_RELAX_INIT * (1 - pow(f, INEWMARK_RELAX_POW));
+	// The relax factor shall be bounded by the CFL
+	const real relax_cfl = (std::min)(INEWMARK_RELAX_INIT,
+	                                  INEWMARK_RELAX_CFL * GetCFL());
+	return (std::max)(relax, relax_cfl);
+}
+
 TimeScheme*
 create_time_scheme(const std::string& name,
                    moordyn::Log* log,
@@ -571,6 +643,16 @@ create_time_scheme(const std::string& name,
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Midpoint name format '" << name << "'";
+			throw moordyn::invalid_value_error(s.str().c_str());
+		}
+	} else if (str::startswith(str::lower(name), "aca")) {
+		try {
+			unsigned int iters = std::stoi(name.substr(3));
+			out = new ImplicitNewmarkScheme(log, waves, iters, 0.5, 0.25);
+		} catch (std::invalid_argument) {
+			stringstream s;
+			s << "Invalid Average Constant Acceleration name format '"
+			  << name << "'";
 			throw moordyn::invalid_value_error(s.str().c_str());
 		}
 	} else {
