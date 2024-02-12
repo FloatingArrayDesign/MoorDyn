@@ -42,7 +42,7 @@ jobs:
         shell: bash
 
       - name: download pre-built VTK static library
-        uses: suisei-cn/actions-download-file@v1.4.0
+        uses: suisei-cn/actions-download-file@v1.6.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
           target: ${{github.workspace}}/
