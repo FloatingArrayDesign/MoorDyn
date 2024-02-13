@@ -1,0 +1,30 @@
+--------------------- MoorDyn Input File ------------------------------------
+MoorDyn input file for Polyester stiffness and length variation as a function
+of the tension
+----------------------- LINE TYPES ------------------------------------------
+TypeName         Diam    Mass/m     EA         BA/-zeta    EI         Cd     Ca     CdAx    CaAx
+(name)           (m)     (kg/m)     (N)        (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)
+Polyester_290mm  0.217   52.0       3.339E+08  -1.0        0.0        1.6    1.79   0.008   0.0    
+---------------------- POINT PROPERTIES --------------------------------
+ID    Type      X       Y       Z         Mass   Volume  CdA    Ca
+(#)   (-)       (m)     (m)     (m)       (kg)   (mˆ3)   (m^2)  (-)
+1    Fixed      0.0     0.0     -372.192  0.0    0.0     0.0    0.0
+2    Coupled    1360.0  0.0     -18.0     0.0    0.0     0.0    0.0
+---------------------- LINES ----------------------------------------
+ID   LineType         AttachA  AttachB   UnstrLen  NumSegs  LineOutputs
+(#)  (name)           (#)      (#)       (m)       (-)      (-)
+1    Polyester_290mm  1        2         1400.0    70       -
+---------------------- OPTIONS -----------------------------------------
+2             writeLog             Write a log file
+0.001         dtM                  time step to use in mooring integration (s)
+1.0e5         kBot                 bottom stiffness (Pa/m)
+1.0e4         cBot                 bottom damping (Pa-s/m)
+9.80665       g                    gravitational constant (m/s^2)
+1025.0        WtrDnsty             water density (kg/m^3)
+372.3         WtrDpth              water depth (m)
+4.0           CdScaleIC            factor by which to scale drag coefficients during dynamic relaxation (-)
+0.5           FrictionCoefficient  general bottom friction coefficient, as a start (-)
+0.1           dtIC                 time interval for analyzing convergence during IC gen (s)
+100           TmaxIC               max time for ic gen (s)
+0.01          threshIC             threshold for IC convergence (-)
+------------------------- need this line -------------------------------------- 

@@ -893,6 +893,49 @@ def SetLineUnstretchedLengthVel(instance, v):
     return cmoordyn.line_set_ulenv(instance, v)
 
 
+def IsLineConstantEA(instance):
+    """ Get whether the line is governed by a non-linear stiffness or a
+    constant one
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    b: True if the stiffness of the line is constant, False if a non-linear
+       stiffness has been set
+    """
+    import cmoordyn
+    return cmoordyn.line_is_const_ea(instance) != 0
+
+
+def GetLineConstantEA(instance):
+    """ Get the constant stiffness of the line
+    
+    This value is useless if non-linear stiffness is considered
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    ea: The constant stiffness EA value
+    """
+    import cmoordyn
+    return cmoordyn.line_get_const_ea(instance)
+
+
+def SetLineConstantEA(instance, ea):
+    """ Set the constant stiffness of the line
+    
+    This value is useless if non-linear stiffness is considered
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    EA (float): The constant stiffness EA value
+    """
+    import cmoordyn
+    return cmoordyn.line_set_const_ea(instance, EA)
+
+
 def GetLineNodePos(instance, i):
     """ Get a line node position
 

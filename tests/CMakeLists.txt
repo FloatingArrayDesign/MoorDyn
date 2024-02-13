@@ -43,6 +43,7 @@ set(CPP_TESTS
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    polyester
 )
 
 function(make_executable test_name, extension)
