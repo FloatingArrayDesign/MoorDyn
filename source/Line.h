@@ -102,6 +102,42 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_SetLineUnstretchedLengthVel(MoorDynLine l, double v);
 
+	/** @brief Get whether the line is governed by a non-linear stiffness or a
+	 * constant one
+	 * @param l The Moordyn line
+	 * @param b 1 if the stiffness of the line is constant, 0 if a
+	 * non-linear stiffness has been set
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_GetLineConstantEA()
+	 * @see MoorDyn_SetLineConstantEA()
+	 */
+	int DECLDIR MoorDyn_IsLineConstantEA(MoorDynLine l, int* b);
+
+	/** @brief Get the constant stiffness of the line
+	 *
+	 * This value is useless if non-linear stiffness is considered
+	 * @param l The Moordyn line
+	 * @param EA The constant stiffness EA value
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_IsLineConstantEA()
+	 * @see MoorDyn_SetLineConstantEA()
+	 */
+	int DECLDIR MoorDyn_GetLineConstantEA(MoorDynLine l, double* EA);
+
+	/** @brief Set the constant stiffness of the line
+	 *
+	 * This value is useless if non-linear stiffness is considered
+	 * @param l The Moordyn line
+	 * @param EA The constant stiffness EA value
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_IsLineConstantEA()
+	 * @see MoorDyn_GetLineConstantEA()
+	 */
+	int DECLDIR MoorDyn_SetLineConstantEA(MoorDynLine l, double EA);
+
 	/** @brief Get a line node position
 	 * @param l The Moordyn line
 	 * @param i The node index

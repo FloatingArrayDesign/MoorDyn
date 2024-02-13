@@ -1005,7 +1005,8 @@ waves_getkin(PyObject*, PyObject* args)
 		return NULL;
 
 	double u[3], ud[3], zeta, pdyn;
-	const int err = MoorDyn_GetWavesKin(instance, x, y, z, u, ud, &zeta, &pdyn);
+	const int err = MoorDyn_GetWavesKin(
+		instance, x, y, z, u, ud, &zeta, &pdyn, NULL);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -1667,6 +1668,87 @@ line_set_ulenv(PyObject*, PyObject* args)
 	return Py_None;
 }
 
+/** @brief Wrapper to MoorDyn_IsLineConstantEA() function
+ * @param args Python passed arguments
+ * @return The unstretched length
+ */
+static PyObject*
+line_is_const_ea(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	int b;
+	const int err = MoorDyn_IsLineConstantEA(instance, &b);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyLong_FromLong(b);
+}
+
+/** @brief Wrapper to MoorDyn_GetLineConstantEA() function
+ * @param args Python passed arguments
+ * @return The unstretched length
+ */
+static PyObject*
+line_get_const_ea(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	double ea;
+	const int err = MoorDyn_GetLineConstantEA(instance, &ea);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyFloat_FromDouble(ea);
+}
+
+/** @brief Wrapper to MoorDyn_SetLineConstantEA() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_const_ea(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	double ea;
+
+	if (!PyArg_ParseTuple(args, "Od", &capsule, &ea))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	const int err = MoorDyn_SetLineConstantEA(instance, ea);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
 /** @brief Wrapper to MoorDyn_GetLineNodePos() function
  * @param args Python passed arguments
  * @return The position
@@ -1985,6 +2067,18 @@ static PyMethodDef moordyn_methods[] = {
 	  line_set_ulenv,
 	  METH_VARARGS,
 	  "Set the line rate of change of unstretched length" },
+	{ "line_is_const_ea",
+	  line_is_const_ea,
+	  METH_VARARGS,
+	  "Check if the stiffness is constant" },
+	{ "line_get_const_ea",
+	  line_get_const_ea,
+	  METH_VARARGS,
+	  "Get the constant stiffness" },
+	{ "line_set_const_ea",
+	  line_set_const_ea,
+	  METH_VARARGS,
+	  "Set the constant stiffness" },
 	{ "line_get_node_pos",
 	  line_get_node_pos,
 	  METH_VARARGS,
