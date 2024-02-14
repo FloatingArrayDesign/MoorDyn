@@ -510,9 +510,11 @@ moordyn::MoorDyn::Step(const double* x,
                        double& dt)
 {
 	// should check if wave kinematics have been set up if expected!
+	const auto default_precision{std::cout.precision()};
+	std::cout << std::fixed << setprecision(1);
 	LOGDBG << "t = " << t << "s     \r";
+	std::cout << std::defaultfloat << setprecision(default_precision);
 
-	cout << fixed << setprecision(1);
 	cout << "\rt = " << t << " " << flush;
 
 	if (dt <= 0) {
