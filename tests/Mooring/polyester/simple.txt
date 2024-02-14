@@ -16,7 +16,7 @@ ID   LineType         AttachA  AttachB   UnstrLen  NumSegs  LineOutputs
 1    Polyester_290mm  1        2         1400.0    70       -
 ---------------------- OPTIONS -----------------------------------------
 2             writeLog             Write a log file
-0.001         dtM                  time step to use in mooring integration (s)
+0.005         dtM                  time step to use in mooring integration (s)
 1.0e5         kBot                 bottom stiffness (Pa/m)
 1.0e4         cBot                 bottom damping (Pa-s/m)
 9.80665       g                    gravitational constant (m/s^2)

@@ -35,7 +35,8 @@
 
 #include <cmath>
 #include <iostream>
-#include <vector>
+#include <fstream>
+#include <deque>
 #include "MoorDyn2.h"
 #include "csv_parser.h"
 #include <catch2/catch_test_macros.hpp>
@@ -46,6 +47,10 @@
 #define KRD1 16.0
 #define KRD2 0.35
 #define TC 200.0
+// The tensions expected, on inverse order
+#define TTIMES { 320.0, 640.0, 960.0, 1280.0, 1599.0 }
+#define TMEANS { 0.1, 0.2, 0.3, 0.4, 0.5 }
+
 
 double vec_norm(const double v[3])
 {
@@ -117,8 +122,10 @@ TEST_CASE("Ramp up, stabilization and cycles")
 	// Time to move
 	double t = 0.0, dt;
 	// Data about the lenght and stiffness recomputation as a function of time
-	double t_mark = 0.0;
-	std::vector<double> tensions;  
+	std::deque<double> times;  
+	std::deque<double> tensions;  
+	std::deque<double> ttimes(TTIMES);
+	std::deque<double> tmeans(TMEANS);
 	for (unsigned int i = 0; i < tdata.size(); i++) {
 		REQUIRE(MoorDyn_GetPointPos(fairlead, r) == MOORDYN_SUCCESS);
 		double t_dst = tdata.at(i);
@@ -127,20 +134,34 @@ TEST_CASE("Ramp up, stabilization and cycles")
 		dr[0] = (x_dst - r[0]) / dt;
 		double f[3];
 		REQUIRE(MoorDyn_Step(system, r, dr, f, &t, &dt) == MOORDYN_SUCCESS);
+		times.push_back(t);
 		tensions.push_back(get_average_tension(line, anchor, fairlead));
-		if ((t - t_mark) >= TC) {
-			t_mark = t;
-			double tension = 0.0;
-			for (auto t : tensions)
-				tension += t;
-			tension /= tensions.size();
-			tensions.clear();
-			double ks = KRS * MBL;
-			double kd = (KRD1 + KRD2 * tension / MBL * 100) * MBL;
-			double l = l0 * (1.0 + tension / ks) / (1.0 + tension / kd);
-			std::cout << "New length = " << l << std::endl;
+
+		// Let's check and tweak the line if there is info enough
+		if (times.back() - times.front() < TC)
+			continue;
+
+		double tension = 0.0;
+		for (auto f : tensions)
+			tension += f;
+		tension /= tensions.size();
+		times.pop_front();
+		tensions.pop_front();
+
+		double ks = KRS * MBL;
+		double kd = (KRD1 + KRD2 * tension / MBL * 100) * MBL;
+		double l = l0 * (1.0 + tension / ks) / (1.0 + tension / kd);
+		REQUIRE(
+			MoorDyn_SetLineConstantEA(line, kd) == MOORDYN_SUCCESS);
+		REQUIRE(
+			MoorDyn_SetLineUnstretchedLength(line, l) == MOORDYN_SUCCESS);
+
+		if (t >= ttimes.front()) {
+			const double tmean = tmeans.front();
+			ttimes.pop_front();
+			tmeans.pop_front();
 			REQUIRE(
-				MoorDyn_SetLineUnstretchedLength(line, l) == MOORDYN_SUCCESS);
+				fabs(tension / MBL - tmean) < 0.025);
 		}
 	}
 
