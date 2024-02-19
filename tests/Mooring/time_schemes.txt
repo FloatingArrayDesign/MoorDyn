@@ -18,7 +18,7 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 2             writeLog      Write a log file
 @DT@          dtM           time step to use in mooring integration (s)
 @TSCHEME@     tScheme       The time integration Scheme (-)
-1.0           cfl           CFL to determine the simulation timestep
+1000.0        cfl           CFL to determine the simulation timestep
 1000.0        WtrDnsty      water density (kg/m^3)
 500           WtrDpth       water depth (m)
 1.0           dtIC          time interval for analyzing convergence during IC gen (s)
