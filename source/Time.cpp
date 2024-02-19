@@ -497,12 +497,30 @@ ABScheme<order, local>::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
+template<unsigned int NSTATE, unsigned int NDERIV>
+ImplicitSchemeBase<NSTATE, NDERIV>::ImplicitSchemeBase(moordyn::Log* log,
+                                                       WavesRef waves,
+                                                       unsigned int iters)
+	: TimeSchemeBase<NSTATE, NDERIV>(log, waves)
+	, _iters(iters)
+	, _c0(0.5)
+	, _c1(0.0)
+{
+}
+
+template<unsigned int NSTATE, unsigned int NDERIV>
+real
+ImplicitSchemeBase<NSTATE, NDERIV>::Relax(const unsigned int& iter)
+{
+	const real x = (iter + 1) / _iters;
+	return c0() / _iters + c1() * tanh(x);
+}
+
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
                                          moordyn::WavesRef waves,
                                          unsigned int iters,
                                          real dt_factor)
-  : TimeSchemeBase(log, waves)
-  , _iters(iters)
+  : ImplicitSchemeBase(log, waves, iters)
   , _dt_factor(dt_factor)
 {
 	stringstream s;
@@ -514,10 +532,18 @@ void
 ImplicitEulerScheme::Step(real& dt)
 {
 	t += _dt_factor * dt;
+	rd[1] = rd[0];  // We use rd[1] just as a tmp storage to compute relaxation
 	for (unsigned int i = 0; i < _iters; i++) {
 		r[1] = r[0] + rd[0] * (_dt_factor * dt);
 		Update(_dt_factor * dt, 1);
 		CalcStateDeriv(0);
+
+		if (i < _iters - 1) {
+			// We cannot relax on the last step
+			const real relax = Relax(i);
+			rd[0].Mix(rd[1], relax);
+			rd[1] = rd[0];
+		}
 	}
 
 	// Apply
@@ -630,7 +656,7 @@ create_time_scheme(const std::string& name,
 	} else if (str::startswith(str::lower(name), "beuler")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(6));
-			out = new ImplicitEulerScheme(log, waves, iters, 1.0);
+			out = new BackwardEulerScheme(log, waves, iters);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Backward Euler name format '" << name << "'";
@@ -639,7 +665,7 @@ create_time_scheme(const std::string& name,
 	} else if (str::startswith(str::lower(name), "midpoint")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(8));
-			out = new ImplicitEulerScheme(log, waves, iters, 0.5);
+			out = new MidpointScheme(log, waves, iters);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Midpoint name format '" << name << "'";

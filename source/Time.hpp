@@ -838,7 +838,7 @@ class EulerScheme : public TimeSchemeBase<1, 1>
 	virtual void Step(real& dt);
 };
 
-/** @class TimeSchemeBase Time.hpp
+/** @class LocalTimeSchemeBase Time.hpp
  * @brief A generic abstract integration scheme
  *
  * This class can be later overloaded to implement a plethora of time schemes
@@ -1134,6 +1134,74 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
 	}
 };
 
+/** @class ImplicitSchemeBase Time.hpp
+ * @brief A generic abstract implicit scheme
+ *
+ * This class can be later overloaded to implement a plethora of time schemes
+ */
+template<unsigned int NSTATE, unsigned int NDERIV>
+class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 * @param dt_factor The inner evaluation point factor. 0.5 for the midpoint
+	 * method, 1.0 for the backward Euler method
+	 */
+	ImplicitSchemeBase(moordyn::Log* log,
+	                   WavesRef waves,
+	                   unsigned int iters = 10);
+
+	/// @brief Destructor
+	virtual ~ImplicitSchemeBase() {}
+
+  protected:
+	/** @brief Get the number of subiterations
+	 * @return The number of iterations
+	 */
+	inline unsigned int iters() const { return _iters; }
+
+	/** @brief Get the constant relaxation part coefficient
+	 * @return The constant relaxation part coefficient
+	 */
+	inline real c0() const { return _c0; }
+
+	/** @brief Set the constant relaxation part coefficient
+	 * @param c The constant relaxation part coefficient
+	 */
+	inline void c0(const real c) { _c0 = c; }
+
+	/** @brief Get the tanh relaxation part coefficient
+	 * @return The tanh relaxation part coefficient
+	 */
+	inline real c1() const { return _c1; }
+
+	/** @brief Set the tanh relaxation part coefficient
+	 * @param c The tanh relaxation part coefficient
+	 */
+	inline void c1(const real c) { _c1 = c; }
+
+	/** @brief Compute the relaxation factor
+	 *
+	 * This method is responsible of avoiding overshooting when computing the
+	 * derivatives
+	 * @param iter The current iteration
+	 */
+	real Relax(const unsigned int& iter);
+
+  private:
+	/// The number of iterations
+	unsigned int _iters;
+
+	/// The constant relaxation part coefficient
+	real _c0;
+
+	/// The tanh relaxation part coefficient
+	real _c1;
+};
+
 /** @class ImplicitEulerScheme Time.hpp
  * @brief Implicit 1st order Euler time scheme
  *
@@ -1141,7 +1209,7 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
  * evaluated somewhere inside the time step. Obviously, since that point depends
  * on the derivative itself, a fixed point problem shall be solved
  */
-class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
+class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 {
   public:
 	/** @brief Costructor
@@ -1157,7 +1225,7 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
 	                    real dt_factor = 0.5);
 
 	/// @brief Destructor
-	~ImplicitEulerScheme() {}
+	virtual ~ImplicitEulerScheme() {}
 
 	/** @brief Run a time step
 	 *
@@ -1171,6 +1239,76 @@ class ImplicitEulerScheme : public TimeSchemeBase<2, 1>
 	unsigned int _iters;
 	/// The evaluation point
 	real _dt_factor;
+};
+
+/** @class BackwardEulerScheme Time.hpp
+ * @brief Implicit 1st order Backward Euler time scheme
+ *
+ * The implicit 1st order Backward Euler method is an implicit method where the
+ * derivative is evaluated at the end of the time step.
+ *
+ * It is quite popular due to its dissipative properties
+ */
+class BackwardEulerScheme : public ImplicitEulerScheme
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 */
+	BackwardEulerScheme(moordyn::Log* log,
+	                    WavesRef waves,
+	                    unsigned int iters = 10)
+		: ImplicitEulerScheme(log, waves, iters, 1.0)
+	{
+		if (iters < 10) {
+			c0(0.1 - 0.01 * iters);
+			c1(0.07);
+		}
+		else {
+			c0(0.0);
+			c1(1.0 / (10.0 + 0.051 * iters * iters));
+		}
+	}
+
+	/// @brief Destructor
+	~BackwardEulerScheme() {}
+};
+
+/** @class MidpointScheme Time.hpp
+ * @brief Implicit 1st order Midpoint time scheme
+ *
+ * The implicit 1st order Midpoint method is an implicit method where the
+ * derivative is evaluated at the middle of the time step.
+ *
+ * It is quite popular due to its energy conservation properties.
+ */
+class MidpointScheme : public ImplicitEulerScheme
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 */
+	MidpointScheme(moordyn::Log* log,
+	               WavesRef waves,
+	               unsigned int iters = 10)
+		: ImplicitEulerScheme(log, waves, iters, 0.5)
+	{
+		if (iters < 14) {
+			c0(0.154 - 0.011 * iters);
+			c1(0.08);
+		}
+		else {
+			c0(0.0);
+			c1(0.015);
+		}
+	}
+
+	/// @brief Destructor
+	~MidpointScheme() {}
 };
 
 /** @class ImplicitNewmarkScheme Time.hpp
