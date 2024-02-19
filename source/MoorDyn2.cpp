@@ -328,6 +328,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	// boost drag coefficients to speed static equilibrium convergence
+	// This is actually useless on the current implementation
 	for (auto obj : LineList)
 		obj->scaleDrag(ICDfac);
 	for (auto obj : PointList)
@@ -361,7 +362,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		t_integrator.AddPoint(obj);
 	for (auto obj : LineList)
 		t_integrator.AddLine(obj);
-	t_integrator.SetCFL(cfl);
+	t_integrator.SetCFL((std::min)(cfl, 1.0));
 	t_integrator.Init();
 	while (((ICTmax - t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
 		// Integrate one ICD timestep (ICdt)
