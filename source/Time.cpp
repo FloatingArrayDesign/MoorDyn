@@ -533,12 +533,12 @@ ImplicitEulerScheme::Step(real& dt)
 {
 	t += _dt_factor * dt;
 	rd[1] = rd[0];  // We use rd[1] just as a tmp storage to compute relaxation
-	for (unsigned int i = 0; i < _iters; i++) {
+	for (unsigned int i = 0; i < iters(); i++) {
 		r[1] = r[0] + rd[0] * (_dt_factor * dt);
 		Update(_dt_factor * dt, 1);
 		CalcStateDeriv(0);
 
-		if (i < _iters - 1) {
+		if (i < iters() - 1) {
 			// We cannot relax on the last step
 			const real relax = Relax(i);
 			rd[0].Mix(rd[1], relax);
