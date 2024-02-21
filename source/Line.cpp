@@ -201,6 +201,7 @@ Line::setup(int number_in,
 	Ap.assign(N + 1, vec::Zero());   // node added mass forcing (transverse)
 	Aq.assign(N + 1, vec::Zero());   // node added mass forcing (axial)
 	B.assign(N + 1, vec::Zero());    // node bottom contact force
+	Lf.assign(N + 1, vec::Zero());    // viv crossflow lift force
 	Fnet.assign(N + 1, vec::Zero()); // total force on node
 
 	// wave things
@@ -1066,6 +1067,19 @@ Line::getStateDeriv()
 			           l[i - 1] * (rho - F[i - 1] * env->rho_w)) *
 			          (-env->g);
 
+		// line natural frequency
+		real m_i; // node mass from mass matrix. This can be cleaned up later
+		if (i == 0) {
+			m_i = pi / 8. * d * d * l[0] * rho;
+		} else if (i == N) {
+			m_i = pi / 8. * d * d * l[N - 1] * rho;
+		} else {
+			m_i = pi / 8. * (d * d * rho * (l[i] + l[i - 1]));
+		}
+		const moordyn::real omega = (pi/l[i]) * sqrt((T[i].norm()/m_i) + ((pi/l[i]) * (pi/l[i]) * (EI/m_i)));
+
+		// Unit vector of current flow
+		const vec U_hat = U[i]/U[i].norm();
 		// relative flow velocity over node
 		const vec vi = U[i] - rd[i];
 		// tangential relative flow component
@@ -1074,6 +1088,11 @@ Line::getStateDeriv()
 		const vec vq = vql * q[i];
 		// transverse relative flow component
 		const vec vp = vi - vq;
+		// crossflow relative flow component. Normal to both cable and flow direction
+		const vec y_dot = vi.dot(q[i].cross(U_hat)) * q[i].cross(U_hat);
+		// reduced velocity
+		const moordyn::real Ui_mag = U[i].norm();
+		const moordyn::real V_r = Ui_mag/(omega*d);
 
 		const moordyn::real vq_mag = vq.norm();
 		const moordyn::real vp_mag = vp.norm();
@@ -1098,6 +1117,22 @@ Line::getStateDeriv()
 		else
 			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
 			        (F[i] * l[i] + F[i - 1] * l[i - 1]) * vq;
+
+		// phase of lift force. Assume phi(0) = 0 for now.
+		const moordyn::real f_hat = 0.172; // For now assume constant non-dimen frequency at max excitation.
+		const moordyn::real phi_dot = 2*pi*f_hat*Ui_mag / d;
+		const moordyn::real phi = phi_dot * t;
+		// Vortex shedding frequency
+		// We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
+		const moordyn::real st = 0.2;
+		const moordyn::real f_s = st * Ui_mag / d;
+		// if frequency lock in and crossflow excitation
+		if ((0.6 < (phi_dot/f_s) < 1.5) && (5.0 < V_r < 7.0)) {
+			const moordyn::real C_e = 0.800; // Excitation coefficient from VIVANA theory manual for f_hat = 0.172.
+			const moordyn::real phase_diff = 0; // In phase motion from max excitation assumption. 
+			const moordyn::real C_l = C_e / cos(phase_diff);
+			Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * y_dot;
+		}
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
@@ -1178,7 +1213,7 @@ Line::getStateDeriv()
 			Fnet[i] = -T[i - 1] - Td[i - 1];
 		else
 			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
-		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i];
+		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i] + Lf[i];
 	}
 
 	//	if (t > 5)

@@ -230,6 +230,8 @@ class Line final : public io::IO
 	std::vector<vec> Aq;
 	/// node bottom contact force
 	std::vector<vec> B;
+	/// crossflow viv lift force
+	std::vector<vec> Lf;
 	/// total force on node
 	std::vector<vec> Fnet;
 
