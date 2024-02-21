@@ -1235,8 +1235,6 @@ class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 	virtual void Step(real& dt);
 
   private:
-	/// The number of iterations
-	unsigned int _iters;
 	/// The evaluation point
 	real _dt_factor;
 };
