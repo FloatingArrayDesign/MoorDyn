@@ -1318,14 +1318,8 @@ class MidpointScheme : public ImplicitEulerScheme
 	               unsigned int iters = 10)
 		: ImplicitEulerScheme(log, waves, iters, 0.5)
 	{
-		if (iters < 14) {
-			c0(0.154 - 0.011 * iters);
-			c1(0.08);
-		}
-		else {
-			c0(0.0);
-			c1(0.015);
-		}
+		c0(1.0);
+		c1(1.0);
 	}
 
 	/// @brief Destructor
