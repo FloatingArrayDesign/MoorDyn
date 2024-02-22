@@ -34,7 +34,6 @@
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
-#include <limits>
 
 #ifdef LINUX
 #include <cmath>
@@ -415,7 +414,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// restore drag coefficients to normal values and restart time counter of
 	// each object
 	_t_integrator->SetTime(0.0);
-	_t_integrator->FromStationary(t_integrator);
+	_t_integrator->SetState(t_integrator.GetState());
 	for (auto obj : LineList) {
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
@@ -2501,6 +2500,78 @@ MoorDyn_GetFASTtens(MoorDyn system,
 	for (int l = 0; l < *numLines; l++)
 		lines[l]->getFASTtens(
 		    FairHTen + l, FairVTen + l, AnchHTen + l, AnchVTen + l);
+
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetDt(MoorDyn system, double* dt)
+{
+	CHECK_SYSTEM(system);
+	*dt = ((moordyn::MoorDyn*)system)->GetDt();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetDt(MoorDyn system, double dt)
+{
+	CHECK_SYSTEM(system);
+	moordyn::real casted = (moordyn::real)dt;
+	((moordyn::MoorDyn*)system)->SetDt(casted);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetCFL(MoorDyn system, double* cfl)
+{
+	CHECK_SYSTEM(system);
+	*cfl = ((moordyn::MoorDyn*)system)->GetCFL();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetCFL(MoorDyn system, double cfl)
+{
+	CHECK_SYSTEM(system);
+	moordyn::real casted = (moordyn::real)cfl;
+	((moordyn::MoorDyn*)system)->SetCFL(casted);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetTimeScheme(MoorDyn system, char* name, size_t* name_len)
+{
+	CHECK_SYSTEM(system);
+	moordyn::TimeScheme* tscheme = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+	std::string out = tscheme->GetName();
+	if (name_len)
+		*name_len = out.size() + 1;
+	if (name) {
+		strncpy(name, out.c_str(), out.size());
+		name[out.size()] = '\0';
+	}
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetTimeScheme(MoorDyn system, const char* name)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	moordyn::MoorDyn* sys = (moordyn::MoorDyn*)system;
+	moordyn::TimeScheme* tscheme;
+	try {
+		tscheme = create_time_scheme(name, sys->GetLogger(), sys->GetWaves());
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+		return err;
+	}
+	tscheme->SetState(sys->GetTimeScheme()->GetState());
+	sys->SetTimeScheme(tscheme);
 
 	return MOORDYN_SUCCESS;
 }
