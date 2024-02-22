@@ -46,8 +46,6 @@
 
 namespace moordyn {
 
-class StationaryScheme;
-
 /** @class TimeScheme Time.hpp
  * @brief Time scheme abstraction
  *
@@ -255,10 +253,21 @@ class TimeScheme : public io::IO
 	 */
 	virtual void Step(real& dt) { t_local += dt; };
 
+	/** @brief Get the state variable
+	 * @param i The index of the state variable to take
+	 * @return The state variable
+	 */
+	inline virtual MoorDynState GetState(unsigned int i=0)
+	{
+		return MoorDynState();
+	}
+
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
+	 * @param i The index of the state variable to take
 	 */
-	virtual void FromStationary(const StationaryScheme& state) {};
+	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
+	{};
 
   protected:
 	/** @brief Costructor
@@ -562,10 +571,23 @@ class TimeSchemeBase : public TimeScheme
 	 */
 	virtual void Step(real& dt) { TimeScheme::Step(dt); };
 
+	/** @brief Get the state variable
+	 * @param i The index of the state variable to take
+	 * @return The state variable
+	 */
+	inline MoorDynState GetState(unsigned int i=0)
+	{
+		return r[i];
+	}
+
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
+	 * @param i The index of the state variable to take
 	 */
-	virtual void FromStationary(const StationaryScheme& state);
+	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
+	{
+		r[i] = state;
+	}
 
 	/** @brief Produce the packed data to be saved
 	 *
@@ -863,10 +885,11 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
+	 * @param i The index of the state variable to take
 	 */
-	inline void FromStationary(const StationaryScheme& state)
+	inline void SetState(const MoorDynState& state, unsigned int i=0)
 	{
-		TimeSchemeBase<NSTATE, NDERIV>::FromStationary(state);
+		TimeSchemeBase<NSTATE, NDERIV>::SetState(state, i);
 		ComputeDt();
 	}
 

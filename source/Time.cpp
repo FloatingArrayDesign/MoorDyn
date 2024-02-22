@@ -149,14 +149,6 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	ground->setDependentStates(); // NOTE: (not likely needed)
 }
 
-template<unsigned int NSTATE, unsigned int NDERIV>
-void
-TimeSchemeBase<NSTATE, NDERIV>::FromStationary(const StationaryScheme& state)
-{
-	r[0] = state.r[0];
-}
-
-
 StationaryScheme::StationaryScheme(moordyn::Log* log, moordyn::WavesRef waves)
   : TimeSchemeBase(log, waves)
   , _error(0.0)
