@@ -46,6 +46,7 @@ set(CATCH2_TESTS
     polyester
     quasi_static_chain
     local_euler
+    midpoint
 )
 
 function(make_executable test_name, extension)
