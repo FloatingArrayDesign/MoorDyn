@@ -49,7 +49,7 @@ using namespace std;
 /// List of available depths
 #define DEPTH "0600"
 /// List of available motions
-#define MOTION "ZZP1_A2"
+#define MOTION "ZZP1_A1"
 /// List of static tensions at the fairlead predicted by quasi-static codes
 #define STATIC_FAIR_TENSION 5232.6
 /// List of static tensions at the anchor predicted by quasi-static codes
@@ -101,7 +101,7 @@ read_tab_file(const char* filepath)
 TEST_CASE("Validation")
 {
 	stringstream lines_file, motion_file, ref_file;
-	lines_file << "Mooring/WD" << DEPTH << "_Chain"
+	lines_file << "Mooring/midpoint/WD" << DEPTH << "_Chain"
 	           << ".txt";
 	motion_file << "Mooring/QuasiStatic/" << MOTION << ".txt";
 	ref_file << "Mooring/QuasiStatic/WD" << DEPTH << "_Chain_" << MOTION
@@ -137,7 +137,7 @@ TEST_CASE("Validation")
 	REQUIRE(eanch0 <= MAX_STATIC_ERROR);
 
 	// Change the time step
-	REQUIRE(MoorDyn_SetCFL(system, 0.14) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetCFL(system, 0.16) == MOORDYN_SUCCESS);
 	double dtM;
 	REQUIRE(MoorDyn_GetDt(system, &dtM) == MOORDYN_SUCCESS);
 	std::cout << "New time step = " << dtM << " s" << std::endl;
