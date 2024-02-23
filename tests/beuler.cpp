@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file midpoint.cpp
- * Tests ran with the implicit Midpoint scheme
+/** @file beuler.cpp
+ * Tests ran with the implicit Backwards Euler
  */
 
 #include "MoorDyn2.h"
@@ -98,7 +98,7 @@ read_tab_file(const char* filepath)
 	return data;
 }
 
-TEST_CASE("quasi_static_chain with midpoint10")
+TEST_CASE("quasi_static_chain with beuler10")
 {
 	stringstream lines_file, motion_file, ref_file;
 	lines_file << "Mooring/WD" << DEPTH << "_Chain" << ".txt";
@@ -136,8 +136,8 @@ TEST_CASE("quasi_static_chain with midpoint10")
 	REQUIRE(eanch0 <= MAX_STATIC_ERROR);
 
 	// Change the time scheme
-	REQUIRE(MoorDyn_SetTimeScheme(system, "midpoint10") == MOORDYN_SUCCESS);
-	REQUIRE(MoorDyn_SetCFL(system, 0.9) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetTimeScheme(system, "beuler10") == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetCFL(system, 0.6) == MOORDYN_SUCCESS);
 	double dtM;
 	REQUIRE(MoorDyn_GetDt(system, &dtM) == MOORDYN_SUCCESS);
 	std::cout << "New time step = " << dtM << " s" << std::endl;
