@@ -1262,70 +1262,6 @@ class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 	real _dt_factor;
 };
 
-/** @class BackwardEulerScheme Time.hpp
- * @brief Implicit 1st order Backward Euler time scheme
- *
- * The implicit 1st order Backward Euler method is an implicit method where the
- * derivative is evaluated at the end of the time step.
- *
- * It is quite popular due to its dissipative properties
- */
-class BackwardEulerScheme : public ImplicitEulerScheme
-{
-  public:
-	/** @brief Costructor
-	 * @param log Logging handler
-	 * @param waves Waves instance
-	 * @param iters The number of inner iterations to find the derivative
-	 */
-	BackwardEulerScheme(moordyn::Log* log,
-	                    WavesRef waves,
-	                    unsigned int iters = 10)
-		: ImplicitEulerScheme(log, waves, iters, 1.0)
-	{
-		if (iters < 10) {
-			c0(0.1 - 0.01 * iters);
-			c1(0.07);
-		}
-		else {
-			c0(0.0);
-			c1(1.0 / (10.0 + 0.051 * iters * iters));
-		}
-	}
-
-	/// @brief Destructor
-	~BackwardEulerScheme() {}
-};
-
-/** @class MidpointScheme Time.hpp
- * @brief Implicit 1st order Midpoint time scheme
- *
- * The implicit 1st order Midpoint method is an implicit method where the
- * derivative is evaluated at the middle of the time step.
- *
- * It is quite popular due to its energy conservation properties.
- */
-class MidpointScheme : public ImplicitEulerScheme
-{
-  public:
-	/** @brief Costructor
-	 * @param log Logging handler
-	 * @param waves Waves instance
-	 * @param iters The number of inner iterations to find the derivative
-	 */
-	MidpointScheme(moordyn::Log* log,
-	               WavesRef waves,
-	               unsigned int iters = 10)
-		: ImplicitEulerScheme(log, waves, iters, 0.5)
-	{
-		c0(1.0);
-		c1(1.0);
-	}
-
-	/// @brief Destructor
-	~MidpointScheme() {}
-};
-
 /** @class ImplicitNewmarkScheme Time.hpp
  * @brief Implicit Newmark Scheme
  *
@@ -1334,7 +1270,7 @@ class MidpointScheme : public ImplicitEulerScheme
  * and solids, specifically on its Average Constant Acceleration incarnation
  * @see https://en.wikipedia.org/wiki/Newmark-beta_method
  */
-class ImplicitNewmarkScheme : public TimeSchemeBase<2, 3>
+class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 {
   public:
 	/** @brief Costructor
@@ -1361,16 +1297,6 @@ class ImplicitNewmarkScheme : public TimeSchemeBase<2, 3>
 	virtual void Step(real& dt);
 
   private:
-	/** @brief Compute the relaxation factor
-	 *
-	 * This method is responsible of avoiding overshooting when computing the
-	 * derivatives
-	 * @param iter The current iteration
-	 */
-	real Relax(const unsigned int& iter);
-
-	/// The number of iterations
-	unsigned int _iters;
 	/// Alpha factor
 	real _gamma;
 	/// Beta factor

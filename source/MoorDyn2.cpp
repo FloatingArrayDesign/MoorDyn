@@ -2572,8 +2572,9 @@ MoorDyn_SetTimeScheme(MoorDyn system, const char* name)
 		     << err_msg << endl;
 		return err;
 	}
-	tscheme->SetState(sys->GetTimeScheme()->GetState());
+	auto state = sys->GetTimeScheme()->GetState();
 	sys->SetTimeScheme(tscheme);
+	tscheme->SetState(state);
 
 	return MOORDYN_SUCCESS;
 }
