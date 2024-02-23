@@ -368,7 +368,20 @@ class MoorDyn final : public io::IO
 	/** @brief Set the current time integrator
 	 * @return The time integrator
 	 */
-	inline void SetTimeScheme(TimeScheme* tscheme) { _t_integrator = tscheme; }
+	inline void SetTimeScheme(TimeScheme* tscheme) {
+		_t_integrator = tscheme;
+		_t_integrator->SetGround(GroundBody);
+		for (auto obj : BodyList)
+			_t_integrator->AddBody(obj);
+		for (auto obj : RodList)
+			_t_integrator->AddRod(obj);
+		for (auto obj : PointList)
+			_t_integrator->AddPoint(obj);
+		for (auto obj : LineList)
+			_t_integrator->AddLine(obj);
+		_t_integrator->SetCFL(cfl);
+		_t_integrator->Init();
+	}
 
   protected:
 	/** @brief Read the input file, setting up all the required objects and
