@@ -198,3 +198,32 @@ TEST_CASE("quasi_static_chain with midpoint10")
 	// For the time being we better ignore these errors
 	// REQUIRE(ea_value <= max_rel_err);
 }
+
+TEST_CASE("Complex system simulation with midpoint5")
+{
+	MoorDyn system = MoorDyn_Create("Mooring/local_euler/complex_system.txt");
+	REQUIRE(system);
+	unsigned int n_dof;
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 3);
+
+	double x[3], dx[3];
+	auto point = MoorDyn_GetPoint(system, 4);
+	REQUIRE(point);
+	REQUIRE(MoorDyn_GetPointPos(point, x) == MOORDYN_SUCCESS);
+	std::fill(dx, dx + 3, 0.0);
+	REQUIRE(MoorDyn_Init(system, x, dx) == MOORDYN_SUCCESS);
+
+	// Change the time scheme
+	REQUIRE(MoorDyn_SetTimeScheme(system, "midpoint5") == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetCFL(system, 0.75) == MOORDYN_SUCCESS);
+	double dtM;
+	REQUIRE(MoorDyn_GetDt(system, &dtM) == MOORDYN_SUCCESS);
+	std::cout << "New time step = " << dtM << " s" << std::endl;
+
+	double f[6];
+	double t = 0.0, dt = 50.0;
+	REQUIRE(MoorDyn_Step(system, x, dx, f, &t, &dt) == MOORDYN_SUCCESS);
+
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
+}
