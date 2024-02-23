@@ -495,7 +495,7 @@ ImplicitSchemeBase<NSTATE, NDERIV>::ImplicitSchemeBase(moordyn::Log* log,
                                                        unsigned int iters)
 	: TimeSchemeBase<NSTATE, NDERIV>(log, waves)
 	, _iters(iters)
-	, _c0(0.5)
+	, _c0(0.9)
 	, _c1(0.0)
 {
 }
@@ -504,8 +504,10 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 real
 ImplicitSchemeBase<NSTATE, NDERIV>::Relax(const unsigned int& iter)
 {
-	const real x = (iter + 1) / _iters;
-	return c0() / _iters + c1() * tanh(x);
+	const real x = 4. * ((iter + 1.) / _iters - 0.5);  // [-1, 1]
+	const real y0 = 1. / _iters;                       // (0, 1]
+	const real y1 = 0.5 * (tanh(x) + 1.);              // (0, 1)
+	return c0() * (1. - y0) + c1() * (1. - y1);
 }
 
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
@@ -550,8 +552,7 @@ ImplicitNewmarkScheme::ImplicitNewmarkScheme(moordyn::Log* log,
                                              unsigned int iters,
                                              real gamma,
                                              real beta)
-  : TimeSchemeBase(log, waves)
-  , _iters(iters)
+  : ImplicitSchemeBase(log, waves, iters)
   , _gamma(gamma)
   , _beta(beta)
 {
@@ -559,6 +560,8 @@ ImplicitNewmarkScheme::ImplicitNewmarkScheme(moordyn::Log* log,
 	s << "gamma=" << gamma << ",beta=" << beta << " implicit Newmark ("
 	  << iters << " iterations)";
 	name = s.str();
+	c0(0.9);
+	c1(0.15);
 }
 
 void
@@ -570,7 +573,7 @@ ImplicitNewmarkScheme::Step(real& dt)
 
 	t += dt;
 	rd[2] = rd[0];  // We use rd[2] just as a tmp storage to compute relaxation
-	for (unsigned int i = 0; i < _iters; i++) {
+	for (unsigned int i = 0; i < iters(); i++) {
 		// At the time of computing r acts as an input, and rd as an output.
 		// Thus we just need to apply the Newmark scheme on r[1] and store
 		// the new rates of change on rd[1]
@@ -578,7 +581,7 @@ ImplicitNewmarkScheme::Step(real& dt)
 		Update(dt, 1);
 		CalcStateDeriv(1);
 
-		if (i < _iters - 1) {
+		if (i < iters() - 1) {
 			// We cannot relax the last step
 			const real relax = Relax(i);
 			rd[1].Mix(rd[2], relax);
@@ -592,29 +595,6 @@ ImplicitNewmarkScheme::Step(real& dt)
 	rd[0] = rd[1];
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);
-}
-
-#ifndef INEWMARK_RELAX_INIT
-#define INEWMARK_RELAX_INIT 0.95
-#endif
-
-#ifndef INEWMARK_RELAX_POW
-#define INEWMARK_RELAX_POW 3
-#endif
-
-#ifndef INEWMARK_RELAX_CFL
-#define INEWMARK_RELAX_CFL 2.0
-#endif
-
-real
-ImplicitNewmarkScheme::Relax(const unsigned int& iter)
-{
-	const real f = (real)iter / _iters;
-	const real relax = INEWMARK_RELAX_INIT * (1 - pow(f, INEWMARK_RELAX_POW));
-	// The relax factor shall be bounded by the CFL
-	const real relax_cfl = (std::min)(INEWMARK_RELAX_INIT,
-	                                  INEWMARK_RELAX_CFL * GetCFL());
-	return (std::max)(relax, relax_cfl);
 }
 
 TimeScheme*
@@ -648,7 +628,7 @@ create_time_scheme(const std::string& name,
 	} else if (str::startswith(str::lower(name), "beuler")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(6));
-			out = new BackwardEulerScheme(log, waves, iters);
+			out = new ImplicitEulerScheme(log, waves, iters, 1.0);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Backward Euler name format '" << name << "'";
@@ -657,7 +637,7 @@ create_time_scheme(const std::string& name,
 	} else if (str::startswith(str::lower(name), "midpoint")) {
 		try {
 			unsigned int iters = std::stoi(name.substr(8));
-			out = new MidpointScheme(log, waves, iters);
+			out = new ImplicitEulerScheme(log, waves, iters, 0.5);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Midpoint name format '" << name << "'";
