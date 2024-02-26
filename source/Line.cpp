@@ -1125,16 +1125,16 @@ Line::getStateDeriv()
 			// Vortex shedding frequency
 			// We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
 			const moordyn::real st = 0.2;
-			const moordyn::real f_s = st * Ui_mag / d;
+			const moordyn::real omega_s = 2 * pi * st * Ui_mag / d;
 			// if frequency lock in and crossflow excitation
-			if ((0.6 < (phi_dot/f_s)) && ((phi_dot/f_s) < 1.5) && (5.0 < V_r) && (V_r < 7.0)) {
+			if ((0.6 < (phi_dot/omega_s)) && ((phi_dot/omega_s) < 1.5) && (5.0 < V_r) && (V_r < 7.0)) {
 				if (t == 0.0) {
 					y_dot = 0.4 * d * phi_dot * (q[i].cross(U_hat)); // Inital crossflow amplitude 40% of diameter
 				}
 				const moordyn::real C_e = 0.800; // Excitation coefficient from VIVANA theory manual for f_hat = 0.172.
 				const moordyn::real phase_diff = 0; // In phase motion from max excitation assumption. 
 				const moordyn::real C_l = C_e / cos(phase_diff);
-				Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * y_dot;
+				Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * (y_dot/y_dot.norm());
 			}
 		}	
 
