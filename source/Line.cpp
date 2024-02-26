@@ -1078,20 +1078,20 @@ Line::getStateDeriv()
 		}
 		const moordyn::real omega = (pi/l[i]) * sqrt((T[i].norm()/m_i) + ((pi/l[i]) * (pi/l[i]) * (EI/m_i)));
 
+		// magnitude of current
+		const moordyn::real Ui_mag = U[i].norm();
 		// Unit vector of current flow
-		const vec U_hat = U[i]/U[i].norm();
+		const vec U_hat = U[i]/Ui_mag;
 		// relative flow velocity over node
 		const vec vi = U[i] - rd[i];
 		// tangential relative flow component
-		// <<<<<<< check sign since I've reversed q
 		const moordyn::real vql = vi.dot(q[i]);
 		const vec vq = vql * q[i];
 		// transverse relative flow component
 		const vec vp = vi - vq;
 		// crossflow relative flow component. Normal to both cable and flow direction
-		const vec y_dot = vi.dot(q[i].cross(U_hat)) * q[i].cross(U_hat);
+		vec y_dot = vi.dot(q[i].cross(U_hat)) * q[i].cross(U_hat);
 		// reduced velocity
-		const moordyn::real Ui_mag = U[i].norm();
 		const moordyn::real V_r = Ui_mag/(omega*d);
 
 		const moordyn::real vq_mag = vq.norm();
@@ -1117,22 +1117,26 @@ Line::getStateDeriv()
 		else
 			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
 			        (F[i] * l[i] + F[i - 1] * l[i - 1]) * vq;
-
-		// phase of lift force. Assume phi(0) = 0 for now.
-		const moordyn::real f_hat = 0.172; // For now assume constant non-dimen frequency at max excitation.
-		const moordyn::real phi_dot = 2*pi*f_hat*Ui_mag / d;
-		const moordyn::real phi = phi_dot * t;
-		// Vortex shedding frequency
-		// We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
-		const moordyn::real st = 0.2;
-		const moordyn::real f_s = st * Ui_mag / d;
-		// if frequency lock in and crossflow excitation
-		if ((0.6 < (phi_dot/f_s) < 1.5) && (5.0 < V_r < 7.0)) {
-			const moordyn::real C_e = 0.800; // Excitation coefficient from VIVANA theory manual for f_hat = 0.172.
-			const moordyn::real phase_diff = 0; // In phase motion from max excitation assumption. 
-			const moordyn::real C_l = C_e / cos(phase_diff);
-			Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * y_dot;
-		}
+		if (Ui_mag > 0.0) { // If there is current
+			// phase of lift force. Assume phi(0) = 0 for now.
+			const moordyn::real f_hat = 0.172; // For now assume constant non-dimen frequency at max excitation.
+			const moordyn::real phi_dot = 2*pi*f_hat*Ui_mag / d;
+			const moordyn::real phi = phi_dot * t;
+			// Vortex shedding frequency
+			// We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
+			const moordyn::real st = 0.2;
+			const moordyn::real f_s = st * Ui_mag / d;
+			// if frequency lock in and crossflow excitation
+			if ((0.6 < (phi_dot/f_s)) && ((phi_dot/f_s) < 1.5) && (5.0 < V_r) && (V_r < 7.0)) {
+				if (t == 0.0) {
+					y_dot = 0.4 * d * phi_dot * (q[i].cross(U_hat)); // Inital crossflow amplitude 40% of diameter
+				}
+				const moordyn::real C_e = 0.800; // Excitation coefficient from VIVANA theory manual for f_hat = 0.172.
+				const moordyn::real phase_diff = 0; // In phase motion from max excitation assumption. 
+				const moordyn::real C_l = C_e / cos(phase_diff);
+				Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * y_dot;
+			}
+		}	
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
