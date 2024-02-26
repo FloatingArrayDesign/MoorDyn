@@ -288,7 +288,7 @@ The columns in order are as follows:
    desired damping ratio (in fraction of critical) for the line type (and MoorDyn will set the BA 
    of each line accordingly)
  - EI – the line bent stiffness, product of elasticity modulus and inertia of the cross-sectional 
-   area (N)
+   area (N-m^2)
  - Cd –  transverse drag coefficient (with respect to frontal area, d*l)
  - Ca –  transverse added mass coefficient (with respect to line displacement)
  - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
