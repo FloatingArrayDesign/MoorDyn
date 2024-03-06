@@ -1045,7 +1045,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			// Make the output file (if queried)
 			if ((outchannels.size() > 0) &&
-			    (strcspn(outchannels.c_str(), "pvUDctsd") <
+			    (strcspn(outchannels.c_str(), "pvUDVctsd") <
 			     strlen(outchannels.c_str()))) {
 				// if 1+ output flag chars are given and they're valid
 				stringstream oname;

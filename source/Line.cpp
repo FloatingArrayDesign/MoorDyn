@@ -289,6 +289,13 @@ Line::initialize()
 				         << i << "Dz \t ";
 			}
 		}
+		// output VIV force
+		if (channels.find("V") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << "Node" << i << "Vx \t Node" << i << "Vy \t Node"
+				         << i << "Vz \t ";
+			}
+		}
 		// output segment tensions
 		if (channels.find("t") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
@@ -354,6 +361,11 @@ Line::initialize()
 			}
 			// output hydro force
 			if (channels.find("D") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output VIV force
+			if (channels.find("V") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
@@ -1117,7 +1129,7 @@ Line::getStateDeriv()
 			// phase of lift force. Assume phi(0) = 0 for now.
 			const moordyn::real f_hat = 0.172; // For now assume constant non-dimen frequency at max excitation.
 			const moordyn::real phi_dot = 2*pi*f_hat*Ui_mag / d;
-			if ((i==0) && (abs(t-1.7) < 0.00001)) cout << "Phi_dot: " << phi_dot << endl;
+			// if ((i==0) && (abs(t-1.7) < 0.00001)) cout << "Phi_dot: " << phi_dot << endl;
 			const moordyn::real phi = phi_dot * t;
 			// Vortex shedding frequency
 			// We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
@@ -1131,7 +1143,7 @@ Line::getStateDeriv()
 				const moordyn::real C_e = 0.800; // Excitation coefficient from VIVANA theory manual for f_hat = 0.172.
 				const moordyn::real phase_diff = 0; // In phase motion from max excitation assumption. 
 				const moordyn::real C_l = C_e / cos(phase_diff);
-				Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * y_dot.normalized();
+				Lf[i] = 0.5 * env->rho_w * d * vi.norm() * Ui_mag * C_l * cos(phi) * q[i].cross(Ui_hat);
 			// }
 		}	
 
@@ -1312,6 +1324,15 @@ Line::Output(real time)
 			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
 					*outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]
+					         << "\t ";
+			}
+		}
+
+		// output VIV force (only CF for now)
+		if (channels.find("V") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				for (int J = 0; J < 3; J++)
+					*outfile << Lf[i][J]
 					         << "\t ";
 			}
 		}
