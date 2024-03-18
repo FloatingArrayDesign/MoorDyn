@@ -1079,13 +1079,6 @@ Line::getStateDeriv()
 			           l[i - 1] * (rho - F[i - 1] * env->rho_w)) *
 			          (-env->g);
 
-		// natural frequency
-		moordyn::real omega;
-		if (i == 0) 
-			for (int n=1;n<12;n++){
-			omega = (n*pi/UnstrLen) * sqrt((T[i].norm()/(rho*A)) + ((n*pi/UnstrLen) * (n*pi/UnstrLen) * (EI/(rho*A))));
-			// if (abs(t-1.7) < 0.00001) cout << "Omega_" << n << ": " << omega << endl;
-			// }
 
 		// magnitude of current
 		const moordyn::real Ui_mag = U[i].norm();
