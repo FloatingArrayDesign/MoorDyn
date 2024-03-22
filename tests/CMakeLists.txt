@@ -49,6 +49,7 @@ set(CATCH2_TESTS
     beuler
     midpoint
     aca
+    wilson
 )
 
 function(make_executable test_name, extension)
