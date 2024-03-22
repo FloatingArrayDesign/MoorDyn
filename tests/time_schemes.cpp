@@ -68,7 +68,8 @@ static std::vector<std::string> schemes({ "Euler",
                                           "ACA5",
                                           "ACA10",
                                           "ACA15",
-                                          "ACA20" });
+                                          "ACA20",
+                                          "Wilson20" });
 static std::vector<std::string> dts({ "1.5E-4",
                                       "1.8E-4",
                                       "2.6E-4",
@@ -87,7 +88,8 @@ static std::vector<std::string> dts({ "1.5E-4",
                                       "9.4E-4",
                                       "1.5E-3",
                                       "1.5E-3",
-                                      "1.6E-3" });
+                                      "1.6E-3",
+                                      "2.4E-3"});
 
 using namespace std;
 

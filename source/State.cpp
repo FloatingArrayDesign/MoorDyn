@@ -500,6 +500,68 @@ StateVarDeriv<std::vector<vec>>::Newmark(
 }
 
 template<>
+StateVarDeriv<vec>
+StateVarDeriv<vec>::Wilson(
+	const StateVarDeriv<vec>& visitor, const real& tau, const real& dt)
+{
+	StateVarDeriv<vec> ret;
+	const real f = tau / dt;
+	ret.acc = (1 - 0.5 * f) * acc + 0.5 * f * visitor.acc;
+	ret.vel = vel + 0.5 * dt * (
+		(1 - 1.0 / 3.0 * f) * acc + 1.0 / 3.0 * f * visitor.acc);
+	return ret;
+}
+
+template<>
+StateVarDeriv<vec6>
+StateVarDeriv<vec6>::Wilson(
+	const StateVarDeriv<vec6>& visitor, const real& tau, const real& dt)
+{
+	StateVarDeriv<vec6> ret;
+	const real f = tau / dt;
+	ret.acc = (1 - 0.5 * f) * acc + 0.5 * f * visitor.acc;
+	ret.vel = vel + 0.5 * dt * (
+		(1 - 1.0 / 3.0 * f) * acc + 1.0 / 3.0 * f * visitor.acc);
+	return ret;
+}
+
+template<>
+StateVarDeriv<XYZQuat, vec6>
+StateVarDeriv<XYZQuat, vec6>::Wilson(
+	const StateVarDeriv<XYZQuat, vec6>& visitor,
+	const real& tau,
+	const real& dt)
+{
+	StateVarDeriv<XYZQuat, vec6> ret;
+	const real f = tau / dt;
+	ret.acc = (1 - 0.5 * f) * acc + 0.5 * f * visitor.acc;
+	ret.vel = vel + XYZQuat::fromVec6(0.5 * dt * (
+		(1 - 1.0 / 3.0 * f) * acc + 1.0 / 3.0 * f * visitor.acc));
+	return ret;
+}
+
+template<>
+StateVarDeriv<std::vector<vec>>
+StateVarDeriv<std::vector<vec>>::Wilson(
+	const StateVarDeriv<std::vector<vec>>& visitor,
+	const real& tau,
+	const real& dt)
+{
+	StateVarDeriv<std::vector<vec>> ret;
+	ret.vel.reserve(vel.size());
+	ret.acc.reserve(acc.size());
+	const real f = tau / dt;
+	const real f2 = 0.5 * f;
+	const real f3 = 1.0 / 3.0 * f;
+	for (unsigned int i = 0; i < vel.size(); i++) {
+		ret.acc.push_back((1 - f2) * acc[i] + f2 * visitor.acc[i]);
+		ret.vel.push_back(vel[i] + 0.5 * dt * (
+			(1 - f3) * acc[i] + f3 * visitor.acc[i]));
+	}
+	return ret;
+}
+
+template<>
 void
 StateVarDeriv<vec>::Mix(const StateVarDeriv<vec>& rhs, const real& f)
 {
@@ -821,6 +883,37 @@ DMoorDynStateDt::Newmark(const DMoorDynStateDt& rhs,
 	out.bodies.reserve(bodies.size());
 	for (unsigned int i = 0; i < bodies.size(); i++)
 		out.bodies.push_back(bodies[i].Newmark(rhs.bodies[i], dt, gamma, beta));
+
+	return out;
+}
+
+DMoorDynStateDt
+DMoorDynStateDt::Wilson(const DMoorDynStateDt& rhs,
+                        const real& tau,
+                        const real& dt)
+{
+	DMoorDynStateDt out;
+
+	if (lines.size() != rhs.lines.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.lines.reserve(lines.size());
+	for (unsigned int i = 0; i < lines.size(); i++)
+		out.lines.push_back(lines[i].Wilson(rhs.lines[i], tau, dt));
+	if (points.size() != rhs.points.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.points.reserve(points.size());
+	for (unsigned int i = 0; i < points.size(); i++)
+		out.points.push_back(points[i].Wilson(rhs.points[i], tau, dt));
+	if (rods.size() != rhs.rods.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.rods.reserve(rods.size());
+	for (unsigned int i = 0; i < rods.size(); i++)
+		out.rods.push_back(rods[i].Wilson(rhs.rods[i], tau, dt));
+	if (bodies.size() != rhs.bodies.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.bodies.reserve(bodies.size());
+	for (unsigned int i = 0; i < bodies.size(); i++)
+		out.bodies.push_back(bodies[i].Wilson(rhs.bodies[i], tau, dt));
 
 	return out;
 }
