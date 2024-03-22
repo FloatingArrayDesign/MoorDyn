@@ -597,6 +597,52 @@ ImplicitNewmarkScheme::Step(real& dt)
 	TimeSchemeBase::Step(dt);
 }
 
+ImplicitWilsonScheme::ImplicitWilsonScheme(moordyn::Log* log,
+                                           moordyn::WavesRef waves,
+                                           unsigned int iters,
+                                           real theta)
+  : ImplicitSchemeBase(log, waves, iters)
+  , _theta(theta)
+{
+	stringstream s;
+	s << "theta=" << theta << " implicit Wilson ("
+	  << iters << " iterations)";
+	name = s.str();
+	c0(0.015);
+	c1(0.000);
+}
+
+void
+ImplicitWilsonScheme::Step(real& dt)
+{
+	const real tdt = _theta * dt;
+	t += tdt;
+	rd[1] = rd[0];  // We use rd[1] just as a tmp storage to compute relaxation
+	for (unsigned int i = 0; i < iters(); i++) {
+		// At the time of computing r acts as an input, and rd as an output.
+		// Thus we just need to apply the Newmark scheme on r[1] and store
+		// the new rates of change on rd[1]
+		r[1] = r[0] + rd[0].Wilson(rd[1], tdt, tdt) * tdt;
+		Update(tdt, 1);
+		CalcStateDeriv(1);
+
+		if (i < iters() - 1) {
+			// We cannot relax on the last step
+			const real relax = Relax(i);
+			rd[0].Mix(rd[1], relax);
+			rd[1] = rd[0];
+		}
+	}
+
+	// Apply
+	t -= (1.f - _theta) * dt;
+	r[1] = r[0] + rd[0].Wilson(rd[1], dt, tdt) * dt;
+	r[0] = r[1];
+	rd[0] = rd[1];
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
+}
+
 TimeScheme*
 create_time_scheme(const std::string& name,
                    moordyn::Log* log,
@@ -650,6 +696,16 @@ create_time_scheme(const std::string& name,
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Average Constant Acceleration name format '"
+			  << name << "'";
+			throw moordyn::invalid_value_error(s.str().c_str());
+		}
+	} else if (str::startswith(str::lower(name), "wilson")) {
+		try {
+			unsigned int iters = std::stoi(name.substr(6));
+			out = new ImplicitWilsonScheme(log, waves, iters, 1.37);
+		} catch (std::invalid_argument) {
+			stringstream s;
+			s << "Invalid Wilson name format '"
 			  << name << "'";
 			throw moordyn::invalid_value_error(s.str().c_str());
 		}

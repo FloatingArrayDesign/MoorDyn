@@ -193,6 +193,30 @@ class StateVarDeriv
 	                            real gamma = 0.5,
 	                            real beta = 0.25);
 
+	/** @brief Carry out a Wilson step
+	 *
+	 * The resulting state rate of change will have the following acceleration
+	 *
+	 * \f[ \dot{u(t_{n+1})} =
+	 *         (1 - \frac{\tau}{2 \theta \Delta t}) \dot{u(t_{n})} +
+	 *         \frac{\tau}{2 \theta \Delta t} \dot{u(t_{n+1})}) \f]
+	 *
+	 * and the following velocity
+	 *
+	 * \f[ u(t_{n+1}) = u(t_{n}) + \frac{\tau}{2} (
+	 *         (1 - \frac{\tau}{3 \theta \Delta t}) \dot{u(t_{n})} +
+	 *         \frac{\tau}{3 \theta \Delta t} \dot{u(t_{n+1})}) \f]
+	 *
+	 * Note that \f$ \tau \f$ can be smaller than \f$ \theta \Delta t \f$.
+	 *
+	 * @param visitor The acceleration at the next time step
+	 * @param tau Time advancing, \f$ \tau \f$.
+	 * @param dt Enlarged time step, \f$ \theta \Delta t \f$.
+	 */
+	StateVarDeriv<T, V> Wilson(const StateVarDeriv<T, V>& visitor,
+	                           const real& tau,
+	                           const real& dt);
+
 	/** @brief Mix this state variation rate with another one
 	 *
 	 * This can be used as a relaxation method when looking for stationary
@@ -376,6 +400,30 @@ class DMoorDynStateDt
 	                        const real& dt,
 	                        real gamma = 0.5,
 	                        real beta = 0.25);
+
+	/** @brief Carry out a Wilson step
+	 *
+	 * The resulting state rate of change will have the following acceleration
+	 *
+	 * \f[ \dot{u(t_{n+1})} =
+	 *         (1 - \frac{\tau}{2 \theta \Delta t}) \dot{u(t_{n})} +
+	 *         \frac{\tau}{2 \theta \Delta t} \dot{u(t_{n+1})}) \f]
+	 *
+	 * and the following velocity
+	 *
+	 * \f[ u(t_{n+1}) = u(t_{n}) + \frac{\tau}{2} (
+	 *         (1 - \frac{\tau}{3 \theta \Delta t}) \dot{u(t_{n})} +
+	 *         \frac{\tau}{3 \theta \Delta t} \dot{u(t_{n+1})}) \f]
+	 *
+	 * Note that \f$ \tau \f$ can be smaller than \f$ \theta \Delta t \f$.
+	 *
+	 * @param visitor The acceleration at the next time step
+	 * @param tau Time advancing, \f$ \tau \f$.
+	 * @param dt Enlarged time step, \f$ \theta \Delta t \f$.
+	 */
+	DMoorDynStateDt Wilson(const DMoorDynStateDt& visitor,
+	                       const real& tau,
+	                       const real& dt);
 
 	/** @brief Mix this state variation rate with another one
 	 *
