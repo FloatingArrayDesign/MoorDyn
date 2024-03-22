@@ -1303,6 +1303,48 @@ class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 	real _beta;
 };
 
+/** @class ImplicitNewmarkScheme Time.hpp
+ * @brief Implicit Wilson Scheme
+ *
+ * The implicit Wilson scheme is so far similar to the Implicit Euler scheme,
+ * but the derivatives are computed considering a time step larger than the
+ * integration one, instead of lower.
+ *
+ * With the computed acceleration a Taylor series expansion is practised to
+ * integrate.
+ *
+ * @see https://www.academia.edu/download/59040594/wilson197220190426-49259-kipdfs.pdf
+ */
+class ImplicitWilsonScheme : public ImplicitSchemeBase<2, 3>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 * @param gamma The gamma factor
+	 * @param beta The beta factor
+	 */
+	ImplicitWilsonScheme(moordyn::Log* log,
+	                     WavesRef waves,
+	                     unsigned int iters = 10,
+	                     real theta = 1.37);
+
+	/// @brief Destructor
+	~ImplicitWilsonScheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+
+  private:
+	/// Theta factor
+	real _theta;
+};
+
 /** @brief Create a time scheme
  * @param name The time scheme name, one of the following:
  * "Euler", "Heun", "RK2", "RK4", "AB3", "AB4"
