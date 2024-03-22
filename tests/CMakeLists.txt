@@ -5,17 +5,24 @@ file(GLOB MooringConfigFiles ${CMAKE_SOURCE_DIR}/tests/Mooring/*.stl
 add_custom_target(Test_MooringConfigFiles)
 add_custom_command(TARGET Test_MooringConfigFiles PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E
-                        copy_directory ${CMAKE_SOURCE_DIR}/tests/Mooring ${CMAKE_CURRENT_BINARY_DIR}/Mooring)
+                        copy_directory ${CMAKE_SOURCE_DIR}/tests/Mooring ${CMAKE_CURRENT_BINARY_DIR}/Mooring
+)
 if(WIN32)
     add_custom_command(TARGET Test_MooringConfigFiles POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordyn> ${CMAKE_CURRENT_BINARY_DIR}/)
+                       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordyn> ${CMAKE_CURRENT_BINARY_DIR}/
+    )
     if(${FORTRAN_WRAPPER})
         add_custom_command(TARGET Test_MooringConfigFiles POST_BUILD
-                           COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordynf> ${CMAKE_CURRENT_BINARY_DIR}/)
+                           COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:moordynf> ${CMAKE_CURRENT_BINARY_DIR}/
+        )
     endif()
 endif()
 
-set(TESTS 
+set(C_TESTS 
+    c_api
+)
+
+set(CPP_TESTS 
     minimal
     lifting
     pendulum
@@ -28,9 +35,6 @@ set(TESTS
     wavekin_4
     tripod
     seafloor
-)
-
-set(CPP_TESTS 
     wavekin
     wavekin_7
     bodies
@@ -39,11 +43,12 @@ set(CPP_TESTS
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    polyester
 )
 
-function(make_executable test_name)
+function(make_executable test_name, extension)
     set(TEST_PRIVATE_DEPS "moordyn;")
-    add_executable(${test_name} ${test_name}.cpp)
+    add_executable(${test_name} ${test_name}.${extension})
     if(USE_VTK AND MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
         list(APPEND TEST_PRIVATE_DEPS VTK::CommonCore
                                          VTK::IOCore
@@ -60,25 +65,28 @@ function(make_executable test_name)
     add_dependencies(${test_name} Test_MooringConfigFiles)
 endfunction()
 
+function(make_c_executable test_name)
+    make_executable(${test_name}, "c")
+endfunction()
+
 function(make_cpp_executable test_name)
-    make_executable(${test_name})
+    make_executable(${test_name}, "cpp")
     target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
 endfunction()
 
 function(make_catch2_executable test_name)
     make_cpp_executable(${test_name})
-    target_include_directories(${test_name} PUBLIC ${CMAKE_BINARY_DIR}/)
     target_link_libraries(${test_name} PRIVATE Catch2::Catch2WithMain)
 endfunction()
 
 if(USE_VTK)
-    set(TESTS "${TESTS};vtk")
+    set(CPP_TESTS "${CPP_TESTS};vtk")
 
     make_cpp_executable(wave_surface)
 endif()
 
-foreach(TEST ${TESTS})
-    make_executable(${TEST})
+foreach(TEST ${C_TESTS})
+    make_c_executable(${TEST})
     add_test(NAME ${TEST}
              COMMAND ${TEST})
 endforeach()

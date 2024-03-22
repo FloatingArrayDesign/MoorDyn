@@ -44,7 +44,7 @@ TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 
 	t_local += this->t_local;
 	for (auto obj : bodies) {
-		if (obj->type != Body::COUPLED)
+		if ((obj->type != Body::COUPLED) && (obj->type != Body::CPLDPIN))
 			continue;
 		obj->updateFairlead(t_local);
 	}
@@ -63,7 +63,7 @@ TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 	}
 
 	for (unsigned int i = 0; i < bodies.size(); i++) {
-		if (bodies[i]->type != Body::FREE)
+		if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN))
 			continue;
 		bodies[i]->setState(r[substep].bodies[i].pos, r[substep].bodies[i].vel);
 	}
@@ -115,7 +115,7 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	}
 
 	for (unsigned int i = 0; i < bodies.size(); i++) {
-		if (bodies[i]->type != Body::FREE)
+		if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN))
 			continue;
 		std::tie(rd[substep].bodies[i].vel, rd[substep].bodies[i].acc) =
 		    bodies[i]->getStateDeriv();
@@ -127,7 +127,7 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 		obj->doRHS();
 	}
 	for (auto obj : rods) {
-		if ((obj->type != Rod::COUPLED) && (obj->type != Rod::CPLDPIN))
+		if (obj->type != Rod::COUPLED)
 			continue;
 		obj->doRHS();
 	}

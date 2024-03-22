@@ -12,7 +12,8 @@ MoorDyn is implemented both in Fortran and in C++. The Fortran version of MoorDy
 
 Both forms of MoorDyn feature the same underlying mooring model, use the same input and output conventions, and are being updated and improved in parallel. They follow the same version numbering, with a "C" or "F" suffix for differentiation.
 
-Further information on MoorDyn can be found on the [documentation site](https://moordyn.readthedocs.io/en/latest/). MoorDyn-F is available in the [OpenFAST repository](https://github.com/OpenFAST/openfast/tree/main/modules/moordyn). MoorDyn-C is available in this repository.
+Further information on MoorDyn can be found on the [documentation site](https://moordyn.readthedocs.io/en/latest/). MoorDyn-F is available in the [OpenFAST repository](https://github.com/OpenFAST/openfast/tree/main/modules/moordyn). MoorDyn-C is available in this repository with the following three maintained branches. The master branch represents the most recent release of 
+MoorDyn-C. The dev branch contains new features currently in development. The v1 branch is the now deprecated version one of MoorDyn-C. 
 
 ## Acknowledgments
 

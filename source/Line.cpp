@@ -1644,6 +1644,30 @@ MoorDyn_SetLineUnstretchedLengthVel(MoorDynLine l, double v)
 }
 
 int DECLDIR
+MoorDyn_IsLineConstantEA(MoorDynLine l, int* b)
+{
+	CHECK_LINE(l);
+	*b = (int)((moordyn::Line*)l)->isConstantEA();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetLineConstantEA(MoorDynLine l, double* EA)
+{
+	CHECK_LINE(l);
+	*EA = ((moordyn::Line*)l)->getConstantEA();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetLineConstantEA(MoorDynLine l, double EA)
+{
+	CHECK_LINE(l);
+	((moordyn::Line*)l)->setConstantEA(EA);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 {
 	CHECK_LINE(l);

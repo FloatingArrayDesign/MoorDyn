@@ -396,6 +396,29 @@ class Line final : public io::IO
 		setUnstretchedLength(UnstrLen0 + dt * UnstrLend);
 	}
 
+	/** @brief Get whether the line is governed by a non-linear stiffness or a
+	 * constant one
+	 * @return true if the stiffness of the line is constant, false if a
+	 * non-linear stiffness has been set
+	 */
+	inline bool isConstantEA() const { return nEApoints > 0; }
+
+	/** @brief Get the constant stiffness of the line
+	 *
+	 * This value is useless if non-linear stiffness is considered
+	 * @return The constant stiffness EA value
+	 * @see ::IsConstantEA()
+	 */
+	inline moordyn::real getConstantEA() const { return E * A; }
+
+	/** @brief Set the constant stiffness of the line
+	 *
+	 * This value is useless if non-linear stiffness is considered
+	 * @param EA The constant stiffness EA value
+	 * @see ::IsConstantEA()
+	 */
+	inline void setConstantEA(moordyn::real EA) { E = EA / A; }
+
 	/** @brief Get the position of a node
 	 * @param i The line node index
 	 * @return The position
@@ -408,6 +431,14 @@ class Line final : public io::IO
 			LOGERR << "Asking node " << i << " of line " << number
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
 			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		if (isnan(r[i].sum())) {
+			stringstream s;
+			s << "NaN detected" << endl
+			  << "Line " << number << " node positions:" << endl;
+			for (unsigned int j = 0; j <= N; j++)
+				s << j << " : " << r[j] << ";" << endl;
+			throw moordyn::nan_error(s.str().c_str());
 		}
 		return r[i];
 	}
@@ -429,9 +460,11 @@ class Line final : public io::IO
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
 		if ((i == 0) || (i == N))
+			// return (
+			//     Fnet[i] +
+			//     vec(0.0, 0.0, M[i](0, 0) * (-env->g))); // <<< update to use W
 			return (
-			    Fnet[i] +
-			    vec(0.0, 0.0, M[i](0, 0) * (-env->g))); // <<< update to use W
+			    Fnet[i]); // <<< update to use W
 
 		// take average of tension in adjacent segments
 		return (0.5 * (T[i] + T[i - 1]));
