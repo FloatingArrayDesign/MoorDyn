@@ -374,6 +374,10 @@ MoorDynState::AsString() const
 		s << "Line " << i << ":" << endl;
 		s << lines[i].AsString();
 	}
+	for (unsigned int i = 0; i < viv.size(); i++) {
+		s << "VIV " << i << ":" << endl;
+		s << viv[i].AsString();
+	}
 	for (unsigned int i = 0; i < points.size(); i++) {
 		s << "Point " << i << ":" << endl;
 		s << points[i].AsString();
@@ -397,6 +401,10 @@ MoorDynState::operator=(const MoorDynState& rhs)
 	lines.reserve(rhs.lines.size());
 	for (auto l : rhs.lines)
 		lines.push_back(l);
+	viv.clear();
+	viv.reserve(rhs.viv.size());
+	for (auto l : rhs.viv)
+		viv.push_back(l);
 	points.clear();
 	points.reserve(rhs.points.size());
 	for (auto l : rhs.points)
@@ -423,6 +431,11 @@ MoorDynState::operator+(const MoorDynState& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] + rhs.lines[i]);
+	if (viv.size() != rhs.viv.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.viv.reserve(viv.size());
+	for (unsigned int i = 0; i < viv.size(); i++)
+		out.viv.push_back(viv[i] + rhs.viv[i]);
 	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.points.reserve(points.size());
@@ -452,6 +465,11 @@ MoorDynState::operator-(const MoorDynState& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] - rhs.lines[i]);
+	if (viv.size() != rhs.viv.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.viv.reserve(viv.size());
+	for (unsigned int i = 0; i < viv.size(); i++)
+		out.viv.push_back(viv[i] - rhs.viv[i]);
 	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.points.reserve(points.size());
@@ -479,6 +497,10 @@ DMoorDynStateDt::AsString() const
 		s << "Line " << i << ":" << endl;
 		s << lines[i].AsString();
 	}
+	for (unsigned int i = 0; i < viv.size(); i++) {
+		s << "VIV " << i << ":" << endl;
+		s << viv[i].AsString();
+	}
 	for (unsigned int i = 0; i < points.size(); i++) {
 		s << "Point " << i << ":" << endl;
 		s << points[i].AsString();
@@ -502,6 +524,10 @@ DMoorDynStateDt::operator=(const DMoorDynStateDt& rhs)
 	lines.reserve(rhs.lines.size());
 	for (auto l : rhs.lines)
 		lines.push_back(l);
+	viv.clear();
+	viv.reserve(rhs.viv.size());
+	for (auto l : rhs.viv)
+		viv.push_back(l);
 	points.clear();
 	points.reserve(rhs.points.size());
 	for (auto l : rhs.points)
@@ -526,6 +552,9 @@ DMoorDynStateDt::operator*(const real& dt)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] * dt);
+	out.viv.reserve(viv.size());
+	for (unsigned int i = 0; i < viv.size(); i++)
+		out.viv.push_back(viv[i] * dt);
 	out.points.reserve(points.size());
 	for (unsigned int i = 0; i < points.size(); i++)
 		out.points.push_back(points[i] * dt);
@@ -549,6 +578,11 @@ DMoorDynStateDt::operator+(const DMoorDynStateDt& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] + rhs.lines[i]);
+	if (viv.size() != rhs.viv.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.viv.reserve(viv.size());
+	for (unsigned int i = 0; i < viv.size(); i++)
+		out.viv.push_back(viv[i] + rhs.viv[i]);
 	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.points.reserve(points.size());
@@ -578,6 +612,11 @@ DMoorDynStateDt::operator-(const DMoorDynStateDt& rhs)
 	out.lines.reserve(lines.size());
 	for (unsigned int i = 0; i < lines.size(); i++)
 		out.lines.push_back(lines[i] - rhs.lines[i]);
+	if (viv.size() != rhs.viv.size())
+		throw moordyn::invalid_value_error("Invalid input size");
+	out.viv.reserve(viv.size());
+	for (unsigned int i = 0; i < viv.size(); i++)
+		out.viv.push_back(viv[i] - rhs.viv[i]);
 	if (points.size() != rhs.points.size())
 		throw moordyn::invalid_value_error("Invalid input size");
 	out.points.reserve(points.size());

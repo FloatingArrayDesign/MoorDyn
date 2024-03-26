@@ -308,6 +308,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	if (!skip_ic) {
 		LOGMSG << "Finalizing ICs using dynamic relaxation (" << ICDfac
 		       << "X normal drag)" << endl;
+
+		for (unsigned int l = 0; l < LineList.size(); l++){
+			LineList[l]->IC_gen = true; // turn on IC_gen flag
+		}
 	}
 
 	// boost drag coefficients to speed static equilibrium convergence
@@ -355,7 +359,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			}
 			MOORDYN_CATCHER(err, err_msg);
 			if (err != MOORDYN_SUCCESS) {
-				LOGERR << "t = " << t << " s" << endl;
+				LOGERR << "Dynam Relax t = " << t << " s: " << err_msg << endl;
 				return err;
 			}
 		}
@@ -420,6 +424,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			LOGMSG << "Best score at " << best_score_t
 			       << " s = " << 100.0 * best_score << "% on line "
 			       << best_score_line << endl;
+		}
+		for (unsigned int l = 0; l < LineList.size(); l++){
+			LineList[l]->IC_gen = false; // turn off IC_gen flag
 		}
 	}
 
@@ -1070,7 +1077,8 @@ moordyn::MoorDyn::ReadInFile()
 			           NumSegs,
 			           env,
 			           outfiles.back(),
-			           outchannels);
+			           outchannels,
+					   dtM0);
 			LineList.push_back(obj);
 			LineStateIs.push_back(
 			    nX);                 // assign start index of this Line's states
@@ -1608,7 +1616,7 @@ moordyn::MoorDyn::readLineProps(string inputText)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
 
-	if (!checkNumberOfEntriesInLine(entries, 10)) {
+	if (!checkNumberOfEntriesInLine(entries, 11)) {
 		return nullptr;
 	}
 
@@ -1621,6 +1629,7 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	obj->Can = atof(entries[7].c_str());
 	obj->Cdt = atof(entries[8].c_str());
 	obj->Cat = atof(entries[9].c_str());
+	obj->Cl = atof(entries[10].c_str());
 
 	moordyn::error_id err;
 	err = read_curve(entries[3].c_str(),
@@ -1652,7 +1661,8 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	       << "\t\tCdn : " << obj->Cdn << endl
 	       << "\t\tCan : " << obj->Can << endl
 	       << "\t\tCdt : " << obj->Cdt << endl
-	       << "\t\tCat : " << obj->Cat << endl;
+	       << "\t\tCat : " << obj->Cat << endl
+		   << "\t\tCl : " << obj->Cat << endl;
 	return obj;
 }
 

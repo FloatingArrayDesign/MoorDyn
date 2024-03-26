@@ -164,6 +164,9 @@ class Line final : public io::IO
 	/// axial drag coefficient [-]
 	/// with respect to surface area, \f$ \pi d l \f$
 	moordyn::real Cdt;
+	/// VIV lift coefficient [-]
+	/// If 0, VIV turned off
+	moordyn::real Cl;
 
 	/// line axial internal damping coefficient (before proceessing) [Ns]
 	moordyn::real BAin;
@@ -242,6 +245,32 @@ class Line final : public io::IO
 	// time
 	/// simulation time
 	moordyn::real t;
+	/// MoorDyn internal time step
+	moordyn::real dtm;
+	
+	// VIV stuff
+	// /// VIV amplitude updated every zero crossing of crossflow velcoity
+	// std::vector<moordyn::real> Amp;
+	/// VIV state (phase,amplitude,smoothed amplitude)
+	std::vector<vec> VIV;
+	/// derivative of VIV state (phase,amplitude,smoothed amplitude)
+	std::vector<vec> VIVd;
+
+	// back indexing one dtm for VIV
+	/// old t
+	moordyn::real t_old = 0.0;
+	// /// running amplitude total, from previous zero crossing of yd
+	// std::vector<moordyn::real> A_int_old;
+	/// node old cf vel
+	std::vector<moordyn::real> yd_old;
+	/// node old cf vel rms
+	std::vector<moordyn::real> yd_rms_old;
+	/// node old cf accel rms
+	std::vector<moordyn::real> ydd_rms_old;
+	/// node old CF direction
+	std::vector<vec> dir_old;
+	/// node old accelerations
+	std::vector<vec> rdd_old;
 
 	// end conditions
 	/** @brief Types of end points
@@ -302,6 +331,9 @@ class Line final : public io::IO
 	/// lines
 	size_t lineId;
 
+	/// boolean to indicate dynamic relaxation occuring
+	bool IC_gen = false;
+
 	/** @brief Setup a line
 	 * @param number Line number
 	 * @param props Line properties
@@ -310,6 +342,7 @@ class Line final : public io::IO
 	 * @param env_in Global struct that holds environmental settings
 	 * @param outfile The outfile where information shall be written
 	 * @param channels The channels/fields that shall be printed in the file
+	 * @param moordyn internal timestep. Used in VIV
 	 */
 	void setup(int number,
 	           LineProps* props,
@@ -317,7 +350,8 @@ class Line final : public io::IO
 	           unsigned int n,
 	           EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile,
-	           string channels);
+	           string channels,
+			   real dtM0);
 
 	/** @brief Set the environmental data
 	 * @param waves_in Global Waves object
@@ -333,12 +367,12 @@ class Line final : public io::IO
 
 	/** @brief Compute the stationary Initial Condition (IC)
 	 * @return The states, i.e. the positions of the internal nodes
-	 * (first) and the velocities of the internal nodes (second)
+	 * (first) and the velocities of the internal nodes (second) and the viv states (third)
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
 	 */
-	std::pair<std::vector<vec>, std::vector<vec>> initialize();
+	std::tuple<std::vector<vec>, std::vector<vec>, std::vector<vec>> initialize();
 
 	/** @brief Number of segments
 	 *
@@ -597,11 +631,12 @@ class Line final : public io::IO
 	/** @brief Set the line state
 	 * @param r The moordyn::Line::getN() - 1 positions
 	 * @param u The moordyn::Line::getN() - 1 velocities
+	 * @param v The moordyn::Line::getN() + 1 viv properties
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
 	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
 	 */
-	void setState(std::vector<vec> r, std::vector<vec> u);
+	void setState(std::vector<vec> r, std::vector<vec> u, std::vector<vec> v);
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r Position
@@ -642,10 +677,10 @@ class Line final : public io::IO
 
 	/** @brief Calculate forces and get the derivative of the line's states
 	 * @return The velocties of the internal nodes (first) and the accelerations
-	 * of the internal nodes (second)
+	 * of the internal nodes (second) and the viv derivatives (third)
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	std::pair<std::vector<vec>, std::vector<vec>> getStateDeriv();
+	std::tuple<std::vector<vec>, std::vector<vec>, std::vector<vec>> getStateDeriv();
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);

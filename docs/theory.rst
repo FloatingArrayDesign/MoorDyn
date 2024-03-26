@@ -17,6 +17,7 @@ variety of mooring and cabling arrangements. Hydrodynamics are included using a 
 Version 2
 ^^^^^^^^^
 MoorDyn v2 contains all the features of v1 with the following additional features:
+
   - Simulation of 6 degree of freedom objects
   - Non-linear tension
   - Wave kinematics
@@ -75,10 +76,12 @@ The theory behind MoorDyn is available in a collection of papers, listed below b
 
 Version 1
 ^^^^^^^^^
+.. _version1:
+
 The v1 lumped-mass formulation of MoorDyn as well as its validation against experiments:
 
   `M. Hall and A. Goupee, “Validation of a lumped-mass mooring line model with DeepCwind semisubmersible model test data,” 
-  Ocean Engineering, vol. 104, pp. 590–603, Aug. 2015.' <http://www.sciencedirect.com/science/article/pii/S0029801815002279>`_
+  Ocean Engineering, vol. 104, pp. 590–603, Aug. 2015. <http://www.sciencedirect.com/science/article/pii/S0029801815002279>`_
 
 Coupling with WEC-Sim or any Simulink code for wave energy converter simulation:
 
@@ -91,6 +94,7 @@ Coupling with WEC-Sim or any Simulink code for wave energy converter simulation:
 
 Version 2
 ^^^^^^^^^
+.. _version2:
 
 Version 2 builds upon the capabilities of Version 1. The theory behind the new features is described in the following references. 
 
@@ -120,15 +124,21 @@ Dynamics of 6DOF objects follows a similar approach to Hydrodyn:
 
   https://www.nrel.gov/wind/nwtc/assets/downloads/HydroDyn/HydroDyn_Manual.pdf
 
+Voretex Induced Vibration (VIV) calculations are based on the work of Jorgen et. al:
+
+  `M.J. Thorsen, S. Sævik, C.M. Larsen, “Non-linear time domain analysis of cross-flow vortex-induced vibrations,” 
+  Marine Structures, vol. 51, pp. 134-151, Jan. 2017. <https://www.sciencedirect.com/science/article/pii/S0951833916302118>`_
+
 Quaternion references:
 
-1. Fossen, Thor I. Handbook of marine craft hydrodynamics and motion control. 
-   Page 25 John Wiley & Sons, 2011.
-2. https://en.wikipedia.org/wiki/Gimbal_lock
-3. https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
-4. https://en.wikipedia.org/wiki/Quaternion#Hamilton_product
+ - Fossen, Thor I. Handbook of marine craft hydrodynamics and motion control. 
+   Page 25. John Wiley & Sons, 2011.
+ - https://en.wikipedia.org/wiki/Gimbal_lock
+ - https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
+ - https://en.wikipedia.org/wiki/Quaternion#Hamilton_product
 
 MoorDyn-C Packages used:
+
  - Eigen: https://eigen.tuxfamily.org 
  - Catch2: https://github.com/catchorg/Catch2
  - KISSFFT: https://github.com/mborgerding/kissfft

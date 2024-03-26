@@ -273,9 +273,9 @@ that will be used in the simulation
 .. code-block:: none
 
  ---------------------- LINE TYPES -----------------------------------
- TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx          
- (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
- Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5           
+ TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx    Cl          
+ (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)     (-)      
+ Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5     0.8      
 
 The columns in order are as follows:
 
@@ -293,6 +293,8 @@ The columns in order are as follows:
  - Ca –  transverse added mass coefficient (with respect to line displacement)
  - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
  - CaAx – tangential added mass coefficient (with respect to line displacement)
+ - Cl – the crossflow VIV lift coefficient. If set to 0, then VIV calculations are disabled for the
+   line. The theory of vortex induced vibrations can be found :ref:`here <version2>`
 
 Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
 must be located in the same folder as the main MoorDyn input file for MoorDyn-C or for MoorDyn-F 

@@ -84,7 +84,7 @@ TimeSchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 
 	for (unsigned int i = 0; i < lines.size(); i++) {
 		lines[i]->setTime(this->t);
-		lines[i]->setState(r[substep].lines[i].pos, r[substep].lines[i].vel);
+		lines[i]->setState(r[substep].lines[i].pos, r[substep].lines[i].vel, r[substep].viv[i].pos);
 	}
 }
 
@@ -95,7 +95,7 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	waves->updateWaves();
 
 	for (unsigned int i = 0; i < lines.size(); i++) {
-		std::tie(rd[substep].lines[i].vel, rd[substep].lines[i].acc) =
+		std::tie(rd[substep].lines[i].vel, rd[substep].lines[i].acc, rd[substep].viv[i].vel) =
 		    lines[i]->getStateDeriv();
 	}
 

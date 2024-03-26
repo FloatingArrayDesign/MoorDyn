@@ -182,6 +182,9 @@ class MoorDynState
 	/// The states of the lines
 	std::vector<LineState> lines;
 
+	/// The states of VIV (vel is dummy var)
+	std::vector<LineState> viv;
+
 	/// The states of the points
 	std::vector<PointState> points;
 
@@ -228,6 +231,9 @@ class DMoorDynStateDt
 
 	/// The state derivatives of the lines
 	std::vector<DLineStateDt> lines;
+
+	/// The state derivatives of VIV (acc is dummy variable)
+	std::vector<DLineStateDt> viv;
 
 	/// The state derivatives of the points
 	std::vector<DPointStateDt> points;

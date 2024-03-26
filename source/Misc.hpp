@@ -1058,6 +1058,7 @@ typedef struct _LineProps // (matching Line Dictionary inputs)
 	double Cat;
 	double Cdn;
 	double Cdt;
+	double Cl; // VIV lift coefficient. If 0, VIV turned off.
 	int nEApoints; // number of values in stress-strain lookup table (0 means
 	               // using constant E)
 	double

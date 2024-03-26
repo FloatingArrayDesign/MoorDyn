@@ -308,16 +308,24 @@ class TimeSchemeBase : public TimeScheme
 		// Build up the states and states derivatives
 		unsigned int n = obj->getN() - 1;
 		LineState state;
+		LineState vstate;
 		state.pos.assign(n, vec::Zero());
 		state.vel.assign(n, vec::Zero());
+		vstate.pos.assign(n+2, vec::Zero());
+		vstate.vel.assign(n+2, vec::Zero());
 		for (unsigned int i = 0; i < r.size(); i++) {
 			r[i].lines.push_back(state);
+			r[i].viv.push_back(vstate);
 		}
 		DLineStateDt dstate;
+		DLineStateDt vdstate;
 		dstate.vel.assign(n, vec::Zero());
 		dstate.acc.assign(n, vec::Zero());
+		vdstate.vel.assign(n+2, vec::Zero());
+		vdstate.acc.assign(n+2, vec::Zero());
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].lines.push_back(dstate);
+			rd[i].viv.push_back(vdstate);
 		}
 	}
 
@@ -515,7 +523,7 @@ class TimeSchemeBase : public TimeScheme
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
-			std::tie(r[0].lines[i].pos, r[0].lines[i].vel) =
+			std::tie(r[0].lines[i].pos, r[0].lines[i].vel, r[0].viv[i].pos) =
 			    lines[i]->initialize();
 		}
 	}

@@ -545,7 +545,7 @@ constructSteadyCurrentGrid(const std::string& folder,
                            moordyn::Log* _log)
 {
 
-	const string CurrentsFilename = folder + "/current_profile.txt";
+	const string CurrentsFilename = folder + "current_profile.txt";
 	LOGMSG << "Reading currents profile from '" << CurrentsFilename << "'..."
 	       << endl;
 
