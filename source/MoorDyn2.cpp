@@ -1616,9 +1616,11 @@ moordyn::MoorDyn::readLineProps(string inputText)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
 
-	if (!checkNumberOfEntriesInLine(entries, 11)) {
+	if (!checkNumberOfEntriesInLine(entries, 10)) {
 		return nullptr;
 	}
+
+	cout << "Entries size: " << entries.size() << endl;
 
 	LineProps* obj = new LineProps();
 
@@ -1629,7 +1631,8 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	obj->Can = atof(entries[7].c_str());
 	obj->Cdt = atof(entries[8].c_str());
 	obj->Cat = atof(entries[9].c_str());
-	obj->Cl = atof(entries[10].c_str());
+	if (entries.size() == 10) obj->Cl = 0.0; // If no lift coefficient, disable VIV. For backwards compatability.
+	else obj->Cl = atof(entries[10].c_str());
 
 	moordyn::error_id err;
 	err = read_curve(entries[3].c_str(),

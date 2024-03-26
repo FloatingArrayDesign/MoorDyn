@@ -294,7 +294,8 @@ The columns in order are as follows:
  - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
  - CaAx – tangential added mass coefficient (with respect to line displacement)
  - Cl – the crossflow VIV lift coefficient. If set to 0, then VIV calculations are disabled for the
-   line. The theory of vortex induced vibrations can be found :ref:`here <version2>`
+   line. This coefficient has been made backwards compatible. If it is not provided, then it is 
+   assumed to be 0.0. The theory of vortex induced vibrations can be found :ref:`here <version2>`
 
 Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
 must be located in the same folder as the main MoorDyn input file for MoorDyn-C or for MoorDyn-F 
