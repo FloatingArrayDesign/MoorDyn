@@ -1244,9 +1244,10 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 	AndersonSchemeBase(moordyn::Log* log,
 	                   WavesRef waves,
 	                   unsigned int iters = 10,
-	                   unsigned int m = 3,
-	                   real tol = 1.e-5,
-	                   real tol_rel = 1.e-3);
+	                   unsigned int m = 4,
+	                   real tol = 1.e-2,
+	                   real tol_rel = 1.e-2,
+	                   real regularization = 1.e-10);
 
 	/// @brief Destructor
 	virtual ~AndersonSchemeBase() {}
@@ -1292,11 +1293,14 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 	}
 
 	/** @brief Get the stats of the residues
+	 * @param ago Either 0 to get the latests residue or 1 to get the previous
+	 * one.
 	 * @return The average and maximum residue
 	 */
-	inline const std::tuple<real, real> residue() const
+	inline const std::tuple<real, real> residue(unsigned int ago=0) const
 	{
-		return { _g.col(1).cwiseAbs().mean(), _g.col(1).cwiseAbs().maxCoeff() };
+		return { _g.col(1 - ago).cwiseAbs().mean(),
+		         _g.col(1 - ago).cwiseAbs().maxCoeff() };
 	}
 
   private:
@@ -1312,6 +1316,12 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 	/// Relative residue reduction to consider that the solution has converged
 	real _tol_rel;
 
+	/// Regularization factor
+	real _regularization;
+
+	/// Number of dofs
+	real _n;
+
 	/// Initial residue
 	real _g0;
 
@@ -1322,10 +1332,10 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 	Eigen::Matrix<real, Eigen::Dynamic, 2> _g;
 
 	/// The evaluation points variation matrix
-	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic> _X;
+	Eigen::MatrixXr _X;
 
 	/// The residues variation matrix
-	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic> _G;
+	Eigen::MatrixXr _G;
 
 	/** @brief Compute the number of acceleration DOFs
 	 * @return The number of acceleration DOFs
