@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file quasi_static_chain.cpp
- * Validation against Orcaflex
+/** @file aca.cpp
+ * Tests ran with the Average Constant Acceleration Newmark scheme
  */
 
 #include "MoorDyn2.h"
@@ -45,19 +45,19 @@
 using namespace std;
 
 /// Time step in the moton files
-const double DT = 0.1;
+#define DT 0.1
 /// List of available depths
-vector<string> DEPTHS({ "0050", "0200", "0600" });
+#define DEPTH "0600"
 /// List of available motions
-vector<string> MOTIONS({ "ZZP1_A1", "ZZP1_A2" });
+#define MOTION "ZZP1_A1"
 /// List of static tensions at the fairlead predicted by quasi-static codes
-vector<double> STATIC_FAIR_TENSION({ 991.6, 2065.4, 5232.6 });
+#define STATIC_FAIR_TENSION 5232.6
 /// List of static tensions at the anchor predicted by quasi-static codes
-vector<double> STATIC_ANCHOR_TENSION({ 826.2, 1402.2, 3244.2 });
+#define STATIC_ANCHOR_TENSION 3244.2
 /// Allowed relative error in the static tension value
-const double MAX_STATIC_ERROR = 0.1;
+#define MAX_STATIC_ERROR 0.1
 /// Allowed relative error in the variable tension value
-const double MAX_DYNAMIC_ERROR = 0.15;
+#define MAX_DYNAMIC_ERROR 0.15
 
 /** @brief Parse a line of a tabulated file
  * @param line The line of text
@@ -98,21 +98,12 @@ read_tab_file(const char* filepath)
 	return data;
 }
 
-/** @brief Run a validation against a quasi-static code
- * @return true if the test worked, false otherwise
- */
-void
-validation(const char* depth, const char* motion)
+TEST_CASE("quasi_static_chain with aca10")
 {
-	auto it = std::find(DEPTHS.begin(), DEPTHS.end(), depth);
-	REQUIRE(it != DEPTHS.end());
-	const unsigned int depth_i = (it - DEPTHS.begin());
-
 	stringstream lines_file, motion_file, ref_file;
-	lines_file << "Mooring/WD" << depth << "_Chain"
-	           << ".txt";
-	motion_file << "Mooring/QuasiStatic/" << motion << ".txt";
-	ref_file << "Mooring/QuasiStatic/WD" << depth << "_Chain_" << motion
+	lines_file << "Mooring/WD" << DEPTH << "_Chain" << ".txt";
+	motion_file << "Mooring/QuasiStatic/" << MOTION << ".txt";
+	ref_file << "Mooring/QuasiStatic/WD" << DEPTH << "_Chain_" << MOTION
 	         << ".txt";
 	auto motion_data = read_tab_file(motion_file.str().c_str());
 	auto ref_data = read_tab_file(ref_file.str().c_str());
@@ -136,13 +127,20 @@ validation(const char* depth, const char* motion)
 	REQUIRE(MoorDyn_GetFASTtens(
 		system, &num_lines, &fh, &fv, &ah, &av) == MOORDYN_SUCCESS);
 	const double ffair0 = sqrt(fh * fh + fv * fv);
-	const double ffair_ref0 = 1.e3 * STATIC_FAIR_TENSION[depth_i];
+	const double ffair_ref0 = 1.e3 * STATIC_FAIR_TENSION;
 	const double fanch0 = sqrt(ah * ah + av * av);
-	const double fanch_ref0 = 1.e3 * STATIC_ANCHOR_TENSION[depth_i];
+	const double fanch_ref0 = 1.e3 * STATIC_ANCHOR_TENSION;
 	const double efair0 = (ffair0 - ffair_ref0) / ffair_ref0;
 	const double eanch0 = (fanch0 - fanch_ref0) / fanch_ref0;
 	REQUIRE(efair0 <= MAX_STATIC_ERROR);
 	REQUIRE(eanch0 <= MAX_STATIC_ERROR);
+
+	// Change the time scheme
+	REQUIRE(MoorDyn_SetTimeScheme(system, "aca10") == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetCFL(system, 0.5) == MOORDYN_SUCCESS);
+	double dtM;
+	REQUIRE(MoorDyn_GetDt(system, &dtM) == MOORDYN_SUCCESS);
+	std::cout << "New time step = " << dtM << " s" << std::endl;
 
 	// Start integrating. The integration have a first chunk of initialization
 	// motion to get something more periodic. In that chunk of the simulation
@@ -194,17 +192,9 @@ validation(const char* depth, const char* motion)
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 
 	ef_value = ef_value / (2.0 * ef_ref);
-	REQUIRE(ef_value <= MAX_DYNAMIC_ERROR);
+	const double max_rel_err = MAX_DYNAMIC_ERROR;
+	REQUIRE(ef_value <= max_rel_err);
 	ea_value = ea_value / (2.0 * ea_ref);
 	// For the time being we better ignore these errors
-	// REQUIRE(ea_value <= MAX_DYNAMIC_ERROR);
-}
-
-TEST_CASE("Validation")
-{
-	for (auto depth : DEPTHS) {
-		for (auto motion : MOTIONS) {
-			validation(depth.c_str(), motion.c_str());
-		}
-	}
+	// REQUIRE(ea_value <= max_rel_err);
 }

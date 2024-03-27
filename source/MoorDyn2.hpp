@@ -46,6 +46,7 @@
 #include "Rod.hpp"
 #include "Body.hpp"
 #include "Seafloor.hpp"
+#include <limits>
 
 #ifdef USE_VTK
 #include <vtkSmartPointer.h>
@@ -315,6 +316,73 @@ class MoorDyn final : public io::IO
 	void saveVTK(const char* filename) const;
 #endif
 
+	/** @brief Get the model time step
+	 * @return The model time step
+	 */
+	inline real GetDt() const { return dtM0; }
+
+	/** @brief Set the model time step
+	 * @param dt The model time step
+	 * @note The CFL will be changed accordingly
+	 */
+	inline void SetDt(real dt) {
+		this->dtM0 = dt;
+		this->cfl = 0.0;
+		for (auto obj : LineList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+		for (auto obj : PointList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+		for (auto obj : RodList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+		for (auto obj : BodyList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	}
+
+	/** @brief Get the model Courant–Friedrichs–Lewy factor
+	 * @return The CFL
+	 */
+	inline real GetCFL() const { return cfl; }
+
+	/** @brief Set the model Courant–Friedrichs–Lewy factor
+	 * @param cfl The CFL
+	 * @note The time step will be changed accordingly
+	 */
+	inline void SetCFL(real cfl) {
+		this->cfl = cfl;
+		this->dtM0 = (std::numeric_limits<real>::max)();
+		for (auto obj : LineList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+		for (auto obj : PointList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+		for (auto obj : RodList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+		for (auto obj : BodyList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	}
+
+	/** @brief Get the current time integrator
+	 * @return The time integrator
+	 */
+	inline TimeScheme* GetTimeScheme() const { return _t_integrator; }
+
+	/** @brief Set the current time integrator
+	 * @return The time integrator
+	 */
+	inline void SetTimeScheme(TimeScheme* tscheme) {
+		_t_integrator = tscheme;
+		_t_integrator->SetGround(GroundBody);
+		for (auto obj : BodyList)
+			_t_integrator->AddBody(obj);
+		for (auto obj : RodList)
+			_t_integrator->AddRod(obj);
+		for (auto obj : PointList)
+			_t_integrator->AddPoint(obj);
+		for (auto obj : LineList)
+			_t_integrator->AddLine(obj);
+		_t_integrator->SetCFL(cfl);
+		_t_integrator->Init();
+	}
+
   protected:
 	/** @brief Read the input file, setting up all the required objects and
 	 * their relationships
@@ -435,8 +503,10 @@ class MoorDyn final : public io::IO
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
-	/// (s) desired mooring line model time step
+	/// (s) desired mooring line model maximum time step
 	real dtM0;
+	/// desired mooring line model maximum CFL factor
+	real cfl;
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
 	real dtOut;

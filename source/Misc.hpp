@@ -83,6 +83,12 @@ typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 6, 6> Matrix6d;
 typedef Matrix<int, 6, 1> Vector6i;
 typedef Matrix<int, 6, 6> Matrix6i;
+// It is also convenient for us to define a generic Eigen dynamic matrix class
+#ifdef MOORDYN_SINGLEPRECISSION
+typedef MatrixXf MatrixXr;
+#else
+typedef MatrixXd MatrixXr;
+#endif
 }
 
 /** @brief MoorDyn2 C++ API namespace
@@ -139,7 +145,7 @@ typedef Eigen::Vector6i ivec6;
 /// Renaming of ivec3
 typedef ivec3 ivec;
 
-/// COmplex numbers
+/// Complex numbers
 typedef std::complex<real> complex;
 
 inline vec3 
@@ -709,7 +715,9 @@ namespace fileIO {
  */
 std::vector<std::string>
 fileToLines(const std::filesystem::path& path);
+
 }
+
 /**
  * @}
  */

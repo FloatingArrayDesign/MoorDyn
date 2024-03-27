@@ -152,7 +152,7 @@ including seabed properties, initial condition (IC) generation settings, and the
 .. code-block:: none
 
  -------------------------- SOLVER OPTIONS---------------------------------------------------
- 0.001    dtM           - time step to use in mooring integration
+ 0.001    dtM          - time step to use in mooring integration
  3.0e6    kb           - bottom stiffness
  3.0e5    cb           - bottom damping
  70       WtrDpth      - water depth
@@ -165,7 +165,8 @@ parenthesis). As such, they are all optional settings, although some of them (su
 size) often need to be set by the user for proper operation. The list of possible options (with any 
 default value provided in parentheses) is:
 
- - dtM (0.001) – desired mooring model time step (s)
+ - dtM (3.402823e+38) – desired mooring model maximum time step (s)
+ - CFL (0.5) – desired mooring model maximum CFL factor
  - g (9.80665) – gravitational constant (m/s^2)
  - rhoW (1025.0)– water density (kg/m^3)
  - WtrDpth (0.0) – water depth (m)
@@ -178,6 +179,11 @@ default value provided in parentheses) is:
    generation (-)
  - ThreshIC (0.001) – convergence threshold for IC generation, acceptable relative difference 
    between three successive fairlead tension measurements (-)
+
+The internal time step is first taken from the dtM option, and then adjusted
+according to the CFL factor, which is the ratio between the timestep and the
+natural period, computed considering the math described on
+:ref:`the troubleshooting section <troubleshooting>`.
 
 The bottom contact parameters, kBot and cBot, result in a pressure which is then applied to the 
 cross-sectional area (d*l) of each contacting line segment to give a resulting vertical contact 
@@ -529,9 +535,10 @@ size) often needs to be set by the user for proper operation. The list of possib
    the more verbose. Please, be mindful that big values would critically reduce the performance!
  - dtM (0.001 C): The time step (s). In MoorDyn-F if this is left blank it defaults to the 
    :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.   
- - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, 
-   BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for 
-   Runge-Kutta while AB stands for Adams-Bashforth
+ - tScheme (RK2): The time integrator. It should be one of
+   Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
+   BEuler\ *N*, Midpoint\ *N*, ACA\ *N*. Look at the
+   :ref:`time schemes documentation <tschemes>` to learn more about this.
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
  - WtrDpth (0.0): The water depth (m). In MoorDyn-F the bathymetry file path can be inputted here.
