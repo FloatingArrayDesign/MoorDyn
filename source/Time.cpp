@@ -510,6 +510,112 @@ ImplicitSchemeBase<NSTATE, NDERIV>::Relax(const unsigned int& iter)
 	return c0() * (1. - y0) + c1() * (1. - y1);
 }
 
+template<unsigned int NSTATE, unsigned int NDERIV>
+AndersonSchemeBase<NSTATE, NDERIV>::AndersonSchemeBase(moordyn::Log* log,
+                                                       WavesRef waves,
+                                                       unsigned int iters,
+                                                       unsigned int m,
+                                                       real tol,
+                                                       real tol_rel)
+	: ImplicitSchemeBase<NSTATE, NDERIV>(log, waves)
+	, _iters(iters)
+	, _m((std::min)(m, iters))
+	, _tol(tol)
+	, _tol_rel(tol_rel)
+{
+}
+
+template<unsigned int NSTATE, unsigned int NDERIV>
+void
+AndersonSchemeBase<NSTATE, NDERIV>::qr(unsigned int iter,
+                                       unsigned int org,
+                                       unsigned int dst,
+                                       float dt)
+{
+	// Resize the matrices on demand
+	if (_X.rows() == 0) {
+		const unsigned int n = ndof();
+		_x.resize(n, 2);
+		_g.resize(n, 2);
+		_X.resize(n, _m);
+		_G.resize(n, _m);
+	}
+
+	// Roll the states and fill
+	_x.col(0) = _x.col(1);
+	_g.col(0) = _g.col(1);
+	fill(org, dst);
+
+	auto [res_mean, res_max] = residue();
+	this->LOGMSG << ", iter " << iter << ", residue = " << res_mean
+	             << " (max=" << res_max << ")" << std::endl;
+
+	const real relax = this->Relax(iter);
+
+	if (iter == 0) {
+		_g0 = res_mean;
+		// We cannot do anything else because we have not data enough. So let's
+		// just relax the point so we do not get too far away from the
+		// attractor
+		this->rd[dst].Mix(this->rd[org], relax);
+		return;
+	}
+
+	// Roll the matrices and fill them
+	unsigned int m = (std::min)(iter, _m);
+	for (unsigned int col = 0; col < m - 1; col++) {
+		_X.col(_m - m + col) = _X.col(_m - m + col + 1);
+		_G.col(_m - m + col) = _G.col(_m - m + col + 1);
+	}
+	_X.col(_m - 1) = _x.col(1) - _x.col(0);
+	_G.col(_m - 1) = _g.col(1) - _g.col(0);
+
+	if (m < 2) {
+		// Again, we cannot produce an estimation yet
+		this->rd[dst].Mix(this->rd[org], relax);
+		return;
+	}
+
+	// Solve
+	auto QR = _G(Eigen::placeholders::all,
+	             Eigen::seqN(_m - m, m)).completeOrthogonalDecomposition();
+	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>
+		gamma = QR.solve(_g.col(1));
+
+	// Produce a new estimation
+	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>
+		acc = _x.col(1) + _g.col(1) - (_X + _G) * gamma;
+	unsigned int n = 0;
+	for (unsigned int i = 0; i < this->lines.size(); i++) {
+		for (unsigned int j = 0; j < this->rd[org].lines[i].acc.size(); j++) {
+			this->rd[dst].lines[i].acc[j] = acc(Eigen::seqN(n, 3), 0);
+			this->rd[dst].lines[i].vel[j] = this->rd[org].lines[i].vel[j] + dt * (
+				this->rd[dst].lines[i].acc[j] - this->rd[org].lines[i].acc[j]);
+			n += 3;
+		}
+	}
+	for (unsigned int i = 0; i < this->points.size(); i++) {
+		this->rd[dst].points[i].acc =  acc(Eigen::seqN(n, 3), 0);
+		this->rd[dst].points[i].vel = this->rd[org].points[i].vel + dt * (
+			this->rd[dst].points[i].acc - this->rd[org].points[i].acc);
+		n += 3;
+	}
+	for (unsigned int i = 0; i < this->rods.size(); i++) {
+		this->rd[dst].rods[i].acc =  acc(Eigen::seqN(n, 6), 0);
+		this->rd[dst].rods[i].vel = this->rd[org].rods[i].vel + XYZQuat::fromVec6(
+			dt * (this->rd[dst].rods[i].acc - this->rd[org].rods[i].acc));
+		n += 6;
+	}
+	for (unsigned int i = 0; i < this->bodies.size(); i++) {
+		this->rd[dst].bodies[i].acc =  acc(Eigen::seqN(n, 6), 0);
+		this->rd[dst].bodies[i].vel = this->rd[org].bodies[i].vel + XYZQuat::fromVec6(
+			dt * (this->rd[dst].bodies[i].acc - this->rd[org].bodies[i].acc));
+		n += 6;
+	}
+
+	this->rd[dst].Mix(this->rd[org], relax);
+}
+
 ImplicitEulerScheme::ImplicitEulerScheme(moordyn::Log* log,
                                          moordyn::WavesRef waves,
                                          unsigned int iters,
@@ -538,6 +644,42 @@ ImplicitEulerScheme::Step(real& dt)
 			rd[0].Mix(rd[1], relax);
 			rd[1] = rd[0];
 		}
+	}
+
+	// Apply
+	r[0] = r[0] + rd[0] * dt;
+	t += (1.0 - _dt_factor) * dt;
+	Update(dt, 0);
+	TimeSchemeBase::Step(dt);
+}
+
+AndersonEulerScheme::AndersonEulerScheme(moordyn::Log* log,
+                                         moordyn::WavesRef waves,
+                                         unsigned int iters,
+                                         real dt_factor)
+  : AndersonSchemeBase(log, waves, iters)
+  , _dt_factor(dt_factor)
+{
+	stringstream s;
+	s << "k=" << dt_factor << " implicit Anderson Euler (" << iters
+	  << " iterations)";
+	name = s.str();
+}
+
+void
+AndersonEulerScheme::Step(real& dt)
+{
+	t += _dt_factor * dt;
+	for (unsigned int i = 0; i < iters(); i++) {
+		r[1] = r[0] + rd[0] * (_dt_factor * dt);
+		Update(_dt_factor * dt, 1);
+		CalcStateDeriv(1);
+
+		qr(i, 0, 1, _dt_factor * dt);
+		rd[0] = rd[1];
+
+		if (this->converged())
+			break;
 	}
 
 	// Apply

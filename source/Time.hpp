@@ -1170,8 +1170,6 @@ class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
-	 * @param dt_factor The inner evaluation point factor. 0.5 for the midpoint
-	 * method, 1.0 for the backward Euler method
 	 */
 	ImplicitSchemeBase(moordyn::Log* log,
 	                   WavesRef waves,
@@ -1225,6 +1223,161 @@ class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 	real _c1;
 };
 
+/** @class AndersonSchemeBase Time.hpp
+ * @brief A generic abstract implicit scheme accelerated with Anderson scheme
+ *
+ * This class can be later overloaded to implement a plethora of time schemes
+ */
+template<unsigned int NSTATE, unsigned int NDERIV>
+class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 * @param m The number of points to compute Anderson's acceleration
+	 * @param tol Minimum residue to consider that the solution has converged
+	 * @param tol_rel Relative residue reduction to consider that the solution
+	 * has converged
+	 */
+	AndersonSchemeBase(moordyn::Log* log,
+	                   WavesRef waves,
+	                   unsigned int iters = 10,
+	                   unsigned int m = 3,
+	                   real tol = 1.e-5,
+	                   real tol_rel = 1.e-3);
+
+	/// @brief Destructor
+	virtual ~AndersonSchemeBase() {}
+
+	/** @brief Get the residual tolerance
+	 *
+	 * When the maximum residue falls below this value the inner iteration
+	 * is stopped
+	 * @return The tolerance
+	 */
+	inline real tol() const { return _tol; }
+
+	/** @brief Set the residual tolerance
+	 *
+	 * When the maximum residue falls below this value the inner iteration
+	 * is stopped
+	 * @param t The tolerance
+	 */
+	inline void tol(const real t) { _tol = t; }
+
+  protected:
+	/** @brief Get the number of subiterations
+	 * @return The number of iterations
+	 */
+	inline unsigned int iters() const { return _iters; }
+
+	/** @brief Produce a new estimation
+	 * @param iter The current iteration
+	 * @param org The input point, x
+	 * @param dst The input eval, f(x), as well as the output
+	 * @param dt The time step to integrate the acceleration as the velocity
+	 */
+	void qr(unsigned int iter, unsigned int org, unsigned int dst, float dt);
+
+	/** @brief Check if the iterator has converged
+	 * @return true if the maximum residue has fallen below the tolerance,
+	 * false otherwise
+	 */
+	inline const bool converged() const
+	{
+		const real g = _g.col(1).cwiseAbs().mean();
+		return (g < _tol) || (g / _g0 < _tol_rel);
+	}
+
+	/** @brief Get the stats of the residues
+	 * @return The average and maximum residue
+	 */
+	inline const std::tuple<real, real> residue() const
+	{
+		return { _g.col(1).cwiseAbs().mean(), _g.col(1).cwiseAbs().maxCoeff() };
+	}
+
+  private:
+	/// The number of iterations
+	unsigned int _iters;
+
+	/// The number of points to compute Anderson's acceleration
+	unsigned int _m;
+
+	/// Minimum residue to consider that the solution has converged
+	real _tol;
+
+	/// Relative residue reduction to consider that the solution has converged
+	real _tol_rel;
+
+	/// Initial residue
+	real _g0;
+
+	/// The evaluation points list
+	Eigen::Matrix<real, Eigen::Dynamic, 2> _x;
+
+	/// The residues list
+	Eigen::Matrix<real, Eigen::Dynamic, 2> _g;
+
+	/// The evaluation points variation matrix
+	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic> _X;
+
+	/// The residues variation matrix
+	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic> _G;
+
+	/** @brief Compute the number of acceleration DOFs
+	 * @return The number of acceleration DOFs
+	 */
+	inline unsigned int ndof() const {
+		unsigned int n = 3 * this->points.size() + 6 * (this->bodies.size() + this->rods.size());
+		for (unsigned int i = 0; i < this->lines.size(); i++)
+			n += 3 * this->rd[0].lines[i].acc.size();
+		return n;
+	}
+
+	/** @brief Fill the last column of the X matrix
+	 * @param org The point, x
+	 * @param dst The eval, f(x)
+	 * @note This function is assuming that the matrix is already resized
+	 */
+	inline void fill(unsigned int org, unsigned int dst)
+	{
+		unsigned int i, j, n = 0;
+		for (i = 0; i < this->lines.size(); i++) {
+			for (j = 0; j < this->rd[org].lines[i].acc.size(); j++) {
+				const vec x = this->rd[org].lines[i].acc[j];
+				const vec fx = this->rd[dst].lines[i].acc[j];
+				_x(Eigen::seqN(n, 3), 1) = x;
+				_g(Eigen::seqN(n, 3), 1) = fx - x;
+				n += 3;
+			}
+		}
+		for (i = 0; i < this->points.size(); i++) {
+			const vec x = this->rd[org].points[i].acc;
+			const vec fx = this->rd[dst].points[i].acc;
+			_x(Eigen::seqN(n, 3), 1) = x;
+			_g(Eigen::seqN(n, 3), 1) = fx - x;
+			n += 3;
+		}
+		for (i = 0; i < this->rods.size(); i++) {
+			const vec6 x = this->rd[org].rods[i].acc;
+			const vec6 fx = this->rd[dst].rods[i].acc;
+			_x(Eigen::seqN(n, 6), 1) = x;
+			_g(Eigen::seqN(n, 6), 1) = fx - x;
+			n += 6;
+		}
+		for (i = 0; i < this->bodies.size(); i++) {
+			const vec6 x = this->rd[org].bodies[i].acc;
+			const vec6 fx = this->rd[dst].bodies[i].acc;
+			_x(Eigen::seqN(n, 6), 1) = x;
+			_g(Eigen::seqN(n, 6), 1) = fx - x;
+			n += 6;
+		}
+	}
+};
+
 /** @class ImplicitEulerScheme Time.hpp
  * @brief Implicit 1st order Euler time scheme
  *
@@ -1249,6 +1402,43 @@ class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 
 	/// @brief Destructor
 	virtual ~ImplicitEulerScheme() {}
+
+	/** @brief Run a time step
+	 *
+	 * This function is the one that must be specialized on each time scheme
+	 * @param dt Time step
+	 */
+	virtual void Step(real& dt);
+
+  private:
+	/// The evaluation point
+	real _dt_factor;
+};
+
+/** @class AndersonEulerScheme Time.hpp
+ * @brief Implicit 1st order Euler time scheme
+ *
+ * The implicit Euler method is an implicit method where the derivative is
+ * evaluated somewhere inside the time step. Obviously, since that point depends
+ * on the derivative itself, a fixed point problem shall be solved
+ */
+class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
+{
+  public:
+	/** @brief Costructor
+	 * @param log Logging handler
+	 * @param waves Waves instance
+	 * @param iters The number of inner iterations to find the derivative
+	 * @param dt_factor The inner evaluation point factor. 0.5 for the midpoint
+	 * method, 1.0 for the backward Euler method
+	 */
+	AndersonEulerScheme(moordyn::Log* log,
+	                    WavesRef waves,
+	                    unsigned int iters = 10,
+	                    real dt_factor = 0.5);
+
+	/// @brief Destructor
+	virtual ~AndersonEulerScheme() {}
 
 	/** @brief Run a time step
 	 *
