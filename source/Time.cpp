@@ -516,12 +516,15 @@ AndersonSchemeBase<NSTATE, NDERIV>::AndersonSchemeBase(moordyn::Log* log,
                                                        unsigned int iters,
                                                        unsigned int m,
                                                        real tol,
-                                                       real tol_rel)
-	: ImplicitSchemeBase<NSTATE, NDERIV>(log, waves)
+                                                       real tol_rel,
+                                                       real regularization)
+	: ImplicitSchemeBase<NSTATE, NDERIV>(log, waves, iters)
 	, _iters(iters)
 	, _m((std::min)(m, iters))
 	, _tol(tol)
 	, _tol_rel(tol_rel)
+	, _regularization(regularization)
+	, _n(0)
 {
 }
 
@@ -534,11 +537,11 @@ AndersonSchemeBase<NSTATE, NDERIV>::qr(unsigned int iter,
 {
 	// Resize the matrices on demand
 	if (_X.rows() == 0) {
-		const unsigned int n = ndof();
-		_x.resize(n, 2);
-		_g.resize(n, 2);
-		_X.resize(n, _m);
-		_G.resize(n, _m);
+		_n = ndof();
+		_x.resize(_n, 2);
+		_g.resize(_n, 2);
+		_X.resize(_n, _m);
+		_G.resize(_n, _m);
 	}
 
 	// Roll the states and fill
@@ -547,9 +550,6 @@ AndersonSchemeBase<NSTATE, NDERIV>::qr(unsigned int iter,
 	fill(org, dst);
 
 	auto [res_mean, res_max] = residue();
-	this->LOGMSG << ", iter " << iter << ", residue = " << res_mean
-	             << " (max=" << res_max << ")" << std::endl;
-
 	const real relax = this->Relax(iter);
 
 	if (iter == 0) {
@@ -561,6 +561,9 @@ AndersonSchemeBase<NSTATE, NDERIV>::qr(unsigned int iter,
 		return;
 	}
 
+	this->rd[dst].Mix(this->rd[org], this->Relax(iter));
+	return;
+
 	// Roll the matrices and fill them
 	unsigned int m = (std::min)(iter, _m);
 	for (unsigned int col = 0; col < m - 1; col++) {
@@ -570,21 +573,33 @@ AndersonSchemeBase<NSTATE, NDERIV>::qr(unsigned int iter,
 	_X.col(_m - 1) = _x.col(1) - _x.col(0);
 	_G.col(_m - 1) = _g.col(1) - _g.col(0);
 
-	if (m < 2) {
+	if (m < _m) {
 		// Again, we cannot produce an estimation yet
 		this->rd[dst].Mix(this->rd[org], relax);
 		return;
 	}
 
-	// Solve
-	auto QR = _G(Eigen::placeholders::all,
-	             Eigen::seqN(_m - m, m)).completeOrthogonalDecomposition();
-	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>
-		gamma = QR.solve(_g.col(1));
+	auto [res_prev_mean, res_prev_max] = residue(1);
+	if ((res_prev_mean < res_mean) && (res_prev_max < res_max)) {
+		// The acceleration is enworstning the prediction, better to stop this
+		// non-sense
+		this->rd[dst].Mix(this->rd[org], relax);
+		return;
+	}
 
-	// Produce a new estimation
-	Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>
-		acc = _x.col(1) + _g.col(1) - (_X + _G) * gamma;
+	Eigen::MatrixXr reg = _regularization * Eigen::MatrixXr::Identity(m, m);
+	// Solve using the Woodbury identity
+	// Eigen::MatrixXr XtG_inv = (_X.transpose() * _G + reg).inverse();
+	// Eigen::MatrixXr B = Eigen::MatrixXr::Identity(_n, _n) +
+	// 	(_X - _G) * XtG_inv * _X.transpose();
+	// Eigen::MatrixXr acc = _x.col(1) + B * _g.col(1);
+	// Solve by straight application
+	Eigen::MatrixXr Gr = _G;
+	Gr.block(_m - m, 0, m, m) += reg;
+	auto QR = Gr(Eigen::placeholders::all,
+	             Eigen::seqN(_m - m, m)).completeOrthogonalDecomposition();
+	Eigen::MatrixXr gamma = QR.solve(_g.col(1));
+	Eigen::MatrixXr acc = _x.col(1) + _g.col(1) - (_X + Gr) * gamma;
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < this->lines.size(); i++) {
 		for (unsigned int j = 0; j < this->rd[org].lines[i].acc.size(); j++) {
@@ -673,10 +688,12 @@ AndersonEulerScheme::Step(real& dt)
 	for (unsigned int i = 0; i < iters(); i++) {
 		r[1] = r[0] + rd[0] * (_dt_factor * dt);
 		Update(_dt_factor * dt, 1);
-		CalcStateDeriv(1);
+		CalcStateDeriv(0);
 
-		qr(i, 0, 1, _dt_factor * dt);
-		rd[0] = rd[1];
+		if (i < iters() - 1) {
+			qr(i, 1, 0, _dt_factor * dt);
+			rd[1] = rd[0];
+		}
 
 		if (this->converged())
 			break;
@@ -826,6 +843,15 @@ create_time_scheme(const std::string& name,
 		try {
 			unsigned int iters = std::stoi(name.substr(8));
 			out = new ImplicitEulerScheme(log, waves, iters, 0.5);
+		} catch (std::invalid_argument) {
+			stringstream s;
+			s << "Invalid Midpoint name format '" << name << "'";
+			throw moordyn::invalid_value_error(s.str().c_str());
+		}
+	} else if (str::startswith(str::lower(name), "anderson")) {
+		try {
+			unsigned int iters = std::stoi(name.substr(8));
+			out = new AndersonEulerScheme(log, waves, iters, 0.5);
 		} catch (std::invalid_argument) {
 			stringstream s;
 			s << "Invalid Midpoint name format '" << name << "'";
