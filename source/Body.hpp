@@ -303,33 +303,33 @@ class Body final : public io::IO
 	/** @brief Get the body position
 	 * @return The body position
 	 */
-	inline vec getPosition() const { return r7.pos; }
+	inline const vec getPosition() const { return r7.pos; }
 
 	/** @brief Get the body Euler XYZ angles
 	 * @return The body Euler XYZ angles
 	 */
-	inline vec getAngles() const { return Quat2Euler(r7.quat); }
+	inline const vec getAngles() const { return Quat2Euler(r7.quat); }
 	// inline vec getAngles() const { return r6(Eigen::seqN(3, 3)); }
 
 	/** @brief Get the body velocity
 	 * @return The body velocity
 	 */
-	inline vec getVelocity() const { return v6(Eigen::seqN(0, 3)); }
+	inline const vec getVelocity() const { return v6(Eigen::seqN(0, 3)); }
 
 	/** @brief Get the body angular velocity
 	 * @return The body angular velocity
 	 */
-	inline vec getAngularVelocity() const { return v6(Eigen::seqN(3, 3)); }
+	inline const vec getAngularVelocity() const { return v6(Eigen::seqN(3, 3)); }
 
 	/** @brief Get the forces and moments exerted over the body
 	 * @return The net force
 	 */
-	vec6 getFnet();
+	const vec6 getFnet() const;
 
 	/** @brief Get the mass and intertia matrix
 	 * @return The mass and inertia matrix
 	 */
-	inline mat6 getM() const { return M; };
+	inline const mat6& getM() const { return M; };
 
 	/** @brief Get body output
 	 *

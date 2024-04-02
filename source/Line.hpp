@@ -425,7 +425,7 @@ class Line final : public io::IO
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
 	 */
-	inline vec getNodePos(unsigned int i) const
+	inline const vec& getNodePos(unsigned int i) const
 	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number
@@ -443,31 +443,165 @@ class Line final : public io::IO
 		return r[i];
 	}
 
-	/** @brief Get the tension in a node
-	 *
-	 * smart (selective) function to get tension at any node including fairlead
-	 * or anchor (accounting for weight in these latter cases) (added Nov 15th)
+	/** @brief Get the velocity of a node
 	 * @param i The line node index
-	 * @return The tension
+	 * @return The velocity
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
 	 */
-	inline vec getNodeTen(unsigned int i) const
+	inline const vec& getNodeVel(unsigned int i) const
 	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
-		if ((i == 0) || (i == N))
-			// return (
-			//     Fnet[i] +
-			//     vec(0.0, 0.0, M[i](0, 0) * (-env->g))); // <<< update to use W
-			return (
-			    Fnet[i]); // <<< update to use W
+		if (isnan(rd[i].sum())) {
+			stringstream s;
+			s << "NaN detected" << endl
+			  << "Line " << number << " node velocities:" << endl;
+			for (unsigned int j = 0; j <= N; j++)
+				s << j << " : " << rd[j] << ";" << endl;
+			throw moordyn::nan_error(s.str().c_str());
+		}
+		return rd[i];
+	}
 
+	/** @brief Get the net force on a node
+	 *
+	 * The net force is the total force acting over a line node.
+	 * 
+	 * To get the different components of the force use ::getNodeTen() ,
+	 * ::getNodeBendStiff() , ::getNodeWeight() , ::getNodeDrag() ,
+	 * ::getNodeFroudeKrilov() and ::getNodeSeaBedForce()
+	 * @note The net force is \b not the sum of all the components that you
+	 * cat extract from the API. For instance, the tension contribution on the
+	 * internal nodes is the difference between the tensions of the adjacent
+	 * segments, while ::getNodeTen() is returning the average.
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec& getNodeForce(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return Fnet[i];
+	};
+
+	/** @brief Get the tension on a node, including the internal line damping
+	 * 
+	 * If it is an inner node, the average of the
+	 * tension at the surrounding segments is provided. If the node is a
+	 * line-end, the associated ending segment tension is provided
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec getNodeTen(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		if (i == 0)
+			return T[0] + Td[0];
+		else if (i == N)
+			return T[N - 1] + Td[N - 1];
 		// take average of tension in adjacent segments
-		return (0.5 * (T[i] + T[i - 1]));
+		return (0.5 * (T[i] + T[i - 1] + Td[i] + Td[i - 1]));
+	};
+
+	/** @brief Get the tension on a node, including the internal line damping
+	 * 
+	 * If it is an inner node, the average of the
+	 * tension at the surrounding segments is provided. If the node is a
+	 * line-end, the associated ending segment tension is provided
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec& getNodeBendStiff(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return Bs[i];
+	};
+
+	/** @brief Get the weight and bouyancy force acting on the node
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec& getNodeWeight(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return W[i];
+	};
+
+	/** @brief Get the drag force acting on the node
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec getNodeDrag(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return Dp[i] + Dq[i];
+	};
+
+	/** @brief Get the Froude-Krilov force acting on the node
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec getNodeFroudeKrilov(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return Ap[i] + Aq[i];
+	};
+
+	/** @brief Get the sea bed reaction force acting on the node
+	 *
+	 * This is eventually including the friction force
+	 * @param i The line node index
+	 * @return The tension
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const vec getNodeSeaBedForce(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return B[i] + Bs[i];
 	};
 
 	/** @brief Get the line curvature at a node position
@@ -479,7 +613,7 @@ class Line final : public io::IO
 	 * (moordyn::Line::EI) is not zero. Otherwise the curvature of every single
 	 * node will be zero.
 	 */
-	inline real getNodeCurv(unsigned int i) const
+	inline const real& getNodeCurv(unsigned int i) const
 	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number
@@ -487,6 +621,22 @@ class Line final : public io::IO
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
 		return Kurv[i];
+	}
+
+	/** @brief Get the mass and added mass matrix
+	 * @param i The line node index
+	 * @return The mass matrix
+	 * @throws invalid_value_error If the node index \p i is bigger than the
+	 * number of nodes, moordyn::Line::N + 1
+	 */
+	inline const mat& getNodeM(unsigned int i) const
+	{
+		if (i > N) {
+			LOGERR << "Asking node " << i << " of line " << number
+			       << ", which only has " << N + 1 << " nodes" << std::endl;
+			throw moordyn::invalid_value_error("Invalid node index");
+		}
+		return M[i];
 	}
 
 	/** @brief Get the array of coordinates of all nodes along the line

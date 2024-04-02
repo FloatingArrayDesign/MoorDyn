@@ -511,8 +511,8 @@ Body::getStateDeriv()
 	return std::make_pair(dPos, a6);
 };
 
-vec6
-Body::getFnet()
+const vec6
+Body::getFnet() const
 {
 	vec6 F6_iner = vec6::Zero();
 	vec6 Fnet_out = vec6::Zero();
@@ -828,6 +828,60 @@ MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6])
 	std::tie(pos, vel) = ((moordyn::Body*)b)->getState();
 	moordyn::vec62array(pos.toVec6(), r);
 	moordyn::vec62array(vel, rd);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyPos(MoorDynBody b, double r[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec pos = ((moordyn::Body*)b)->getPosition();
+	moordyn::vec2array(pos, r);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyAngle(MoorDynBody b, double r[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec pos = ((moordyn::Body*)b)->getAngles();
+	moordyn::vec2array(pos, r);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyVel(MoorDynBody b, double rd[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec vel = ((moordyn::Body*)b)->getVelocity();
+	moordyn::vec2array(vel, rd);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyAngVel(MoorDynBody b, double rd[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec vel = ((moordyn::Body*)b)->getAngularVelocity();
+	moordyn::vec2array(vel, rd);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyForce(MoorDynBody b, double f[6])
+{
+	CHECK_BODY(b);
+	moordyn::vec6 force = ((moordyn::Body*)b)->getFnet();
+	moordyn::vec62array(force, f);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyM(MoorDynBody b, double m[6][6])
+{
+	CHECK_BODY(b);
+	moordyn::mat6 mass = ((moordyn::Body*)b)->getM();
+	moordyn::mat62array(mass, m);
 	return MOORDYN_SUCCESS;
 }
 

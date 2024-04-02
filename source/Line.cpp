@@ -1682,6 +1682,34 @@ MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 }
 
 int DECLDIR
+MoorDyn_GetLineNodeVel(MoorDynLine l, unsigned int i, double vel[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec rd = ((moordyn::Line*)l)->getNodeVel(i);
+		moordyn::vec2array(rd, vel);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeForce(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeForce(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodeTen(MoorDynLine l, unsigned int i, double ten[3])
 {
 	CHECK_LINE(l);
@@ -1696,6 +1724,76 @@ MoorDyn_GetLineNodeTen(MoorDynLine l, unsigned int i, double ten[3])
 }
 
 int DECLDIR
+MoorDyn_GetLineNodeBendStiff(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeBendStiff(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeWeight(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeWeight(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeDrag(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeDrag(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeFroudeKrilov(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeFroudeKrilov(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeSeaBedForce(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeSeaBedForce(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodeCurv(MoorDynLine l, unsigned int i, double* curv)
 {
 	CHECK_LINE(l);
@@ -1704,6 +1802,20 @@ MoorDyn_GetLineNodeCurv(MoorDynLine l, unsigned int i, double* curv)
 	try {
 		const auto c = ((moordyn::Line*)l)->getNodeCurv(i);
 		*curv = c;
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeM(MoorDynLine l, unsigned int i, double m[3][3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::mat mass = ((moordyn::Line*)l)->getNodeM(i);
+		moordyn::mat2array(mass, m);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
