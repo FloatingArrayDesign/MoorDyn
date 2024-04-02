@@ -500,13 +500,20 @@ class Rod final : public io::IO
 	 */
 	std::pair<XYZQuat, vec6> getStateDeriv();
 
-	/** @brief function to return net force on rod (and possibly moment at end A
-	 * if it's not pinned)
+	/** @brief Get the net force on rod (and possibly moment at end A if it's
+	 * not pinned)
 	 * @return The net force
 	 * @throw moordyn::invalid_value_error If the rod is not of type
 	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
 	 */
-	vec6 getFnet();
+	const vec6 getFnet() const;
+
+	/** @brief Get the rod mass matrix
+	 * @return The net force
+	 * @throw moordyn::invalid_value_error If the rod is not of type
+	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
+	 */
+	inline const mat6 getM() const { return M6net; }
 
 	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body

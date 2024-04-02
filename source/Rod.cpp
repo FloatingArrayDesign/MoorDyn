@@ -681,8 +681,8 @@ Rod::getStateDeriv()
 	return std::make_pair(vel7, acc6);
 }
 
-vec6
-Rod::getFnet()
+const vec6
+Rod::getFnet() const
 {
 	// return F6net;
 	// // >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global
@@ -1678,6 +1678,24 @@ MoorDyn_GetRodType(MoorDynRod rod, int* t)
 }
 
 int DECLDIR
+MoorDyn_GetRodForce(MoorDynRod rod, double f[6])
+{
+	CHECK_ROD(rod);
+	moordyn::vec6 fnet = ((moordyn::Rod*)rod)->getFnet();
+	moordyn::vec62array(fnet, f);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetRodM(MoorDynRod rod, double m[6][6])
+{
+	CHECK_ROD(rod);
+	moordyn::mat6 mass = ((moordyn::Rod*)rod)->getM();
+	moordyn::mat62array(mass, m);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetRodN(MoorDynRod rod, unsigned int* n)
 {
 	CHECK_ROD(rod);
@@ -1704,6 +1722,20 @@ MoorDyn_GetRodNodePos(MoorDynRod rod, unsigned int i, double pos[3])
 	try {
 		const moordyn::vec r = ((moordyn::Rod*)rod)->getNodePos(i);
 		moordyn::vec2array(r, pos);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetRodNodeVel(MoorDynRod rod, unsigned int i, double vel[3])
+{
+	CHECK_ROD(rod);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec rd = ((moordyn::Rod*)rod)->getNodeVel(i);
+		moordyn::vec2array(rd, vel);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;

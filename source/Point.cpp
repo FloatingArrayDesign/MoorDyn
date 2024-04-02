@@ -166,21 +166,6 @@ Point::initialize()
 	return std::make_pair(pos, vel);
 };
 
-// function to return net force on point (just to allow public reading of
-// Fnet)
-void
-Point::getFnet(vec& Fnet_out)
-{
-	Fnet_out = Fnet;
-};
-
-// function to return mass matrix of point
-void
-Point::getM(mat& M_out)
-{
-	M_out = M;
-};
-
 real
 Point::GetPointOutput(OutChanProps outChan)
 {
@@ -535,8 +520,7 @@ int DECLDIR
 MoorDyn_GetPointPos(MoorDynPoint point, double pos[3])
 {
 	CHECK_POINT(point);
-	moordyn::vec r, rd;
-	((moordyn::Point*)point)->getState(r, rd);
+	moordyn::vec r = ((moordyn::Point*)point)->getPosition();
 	moordyn::vec2array(r, pos);
 	return MOORDYN_SUCCESS;
 }
@@ -545,8 +529,7 @@ int DECLDIR
 MoorDyn_GetPointVel(MoorDynPoint point, double v[3])
 {
 	CHECK_POINT(point);
-	moordyn::vec r, rd;
-	((moordyn::Point*)point)->getState(r, rd);
+	moordyn::vec rd = ((moordyn::Point*)point)->getVelocity();
 	moordyn::vec2array(rd, v);
 	return MOORDYN_SUCCESS;
 }
@@ -555,9 +538,17 @@ int DECLDIR
 MoorDyn_GetPointForce(MoorDynPoint point, double f[3])
 {
 	CHECK_POINT(point);
-	moordyn::vec fnet;
-	((moordyn::Point*)point)->getFnet(fnet);
+	moordyn::vec fnet = ((moordyn::Point*)point)->getFnet();
 	moordyn::vec2array(fnet, f);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetPointM(MoorDynPoint point, double m[3][3])
+{
+	CHECK_POINT(point);
+	moordyn::mat mass = ((moordyn::Point*)point)->getM();
+	moordyn::mat2array(mass, m);
 	return MOORDYN_SUCCESS;
 }
 

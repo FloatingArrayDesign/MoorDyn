@@ -73,6 +73,54 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6]);
 
+	/** @brief Get the body position
+	 * @param b The Moordyn body
+	 * @param r The output position (3dof)
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyPos(MoorDynBody b, double r[3]);
+
+	/** @brief Get the body angle
+	 * @param b The Moordyn body
+	 * @param r The output angles (3dof)
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyAngle(MoorDynBody b, double r[3]);
+
+	/** @brief Get the body velocity
+	 * @param b The Moordyn body
+	 * @param rd The output velocity (3dof)
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyVel(MoorDynBody b, double rd[3]);
+
+	/** @brief Get the body angular velocity
+	 * @param b The Moordyn body
+	 * @param rd The output angular velocity (3dof)
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyAngVel(MoorDynBody b, double rd[3]);
+
+	/** @brief Get the body angular velocity
+	 * @param b The Moordyn body
+	 * @param rd The output angular velocity (3dof)
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyForce(MoorDynBody b, double f[6]);
+
+	/** @brief Get the body mass and intertia matrix
+	 * @param b The Moordyn body
+	 * @param m The output mass matrix
+	 * @return MOORDYN_INVALID_VALUE if a NULL body is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 */
+	int DECLDIR MoorDyn_GetBodyM(MoorDynBody b, double m[6][6]);
+
 	/** @brief Save the point to a VTK (.vtp) file
 	 * @param b The Moordyn body
 	 * @param filename The output maximum tension module

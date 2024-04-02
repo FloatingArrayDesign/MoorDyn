@@ -93,6 +93,15 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetPointForce(MoorDynPoint point, double f[3]);
 
+	/** @brief Get the point mass matrix
+	 * @param point The Moordyn point
+	 * @param f The output force
+	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+	 * otherwise
+	 * (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_GetPointM(MoorDynPoint point, double m[3][3]);
+
 	/** @brief Get the number of connected lines
 	 * @param point The Moordyn point
 	 * @param n The output number of connected lines
