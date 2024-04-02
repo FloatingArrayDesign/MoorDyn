@@ -1009,10 +1009,6 @@ moordyn::MoorDyn::ReadInFile()
 			LOGERR << "Reading lines without defined line types" << endl;
 			return MOORDYN_INVALID_INPUT;
 		}
-		if (!PointList.size()) {
-			LOGERR << "Reading lines without defined points" << endl;
-			return MOORDYN_INVALID_INPUT;
-		}
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
