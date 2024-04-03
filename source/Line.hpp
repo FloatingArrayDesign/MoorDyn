@@ -594,7 +594,7 @@ class Line final : public io::IO
 	 * @throws invalid_value_error If the node index \p i is bigger than the
 	 * number of nodes, moordyn::Line::N + 1
 	 */
-	inline const vec getNodeSeaBedForce(unsigned int i) const
+	inline const vec getNodeSeabedForce(unsigned int i) const
 	{
 		if (i > N) {
 			LOGERR << "Asking node " << i << " of line " << number

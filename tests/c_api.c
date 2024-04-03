@@ -399,7 +399,7 @@ main(int narg, char** arg)
 		printf("MoorDyn_GetLineNodeTen() test failed...");
 		return 255;
 	}
-	ret_code = MoorDyn_GetLineNodeSeaBedForce(NULL, un, NULL);
+	ret_code = MoorDyn_GetLineNodeSeabedForce(NULL, un, NULL);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_GetLineNodeTen() test failed...");
 		return 255;

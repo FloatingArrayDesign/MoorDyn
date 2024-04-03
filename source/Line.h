@@ -378,7 +378,7 @@ extern "C"
 	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
 	 * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
 	 */
-	int DECLDIR MoorDyn_GetLineNodeSeaBedForce(MoorDynLine l,
+	int DECLDIR MoorDyn_GetLineNodeSeabedForce(MoorDynLine l,
 	                                           unsigned int i,
 	                                           double f[3]);
 
