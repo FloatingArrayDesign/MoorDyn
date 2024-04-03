@@ -114,7 +114,7 @@ endif()
 
 if(${PYTHON_WRAPPER})
     add_test (NAME python-tests
-        COMMAND ${Python_EXECUTABLE} -m pytest
+        COMMAND ${Python_EXECUTABLE} -m pytest -s
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     set_tests_properties(python-tests
