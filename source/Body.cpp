@@ -67,12 +67,15 @@ Body::setup(int number_in,
 	type = type_in;
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 
+	// We better store the body initial position in all cases so the state is
+	// correctly initialized, and MoorDyn_GetBodyState() would be successfully
+	// used before calling MoorDyn_Init()
+	body_r6.head<3>() = r6_in.head<3>();
+	body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
+
 	if (type == FREE) {
 		bodyM = M_in;
 		bodyV = V_in;
-
-		body_r6.head<3>() = r6_in.head<3>();
-		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		body_rCG = rCG_in;
 		bodyI = I_in;
 		bodyCdA = CdA_in;
@@ -80,17 +83,12 @@ Body::setup(int number_in,
 	} else if (type == FIXED){ // fixed bodies have no need for these variables other than position...
 		bodyM = 0.0;
 		bodyV = 0.0;
-		body_r6.head<3>() = r6_in.head<3>();
-		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		bodyI = vec::Zero();
 		bodyCdA = vec6::Zero();
 		bodyCa = vec6::Zero();
 	} else if (type == CPLDPIN){
 		bodyM = M_in;
 		bodyV = V_in;
-
-		body_r6.head<3>() = vec3::Zero();
-		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		body_rCG = rCG_in;
 		bodyI = I_in;
 		bodyCdA = CdA_in;
@@ -99,8 +97,6 @@ Body::setup(int number_in,
 	{
 		bodyM = 0.0;
 		bodyV = 0.0;
-
-		body_r6 = vec6::Zero();
 		body_rCG = vec::Zero();
 		bodyI = vec::Zero();
 		bodyCdA = vec6::Zero();
