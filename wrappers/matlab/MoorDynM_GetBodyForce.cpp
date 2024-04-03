@@ -37,25 +37,13 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynWaves, 5, 4)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynBody, 1, 1)
 {
-	const double x = inputs[1][0];
-	const double y = inputs[2][0];
-	const double z = inputs[3][0];
-	const uint64_t seafloor_ptr = inputs[4][0];
-	MoorDynSeafloor seafloor = (MoorDynSeafloor)decode_ptr(seafloor_ptr);
-	std::vector<double> u(3, 0.0);
-	std::vector<double> ud(3, 0.0);
-	double zeta, pdyn;
-	const int err = MoorDyn_GetWavesKin(
-	    instance, x, y, z, u.data(), ud.data(), &zeta, &pdyn, seafloor);
+	std::vector<double> f(6, 0.0);
+	const int err = MoorDyn_GetBodyForce(instance, f.data());
 	MOORDYNM_CHECK_ERROR(err);
 
 	outputs[0] = factory.createArray<double>(
-	    { 1, u.size() }, u.data(), u.data() + u.size());
-	outputs[1] = factory.createArray<double>(
-	    { 1, ud.size() }, ud.data(), ud.data() + ud.size());
-	outputs[2] = factory.createScalar<double>(zeta);
-	outputs[3] = factory.createScalar<double>(pdyn);
+	    { 1, f.size() }, f.data(), f.data() + f.size());
 }
 MOORDYNM_MEX_FUNCTION_END
