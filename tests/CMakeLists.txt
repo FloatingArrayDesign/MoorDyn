@@ -112,6 +112,17 @@ if(${FORTRAN_WRAPPER})
              COMMAND fortran_bindings)
 endif()
 
+if(${PYTHON_WRAPPER})
+    add_test (NAME python-tests
+        COMMAND ${Python_EXECUTABLE} -m pytest
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    set_tests_properties(python-tests
+        PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/wrappers/python/:$ENV{PYTHONPATH}")
+    set_tests_properties(python-tests
+        PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/source/:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 if(${MATLAB_WRAPPER})
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/matlab_bindings.m.in"
                    "${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m")
