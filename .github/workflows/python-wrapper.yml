@@ -48,4 +48,4 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
-      run: ctest -C ${{env.BUILD_TYPE}} -R python-tests
+      run: ctest -C ${{env.BUILD_TYPE}} -R python-tests --output-on-failure
