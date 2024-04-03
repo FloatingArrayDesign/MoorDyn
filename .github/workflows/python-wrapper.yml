@@ -2,7 +2,7 @@ name: Python wrapper testing
 
 on:
   push:
-    branches: [ $default-branch, master, wrappers_test ]
+    branches: [ $default-branch, master ]
   pull_request:
     branches:
       - "**"
