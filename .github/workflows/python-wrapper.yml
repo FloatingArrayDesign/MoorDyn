@@ -31,7 +31,7 @@ jobs:
       id: setup-python
 
     - name: Install Python dependencies
-      run: pip install --upgrade build
+      run: pip install --upgrade build pytest
 
     - name: Install VTK
       run: |
