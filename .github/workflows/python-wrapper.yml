@@ -45,6 +45,11 @@ jobs:
       id: build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    - name: Set env variables for the tests
+      run: |
+        echo "PYTHONPATH=${{github.workspace}}/build/wrappers/python/" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${{github.workspace}}/build/source/" >> $GITHUB_ENV
+
     - name: Test
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
