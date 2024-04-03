@@ -47,7 +47,7 @@ jobs:
 
     - name: Set env variables for the tests
       run: |
-        echo "PYTHONPATH=${{github.workspace}}/build/wrappers/python/" >> $GITHUB_ENV
+        echo "PYTHONPATH=${{github.workspace}}/build/wrappers/python/:$( find ${{github.workspace}} -name cmoordyn.cpython*.so  -print -quit )" >> $GITHUB_ENV
         echo "LD_LIBRARY_PATH=${{github.workspace}}/build/source/" >> $GITHUB_ENV
 
     - name: Test
