@@ -30,6 +30,9 @@ jobs:
       uses: actions/setup-python@v5
       id: setup-python
 
+    - name: Install Python dependencies
+      run: pip install --upgrade build
+
     - name: Install VTK
       run: |
         sudo apt-get -qq update
