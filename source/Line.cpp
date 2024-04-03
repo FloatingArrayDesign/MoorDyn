@@ -1780,13 +1780,13 @@ MoorDyn_GetLineNodeFroudeKrilov(MoorDynLine l, unsigned int i, double f[3])
 }
 
 int DECLDIR
-MoorDyn_GetLineNodeSeaBedForce(MoorDynLine l, unsigned int i, double f[3])
+MoorDyn_GetLineNodeSeabedForce(MoorDynLine l, unsigned int i, double f[3])
 {
 	CHECK_LINE(l);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		const moordyn::vec force = ((moordyn::Line*)l)->getNodeSeaBedForce(i);
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeSeabedForce(i);
 		moordyn::vec2array(force, f);
 	}
 	MOORDYN_CATCHER(err, err_msg);
