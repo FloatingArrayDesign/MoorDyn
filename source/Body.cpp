@@ -581,7 +581,7 @@ Body::doRHS()
 	cda(Eigen::seqN(0, 3)) = OrMat.transpose() * bodyCdA.head<3>();
 	cda(Eigen::seqN(3, 3)) = OrMat.transpose() * bodyCdA.tail<3>();
 	F6net +=
-	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(cda);
+	    0.5 * env->rho_w * vi.cwiseProduct((vi.cwiseProduct(cda)).cwiseAbs());
 
 	// Get contributions from any points attached to the body
 	for (auto attached : attachedP) {
