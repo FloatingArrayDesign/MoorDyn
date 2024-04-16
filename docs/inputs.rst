@@ -353,12 +353,18 @@ The columns are as follows:
  - CG – Body center of gravity. If one value given, it is along the Z axis. To specify a coordinate 
    point, the XYZ values are listed separated by | with no spaces (m)
  - I – Body moment of inertia diagonals for the 3x3 inertia matrix. If one value given, it is used 
-   for all three values. To specify different values, the inputs are listed separated by | with no 
+   for all three values. To specify three different values, the inputs are listed separated by | with no 
    spaces (kg-m^2)
  - Volume – The body displaced volume used in buoyancy calculations excluding attached rod and 
    point volume contributions (m^3)
- - CdA – The product of drag coefficient and frontal area of body (m^2)
- - Ca – The body added mass coefficient
+ - CdA – The product of drag coefficient and frontal area of body. If one value given, it is used 
+   for all six values. If two values are given, the first is used for the translational drag and 
+   the second for the rotational drag. If three values are given, they are used as both the 
+   translational and rotational drag coefficicents for the respective axis. If six values are given, 
+   they are used as the drag coefficicnets in the respective degree of freedom. To specify different 
+   values, the inputs are listed separated by | with no spaces (m^2)
+ - Ca – The body added mass coefficient. If one value given, it is used for all three values. To 
+   specify three different values, the inputs are listed separated by | with no spaces
 
 Rods list
 ^^^^^^^^^
