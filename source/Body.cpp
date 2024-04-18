@@ -578,8 +578,8 @@ Body::doRHS()
 
 	// Rotational DOFs drag coefficients are also defined on bodyCdA
 	vec6 cda;
-	cda(Eigen::seqN(0, 3)) = (OrMat * bodyCdA.head<3>().asDiagonal() * OrMat.transpose()) * vi.cwiseProduct(vi.cwiseAbs()).head<3>();
-	cda(Eigen::seqN(3, 3)) = (OrMat * bodyCdA.tail<3>().asDiagonal() * OrMat.transpose()) * vi.cwiseProduct(vi.cwiseAbs()).tail<3>();
+	cda(Eigen::seqN(0, 3)) = (OrMat * bodyCdA.head<3>().asDiagonal() * OrMat.transpose()) * vi.head<3>() * vi.head<3>().norm();
+	cda(Eigen::seqN(3, 3)) = (OrMat * bodyCdA.tail<3>().asDiagonal() * OrMat.transpose()) * vi.tail<3>() * vi.tail<3>().norm();
 	F6net +=
 	    0.5 * env->rho_w * cda;
 
