@@ -1022,6 +1022,8 @@ struct EnvCond
 	double kb;
 	/// bottom damping   (Pa/m/s)
 	double cb;
+	/// VIV RMS sampling time for crossflow velcoity phase (s)
+	double Ts;
 	/// Bottom modeling mode (0=flat, 1=3d...)<<<
 	moordyn::seafloor_settings SeafloorMode;
 

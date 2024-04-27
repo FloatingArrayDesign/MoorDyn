@@ -127,6 +127,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	env->rho_w = 1025.;
 	env->kb = 3.0e6;
 	env->cb = 3.0e5;
+	env->Ts = 3.0;
 	env->waterKinOptions = waves::WaterKinOptions();
 	env->WriteUnits = 1; // by default, write units line
 	env->writeLog = 0;   // by default, don't write out a log file
@@ -1620,8 +1621,6 @@ moordyn::MoorDyn::readLineProps(string inputText)
 		return nullptr;
 	}
 
-	cout << "Entries size: " << entries.size() << endl;
-
 	LineProps* obj = new LineProps();
 
 	obj->type = entries[0];
@@ -2045,6 +2044,8 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		ICDfac = atof(entries[0].c_str());
 	else if ((name == "threshIC") || (name == "ICthresh"))
 		ICthresh = atof(entries[0].c_str());
+	else if ((name == "vivTs"))
+		env->Ts = atof(entries[0].c_str());
 	else if (name == "WaveKin") {
 		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
 		if ((WaveKinTemp < waves::WAVES_NONE) ||

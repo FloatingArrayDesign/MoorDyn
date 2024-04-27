@@ -155,6 +155,9 @@ Line::setup(int number_in,
 	Cdt = props->Cdt;
 	Cl = props->Cl;
 
+	// assign number of time steps for RMS back indexing from MD options
+	n_m = int(env->Ts/dtm)+1;
+
 	// copy in nonlinear stress-strain data if applicable
 	stiffXs.clear();
 	stiffYs.clear();
@@ -1154,14 +1157,14 @@ Line::getStateDeriv()
 			// const moordyn::real As = VIV[i][2];
 			
 			// Crossflow velocity
-			const moordyn::real yd = rd[i].dot(q[i].cross(Ui_hat));
+			const moordyn::real yd = rd[i].dot(q[i].cross(vp.normalized()));
 
-			// Vortex shedding period
-			const moordyn::real T_s = d / (Ui_mag * 0.2); // We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
+			// // Vortex shedding period
+			// const moordyn::real T_s = d / (Ui_mag * 0.2); // We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
 
 			// phase of y_dot
-			const moordyn::real T_m = 5 * T_s; // take the sampling time to be 5x the sheddding period
-			const moordyn::real n_m = int(T_m/dtm)+1;
+			// const moordyn::real T_m = 5 * T_s; // take the sampling time to be 5x the sheddding period
+			// const moordyn::real n_m = int(T_m/dtm)+1;
 			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd_old[i]*yd_old[i]))/n_m); // RMS approximation from Jorgen
 			const moordyn::real ydd_old = rdd_old[i].dot(dir_old[i]);
 			const moordyn::real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd_old*ydd_old))/n_m);

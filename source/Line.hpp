@@ -255,6 +255,8 @@ class Line final : public io::IO
 	std::vector<vec> VIV;
 	/// derivative of VIV state (phase,amplitude,smoothed amplitude)
 	std::vector<vec> VIVd;
+	/// Num timesteps for rolling RMS of crossflow velocity phase
+	unsigned int n_m;
 
 	// back indexing one dtm for VIV
 	/// old t
