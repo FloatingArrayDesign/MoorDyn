@@ -838,10 +838,8 @@ data. Details on this format can be found in the :ref:`water kinematics section 
  ...any notes here...
  --------------------------- WAVES -------------------------------------
  3                    WaveKinMod  - type of wave input {0 no waves; 3 set up grid of wave data based on time series} 
- "waveelev.dat"       WaveKinFile - file containing wave elevation time series at 
- 0,0,0
- 0.5                  dtWave      - time step to use in setting up wave kinematics  
- grid (s)
+ "waveelev.dat"       WaveKinFile - file containing wave elevation time series at 0,0,0
+ 0.5                  dtWave      - time step to use in setting up wave kinematics grid (s)
  0                    WaveDir     - wave heading (deg)
  2                                - X wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
  -24, 150, 100                    - X wave grid point data
