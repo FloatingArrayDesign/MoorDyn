@@ -534,18 +534,18 @@ Line::GetLineOutput(OutChanProps outChan)
 	else if (outChan.QType == Ten) {
 		if ((outChan.NodeID == 0) || (outChan.NodeID == N))
 			return getNodeForce(outChan.NodeID).norm();
-		return (0.5 * (T[outChan.NodeID] + T[outChan.NodeID - 1])).norm();
+		return getNodeTen(outChan.NodeID).norm();
 	}
 	else if (outChan.QType == TenA)
 		return getNodeForce(0).norm();
 	else if (outChan.QType == TenB)
 		return getNodeForce(N).norm();
 	else if (outChan.QType == FX)
-		return Fnet[outChan.NodeID][0];
+		return getNodeForce(outChan.NodeID)[0];
 	else if (outChan.QType == FY)
-		return Fnet[outChan.NodeID][1];
+		return getNodeForce(outChan.NodeID)[1];
 	else if (outChan.QType == FZ)
-		return Fnet[outChan.NodeID][2];
+		return getNodeForce(outChan.NodeID)[2];
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
 }
@@ -1517,7 +1517,7 @@ Line::drawGL(void)
 	for (int i = 0; i <= N; i++) {
 		const double newTen = ((i == 0) || (i == N)) ?
 			getNodeForce(i).norm() :
-			(0.5 * (T[i] + T[i - 1])).norm();
+			getNodeTen(i).norm();
 		if (newTen > maxTen)
 			maxTen = newTen;
 	}
@@ -1527,9 +1527,9 @@ Line::drawGL(void)
 	for (int i = 0; i <= N; i++) {
 		glVertex3d(r[i][0], r[i][1], r[i][2]);
 		if (i < N) {
-			const double normTen = ((i == 0) || (i == N)) ?
+			const double normTen = (((i == 0) || (i == N)) ?
 				getNodeForce(i).norm() :
-				(0.5 * (T[i] + T[i - 1])).norm();
+				getNodeTen(i).norm()) / maxTen;
 			ColorMap(normTen, rgb);
 			glColor3d(rgb[0], rgb[1], rgb[2]);
 		}
@@ -1553,9 +1553,9 @@ Line::drawGL2(void)
 
 	// line
 	for (unsigned int i = 0; i < N; i++) {
-		const double normTen = 0.2 + 0.8 * pow(((i == 0) || (i == N)) ?
+		const double normTen = 0.2 + 0.8 * pow((((i == 0) || (i == N)) ?
 			getNodeForce(i).norm() :
-			(0.5 * (T[i] + T[i - 1])).norm(), 4.0);
+			getNodeTen(i).norm()) / maxTen, 4.0);
 		ColorMap(normTen, rgb);
 		glColor3d(rgb[0], rgb[1], rgb[2]);
 
