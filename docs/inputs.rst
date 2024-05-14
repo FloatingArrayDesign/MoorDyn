@@ -479,20 +479,26 @@ For example, outputting node positions and segment tensions could be achieved by
 this last column.  These outputs will go to a dedicated output file for each line only.  For 
 sending values to the global output file, use the Outputs section instead.
 
-Failure
-^^^^^^^
+Failure (MoorDyn-F only)
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section (optional) describes the failure conditions of the system. 
+This section (optional) describes the failure conditions of the system. Line failures can only be
+triggered at an existing point or rod end where a line/lines are attached. Failures can be 
+triggered by a time or attachment tension threshold, which ever comes first. Users can specify
+multiple failures for a given point, but duplicate failure configurations will be ignored.
+If two lines attached to a point are listed to fail (failure 1 for example), then after the failure
+the lines will remain attached to each other by a free point. In this multi line case, if any line
+reaches the tension threshold then the failure will be triggered. The theory behind failures can be
+found :ref:`here <version2>`.
 
 .. code-block:: none
 
   ---------------------- FAILURE ----------------------
-  Node    Line(s)   FailTime   FailTen
-  ()       (,)      (s or 0)   (N or 0)
-  any      1,2,3,4     0        1200e3
-  3        1           0        1200e3
-  R1a      1,2,3       12         0
-
+  FailureID  Point    Line(s)   FailTime   FailTen
+  ()           ()       (,)      (s or 0)   (N or 0)
+  1          5        1,2,3,4     0         1200e3
+  2          3        1           0         1200e3
+  3         R1a       1,2,3       12          0
 
 Control (MoorDyn-F only)
 ^^^^^^^^^^^^^^^^^^^^^^^^
