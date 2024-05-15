@@ -464,7 +464,7 @@ Line::initialize()
 		// BAin), then -BAin indicates desired damping ratio)
 		c = -BAin * UnstrLen / N * sqrt(E * rho); // rho = w/A
 		LOGMSG << "Line " << number << " damping set to " << c
-		       << " Ns = " << c * A << " Pa-s, based on input of " << BAin
+		       << " Pa-s = " << c * A << " Ns, based on input of " << BAin
 		       << endl;
 	} else {
 		// otherwise it's the regular internal damping coefficient, which should

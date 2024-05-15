@@ -143,7 +143,7 @@ class Line final : public io::IO
 	moordyn::real E;
 	/// line bending stiffness [Nm^2]
 	moordyn::real EI;
-	/** line axial internal damping coefficient [Ns]
+	/** line axial internal damping coefficient [Pa-s]
 	 *
 	 * The provided value in moordyn::Line::props::c can be either the literal
 	 * damping coefficient, or a negative value in which case it represents the
