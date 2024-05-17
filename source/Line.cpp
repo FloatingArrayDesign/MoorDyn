@@ -154,9 +154,8 @@ Line::setup(int number_in,
 	Cdn = props->Cdn;
 	Cdt = props->Cdt;
 	Cl = props->Cl;
-
-	// assign number of time steps for RMS back indexing from MD options
-	n_m = int(env->Ts/dtm)+1;
+	dF = props->dF;
+	cF = props->cF;
 
 	// copy in nonlinear stress-strain data if applicable
 	stiffXs.clear();
@@ -259,6 +258,8 @@ Line::initialize()
 	       << "    Cdn : " << Cdn << endl
 	       << "    Cdt : " << Cdt << endl
 		   << "    Cl  : " << Cl << endl
+		   << "    dF  : " << dF << endl
+		   << "    cF  : " << cF << endl
 	       << "    ww_l: " << ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81
 	       << endl;
 
@@ -1174,7 +1175,7 @@ Line::getStateDeriv()
 			if (phi_yd < 0) phi_yd = 2*pi + phi_yd; // atan2 to 0-2Pi range
 
 			// non-dimensional frequency
-			const moordyn::real f_hat = 0.18+0.08*sin(phi_yd - phi); // phi to be integrated from state
+			const moordyn::real f_hat = cF + dF *sin(phi_yd - phi); // phi to be integrated from state
 			// frequency of lift force (rad/s)
 			const moordyn::real phi_dot = 2*pi*f_hat*vp_mag / d;// to be added to state
 

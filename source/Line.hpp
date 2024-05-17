@@ -167,6 +167,12 @@ class Line final : public io::IO
 	/// VIV lift coefficient [-]
 	/// If 0, VIV turned off
 	moordyn::real Cl;
+	/// +- range of VIV synchronization [-]
+	/// in non-dimensional frequency
+	moordyn::real dF;
+	/// Center VIV synchronization [-]
+	/// in non-dimensional frequency
+	moordyn::real cF;
 
 	/// line axial internal damping coefficient (before proceessing) [Ns]
 	moordyn::real BAin;
@@ -256,7 +262,7 @@ class Line final : public io::IO
 	/// derivative of VIV state (phase,amplitude,smoothed amplitude)
 	std::vector<vec> VIVd;
 	/// Num timesteps for rolling RMS of crossflow velocity phase
-	unsigned int n_m;
+	const unsigned int n_m = 500;
 
 	// back indexing one dtm for VIV
 	/// old t

@@ -1022,8 +1022,6 @@ struct EnvCond
 	double kb;
 	/// bottom damping   (Pa/m/s)
 	double cb;
-	/// VIV RMS sampling time for crossflow velcoity phase (s)
-	double Ts;
 	/// Bottom modeling mode (0=flat, 1=3d...)<<<
 	moordyn::seafloor_settings SeafloorMode;
 
@@ -1061,6 +1059,8 @@ typedef struct _LineProps // (matching Line Dictionary inputs)
 	double Cdn;
 	double Cdt;
 	double Cl; // VIV lift coefficient. If 0, VIV turned off.
+	double dF; // +- range around cF for VIV synchronization model 
+	double cF; // center non-dim frequency for VIV synch model
 	int nEApoints; // number of values in stress-strain lookup table (0 means
 	               // using constant E)
 	double

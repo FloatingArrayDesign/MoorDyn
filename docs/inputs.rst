@@ -272,10 +272,10 @@ that will be used in the simulation
 
 .. code-block:: none
 
- ---------------------- LINE TYPES -----------------------------------
- TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx    Cl          
- (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)     (-)      
- Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5     0.8      
+ ---------------------- LINE TYPES ----------------------------------------------------------------------
+ TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx    Cl    dF    cF        
+ (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)     (-)   (-)   (-) 
+ Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5     0.8   0.08  0.18
 
 The columns in order are as follows:
 
@@ -293,9 +293,13 @@ The columns in order are as follows:
  - Ca –  transverse added mass coefficient (with respect to line displacement)
  - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
  - CaAx – tangential added mass coefficient (with respect to line displacement)
- - Cl – the crossflow VIV lift coefficient. If set to 0, then VIV calculations are disabled for the
+ - Cl – OPTIONAL - the crossflow VIV lift coefficient. If set to 0, then VIV calculations are disabled for the
    line. This coefficient has been made backwards compatible. If it is not provided, then it is 
    assumed to be 0.0. The theory of vortex induced vibrations can be found :ref:`here <version2>`
+ - dF - OPTIONAL - the cF +- range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+   provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
+ - cF - OPTIONAL - the center of the range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+   provided and VIV is enabled (Cl > 0) then it is default to 0.18 to align with the the theory found :ref:`here <version2>`
 
 Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
 must be located in the same folder as the main MoorDyn input file for MoorDyn-C or for MoorDyn-F 

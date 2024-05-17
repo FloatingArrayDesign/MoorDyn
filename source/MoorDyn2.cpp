@@ -127,7 +127,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	env->rho_w = 1025.;
 	env->kb = 3.0e6;
 	env->cb = 3.0e5;
-	env->Ts = 3.0;
 	env->waterKinOptions = waves::WaterKinOptions();
 	env->WriteUnits = 1; // by default, write units line
 	env->writeLog = 0;   // by default, don't write out a log file
@@ -1630,8 +1629,19 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	obj->Can = atof(entries[7].c_str());
 	obj->Cdt = atof(entries[8].c_str());
 	obj->Cat = atof(entries[9].c_str());
-	if (entries.size() == 10) obj->Cl = 0.0; // If no lift coefficient, disable VIV. For backwards compatability.
-	else obj->Cl = atof(entries[10].c_str());
+	if (entries.size() == 10) {
+		obj->Cl = 0.0; // If no lift coefficient, disable VIV. For backwards compatability.
+		obj->dF = 0.0;
+		obj->cF = 0.0;
+	} else if (entries.size() == 11) {
+		obj->Cl = atof(entries[10].c_str());
+		obj->dF = 0.08; // set to default Thorsen synchronization range if not provided
+		obj->cF = 0.18; // set to default Thorsen synchronization centering if not provided
+	} else if (entries.size() == 13) {
+		obj->Cl = atof(entries[10].c_str());
+		obj->dF = atof(entries[11].c_str());
+		obj->cF = atof(entries[12].c_str());
+	} else return nullptr;
 
 	moordyn::error_id err;
 	err = read_curve(entries[3].c_str(),
@@ -2044,8 +2054,6 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		ICDfac = atof(entries[0].c_str());
 	else if ((name == "threshIC") || (name == "ICthresh"))
 		ICthresh = atof(entries[0].c_str());
-	else if ((name == "vivTs"))
-		env->Ts = atof(entries[0].c_str());
 	else if (name == "WaveKin") {
 		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
 		if ((WaveKinTemp < waves::WAVES_NONE) ||
