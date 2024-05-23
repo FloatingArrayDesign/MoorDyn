@@ -247,7 +247,16 @@ class Point final : public io::IO
 	 */
 	std::pair<vec, vec> initialize();
 
+	/** @brief Get the point position
+	 * @return The position [x,y,z]
+	 */
 	inline const vec& getPosition() const { return r; }
+
+	/** @brief Get the point velocity
+	 * @return The velocity [x,y,z]
+	 */
+	inline const vec& getVelocity() const { return rd; }
+
 	/** @brief Get the point state
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
@@ -266,12 +275,22 @@ class Point final : public io::IO
 	/** @brief Get the force on the point
 	 * @param Fnet_out The output force [x,y,z]
 	 */
-	void getFnet(vec& Fnet_out);
+	inline void getFnet(vec& Fnet_out) const { Fnet_out = Fnet; }
+
+	/** @brief Get the force on the point
+	 * @return The output force [x,y,z]
+	 */
+	inline const vec& getFnet() const { return Fnet; }
 
 	/** @brief Get the mass matrix
 	 * @param M_out The output mass matrix
 	 */
-	void getM(mat& M_out);
+	inline void getM(mat& M_out) const { M_out = M; }
+
+	/** @brief Get the mass matrix
+	 * @return The mass matrix
+	 */
+	inline const mat& getM() const { return M; };
 
 	/** @brief Get the output
 	 * @param outChan The query

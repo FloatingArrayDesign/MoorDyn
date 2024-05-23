@@ -531,18 +531,21 @@ Line::GetLineOutput(OutChanProps outChan)
 		return rd[outChan.NodeID][1];
 	else if (outChan.QType == VelZ)
 		return rd[outChan.NodeID][2];
-	else if (outChan.QType == Ten)
+	else if (outChan.QType == Ten) {
+		if ((outChan.NodeID == 0) || (outChan.NodeID == N))
+			return getNodeForce(outChan.NodeID).norm();
 		return getNodeTen(outChan.NodeID).norm();
+	}
 	else if (outChan.QType == TenA)
-		return getNodeTen(0).norm();
+		return getNodeForce(0).norm();
 	else if (outChan.QType == TenB)
-		return getNodeTen(N).norm();
+		return getNodeForce(N).norm();
 	else if (outChan.QType == FX)
-		return Fnet[outChan.NodeID][0];
+		return getNodeForce(outChan.NodeID)[0];
 	else if (outChan.QType == FY)
-		return Fnet[outChan.NodeID][1];
+		return getNodeForce(outChan.NodeID)[1];
 	else if (outChan.QType == FZ)
-		return Fnet[outChan.NodeID][2];
+		return getNodeForce(outChan.NodeID)[2];
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
 }
@@ -1512,7 +1515,9 @@ Line::drawGL(void)
 	double normTen;
 	double rgb[3];
 	for (int i = 0; i <= N; i++) {
-		double newTen = getNodeTen(i).norm();
+		const double newTen = ((i == 0) || (i == N)) ?
+			getNodeForce(i).norm() :
+			getNodeTen(i).norm();
 		if (newTen > maxTen)
 			maxTen = newTen;
 	}
@@ -1522,7 +1527,9 @@ Line::drawGL(void)
 	for (int i = 0; i <= N; i++) {
 		glVertex3d(r[i][0], r[i][1], r[i][2]);
 		if (i < N) {
-			normTen = getNodeTen(i).norm() / maxTen;
+			const double normTen = (((i == 0) || (i == N)) ?
+				getNodeForce(i).norm() :
+				getNodeTen(i).norm()) / maxTen;
 			ColorMap(normTen, rgb);
 			glColor3d(rgb[0], rgb[1], rgb[2]);
 		}
@@ -1537,14 +1544,18 @@ Line::drawGL2(void)
 	double normTen;
 	double rgb[3];
 	for (int i = 0; i <= N; i++) {
-		double newTen = getNodeTen(i).norm();
+		const double newTen = ((i == 0) || (i == N)) ?
+			getNodeForce(i).norm() :
+			(0.5 * (T[i] + T[i - 1])).norm();
 		if (newTen > maxTen)
 			maxTen = newTen;
 	}
 
 	// line
 	for (unsigned int i = 0; i < N; i++) {
-		normTen = 0.2 + 0.8 * pow(getNodeTen(i).norm() / maxTen, 4.0);
+		const double normTen = 0.2 + 0.8 * pow((((i == 0) || (i == N)) ?
+			getNodeForce(i).norm() :
+			getNodeTen(i).norm()) / maxTen, 4.0);
 		ColorMap(normTen, rgb);
 		glColor3d(rgb[0], rgb[1], rgb[2]);
 
@@ -1644,6 +1655,30 @@ MoorDyn_SetLineUnstretchedLengthVel(MoorDynLine l, double v)
 }
 
 int DECLDIR
+MoorDyn_IsLineConstantEA(MoorDynLine l, int* b)
+{
+	CHECK_LINE(l);
+	*b = (int)((moordyn::Line*)l)->isConstantEA();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetLineConstantEA(MoorDynLine l, double* EA)
+{
+	CHECK_LINE(l);
+	*EA = ((moordyn::Line*)l)->getConstantEA();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetLineConstantEA(MoorDynLine l, double EA)
+{
+	CHECK_LINE(l);
+	((moordyn::Line*)l)->setConstantEA(EA);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 {
 	CHECK_LINE(l);
@@ -1652,6 +1687,34 @@ MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 	try {
 		const moordyn::vec r = ((moordyn::Line*)l)->getNodePos(i);
 		moordyn::vec2array(r, pos);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeVel(MoorDynLine l, unsigned int i, double vel[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec rd = ((moordyn::Line*)l)->getNodeVel(i);
+		moordyn::vec2array(rd, vel);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeForce(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeForce(i);
+		moordyn::vec2array(force, f);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
@@ -1672,6 +1735,76 @@ MoorDyn_GetLineNodeTen(MoorDynLine l, unsigned int i, double ten[3])
 }
 
 int DECLDIR
+MoorDyn_GetLineNodeBendStiff(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeBendStiff(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeWeight(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeWeight(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeDrag(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeDrag(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeFroudeKrilov(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeFroudeKrilov(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeSeabedForce(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeSeabedForce(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodeCurv(MoorDynLine l, unsigned int i, double* curv)
 {
 	CHECK_LINE(l);
@@ -1680,6 +1813,20 @@ MoorDyn_GetLineNodeCurv(MoorDynLine l, unsigned int i, double* curv)
 	try {
 		const auto c = ((moordyn::Line*)l)->getNodeCurv(i);
 		*curv = c;
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeM(MoorDynLine l, unsigned int i, double m[3][3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::mat mass = ((moordyn::Line*)l)->getNodeM(i);
+		moordyn::mat2array(mass, m);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
