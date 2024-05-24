@@ -188,6 +188,10 @@ class Line final : public io::IO
 	/// y array for stress-strainrate lookup table
 	std::vector<moordyn::real> dampYs;
 
+	// Externally provided data
+	/// Internal pipe pressure at the nodes (Pa)
+	std::vector<moordyn::real> pin;
+
 	// kinematics
 	/// node positions
 	std::vector<vec> r;

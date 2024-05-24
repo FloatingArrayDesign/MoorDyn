@@ -560,7 +560,7 @@ Body::doRHS()
 
 	// env->waves->getU(r6, t, U); // call generic function to get water
 	// velocities <<<<<<<<< all needs updating
-	auto [zeta, U, Ud] = waves->getWaveKinBody(bodyId);
+	auto [zeta, U, Ud, Pdyn] = waves->getWaveKinBody(bodyId);
 
 	// ------------------------------------------------------------------------------------------
 

@@ -179,6 +179,8 @@ Line::setup(int number_in,
 
 	// ------------------------- size vectors -------------------------
 
+	pin.assign(N + 1, 0.0);        // Internal pressure at node points (Pa)
+
 	r.assign(N + 1, vec::Zero());  // node positions [i][x/y/z]
 	rd.assign(N + 1, vec::Zero()); // node positions [i][x/y/z]
 	q.assign(N + 1, vec::Zero());  // unit tangent vectors for each node
@@ -787,8 +789,8 @@ Line::getStateDeriv()
 		    r[i + 1]); // compute unit vector q ... using adjacent two nodes!
 
 	// calculate unit tangent vectors for either end node if the line has no
-	// bending stiffness of if either end is pinned (otherwise it's already been
-	// set via setEndStateFromRod)
+	// bending stiffness of if either end is pinned (otherwise it's already
+	// been set via ::setEndOrientation())
 	if ((endTypeA == PINNED) || (EI == 0))
 		unitvector(q[0], r[0], r[1]);
 	if ((endTypeB == PINNED) || (EI == 0))
@@ -797,7 +799,7 @@ Line::getStateDeriv()
 	//============================================================================================
 	// --------------------------------- apply wave kinematics
 	// -----------------------------
-	auto [zeta, U, Ud] = waves->getWaveKinLine(lineId);
+	auto [zeta, U, Ud, Pdyn] = waves->getWaveKinLine(lineId);
 
 	// If in still water, iterate over all the segments and calculate
 	// volume of segment submerged. This is later used to calculate
@@ -1268,7 +1270,7 @@ Line::Output(real time)
 		}
 		// output wave velocities?
 		if (channels.find("U") != string::npos) {
-			auto [_z, U, _ud] = waves->getWaveKinLine(lineId);
+			auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
 			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
 					*outfile << U[i][J] << "\t ";
@@ -1427,7 +1429,7 @@ Line::getVTK() const
 	auto vtk_Fnet = vector_to_vtk_array("Fnet", this->Fnet);
 	auto vtk_M = io::vtk_farray("M", 9, num_points);
 	auto vtk_D = io::vtk_farray("Drag", 3, num_points);
-	auto [z, U, Ud] = waves->getWaveKinLine(lineId);
+	auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
 	auto vtk_U = vector_to_vtk_array("U", U);
 
 	// Segment fields, i.e. r.size()-1 number of tuples

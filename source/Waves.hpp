@@ -464,13 +464,13 @@ class Waves : public LogUser
 
 	using NodeKinReturnType = std::tuple<const std::vector<real>&,
 	                                     const std::vector<vec3>&,
-	                                     const std::vector<vec3>&>;
+	                                     const std::vector<vec3>&,
+	                                     const std::vector<real>&>;
 	/**
 	 * @brief Get the water kinematics for the line with id
 	 *
 	 * @param lineId Id of the line
-	 * @return std::tuple<std::vector<real>, std::vector<vec3>&,
-	 * std::vector<vec3>&> (zeta, U, Ud)
+	 * @return NodeKinReturnType (zeta, U, Ud, pDyn)
 	 */
 	NodeKinReturnType getWaveKinLine(size_t lineId);
 
@@ -478,16 +478,9 @@ class Waves : public LogUser
 	 * @brief Get the water kinematics for the rod with given Id.
 	 *
 	 * @param rodId Id of the rod
-	 * @return std::tuple<const std::vector<real>&,
-	 * const std::vector<vec3>&,
-	 * const std::vector<vec3>&,
-	 * const std::vector<real>&>  (zeta, U, Ud, pDyn)
+	 * @return NodeKinReturnType (zeta, U, Ud, pDyn)
 	 */
-	std::tuple<const std::vector<real>&,
-	           const std::vector<vec3>&,
-	           const std::vector<vec3>&,
-	           const std::vector<real>&>
-	getWaveKinRod(size_t rodId);
+	NodeKinReturnType getWaveKinRod(size_t rodId);
 
 	/**
 	 * @brief Get the water kinematics for the body with given Id
@@ -495,7 +488,7 @@ class Waves : public LogUser
 	 * The vectors should all be of length 1
 	 *
 	 * @param bodyId Id of the body
-	 * @return NodeKinReturnType (zeta, U, Ud)
+	 * @return NodeKinReturnType (zeta, U, Ud, pDyn)
 	 */
 	NodeKinReturnType getWaveKinBody(size_t bodyId);
 
@@ -505,7 +498,7 @@ class Waves : public LogUser
 	 * The vectors should all be of length 1
 	 *
 	 * @param pointId Id of the points
-	 * @return NodeKinReturnType (zeta, U, Ud)
+	 * @return NodeKinReturnType (zeta, U, Ud, pDyn)
 	 */
 	NodeKinReturnType getWaveKinPoint(size_t pointId);
 
@@ -552,11 +545,12 @@ class Waves : public LogUser
 		std::vector<std::vector<real>> zetas;
 		std::vector<std::vector<vec3>> U;
 		std::vector<std::vector<vec3>> Ud;
+		std::vector<std::vector<real>> Pdyn;
 
 		NodeKinReturnType operator[](size_t idx)
 		{
 
-			return { zetas[idx], U[idx], Ud[idx] };
+			return { zetas[idx], U[idx], Ud[idx], Pdyn[idx] };
 		}
 	};
 
@@ -571,10 +565,6 @@ class Waves : public LogUser
 		NodeKinematics<moordyn::Line> lines;
 		NodeKinematics<moordyn::Body> bodies;
 		NodeKinematics<moordyn::Rod> rods;
-		// at the moment, only rods need dynamic pressure
-		// so this kind of lives on its own
-		std::vector<std::vector<real>> rodPdyn;
-
 		NodeKinematics<moordyn::Point> points;
 	};
 
@@ -600,6 +590,7 @@ class Waves : public LogUser
 		nodeKinematics.zetas.emplace_back(num_nodes, 0.0);
 		nodeKinematics.U.emplace_back(num_nodes, vec3::Zero());
 		nodeKinematics.Ud.emplace_back(num_nodes, vec3::Zero());
+		nodeKinematics.Pdyn.emplace_back(num_nodes, 0.0);
 	}
 
 	/**
