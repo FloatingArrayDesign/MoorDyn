@@ -141,7 +141,7 @@ jobs:
       - name: Download MacOS x86_64 dists
         uses: actions/download-artifact@v4
         with:
-          name: python-wheels-MacOS
+          name: python-wheels-macOS
           path: dist/
 
       - name: Download Windows x86_64 dists
