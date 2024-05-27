@@ -791,9 +791,10 @@ Line::getStateDeriv()
 	// calculate unit tangent vectors for either end node if the line has no
 	// bending stiffness of if either end is pinned (otherwise it's already
 	// been set via ::setEndOrientation())
-	if ((endTypeA == PINNED) || (EI == 0))
+	const bool isEI = (EI > 0) || (nEIpoints > 0);
+	if ((endTypeA == PINNED) || !isEI)
 		unitvector(q[0], r[0], r[1]);
-	if ((endTypeB == PINNED) || (EI == 0))
+	if ((endTypeB == PINNED) || !isEI)
 		unitvector(q[N], r[N - 1], r[N]);
 
 	//============================================================================================
@@ -866,7 +867,7 @@ Line::getStateDeriv()
 		Bs[i] = vec(0.0, 0.0, 0.0);
 
 	// and now compute them (if possible)
-	if ((EI > 0) || (nEIpoints > 0)) {
+	if (isEI) {
 		// loop through all nodes to calculate bending forces
 		for (unsigned int i = 0; i <= N; i++) {
 			moordyn::real Kurvi = 0.0;
@@ -875,31 +876,55 @@ Line::getStateDeriv()
 			vec Mforce_ip1(0.0, 0.0, 0.0);
 			vec Mforce_i;
 
+			// Let's start getting the curvature so we can eventually skip the
+			// computation as soon as possible
+			if (i == 0) {
+				// end node A case (only if attached to a Rod, i.e. a
+				// cantilever rather than pinned point)
+				if (endTypeA == CANTILEVERED)
+				{
+					Kurvi = GetCurvature(lstr[0], q[0], qs[0]);
+				}
+			} else if (i == N) {
+				// end node B case (only if attached to a Rod, i.e. a
+				// cantilever rather than pinned point)
+				if (endTypeB == CANTILEVERED)
+				{
+					Kurvi = GetCurvature(lstr[i - 1], qs[i - 1], q[i]);
+				}
+			} else {
+				// internal node
+				// curvature <<< remember to check sign, or just take abs
+				Kurvi = GetCurvature(lstr[i - 1] + lstr[i], qs[i - 1], qs[i]);
+			}
+
+			// record curvature at node!!
+			Kurv[i] = Kurvi;
+			if (EqualRealNos(Kurvi, 0.0))
+				continue;
+
 			// calculate force on each node due to bending stiffness!
 
-			// end node A case (only if attached to a Rod, i.e. a cantilever
-			// rather than pinned point)
 			if (i == 0) {
-				if (endTypeA == CANTILEVERED) // if attached to Rod i.e.
-				                              // cantilever point
+				// end node A case (only if attached to a Rod, i.e. a
+				// cantilever rather than pinned point)
+				if (endTypeA == CANTILEVERED)
 				{
-					// curvature <<< check if this approximation works for an
-					// end (assuming rod angle is node angle which is middle of
-					// if there was a segment -1/2
-					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);
 					if (nEIpoints > 0)
 						EI = getNonlinearEI(Kurvi);
 
 					// get direction of bending radius axis
-					pvec = q[0].cross(qs[i]);
+					pvec = q[0].cross(qs[0]);
 
-					// get direction of resulting force from bending to apply on
-					// node i+1
-					Mforce_ip1 = qs[i].cross(pvec);
+					// get direction of resulting force from bending to apply
+					// on node i+1
+					Mforce_ip1 = qs[0].cross(pvec);
 
-					// record bending moment at end for potential application to
-					// attached object   <<<< do double check this....
-					scalevector(pvec, Kurvi * EI, endMomentA);
+					// record bending moment at end for potential application
+					// to attached object   <<<< do double check this....
+					// NOTE: Reenable this if damping is eventually added at
+					// some point
+					// scalevector(pvec, Kurvi * EI, endMomentA);
 
 					// scale force direction vectors by desired moment force
 					// magnitudes to get resulting forces on adjacent nodes
@@ -924,7 +949,6 @@ Line::getStateDeriv()
 					// works for an end (assuming rod angle is node
 					// angle which is middle of if there was a
 					// segment -1/2
-					Kurvi = GetCurvature(lstr[i - 1], qs[i - 1], q[i]);
 					if (nEIpoints > 0)
 						EI = getNonlinearEI(Kurvi);
 
@@ -937,10 +961,12 @@ Line::getStateDeriv()
 
 					// record bending moment at end for potential application to
 					// attached object   <<<< do double check this....
-					scalevector(
-					    pvec,
-					    -Kurvi * EI,
-					    endMomentB); // note end B is oposite sign as end A
+					// NOTE: Reenable this if damping is eventually added at
+					// some point
+					// scalevector(
+					//     pvec,
+					//     -Kurvi * EI,
+					//     endMomentB); // note end B is oposite sign as end A
 
 					// scale force direction vectors by desired moment force
 					// magnitudes to get resulting forces on adjacent nodes
@@ -960,12 +986,11 @@ Line::getStateDeriv()
 			else {
 				// curvature <<< remember to check
 				// sign, or just take abs
-				Kurvi = GetCurvature(lstr[i - 1] + lstr[i], qs[i - 1], qs[i]);
 				if (nEIpoints > 0)
 					EI = getNonlinearEI(Kurvi);
 
 				// get direction of bending radius axis
-				pvec = qs[i - 1].cross(q[i]);
+				pvec = qs[i - 1].cross(qs[i]);
 
 				// get direction of resulting force from bending to apply on
 				// node i-1
@@ -1003,8 +1028,6 @@ Line::getStateDeriv()
 				cout << Mforce_ip1 << endl;
 			}
 
-			// record curvature at node!!
-			Kurv[i] = Kurvi;
 
 			// any damping forces for bending? I hope not...
 

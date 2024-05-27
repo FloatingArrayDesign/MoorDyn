@@ -47,6 +47,7 @@
 #include <filesystem>
 
 #include <memory>
+#include <limits>
 
 // #ifdef USEGL
 //  #include <GL/gl.h>  // for openGL drawing option
@@ -139,8 +140,33 @@ typedef Eigen::Vector6i ivec6;
 /// Renaming of ivec3
 typedef ivec3 ivec;
 
-/// COmplex numbers
+/// Complex numbers
 typedef std::complex<real> complex;
+
+/** @brief This function compares two real numbers and determines if they are
+ * "almost" equal
+ *
+ * "almost" equal means equal within some relative tolerance (basically
+ * ignoring the last 2 significant digits) (see "Safe Comparisons" suggestion
+ * from http://www.lahey.com/float.htm)
+ * @param a1 The first real number to compare
+ * @param a2 The second real number to compare
+ * @return true if and only if the numbers are almost equal, false otherwise
+ * @note The numbers are added together in this routine, so overflow can result
+ * if comparing two "huge" numbers.
+ * @note Use this function instead of directly calling a specific routine in
+ * the generic interface.
+ */
+inline bool
+EqualRealNos(const real a1, const real a2)
+{
+	constexpr real eps = std::numeric_limits<moordyn::real>::epsilon();
+	constexpr real tol = ((real)100.0) * eps / ((real)2.0);
+
+	const real fraction = (std::max)(std::abs(a1 + a2), ((real)1.0));
+	return std::abs(a1 - a2) <= fraction * tol;
+}
+
 
 inline vec3 
 canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
@@ -759,9 +785,10 @@ solveMat6(const mat6& mat, const vec6& vec);
 inline moordyn::real
 unitvector(vec& u, const vec& r1, const vec& r2)
 {
-	vec v = r2 - r1;
-	const double l = v.norm();
-	u = v / l;
+	u = r2 - r1;
+	const double l = u.norm();
+	if (!EqualRealNos(l, 0.0))
+		u /= l;
 	return l;
 }
 
@@ -777,7 +804,7 @@ inline void
 scalevector(const vec& u, T newlength, vec& y)
 {
 	const moordyn::real l2 = u.squaredNorm();
-	if (l2 == 0.0) {
+	if (EqualRealNos(l2, 0.0)) {
 		y = u;
 		return;
 	}
