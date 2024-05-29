@@ -1070,7 +1070,7 @@ Line::getStateDeriv()
 			if (EqualRealNos(Kurvi, 0.0))
 				continue;
 			// The driving pressure
-			const real h = zeta[i] - r[i].z();
+			const real h = (std::max)(0.0, zeta[i] - r[i].z());
 			const real p = pin[i] - (env->rho_w * env->g * h + pdyn[i]);
 			// The direction
 			const vec nvec = q[i].cross(pvec[i]);
