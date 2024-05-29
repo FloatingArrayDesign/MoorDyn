@@ -776,7 +776,7 @@ Line::getStateDeriv()
 		const double ldstr_top = (r[i + 1] - r[i]).dot(rd[i + 1] - rd[i]);
 		ldstr[i] = ldstr_top / lstr[i]; // strain rate of segment
 
-		V[i] = A * l[i]; // volume attributed to segment
+		// V[i] = A * l[i]; // volume attributed to segment
 	}
 
 	// calculate unit tangent vectors (q) for each internal node. note: I've
@@ -822,13 +822,13 @@ Line::getStateDeriv()
 
 		if (i == 0) {
 			m_i = pi / 8. * d * d * l[0] * rho;
-			v_i = 1. / 2. * F[i] * V[i];
+			v_i = 0.5 * F[0] * V[0];
 		} else if (i == N) {
 			m_i = pi / 8. * d * d * l[N - 1] * rho;
-			v_i = 1. / 2. * F[i - 1] * V[i - 1];
+			v_i = 0.5 * F[i - 1] * V[i - 1];
 		} else {
 			m_i = pi / 8. * (d * d * rho * (l[i] + l[i - 1]));
-			v_i = 1. / 2. * (F[i - 1] * V[i - 1] + F[i] * V[i]);
+			v_i = 0.5 * (F[i - 1] * V[i - 1] + F[i] * V[i]);
 		}
 
 		// Make node mass matrix
@@ -864,7 +864,7 @@ Line::getStateDeriv()
 	// Bending loads
 	// first zero out the forces from last run
 	for (unsigned int i = 0; i <= N; i++)
-		Bs[i] = vec(0.0, 0.0, 0.0);
+		Bs[i] = vec::Zero();
 
 	// and now compute them (if possible)
 	if (isEI) {
