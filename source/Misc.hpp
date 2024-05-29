@@ -1036,6 +1036,10 @@ typedef struct _FailProps
 const int nCoef = 30; // maximum number of entries to allow in nonlinear
                       // coefficient lookup tables
 
+/** \ingroup environment
+ *  @{
+ */
+
 struct EnvCond
 {
 	/// Gavity acceleration (m/s^2)
@@ -1071,6 +1075,8 @@ struct EnvCond
 };
 
 typedef std::shared_ptr<EnvCond> EnvCondRef;
+
+/// @}
 
 typedef struct _LineProps // (matching Line Dictionary inputs)
 {
