@@ -26,7 +26,6 @@ set(CPP_TESTS
     minimal
     lifting
     pendulum
-    beam
     time_schemes
     io
     rods
@@ -43,6 +42,8 @@ set(CPP_TESTS
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    beam
+    conveying_fluid
     polyester
 )
 
