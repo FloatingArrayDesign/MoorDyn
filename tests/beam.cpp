@@ -34,11 +34,8 @@
  */
 
 #include "MoorDyn2.h"
-#include <stdexcept>
-#include <iostream>
-#include <iomanip>
-#include <algorithm>
 #include <cmath>
+#include <catch2/catch_test_macros.hpp>
 
 #define TOL 0.5
 #define Z0 10.0
@@ -52,21 +49,12 @@
 bool
 compare(double v1, double v2)
 {
-	auto err = fabs(v1 - v2);
+	auto err = std::abs(v1 - v2);
 	if (!err)
 		return true;
-	auto renorm = v1 ? fabs(v1) : 1.0;
+	auto renorm = v1 ? std::abs(v1) : 1.0;
 	return err / renorm <= TOL;
 }
-
-#define CHECK_VALUE(name, v1, v2)                                              \
-	if (!compare(v1, v2)) {                                                    \
-		cerr << setprecision(8) << "Checking " << name << " failed. " << v1    \
-		     << " was expected"                                                \
-		     << " but " << v2 << " was computed" << endl;                      \
-		MoorDyn_Close(system);                                                 \
-		return false;                                                          \
-	}
 
 using namespace std;
 
@@ -83,57 +71,26 @@ simply_supported_solution(double x)
 	return -p * x * (L * L * L - 2. * x * x * L + x * x * x) / (24. * EI);
 }
 
-/** @brief Simply supported beam case
- * @return true if the test worked, false otherwise
- */
-bool
-simply_supported()
+TEST_CASE("Simply supported beam")
 {
-	int err;
-	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
-
 	MoorDyn system = MoorDyn_Create("Mooring/BeamSimplySupported.txt");
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
-	err = MoorDyn_Init(system, NULL, NULL);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
 
 	// Compare the node positions
 	auto line = MoorDyn_GetLine(system, 1);
+	REQUIRE(line);
 	unsigned int n_nodes;
-	err = MoorDyn_GetLineNumberNodes(line, &n_nodes);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting the number of nodes: " << err << endl;
-		MoorDyn_Close(system);
-		return false;
-	}
+	REQUIRE(MoorDyn_GetLineNumberNodes(line, &n_nodes) == MOORDYN_SUCCESS);
 	for (unsigned int i = 0; i < n_nodes; i++) {
 		double pos[3];
-		err = MoorDyn_GetLineNodePos(line, i, pos);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure getting the node " << i << " pos: " << err << endl;
-			MoorDyn_Close(system);
-			return false;
-		}
+		REQUIRE(MoorDyn_GetLineNodePos(line, i, pos) == MOORDYN_SUCCESS);
 		const double z = simply_supported_solution(pos[0]);
-		CHECK_VALUE(i, z, pos[2] - Z0);
-		cout << "Node " << i << " = " << pos[0] << ", " << pos[2] - Z0
-		     << " vs. " << z << endl;
+		REQUIRE(compare(z, pos[2] - Z0));
 	}
 
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
-
-	return true;
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
 
 /** @brief Cantilevered beam analytic solution
@@ -149,69 +106,24 @@ cantilevered_solution(double x)
 	return -p * x * x * (6. * L * L - 4. * x * L + x * x) / (24. * EI);
 }
 
-/** @brief Cantilevered beam case
- * @return true if the test worked, false otherwise
- */
-bool
-cantilevered()
+TEST_CASE("Cantilevered beam")
 {
-	int err;
-	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
-
 	MoorDyn system = MoorDyn_Create("Mooring/BeamCantilevered.txt");
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
-	err = MoorDyn_Init(system, NULL, NULL);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
 
 	// Compare the node positions
 	auto line = MoorDyn_GetLine(system, 1);
+	REQUIRE(line);
 	unsigned int n_nodes;
-	err = MoorDyn_GetLineNumberNodes(line, &n_nodes);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting the number of nodes: " << err << endl;
-		MoorDyn_Close(system);
-		return false;
-	}
+	REQUIRE(MoorDyn_GetLineNumberNodes(line, &n_nodes) == MOORDYN_SUCCESS);
 	for (unsigned int i = 0; i < n_nodes; i++) {
 		double pos[3];
-		err = MoorDyn_GetLineNodePos(line, i, pos);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure getting the node " << i << " pos: " << err << endl;
-			MoorDyn_Close(system);
-			return false;
-		}
+		REQUIRE(MoorDyn_GetLineNodePos(line, i, pos) == MOORDYN_SUCCESS);
 		const double z = cantilevered_solution(pos[0]);
-		CHECK_VALUE(i, z, pos[2] - Z0);
-		cout << "Node " << i << " = " << pos[0] << ", " << pos[2] - Z0
-		     << " vs. " << z << endl;
+		REQUIRE(compare(z, pos[2] - Z0));
 	}
 
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
-
-	return true;
-}
-
-/** @brief Runs all the test
- * @return 0 if the tests have ran just fine. The index of the failing test
- * otherwise
- */
-int
-main(int, char**)
-{
-	if (!simply_supported())
-		return 1;
-	if (!cantilevered())
-		return 2;
-	return 0;
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
