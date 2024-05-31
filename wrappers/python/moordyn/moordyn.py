@@ -1130,10 +1130,48 @@ def SetLineConstantEA(instance, ea):
     
     Parameters:
     instance (cmoordyn.MoorDynLine): The line instance
-    EA (float): The constant stiffness EA value
+    ea (float): The constant stiffness EA value
     """
     import cmoordyn
-    return cmoordyn.line_set_const_ea(instance, EA)
+    return cmoordyn.line_set_const_ea(instance, ea)
+
+
+def IsLinePressBend(instance):
+    """ Get whether the line pressure bending is considered or not
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    b: True if the pressure bending of the line is enabled, False otherwise
+    """
+    import cmoordyn
+    return cmoordyn.line_is_pbend(b)
+
+
+def SetLinePressBend(instance, b):
+    """ Set whether the line pressure bending is considered or not
+    
+    This value is useless if non-linear stiffness is considered
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    b (bool): True if the pressure bending of the line shall be considered,
+              False otherwise
+    """
+    import cmoordyn
+    return cmoordyn.line_set_pbend(instance, b)
+
+
+def SetLinePressInt(instance, p):
+    """Set the line internal pressure values at the nodes
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    p (list): Pressure values
+    """
+    import cmoordyn
+    return cmoordyn.line_set_pint(instance, list(p))
 
 
 def GetLineNodePos(instance, i):

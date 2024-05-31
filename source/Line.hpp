@@ -188,6 +188,14 @@ class Line final : public io::IO
 	/// y array for stress-strainrate lookup table
 	std::vector<moordyn::real> dampYs;
 
+	// Externally provided data
+	/** true if pressure bending forces shall be considered, false otherwise
+	 * @see https://cds.cern.ch/record/1224245/files/PH-EP-Tech-Note-2009-004.pdf?version=1
+	 */
+	bool isPb;
+	/// internal pipe pressure at the nodes (Pa)
+	std::vector<moordyn::real> pin;
+
 	// kinematics
 	/// node positions
 	std::vector<vec> r;
@@ -195,6 +203,8 @@ class Line final : public io::IO
 	std::vector<vec> rd;
 	/// unit tangent vectors for each node
 	std::vector<vec> q;
+	/// unit normal vectors for each node (used in bending calcs)
+	std::vector<vec> pvec;
 	/// unit tangent vectors for each segment (used in bending calcs)
 	std::vector<vec> qs;
 	/// unstretched line segment lengths
@@ -218,6 +228,8 @@ class Line final : public io::IO
 	std::vector<vec> Td;
 	/// bending stiffness forces
 	std::vector<vec> Bs;
+	/// Pressure bending forces
+	std::vector<vec> Pb;
 	/// node weights
 	std::vector<vec> W;
 	/// node drag (transversal)
@@ -759,6 +771,37 @@ class Line final : public io::IO
 		Cdn = Cdn * scaler;
 		Cdt = Cdt * scaler;
 	}
+
+	/** @brief Enable the pressure bending forces (disabled by default)
+	 *
+	 * The internal pressure can be provided at each node by calling
+	 * ::internalPress(), while the external pressure is computed as the
+	 * hydrostatic pressure plus the dynamic pressure (see
+	 * moordyn::Waves::getWaveKinLine()).
+	 *
+	 * If no internal pressure is provided, zeros will be considered.
+	 */
+	inline void enablePb() { isPb = true; }
+
+	/** @brief Disable the pressure bending forces (disabled by default)
+	 */
+	inline void disablePb() { isPb = false; }
+
+	/** @brief Check if pressure bending forces are considered
+	 * @return true if pressure bending forces are considered, false otherwise
+	 */
+	inline bool enabledPb() const { return isPb; }
+
+	/** @brief Set the internal pressure at each node of the line
+	 *
+	 * If this is not provided, the last stored values (zero by default) will
+	 * be considered.
+	 *
+	 * This function is useless unless ::enablePb() is called.
+	 * @param p The pressure values (Pa) at each node
+	 * @throws invalid_value_error If @p p has wrong size
+	 */
+	void setPin(std::vector<real> p);
 
 	/** @brief Set the line  simulation time
 	 * @param time Simulation time

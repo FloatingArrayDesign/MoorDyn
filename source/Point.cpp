@@ -348,7 +348,7 @@ Point::doRHS()
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
-	auto [zeta, U, Ud] = waves->getWaveKinPoint(pointId);
+	auto [zeta, U, Ud, Pdyn] = waves->getWaveKinPoint(pointId);
 	// env->waves->getU(r, t, U); // call generic function to get water
 	// velocities  <<<<<<<<<<<<<<<< all needs updating
 
