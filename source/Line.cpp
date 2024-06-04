@@ -483,7 +483,7 @@ Line::initialize()
 	// catenary routine (from FAST v.7)
 
 	real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
-	if (XF > 0.0) {
+	if (XF > 0.0001) { // tolerance for calculation of XF when points are not along x or y axis
 
 		real ZF = dir[2];
 		real LW = ((rho - env->rho_w) * A) * env->g;
