@@ -799,10 +799,7 @@ Line::getStateDeriv()
 		// vectors (qs) for each segment (this is used for bending calculations)
 		lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 
-		// this is the denominator of how the stretch rate equation was
-		// formulated
-		const double ldstr_top = (r[i + 1] - r[i]).dot(rd[i + 1] - rd[i]);
-		ldstr[i] = ldstr_top / lstr[i]; // strain rate of segment
+		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
 
 		// V[i] = A * l[i]; // volume attributed to segment
 	}
@@ -911,18 +908,17 @@ Line::getStateDeriv()
 			E = getNonlinearE(lstr[i], l[i]);
 
 		if (lstr[i] / l[i] > 1.0) {
-			T[i] = E * A * (1. / l[i] - 1. / lstr[i]) * (r[i + 1] - r[i]);
+			T[i] = E * A * (lstr[i] - l[i]) / l[i] * qs[i];
 		} else {
 			// cable can't "push" ...
 			// or can it, if bending stiffness is nonzero? <<<<<<<<<
-			T[i] = vec(0.0, 0.0, 0.0);
+			T[i] = vec::Zero();
 		}
 
 		// line internal damping force
 		if (nCpoints > 0)
 			c = getNonlinearC(ldstr[i], l[i]);
-
-		Td[i] = c * A * (ldstr[i] / l[i]) * (r[i + 1] - r[i]) / lstr[i];
+		Td[i] = c * A * ldstr[i] / l[i] * qs[i];
 	}
 
 	// Bending loads
