@@ -686,6 +686,9 @@ Footnotes:
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
   same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
   fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
+- The output list is not case sensistive, however all MoorDyn-F outputs will be printed to the output
+  file in all caps. When searching OpenFAST output channels, users will need to search for MoorDyn
+  channels in all caps. Example: the channel fairten1 would appear in the output file as FAIRTEN1.
 
 1. Line node forces: Line node forces output the net force on the node, which includes the tension
    vectors of the adjacent segments plus the weight, buoyancy, seabed-contact, and hydrodynamic 
