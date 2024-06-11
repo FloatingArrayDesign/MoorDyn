@@ -143,6 +143,9 @@ Rod::setup(int number_in,
 	// ------------------------- set starting kinematics
 	// -------------------------
 
+	// Initialize the accelerations to avoid border cases, like Pinned rods
+	// reading the linear acceleration without ssetting it
+	acc6 = vec6::Zero();
 	// set Rod positions if applicable
 	if (type == FREE) {
 		// For an independent rod, set the position right off the bat
@@ -671,6 +674,7 @@ Rod::getStateDeriv()
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 		const mat M_out3 = M_out6(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+		acc6(Eigen::seqN(0, 3)) = vec::Zero();
 		acc6(Eigen::seqN(3, 3)) = M_out3.inverse() * Fnet_out3;
 
 		// dxdt = V   (velocities)
