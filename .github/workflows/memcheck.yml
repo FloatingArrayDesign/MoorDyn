@@ -9,6 +9,7 @@ permissions: write-all
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
+  PROCESSES: 4
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 2
   VTK_VERSION_PATCH: 6
@@ -43,4 +44,4 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
-      run: ctest -C ${{env.BUILD_TYPE}} -T memcheck --output-on-failure
+      run: ctest -C ${{env.BUILD_TYPE}} -T memcheck --output-on-failure -j ${{env.PROCESSES}}
