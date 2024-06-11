@@ -17,7 +17,7 @@ env:
   VTK_VERSION_PATCH: 6
 
 jobs:
-  build:
+  memcheck:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
