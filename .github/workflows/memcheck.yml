@@ -1,6 +1,8 @@
 name: memcheck
 
 on:
+  push:
+    branches: [ cfl ]
   pull_request:
     branches: [ $default-branch, master ]
 
