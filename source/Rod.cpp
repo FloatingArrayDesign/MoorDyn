@@ -124,12 +124,12 @@ Rod::setup(int number_in,
 	                 // segments) (1 = fully submerged, 0 = out of water)
 
 	if (N == 0) {
-		// special case of zero-length rod, which is denoted by numsegs=0 in the
-		// intput file
+		// special case of zero-length rod, which is denoted by numsegs=0 in
+		// the intput file
+		q0 = vec::Zero();
 		l.assign(1, 0.); // line unstretched segment lengths
 		V.assign(1, 0.); // segment volume?
 		UnstrLen = 0.0;  // set Rod length to zero
-		q = vec::Zero();
 	} else {
 		// normal finite-length case
 		UnstrLen = unitvector(q0, endCoords.head<3>(), endCoords.tail<3>());
@@ -137,9 +137,8 @@ Rod::setup(int number_in,
 		    UnstrLen / N;  // distribute line length evenly over segments
 		l.assign(N, lseg); // line unstretched segment lengths
 		V.assign(N, lseg * 0.25 * pi * d * d); // segment volume?
-		// get Rod axis direction vector and Rod length
-		q = q0;
 	}
+	q = q0;
 
 	// ------------------------- set starting kinematics
 	// -------------------------
