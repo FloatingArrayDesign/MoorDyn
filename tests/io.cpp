@@ -499,6 +499,7 @@ restore()
 		MoorDyn_Close(system);
 		return false;
 	}
+	free(backup);
 	double f2[9];
 	t = 0.0;
 	err = MoorDyn_Step(system, x, dx, f2, &t, &dt);
