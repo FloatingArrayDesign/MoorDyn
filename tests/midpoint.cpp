@@ -216,7 +216,7 @@ TEST_CASE("Complex system simulation with midpoint5")
 
 	// Change the time scheme
 	REQUIRE(MoorDyn_SetTimeScheme(system, "midpoint5") == MOORDYN_SUCCESS);
-	REQUIRE(MoorDyn_SetCFL(system, 0.75) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetCFL(system, 0.7) == MOORDYN_SUCCESS);
 	double dtM;
 	REQUIRE(MoorDyn_GetDt(system, &dtM) == MOORDYN_SUCCESS);
 	std::cout << "New time step = " << dtM << " s" << std::endl;
