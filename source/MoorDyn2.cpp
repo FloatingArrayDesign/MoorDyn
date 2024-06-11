@@ -139,6 +139,9 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	waves = std::make_shared<moordyn::Waves>(_log);
 
 	const moordyn::error_id err = ReadInFile();
+	if (err != MOORDYN_SUCCESS) {
+		delete GetLogger();
+	}
 	MOORDYN_THROW(err, "Exception while reading the input file");
 
 	LOGDBG << "MoorDyn is expecting " << NCoupledDOF()
@@ -178,7 +181,7 @@ moordyn::MoorDyn::~MoorDyn()
 	for (auto obj : LineList)
 		delete obj;
 
-	delete _log;
+	delete GetLogger();
 }
 
 moordyn::error_id
