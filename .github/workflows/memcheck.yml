@@ -12,9 +12,6 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
   PROCESSES: 4
-  VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 2
-  VTK_VERSION_PATCH: 6
 
 jobs:
   memcheck:
@@ -31,13 +28,8 @@ jobs:
         sudo apt-get -qq update
         sudo apt-get -qq -y install valgrind
 
-    - name: Install VTK
-      run: |
-        sudo apt-get -qq update
-        sudo apt-get -qq -y install libvtk9-dev
-
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DBUILD_TESTING=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=OFF -DBUILD_TESTING=ON
 
     - name: Build
       id: build
