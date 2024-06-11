@@ -369,6 +369,7 @@ class MoorDyn final : public io::IO
 	 * @return The time integrator
 	 */
 	inline void SetTimeScheme(TimeScheme* tscheme) {
+		if (_t_integrator) delete _t_integrator;
 		_t_integrator = tscheme;
 		_t_integrator->SetGround(GroundBody);
 		for (auto obj : BodyList)
