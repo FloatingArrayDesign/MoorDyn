@@ -82,6 +82,7 @@ TEST_CASE("Pipe buckling while conveying fluid")
 		pin[i] = P;
 	REQUIRE(MoorDyn_SetLinePressBend(line, 1) == MOORDYN_SUCCESS);
 	REQUIRE(MoorDyn_SetLinePressInt(line, pin) == MOORDYN_SUCCESS);
+	free(pin);
 
 	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
 
