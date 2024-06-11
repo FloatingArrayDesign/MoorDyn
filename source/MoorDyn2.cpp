@@ -345,7 +345,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	real t = 0;
 	real error_prev = (std::numeric_limits<real>::max)();
-	real error0, error;
+	real error = (std::numeric_limits<real>::max)();
+	real error0 = error;
 	// The function is enclosed in parenthesis to avoid Windows min() and max()
 	// macros break it
 	// See
