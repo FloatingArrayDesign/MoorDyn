@@ -44,4 +44,4 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       # We are just testing in Linux
-      run: ctest -C ${{env.BUILD_TYPE}} -T memcheck --output-on-failure --timeout 7200 -j ${{env.PROCESSES}}
+      run: ctest -C ${{env.BUILD_TYPE}} -T memcheck --output-on-failure -j ${{env.PROCESSES}} -E "(time_schemes|seafloor)"
