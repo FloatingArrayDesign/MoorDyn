@@ -141,6 +141,15 @@ if(${MOORDYN_FASTMATH})
     endif()
 endif()
 
+find_program(MEMORYCHECK_COMMAND valgrind)
+if(NOT ${MEMORYCHECK_COMMAND})
+    message(WARNING "valgrind is not found, you will not be able to run memchecks")
+else(NOT ${MEMORYCHECK_COMMAND})
+    set(MEMORYCHECK_SUPPRESSIONS_FILE
+        "${PROJECT_SOURCE_DIR}/tests/valgrind_suppress.txt")
+endif()
+
+
 # Compile the library
 add_subdirectory(source)
 # And the eventual wrappers
