@@ -33,6 +33,7 @@
  * been digitalized with https://github.com/automeris-io/WebPlotDigitizer
  */
 
+#define _USE_MATH_DEFINES
 #include "MoorDyn2.h"
 #include <algorithm>
 #include <vector>
@@ -41,7 +42,6 @@
 #include <sstream>
 #include <fstream>
 #include <tuple>
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <catch2/catch_test_macros.hpp>
 
