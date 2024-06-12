@@ -45,6 +45,7 @@ set(CATCH2_TESTS
     conveying_fluid
     polyester
     quasi_static_chain
+    lowe_and_langley_2006
     local_euler
     beuler
     midpoint
