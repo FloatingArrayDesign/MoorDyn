@@ -2,8 +2,8 @@ Time Schemes
 ============
 .. _tschemes:
 
-MoorDyn 2 is deployed with several time schemes, with different features,
-strengths and weaknesses.
+MoorDyn-C version 2 is deployed with several time schemes, with different
+features, strengths and weaknesses.
 
 They can be deivided into 2 main categories: Explicit and implicit ones.
 
