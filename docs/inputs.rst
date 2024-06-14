@@ -566,7 +566,7 @@ The list of possible options is:
    :ref:`time schemes documentation <tschemes>` to learn more about this.
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
- - WtrDpth (0.0): The water depth (m). In MoorDyn-F the bathymetry file path can be inputted here.
+ - WtrDpth (0.0): The water depth (m). In MoorDyn-C the bathymetry file path can be inputted here.
  - kBot (3.0e6): The bottom stiffness (Pa/m)
  - cBot (3.0e5): The bottom damping (Pa-s/m)
  - dtIC (1.0 C, 2.0 F): The threshold amount of time the system must be converged for to be 
@@ -615,8 +615,8 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - unifyCurrentGrid: Not available in MoorDyn-F because currents and waves are handled in the same 
    input file.
  - writeUnits: Units are always written to output file headers
- - Seafloor file: MoorDyn-F accepts a bathymetry file path as an alternative to a number in the 
-   WtrDpth option
+ - Seafloor file: MoorDyn-C accepts a bathymetry file path as an alternative to
+   a number in the WtrDpth option
  - FrictionCoefficient: MoorDyn-F contains friction coefficients for lines in both the axial and 
    transverse directions while MoorDyn-C only has a general seafloor contact coefficient of friction
  - FricDamp: Same as CV in MoorDyn-F.
