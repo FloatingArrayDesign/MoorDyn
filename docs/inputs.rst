@@ -562,7 +562,7 @@ The list of possible options is:
  - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor
  - tScheme (RK2): The time integrator. It should be one of
    Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
-   BEuler\ *N*, Midpoint\ *N*, ACA\ *N*. Look at the
+   BEuler\ *N*, Midpoint\ *N*, ACA\ *N*, Wilson\ *N*. Look at the
    :ref:`time schemes documentation <tschemes>` to learn more about this.
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
