@@ -16,7 +16,6 @@ MoorDyn - Lumped-Mass Mooring Dynamics
    inputs
    structure
    api_c
-   troubleshooting
    waterkinematics
    theory
 
