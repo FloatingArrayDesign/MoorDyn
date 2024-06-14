@@ -165,8 +165,7 @@ parenthesis). As such, they are all optional settings, although some of them (su
 size) often need to be set by the user for proper operation. The list of possible options (with any 
 default value provided in parentheses) is:
 
- - dtM (3.402823e+38) – desired mooring model maximum time step (s)
- - CFL (0.5) – desired mooring model maximum CFL factor
+ - dtM (0.001) – desired mooring model time step (s)
  - g (9.80665) – gravitational constant (m/s^2)
  - rhoW (1025.0)– water density (kg/m^3)
  - WtrDpth (0.0) – water depth (m)
@@ -554,10 +553,13 @@ indicate which version has that as the default. As such, they are all optional s
 some of them (such as time step size) often needs to be set by the user for proper operation. 
 The list of possible options is:
 
- - writeLog (0 C, -1 F): If >0 a log file is written recording information. The bigger the number 
-   the more verbose. Please, be mindful that big values would critically reduce the performance!
- - dtM (0.001 C): The time step (s). In MoorDyn-F if this is left blank it defaults to the 
-   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.   
+ - writeLog (0 C, -1 F): If >0 a log file is written recording information. The
+   bigger the number the more verbose. Please, be mindful that big values would
+   critically reduce the performance!
+ - dtM (3.402823e+38) – desired mooring model maximum time step (s). In
+   MoorDyn-F if this is left blank it defaults to the
+   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.
+ - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor
  - tScheme (RK2): The time integrator. It should be one of
    Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
    BEuler\ *N*, Midpoint\ *N*, ACA\ *N*. Look at the
@@ -594,11 +596,15 @@ The list of possible options is:
    step size (s)
  - Seafloor file: A path to the :ref:`bathymetry file <seafloor_in>`
 
-In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values provided by FAST, so it is 
-recommended to not use custom values for the sake of consistency.
+In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values
+provided by FAST, so it is  recommended to not use custom values for the sake
+of consistency.
 
 The following MoorDyn-C options are not supported by MoorDyn-F: 
 
+ - CFL: In MoorDyn-F the time step is governed by the
+   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step. To
+   override it just the option dtM is available.
  - WaveKin & Currents: In MoorDyn-F waves and currents are combined into a single option called 
    WaterKin which takes a file path as a value and defaults to an empty string (i.e. no WaterKin). 
    The file provided should be formatted as described in the additional MoorDyn inputs 
