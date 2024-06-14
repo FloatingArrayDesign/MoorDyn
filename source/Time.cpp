@@ -854,7 +854,7 @@ create_time_scheme(const std::string& name,
 			out = new AndersonEulerScheme(log, waves, iters, 0.5);
 		} catch (std::invalid_argument) {
 			stringstream s;
-			s << "Invalid Midpoint name format '" << name << "'";
+			s << "Invalid Anderson name format '" << name << "'";
 			throw moordyn::invalid_value_error(s.str().c_str());
 		}
 	} else if (str::startswith(str::lower(name), "aca")) {
