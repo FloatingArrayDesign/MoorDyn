@@ -6,9 +6,9 @@ MoorDyn-C version 2 is deployed with several time schemes, with different
 features, strengths and weaknesses.
 
 .. note::
-MoorDyn-F only uses the Runge-Kutta 2 (RK2) time scheme in the interest
-of efficiency for OpenFAST simulations.
-Time scheme specification is not an option in the MoorDyn-F input files.
+   MoorDyn-F only uses the Runge-Kutta 2 (RK2) time scheme in the interest
+   of efficiency for OpenFAST simulations.
+   Time scheme specification is not an option in the MoorDyn-F input files.
 
 They can be deivided into 2 main categories: Explicit and implicit ones.
 
@@ -152,11 +152,114 @@ an iterative process in which the time derivatives are progressively improved.
 The implicit time schemes enjoy a way better stability. Even more, the Newmark
 scheme is unconditionally stable. Then, what is the catch? Well, they can turn
 unstable on the internal iterative process. The half good news is that, by
-construstion, relaxation can be applied on the internal iterative process.
+construction, relaxation can be applied on the internal iterative process.
 
 Hereby an arbitrarily large time step can be considered, provided that a
 sufficiently large number of substeps are configured. See
 :ref:`the relaxation process <relaxation>` below.
+
+The number of substeps is set as a suffix number on the time scheme name (see
+:ref:`the version 2 options <v2_inputs>`.
+For instance, setting a "beuler5" time scheme options means that a
+Backward-Euler scheme, with 5 substeps, will be considered.
+The number of substeps might be any integer bigger than 0.
+
+Backward-Euler
+^^^^^^^^^^^^^^
+
+Usage:
+
+.. code-block:: none
+
+ ---------------------- OPTIONS -----------------------------------------
+ beuler5  tscheme      5 substeps Backward Euler scheme
+
+As discussed above, the backward Euler scheme is formulated as:
+
+.. math::
+   r(t_{n+1}) = r(t_n) + \Delta t \frac{\mathrm{d} r}{\mathrm{d} t}(t_{n+1})
+
+Backward Euler schemes are usually very stable due to the large numerical
+dissipation they ussually introduce on the process.
+However, its good stability features are so far hampered by the fact that the
+derivative is evaluated at the end of the time step, which would drive the
+inner iterative process to a divergent stage.
+
+Midpoint
+^^^^^^^^
+
+Usage:
+
+.. code-block:: none
+
+ ---------------------- OPTIONS -----------------------------------------
+ midpoint5  tscheme      5 substeps Midpoint scheme
+
+The midpoint scheme is evaluated as:
+
+.. math::
+   r(t_{n+1}) = r(t_n) + \Delta t \frac{\mathrm{d} r}{\mathrm{d} t}(t_{n+1/2})
+
+i.e. the derivative is evaluated on the center of the time step.
+Midpoint schemes are popular because their great conservation properties when
+modelling Hamiltonian systems.
+The numerical tests seems to show that the Midpoint scheme exposes the bests
+performance of all time schemes, being able to keep the stability and get a
+great accuracy with relatively low number of substeps.
+
+Backward-Euler with Anderson's acceleration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Usage:
+
+.. code-block:: none
+
+ ---------------------- OPTIONS -----------------------------------------
+ anderson5  tscheme      5 substeps Backward Euler accelerated scheme
+
+This is the same scheme than the Backward-Euler scheme, but with
+`Anderson accelration <https://en.wikipedia.org/wiki/Anderson_acceleration>`_.
+Unfortunately, to be able to enjoy the acceleration a large number of substeps
+is usually required, making this scheme actually quite useless.
+
+Average Constant Acceleration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Usage:
+
+.. code-block:: none
+
+ ---------------------- OPTIONS -----------------------------------------
+ aca5  tscheme      5 substeps Average Constant Acceleration scheme
+
+This is the most popular
+`Newmark-Beta scheme <https://en.wikipedia.org/wiki/Newmark-beta_method>`_.
+It is unconditionally stable for the kind of systems considered on MoorDyn.
+Unfortunately it is affected by the same problem than the Backward-Euler
+scheme, i.e. the derivatives are evaluated at the end of the time step, which
+might result on divergent inner iterative processes.
+
+Wilson-theta scheme
+^^^^^^^^^^^^^^^^^^^
+
+Usage:
+
+.. code-block:: none
+
+ ---------------------- OPTIONS -----------------------------------------
+ wilson5  tscheme      5 substeps Wilson-theta scheme
+
+The Wilson-theta scheme is some sort of exacerbated Backward Euler scheme, i.e.
+the derivative is evaluated beyond the time step itself:
+
+.. math::
+   r(t_{n+1}) = r(t_n) + \Delta t \frac{\mathrm{d} r}{\mathrm{d} t}(t_{n+1+\theta})
+
+In MoorDyn-C the popular value :math:`\theta = 1.37` is considered.
+This scheme is trying to get the Backward-Euler characteristic dissipation
+to a higher level.
+Unfortunately, it is again affected by the eventual divergent inner iterative
+processes.
 
 Semi-implicit relaxation
 ------------------------
@@ -316,4 +419,7 @@ With such a set of constants the resulting speedup can be plotted:
 .. figure:: relaxation_005.png
    :alt: Backward's Euler speedup
 
-As expected, the larger the number of iterations, the better the speedup.
+As expected, the larger the number of iterations, the larger speedup.
+
+On MoorDyn-C each semi-implicit time scheme has its own relaxation constants,
+obtained numerically to achieve good stability features

@@ -497,8 +497,7 @@ triggered by a time or attachment tension threshold, which ever comes first. Use
 multiple failures for a given point, but duplicate failure configurations will be ignored.
 If two lines attached to a point are listed to fail (failure 1 for example), then after the failure
 the lines will remain attached to each other by a free point. In this multi line case, if any line
-reaches the tension threshold then the failure will be triggered. The theory behind failures can be
-found :ref:`here <theory>`.
+reaches the tension threshold then the failure will be triggered.
 
 .. code-block:: none
 
@@ -688,13 +687,13 @@ number looks like [OBJECT#][SUFFIX], i.e. ROD1SUB.
 
 Reference Points:
 
--	Rods: End A (Node 0)
-  - No z rotations for rods (rotations along axis of rod negligible)
-  - A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
-    will be zero for this case. 
--	Bodies: Center of Mass
--	Points: Center of Mass
--	Lines: End A (Node 0)
+- Rods: End A (Node 0)
+- No z rotations for rods (rotations along axis of rod negligible)
+- A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
+  will be zero for this case. 
+- Bodies: Center of Mass
+- Points: Center of Mass
+- Lines: End A (Node 0)
 
 Footnotes:
 
