@@ -5,6 +5,11 @@ Time Schemes
 MoorDyn-C version 2 is deployed with several time schemes, with different
 features, strengths and weaknesses.
 
+.. note::
+MoorDyn-F only uses the Runge-Kutta 2 (RK2) time scheme in the interest
+of efficiency for OpenFAST simulations.
+Time scheme specification is not an option in the MoorDyn-F input files.
+
 They can be deivided into 2 main categories: Explicit and implicit ones.
 
 Explicit:
