@@ -799,9 +799,9 @@ Originally, it was coupled to a modified form of FAST v7.
 WEC-Sim
 ^^^^^^^
 
-WEC-Sim is currently coupled with MoorDyn v1. Support for the current version of
-MoorDyn-C v2, is in the process of being developed. The WEC-Sim source code can be found 
-`here <https://github.com/WEC-Sim/WEC-Sim>`_.
+WEC-Sim is coupled with MoorDyn-C v2 as of Spring 2024 with `WEC-Sim PR #1212 <https://github.com/WEC-Sim/WEC-Sim/pull/1212>`_. 
+The original coupling was with MoorDyn v1 and the the publication can be found in the 
+:ref:`theory section <theory>`. The WEC-Sim source code can be found `here <https://github.com/WEC-Sim/WEC-Sim>`_.
 
 DualSPHysics
 ^^^^^^^^^^^^
