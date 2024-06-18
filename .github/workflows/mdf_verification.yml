@@ -1,0 +1,72 @@
+name: MoorDynF regression tests
+
+on:
+  push:
+    branches: [ $default-branch, master, mdf ]
+  pull_request:
+    branches:
+      - "**"
+
+permissions: write-all
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+            os: [ubuntu-22.04]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      id: setup-python
+
+    - name: Install Python dependencies
+      run: pip install --upgrade pytest Bokeh
+
+    - name: Download OpenFAST
+      shell: bash
+      run: |
+        cd ${{github.workspace}}/
+        git clone --recursive https://github.com/OpenFAST/openfast.git
+
+    - name: Compile MoorDynF
+      shell: bash
+      run: |
+        cd ${{github.workspace}}/
+        mkdir -p openfast.build
+        cd openfast.build
+        cmake openfast -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DBUILD_TESTING=ON ../openfast
+        make moordyn_driver
+        cd ${{github.workspace}}/
+
+    - name: Run MoorDynF regression tests
+      shell: bash
+      run: |
+        cd ${{github.workspace}}/openfast.build
+        ctest -VV -R md_ -LE python
+        cd ${{github.workspace}}/
+
+    - name: Create install folder
+      run: |
+          mkdir -p ${{github.workspace}}/install
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=ON -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DBUILD_TESTING=ON
+
+    - name: Build
+      id: build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Install
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Set env variables for the tests
+      run: |
+        echo "LD_LIBRARY_PATH=${{github.workspace}}/build/source/" >> $GITHUB_ENV
