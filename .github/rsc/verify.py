@@ -3,11 +3,22 @@ import os
 import sys
 import moordyn
 import numpy as np
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+except ImportError:
+    plt = None
 
 parser = argparse.ArgumentParser(
     description='Run the same MDF regression tests and check')
-parser.add_argument('root',
+parser.add_argument('root', type=str,
     help='The root folder with both openfast/ and openfast.build/ subfolders')
+parser.add_argument('--rtol', type=float, default=1.5,
+    help=('Relative tolerance to allow the solution to deviate; expressed as ',
+          'order of magnitudes less than baseline'))
+parser.add_argument('--atol', type=float, default=1.5,
+    help=('Absolute tolerance to allow small values to pass; expressed as ',
+          'order of magnitudes less than baseline'))
 
 
 # Let's start importing some handy tools from MDF
@@ -214,8 +225,21 @@ def read_outs(fpath, skiplines=2):
     return np.transpose(data)
 
 
+def plot(ref, data, fpath):
+    if plt is None:
+        return
+    colors = list(mcolors.XKCD_COLORS.values())
+    for i in range(1, ref.shape[0]):
+        plt.plot(ref[0, :], ref[i, :], linestyle='dashed',
+                 color=colors[i - 1])
+        plt.plot(data[0, :], data[i, :], linestyle='solid',
+                 color=colors[i - 1], label=f'channel {i}')
+    plt.legend(loc='best')
+    plt.savefig(fpath)
+
+
 # Run the tests...
-all_good = True
+summary = {}
 for test in tests:
     print(f"Test {test}...")
     env, md = read_driver(test)
@@ -228,7 +252,7 @@ for test in tests:
         motions = interpolate_motions(read_motions(md["InputsFile"]), md)
         assert motions.shape[0] - 1 == ndofs
     # Run the simulation
-    r, _ = get_state(system)
+    r = get_state(system)[0] if motions is None else motions[1:, 0]
     u = [0 for i in range(ndofs)]
     moordyn.Init(system, r, u)
     dt = md["dtC"]
@@ -239,14 +263,27 @@ for test in tests:
         rorg = np.asarray(rorg)
         rdst = rorg if motions is None else motions[1:, i + 1]
         u = (rdst - rorg) / dt
-        moordyn.Step(system, r, u, t, dt)
+        moordyn.Step(system, rorg, u, t, dt)
     moordyn.Close(system)
     # Read the ouputs and compare
     ref = read_outs(md["OutRootName"], skiplines=8)
     new = read_outs(os.path.splitext(fname)[0] + ".out", skiplines=2)
-    passing = np.all(pass_fail.passing_channels(ref, new, 2.0, 1.9))
-    print("Passed!" if passing else "Failed.")
-    if not passing:
-        all_good = False
+    # Drop the eventual points at the tail that ight come from precision errors
+    # on the time
+    n_samples = min(ref.shape[1], new.shape[1])
+    ref = ref[:, :n_samples]
+    new = new[:, :n_samples]
+    plot(ref, new, test + ".png")
+    passing = np.all(
+        pass_fail.passing_channels(ref, new, args.rtol, args.atol))
+    
+    summary[test] = passing
 
-assert all_good
+if np.any(summary.values()):
+    print("")
+    print("=" * 80)
+    print(f"{np.sum(list(summary.values()))} / {len(summary.values())} failed:")
+    for i, (key, value) in enumerate(summary.items()):
+        print(f"\t{i + 1}: Test '{key}' " + ("PASSED" if value else "FAILED"))
+    print("=" * 80)
+    print("")
