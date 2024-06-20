@@ -316,7 +316,7 @@ for test in tests:
 print("")
 print("=" * 80)
 N = len(summary.values())
-if np.any(summary.values()):
+if not np.all(summary.values()):
     n = N - np.sum(list(summary.values()))
     print(f"{n} / {N} tests failed:")
     for i, (key, value) in enumerate(summary.items()):
@@ -325,3 +325,5 @@ else:
     print(f"{N} / {N} tests passed:")
 print("=" * 80)
 print("")
+
+assert np.all(summary.values())
