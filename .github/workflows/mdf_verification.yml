@@ -70,3 +70,6 @@ jobs:
     - name: Set env variables for the tests
       run: |
         echo "LD_LIBRARY_PATH=${{github.workspace}}/build/source/" >> $GITHUB_ENV
+
+    - name: Run the tests
+      run: python ${{github.workspace}}/tests/.mdf_verification/verify.py ${{github.workspace}}/
