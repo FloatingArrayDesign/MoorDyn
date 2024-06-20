@@ -1159,7 +1159,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
-			str::decomposeString(entries[0], let1, num1, let2, num2, let3);
+			str::decomposeString(entries[1], let1, num1, let2, num2, let3);
 
 			if (num1.empty()) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1209,7 +1209,7 @@ moordyn::MoorDyn::ReadInFile()
 				return MOORDYN_INVALID_INPUT;
 			}
 
-			vector<string> lineNums = moordyn::str::split(entries[1], ',');
+			vector<string> lineNums = moordyn::str::split(entries[2], ',');
 			obj->lines.reserve(lineNums.size());
 			obj->line_end_points.reserve(lineNums.size());
 			for (unsigned int il = 0; il < lineNums.size(); il++) {
@@ -1225,8 +1225,8 @@ moordyn::MoorDyn::ReadInFile()
 				obj->line_end_points.push_back(ENDPOINT_A);
 			}
 
-			obj->time = atof(entries[2].c_str());
-			obj->ten = atof(entries[3].c_str());
+			obj->time = atof(entries[3].c_str());
+			obj->ten = atof(entries[4].c_str());
 
 			LOGDBG << "fail time is " << obj->time << " s" << endl;
 			LOGDBG << "fail ten is " << obj->ten << " N" << endl;
