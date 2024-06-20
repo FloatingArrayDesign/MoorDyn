@@ -2020,9 +2020,9 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		env->rho_w = atof(entries[0].c_str());
 	else if (name == "WtrDpth")
 		env->WtrDpth = atof(entries[0].c_str());
-	else if ((name == "kBot") || (name == "kb"))
+	else if ((name == "kBot") || (name == "kbot") || (name == "kb"))
 		env->kb = atof(entries[0].c_str());
-	else if ((name == "cBot") || (name == "cb"))
+	else if ((name == "cBot") || (name == "cbot") || (name == "cb"))
 		env->cb = atof(entries[0].c_str());
 	else if ((name == "dtIC") || (name == "ICdt"))
 		ICdt = atof(entries[0].c_str());
