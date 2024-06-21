@@ -910,9 +910,10 @@ MoorDyn Input File
 
 The following input file excerpt shows how points can be specified as attached to specific turbines 
 (turbines 3 and 4 in this example). When a point has "TurbineN" as its attachment, it acts similarly to a 
-"Coupled" attachment, where the X/Y/Z inputs specify the relative location of the fairlead on the platform. 
-In the farm-level MoorDyn input file, "Coupled" point types cannot be used because it is ambiguous 
-which turbine they attach to.
+"BodyN" attachment, where the X/Y/Z inputs specify the relative location of the fairlead on the platform. 
+ex. For a turbine located at (200, 0, 0), a vertical line attached to it's center would have
+a fixed point at end A at (200, 0, 0) and a turbineN point at (0, 0, 0). In the farm-level MoorDyn input 
+file, "Coupled" point types cannot be used because it is ambiguous which turbine they attach to.
 
 .. code-block:: none
  :emphasize-lines: 5,6,11
