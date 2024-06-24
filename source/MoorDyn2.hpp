@@ -501,6 +501,8 @@ class MoorDyn final : public io::IO
 	real ICTmax;
 	// threshold for relative change in tensions to call it converged
 	real ICthresh;
+	// use dynamic (1) or stationary (0) inital condition solver
+	int ICgenDynamic;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
@@ -670,13 +672,22 @@ class MoorDyn final : public io::IO
 		}
 
 		vector<string> flines;
+		int i = 0;
 		while (f.good()) {
 			string fline;
 			getline(f, fline);
-			moordyn::str::rtrim(fline);
-			flines.push_back(fline);
+			if (i>2) { // skip first three lines as headers 
+				moordyn::str::rtrim(fline);
+				flines.push_back(fline);
+			}
+			i++;
 		}
 		f.close();
+
+		if (i < 5) {
+			LOGERR << "Error: Not enough curve data in curve file" << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
 
 		for (auto fline : flines) {
 			vector<string> entries = moordyn::str::split(fline, ' ');
@@ -692,7 +703,7 @@ class MoorDyn final : public io::IO
 			LOGDBG << "(" << x.back() << ", " << y.back() << ")" << std::endl;
 		}
 
-		LOGMSG << "OK" << std::endl;
+		LOGMSG << (i-3) << " lines of curve successfully loaded" << std::endl;
 		return MOORDYN_SUCCESS;
 	}
 
