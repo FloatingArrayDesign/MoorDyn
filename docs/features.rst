@@ -1,3 +1,11 @@
+Features and References
+=======================
+.. _theory:
+
+Most of MoorDyn’s theory is described in the following publications. This page 
+gives a very high-level overview, highlights specific theory aspects that may 
+be important to users, and lists the papers where more detail can be found.
+
 Features
 --------
 
