@@ -8,8 +8,7 @@ MoorDyn - Lumped-Mass Mooring Dynamics
 .. _index:
 
 .. toctree::
-   :maxdepth: 5
-   :hidden:
+   :maxdepth: 2
 
    compiling
    drivers
