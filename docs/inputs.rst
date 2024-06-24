@@ -600,7 +600,7 @@ A note about time steps in MoorDyn-C: The internal time step is first taken from
 no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
 runs using the user time step. If no time step is provided, then the user provided CFL factor is 
 used to calculate the time step and MoorDyn-C uses this calculated time step. If both the time step
-and CFL are provided, MoorDyn-C uses the more restrictive time step between user provided and CFL 
+and CFL are provided, MoorDyn-C uses the smaller time step between user provided and CFL 
 calculated.
 
 In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values
