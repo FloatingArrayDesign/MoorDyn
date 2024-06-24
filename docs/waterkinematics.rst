@@ -36,6 +36,7 @@ Below is an example program demonstrating basic usage of external wave kinematic
 .. code-block:: c
 
     #include <iostream>
+    #include <moordyn/MoorDyn2.h>
     using namespace std;
 
     void
@@ -50,9 +51,12 @@ Below is an example program demonstrating basic usage of external wave kinematic
         du[1] = 0.0; // y acceleration
         du[2] = 0.0; // z acceleration
     }
-    void main() 
+    bool main() 
     {
-        MoorDyn system = MoorDyn_Create(input_file);
+
+        int err;
+
+        MoorDyn system = MoorDyn_Create("Mooring/lines.txt");
         if (!system) {
             cerr << "Failure Creating the Mooring system" << endl;
             return false;
@@ -116,7 +120,7 @@ Below is an example program demonstrating basic usage of external wave kinematic
                 return false;
             }
 
-            err = MoorDyn_Step(system, NULl, NULL, NULL, &t, &dt);
+            err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
             if (err != MOORDYN_SUCCESS) {
                 MoorDyn_Close(system);
                 cerr << "Failure during the mooring step: " << err << endl;

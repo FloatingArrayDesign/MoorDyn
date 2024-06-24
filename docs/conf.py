@@ -43,11 +43,11 @@ breathe_default_project = "MoorDyn"
 # -- Project information -----------------------------------------------------
 
 project = 'MoorDyn'
-copyright = '2023, National Renewable Energy Laboratory'
+copyright = '2024, National Renewable Energy Laboratory'
 author = 'Matt Hall'
 
 # The full version, including alpha/beta/rc tags
-release = '2.2.2'
+release = '2.3.1' # TODO: can we automate this?
 
 
 # -- General configuration ---------------------------------------------------

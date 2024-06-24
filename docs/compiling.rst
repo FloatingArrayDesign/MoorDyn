@@ -104,7 +104,7 @@ Windows
 ^^^^^^^
 
 This section will show how to install Eigen3 and MoorDyn in the default folders
-(C:\Program Files (x86)\Eigen3 and C:\Program Files (x86)\Moordyn) using CMake
+(``C:\Program Files (x86)\Eigen3`` and ``C:\Program Files (x86)\Moordyn``) using CMake
 This documentation assumes that you are building in an MSYS2 build environment.
 
 Install the following necessary tools:
@@ -159,7 +159,7 @@ the Git window select "Clone Existing Repository".
 
    The Git GUI to clone repositories
 
-As a default, MoorDyn uses the Egien package that is internal in the source code.
+As a default, MoorDyn uses the Eigen package that is internal in the source code.
 If you would like to use an external copy of Eigen, please follow the instructions
 in the :ref:`installing with external eigen <external_eigen>` note at this point. 
 

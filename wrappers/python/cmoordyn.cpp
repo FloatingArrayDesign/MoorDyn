@@ -2202,6 +2202,112 @@ line_set_const_ea(PyObject*, PyObject* args)
 	return Py_None;
 }
 
+/** @brief Wrapper to MoorDyn_IsLinePressBend() function
+ * @param args Python passed arguments
+ * @return The unstretched length
+ */
+static PyObject*
+line_is_pbend(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+
+	if (!PyArg_ParseTuple(args, "O", &capsule))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	int b;
+	const int err = MoorDyn_IsLinePressBend(instance, &b);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return PyBool_FromLong(b);
+}
+
+/** @brief Wrapper to MoorDyn_SetLinePressBend() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_pbend(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	int b;
+
+	if (!PyArg_ParseTuple(args, "Ob", &capsule, &b))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	const int err = MoorDyn_SetLinePressBend(instance, b);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
+/** @brief Wrapper to MoorDyn_SetLinePressInt() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+line_set_pint(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	PyObject* pvals;
+
+	if (!PyArg_ParseTuple(args, "OO", &capsule, &pvals))
+		return NULL;
+
+	MoorDynLine instance =
+	    (MoorDynLine)PyCapsule_GetPointer(capsule, line_capsule_name);
+	if (!instance)
+		return NULL;
+
+	pvals = PySequence_Fast(pvals, "2 argument must be iterable");
+	if (!pvals)
+		return NULL;
+	unsigned int n;
+	int err;
+	err = MoorDyn_GetLineN(instance, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	if (PySequence_Fast_GET_SIZE(pvals) != n + 1) {
+		std::stringstream err;
+		err << "2nd argument must have " << n + 1 << " components";
+		PyErr_SetString(PyExc_ValueError, err.str().c_str());
+		return NULL;
+	}
+
+	// Convert them to C arrays that MoorDyn might handle
+	double* pin = py_iterable_to_double(pvals);
+	Py_DECREF(pvals);
+	if (!pin) {
+		return NULL;
+	}
+
+	err = MoorDyn_SetLinePressInt(instance, pin);
+	free(pin);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	return Py_None;
+}
+
 /** @brief Wrapper to MoorDyn_GetLineNodePos() function
  * @param args Python passed arguments
  * @return The position
@@ -2823,6 +2929,18 @@ static PyMethodDef moordyn_methods[] = {
 	  line_set_const_ea,
 	  METH_VARARGS,
 	  "Set the constant stiffness" },
+	{ "line_is_pbend",
+	  line_is_pbend,
+	  METH_VARARGS,
+	  "Get whether pressure bending forces are considered or not" },
+	{ "line_set_pbend",
+	  line_set_pbend,
+	  METH_VARARGS,
+	  "Set whether pressure bending forces are considered or not" },
+	{ "line_set_pint",
+	  line_set_pint,
+	  METH_VARARGS,
+	  "Set the internal flow pressure" },
 	{ "line_get_node_pos",
 	  line_get_node_pos,
 	  METH_VARARGS,

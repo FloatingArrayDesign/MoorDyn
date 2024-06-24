@@ -527,10 +527,8 @@ Waves::addRod(moordyn::Rod* rod)
 	if (rod->rodId == static_cast<int>(nodeKin.rods.structures.size())) {
 		auto num_nodes = rod->getN() + 1;
 		genericAdd(rod, num_nodes, nodeKin.rods);
-		nodeKin.rodPdyn.emplace_back(num_nodes, 0.0);
 		// TODO - only do this when needed, see comment in addLIne
 		genericAdd(rod, num_nodes, waveKin.rods);
-		waveKin.rodPdyn.emplace_back(num_nodes, 0.0);
 	} else {
 		throw "the rod id should be equal to its index in the rod array";
 	}
@@ -541,7 +539,6 @@ Waves::addBody(moordyn::Body* body)
 	if (body->bodyId == static_cast<int>(nodeKin.bodies.structures.size())) {
 		auto num_nodes = 1;
 		genericAdd(body, num_nodes, nodeKin.bodies);
-
 		// TODO - only do this when needed, see comment in addLIne
 		genericAdd(body, num_nodes, waveKin.bodies);
 	} else {
@@ -555,7 +552,6 @@ Waves::addPoint(moordyn::Point* point)
 	if (point->pointId == static_cast<int>(nodeKin.points.structures.size())) {
 		auto num_nodes = 1;
 		genericAdd(point, num_nodes, nodeKin.points);
-
 		// TODO - only do this when needed, see comment in addLIne
 		genericAdd(point, num_nodes, waveKin.points);
 	} else {
@@ -570,14 +566,10 @@ Waves::getWaveKinLine(size_t lineId)
 	return nodeKin.lines[lineId];
 }
 
-std::tuple<const std::vector<real>&,
-           const std::vector<vec3>&,
-           const std::vector<vec3>&,
-           const std::vector<real>&>
+Waves::NodeKinReturnType
 Waves::getWaveKinRod(size_t rodId)
 {
-	auto [z, u, ud] = nodeKin.rods[rodId];
-	return { z, u, ud, nodeKin.rodPdyn[rodId] };
+	return nodeKin.rods[rodId];
 }
 
 Waves::NodeKinReturnType
@@ -712,8 +704,11 @@ Waves::kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f)
 		for (unsigned int i = 0; i <= line->getN(); i++) {
 			const vec pos = line->getNodePos(i);
 			const auto id = line->lineId;
-			real pdyn;
-			f(pos, lines.U[id][i], lines.Ud[id][i], lines.zetas[id][i], pdyn);
+			f(pos,
+			  lines.U[id][i],
+			  lines.Ud[id][i],
+			  lines.zetas[id][i],
+			  lines.Pdyn[id][i]);
 		}
 	}
 
@@ -726,7 +721,7 @@ Waves::kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f)
 			  rods.U[id][i],
 			  rods.Ud[id][i],
 			  rods.zetas[id][i],
-			  nodeKinematics.rodPdyn[id][i]);
+			  rods.Pdyn[id][i]);
 		}
 	}
 
@@ -734,16 +729,22 @@ Waves::kinematicsForAllNodes(AllNodesKin& nodeKinematics, F f)
 	for (const auto& point : points.structures) {
 		const vec& pos = point->getPosition();
 		const auto id = point->pointId;
-		real pdyn;
-		f(pos, points.U[id][0], points.Ud[id][0], points.zetas[id][0], pdyn);
+		f(pos,
+		  points.U[id][0],
+		  points.Ud[id][0],
+		  points.zetas[id][0],
+		  points.Pdyn[id][0]);
 	}
 
 	auto& bodies = nodeKinematics.bodies;
 	for (const auto& body : bodies.structures) {
 		const vec pos = body->getPosition();
 		const auto id = body->bodyId;
-		real pdyn;
-		f(pos, bodies.U[id][0], bodies.Ud[id][0], bodies.zetas[id][0], pdyn);
+		f(pos,
+		  bodies.U[id][0],
+		  bodies.Ud[id][0],
+		  bodies.zetas[id][0],
+		  bodies.Pdyn[id][0]);
 	}
 }
 

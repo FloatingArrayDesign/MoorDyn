@@ -138,6 +138,38 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_SetLineConstantEA(MoorDynLine l, double EA);
 
+	/** @brief Get whether the line pressure bending is considered or not
+	 * @param l The Moordyn line
+	 * @param b 1 if the pressure bending of the line is enabled, 0 otherwise
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_SetLinePressBend()
+	 * @see MoorDyn_SetLinePressInt()
+	 */
+	int DECLDIR MoorDyn_IsLinePressBend(MoorDynLine l, int* b);
+
+	/** @brief Set whether the line pressure bending is considered or not
+	 * @param l The Moordyn line
+	 * @param b 1 if the pressure bending of the line shall be considered, 0
+	 * otherwise
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_IsLinePressBend()
+	 * @see MoorDyn_SetLinePressInt()
+	 */
+	int DECLDIR MoorDyn_SetLinePressBend(MoorDynLine l, int b);
+
+	/** @brief Set the line internal pressure values at the nodes
+	 * @param l The Moordyn line
+	 * @param p Pressure values, and array with MoorDyn_GetLineN() + 1
+	 * values
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+	 * otherwise
+	 * @see MoorDyn_IsLinePressBend()
+	 * @see MoorDyn_SetLinePressBend()
+	 */
+	int DECLDIR MoorDyn_SetLinePressInt(MoorDynLine l, const double* p);
+
 	/** @brief Get a line node position
 	 * @param l The Moordyn line
 	 * @param i The node index

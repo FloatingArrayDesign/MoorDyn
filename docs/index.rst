@@ -33,7 +33,9 @@ The pages on this site provide information
 about :ref:`compiling <compiling>`, MoorDyn's :ref:`input files <inputs>`, 
 how to :ref:`drive a simulation <drivers>`, how MoorDyn is :ref:`structured <structure>`, 
 and its :ref:`theory <theory>`. MoorDyn is available in multiple forms,
-which are outlined below.
+which are outlined below. The *latest* version of the docs is kept up-to-date with the 
+dev branches of both MoorDyn-C and MoorDyn-F. The *master* version of the docs is up to date with 
+the `latest MoorDyn-C release <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_.
 
 Note: This documentation is meant for users, a
 `Doxygen documentation <./doxygen/html/index.html>`_ has been deployed for the

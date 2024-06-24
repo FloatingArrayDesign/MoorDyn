@@ -28,16 +28,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file beam.cpp
- * Simply supported and cantilevered beams (Cables modelled by Euler-Bernoulli
- * equations).
+/** @file conveying_fluid.cpp
+ * It is just a demo on adding a constant internal pressure and its effect
+ * further buckling the pipe.
  */
 
 #include "MoorDyn2.h"
-#include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <iostream>
 #include <catch2/catch_test_macros.hpp>
 
-#define TOL 0.5
 #define Z0 10.0
 #define L 10.0
 #define D 0.05
@@ -45,16 +46,8 @@
 #define EA 1.5e9
 #define EI 1.0e7
 #define G 9.80665
-
-bool
-compare(double v1, double v2)
-{
-	auto err = std::abs(v1 - v2);
-	if (!err)
-		return true;
-	auto renorm = v1 ? std::abs(v1) : 1.0;
-	return err / renorm <= TOL;
-}
+// Curvature estimated from the analytic solution
+#define K 0.00122
 
 using namespace std;
 
@@ -71,58 +64,33 @@ simply_supported_solution(double x)
 	return -p * x * (L * L * L - 2. * x * x * L + x * x * x) / (24. * EI);
 }
 
-TEST_CASE("Simply supported beam")
+TEST_CASE("Pipe buckling while conveying fluid")
 {
 	MoorDyn system = MoorDyn_Create("Mooring/BeamSimplySupported.txt");
 	REQUIRE(system);
 
-	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
-
-	// Compare the node positions
 	auto line = MoorDyn_GetLine(system, 1);
 	REQUIRE(line);
 	unsigned int n_nodes;
 	REQUIRE(MoorDyn_GetLineNumberNodes(line, &n_nodes) == MOORDYN_SUCCESS);
-	for (unsigned int i = 0; i < n_nodes; i++) {
+	double* pin = (double*)malloc(n_nodes * sizeof(double));
+	REQUIRE(pin);
+	// Set a press force of about 1% of the beam weight
+	const double A = 0.25 * M_PI * D * D;
+	const double P = 1.e-2 * W * G / (A * K);
+	for (unsigned int i = 0; i < n_nodes; i++)
+		pin[i] = P;
+	REQUIRE(MoorDyn_SetLinePressBend(line, 1) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_SetLinePressInt(line, pin) == MOORDYN_SUCCESS);
+
+	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
+
+	// Compare the node positions
+	for (unsigned int i = 1; i < n_nodes - 1; i++) {
 		double pos[3];
 		REQUIRE(MoorDyn_GetLineNodePos(line, i, pos) == MOORDYN_SUCCESS);
 		const double z = simply_supported_solution(pos[0]);
-		REQUIRE(compare(z, pos[2] - Z0));
-	}
-
-	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
-}
-
-/** @brief Cantilevered beam analytic solution
- * @param x x position of the node
- * @return z position of the node
- * @see
- * https://www.efunda.com/formulae/solid_mechanics/beams/casestudy_display.cfm?case=cantilever_uniformload
- */
-double
-cantilevered_solution(double x)
-{
-	const double p = W * G;
-	return -p * x * x * (6. * L * L - 4. * x * L + x * x) / (24. * EI);
-}
-
-TEST_CASE("Cantilevered beam")
-{
-	MoorDyn system = MoorDyn_Create("Mooring/BeamCantilevered.txt");
-	REQUIRE(system);
-
-	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
-
-	// Compare the node positions
-	auto line = MoorDyn_GetLine(system, 1);
-	REQUIRE(line);
-	unsigned int n_nodes;
-	REQUIRE(MoorDyn_GetLineNumberNodes(line, &n_nodes) == MOORDYN_SUCCESS);
-	for (unsigned int i = 0; i < n_nodes; i++) {
-		double pos[3];
-		REQUIRE(MoorDyn_GetLineNodePos(line, i, pos) == MOORDYN_SUCCESS);
-		const double z = cantilevered_solution(pos[0]);
-		REQUIRE(compare(z, pos[2] - Z0));
+		REQUIRE((pos[2] - Z0) < z);
 	}
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);

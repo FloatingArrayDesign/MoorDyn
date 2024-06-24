@@ -104,13 +104,30 @@ Preliminary comparison of seabed friction formulations:
   `K. Devries, M. Hall, “Comparison of Seabed Friction Formulations in a LumpedMass Mooring Model”. in Proceedings of the ASME 
   International Offshore Wind Technical Conference, San Francisco, California, Nov. 2018. <http://matt-hall.ca/publications.html>`_
 
-Overview of MoorDyn v2:
+Overview of MoorDyn v2 (bodies, rods, and line failures):
 
-  https://www.nrel.gov/docs/fy20osti/76555.pdf
+  `Hall, Matthew, “MoorDyn V2: New Capabilities in Mooring System Components and Load Cases.” In Proceedings of the ASME 2020 39th International 
+  Conference on Ocean, Offshore and Arctic Engineering. virtual conference, 2020. <https://www.nrel.gov/docs/fy20osti/76555.pdf>`_
+
+Seabed friction and bathymetry approach used in v2:
+
+  `Housner, Stein, Ericka Lozon, Bruce Martin, Dorian Brefort, and Matthew Hall, “Seabed Bathymetry and Friction Modeling in MoorDyn.” Journal of 
+  Physics: Conference Series 2362, no. 1, Nov 2022: 012018. <https://doi.org/10.1088/1742-6596/2362/1/012018>`_
 
 Implementation of bending stiffness modeling for power cables:
 
-  https://www.nrel.gov/docs/fy21osti/76968.pdf
+  `Hall, Matthew, Senu Sirnivas, and Yi-Hsiang Yu, “Implementation and Verification of Cable Bending Stiffness in MoorDyn.” In ASME 2021 3rd International Offshore Wind 
+  Technical Conference, V001T01A011. Virtual, Online: American Society of Mechanical Engineers, 2021. <https://doi.org/10.1115/IOWTC2021-3565>`_
+
+Non-linear line stiffness:
+
+ `Lozon, Ericka, Matthew Hall, Paul McEvoy, Seojin Kim, and Bradley Ling, “Design and Analysis of a Floating-Wind Shallow-Water Mooring System 
+ Featuring Polymer Springs.” American Society of Mechanical Engineers Digital Collection, 2022. <https://doi.org/10.1115/IOWTC2022-98149>`_
+
+Viscoelastic approach for non-linear rope behavior:
+
+  `Hall, Matthew, Brian Duong, and Ericka Lozon, “Streamlined Loads Analysis of Floating Wind Turbines With Fiber Rope Mooring Lines.” In ASME 2023 
+  5th International Offshore Wind Technical Conference, V001T01A029. Exeter, UK: American Society of Mechanical Engineers, 2023. <https://doi.org/10.1115/IOWTC2023-119524>`_
 
 The Fortran version of MoorDyn is available as a module inside of OpenFAST:
   

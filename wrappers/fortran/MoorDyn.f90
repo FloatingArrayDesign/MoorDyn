@@ -38,12 +38,12 @@ module moordyn
              MoorDyn_GetRodNodeVel, MoorDyn_SaveRodVTK, &
              MoorDyn_GetPointPos, MoorDyn_GetPointVel, &
              MoorDyn_GetPointForce, MoorDyn_GetPointM, MoorDyn_SavePointVTK, &
-             MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeVel, &
-             MoorDyn_GetLineNodeForce, MoorDyn_GetLineNodeTen, &
-             MoorDyn_GetLineNodeBendStiff, MoorDyn_GetLineNodeWeight, &
-             MoorDyn_GetLineNodeDrag, MoorDyn_GetLineNodeFroudeKrilov, &
-             MoorDyn_GetLineNodeSeabedForce, MoorDyn_GetLineNodeM, &
-             MoorDyn_SaveLineVTK
+             MoorDyn_SetLinePressInt, MoorDyn_GetLineNodePos, &
+             MoorDyn_GetLineNodeVel, MoorDyn_GetLineNodeForce, &
+             MoorDyn_GetLineNodeTen, MoorDyn_GetLineNodeBendStiff, &
+             MoorDyn_GetLineNodeWeight, MoorDyn_GetLineNodeDrag, &
+             MoorDyn_GetLineNodeFroudeKrilov, MoorDyn_GetLineNodeSeabedForce, &
+             MoorDyn_GetLineNodeM, MoorDyn_SaveLineVTK
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
             MD_SetLogLevel, MD_Log, MD_Init, MD_Init_NoIC, MD_Step, MD_Close, &
@@ -67,9 +67,10 @@ module moordyn
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
             MD_GetLineUnstretchedLength, MD_SetLineUnstretchedLength, &
             MD_SetLineUnstretchedLengthVel, MD_IsLineConstantEA, &
-            MD_GetLineConstantEA, MD_SetLineConstantEA, MD_GetLineNodePos, &
-            MD_GetLineNodeVel, MD_GetLineNodeForce, MD_GetLineNodeTen, &
-            MD_GetLineNodeBendStiff, MD_GetLineNodeWeight, &
+            MD_GetLineConstantEA, MD_SetLineConstantEA, &
+            MD_IsLinePressBend, MD_SetLinePressBend, MD_SetLinePressInt, &
+            MD_GetLineNodePos, MD_GetLineNodeVel, MD_GetLineNodeForce, &
+            MD_GetLineNodeTen, MD_GetLineNodeBendStiff, MD_GetLineNodeWeight, &
             MD_GetLineNodeDrag, MD_GetLineNodeFroudeKrilov, &
             MD_GetLineNodeSeabedForce, MD_GetLineNodeCurv, &
             MD_GetLineNodeM, MD_GetLineMaxTen, MD_GetLineFairTen, &
@@ -556,6 +557,25 @@ module moordyn
       real(c_double), intent(out) :: ea
     end function MD_SetLineConstantEA
 
+    integer(c_int) function MD_IsLinePressBend(instance, t) bind(c, name='MoorDyn_IsLinePressBend')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: t
+    end function MD_IsLinePressBend
+
+    integer(c_int) function MD_SetLinePressBend(instance, b) bind(c, name='MoorDyn_SetLinePressBend')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: b
+    end function MD_SetLinePressBend
+
+    function MoorDyn_SetLinePressInt(instance, p) bind(c, name='MoorDyn_SetLinePressInt') result(rc)
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: p
+      integer(c_int) :: rc
+    end function MoorDyn_SetLinePressInt
+
     integer(c_int) function MD_GetLineUnstretchedLength(instance, l) bind(c, name='MoorDyn_GetLineUnstretchedLength')
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
@@ -948,6 +968,13 @@ contains
 
   !                                Line.h
   ! ============================================================================
+
+  integer function MD_SetLinePressInt(instance, p)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: p(:)
+    MD_SetLinePressInt = MoorDyn_SetLinePressInt(instance, c_loc(p))
+  end function MD_SetLinePressInt
 
   integer function MD_GetLineNodePos(instance, n, r)
     use iso_c_binding
