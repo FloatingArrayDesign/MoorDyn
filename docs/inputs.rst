@@ -179,11 +179,6 @@ default value provided in parentheses) is:
  - ThreshIC (0.001) – convergence threshold for IC generation, acceptable relative difference 
    between three successive fairlead tension measurements (-)
 
-The internal time step is first taken from the dtM option, and then adjusted
-according to the CFL factor, which is the ratio between the timestep and the
-natural period, computed considering the math described on
-:ref:`the troubleshooting section <troubleshooting>`.
-
 The bottom contact parameters, kBot and cBot, result in a pressure which is then applied to the 
 cross-sectional area (d*l) of each contacting line segment to give a resulting vertical contact 
 force for each segment.
@@ -558,14 +553,16 @@ The list of possible options is:
  - dtM (3.402823e+38) – desired mooring model maximum time step (s). In
    MoorDyn-F if this is left blank it defaults to the
    :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.
- - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor
+ - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor. CFL is the ratio 
+   between the time step and the natural period, computed considering the math described in
+   :ref:`the troubleshooting section <troubleshooting>`.
  - tScheme (RK2): The time integrator. It should be one of
    Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
    BEuler\ *N*, Midpoint\ *N*, ACA\ *N*, Wilson\ *N*. Look at the
    :ref:`time schemes documentation <tschemes>` to learn more about this.
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
- - WtrDpth (0.0): The water depth (m). In MoorDyn-C the bathymetry file path can be inputted here.
+ - WtrDpth (0.0): The water depth (m). In MoorDyn-F the bathymetry file path can be inputted here.
  - kBot (3.0e6): The bottom stiffness (Pa/m)
  - cBot (3.0e5): The bottom damping (Pa-s/m)
  - dtIC (1.0 C, 2.0 F): The threshold amount of time the system must be converged for to be 
@@ -593,7 +590,18 @@ The list of possible options is:
  - StatDynFricScale (1.0): Rate between Static and Dynamic friction coefficients
  - dtOut (0.0): Time step size to be written to output files. A value of zero will use dtM as a 
    step size (s)
- - Seafloor file: A path to the :ref:`bathymetry file <seafloor_in>`
+ - SeafloorFile: A path to the :ref:`bathymetry file <seafloor_in>`
+ - ICgenDynamic (0): MoorDyn-C switch for using older dynamic relaxation method (same as MoorDyn-F).
+   If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
+   The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
+   but it can take longer to reach equilibrium.
+
+A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
+no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
+runs using the user time step. If no time step is provided, then the user provided CFL factor is 
+used to calculate the time step and MoorDyn-C uses this calculated time step. If both the time step
+and CFL are provided, MoorDyn-C uses the more restrictive time step between user provided and CFL 
+calculated.
 
 In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values
 provided by FAST, so it is  recommended to not use custom values for the sake
@@ -614,12 +622,13 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - unifyCurrentGrid: Not available in MoorDyn-F because currents and waves are handled in the same 
    input file.
  - writeUnits: Units are always written to output file headers
- - Seafloor file: MoorDyn-C accepts a bathymetry file path as an alternative to
+ - SeafloorFile: MoorDyn-F accepts a bathymetry file path as an alternative to
    a number in the WtrDpth option
  - FrictionCoefficient: MoorDyn-F contains friction coefficients for lines in both the axial and 
    transverse directions while MoorDyn-C only has a general seafloor contact coefficient of friction
  - FricDamp: Same as CV in MoorDyn-F.
  - StatDynFricScale: Same as MC in MoorDyn-F.
+ - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 
