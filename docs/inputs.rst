@@ -230,14 +230,15 @@ changes from V1.
 
 Most helpfully, this new format is identical between C++ and FORTRAN versions of
 MoorDyn, and it is designed to support future capability enhancements without
-requiring changes.
+requiring format changes.
 
 This file is divided into sections, some of which are optional. Each section is
 identified (and detected) by a header line consisting of a key phrase (e.g. Line
 Types) surrounded by dashes. While a couple sections are optional, the order of
 the sections cannot be changed. The exact whitespace and alignment of the lines of the file is not 
 important, as long as values are separated by at least one space. However, every column must have 
-a value.
+a value. MoorDyn only reads the values of each column, not the column headers or units. The column 
+identifiers and units can be changed by the user but should use similar names to retain readability. 
 
 To successfully run a simulation, MoorDyn requires at least one line. If you are aiming to simulate 
 a system with no lines, the best approach is to create a short taut vertical line stretched between 
@@ -397,7 +398,7 @@ outputs are wanted.  Eight output properties are currently possible:
 
  - p – node positions
  - v – node velocities
- - U – wave velocities at each node
+ - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
  - c – internal damping force at each segment
@@ -471,7 +472,7 @@ outputs are wanted. Eight output properties are currently possible:
 
  - p – node positions
  - v – node velocities
- - U – wave velocities at each node
+ - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
  - c – internal damping force at each segment
@@ -492,7 +493,7 @@ multiple failures for a given point, but duplicate failure configurations will b
 If two lines attached to a point are listed to fail (failure 1 for example), then after the failure
 the lines will remain attached to each other by a free point. In this multi line case, if any line
 reaches the tension threshold then the failure will be triggered. The theory behind failures can be
-found :ref:`here <version2>`.
+found :ref:`here <theory>`.
 
 .. code-block:: none
 
@@ -506,8 +507,8 @@ found :ref:`here <version2>`.
 Control (MoorDyn-F only)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section (optional) is only available for MoorDyn-F and describes the control channels of the 
-system. 
+This section (optional) is only available for MoorDyn-F and describes which lines are assigned to 
+which control channel in the ServoDyn input file. 
 
 .. code-block:: none
 
@@ -517,6 +518,11 @@ system.
   1        1,2,3,4 
   2        5
 
+In the example above channel 1 is used to control lines 1-4 and channel 2 is used to control line 5.
+These channel numbers must correspond to control channels in the ServoDyn input file. The ServoDyn 
+summary file (enabled with ``SumPrint`` option) will contain a list of all cable control channels in 
+use and what they are assigned to.
+
 Options
 ^^^^^^^
 
@@ -525,6 +531,7 @@ This section (required) describes the simulation options
 .. code-block:: none
 
  ---------------------- OPTIONS -----------------------------------------
+ 1             writeLog      Write log file
  0.002         dtM           time step to use in mooring integration (s)
  3000000       kbot          bottom stiffness (Pa/m)
  300000        cbot          bottom damping (Pa-s/m)
@@ -532,10 +539,14 @@ This section (required) describes the simulation options
  10            TmaxIC        max time for ic gen (s)
  0.001         threshIC      threshold for IC convergence (-)
  
-Any of these lines can be omitted, in which case default values will be used (shown in 
-parentheses). Default value swith a C or an F indicates which version has that as the default.
-As such, they are all optional settings, although some of them (such as time step 
-size) often needs to be set by the user for proper operation. The list of possible options is:
+The options list differs from the other sections in that it uses a value + key approach.
+MoorDyn reads in the value, and then assigns it to the corresponding key. This means the 
+order of the options list does not matter, however any options listed above the ``writeLog`` 
+flag will not be included in the log file. Any of these option lines can be omitted, in which 
+case default values will be used (shown in parentheses). Default values with a C or a F 
+indicate which version has that as the default. As such, they are all optional settings, although 
+some of them (such as time step size) often needs to be set by the user for proper operation. 
+The list of possible options is:
 
  - writeLog (0 C, -1 F): If >0 a log file is written recording information. The bigger the number 
    the more verbose. Please, be mindful that big values would critically reduce the performance!
@@ -633,7 +644,6 @@ shown below) for MoorDyn to know when to stop reading inputs.
  ANCHTEN1
  ANCHTEN2
  ANCHTEN3
- END
  ------------------------- need this line -------------------------------------
 
 The avaible output flags are decribed in the table below:
@@ -870,12 +880,18 @@ data. Details on this format can be found in the :ref:`water kinematics section 
 MoorDyn with FAST.Farm - Inputs
 -------------------------------
 
-In FAST.Farm, a new ability to use MoorDyn at the array level to simulate shared mooring systems 
-has been developed. Until the main branch of OpenFAST, the FAST.Farm capability, and the MoorDyn-C 
-capability are merged, the shared moorings capability in FAST.Farm uses the MoorDyn v1 input file 
-format, with a small adjustment to reference attachments to multiple turbines.
+MoorDyn is available at an array level in FAST.Farm using the MoorDyn-F v2 input file format.
+A nice description of FAST.Farm is found on the OpenFAST repository README: 
 
-https://github.com/mattEhall/openfast/tree/f/fast-farm
+"FAST.Farm extends the capabilities of OpenFAST to provide physics-based engineering simulation 
+of multi-turbine land-based, fixed-bottom offshore, and floating offshore wind farms. With 
+FAST.Farm, you can simulate each wind turbine in the farm with an OpenFAST model and capture 
+the relevant physics for prediction of wind farm power performance and structural loads, including 
+wind farm-wide ambient wind, super controller, and wake advection, meandering, and merging. 
+FAST.Farm maintains computational efficiency through parallelization to enable loads analysis for 
+predicting the ultimate and fatigue loads of each wind turbine in the farm."
+
+FAST.Farm can be obtained from the `OpenFAST repository <https://github.com/OpenFAST/openfast/tree/main>`_.
 
 General Organization
 ^^^^^^^^^^^^^^^^^^^^
@@ -885,46 +901,72 @@ FAST.Farm. This ability can be used for any non-shared mooring lines in all case
 simulation of shared mooring lines, which are coupled with multiple turbines, an additional 
 farm-level MoorDyn instance has been added. This MoorDyn instance is not associated with any 
 turbine but instead is called at a higher level by FAST.Farm. Attachments to different turbines 
-within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the type for any 
-points that are attached to a turbine, where "N" is the specific turbine number as listed in the 
-FAST.Farm input file.
+within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the attachment for any 
+points/bodies/rods that are attached to a turbine, where "N" is the specific turbine number as listed in the 
+FAST.Farm input file. Pinned bodies and rods are not yet supported in FAST.Farm. 
 
 MoorDyn Input File
 ^^^^^^^^^^^^^^^^^^
 
 The following input file excerpt shows how points can be specified as attached to specific turbines 
-(turbines 3 and 4 in this example). When a point has "TurbineN" as its type, it acts similarly to a 
-"Vessel" type, where the X/Y/Z inputs specify the relative location of the fairlead on the platform. 
-In the farm-level MoorDyn input file, "Vessel" point types cannot be used because it is ambiguous 
-which turbine they attach to.
+(turbines 3 and 4 in this example). When a point has "TurbineN" as its attachment, it acts similarly to a 
+"BodyN" attachment, where the X/Y/Z inputs specify the relative location of the fairlead on the platform. 
+ex. For a turbine located at (200, 0, 0), a vertical line attached to it's center would have
+a fixed point at end A at (200, 0, 0) and a turbineN point at (0, 0, 0). In the farm-level MoorDyn input 
+file, "Coupled" point types cannot be used because it is ambiguous which turbine they attach to.
 
 .. code-block:: none
- :emphasize-lines: 5,6,12
+ :emphasize-lines: 5,6,11
  
  ----------------------- POINTS ----------------------------------------------
- Node      Type        X       Y         Z        M        V       CdA   CA
+ Node    Attachment    X       Y         Z        M        V       CdA   CA
  (-)       (-)        (m)     (m)       (m)      (kg)     (m^3)   (m^2)  (-)
  1         Turbine3   10.0     0      -10.00      0        0        0     0
  3         Turbine4  -10.0     0      -10.00      0        0        0     0
  2         Fixed     267.0    80      -70.00      0        0        0     0
  -------------------------- LINE PROPERTIES ----------------------------------
- 2     NLines - the number of lines
- Line    LineType  UnstrLen   NumSegs    NodeA     NodeB  Flags/Outputs
- (-)      (-)        (m)        (-)       (-)       (-)      (-)
- 1     sharedchain  300.0        20        1         2        p
- 2     anchorchain  300.0        20        1         3        p
+ ID    LineType      AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+ (-)     (-)         (-)        (-)       (m)       (-)      (-)
+ 1     sharedchain    1         2        300.0      20        p
+ 2     anchorchain    1         3        300.0      20        p
  
 In this example, Line 1 is a shared mooring line and Line 2 is an anchored mooring line that has a 
 fairlead point in common with the shared line. Individual mooring systems can be modeled in the 
 farm-level MoorDyn instance as well.
 
+The same approach is used for bodies and rods, where the attachment is defined as "TurbineN".
+The body and rod positions and rotations are defined relative to the turbines position and rotation. 
+The following code snippet shows rods using the turbine convention.
+
+.. code-block:: none
+  :emphasize-lines: 12,13,17
+
+  ---------------------- LINE TYPES --------------------------------------------------
+  TypeName    Diam     Mass/m     EA      BA/-zeta     EI        Cd      Ca      CdAx    CaAx
+  (name)      (m)      (kg/m)     (N)     (N-s/-)    (N-m^2)     (-)     (-)     (-)     (-)
+  0           0.1410    35.78  2.030e+08 -1.000e+00  8.410e+03   1.200   1.000   0.20    0.00 
+  --------------------- ROD TYPES -----------------------------------------------------
+  TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd
+  (name)        (m)      (kg/m)    (-)    (-)     (-)      (-)
+  connector    0.2000    0.00      0.000  0.000   0.000    0.000  
+  ---------------------- RODS ---------------------------------------------------------
+  ID   RodType    Attachment   Xa      Ya    Za      Xb      Yb    Zb      NumSegs  RodOutputs
+  (#)  (name)     (#/key)      (m)     (m)   (m)     (m)     (m)   (m)     (-)       (-)
+  1    connector  Turbine1     -0.62   0.00  -13.22  0.62    0.00  -14.78   0         - 
+  2    connector  Free         -947.81 0.00  -150.60 -945.82 0.00  -150.75  0         -
+  ---------------------- LINES --------------------------------------------------------
+  ID    LineType      AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+  (#)    (name)        (#)      (#)       (m)       (-)     (-)
+  1        0           R1B      R2A     299.429     10      pt
+
+In this example 0-length rods are used as bend-stiffeners for a suspended cable attached to 
+Turbine1.
 
 FAST.Farm Input File
 ^^^^^^^^^^^^^^^^^^^^
 
-In the branch of FAST.Farm that supports shared mooring capabilities, several additional lines have 
-been added to the FAST.Farm primary input file. These are highlighted in the example input file 
-excerpt below:
+Several additional lines have been added to the FAST.Farm primary input file. These are highlighted 
+in the example input file excerpt below:
 
 .. code-block:: none
  :emphasize-lines: 9,10,13,14,15
