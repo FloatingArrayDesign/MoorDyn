@@ -90,7 +90,10 @@ if platform.system() == "Windows":
 elif platform.system() == "Darwin":
     # To avoid errors with std::filesystem::path
     extra_compile_args.append("-mmacosx-version-min=10.15")
-definitions = [('MoorDyn_EXPORTS', '1'),]
+definitions = [('MoorDyn_EXPORTS', '1'),
+               ('MOORDYN_MAJOR_VERSION', '${MOORDYN_MAJOR_VERSION}'),
+               ('MOORDYN_MINOR_VERSION', '${MOORDYN_MINOR_VERSION}'),
+               ('MOORDYN_PATCH_VERSION', '${MOORDYN_PATCH_VERSION}')]
 include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
 if platform.system() == "Windows":
     extra_link_args = [
