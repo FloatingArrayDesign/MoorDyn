@@ -332,4 +332,4 @@ else:
 print("=" * 80)
 print("")
 
-assert np.all(summary.values())
+assert np.all(values)
