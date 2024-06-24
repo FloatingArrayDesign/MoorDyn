@@ -248,6 +248,11 @@ def get_state(system):
 
 
 def read_outs(fpath, skiplines=2):
+    def to_num(s):
+        if '***' in s:
+            return 0.0
+        return float(s)
+
     data = []
     with open(fpath, "r") as fin:
         lines = fin.readlines()[skiplines:]
@@ -255,7 +260,7 @@ def read_outs(fpath, skiplines=2):
             line = line.strip().replace("\t", " ")
             while line.find("  ") != -1:
                 line = line.replace("  ", " ")
-            data.append([float(field) for field in line.split()])
+            data.append([to_num(field) for field in line.split()])
     return np.transpose(data)
 
 
