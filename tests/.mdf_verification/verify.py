@@ -320,9 +320,10 @@ for test in tests:
 
 print("")
 print("=" * 80)
-N = len(summary.values())
-if not np.all(summary.values()):
-    n = N - np.sum(list(summary.values()))
+values = list(summary.values())
+N = len(values)
+if not np.all(values):
+    n = N - np.sum(list(values))
     print(f"{n} / {N} tests failed:")
     for i, (key, value) in enumerate(summary.items()):
         print(f"\t{i + 1}: Test '{key}' " + ("PASSED" if value else "FAILED"))
