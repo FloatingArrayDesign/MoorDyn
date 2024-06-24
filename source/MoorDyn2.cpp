@@ -108,7 +108,9 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 		_basepath = _filepath.substr(0, lastSlash + 1);
 	}
 
-	LOGMSG << "\n Running MoorDyn (v2.3.1, 2024-5-24)" << endl // TODO: can we automate this?
+	LOGMSG << "\n Running MoorDyn (v"
+	       << MOORDYN_MAJOR_VERSION << "." << MOORDYN_MINOR_VERSION << "."
+		   << MOORDYN_PATCH_VERSION << ")" << endl
 	       << "         MoorDyn v2 has significant ongoing input file changes "
 	          "from v1."
 	       << endl
