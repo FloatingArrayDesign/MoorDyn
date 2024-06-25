@@ -26,5 +26,6 @@ midpoint5     tScheme       Time integration scheme
 30            TmaxIC        Initial Condition generation maximum time (s)
 1.0           dtIC          Initial Condition generation convergence tests (s)
 5e-3          threshIC      Initial Condition generation convergence threshold
+0             ICgenDynamic  IC generator (0 = stationary, 1 = legacy upscale dynamics)
 1             WaveKin       The wave kinematics are provided through the API (-)
 ------------------------- need this line -------------------------------------- 
