@@ -90,7 +90,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , cfl(0.5)
   , dtOut(0.0)
   , _t_integrator(NULL)
-  , ICgenDynamic(0)
+  , ICgenDynamic(true)
   , env(std::make_shared<EnvCond>())
   , GroundBody(NULL)
   , waves(nullptr)
@@ -183,6 +183,223 @@ moordyn::MoorDyn::~MoorDyn()
 		delete obj;
 
 	delete GetLogger();
+}
+
+moordyn::error_id
+moordyn::MoorDyn::icLegacy()
+{
+	// dtIC set to fraction of input so convergence is over dtIC (as described in docs)
+	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
+	ICdt = ICdt / (convergence_iters+1);
+
+	_t_integrator->Init();
+
+	LOGMSG << "Finalizing ICs using dynamic solve (" << ICDfac
+	       << "X normal drag)" << endl;
+	for (auto obj : LineList)
+		obj->scaleDrag(ICDfac);
+	for (auto obj : PointList)
+		obj->scaleDrag(ICDfac);
+	for (auto obj : RodList)
+		obj->scaleDrag(ICDfac);
+	for (auto obj : BodyList)
+		obj->scaleDrag(ICDfac);
+
+	// vector to store tensions for analyzing convergence
+	vector<real> FairTens(LineList.size(), 0.0);
+
+	vector<real> FairTensLast_col(convergence_iters, 0.0);
+	for (unsigned int i = 0; i < convergence_iters; i++)
+		FairTensLast_col[i] = 1.0 * i;
+	vector<vector<real>> FairTensLast(LineList.size(), FairTensLast_col);
+
+	unsigned int iic = 1; // To match MDF indexing
+	real t = 0;
+	bool converged = true;
+	real max_error = 0.0;
+	unsigned int max_error_line = 0;
+	real best_score = (std::numeric_limits<real>::max)();
+	real best_score_t = 0.0;
+	unsigned int best_score_line = 0;
+
+	ICdt = ICdt / (convergence_iters+1);
+	while ((ICTmax - t) > (std::numeric_limits<real>::min)()) {
+		// Integrate one ICD timestep (ICdt)
+		real t_target = ICdt;
+		real dt;
+		_t_integrator->Next();
+		while ((dt = t_target) > 0.0) {
+			if (dtM0 < dt)
+				dt = dtM0;
+			moordyn::error_id err = MOORDYN_SUCCESS;
+			string err_msg;
+			try {
+				_t_integrator->Step(dt);
+				t = _t_integrator->GetTime();
+				t_target -= dt;
+			}
+			MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS) {
+				LOGERR << "t = " << t << " s" << endl;
+				return err;
+			}
+		}
+
+		// Roll previous fairlead tensions for comparison
+		for (unsigned int lf = 0; lf < LineList.size(); lf++) {
+			for (int pt = convergence_iters - 1; pt > 0; pt--)
+				FairTensLast[lf][pt] = FairTensLast[lf][pt - 1];
+			FairTensLast[lf][0] = FairTens[lf];
+		}
+
+		// go through points to get fairlead forces
+		for (unsigned int lf = 0; lf < LineList.size(); lf++)
+			FairTens[lf] =
+				LineList[lf]->getNodeTen(LineList[lf]->getN()).norm();
+
+		// check for convergence (compare current tension at each fairlead with
+		// previous convergence_iters-1 values)
+		if (iic > convergence_iters) {
+			// check for any non-convergence, and continue to the next time step
+			// if any occurs
+			converged = true;
+			max_error = 0.0;
+			for (unsigned int lf = 0; lf < LineList.size(); lf++) {
+				for (unsigned int pt = 0; pt < convergence_iters; pt++) {
+					const real error =
+						abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
+					if (error > max_error) {
+						max_error = error;
+						max_error_line = LineList[lf]->number;
+					}
+				}
+			}
+			if (max_error < best_score) {
+				best_score = max_error;
+				best_score_t = t;
+				best_score_line = max_error_line;
+			}
+			if (max_error > ICthresh) {
+				converged = false;
+				LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
+					<< iic << "), error = " << 100.0 * max_error
+					<< "% on line " << max_error_line << "     \r";
+			}
+
+			if (converged)
+				break;
+		}
+
+		iic++;
+	}
+
+	if (converged) {
+		LOGMSG << "Fairlead tensions converged" << endl;
+	} else {
+		LOGWRN << "Fairlead tensions did not converge" << endl;
+	}
+	LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
+		<< "% on line " << max_error_line << endl;
+	if (!converged) {
+		LOGMSG << "Best score at " << best_score_t
+			<< " s = " << 100.0 * best_score << "% on line "
+			<< best_score_line << endl;
+	}
+
+
+	// We are setting the timer again later, but better doing it here as well,
+	// so no regressions might happens on the subinstances setTime() callings
+	_t_integrator->SetTime(0.0);
+
+	// restore drag coefficients to normal values and restart time counter of
+	// each object
+	for (auto obj : LineList) {
+		obj->scaleDrag(1.0 / ICDfac);
+		obj->setTime(0.0);
+	}
+	for (auto obj : PointList)
+		obj->scaleDrag(1.0 / ICDfac);
+	for (auto obj : RodList) {
+		obj->scaleDrag(1.0 / ICDfac);
+		obj->setTime(0.0);
+	}
+	for (auto obj : BodyList)
+		obj->scaleDrag(1.0 / ICDfac);
+	return MOORDYN_SUCCESS;
+}
+
+moordyn::error_id
+moordyn::MoorDyn::icStationary()
+{
+	real t = 0;
+	real error_prev = (std::numeric_limits<real>::max)();
+	real error = (std::numeric_limits<real>::max)();
+	real error0 = error;
+	real best_score = (std::numeric_limits<real>::max)();
+	real best_score_t = 0.0;
+
+	LOGMSG << "Finalizing ICs using static solve" << endl;
+
+	StationaryScheme t_integrator(_log, waves);
+	t_integrator.SetGround(GroundBody);
+	for (auto obj : BodyList)
+		t_integrator.AddBody(obj);
+	for (auto obj : RodList)
+		t_integrator.AddRod(obj);
+	for (auto obj : PointList)
+		t_integrator.AddPoint(obj);
+	for (auto obj : LineList)
+		t_integrator.AddLine(obj);
+	t_integrator.SetCFL((std::min)(cfl, 1.0));
+	t_integrator.Init();
+	auto n_states = t_integrator.NStates();
+	while ((ICTmax - t) > (std::numeric_limits<real>::min)()) {
+		// Integrate one ICD timestep (ICdt)
+		real t_target = ICdt;
+		real dt;
+		t_integrator.Next();
+		while ((dt = t_target) > 0.0) {
+			if (dtM0 < dt)
+				dt = dtM0;
+			moordyn::error_id err = MOORDYN_SUCCESS;
+			string err_msg;
+			try {
+				t_integrator.Step(dt);
+				error = t_integrator.Error();
+				if (!t)
+					error0 = error;
+				t = t_integrator.GetTime();
+				t_target -= dt;
+			}
+			MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS) {
+				LOGERR << "t = " << t << " s" << endl;
+				return err;
+			}
+		}
+
+		if (error < best_score) {
+			best_score = error;
+			best_score_t = t;
+		}
+
+		const real error_rel = error / error0;
+		const real error_deriv = std::abs(error_prev - error) / error_prev;
+		if (!error || (error_rel < ICthresh) || (error_deriv < ICthresh))
+			break;
+		error_prev = error;
+
+		LOGDBG << "Stationary solution t = " << t << "s, "
+			<< "error avg = " << error / n_states << " m/s2, "
+			<< "error change = " << 100.0 * error_deriv << "%     \r";
+	}
+
+	_t_integrator->SetState(t_integrator.GetState());
+	LOGMSG << "Remaining error after " << t << " s = "
+			<< error / n_states << " m/s2" << endl;
+	LOGMSG << "Best score at " << best_score_t
+			<< " s = " << best_score / n_states << " m/s2" << endl;
+	return MOORDYN_SUCCESS;
 }
 
 moordyn::error_id
@@ -298,7 +515,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		ix += 3;
 	}
 
-	if (dtM0 < (0.9 * (std::numeric_limits<real>::max)())) cfl = (std::numeric_limits<real>::max)(); // Is 90% of max sufficient tolerance for this check?
+	if (dtM0 < (0.9 * (std::numeric_limits<real>::max)()))
+		cfl = (std::numeric_limits<real>::max)(); // Is 90% of max sufficient tolerance for this check?
 
 	// Compute the timestep
 	for (auto obj : LineList)
@@ -325,232 +543,18 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	_t_integrator->SetCFL(cfl);
 
 	// ------------------ do IC gen --------------------
-
-	// vector to store tensions for analyzing convergence
-	vector<real> FairTens(LineList.size(), 0.0);
-
-	real t = 0;
-	real error_prev = (std::numeric_limits<real>::max)();
-	real error = (std::numeric_limits<real>::max)();
-	real error0 = error;
-	// The function is enclosed in parenthesis to avoid Windows min() and max()
-	// macros break it
-	// See
-	// https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
-	real best_score = (std::numeric_limits<real>::max)();
-	real best_score_t = 0.0;
-
-	// dtIC set to fraction of input so convergence is over dtIC (as described in docs)
-	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
-	ICdt = ICdt / (convergence_iters+1);
-
-	if (ICgenDynamic) {
-
-		_t_integrator->Init();
-
-		// boost drag coefficients to speed static equilibrium convergence
-		if (!skip_ic) LOGMSG << "Finalizing ICs using dynamic solve (" << ICDfac << "X normal drag)" << endl;
-		for (auto obj : LineList)
-			obj->scaleDrag(ICDfac);
-		for (auto obj : PointList)
-			obj->scaleDrag(ICDfac);
-		for (auto obj : RodList)
-			obj->scaleDrag(ICDfac);
-		for (auto obj : BodyList)
-			obj->scaleDrag(ICDfac);
-
-		// vector to store tensions for analyzing convergence
-		vector<real> FairTens(LineList.size(), 0.0);
-
-		vector<real> FairTensLast_col(convergence_iters, 0.0);
-		for (unsigned int i = 0; i < convergence_iters; i++)
-			FairTensLast_col[i] = 1.0 * i;
-		vector<vector<real>> FairTensLast(LineList.size(), FairTensLast_col);
-
-		unsigned int iic = 1; // To match MDF indexing
-		real t = 0;
-		bool converged = true;
-		real max_error = 0.0;
-		unsigned int max_error_line = 0;
-		// The function is enclosed in parenthesis to avoid Windows min() and max()
-		// macros break it
-		// See
-		// https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
-		real best_score = (std::numeric_limits<real>::max)();
-		real best_score_t = 0.0;
-		unsigned int best_score_line = 0;
-
-		// //dtIC set to fraction of input so convergence is over dtIC
-		ICdt = ICdt / (convergence_iters+1);
-		while (((ICTmax-t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
-			// Integrate one ICD timestep (ICdt)
-			real t_target = ICdt;
-			real dt;
-			_t_integrator->Next();
-			while ((dt = t_target) > 0.0) {
-				if (dtM0 < dt)
-					dt = dtM0;
-				moordyn::error_id err = MOORDYN_SUCCESS;
-				string err_msg;
-				try {
-					_t_integrator->Step(dt);
-					t = _t_integrator->GetTime();
-					t_target -= dt;
-				}
-				MOORDYN_CATCHER(err, err_msg);
-				if (err != MOORDYN_SUCCESS) {
-					LOGERR << "t = " << t << " s" << endl;
-					return err;
-				}
-			}
-
-			// Roll previous fairlead tensions for comparison
-			for (unsigned int lf = 0; lf < LineList.size(); lf++) {
-				for (int pt = convergence_iters - 1; pt > 0; pt--)
-					FairTensLast[lf][pt] = FairTensLast[lf][pt - 1];
-				FairTensLast[lf][0] = FairTens[lf];
-			}
-
-			// go through points to get fairlead forces
-			for (unsigned int lf = 0; lf < LineList.size(); lf++)
-				FairTens[lf] =
-					LineList[lf]->getNodeTen(LineList[lf]->getN()).norm();
-
-			// check for convergence (compare current tension at each fairlead with
-			// previous convergence_iters-1 values)
-			if (iic > convergence_iters) {
-				// check for any non-convergence, and continue to the next time step
-				// if any occurs
-				converged = true;
-				max_error = 0.0;
-				for (unsigned int lf = 0; lf < LineList.size(); lf++) {
-					for (unsigned int pt = 0; pt < convergence_iters; pt++) {
-						const real error =
-							abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
-						if (error > max_error) {
-							max_error = error;
-							max_error_line = LineList[lf]->number;
-						}
-					}
-				}
-				if (max_error < best_score) {
-					best_score = max_error;
-					best_score_t = t;
-					best_score_line = max_error_line;
-				}
-				if (max_error > ICthresh) {
-					converged = false;
-					LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
-						<< iic << "), error = " << 100.0 * max_error
-						<< "% on line " << max_error_line << "     \r";
-				}
-
-				if (converged)
-					break;
-			}
-
-			iic++;
-		}
-
-		if (!skip_ic) {
-			if (converged) {
-				LOGMSG << "Fairlead tensions converged" << endl;
-			} else {
-				LOGWRN << "Fairlead tensions did not converge" << endl;
-			}
-			LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
-				<< "% on line " << max_error_line << endl;
-			if (!converged) {
-				LOGMSG << "Best score at " << best_score_t
-					<< " s = " << 100.0 * best_score << "% on line "
-					<< best_score_line << endl;
-			}
-		}
+	if (!skip_ic) {
+		moordyn::error_id err;
+		if (ICgenDynamic)
+			err = icLegacy();
+		else
+			err = icStationary();
+		if (err != MOORDYN_SUCCESS)
+			return err;
 	} else {
-
-		if (!skip_ic) LOGMSG << "Finalizing ICs using static solve" << endl;
-
-		StationaryScheme t_integrator(_log, waves);
-		t_integrator.SetGround(GroundBody);
-
-		for (auto obj : BodyList)
-			t_integrator.AddBody(obj);
-		for (auto obj : RodList)
-			t_integrator.AddRod(obj);
-		for (auto obj : PointList)
-			t_integrator.AddPoint(obj);
-		for (auto obj : LineList)
-			t_integrator.AddLine(obj);
-		t_integrator.SetCFL((std::min)(cfl, 1.0));
-		t_integrator.Init();
-		auto n_states = t_integrator.NStates();
-		while (((ICTmax - t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
-			// Integrate one ICD timestep (ICdt)
-			real t_target = ICdt;
-			real dt;
-			t_integrator.Next();
-			while ((dt = t_target) > 0.0) {
-				if (dtM0 < dt)
-					dt = dtM0;
-				moordyn::error_id err = MOORDYN_SUCCESS;
-				string err_msg;
-				try {
-					t_integrator.Step(dt);
-					error = t_integrator.Error();
-					if (!t)
-						error0 = error;
-					t = t_integrator.GetTime();
-					t_target -= dt;
-				}
-				MOORDYN_CATCHER(err, err_msg);
-				if (err != MOORDYN_SUCCESS) {
-					LOGERR << "t = " << t << " s" << endl;
-					return err;
-				}
-			}
-
-			if (error < best_score) {
-				best_score = error;
-				best_score_t = t;
-			}
-
-			const real error_rel = error / error0;
-			const real error_deriv = std::abs(error_prev - error) / error_prev;
-			if (!error || (error_rel < ICthresh) || (error_deriv < ICthresh))
-				break;
-			error_prev = error;
-
-			LOGDBG << "Stationary solution t = " << t << "s, "
-				<< "error avg = " << error / n_states << " m/s2, "
-				<< "error change = " << 100.0 * error_deriv << "%     \r";
-		}
-		
-		_t_integrator->SetState(t_integrator.GetState());
-		if (!skip_ic) {
-			LOGMSG << "Remaining error after " << t << " s = "
-				<< error / n_states << " m/s2" << endl;
-			LOGMSG << "Best score at " << best_score_t
-					<< " s = " << best_score / n_states << " m/s2" << endl;
-		}
+		_t_integrator->Init();
 	}
-
-
-	// restore drag coefficients to normal values and restart time counter of
-	// each object
 	_t_integrator->SetTime(0.0);
-
-	for (auto obj : LineList) {
-		if (ICgenDynamic) obj->scaleDrag(1.0 / ICDfac);
-		obj->setTime(0.0);
-	}
-	for (auto obj : PointList)
-		if (ICgenDynamic) obj->scaleDrag(1.0 / ICDfac);
-	for (auto obj : RodList) {
-		if (ICgenDynamic) obj->scaleDrag(1.0 / ICDfac);
-		obj->setTime(0.0);
-	}
-	for (auto obj : BodyList)
-		if (ICgenDynamic) obj->scaleDrag(1.0 / ICDfac);
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
@@ -863,7 +867,7 @@ MoorDyn::saveVTK(const char* filename) const
 moordyn::error_id
 moordyn::MoorDyn::ReadInFile()
 {
-	unsigned int i = 0;
+	int i = 0;
 
 	// We are really interested in looking for the writeLog option, to start
 	// logging as soon as possible
@@ -2184,7 +2188,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		std::string filepath = entries[0];
 		this->seafloor->setup(env, filepath);
 	} else if (name == "ICgenDynamic")
-		ICgenDynamic = atof(entries[0].c_str());
+		ICgenDynamic = bool(atof(entries[0].c_str()));
 	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
