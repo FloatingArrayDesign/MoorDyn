@@ -770,16 +770,6 @@ Body::defaultVTK()
 }
 #endif
 
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Body::drawGL(void)
-{
-	double radius = pow(BodyV / (4 / 3 * pi), 0.33333); // pointV
-	Sphere(r[0], r[1], r[2], radius);
-};
-#endif
-
 } // ::moordyn
 
 // =============================================================================

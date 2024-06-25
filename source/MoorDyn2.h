@@ -470,16 +470,6 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_Load(MoorDyn system, const char* filepath);
 
-	/** @brief Draw the lines and points in the active OpenGL context
-	 *
-	 * The OpenGL context is assumed to be created by the caller before calling
-	 * this function
-	 * @param system The Moordyn system
-	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
-	 * otherwise (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_DrawWithGL(MoorDyn system);
-
 	/** @brief Save the whole system to a VTK (.vtm) file
 	 *
 	 * In general it is more convenient to handle each object independently,

@@ -439,10 +439,6 @@ class Body final : public io::IO
 	void saveVTK(const char* filename) const;
 #endif
 
-#ifdef USEGL
-	void drawGL(void);
-#endif
-
   private:
 #ifdef USE_VTK
 	/// The 3D object that represents the body

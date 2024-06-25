@@ -418,10 +418,6 @@ class Point final : public io::IO
 	 */
 	void saveVTK(const char* filename) const;
 #endif
-
-#ifdef USEGL
-	void drawGL(void);
-#endif
 };
 
 } // ::moordyn
