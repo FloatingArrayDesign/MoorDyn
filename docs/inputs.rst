@@ -640,7 +640,10 @@ The following options from MoorDyn-F are not supported by MoorDyn-C:
  - CV (200.0): Same as FricDamp in MoorDyn-C.
  - inertialF (0): Toggle to include inertial components in the returned forces from coupled 
    bodies and rods. Transients in the acceleration passed into MoorDy-F by OpenFAST can result 
-   in large non-physical forces and moments which can cause instability in the model [0: on, 1: off]
+   in large non-physical forces and moments which can cause instability in the model [0: no, 
+   1: yes, 2: yes with ramp to inertialF_rampT]
+ - inertialF_rampT (30.0): Ramp time for inertial forces to reduce coupled object instability (s). 
+   This is ignored unless inertialF = 2
 
 Outputs
 ^^^^^^^
