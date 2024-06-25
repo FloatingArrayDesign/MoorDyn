@@ -49,11 +49,6 @@
 #include <memory>
 #include <limits>
 
-// #ifdef USEGL
-//  #include <GL/gl.h>  // for openGL drawing option
-//  #include <GL/glu.h> // used in arrow function
-// #endif
-
 #ifdef OSX
 #include <sys/uio.h>
 #elif defined WIN32

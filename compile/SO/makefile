@@ -3,7 +3,6 @@
 #
 # Several options can be set:
 #
-#  - USEGL: Enables the OpenGL visualization
 #  - COPTS: Compilation options. For good performance and compatibility use:
 #           COPTS='-msse2 -ffast-math -DMOORDYN_SINGLEPRECISSION'
 #           However, for local-only installations a more aggresive instructions
@@ -24,11 +23,6 @@
 
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DLINUX -DMoorDyn_EXPORTS -fPIC
 CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC -I../../source/
-
-ifdef USEGL
-CFLAGS += -DUSEGL
-LFLAGS += -lopengl32 -lglu32
-endif
 
 CFLAGS += $(COPTS)
 LFLAGS += $(LOPTS)

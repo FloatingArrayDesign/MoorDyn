@@ -3,7 +3,6 @@
 #
 # Several options can be set:
 #
-#  - USEGL: Enables the OpenGL visualization
 #  - COPTS: Compilation options. For good performance and compatibility use:
 #           COPTS='-msse2 -ffast-math -DMOORDYN_SINGLEPRECISSION'
 #           However, for local-only installations a more aggresive instructions
@@ -28,11 +27,6 @@
 # Flags for compiling with clang (OSX default)
 LFLAGS = -shared -DOSX -DMoorDyn_EXPORTS -fPIC
 CFLAGS = -c -O3 -static -g -Wall -Wextra -DOSX -DMoorDyn_EXPORTS -fPIC -I../../source/
-
-ifdef USEGL
-CFLAGS += -DUSEGL
-LFLAGS += -lopengl32 -lglu32
-endif
 
 CFLAGS += $(COPTS)
 LFLAGS += $(LOPTS)

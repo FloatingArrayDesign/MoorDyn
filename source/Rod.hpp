@@ -579,11 +579,6 @@ class Rod final : public io::IO
 	 */
 	void saveVTK(const char* filename) const;
 #endif
-
-#ifdef USEGL
-	void drawGL(void);
-	void drawGL2(void);
-#endif
 };
 
 } // ::moordyn
