@@ -2594,22 +2594,6 @@ MoorDyn_Load(MoorDyn system, const char* filepath)
 }
 
 int DECLDIR
-MoorDyn_DrawWithGL(MoorDyn system)
-{
-	CHECK_SYSTEM(system);
-
-#ifdef USEGL
-	// draw the mooring system with OpenGL commands (assuming a GL context has
-	// been created by the calling program)
-	for (auto line : ((moordyn::MoorDyn*)system)->GetLines())
-		line->drawGL2();
-	for (auto point : ((moordyn::MoorDyn*)system)->GetPoints())
-		point->drawGL();
-#endif
-	return MOORDYN_SUCCESS;
-}
-
-int DECLDIR
 MoorDyn_SaveVTK(MoorDyn system, const char* filename)
 {
 #ifdef USE_VTK

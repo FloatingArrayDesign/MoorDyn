@@ -88,11 +88,6 @@ main(int narg, char** arg)
 		printf("GetNodePos() test failed...");
 		return 255;
 	}
-	ret_code = DrawWithGL();
-	if (ret_code != MOORDYN_MEM_ERROR) {
-		printf("DrawWithGL() test failed...");
-		return 255;
-	}
 
 	// MoorDyn2.h
 	MoorDyn system = MoorDyn_Create("nofile");
@@ -248,11 +243,6 @@ main(int narg, char** arg)
 	ret_code = MoorDyn_Load(NULL, "nofile");
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_Load() test failed...");
-		return 255;
-	}
-	ret_code = MoorDyn_DrawWithGL(NULL);
-	if (ret_code != MOORDYN_INVALID_VALUE) {
-		printf("MoorDyn_DrawWithGL() test failed...");
 		return 255;
 	}
 	ret_code = MoorDyn_SaveVTK(NULL, "nofile");
