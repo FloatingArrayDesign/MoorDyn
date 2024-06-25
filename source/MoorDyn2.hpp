@@ -397,37 +397,84 @@ class MoorDyn final : public io::IO
 	 */
 	moordyn::error_id ReadInFile();
 
+	/** @brief Read the input file and store it as a set of strings, one per
+	 * line
+	 * @param in_txt The output list of strings
+	 * @return MOORDYN_SUCCESS If the input file is correctly loaded and all
+	 * the objects are consistently set, an error code otherwise
+	 * (see @ref moordyn_errors)
+	 * @see ::ReadInFile()
+	 */
 	moordyn::error_id readFileIntoBuffers(vector<string>& in_txt);
 
+	/** @brief Get the file line index where a section starts
+	 * @param in_txt The list of strings that contains the input file lines
+	 * @param sectionName The valid section name strings
+	 * @return The line index, -1 if the section cannot be found
+	 * @see ::ReadInFile()
+	 * @see ::readFileIntoBuffers()
+	 */
 	int findStartOfSection(vector<string>& in_txt, vector<string> sectionName);
 
-	/** @brief Helper function to cread a new line property given a line from
+	/** @brief Helper function to read a new line property given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Line Properties section of input file
+	 * @return The line properties
 	 */
 	LineProps* readLineProps(string inputText);
 
-	/** @brief Helper function to cread a new rod property given a line from
+	/** @brief Helper function to read a new rod property given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Rod Properties section of input file
+	 * @return The rod properties
 	 */
 	RodProps* readRodProps(string inputText);
 
-	/** @brief Helper function to cread a new rod given a line from
+	/** @brief Helper function to read a new rod given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Rod List section of input file
+	 * @return The rod object
 	 */
 	Rod* readRod(string inputText);
 
+	/** @brief Helper function to read a new body given a line from
+	 * the input file.
+	 *
+	 * @param inputText a string from the Body List section of input file
+	 * @return The body object
+	 */
 	Body* readBody(string inputText);
 
+	/** @brief Helper function to read an option given a line from
+	 * the input file.
+	 *
+	 * @param in_txt The list of strings that contains the input file lines
+	 * @param index The option line index
+	 */
 	void readOptionsLine(vector<string>& in_txt, int index);
 
+	/** @brief Check that the provided entries match the expected ones
+	 *
+	 * If a wrong number of entries is provided an error is printed out
+	 * @param entries Provided entries
+	 * @param supposedNumberOfEntries Expected number of entries
+	 */
 	bool checkNumberOfEntriesInLine(vector<string> entries,
 	                                int supposedNumberOfEntries);
+
+	/** @brief Compute an initial condition using the stationary solver
+	 * @see ::ICgenDynamic
+	 */
+	moordyn::error_id icStationary();
+
+	/** @brief Compute an initial condition using the legacy upscaled drag
+	 * dynamic solver
+	 * @see ::ICgenDynamic
+	 */
+	moordyn::error_id icLegacy();
 
 	/** @brief Get the forces
 	 * @param f The forces array
@@ -501,8 +548,8 @@ class MoorDyn final : public io::IO
 	real ICTmax;
 	// threshold for relative change in tensions to call it converged
 	real ICthresh;
-	// use dynamic (1) or stationary (0) inital condition solver
-	int ICgenDynamic;
+	// use dynamic (true) or stationary (false) inital condition solver
+	bool ICgenDynamic;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
