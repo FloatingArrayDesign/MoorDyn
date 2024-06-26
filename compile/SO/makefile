@@ -24,6 +24,15 @@
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DLINUX -DMoorDyn_EXPORTS -fPIC
 CFLAGS = -c -O3 -g -Wall -Wextra -DLINUX -DMoorDyn_EXPORTS -fPIC -I../../source/
 
+# Automagically collect the library version
+CMAKEROOT := ../../CMakeLists.txt
+MOORDYN_MAJOR_VERSION=$(shell cat ${CMAKEROOT} | grep "set(MOORDYN_MAJOR_VERSION" | cut -d " " -f 2 | cut -d ")" -f 1)
+MOORDYN_MINOR_VERSION=$(shell cat ${CMAKEROOT} | grep "set(MOORDYN_MINOR_VERSION" | cut -d " " -f 2 | cut -d ")" -f 1)
+MOORDYN_PATCH_VERSION=$(shell cat ${CMAKEROOT} | grep "set(MOORDYN_PATCH_VERSION" | cut -d " " -f 2 | cut -d ")" -f 1)
+CFLAGS += -DMOORDYN_MAJOR_VERSION=$(MOORDYN_MAJOR_VERSION)
+CFLAGS += -DMOORDYN_MINOR_VERSION=$(MOORDYN_MINOR_VERSION)
+CFLAGS += -DMOORDYN_PATCH_VERSION=$(MOORDYN_PATCH_VERSION)
+
 CFLAGS += $(COPTS)
 LFLAGS += $(LOPTS)
 
@@ -41,12 +50,16 @@ DIRGUARD = @mkdir -p $(@D)
 
 all: libmoordyn.so
 
-libmoordyn.so: libmoordyn.so.2.0.0
+libmoordyn.so: libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION)
 	rm -f libmoordyn.so
-	ln -s libmoordyn.so.2.0.0 libmoordyn.so
+	ln -s libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION) libmoordyn.so
 
-libmoordyn.so.2.0.0: $(OBJECTS)
-	$(CXX) $(LFLAGS) -o libmoordyn.so.2.0.0 $(OBJECTS)
+libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION): libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION).$(MOORDYN_PATCH_VERSION)
+	rm -f libmoordyn.so
+	ln -s libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION).$(MOORDYN_PATCH_VERSION) libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION)
+
+libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION).$(MOORDYN_PATCH_VERSION): $(OBJECTS)
+	$(CXX) $(LFLAGS) -o libmoordyn.so.$(MOORDYN_MAJOR_VERSION).$(MOORDYN_MINOR_VERSION).$(MOORDYN_PATCH_VERSION) $(OBJECTS)
 
 %.o: ../../source/%.cpp $(HEADERS)
 	${CXX} $(CPPFLAGS) -o $@ $<

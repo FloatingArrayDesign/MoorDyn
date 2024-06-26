@@ -23,6 +23,17 @@
 LFLAGS = -shared -static-libgcc -static-libstdc++ -DMoorDyn_EXPORTS -fPIC
 CFLAGS = -c -O3 -g -Wall -Wextra -DMoorDyn_EXPORTS -fPIC -I../../source/
 
+# Automagically collect the library version
+# This should still work fine with mingw, or even in modern Windows with bash
+# I have not tested it anyway
+CMAKEROOT := ../../CMakeLists.txt
+MOORDYN_MAJOR_VERSION=$(shell cat ${CMAKEROOT} | grep "set(MOORDYN_MAJOR_VERSION" | cut -d " " -f 2 | cut -d ")" -f 1)
+MOORDYN_MINOR_VERSION=$(shell cat ${CMAKEROOT} | grep "set(MOORDYN_MINOR_VERSION" | cut -d " " -f 2 | cut -d ")" -f 1)
+MOORDYN_PATCH_VERSION=$(shell cat ${CMAKEROOT} | grep "set(MOORDYN_PATCH_VERSION" | cut -d " " -f 2 | cut -d ")" -f 1)
+CFLAGS += -DMOORDYN_MAJOR_VERSION=$(MOORDYN_MAJOR_VERSION)
+CFLAGS += -DMOORDYN_MINOR_VERSION=$(MOORDYN_MINOR_VERSION)
+CFLAGS += -DMOORDYN_PATCH_VERSION=$(MOORDYN_PATCH_VERSION)
+
 CFLAGS += $(COPTS)
 LFLAGS += $(LOPTS)
 
