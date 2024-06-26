@@ -287,7 +287,7 @@ for test in tests:
     # Get the NDoFs and check if the motions are right
     ndofs = moordyn.NCoupledDOF(system)
     motions = None
-    if md["InputsMode"]:
+    if md["InputsMode"] and md["InputsFile"]:
         motions = interpolate_motions(read_motions(md["InputsFile"]), md)
         assert motions.shape[0] - 1 == ndofs
     # Run the simulation
