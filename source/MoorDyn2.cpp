@@ -869,14 +869,13 @@ moordyn::MoorDyn::ReadInFile()
 {
 	int i = 0;
 
-	// We are really interested in looking for the writeLog option, to start
-	// logging as soon as possible
 	vector<string> in_txt;
 	if (readFileIntoBuffers(in_txt) != MOORDYN_SUCCESS) {
-		// BREAK
 		return MOORDYN_INVALID_INPUT_FILE;
 	}
-	// Skip until we find the options header line
+
+	// We are really interested in looking for the writeLog option, to start
+	// logging as soon as possible
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
@@ -890,16 +889,30 @@ moordyn::MoorDyn::ReadInFile()
 			const string name = entries[1];
 
 			if (name == "writeLog") {
-				env->writeLog = atoi(entries[0].c_str());
+				env->writeLog = atoi(value.c_str());
 				const moordyn::error_id err = SetupLog();
 				if (err != MOORDYN_SUCCESS)
 					return err;
-				i++;
-
-			} else {
-				readOptionsLine(in_txt, i);
-				i++;
+				break;
 			}
+		}
+	}
+	// Now we can read all the options
+	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
+		LOGDBG << "   Reading options:" << endl;
+		// Parse options until the next header or the end of the file
+		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+			if (entries.size() < 2) {
+				i++;
+				continue;
+			}
+			const string name = entries[1];
+
+			if (name != "writeLog") {
+				readOptionsLine(in_txt, i);
+			}
+			i++;
 		}
 	}
 
