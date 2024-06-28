@@ -173,7 +173,7 @@ inline vec3
 canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 {
 	// From issue #163: https://github.com/FloatingArrayDesign/MoorDyn/issues/163
-	mat3 coeff = quat.toRotationMatrix();
+	mat3 coeff = quat.normalized().toRotationMatrix();
 	vec3 res{};
 	using Index = int;
 	using Scalar = real;
