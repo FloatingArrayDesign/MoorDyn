@@ -470,23 +470,18 @@ TEST_CASE("Body drag")
 
 TEST_CASE("Excentric body")
 {
-	moordyn::MoorDyn system{ "Mooring/body_tests/floatingBodies.txt" };
+	moordyn::MoorDyn system{ "Mooring/body_tests/orbitalBody.txt" };
 
 	double f[3];
-	double initial_angular_vel = 0.2;
+	const double radius = 10.0;
+	const double omega = 0.2;
+	const moordyn::vec r0 = moordyn::vec(0, 0, 20.0);
 	auto bodies = system.GetBodies();
+	for (auto body : bodies)
 	{
-		auto body = bodies.at(0);
-		const auto [pos, vel] = body->getState();
-		const moordyn::vec6 new_vel =
-		    moordyn::vec6(0.0, 0.0, 0.0, initial_angular_vel, 0.0, 0.0);
-		body->setState(pos, new_vel);
-	}
-	{
-		auto body = bodies.at(1);
 		const auto [pos, vel] = body->getState();
 		const moordyn::vec6 new_vel = moordyn::vec6(
-		    0.0, 0.0, 10 * initial_angular_vel, initial_angular_vel, 0.0, 0.0);
+		    0.0, 0.0, radius * omega, omega, 0.0, 0.0);
 		body->setState(pos, new_vel);
 	}
 
@@ -502,16 +497,22 @@ TEST_CASE("Excentric body")
 	REQUIRE(write_system_vtk(system, t, series_writer));
 	while ((t_max - t) > (0.1 * dt)) {
 		REQUIRE(system.Step(NULL, NULL, f, t, dt) == MOORDYN_SUCCESS);
+		for (auto body : bodies)
 		{
-			const auto body = bodies.at(1);
 			const auto [pos, vel] = body->getState();
 			const moordyn::vec3 global_pos = pos.pos;
-			const moordyn::real expected_y = 10 * cos(initial_angular_vel * t);
-			const moordyn::real expected_z =
-			    20 + 10 * sin(initial_angular_vel * t);
-			const auto err_y = global_pos.y() - expected_y;
-			const auto err_z = global_pos.z() - expected_z;
-			REQUIRE((abs(err_y) <= 1e-4 && abs(err_z) <= 1e-4));
+			const moordyn::vec q = (global_pos - r0) / radius;
+			const moordyn::real w = atan2(q.z(), q.y()) / t;
+			const auto err_r = (global_pos - r0).norm() - radius;
+			const auto err_w = atan2(q.z(), q.y()) / t - omega;
+
+			// Check that we are orbiting at the right radius
+			REQUIRE(abs(err_r) <= 1e-6 * radius);
+			// Check that we are orbiting at the right velocity
+			// NOTE: While orbiting around the rod the angular speed is really
+			// stable. The same cannot be said of the orbital kinematics around
+			// the point, where the velocity can be almost 0.3 rad/s
+			REQUIRE(abs(err_w) <= 2e-1 * omega);
 		}
 
 		REQUIRE(write_system_vtk(system, t, series_writer));
