@@ -45,74 +45,9 @@
 #include <vector>
 #include <numeric>
 #include <catch2/catch_test_macros.hpp>
-
 #include "util.h"
 
 using namespace std;
-
-#ifdef USE_VTK
-
-bool
-write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
-{
-	// if no series writer, we do nothing but pretend to work
-	if (series_writer == NULL) {
-		return true;
-	}
-
-	moordyn::MoorDyn* system = (moordyn::MoorDyn*)(in_system);
-	std::stringstream filename;
-	std::stringstream element_name;
-	element_name << "vtk_system";
-	auto& vtp_series = series_writer->getSeries(element_name.str());
-	auto step_num = vtp_series.time_steps.size();
-
-	filename << element_name.str() << "." << step_num << ".vtm";
-	std::string full_path = "../../vtk_out/" + filename.str();
-	// std::cout << "***     Saving on '" << full_path << "'..." <<
-	// std::endl;
-	vtp_series.time_steps.push_back({ filename.str(), time });
-	system->saveVTK(full_path.c_str());
-	return true;
-}
-
-
-bool
-write_system_vtk(moordyn::MoorDyn& system,
-                 double time,
-                 SeriesWriter* series_writer)
-{
-	if (series_writer == nullptr) {
-		return true;
-	}
-	// if (system.GetLines().empty()) {
-	// 	return true;
-	// }
-	std::stringstream filename;
-	std::stringstream element_name;
-	element_name << "vtk_system";
-	auto& vtp_series = series_writer->getSeries(element_name.str());
-	auto step_num = vtp_series.time_steps.size();
-
-	filename << element_name.str() << "." << step_num << ".vtm";
-	std::string full_path = "../../vtk_out/" + filename.str();
-	// std::cout << "***     Saving on '" << full_path << "'..." <<
-	// std::endl;
-	vtp_series.time_steps.push_back({ filename.str(), time });
-	system.saveVTK(full_path.c_str());
-	return true;
-}
-
-#else
-class SeriesWriter;
-
-bool
-write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
-{
-	return true;
-}
-
-#endif
 
 /**
  * @brief Represents a number of times and data for coupled DOFs
@@ -166,7 +101,6 @@ struct Trajectory
  * @param trajectory The trajectory to use for the coupled DOFs
  * @param t Reference to the time, makes it easier to integrate into program
  * flow
- * @param series_writer Used to write out vtk series
  * @return true Success
  * @return false Failure
  */
@@ -174,8 +108,7 @@ template<typename T>
 bool
 followTrajectory(MoorDyn& system,
                  const Trajectory<T>& trajectory,
-                 double& t,
-                 SeriesWriter* series_writer)
+                 double& t)
 {
 
 	int err;
@@ -192,14 +125,9 @@ followTrajectory(MoorDyn& system,
 		err = MoorDyn_Step(system, x.data(), dx.data(), f.data(), &t, &dt);
 		if (err != MOORDYN_SUCCESS)
 			return false;
-
-		if (!write_system_vtk(system, t, series_writer))
-			return false;
 	}
 	return true;
 }
-
-#define series_writer NULL
 
 /**
  * @brief Uses a line between a point on the body and a coupled point to rotate
@@ -233,13 +161,11 @@ TEST_CASE("Rotating body")
 
 	MoorDynPoint point = MoorDyn_GetPoint(system, 8);
 	REQUIRE(point);
-	REQUIRE(write_system_vtk(system, 0, series_writer));
 
 	double t = 0, dt = 0.1;
 	// do one outer time step just to make sure everything is settled
 	REQUIRE(MoorDyn_Step(
 		system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
-	REQUIRE(write_system_vtk(system, t, series_writer));
 	double start_t = t;
 
 	// goes from (2, 0, 0) to (0, 0, 2) in 2 seconds
@@ -251,7 +177,7 @@ TEST_CASE("Rotating body")
 		x = body_center + (radius * moordyn::vec3{ cos(angle), 0, sin(angle) });
 		return x;
 	});
-	REQUIRE(followTrajectory(system, trajectory, t, series_writer));
+	REQUIRE(followTrajectory(system, trajectory, t));
 
 	start_t = t;
 	x = body_center + moordyn::vec3(0.0, 0.0, 0.05 + radius);
@@ -260,7 +186,6 @@ TEST_CASE("Rotating body")
 	while (t < start_t + 0.5) {
 		REQUIRE(MoorDyn_Step(
 			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
-		REQUIRE(write_system_vtk(system, t, series_writer));
 	}
 
 	moordyn::vec3 point_pos;
@@ -282,7 +207,7 @@ TEST_CASE("Rotating body")
 		x = body_center + (radius * moordyn::vec3{ 0, sin(angle), cos(angle) });
 		return x;
 	});
-	REQUIRE(followTrajectory(system, trajectory2, t, series_writer));
+	REQUIRE(followTrajectory(system, trajectory2, t));
 
 	start_t = t;
 	x = body_center + moordyn::vec3(0.0, radius + 0.05, 0);
@@ -291,7 +216,6 @@ TEST_CASE("Rotating body")
 	while (t < start_t + 0.5) {
 		REQUIRE(MoorDyn_Step(
 			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
-		REQUIRE(write_system_vtk(system, t, series_writer));
 	}
 
 	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
@@ -313,7 +237,7 @@ TEST_CASE("Rotating body")
 		x = body_center + (radius * moordyn::vec3{ sin(angle), cos(angle), 0 });
 		return x;
 	});
-	REQUIRE(followTrajectory(system, trajectory3, t, series_writer));
+	REQUIRE(followTrajectory(system, trajectory3, t));
 
 	start_t = t;
 	x = body_center + moordyn::vec3(radius + 0.05, 0, 0);
@@ -322,7 +246,6 @@ TEST_CASE("Rotating body")
 	while (t < start_t + 0.5) {
 		REQUIRE(MoorDyn_Step(
 			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
-		REQUIRE(write_system_vtk(system, t, series_writer));
 	}
 
 	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
@@ -392,7 +315,6 @@ TEST_CASE("Pinned body")
 	double f[6];
 
 	REQUIRE(MoorDyn_Init(system, x.data(), xd.data()) == MOORDYN_SUCCESS);
-	REQUIRE(write_system_vtk(system, 0, series_writer));
 
 	auto body = MoorDyn_GetBody(system, 1);
 	REQUIRE(body);
@@ -402,15 +324,12 @@ TEST_CASE("Pinned body")
 	double t = 0.0, dt = 0.01, accel = 0.5;
 	bool local_min_max;
 
-	REQUIRE(write_system_vtk(system, t, series_writer));
-
 	while (t < 50.0) {
 
 		x[1] = 0.5 * accel * pow(t, 2);
 		xd[1] = accel * t;
 		REQUIRE(MoorDyn_Step(
 			system, x.data(), xd.data(), f, &t, &dt) == MOORDYN_SUCCESS);
-		REQUIRE(write_system_vtk(system, t, series_writer));
 
 		REQUIRE(MoorDyn_GetBodyState(
 			body, r.data(), rd.data()) == MOORDYN_SUCCESS);
@@ -454,7 +373,6 @@ TEST_CASE("Body drag")
 	double f[3];
 
 	REQUIRE(MoorDyn_Init(system, nullptr, nullptr) == MOORDYN_SUCCESS);
-	REQUIRE(write_system_vtk(system, 0, series_writer));
 
 	double t = 0, dt = 0.1;
 	double max_t = 5;
@@ -462,7 +380,6 @@ TEST_CASE("Body drag")
 		// do one outer time step just to make sure everything is settled
 		REQUIRE(MoorDyn_Step(
 			system, nullptr, nullptr, f, &t, &dt) == MOORDYN_SUCCESS);
-		REQUIRE(write_system_vtk(system, t, series_writer));
 	}
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
@@ -494,7 +411,6 @@ TEST_CASE("Excentric body")
 	// stuff
 	double small_dt = 1e-6;
 	REQUIRE(system.Step(NULL, NULL, f, t, small_dt) == MOORDYN_SUCCESS);
-	REQUIRE(write_system_vtk(system, t, series_writer));
 	while ((t_max - t) > (0.1 * dt)) {
 		REQUIRE(system.Step(NULL, NULL, f, t, dt) == MOORDYN_SUCCESS);
 		for (auto body : bodies)
@@ -512,9 +428,7 @@ TEST_CASE("Excentric body")
 			// NOTE: While orbiting around the rod the angular speed is really
 			// stable. The same cannot be said of the orbital kinematics around
 			// the point, where the velocity can be almost 0.3 rad/s
-			REQUIRE(abs(err_w) <= 2e-1 * omega);
+			REQUIRE(abs(err_w) <= 1e-6 * omega);
 		}
-
-		REQUIRE(write_system_vtk(system, t, series_writer));
 	}
 }
