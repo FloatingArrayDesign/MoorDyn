@@ -315,6 +315,14 @@ Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 	M_out = translateMass(rRel, M);
 }
 
+vec
+Point::getCentripetalForce(vec rRef, vec w) const
+{
+	const vec rRel = r - rRef;
+
+	return w.squaredNorm() * (M * rRel);
+}
+
 moordyn::error_id
 Point::doRHS()
 {
