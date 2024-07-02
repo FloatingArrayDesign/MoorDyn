@@ -895,6 +895,7 @@ moordyn::MoorDyn::ReadInFile()
 					return err;
 				break;
 			}
+			i++;
 		}
 	}
 	// Now we can read all the options
