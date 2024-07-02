@@ -431,6 +431,24 @@ class Rod final : public io::IO, public SuperCFL
 	 */
 	inline void setTime(real time) { t = time; }
 
+	/** @brief Get the body kinematics
+	 * @param pos The output position
+	 * @param vel The output velocity
+	 */
+	inline void getState(XYZQuat& pos, vec6& vel) const
+	{
+		pos = r7;
+		vel = v6;
+	}
+
+	/** @brief Get the body kinematics
+	 * @return Position and velocity
+	 */
+	inline std::pair<XYZQuat, vec6> getState() const
+	{
+		return std::make_pair(r7, v6);
+	}
+
 	/** @brief Set the rod state
 	 *
 	 * for a free Rod, there are 12 states:
@@ -520,7 +538,7 @@ class Rod final : public io::IO, public SuperCFL
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
-	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
+	 * @param rBody The body position
 	 */
 	void getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody);
 
@@ -532,6 +550,23 @@ class Rod final : public io::IO, public SuperCFL
 	inline void getNetForceAndMass(vec6& Fnet_out, mat6& M_out)
 	{
 		getNetForceAndMass(Fnet_out, M_out, r[0]);
+	}
+
+	/** @brief Calculate the centripetal force on a body
+	 * @param rBody The body position
+	 * @param vBody The body angular velocity
+	 * @return Centripetal force on the body
+	 */
+	vec getCentripetalForce(vec rBody, vec vBody) const;
+
+	/** @brief Calculate the centripetal force on a body
+	 * @param rBody The body position
+	 * @param vBody The body velocity
+	 * @return Centripetal force on the body
+	 */
+	inline vec getCentripetalForce(vec rBody, vec6 vBody) const
+	{
+		return getCentripetalForce(rBody, (vec)(vBody.tail<3>()));
 	}
 
 	/** @brief This is the big function that calculates the forces on the rod,
