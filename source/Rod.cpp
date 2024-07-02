@@ -816,6 +816,20 @@ Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
 	*/
 }
 
+vec
+Rod::getCentripetalForce(vec rRef, vec w) const
+{
+	if (!N)
+		return vec::Zero();
+
+	vec F = vec::Zero();
+	for (unsigned int i = 0; i <= N; i++) {
+		const vec rRel = r[i] - rRef;
+		F += w.squaredNorm() * (M[i] * rRel);
+	}
+	return F;
+}
+
 real
 calcSubSeg(vec p1, vec p2, real surface_height, real diameter)
 {
