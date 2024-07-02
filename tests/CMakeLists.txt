@@ -35,12 +35,12 @@ set(CPP_TESTS
     seafloor
     wavekin
     wavekin_7
-    bodies
 )
 
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    bodies
     beam
     conveying_fluid
     polyester

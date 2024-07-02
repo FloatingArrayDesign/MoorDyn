@@ -373,6 +373,23 @@ class Point final : public io::IO, public SuperCFL
 	                        mat6& M_out,
 	                        vec rBody = vec::Zero());
 
+	/** @brief Calculate the centripetal force on a body
+	 * @param rBody The body position
+	 * @param vBody The body angular velocity
+	 * @return Centripetal force on the body
+	 */
+	vec getCentripetalForce(vec rBody, vec vBody) const;
+
+	/** @brief Calculate the centripetal force on a body
+	 * @param rBody The body position
+	 * @param vBody The body velocity
+	 * @return Centripetal force on the body
+	 */
+	inline vec getCentripetalForce(vec rBody, vec6 vBody) const
+	{
+		return getCentripetalForce(rBody, (vec)(vBody.tail<3>()));
+	}
+
 	/** @brief Calculates the forces and mass on the point, including from
 	 * attached lines
 	 *

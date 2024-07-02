@@ -127,7 +127,7 @@ Body::setup(int number_in,
 	v6 = vec6::Zero();
 
 	// calculate orientation matrix based on latest angles
-	OrMat = r7.quat.toRotationMatrix();
+	OrMat = r7.quat.normalized().toRotationMatrix();
 
 	LOGDBG << "Set up Body " << number << ", type " << TypeName(type) << ". "
 	       << endl;
@@ -269,6 +269,7 @@ Body::setDependentStates()
 		                    rPoint,
 		                    rdPoint); //<<< should double check this function
 
+
 		// pass above to the point and get it to calculate the forces
 		try {
 			attachedP[i]->setKinematics(rPoint, rdPoint);
@@ -288,13 +289,13 @@ Body::setDependentStates()
 
 		// do 3d details of Rod ref point
 		vec tmpr, tmprd;
+		// set first three entires (end A translation) of rRod and rdRod
 		transformKinematics(r6RodRel[i](Eigen::seqN(0, 3)),
 		                    OrMat,
 		                    r7.pos,
 		                    v6,
 		                    tmpr,
-		                    tmprd); // set first three entires (end A
-		                            // translation) of rRod and rdRod
+		                    tmprd);
 		// does the above function need to take in all 6 elements of r6RodRel??
 		rRod(Eigen::seqN(0, 3)) = tmpr;
 		rdRod(Eigen::seqN(0, 3)) = tmprd;
@@ -430,7 +431,7 @@ Body::updateFairlead(real time)
 		a6 = rdd_ves;
 
 		// calculate orientation matrix based on latest angles
-		OrMat = r7.quat.toRotationMatrix();
+		OrMat = r7.quat.normalized().toRotationMatrix();
 
 		// set positions of any dependent points and rods
 		setDependentStates();
@@ -465,7 +466,7 @@ Body::setState(XYZQuat pos, vec6 vel)
 	}
 
 	// calculate orientation matrix based on latest angles
-	OrMat = r7.quat.toRotationMatrix();
+	OrMat = r7.quat.normalized().toRotationMatrix();
 
 	// set positions of any dependent points and rods
 	setDependentStates();
@@ -588,6 +589,7 @@ Body::doRHS()
 		vec6 F6_i;
 		mat6 M6_i;
 		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
+		F6_i(Eigen::seqN(0, 3)) += attached->getCentripetalForce(r7.pos, v6);
 
 		// sum quantitites
 		F6net += F6_i;
@@ -601,6 +603,8 @@ Body::doRHS()
 		vec6 F6_i;
 		mat6 M6_i;
 		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
+		F6_i(Eigen::seqN(0, 3)) += attached->getCentripetalForce(r7.pos, v6);
+
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];

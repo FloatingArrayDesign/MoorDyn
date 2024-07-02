@@ -452,7 +452,7 @@ Rod::setState(XYZQuat pos, vec6 vel)
 
 	// update Rod direction unit vector (simply equal to last three entries of
 	// r6)
-	const mat OrMat = r7.quat.toRotationMatrix();
+	const mat OrMat = r7.quat.normalized().toRotationMatrix();
 	q = OrMat * q0;
 }
 
@@ -537,7 +537,7 @@ Rod::setKinematics(vec6 r_in, vec6 rd_in)
 	// update Rod direction unit vector (presumably these were set elsewhere for
 	// pinned Rods)
 	// TODO - don't recalculate OrMat here
-	const mat OrMat = r7.quat.toRotationMatrix();
+	const mat OrMat = r7.quat.normalized().toRotationMatrix();
 	q = OrMat * q0;
 }
 
@@ -554,7 +554,7 @@ Rod::setDependentStates()
 	if (N > 0) {
 		// set end B nodes only if the rod isn't zero length
 		// TODO - determine if q has been calculated here
-		q = r7.quat.toRotationMatrix() * q0;
+		q = r7.quat.normalized().toRotationMatrix() * q0;
 		const vec rRel = UnstrLen * q;
 		r[N] = r[0] + rRel;
 		const vec w = v6.tail<3>();
@@ -814,6 +814,20 @@ Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
 	    Fnet_out[J+3] = Fnet_out[J+3] + Mext[J];
 
 	*/
+}
+
+vec
+Rod::getCentripetalForce(vec rRef, vec w) const
+{
+	if (!N)
+		return vec::Zero();
+
+	vec F = vec::Zero();
+	for (unsigned int i = 0; i <= N; i++) {
+		const vec rRel = r[i] - rRef;
+		F += w.squaredNorm() * (M[i] * rRel);
+	}
+	return F;
 }
 
 real

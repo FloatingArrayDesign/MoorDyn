@@ -369,7 +369,7 @@ class Body final : public io::IO, public SuperCFL
 	 * @param r The position
 	 * @param rd The velocity
 	 */
-	void setState(XYZQuat r, vec6 rd);
+	void DECLDIR setState(XYZQuat r, vec6 rd);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *

@@ -44,47 +44,10 @@
 #include <limits>
 #include <vector>
 #include <numeric>
-
+#include <catch2/catch_test_macros.hpp>
 #include "util.h"
 
 using namespace std;
-
-#ifdef USE_VTK
-
-bool
-write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
-{
-	// if no series writer, we do nothing but pretend to work
-	if (series_writer == NULL) {
-		return true;
-	}
-
-	moordyn::MoorDyn* system = (moordyn::MoorDyn*)(in_system);
-	std::stringstream filename;
-	std::stringstream element_name;
-	element_name << "vtk_system";
-	auto& vtp_series = series_writer->getSeries(element_name.str());
-	auto step_num = vtp_series.time_steps.size();
-
-	filename << element_name.str() << "." << step_num << ".vtm";
-	std::string full_path = "../../vtk_out/" + filename.str();
-	// std::cout << "***     Saving on '" << full_path << "'..." <<
-	// std::endl;
-	vtp_series.time_steps.push_back({ filename.str(), time });
-	system->saveVTK(full_path.c_str());
-	return true;
-}
-
-#else
-class SeriesWriter;
-
-bool
-write_system_vtk(MoorDyn in_system, double time, SeriesWriter* series_writer)
-{
-	return true;
-}
-
-#endif
 
 /**
  * @brief Represents a number of times and data for coupled DOFs
@@ -138,7 +101,6 @@ struct Trajectory
  * @param trajectory The trajectory to use for the coupled DOFs
  * @param t Reference to the time, makes it easier to integrate into program
  * flow
- * @param series_writer Used to write out vtk series
  * @return true Success
  * @return false Failure
  */
@@ -146,8 +108,7 @@ template<typename T>
 bool
 followTrajectory(MoorDyn& system,
                  const Trajectory<T>& trajectory,
-                 double& t,
-                 SeriesWriter* series_writer)
+                 double& t)
 {
 
 	int err;
@@ -162,15 +123,8 @@ followTrajectory(MoorDyn& system,
 		std::vector<double> f(x.size());
 		double dt = trajectory.times[i + 1] - trajectory.times[i];
 		err = MoorDyn_Step(system, x.data(), dx.data(), f.data(), &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring initialization: " << err
-			     << endl;
+		if (err != MOORDYN_SUCCESS)
 			return false;
-		}
-
-		if (!write_system_vtk(system, t, series_writer)) {
-			return false;
-		}
 	}
 	return true;
 }
@@ -178,7 +132,6 @@ followTrajectory(MoorDyn& system,
 /**
  * @brief Uses a line between a point on the body and a coupled point to rotate
  * the body around
- *
  *
  * The point on the body starts at (1, 0, 0) relative to the body.
  * Then we drag the point to (0, 0, 1) to rotate the body -90 degrees around the
@@ -188,34 +141,15 @@ followTrajectory(MoorDyn& system,
  *
  * The final result of this should be that the body gets rotated -90 degrees
  * around the x-axis.
- *
- *
- * @param series_writer
- * @return true
- * @return false
  */
-bool
-rotatingBody(SeriesWriter* series_writer)
+TEST_CASE("Rotating body")
 {
-	int err;
-	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
-
 	MoorDyn system = MoorDyn_Create("Mooring/body_tests/rotatingBody.txt");
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
 	unsigned int n_dof;
-	err = MoorDyn_NCoupledDOF(system, &n_dof);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting NCoupledDOF: " << err << endl;
-		return false;
-	}
-	if (n_dof != 3) {
-		cerr << "Expected 3 DOFs but got " << n_dof << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 3);
 
 	const moordyn::vec3 body_center{ 0, 0, 5 };
 	const moordyn::real radius = 2.0;
@@ -223,29 +157,15 @@ rotatingBody(SeriesWriter* series_writer)
 	moordyn::vec3 dx{ 0, 0, 0 };
 	double f[3];
 
-	err = MoorDyn_Init(system, x.data(), dx.data());
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, x.data(), dx.data()) == MOORDYN_SUCCESS);
 
 	MoorDynPoint point = MoorDyn_GetPoint(system, 8);
-
-	if (!write_system_vtk(system, 0, series_writer)) {
-		return false;
-	}
+	REQUIRE(point);
 
 	double t = 0, dt = 0.1;
 	// do one outer time step just to make sure everything is settled
-	err = MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
-
-	if (!write_system_vtk(system, t, series_writer)) {
-		return false;
-	}
+	REQUIRE(MoorDyn_Step(
+		system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
 	double start_t = t;
 
 	// goes from (2, 0, 0) to (0, 0, 2) in 2 seconds
@@ -257,36 +177,23 @@ rotatingBody(SeriesWriter* series_writer)
 		x = body_center + (radius * moordyn::vec3{ cos(angle), 0, sin(angle) });
 		return x;
 	});
-	if (!followTrajectory(system, trajectory, t, series_writer)) {
-		return false;
-	}
+	REQUIRE(followTrajectory(system, trajectory, t));
 
 	start_t = t;
 	x = body_center + moordyn::vec3(0.0, 0.0, 0.05 + radius);
 	dx = moordyn::vec3(0, 0, 0.0);
 	// give 0.5 seconds to settle at the top
 	while (t < start_t + 0.5) {
-		err = MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring initialization: " << err
-			     << endl;
-			return false;
-		}
-		if (!write_system_vtk(system, t, series_writer)) {
-			return false;
-		}
+		REQUIRE(MoorDyn_Step(
+			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
 	}
 
 	moordyn::vec3 point_pos;
-	MoorDyn_GetPointPos(point, point_pos.data());
+	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
 	{
 		moordyn::vec3 rel_pos = point_pos - body_center;
 		moordyn::vec3 expected_pos{ 0, 0, 1.0 };
-		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
-			cerr << "Point 8 relative to body center should be "
-			     << expected_pos.transpose() << " but was "
-			     << rel_pos.transpose() << " at t = " << t << endl;
-		}
+		REQUIRE(allclose(rel_pos, expected_pos, 0.1, 0.15));
 	}
 
 	start_t = t;
@@ -300,36 +207,23 @@ rotatingBody(SeriesWriter* series_writer)
 		x = body_center + (radius * moordyn::vec3{ 0, sin(angle), cos(angle) });
 		return x;
 	});
-	if (!followTrajectory(system, trajectory2, t, series_writer)) {
-		return false;
-	}
+	REQUIRE(followTrajectory(system, trajectory2, t));
 
 	start_t = t;
 	x = body_center + moordyn::vec3(0.0, radius + 0.05, 0);
 	dx = moordyn::vec3(0, 0.0, 0.0);
 	// give 0.5 seconds to settle at the top
 	while (t < start_t + 0.5) {
-		err = MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring initialization: " << err
-			     << endl;
-			return false;
-		}
-		if (!write_system_vtk(system, t, series_writer)) {
-			return false;
-		}
+		REQUIRE(MoorDyn_Step(
+			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
 	}
 
-	MoorDyn_GetPointPos(point, point_pos.data());
+	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
 	{
 
 		moordyn::vec3 rel_pos = point_pos - body_center;
 		moordyn::vec3 expected_pos{ 0, 1.0, 0.0 };
-		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
-			cerr << "Point 8 relative to body center should be "
-			     << expected_pos.transpose() << " but was "
-			     << rel_pos.transpose() << " at t = " << t << endl;
-		}
+		REQUIRE(allclose(rel_pos, expected_pos, 0.1, 0.15));
 	}
 
 	start_t = t;
@@ -343,41 +237,30 @@ rotatingBody(SeriesWriter* series_writer)
 		x = body_center + (radius * moordyn::vec3{ sin(angle), cos(angle), 0 });
 		return x;
 	});
-	if (!followTrajectory(system, trajectory3, t, series_writer)) {
-		return false;
-	}
+	REQUIRE(followTrajectory(system, trajectory3, t));
 
 	start_t = t;
 	x = body_center + moordyn::vec3(radius + 0.05, 0, 0);
 	dx = moordyn::vec3(0, 0.0, 0.0);
 	// give 0.1 seconds to settle at the top
 	while (t < start_t + 0.5) {
-		err = MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring initialization: " << err
-			     << endl;
-			return false;
-		}
-		if (!write_system_vtk(system, t, series_writer)) {
-			return false;
-		}
+		REQUIRE(MoorDyn_Step(
+			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
 	}
 
-	MoorDyn_GetPointPos(point, point_pos.data());
+	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
 	{
 
 		moordyn::vec3 rel_pos = point_pos - body_center;
 		moordyn::vec3 expected_pos{ 1.0, 0.0, 0.0 };
-		if (!allclose(rel_pos, expected_pos, 0.1, 0.15)) {
-			cerr << "Point 8 relative to body center should be "
-			     << expected_pos.transpose() << "but was "
-			     << rel_pos.transpose() << " at t=" << t << endl;
-		}
+		REQUIRE(allclose(rel_pos, expected_pos, 0.1, 0.15));
 	}
 
 	auto body = MoorDyn_GetBody(system, 1);
+	REQUIRE(body);
 	moordyn::vec6 r, rd;
-	MoorDyn_GetBodyState(body, r.data(), rd.data());
+	REQUIRE(MoorDyn_GetBodyState(
+		body, r.data(), rd.data()) == MOORDYN_SUCCESS);
 	// We want axis-angle representation, and it's easier to compute that from
 	// quaternion so we convert back to quaternion
 	auto xyz_quat = moordyn::XYZQuat::fromVec6(r);
@@ -386,14 +269,9 @@ rotatingBody(SeriesWriter* series_writer)
 	double angle = moordyn::rad2deg * 2 * acos(q.w());
 	double denom = (sqrt(1 - q.w() * q.w()));
 	moordyn::vec3 axis{ q.x() / denom, q.y() / denom, q.z() / denom };
-	if (!(abs(axis.x()) > 0.85 && abs(axis.y()) < 0.2 &&
-	      abs(axis.z()) < 0.2)) { // if we are just checking axis direction then
-		                          // +/- does not matter
-		cerr << "The final rotation of the body in angle axis form should "
-		        "have an axis in the x direction, but axis is "
-		     << axis.transpose() << endl;
-		return false;
-	}
+	REQUIRE((abs(axis.x()) > 0.85 &&
+	         abs(axis.y()) < 0.2 &&
+	         abs(axis.z()) < 0.2));
 	// normalize angle between +180 and -180
 	while (angle > 180.) {
 		angle -= 360;
@@ -401,28 +279,16 @@ rotatingBody(SeriesWriter* series_writer)
 	while (angle < -180) {
 		angle += 360;
 	}
-	if (!(abs(angle - 90) < 10)) {
-		cerr << "The final rotation of the body in angle-axis form should "
-		        "have a angle near 90 degrees but angle is "
-		     << angle << endl;
-		return false;
-	}
+	REQUIRE(abs(angle - 90) < 10);
 
 	cout << "Body r = " << r.transpose() << endl;
 	cout << "Axis-Angle rotation: axis = " << axis.transpose()
 	     << ", angle = " << angle << " degrees" << endl;
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
-
-	return true;
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
 
 /**
  * @brief Compares inertial deflection of a pinned body to analytical solution
- *
  *
  * The coupled pinned body that is massless and volumeless with a rod fixed to
  * it is moved with constant acceleration in a vaccum (0 water density). The
@@ -434,76 +300,39 @@ rotatingBody(SeriesWriter* series_writer)
  *
  * This only tests the inertial properties of pinned bodies, other tests deal
  * with hydrodynamics and general body properties
- *
- *
- * @param series_writer
- * @return true
- * @return false
  */
-bool
-pinnedBody(SeriesWriter* series_writer)
+TEST_CASE("Pinned body")
 {
-	int err;
-	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
-
 	MoorDyn system = MoorDyn_Create("Mooring/body_tests/pinnedBody.txt");
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
 	unsigned int n_dof;
-	err = MoorDyn_NCoupledDOF(system, &n_dof);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting NCoupledDOF: " << err << endl;
-		return false;
-	}
-	if (n_dof !=
-	    6) { // rotational DOF are ignored by MDC, same as a coupled pinned rods
-		cerr << "Expected 6 DOFs but got " << n_dof << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof ==6);
 
 	moordyn::vec6 x{ 0, 0, -5, 0, 0, 0 };
 	moordyn::vec6 xd{ 0, 0, 0, 0, 0, 0 };
 	double f[6];
 
-	err = MoorDyn_Init(system, x.data(), xd.data());
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
-
-	if (!write_system_vtk(system, 0, series_writer)) {
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, x.data(), xd.data()) == MOORDYN_SUCCESS);
 
 	auto body = MoorDyn_GetBody(system, 1);
+	REQUIRE(body);
 	moordyn::vec6 r, rd;
 	vector<double> roll;
 	int i = 0, j = 0;
 	double t = 0.0, dt = 0.01, accel = 0.5;
 	bool local_min_max;
 
-	if (!write_system_vtk(system, t, series_writer)) {
-		return false;
-	}
-
 	while (t < 50.0) {
 
 		x[1] = 0.5 * accel * pow(t, 2);
 		xd[1] = accel * t;
-		err = MoorDyn_Step(system, x.data(), xd.data(), f, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring initialization: " << err
-			     << endl;
-			return false;
-		}
-		if (!write_system_vtk(system, t, series_writer)) {
-			return false;
-		}
+		REQUIRE(MoorDyn_Step(
+			system, x.data(), xd.data(), f, &t, &dt) == MOORDYN_SUCCESS);
 
-		MoorDyn_GetBodyState(body, r.data(), rd.data());
+		REQUIRE(MoorDyn_GetBodyState(
+			body, r.data(), rd.data()) == MOORDYN_SUCCESS);
 		roll.push_back(r[3]);
 
 		if (i >= 30) { // after the simulation has run for a few time steps
@@ -522,120 +351,84 @@ pinnedBody(SeriesWriter* series_writer)
 	}
 	double theta = atan(-accel / 9.80665);
 	double average = reduce(roll.begin(), roll.end()) / roll.size();
-	if (abs(average - theta) > 0.001) {
-		cerr << "Pinned body inertial deflection should be " << theta
-		     << " but it is " << average << endl;
-		return false;
-	}
+	REQUIRE(abs(average - theta) <= 0.001);
 
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 
-	cout << setprecision(4) << "Average roll is " << average << endl;
-	cout << setprecision(4) << "Theoretical roll is " << theta << endl;
-
-	return true;
+	// NOTE: jlcercos has dropped setprecision since it was not restored to the
+	// default value afterwards, which might impair the subsequent exexutions
+	cout << "Average roll is " << average << endl;
+	cout << "Theoretical roll is " << theta << endl;
 }
 
-bool
-bodyDrag(SeriesWriter* series_writer)
+TEST_CASE("Body drag")
 {
-	int err;
-	cout << endl << " => " << __PRETTY_FUNC_NAME__ << "..." << endl;
-
 	MoorDyn system = MoorDyn_Create("Mooring/body_tests/bodyDrag.txt");
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
 	unsigned int n_dof;
-	err = MoorDyn_NCoupledDOF(system, &n_dof);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure getting NCoupledDOF: " << err << endl;
-		return false;
-	}
-	if (n_dof != 0) {
-		cerr << "Expected 0 DOFs but got " << n_dof << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 0);
 
 	double f[3];
 
-	err = MoorDyn_Init(system, nullptr, nullptr);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
-
-	if (!write_system_vtk(system, 0, series_writer)) {
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, nullptr, nullptr) == MOORDYN_SUCCESS);
 
 	double t = 0, dt = 0.1;
 	double max_t = 5;
 	while (t < max_t) {
 		// do one outer time step just to make sure everything is settled
-		err = MoorDyn_Step(system, nullptr, nullptr, f, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring dynamics: " << err << endl;
-			return false;
-		}
-
-		if (!write_system_vtk(system, t, series_writer)) {
-			return false;
-		}
+		REQUIRE(MoorDyn_Step(
+			system, nullptr, nullptr, f, &t, &dt) == MOORDYN_SUCCESS);
 	}
 
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
-
-	return true;
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
 
-/** @brief Runs all the test
- * @return 0 if the tests have ran just fine. The index of the failing test
- * otherwise
- */
-int
-main(int, char**)
+TEST_CASE("Excentric body")
 {
-	try {
-		// SeriesWriter series_writer;
-		if (!rotatingBody(NULL)) {
-			// series_writer.writeJson("../../vtk_out/");
-			return 3;
+	moordyn::MoorDyn system{ "Mooring/body_tests/orbitalBody.txt" };
+
+	double f[3];
+	const double radius = 10.0;
+	const double omega = 0.2;
+	const moordyn::vec r0 = moordyn::vec(0, 0, 20.0);
+	auto bodies = system.GetBodies();
+	for (auto body : bodies)
+	{
+		const auto [pos, vel] = body->getState();
+		const moordyn::vec6 new_vel = moordyn::vec6(
+		    0.0, 0.0, radius * omega, omega, 0.0, 0.0);
+		body->setState(pos, new_vel);
+	}
+
+	REQUIRE(system.Init(nullptr, nullptr) == MOORDYN_SUCCESS);
+
+	double t = 0, dt = 0.25;
+	double t_max = 10.0;
+
+	// I do this just so that my first vtk output includes correct forces and
+	// stuff
+	double small_dt = 1e-6;
+	REQUIRE(system.Step(NULL, NULL, f, t, small_dt) == MOORDYN_SUCCESS);
+	while ((t_max - t) > (0.1 * dt)) {
+		REQUIRE(system.Step(NULL, NULL, f, t, dt) == MOORDYN_SUCCESS);
+		for (auto body : bodies)
+		{
+			const auto [pos, vel] = body->getState();
+			const moordyn::vec3 global_pos = pos.pos;
+			const moordyn::vec q = (global_pos - r0) / radius;
+			const moordyn::real w = atan2(q.z(), q.y()) / t;
+			const auto err_r = (global_pos - r0).norm() - radius;
+			const auto err_w = atan2(q.z(), q.y()) / t - omega;
+
+			// Check that we are orbiting at the right radius
+			REQUIRE(abs(err_r) <= 1e-6 * radius);
+			// Check that we are orbiting at the right velocity
+			// NOTE: While orbiting around the rod the angular speed is really
+			// stable. The same cannot be said of the orbital kinematics around
+			// the point, where the velocity can be almost 0.3 rad/s
+			REQUIRE(abs(err_w) <= 1e-6 * omega);
 		}
-		// series_writer.writeJson("../../vtk_out/");
-
-	} catch (std::exception& e) {
-		cerr << "rotatingBody failed with exception " << e.what() << endl;
-		return 3;
 	}
-
-	try {
-		// SeriesWriter series_writer;
-		if (!pinnedBody(NULL)) {
-			// series_writer.writeJson("../../vtk_out/");
-			return 3;
-		}
-		// series_writer.writeJson("../../vtk_out/");
-
-	} catch (std::exception& e) {
-		cerr << "pinnedBody failed with exception " << e.what() << endl;
-		return 3;
-	}
-
-	if (!bodyDrag(NULL)) {
-		return 2;
-	}
-
-	cout << "bodies.cpp passed successfully" << endl;
-	return 0;
 }
