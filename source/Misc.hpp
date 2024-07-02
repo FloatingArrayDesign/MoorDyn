@@ -829,8 +829,8 @@ getH(vec r)
 {
 	mat H;
 	// clang-format off
-	H <<   0, r[2], -r[1], 
-		-r[2],     0, r[0],
+	H << 0, r[2], -r[1],
+		-r[2], 0, r[0],
 		r[1], -r[0], 0;
 	// clang-format on
 	return H;
