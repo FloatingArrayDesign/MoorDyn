@@ -825,7 +825,7 @@ Rod::getCentripetalForce(vec rRef, vec w) const
 	vec F = vec::Zero();
 	for (unsigned int i = 0; i <= N; i++) {
 		const vec rRel = r[i] - rRef;
-		F += w.squaredNorm() * (M[i] * rRel);
+		F -= M[i] * (w.cross(w.cross(rRel)));
 	}
 	return F;
 }
