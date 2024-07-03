@@ -262,9 +262,9 @@ inline quaternion
 Euler2Quat(const vec3& angles)
 {
 	using AngleAxis = Eigen::AngleAxis<real>;
-	quaternion q = AngleAxis(angles.x(), vec3::UnitX()) *
+	quaternion q = AngleAxis(angles.z(), vec3::UnitZ()) *
 	               AngleAxis(angles.y(), vec3::UnitY()) *
-	               AngleAxis(angles.z(), vec3::UnitZ());
+	               AngleAxis(angles.x(), vec3::UnitX());
 	return q;
 }
 
