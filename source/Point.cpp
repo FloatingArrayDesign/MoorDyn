@@ -299,7 +299,7 @@ Point::getStateDeriv()
 };
 
 void
-Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
+Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody, vec6 vBody)
 {
 	doRHS();
 
@@ -310,17 +310,11 @@ Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 	// convert segment net force into 6dof force about body ref point
 	Fnet_out(Eigen::seqN(0, 3)) = Fnet;
 	Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
+	// add the centripetal force
+	Fnet_out(Eigen::seqN(0, 3)) += getCentripetalForce(rBody, vBody.tail<3>());
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	M_out = translateMass(rRel, M);
-}
-
-vec
-Point::getCentripetalForce(vec rRef, vec w) const
-{
-	const vec rRel = r - rRef;
-
-	return -M * (w.cross(w.cross(rRel)));
 }
 
 moordyn::error_id

@@ -588,8 +588,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
-		F6_i(Eigen::seqN(0, 3)) += attached->getCentripetalForce(r7.pos, v6);
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos, v6);
 
 		// sum quantitites
 		F6net += F6_i;
@@ -602,9 +601,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
-		F6_i(Eigen::seqN(0, 3)) += attached->getCentripetalForce(r7.pos, v6);
-
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos, v6);
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];
