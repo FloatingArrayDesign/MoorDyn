@@ -539,8 +539,12 @@ class Rod final : public io::IO, public SuperCFL
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
 	 * @param rBody The body position
+	 * @param vBody The body velocity
 	 */
-	void getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody);
+	void getNetForceAndMass(vec6& Fnet_out,
+	                        mat6& M_out,
+	                        vec rBody,
+	                        vec6 vBody);
 
 	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
@@ -549,24 +553,7 @@ class Rod final : public io::IO, public SuperCFL
 	 */
 	inline void getNetForceAndMass(vec6& Fnet_out, mat6& M_out)
 	{
-		getNetForceAndMass(Fnet_out, M_out, r[0]);
-	}
-
-	/** @brief Calculate the centripetal force on a body
-	 * @param rBody The body position
-	 * @param vBody The body angular velocity
-	 * @return Centripetal force on the body
-	 */
-	vec getCentripetalForce(vec rBody, vec vBody) const;
-
-	/** @brief Calculate the centripetal force on a body
-	 * @param rBody The body position
-	 * @param vBody The body velocity
-	 * @return Centripetal force on the body
-	 */
-	inline vec getCentripetalForce(vec rBody, vec6 vBody) const
-	{
-		return getCentripetalForce(rBody, (vec)(vBody.tail<3>()));
+		getNetForceAndMass(Fnet_out, M_out, r[0], vec6::Zero());
 	}
 
 	/** @brief This is the big function that calculates the forces on the rod,
@@ -615,6 +602,26 @@ class Rod final : public io::IO, public SuperCFL
 	 */
 	void saveVTK(const char* filename) const;
 #endif
+
+  private:
+	/** @brief Calculate the centripetal force on a body
+	 * @param r The body position
+	 * @param w The body angular velocity
+	 * @return Centripetal force on the body
+	 */
+	inline vec getCentripetalForce(vec r, vec w) const
+	{
+		if (!N)
+			return vec::Zero();
+
+		vec F = vec::Zero();
+		for (unsigned int i = 0; i <= N; i++) {
+			F -= M[i] * (w.cross(w.cross(this->r[i] - r)));
+		}
+		return F;
+	}
+
+
 };
 
 } // ::moordyn
