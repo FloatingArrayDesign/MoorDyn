@@ -741,7 +741,7 @@ Rod::getFnet() const
 
 // calculate the aggregate 6DOF rigid-body force and mass data of the rod
 void
-Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
+Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef, vec6 vRef)
 {
 	// rBody is the location of the body reference point. A NULL pointer value
 	// means the end A coordinates should be used instead.
@@ -765,6 +765,8 @@ Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
 	// shift net forces and add the existing moments
 	const vec f3net = F6net(Eigen::seqN(0, 3));
 	Fnet_out(Eigen::seqN(3, 3)) = F6net(Eigen::seqN(3, 3)) + rRel.cross(f3net);
+	// add the centripetal force
+	Fnet_out(Eigen::seqN(0, 3)) += getCentripetalForce(rRef, vRef.tail<3>());
 
 	// shift mass matrix to be about ref point
 	M_out = translateMass6(rRel, M6net);
@@ -814,20 +816,6 @@ Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
 	    Fnet_out[J+3] = Fnet_out[J+3] + Mext[J];
 
 	*/
-}
-
-vec
-Rod::getCentripetalForce(vec rRef, vec w) const
-{
-	if (!N)
-		return vec::Zero();
-
-	vec F = vec::Zero();
-	for (unsigned int i = 0; i <= N; i++) {
-		const vec rRel = r[i] - rRef;
-		F -= M[i] * (w.cross(w.cross(rRel)));
-	}
-	return F;
 }
 
 real
