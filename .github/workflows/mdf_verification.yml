@@ -34,7 +34,7 @@ jobs:
       shell: bash
       run: |
         cd ${{github.workspace}}/
-        git clone --recursive https://github.com/OpenFAST/openfast.git
+        git clone --recursive --single-branch -b dev https://github.com/OpenFAST/openfast.git
 
     - name: Compile MoorDynF
       shell: bash
