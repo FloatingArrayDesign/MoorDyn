@@ -367,28 +367,13 @@ class Point final : public io::IO, public SuperCFL
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
-	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
+	 * @param rBody The body position
+	 * @param vBody The body velocity
 	 */
 	void getNetForceAndMass(vec6& Fnet_out,
 	                        mat6& M_out,
-	                        vec rBody = vec::Zero());
-
-	/** @brief Calculate the centripetal force on a body
-	 * @param rBody The body position
-	 * @param vBody The body angular velocity
-	 * @return Centripetal force on the body
-	 */
-	vec getCentripetalForce(vec rBody, vec vBody) const;
-
-	/** @brief Calculate the centripetal force on a body
-	 * @param rBody The body position
-	 * @param vBody The body velocity
-	 * @return Centripetal force on the body
-	 */
-	inline vec getCentripetalForce(vec rBody, vec6 vBody) const
-	{
-		return getCentripetalForce(rBody, (vec)(vBody.tail<3>()));
-	}
+	                        vec rBody = vec::Zero(),
+	                        vec6 vBody = vec6::Zero());
 
 	/** @brief Calculates the forces and mass on the point, including from
 	 * attached lines
@@ -436,6 +421,18 @@ class Point final : public io::IO, public SuperCFL
 	 */
 	void saveVTK(const char* filename) const;
 #endif
+
+  private:
+	/** @brief Calculate the centripetal force on a body
+	 * @param r The body position
+	 * @param w The body angular velocity
+	 * @return Centripetal force on the body
+	 */
+	inline vec getCentripetalForce(vec r, vec w) const
+	{
+		return -M * (w.cross(w.cross(this->r - r)));
+	}
+
 };
 
 } // ::moordyn
