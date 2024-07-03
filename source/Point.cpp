@@ -320,7 +320,7 @@ Point::getCentripetalForce(vec rRef, vec w) const
 {
 	const vec rRel = r - rRef;
 
-	return w.squaredNorm() * (M * rRel);
+	return -M * (w.cross(w.cross(rRel)));
 }
 
 moordyn::error_id
