@@ -558,6 +558,11 @@ Body::doRHS()
 	F6net(Eigen::seqN(0, 3)) = Fgrav;
 	F6net(Eigen::seqN(3, 3)) = body_rCGrotated.cross(Fgrav);
 
+	// Centrifugal force due to COM not being at body origin
+	const vec w = v6.tail<3>();
+	F6net.head<3>() -=
+		M.topLeftCorner(3, 3) * (w.cross(w.cross(body_rCGrotated)));
+
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
