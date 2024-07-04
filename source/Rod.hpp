@@ -473,13 +473,21 @@ class Rod final : public io::IO, public SuperCFL
 	 * boundary conditions (rod kinematics) for the proceeding time steps
 	 * @param r The input position
 	 * @param rd The input velocity
-	 * @param rdd The input velocity
+	 * @param rdd The input acceleration
 	 * @throw moordyn::invalid_value_error If the rod is not of type
 	 * moordyn::Rod::COUPLED or moordyn::Rod::CPLDPIN
 	 * @note If the rod is of type moordyn::Rod::CPLDPIN, then just 3 components
 	 * of @p r and @p rd are considered
 	 */
-	void initiateStep(vec6 r_in, vec6 rd_in, vec6 rdd_in);
+	void initiateStep(vec6 r, vec6 rd, vec6 rdd);
+
+	/** @brief Get the last setted velocity for an unfree rod
+	 *
+	 * For free rods the behaviour is undetermined
+	 *
+	 * @return The velocity (6 dof)
+	 */
+	inline vec6 getUnfreeVel() const { return rd_ves; }
 
 	/** @brief Sets the kinematics
 	 *
