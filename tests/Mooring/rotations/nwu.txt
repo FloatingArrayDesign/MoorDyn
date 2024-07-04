@@ -9,7 +9,7 @@ The rotations are thus consistent with the EulerXYZ criteria:
  - Roll:  rotates around x axis, in such a way the starboard side (-y dir) goes
           down
  - Pitch: rotates around y axis, in such a way the bow (+x dir) goes down
- - Yaw:   rotates around y axis, in such a way the bow (+x dir) goes to the
+ - Yaw:   rotates around z axis, in such a way the bow (+x dir) goes to the
           portside
 
 The rotations can be contatenated on a straight forward way, i.e. you can get
