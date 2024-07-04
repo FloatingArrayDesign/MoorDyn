@@ -190,9 +190,9 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 		//  s2s3   -c2s1s3 + c1c3    -c2c1s3 - s1c3
 		// -s2c3    c2s1c3 + c1s3     c2c1c3 - s1s3
 		// Note: s2 is always positive.
-		Scalar s2 = Eigen::numext::hypot(coeff(j, i), coeff(k, i));
-		if (odd) {
-			res[0] = atan2(coeff(j, i), coeff(k, i));
+		Scalar s2 = Eigen::numext::hypot(coeff(i, j), coeff(i, k));
+		if (!odd) {
+			res[0] = atan2(coeff(i, j), coeff(i, k));
 			// s2 is always positive, so res[1] will be within the canonical [0,
 			// pi] range
 			res[1] = atan2(s2, coeff(i, i));
@@ -211,7 +211,7 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 			// arguments to atan2, while the calculation of the third angle does
 			// not need special adjustment since it uses the adjusted res[0] as
 			// the input and produces a correct result.
-			res[0] = atan2(-coeff(j, i), -coeff(k, i));
+			res[0] = atan2(-coeff(i, j), -coeff(i, k));
 			res[1] = -atan2(s2, coeff(i, i));
 		}
 		// With a=(0,1,0), we have i=0; j=1; k=2, and after computing the first
@@ -225,8 +225,8 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 		//  Thus:  m11.c1 - m21.s1 = c3  &   m12.c1 - m22.s1 = s3
 		Scalar s1 = sin(res[0]);
 		Scalar c1 = cos(res[0]);
-		res[2] = atan2(c1 * coeff(j, k) - s1 * coeff(k, k),
-		               c1 * coeff(j, j) - s1 * coeff(k, j));
+		res[2] = atan2(c1 * coeff(k, j) - s1 * coeff(k, k),
+		               c1 * coeff(j, j) - s1 * coeff(j, k));
 	} else {
 		// Tait-Bryan angles (all three axes are different; typically used for
 		// yaw-pitch-roll calculations). The i, j, k indices enable addressing
@@ -236,17 +236,17 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 		//  c2c3    s2s1c3 - c1s3     s2c1c3 + s1s3
 		//  c2s3    s2s1s3 + c1c3     s2c1s3 - s1c3
 		// -s2      c2s1              c2c1
-		res[0] = atan2(coeff(j, k), coeff(k, k));
-		Scalar c2 = Eigen::numext::hypot(coeff(i, i), coeff(i, j));
+		res[0] = atan2(coeff(k, j), coeff(k, k));
+		Scalar c2 = Eigen::numext::hypot(coeff(i, i), coeff(j, i));
 		// c2 is always positive, so the following atan2 will always return a
 		// result in the correct canonical middle angle range [-pi/2, pi/2]
-		res[1] = atan2(-coeff(i, k), c2);
+		res[1] = atan2(-coeff(k, i), c2);
 		Scalar s1 = sin(res[0]);
 		Scalar c1 = cos(res[0]);
-		res[2] = atan2(s1 * coeff(k, i) - c1 * coeff(j, i),
-		               c1 * coeff(j, j) - s1 * coeff(k, j));
+		res[2] = atan2(s1 * coeff(i, k) - c1 * coeff(i, j),
+		               c1 * coeff(j, j) - s1 * coeff(j, k));
 	}
-	if (!odd) {
+	if (odd) {
 		res = -res;
 	}
 	return res;
@@ -255,7 +255,8 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 inline vec3
 Quat2Euler(const quaternion& q)
 {
-	return canonicalEulerAngles(q, 0, 1, 2); // 0, 1, 2 correspond to axes leading to XYZ rotation 
+	// 0, 1, 2 correspond to axes leading to XYZ rotation 
+	return canonicalEulerAngles(q, 0, 1, 2);
 }
 
 inline quaternion
