@@ -29,44 +29,17 @@ The main difference between MoorDyn-C and MoorDyn-F is that MoorDyn-C uses quate
 Orientation of 6 DOF objects:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Euler angles – MoorDyn-F
-""""""""""""""""""""""""
+MoorDyn-C, MoorDyn-F and `MoorPy <https://github.com/NREL/MoorPy>`_ share the
+same Intrinsic Euler-XYZ (Tait-Bryan) angles criteria to compute orientations.
+You can learn more about this on
+`Hall M. Generalized Quasi-Static Mooring System Modeling with Analytic Jacobians. Energies. 2024; 17(13):3155. https://doi.org/10.3390/en17133155 <https://www.mdpi.com/1996-1073/17/13/3155>`_
 
-In the following figure the 6DOF object orientation angles convention is depicted:
-
-.. figure:: angles.svg
-   :alt: Angles criteria schematic view
-
-The roll and yaw angles, :math:`\phi` and :math:`\psi`, follow the
-right hand criteria, while the pitch angle, :math:`\theta`, follows the left
-hand criteria.
-This way the classic rotation matrices can be considered,
-
-.. math::
-   \begin{alignat}{1}
-   R_x(\phi) &= \begin{bmatrix}
-   1 &  0         &  0           \\
-   0 &  \cos \phi & -\sin \phi \\[3pt]
-   0 &  \sin \phi & \cos \phi \\[3pt]
-   \end{bmatrix} \\[6pt]
-   R_y(\theta) &= \begin{bmatrix}
-   \cos \theta & 0 & \sin \theta \\[3pt]
-   0           & 1 &  0           \\[3pt]
-   -\sin \theta & 0 &  \cos \theta \\
-   \end{bmatrix} \\[6pt]
-   R_z(\psi) &= \begin{bmatrix}
-   \cos \psi & -\sin \psi & 0 \\[3pt]
-   \sin \psi &  \cos \psi & 0 \\[3pt]
-   0         &  0         & 1 \\
-   \end{bmatrix}
-   \end{alignat}
-
-
-Quaternions – MoorDyn-C
-"""""""""""""""""""""""
-
-The latest MoorDyn-C internally uses quaternions to describe the location and orientation of 6 DOF objects. Externally MoorDyn-C behaves the same as MoorDyn-F, using Euler angles for both inputs and outputs. Quaternions are a common alternative to Euler angles for describing orientations of 3D objects. 
-Further description of quaternions can be found in PR #90 in the MoorDyn repository, put together by Alex Kinley of Kelson Marine: https://github.com/FloatingArrayDesign/MoorDyn/pull/90#issue-1777700494
+However, while on MoorDyn-F this is handled by considering orientation
+matrices, on MoorDyn-C quaternions are considered to describe the location and
+orientation of 6 DOF objects.
+Further description of quaternions can be found in PR #90 in the MoorDyn
+repository, put together by Alex Kinley of Kelson Marine:
+https://github.com/FloatingArrayDesign/MoorDyn/pull/90#issue-1777700494
 
 References
 ----------
