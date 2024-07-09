@@ -13,7 +13,7 @@ ENUREF = [[1, 0, 0],
 ANGLE = 5
 
 
-def rotate_vecs(vecs, angles, seq='xyz', degrees=True):
+def rotate_vecs(vecs, angles, seq="XYZ", degrees=True):
     r = R.from_euler(seq, angles, degrees=degrees)
     return [r.apply(vec) for vec in vecs]
 
@@ -26,7 +26,7 @@ def compare_vecs(vecs, refs, tol=1e-5):
             assert abs(vecs[i][j] - refs[i][j]) < 1e-5
 
 
-def abseuler2releuler(org, dst, seq='xyz', degrees=True):
+def abseuler2releuler(org, dst, seq="XYZ", degrees=True):
     r0 = R.from_euler(seq, org, degrees=degrees).inv()
     r1 = R.from_euler(seq, dst, degrees=degrees)
     return (r1 * r0).as_euler(seq, degrees=degrees)
@@ -66,19 +66,19 @@ class RotationTests(TestCase):
         t = 0
         # Roll test
         r, t = rotate_moordyn(system, ANGLE, 0, 0, t)
-        compare_vecs(r, rotate_vecs(ENUREF, ANGLE, seq='x'))
+        compare_vecs(r, rotate_vecs(ENUREF, ANGLE, seq='X'))
         assert(r[1][2] > 0.0)  # Portside up, i.e. starboard down
         r, t = rotate_moordyn(system, -ANGLE, 0, 0, t)
         compare_vecs(r, ENUREF)
         # Pitch test
         r, t = rotate_moordyn(system, 0, ANGLE, 0, t)
-        compare_vecs(r, rotate_vecs(ENUREF, ANGLE, seq='y'))
+        compare_vecs(r, rotate_vecs(ENUREF, ANGLE, seq='Y'))
         assert(r[0][2] < 0.0)  # Bow down
         r, t = rotate_moordyn(system, 0, -ANGLE, 0, t)
         compare_vecs(r, ENUREF)
         # Yaw test
         r, t = rotate_moordyn(system, 0, 0, ANGLE, t)
-        compare_vecs(r, rotate_vecs(ENUREF, ANGLE, seq='z'))
+        compare_vecs(r, rotate_vecs(ENUREF, ANGLE, seq='Z'))
         assert(r[0][1] > 0.0)  # Bow to portside
         r, t = rotate_moordyn(system, 0, 0, -ANGLE, t)
         compare_vecs(r, ENUREF)
