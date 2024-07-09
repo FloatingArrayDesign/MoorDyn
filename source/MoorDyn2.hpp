@@ -550,6 +550,8 @@ class MoorDyn final : public io::IO
 	real ICthresh;
 	// use dynamic (true) or stationary (false) inital condition solver
 	bool ICgenDynamic;
+	/// print the timesteps. Disable for MD_F reg tests
+	bool print_time;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;

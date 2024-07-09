@@ -158,7 +158,7 @@ def create_input_file(env, md):
                 end = i
                 break
         opts = mdopts2dict(opts[:end])
-        for optin, optout in (('Gravity', 'gravity'),
+        for optin, optout in (('Gravity', 'gravity'), # todo: make case insensitive
                               ('rhoW', 'rho'),
                               ('WtrDpth', 'WtrDpth')):
             if optin not in env.keys():
@@ -173,6 +173,8 @@ def create_input_file(env, md):
                         f"{optout}={opts[optout]} in MoorDyn config file")
             lines.insert(start + end,
                          f"{env[optin]}  {optout}  option set by the driver\n")
+        lines.insert(start+end, "0   print_time      - console printing of timesteps disabled for GH actions" )
+        
         for line in lines:
             fout.write(line)
     return fname

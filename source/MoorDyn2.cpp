@@ -91,6 +91,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , dtOut(0.0)
   , _t_integrator(NULL)
   , ICgenDynamic(false)
+  , print_time(true)
   , env(std::make_shared<EnvCond>())
   , GroundBody(NULL)
   , waves(nullptr)
@@ -627,12 +628,15 @@ moordyn::MoorDyn::Step(const double* x,
                        double& dt)
 {
 	// should check if wave kinematics have been set up if expected!
-	const auto default_precision{std::cout.precision()};
-	std::cout << std::fixed << setprecision(1);
-	LOGDBG << "t = " << t << "s     \r";
-	std::cout << std::defaultfloat << setprecision(default_precision);
+	
+	if (print_time) {
+		const auto default_precision{std::cout.precision()};
+		std::cout << std::fixed << setprecision(1);
+		LOGDBG << "t = " << t << "s     \r";
+		std::cout << std::defaultfloat << setprecision(default_precision);
 
-	cout << "\rt = " << t << " " << flush;
+		cout << "\rt = " << t << " " << flush;
+	}
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
@@ -2203,6 +2207,8 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		this->seafloor->setup(env, filepath);
 	} else if (name == "ICgenDynamic")
 		ICgenDynamic = bool(atof(entries[0].c_str()));
+	else if (name == "print_time")
+		print_time = bool(atof(entries[0].c_str()));
 	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
