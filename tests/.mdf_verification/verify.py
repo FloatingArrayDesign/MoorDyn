@@ -278,24 +278,47 @@ def read_outs(fpath, skiplines=2):
     return np.transpose(data), heads
 
 
-def plot(ref, ref_heads, data, data_heads, passed, fpath):
+def plot(ref, ref_heads, data, data_heads, passed, rtol_mag, atol_mag, fpath):
     if plt is None:
         return
-    fig,axes = plt.subplots(ref.shape[0]-1, 1, sharex = True, figsize=(12.8,4*(ref.shape[0]-1)))
+    fig,axes = plt.subplots(ref.shape[0]-1, 2, sharex = True, figsize=(12.8,4*(ref.shape[0]-1)))
     if ref.shape[0] <= 2:
         ax = [axes]
     else:
         ax = axes
     for i in range(1, ref.shape[0]):
-        ax[i-1].plot(data[0, :], data[i, :], linestyle='solid',
+        # Plot the channels
+        ax[i-1][0].plot(data[0, :], data[i, :], linestyle='solid',
                 color='b', label=f"MD-C: {(data_heads[i])}")
-        ax[i-1].plot(ref[0, :], ref[i, :], linestyle='dashed',
+        ax[i-1][0].plot(ref[0, :], ref[i, :], linestyle='dashed',
                 color='r', label=f"MD-F: {(ref_heads[i])}")
-        ax[i-1].legend(loc='best')
-        if passed and (i == 1):
-            ax[i-1].set_title("PASSED")
-        elif (not passed) and (i==1):
-            ax[i-1].set_title("FAILED")
+        ax[i-1][0].legend(loc='best')
+
+        # Plot the difference. First calculate threshold (from OpenFAST testing erorPlotting.py _plotError)
+        NUMEPS = 1e-12
+        ATOL_MIN = 1e-6
+        baseline_offset = ref[i, :] - np.min(ref[i, :])
+        b_order_of_magnitude = np.floor( np.log10( baseline_offset + NUMEPS ) )
+        rtol = 10**(-1 * rtol_mag)
+        atol = 10**(max(b_order_of_magnitude) - atol_mag)
+        atol = max(atol, ATOL_MIN)
+        passfail_line = atol + rtol * abs(ref[i, :])
+        ax[i-1][1].plot(data[0, :], passfail_line, color='g', 
+                        label=f"Threshold {(data_heads[i])}")
+        ax[i-1][1].plot(data[0, :], abs(ref[i, :] - data[i, :]), color='gray', 
+                        label=f"Error {(data_heads[i])}")
+        ax[i-1][1].legend(loc='best')
+
+        # titles
+        if i == 1:
+            if passed:
+                ax[i-1][0].set_title("PASSED")
+            else:
+                ax[i-1][0].set_title("FAILED")
+            
+            ax[i-1][1].set_title(f"abs diff btwn MD-C and MD-F")
+
+        
 
     fig.tight_layout()
     fig.savefig(fpath, dpi=400)
@@ -344,7 +367,7 @@ for test in tests:
     passing = np.all(
         pass_fail.passing_channels(ref, new, args.rtol, args.atol))
     
-    plot(ref, ref_heads, new, new_heads, passing, test + ".png")
+    plot(ref, ref_heads, new, new_heads, passing, args.rtol, args.atol, test + ".png")
 
     summary[test] = passing
 
