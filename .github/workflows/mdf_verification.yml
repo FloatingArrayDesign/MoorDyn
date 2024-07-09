@@ -73,3 +73,9 @@ jobs:
 
     - name: Run the tests
       run: python ${{github.workspace}}/tests/.mdf_verification/verify.py ${{github.workspace}}/
+    - name: Upload the artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: upload test artifacts
+        path: |
+          ${{github.workspace}}/tests/.mdf_verification/*.png

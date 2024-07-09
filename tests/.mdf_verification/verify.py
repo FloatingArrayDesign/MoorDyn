@@ -85,17 +85,19 @@ def mdopts2dict(lines):
 
         if line.startswith('"'):
             # The value is a string
-            end = line[1:].find('"') + 1 
-            value = line[1:end]
+            end = line[1:].find('"') + 2 
+            value = line[1:end-1]
         else:
-            end = line.find(' ')
+            indicies = [line.find(' '), line.find('  '), line.find('\t')]
+            if -1 in indicies:
+                indicies.remove(-1)
+            end = min(indicies)
             value = to_num(line[:end])
-
-        line = line[end:]
+        line = line[end:].strip()
         while line.find("  ") != -1:
             line = line.replace("  ", " ")
-        key = line.split(" ")[1]
 
+        key = line.split(" ")[0]
         data[key] = value
 
     return data
@@ -106,8 +108,11 @@ def read_driver(test):
     test_root = os.path.join(args.root,
                              'openfast/reg_tests/r-test/modules/moordyn/',
                              test)
-    with open(os.path.join(test_root, "md_driver.inp"), "r") as f:
-        lines = f.readlines()
+    try: 
+        with open(os.path.join(test_root, "md_driver.inp"), "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError: 
+        return -1,-1 
 
     def get_section(lines, name):
         start, end = None, None
@@ -254,34 +259,53 @@ def read_outs(fpath, skiplines=2):
         return float(s)
 
     data = []
+    heads = []
     with open(fpath, "r") as fin:
-        lines = fin.readlines()[skiplines:]
-        for line in lines:
+        lines = fin.readlines()[skiplines-2:]
+        line = lines[0]
+        line = line.strip().replace("\t", " ")
+        while line.find("  ") != -1:
+            line = line.replace("  ", " ")
+        heads = [field for field in line.split()]
+
+        for line in lines[2:]:
             line = line.strip().replace("\t", " ")
             while line.find("  ") != -1:
                 line = line.replace("  ", " ")
             data.append([to_num(field) for field in line.split()])
-    return np.transpose(data)
+    return np.transpose(data), heads
 
 
-def plot(ref, data, fpath):
+def plot(ref, ref_heads, data, data_heads, fpath):
     if plt is None:
         return
-    colors = list(mcolors.XKCD_COLORS.values())
+    print("SHAPE:", ref.shape[0])
+    fig,axes = plt.subplots(ref.shape[0]-1, 1, sharex = True, figsize=(12.8,4*(ref.shape[0]-1)))
+    if ref.shape[0] <= 2:
+        ax = [axes]
+    else:
+        ax = axes
     for i in range(1, ref.shape[0]):
-        plt.plot(ref[0, :], ref[i, :], linestyle='dashed',
-                 color=colors[i - 1])
-        plt.plot(data[0, :], data[i, :], linestyle='solid',
-                 color=colors[i - 1], label=f'channel {i}')
-    plt.legend(loc='best')
-    plt.savefig(fpath)
+        ax[i-1].plot(data[0, :], data[i, :], linestyle='solid',
+                color='b', label=f"MD-C: {(data_heads[i])}")
+        ax[i-1].plot(ref[0, :], ref[i, :], linestyle='dashed',
+                color='r', label=f"MD-F: {(ref_heads[i])}")
+        ax[i-1].legend(loc='best')
+
+    fig.tight_layout()
+    fig.savefig(fpath, dpi=400)
+    plt.close()
 
 
 # Run the tests...
 summary = {}
 for test in tests:
+    print("\n ------------------")
     print(f"Test {test}...")
     env, md = read_driver(test)
+    if env == md == -1:
+        print(f"WARNING: Error in loading {test}. Does not match md_driver.inp convention")
+        continue
     fname = create_input_file(env, md)
     system = moordyn.Create(fname)
     # Get the NDoFs and check if the motions are right
@@ -305,14 +329,14 @@ for test in tests:
         moordyn.Step(system, rorg, u, t, dt)
     moordyn.Close(system)
     # Read the ouputs and compare
-    ref = read_outs(md["OutRootName"], skiplines=8)
-    new = read_outs(os.path.splitext(fname)[0] + ".out", skiplines=2)
-    # Drop the eventual points at the tail that ight come from precision errors
+    ref, ref_heads = read_outs(md["OutRootName"], skiplines=8)
+    new, new_heads = read_outs(os.path.splitext(fname)[0] + ".out", skiplines=2)
+    # Drop the eventual points at the tail that might come from precision errors
     # on the time
     n_samples = min(ref.shape[1], new.shape[1])
     ref = ref[:, :n_samples]
     new = new[:, :n_samples]
-    plot(ref, new, test + ".png")
+    plot(ref, ref_heads, new, new_heads, test + ".png")
     passing = np.all(
         pass_fail.passing_channels(ref, new, args.rtol, args.atol))
     
