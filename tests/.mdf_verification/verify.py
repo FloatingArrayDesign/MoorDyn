@@ -281,7 +281,6 @@ def read_outs(fpath, skiplines=2):
 def plot(ref, ref_heads, data, data_heads, fpath):
     if plt is None:
         return
-    print("SHAPE:", ref.shape[0])
     fig,axes = plt.subplots(ref.shape[0]-1, 1, sharex = True, figsize=(12.8,4*(ref.shape[0]-1)))
     if ref.shape[0] <= 2:
         ax = [axes]

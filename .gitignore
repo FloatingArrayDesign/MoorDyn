@@ -47,6 +47,9 @@ compile/SO/test*
 
 #program output files
 *.out
+*.png
+*.log
+*.dat
 tests/.mdf_verification/*.out
 tests/.mdf_verification/*.log
 tests/.mdf_verification/*.png
