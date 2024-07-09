@@ -278,7 +278,7 @@ def read_outs(fpath, skiplines=2):
     return np.transpose(data), heads
 
 
-def plot(ref, ref_heads, data, data_heads, fpath):
+def plot(ref, ref_heads, data, data_heads, passed, fpath):
     if plt is None:
         return
     fig,axes = plt.subplots(ref.shape[0]-1, 1, sharex = True, figsize=(12.8,4*(ref.shape[0]-1)))
@@ -292,6 +292,10 @@ def plot(ref, ref_heads, data, data_heads, fpath):
         ax[i-1].plot(ref[0, :], ref[i, :], linestyle='dashed',
                 color='r', label=f"MD-F: {(ref_heads[i])}")
         ax[i-1].legend(loc='best')
+        if passed and (i == 1):
+            ax[i-1].set_title("PASSED")
+        elif (not passed) and (i==1):
+            ax[i-1].set_title("FAILED")
 
     fig.tight_layout()
     fig.savefig(fpath, dpi=400)
@@ -337,10 +341,11 @@ for test in tests:
     n_samples = min(ref.shape[1], new.shape[1])
     ref = ref[:, :n_samples]
     new = new[:, :n_samples]
-    plot(ref, ref_heads, new, new_heads, test + ".png")
     passing = np.all(
         pass_fail.passing_channels(ref, new, args.rtol, args.atol))
     
+    plot(ref, ref_heads, new, new_heads, passing, test + ".png")
+
     summary[test] = passing
 
 print("")
