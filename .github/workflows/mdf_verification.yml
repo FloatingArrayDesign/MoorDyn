@@ -28,7 +28,8 @@ jobs:
       id: setup-python
 
     - name: Install Python dependencies
-      run: pip install --upgrade build pytest Bokeh numpy
+      run: 
+        pip install --upgrade build pytest Bokeh numpy matplotlib
 
     - name: Download OpenFAST
       shell: bash
