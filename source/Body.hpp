@@ -248,7 +248,17 @@ class Body final : public io::IO, public SuperCFL
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	void initializeUnfreeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero(), vec6 rdd = vec6::Zero());
+	void initializeUnfreeBody(vec6 r = vec6::Zero(),
+	                          vec6 rd = vec6::Zero(),
+	                          vec6 rdd = vec6::Zero());
+
+	/** @brief Get the last setted velocity for an unfree body
+	 *
+	 * For free bodies the behaviour is undetermined
+	 *
+	 * @return The velocity (6 dof)
+	 */
+	inline vec6 getUnfreeVel() const { return rd_ves; }
 
 	/** @brief Initialize the FREE point state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
@@ -349,11 +359,11 @@ class Body final : public io::IO, public SuperCFL
 	 * boundary conditions (body kinematics) for the proceeding time steps
 	 * @param r The input position
 	 * @param rd The input velocity
-	 * @param rdd The input velocity
+	 * @param rdd The input acceleration
 	 * @throw moordyn::invalid_value_error If the body is not of type
 	 * moordyn::Body::COUPLED or moordyn::Body::FIXED
 	 */
-	void initiateStep(vec6 r_in, vec6 rd_in, vec6 rdd_in);
+	void initiateStep(vec6 r, vec6 rd, vec6 rdd);
 
 	/** @brief Sets the kinematics based on the position and velocity of the
 	 * fairlead.

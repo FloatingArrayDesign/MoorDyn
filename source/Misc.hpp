@@ -168,11 +168,11 @@ EqualRealNos(const real a1, const real a2)
 	return std::abs(a1 - a2) <= fraction * tol;
 }
 
-
-inline vec3 
+inline vec3
 canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 {
-	// From issue #163: https://github.com/FloatingArrayDesign/MoorDyn/issues/163
+	// From issue #163:
+	// https://github.com/FloatingArrayDesign/MoorDyn/issues/163
 	mat3 coeff = quat.normalized().toRotationMatrix();
 	vec3 res{};
 	using Index = int;
@@ -255,7 +255,8 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 inline vec3
 Quat2Euler(const quaternion& q)
 {
-	return canonicalEulerAngles(q, 0, 1, 2); // 0, 1, 2 correspond to axes leading to XYZ rotation 
+	// 0, 1, 2 correspond to axes leading to XYZ rotation
+	return canonicalEulerAngles(q, 0, 1, 2);
 }
 
 inline quaternion

@@ -1,0 +1,44 @@
+--------------------- MoorDyn Input File -------------------------------------------------------
+Testing the rotations assuming the NWU angles criteria, i.e. the bow is
+pointing towards the x axis, the portside towards the y axis and the z axis
+upwards.
+To check the rotations we set 3 points pointing on the positive x, y and z
+
+The rotations are thus consistent with the EulerXYZ criteria:
+
+ - Roll:  rotates around x axis, in such a way the starboard side (-y dir) goes
+          down
+ - Pitch: rotates around y axis, in such a way the bow (+x dir) goes down
+ - Yaw:   rotates around z axis, in such a way the bow (+x dir) goes to the
+          portside
+
+The rotations can be contatenated on a straight forward way, i.e. you can get
+the current state and just compute the velocity as the difference. e.g.
+
+double r[6], rd[6];
+const auto [r, tmp] = MoorDyn_GetBodyState(body, r, rd);
+const double r_next[6] = {x, y, z, roll, pitch, yaw};
+for (unsigned int i = 0; i < 6; i++) {
+    rd[i] = (r_next[i] - r[i]) / dt;
+}
+MoorDyn_Step(system, r, rd, t, dt);
+---------------------------- BODIES -----------------------------------------------------
+ID      Attachment  X0     Y0     Z0     r0       p0       y0       Mass    CG*    I*          Volume   CdA*     Ca
+(#)     (-)         (m)    (m)    (m)    (deg)    (deg)    (deg)    (kg)    (m)    (kg-m^2)    (m^3)    (m^2)    (-)
+1       coupled     0      0      0      0        0        0        0       0      0           0        0        0
+----------------------- POINTS ----------------------------------------------
+Node      Type       X      Y      Z      M       V        CdA      CA
+(-)       (-)        (m)    (m)    (m)    (kg)    (m^3)    (m^2)    (-)
+1         Body1      1      0      0      0       0        0        0
+2         Body1      0      1      0      0       0        0        0
+3         Body1      0      0      1      0       0        0        0
+-------------------------- SOLVER OPTIONS---------------------------------------------------
+0        writeLog     - Write a log file
+0.0      g            - No gravity
+1.0      dtM          - time step to use in mooring integration
+3.0e6    kb           - bottom stiffness
+3.0e5    cb           - bottom damping
+100      WtrDpth      - water depth
+0.0      TmaxIC       - threshold for IC convergence
+euler    tScheme      - Just one step per time step
+--------------------------- need this line -------------------------------------------------

@@ -434,14 +434,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
 
 		// BUG: These conversions will not be needed in the future
-		vec6 r, rd, rdd;
+		vec6 r, rd;
 		if (BodyList[l]->type == Body::COUPLED){
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
-			// determine acceleration 
-			rdd = (rd - rd_b) / dtM0;
-			rd_b = rd;
-
 			ix += 6;
 		} else {
 			// for pinned body 3 entries will be taken
@@ -450,13 +446,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			r(Eigen::seqN(0, 3)) = r3;
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
-			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_b) / dtM0;
-			rd3_b = rd3;
-
 			ix += 3;
 		}
-		BodyList[l]->initializeUnfreeBody(r, rd, rdd);
+		BodyList[l]->initializeUnfreeBody(r, rd, vec6::Zero());
 	}
 
 	for (auto l : CpldRodIs) {
@@ -467,10 +459,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			// for cantilevered rods 6 entries will be taken
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
-			// determine acceleration 
-		    rdd = (rd - rd_r) / dtM0;
-			rd_r = rd;
-
 			ix += 6;
 		} else {
 			// for pinned rods 3 entries will be taken
@@ -479,13 +467,9 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			r(Eigen::seqN(0, 3)) = r3;
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
-			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_r) / dtM0;
-			rd3_r = rd3;
-
 			ix += 3;
 		}
-		RodList[l]->initiateStep(r, rd, rdd);
+		RodList[l]->initiateStep(r, rd, vec6::Zero());
 		RodList[l]->updateFairlead(0.0);
 		// call this just to set up the output file header
 		RodList[l]->initialize();
@@ -659,13 +643,12 @@ moordyn::MoorDyn::Step(const double* x,
 	for (auto l : CpldBodyIs) {
 		// BUG: These conversions will not be needed in the future
 		vec6 r, rd, rdd;
+		const vec6 rd_b = BodyList[l]->getUnfreeVel();
 		if (BodyList[l]->type == Body::COUPLED){
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
 			// determine acceleration 
-			rdd = (rd - rd_b) / dtM0;
-			rd_b = rd;
-
+			rdd = (rd - rd_b) / dt;
 			ix += 6;
 		} else {
 			// for pinned body 3 entries will be taken
@@ -675,23 +658,21 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
 			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_b) / dt;
-			rd3_b = rd3;
-
+		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd_b.head<3>()) / dt;
 			ix += 3;
 		}
-		BodyList[l]->initiateStep(r, rd, rdd); // acceleration required for inertial terms
+		// acceleration required for inertial terms
+		BodyList[l]->initiateStep(r, rd, rdd);
 	}
 	for (auto l : CpldRodIs) {
 		vec6 r, rd, rdd;
+		const vec6 rd_r = RodList[l]->getUnfreeVel();
 		if (RodList[l]->type == Rod::COUPLED) {
 			// for cantilevered rods 6 entries will be taken
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
 			// determine acceleration 
 		    rdd = (rd - rd_r) / dt;
-			rd_r = rd;
-
 			ix += 6;
 		} else {
 			// for pinned rods 3 entries will be taken
@@ -701,12 +682,11 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
 			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_r) / dt;
-			rd3_r = rd3;
-
+		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd_r.head<3>()) / dt;
 			ix += 3;
 		}
-		RodList[l]->initiateStep(r, rd, rdd); // acceleration required for inertial terms
+		// acceleration required for inertial terms
+		RodList[l]->initiateStep(r, rd, rdd);
 	}
 	for (auto l : CpldPointIs) {
 		vec r, rd;
