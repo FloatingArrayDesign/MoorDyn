@@ -124,12 +124,12 @@ Rod::setup(int number_in,
 	                 // segments) (1 = fully submerged, 0 = out of water)
 
 	if (N == 0) {
-		// special case of zero-length rod, which is denoted by numsegs=0 in the
-		// intput file
+		// special case of zero-length rod, which is denoted by numsegs=0 in
+		// the intput file
+		q0 = vec::Zero();
 		l.assign(1, 0.); // line unstretched segment lengths
 		V.assign(1, 0.); // segment volume?
 		UnstrLen = 0.0;  // set Rod length to zero
-		q = vec::Zero();
 	} else {
 		// normal finite-length case
 		UnstrLen = unitvector(q0, endCoords.head<3>(), endCoords.tail<3>());
@@ -137,13 +137,15 @@ Rod::setup(int number_in,
 		    UnstrLen / N;  // distribute line length evenly over segments
 		l.assign(N, lseg); // line unstretched segment lengths
 		V.assign(N, lseg * 0.25 * pi * d * d); // segment volume?
-		// get Rod axis direction vector and Rod length
-		q = q0;
 	}
+	q = q0;
 
 	// ------------------------- set starting kinematics
 	// -------------------------
 
+	// Initialize the accelerations to avoid border cases, like Pinned rods
+	// reading the linear acceleration without ssetting it
+	acc6 = vec6::Zero();
 	// set Rod positions if applicable
 	if (type == FREE) {
 		// For an independent rod, set the position right off the bat
@@ -196,6 +198,7 @@ Rod::addLine(Line* l, EndPoints l_end_point, EndPoints end_point)
 			LOGERR << "Rod only has end points 'A' or 'B'" << endl;
 			throw moordyn::invalid_value_error("Invalid end point");
 	}
+	SuperCFL::AddChild(l);
 }
 
 EndPoints
@@ -211,6 +214,7 @@ Rod::removeLine(EndPoints end_point, Line* line)
 		// This is the line's entry in the attachment list
 		line_end_point = it->end_point;
 		lines->erase(it);
+		SuperCFL::RemoveChild(line);
 		// TODO Waves - we probably want to clean up the line node wave kin
 		// stores in the waves class
 
@@ -448,7 +452,7 @@ Rod::setState(XYZQuat pos, vec6 vel)
 
 	// update Rod direction unit vector (simply equal to last three entries of
 	// r6)
-	const mat OrMat = r7.quat.toRotationMatrix();
+	const mat OrMat = r7.quat.normalized().toRotationMatrix();
 	q = OrMat * q0;
 }
 
@@ -533,7 +537,7 @@ Rod::setKinematics(vec6 r_in, vec6 rd_in)
 	// update Rod direction unit vector (presumably these were set elsewhere for
 	// pinned Rods)
 	// TODO - don't recalculate OrMat here
-	const mat OrMat = r7.quat.toRotationMatrix();
+	const mat OrMat = r7.quat.normalized().toRotationMatrix();
 	q = OrMat * q0;
 }
 
@@ -550,7 +554,7 @@ Rod::setDependentStates()
 	if (N > 0) {
 		// set end B nodes only if the rod isn't zero length
 		// TODO - determine if q has been calculated here
-		q = r7.quat.toRotationMatrix() * q0;
+		q = r7.quat.normalized().toRotationMatrix() * q0;
 		const vec rRel = UnstrLen * q;
 		r[N] = r[0] + rRel;
 		const vec w = v6.tail<3>();
@@ -670,6 +674,7 @@ Rod::getStateDeriv()
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 		const mat M_out3 = M_out6(Eigen::seqN(3, 3), Eigen::seqN(3, 3));
+		acc6(Eigen::seqN(0, 3)) = vec::Zero();
 		acc6(Eigen::seqN(3, 3)) = M_out3.inverse() * Fnet_out3;
 
 		// dxdt = V   (velocities)
@@ -681,8 +686,8 @@ Rod::getStateDeriv()
 	return std::make_pair(vel7, acc6);
 }
 
-vec6
-Rod::getFnet()
+const vec6
+Rod::getFnet() const
 {
 	// return F6net;
 	// // >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global
@@ -736,7 +741,7 @@ Rod::getFnet()
 
 // calculate the aggregate 6DOF rigid-body force and mass data of the rod
 void
-Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
+Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef, vec6 vRef)
 {
 	// rBody is the location of the body reference point. A NULL pointer value
 	// means the end A coordinates should be used instead.
@@ -760,6 +765,8 @@ Rod::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rRef)
 	// shift net forces and add the existing moments
 	const vec f3net = F6net(Eigen::seqN(0, 3));
 	Fnet_out(Eigen::seqN(3, 3)) = F6net(Eigen::seqN(3, 3)) + rRel.cross(f3net);
+	// add the centripetal force
+	Fnet_out(Eigen::seqN(0, 3)) += getCentripetalForce(rRef, vRef.tail<3>());
 
 	// shift mass matrix to be about ref point
 	M_out = translateMass6(rRel, M6net);
@@ -1571,77 +1578,6 @@ Rod::saveVTK(const char* filename) const
 }
 #endif
 
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Rod::drawGL(void)
-{
-	double maxTen = 0.0;
-	double normTen;
-	double rgb[3];
-	for (int i = 0; i <= N; i++) {
-		double newTen = getNodeTen(i);
-		if (newTen > maxTen)
-			maxTen = newTen;
-	}
-
-	glColor3f(0.5, 0.5, 1.0);
-	glBegin(GL_LINE_STRIP);
-	for (int i = 0; i <= N; i++) {
-		glVertex3d(r[i][0], r[i][1], r[i][2]);
-		if (i < N) {
-			normTen = getNodeTen(i) / maxTen;
-			ColorMap(normTen, rgb);
-			glColor3d(rgb[0], rgb[1], rgb[2]);
-		}
-	}
-	glEnd();
-};
-
-void
-Rod::drawGL2(void)
-{
-	double maxTen = 0.0;
-	double normTen;
-	double rgb[3];
-	for (int i = 0; i <= N; i++) {
-		double newTen = getNodeTen(i);
-		if (newTen > maxTen)
-			maxTen = newTen;
-	}
-
-	// line
-	for (int i = 0; i < N; i++) {
-		normTen = 0.2 + 0.8 * pow(getNodeTen(i) / maxTen, 4.0);
-		ColorMap(normTen, rgb);
-		glColor3d(rgb[0], rgb[1], rgb[2]);
-
-		Cylinder(r[i][0],
-		         r[i][1],
-		         r[i][2],
-		         r[i + 1][0],
-		         r[i + 1][1],
-		         r[i + 1][2],
-		         27,
-		         0.5);
-	}
-	// velocity vectors
-	for (int i = 0; i <= N; i++) {
-		glColor3d(0.0, 0.2, 0.8);
-		double vscal = 5.0;
-
-		Arrow(r[i][0],
-		      r[i][1],
-		      r[i][2],
-		      vscal * rd[i][0],
-		      vscal * rd[i][1],
-		      vscal * rd[i][2],
-		      0.1,
-		      0.7);
-	}
-};
-#endif
-
 } // ::moordyn
 
 // =============================================================================
@@ -1678,6 +1614,24 @@ MoorDyn_GetRodType(MoorDynRod rod, int* t)
 }
 
 int DECLDIR
+MoorDyn_GetRodForce(MoorDynRod rod, double f[6])
+{
+	CHECK_ROD(rod);
+	moordyn::vec6 fnet = ((moordyn::Rod*)rod)->getFnet();
+	moordyn::vec62array(fnet, f);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetRodM(MoorDynRod rod, double m[6][6])
+{
+	CHECK_ROD(rod);
+	moordyn::mat6 mass = ((moordyn::Rod*)rod)->getM();
+	moordyn::mat62array(mass, m);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetRodN(MoorDynRod rod, unsigned int* n)
 {
 	CHECK_ROD(rod);
@@ -1704,6 +1658,20 @@ MoorDyn_GetRodNodePos(MoorDynRod rod, unsigned int i, double pos[3])
 	try {
 		const moordyn::vec r = ((moordyn::Rod*)rod)->getNodePos(i);
 		moordyn::vec2array(r, pos);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetRodNodeVel(MoorDynRod rod, unsigned int i, double vel[3])
+{
+	CHECK_ROD(rod);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec rd = ((moordyn::Rod*)rod)->getNodeVel(i);
+		moordyn::vec2array(rd, vel);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;

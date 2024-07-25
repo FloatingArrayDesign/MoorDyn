@@ -69,7 +69,9 @@ jobs:
         if: runner.os != 'Linux'
 
       - name: Build the source distribution
-        run: python setup.py sdist
+        run: |
+            python -m pip install -U pip setuptools
+            python setup.py sdist
         if: runner.os == 'Linux'
 
       - name: Set up QEMU
@@ -79,7 +81,7 @@ jobs:
         if: runner.os == 'Linux'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.5
+        uses: pypa/cibuildwheel@v2.19.2
         with:
             output-dir: dist
         env:
@@ -96,7 +98,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         id: build_wheels
         with:
-          name: python-wheels-x86_64
+          name: python-wheels-${{runner.os}}
           path: ./dist/*
 
   build_aarch64:
@@ -130,25 +132,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download x86_64 dists
+      - name: Download Linux x86_64 dists
         uses: actions/download-artifact@v4
         with:
-          name: python-wheels-x86_64
+          name: python-wheels-Linux
           path: dist/
 
-      - name: Download aarch64 dists
+      - name: Download MacOS x86_64 dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-wheels-macOS
+          path: dist/
+
+      - name: Download Windows x86_64 dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-wheels-Windows
+          path: dist/
+
+      - name: Download Linux aarch64 dists
         uses: actions/download-artifact@v4
         with:
           name: python-wheels-aarch64
           path: dist/
 
-      - name: Download ppc64le dists
+      - name: Download Linux ppc64le dists
         uses: actions/download-artifact@v4
         with:
           name: python-wheels-ppc64le
           path: dist/
 
-      - name: Download s390x dists
+      - name: Download Linux s390x dists
         uses: actions/download-artifact@v4
         with:
           name: python-wheels-s390x

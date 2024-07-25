@@ -67,12 +67,15 @@ Body::setup(int number_in,
 	type = type_in;
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 
+	// We better store the body initial position in all cases so the state is
+	// correctly initialized, and MoorDyn_GetBodyState() would be successfully
+	// used before calling MoorDyn_Init()
+	body_r6.head<3>() = r6_in.head<3>();
+	body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
+
 	if (type == FREE) {
 		bodyM = M_in;
 		bodyV = V_in;
-
-		body_r6.head<3>() = r6_in.head<3>();
-		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		body_rCG = rCG_in;
 		bodyI = I_in;
 		bodyCdA = CdA_in;
@@ -80,17 +83,12 @@ Body::setup(int number_in,
 	} else if (type == FIXED){ // fixed bodies have no need for these variables other than position...
 		bodyM = 0.0;
 		bodyV = 0.0;
-		body_r6.head<3>() = r6_in.head<3>();
-		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		bodyI = vec::Zero();
 		bodyCdA = vec6::Zero();
 		bodyCa = vec6::Zero();
 	} else if (type == CPLDPIN){
 		bodyM = M_in;
 		bodyV = V_in;
-
-		body_r6.head<3>() = vec3::Zero();
-		body_r6.tail<3>() = deg2rad * r6_in.tail<3>();
 		body_rCG = rCG_in;
 		bodyI = I_in;
 		bodyCdA = CdA_in;
@@ -99,8 +97,6 @@ Body::setup(int number_in,
 	{
 		bodyM = 0.0;
 		bodyV = 0.0;
-
-		body_r6 = vec6::Zero();
 		body_rCG = vec::Zero();
 		bodyI = vec::Zero();
 		bodyCdA = vec6::Zero();
@@ -131,7 +127,7 @@ Body::setup(int number_in,
 	v6 = vec6::Zero();
 
 	// calculate orientation matrix based on latest angles
-	OrMat = r7.quat.toRotationMatrix();
+	OrMat = r7.quat.normalized().toRotationMatrix();
 
 	LOGDBG << "Set up Body " << number << ", type " << TypeName(type) << ". "
 	       << endl;
@@ -144,6 +140,7 @@ Body::addPoint(moordyn::Point* point, vec coords)
 
 	// store Point address
 	attachedP.push_back(point);
+	SuperCFL::AddChild(point);
 
 	// store Point relative location
 	rPointRel.push_back(coords);
@@ -156,6 +153,7 @@ Body::addRod(Rod* rod, vec6 coords)
 
 	// store Rod address
 	attachedR.push_back(rod);
+	SuperCFL::AddChild(rod);
 
 	// store Rod end A relative position and unit vector from end A to B
 	vec tempUnitVec;
@@ -271,6 +269,7 @@ Body::setDependentStates()
 		                    rPoint,
 		                    rdPoint); //<<< should double check this function
 
+
 		// pass above to the point and get it to calculate the forces
 		try {
 			attachedP[i]->setKinematics(rPoint, rdPoint);
@@ -290,13 +289,13 @@ Body::setDependentStates()
 
 		// do 3d details of Rod ref point
 		vec tmpr, tmprd;
+		// set first three entires (end A translation) of rRod and rdRod
 		transformKinematics(r6RodRel[i](Eigen::seqN(0, 3)),
 		                    OrMat,
 		                    r7.pos,
 		                    v6,
 		                    tmpr,
-		                    tmprd); // set first three entires (end A
-		                            // translation) of rRod and rdRod
+		                    tmprd);
 		// does the above function need to take in all 6 elements of r6RodRel??
 		rRod(Eigen::seqN(0, 3)) = tmpr;
 		rdRod(Eigen::seqN(0, 3)) = tmprd;
@@ -432,7 +431,7 @@ Body::updateFairlead(real time)
 		a6 = rdd_ves;
 
 		// calculate orientation matrix based on latest angles
-		OrMat = r7.quat.toRotationMatrix();
+		OrMat = r7.quat.normalized().toRotationMatrix();
 
 		// set positions of any dependent points and rods
 		setDependentStates();
@@ -467,7 +466,7 @@ Body::setState(XYZQuat pos, vec6 vel)
 	}
 
 	// calculate orientation matrix based on latest angles
-	OrMat = r7.quat.toRotationMatrix();
+	OrMat = r7.quat.normalized().toRotationMatrix();
 
 	// set positions of any dependent points and rods
 	setDependentStates();
@@ -511,8 +510,8 @@ Body::getStateDeriv()
 	return std::make_pair(dPos, a6);
 };
 
-vec6
-Body::getFnet()
+const vec6
+Body::getFnet() const
 {
 	vec6 F6_iner = vec6::Zero();
 	vec6 Fnet_out = vec6::Zero();
@@ -559,12 +558,17 @@ Body::doRHS()
 	F6net(Eigen::seqN(0, 3)) = Fgrav;
 	F6net(Eigen::seqN(3, 3)) = body_rCGrotated.cross(Fgrav);
 
+	// Centrifugal force due to COM not being at body origin
+	const vec w = v6.tail<3>();
+	F6net.head<3>() -=
+		M.topLeftCorner(3, 3) * (w.cross(w.cross(body_rCGrotated)));
+
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
 	// env->waves->getU(r6, t, U); // call generic function to get water
 	// velocities <<<<<<<<< all needs updating
-	auto [zeta, U, Ud] = waves->getWaveKinBody(bodyId);
+	auto [zeta, U, Ud, Pdyn] = waves->getWaveKinBody(bodyId);
 
 	// ------------------------------------------------------------------------------------------
 
@@ -578,10 +582,10 @@ Body::doRHS()
 
 	// Rotational DOFs drag coefficients are also defined on bodyCdA
 	vec6 cda;
-	cda(Eigen::seqN(0, 3)) = OrMat.transpose() * bodyCdA.head<3>();
-	cda(Eigen::seqN(3, 3)) = OrMat.transpose() * bodyCdA.tail<3>();
+	cda(Eigen::seqN(0, 3)) = (OrMat * bodyCdA.head<3>().asDiagonal() * OrMat.transpose()) * vi.head<3>() * vi.head<3>().norm();
+	cda(Eigen::seqN(3, 3)) = (OrMat * bodyCdA.tail<3>().asDiagonal() * OrMat.transpose()) * vi.tail<3>() * vi.tail<3>().norm();
 	F6net +=
-	    0.5 * env->rho_w * vi.cwiseProduct(vi.cwiseAbs()).cwiseProduct(cda);
+	    0.5 * env->rho_w * cda;
 
 	// Get contributions from any points attached to the body
 	for (auto attached : attachedP) {
@@ -589,7 +593,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos, v6);
 
 		// sum quantitites
 		F6net += F6_i;
@@ -602,7 +606,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos, v6);
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];
@@ -774,16 +778,6 @@ Body::defaultVTK()
 }
 #endif
 
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Body::drawGL(void)
-{
-	double radius = pow(BodyV / (4 / 3 * pi), 0.33333); // pointV
-	Sphere(r[0], r[1], r[2], radius);
-};
-#endif
-
 } // ::moordyn
 
 // =============================================================================
@@ -828,6 +822,60 @@ MoorDyn_GetBodyState(MoorDynBody b, double r[6], double rd[6])
 	std::tie(pos, vel) = ((moordyn::Body*)b)->getState();
 	moordyn::vec62array(pos.toVec6(), r);
 	moordyn::vec62array(vel, rd);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyPos(MoorDynBody b, double r[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec pos = ((moordyn::Body*)b)->getPosition();
+	moordyn::vec2array(pos, r);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyAngle(MoorDynBody b, double r[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec pos = ((moordyn::Body*)b)->getAngles();
+	moordyn::vec2array(pos, r);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyVel(MoorDynBody b, double rd[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec vel = ((moordyn::Body*)b)->getVelocity();
+	moordyn::vec2array(vel, rd);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyAngVel(MoorDynBody b, double rd[3])
+{
+	CHECK_BODY(b);
+	moordyn::vec vel = ((moordyn::Body*)b)->getAngularVelocity();
+	moordyn::vec2array(vel, rd);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyForce(MoorDynBody b, double f[6])
+{
+	CHECK_BODY(b);
+	moordyn::vec6 force = ((moordyn::Body*)b)->getFnet();
+	moordyn::vec62array(force, f);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetBodyM(MoorDynBody b, double m[6][6])
+{
+	CHECK_BODY(b);
+	moordyn::mat6 mass = ((moordyn::Body*)b)->getM();
+	moordyn::mat62array(mass, m);
 	return MOORDYN_SUCCESS;
 }
 

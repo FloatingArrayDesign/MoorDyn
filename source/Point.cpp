@@ -107,6 +107,7 @@ Point::addLine(Line* theLine, EndPoints end_point)
 
 	attachment a = { theLine, end_point };
 	attached.push_back(a);
+	SuperCFL::AddChild(theLine);
 };
 
 EndPoints
@@ -120,6 +121,7 @@ Point::removeLine(Line* line)
 		// This is the line's entry in the attachment list
 		end_point = it->end_point;
 		attached.erase(it);
+		SuperCFL::RemoveChild(line);
 
 		LOGMSG << "Detached line " << line->number << " from Point " << number
 		       << endl;
@@ -164,21 +166,6 @@ Point::initialize()
 	LOGDBG << "   Initialized Point " << number << endl;
 
 	return std::make_pair(pos, vel);
-};
-
-// function to return net force on point (just to allow public reading of
-// Fnet)
-void
-Point::getFnet(vec& Fnet_out)
-{
-	Fnet_out = Fnet;
-};
-
-// function to return mass matrix of point
-void
-Point::getM(mat& M_out)
-{
-	M_out = M;
 };
 
 real
@@ -312,7 +299,7 @@ Point::getStateDeriv()
 };
 
 void
-Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
+Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody, vec6 vBody)
 {
 	doRHS();
 
@@ -323,6 +310,8 @@ Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 	// convert segment net force into 6dof force about body ref point
 	Fnet_out(Eigen::seqN(0, 3)) = Fnet;
 	Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
+	// add the centripetal force
+	Fnet_out(Eigen::seqN(0, 3)) += getCentripetalForce(rBody, vBody.tail<3>());
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	M_out = translateMass(rRel, M);
@@ -363,7 +352,7 @@ Point::doRHS()
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
-	auto [zeta, U, Ud] = waves->getWaveKinPoint(pointId);
+	auto [zeta, U, Ud, Pdyn] = waves->getWaveKinPoint(pointId);
 	// env->waves->getU(r, t, U); // call generic function to get water
 	// velocities  <<<<<<<<<<<<<<<< all needs updating
 
@@ -486,16 +475,6 @@ Point::saveVTK(const char* filename) const
 }
 #endif
 
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Point::drawGL(void)
-{
-	double radius = pow(pointV / (4 / 3 * pi), 0.33333); // pointV
-	Sphere(r[0], r[1], r[2], radius);
-};
-#endif
-
 } // ::moordyn
 
 // =============================================================================
@@ -535,8 +514,7 @@ int DECLDIR
 MoorDyn_GetPointPos(MoorDynPoint point, double pos[3])
 {
 	CHECK_POINT(point);
-	moordyn::vec r, rd;
-	((moordyn::Point*)point)->getState(r, rd);
+	moordyn::vec r = ((moordyn::Point*)point)->getPosition();
 	moordyn::vec2array(r, pos);
 	return MOORDYN_SUCCESS;
 }
@@ -545,8 +523,7 @@ int DECLDIR
 MoorDyn_GetPointVel(MoorDynPoint point, double v[3])
 {
 	CHECK_POINT(point);
-	moordyn::vec r, rd;
-	((moordyn::Point*)point)->getState(r, rd);
+	moordyn::vec rd = ((moordyn::Point*)point)->getVelocity();
 	moordyn::vec2array(rd, v);
 	return MOORDYN_SUCCESS;
 }
@@ -555,9 +532,17 @@ int DECLDIR
 MoorDyn_GetPointForce(MoorDynPoint point, double f[3])
 {
 	CHECK_POINT(point);
-	moordyn::vec fnet;
-	((moordyn::Point*)point)->getFnet(fnet);
+	moordyn::vec fnet = ((moordyn::Point*)point)->getFnet();
 	moordyn::vec2array(fnet, f);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetPointM(MoorDynPoint point, double m[3][3])
+{
+	CHECK_POINT(point);
+	moordyn::mat mass = ((moordyn::Point*)point)->getM();
+	moordyn::mat2array(mass, m);
 	return MOORDYN_SUCCESS;
 }
 

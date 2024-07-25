@@ -152,7 +152,7 @@ including seabed properties, initial condition (IC) generation settings, and the
 .. code-block:: none
 
  -------------------------- SOLVER OPTIONS---------------------------------------------------
- 0.001    dtM           - time step to use in mooring integration
+ 0.001    dtM          - time step to use in mooring integration
  3.0e6    kb           - bottom stiffness
  3.0e5    cb           - bottom damping
  70       WtrDpth      - water depth
@@ -230,14 +230,15 @@ changes from V1.
 
 Most helpfully, this new format is identical between C++ and FORTRAN versions of
 MoorDyn, and it is designed to support future capability enhancements without
-requiring changes.
+requiring format changes.
 
 This file is divided into sections, some of which are optional. Each section is
 identified (and detected) by a header line consisting of a key phrase (e.g. Line
 Types) surrounded by dashes. While a couple sections are optional, the order of
 the sections cannot be changed. The exact whitespace and alignment of the lines of the file is not 
 important, as long as values are separated by at least one space. However, every column must have 
-a value.
+a value. MoorDyn only reads the values of each column, not the column headers or units. The column 
+identifiers and units can be changed by the user but should use similar names to retain readability. 
 
 To successfully run a simulation, MoorDyn requires at least one line. If you are aiming to simulate 
 a system with no lines, the best approach is to create a short taut vertical line stretched between 
@@ -288,7 +289,7 @@ The columns in order are as follows:
    desired damping ratio (in fraction of critical) for the line type (and MoorDyn will set the BA 
    of each line accordingly)
  - EI – the line bent stiffness, product of elasticity modulus and inertia of the cross-sectional 
-   area (N)
+   area (N-m^2)
  - Cd –  transverse drag coefficient (with respect to frontal area, d*l)
  - Ca –  transverse added mass coefficient (with respect to line displacement)
  - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
@@ -360,12 +361,18 @@ The columns are as follows:
  - CG – Body center of gravity. If one value given, it is along the Z axis. To specify a coordinate 
    point, the XYZ values are listed separated by | with no spaces (m)
  - I – Body moment of inertia diagonals for the 3x3 inertia matrix. If one value given, it is used 
-   for all three values. To specify different values, the inputs are listed separated by | with no 
+   for all three values. To specify three different values, the inputs are listed separated by | with no 
    spaces (kg-m^2)
  - Volume – The body displaced volume used in buoyancy calculations excluding attached rod and 
    point volume contributions (m^3)
- - CdA – The product of drag coefficient and frontal area of body (m^2)
- - Ca – The body added mass coefficient
+ - CdA – The product of drag coefficient and frontal area of body. If one value given, it is used 
+   for all six values. If two values are given, the first is used for the translational drag and 
+   the second for the rotational drag. If three values are given, they are used as both the 
+   translational and rotational drag coefficicents for the respective axis. If six values are given, 
+   they are used as the drag coefficicnets in the respective degree of freedom. To specify different 
+   values, the inputs are listed separated by | with no spaces (m^2)
+ - Ca – The body added mass coefficient. If one value given, it is used for all three values. To 
+   specify three different values, the inputs are listed separated by | with no spaces
 
 Rods list
 ^^^^^^^^^
@@ -398,7 +405,7 @@ outputs are wanted.  Eight output properties are currently possible:
 
  - p – node positions
  - v – node velocities
- - U – wave velocities at each node
+ - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
  - c – internal damping force at each segment
@@ -472,7 +479,7 @@ outputs are wanted. Eight output properties are currently possible:
 
  - p – node positions
  - v – node velocities
- - U – wave velocities at each node
+ - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
  - c – internal damping force at each segment
@@ -492,8 +499,7 @@ triggered by a time or attachment tension threshold, which ever comes first. Use
 multiple failures for a given point, but duplicate failure configurations will be ignored.
 If two lines attached to a point are listed to fail (failure 1 for example), then after the failure
 the lines will remain attached to each other by a free point. In this multi line case, if any line
-reaches the tension threshold then the failure will be triggered. The theory behind failures can be
-found :ref:`here <version2>`.
+reaches the tension threshold then the failure will be triggered.
 
 .. code-block:: none
 
@@ -507,8 +513,8 @@ found :ref:`here <version2>`.
 Control (MoorDyn-F only)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section (optional) is only available for MoorDyn-F and describes the control channels of the 
-system. 
+This section (optional) is only available for MoorDyn-F and describes which lines are assigned to 
+which control channel in the ServoDyn input file. 
 
 .. code-block:: none
 
@@ -518,6 +524,11 @@ system.
   1        1,2,3,4 
   2        5
 
+In the example above channel 1 is used to control lines 1-4 and channel 2 is used to control line 5.
+These channel numbers must correspond to control channels in the ServoDyn input file. The ServoDyn 
+summary file (enabled with ``SumPrint`` option) will contain a list of all cable control channels in 
+use and what they are assigned to.
+
 Options
 ^^^^^^^
 
@@ -526,6 +537,7 @@ This section (required) describes the simulation options
 .. code-block:: none
 
  ---------------------- OPTIONS -----------------------------------------
+ 1             writeLog      Write log file
  0.002         dtM           time step to use in mooring integration (s)
  3000000       kbot          bottom stiffness (Pa/m)
  300000        cbot          bottom damping (Pa-s/m)
@@ -533,18 +545,28 @@ This section (required) describes the simulation options
  10            TmaxIC        max time for ic gen (s)
  0.001         threshIC      threshold for IC convergence (-)
  
-Any of these lines can be omitted, in which case default values will be used (shown in 
-parentheses). Default value swith a C or an F indicates which version has that as the default.
-As such, they are all optional settings, although some of them (such as time step 
-size) often needs to be set by the user for proper operation. The list of possible options is:
+The options list differs from the other sections in that it uses a value + key approach.
+MoorDyn reads in the value, and then assigns it to the corresponding key. This means the 
+order of the options list does not matter, however any options listed above the ``writeLog`` 
+flag will not be included in the log file. Any of these option lines can be omitted, in which 
+case default values will be used (shown in parentheses). Default values with a C or a F 
+indicate which version has that as the default. As such, they are all optional settings, although 
+some of them (such as time step size) often needs to be set by the user for proper operation. 
+The list of possible options is:
 
- - writeLog (0 C, -1 F): If >0 a log file is written recording information. The bigger the number 
-   the more verbose. Please, be mindful that big values would critically reduce the performance!
- - dtM (0.001 C): The time step (s). In MoorDyn-F if this is left blank it defaults to the 
-   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.   
- - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, 
-   BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for 
-   Runge-Kutta while AB stands for Adams-Bashforth
+ - writeLog (0 C, -1 F): If >0 a log file is written recording information. The
+   bigger the number the more verbose. Please, be mindful that big values would
+   critically reduce the performance!
+ - dtM (3.402823e+38) – desired mooring model maximum time step (s). In
+   MoorDyn-F if this is left blank it defaults to the
+   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.
+ - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor. CFL is the ratio 
+   between the time step and the natural period, computed considering the math described in
+   :ref:`the troubleshooting section <troubleshooting>`.
+ - tScheme (RK2): The time integrator. It should be one of
+   Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
+   BEuler\ *N*, Midpoint\ *N*, ACA\ *N*, Wilson\ *N*. Look at the
+   :ref:`time schemes documentation <tschemes>` to learn more about this.
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
  - WtrDpth (0.0): The water depth (m). In MoorDyn-F the bathymetry file path can be inputted here.
@@ -575,13 +597,28 @@ size) often needs to be set by the user for proper operation. The list of possib
  - StatDynFricScale (1.0): Rate between Static and Dynamic friction coefficients
  - dtOut (0.0): Time step size to be written to output files. A value of zero will use dtM as a 
    step size (s)
- - Seafloor file: A path to the :ref:`bathymetry file <seafloor_in>`
+ - SeafloorFile: A path to the :ref:`bathymetry file <seafloor_in>`
+ - ICgenDynamic (0): MoorDyn-C switch for using older dynamic relaxation method (same as MoorDyn-F).
+   If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
+   The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
+   but it can take longer to reach equilibrium.
 
-In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values provided by FAST, so it is 
-recommended to not use custom values for the sake of consistency.
+A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
+no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
+runs using the user time step. If no time step is provided, then the user provided CFL factor is 
+used to calculate the time step and MoorDyn-C uses this calculated time step. If both the time step
+and CFL are provided, MoorDyn-C uses the smaller time step between user provided and CFL 
+calculated.
+
+In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values
+provided by FAST, so it is  recommended to not use custom values for the sake
+of consistency.
 
 The following MoorDyn-C options are not supported by MoorDyn-F: 
 
+ - CFL: In MoorDyn-F the time step is governed by the
+   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step. To
+   override it just the option dtM is available.
  - WaveKin & Currents: In MoorDyn-F waves and currents are combined into a single option called 
    WaterKin which takes a file path as a value and defaults to an empty string (i.e. no WaterKin). 
    The file provided should be formatted as described in the additional MoorDyn inputs 
@@ -592,12 +629,13 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - unifyCurrentGrid: Not available in MoorDyn-F because currents and waves are handled in the same 
    input file.
  - writeUnits: Units are always written to output file headers
- - Seafloor file: MoorDyn-F accepts a bathymetry file path as an alternative to a number in the 
-   WtrDpth option
+ - SeafloorFile: MoorDyn-F accepts a bathymetry file path as an alternative to
+   a number in the WtrDpth option
  - FrictionCoefficient: MoorDyn-F contains friction coefficients for lines in both the axial and 
    transverse directions while MoorDyn-C only has a general seafloor contact coefficient of friction
  - FricDamp: Same as CV in MoorDyn-F.
  - StatDynFricScale: Same as MC in MoorDyn-F.
+ - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 
@@ -609,7 +647,10 @@ The following options from MoorDyn-F are not supported by MoorDyn-C:
  - CV (200.0): Same as FricDamp in MoorDyn-C.
  - inertialF (0): Toggle to include inertial components in the returned forces from coupled 
    bodies and rods. Transients in the acceleration passed into MoorDy-F by OpenFAST can result 
-   in large non-physical forces and moments which can cause instability in the model [0: on, 1: off]
+   in large non-physical forces and moments which can cause instability in the model [0: no, 
+   1: yes, 2: yes with ramp to inertialF_rampT]
+ - inertialF_rampT (30.0): Ramp time for inertial forces to reduce coupled object instability (s). 
+   This is ignored unless inertialF = 2
 
 Outputs
 ^^^^^^^
@@ -634,7 +675,6 @@ shown below) for MoorDyn to know when to stop reading inputs.
  ANCHTEN1
  ANCHTEN2
  ANCHTEN3
- END
  ------------------------- need this line -------------------------------------
 
 The avaible output flags are decribed in the table below:
@@ -666,13 +706,13 @@ number looks like [OBJECT#][SUFFIX], i.e. ROD1SUB.
 
 Reference Points:
 
--	Rods: End A (Node 0)
-  - No z rotations for rods (rotations along axis of rod negligible)
-  - A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
-    will be zero for this case. 
--	Bodies: Center of Mass
--	Points: Center of Mass
--	Lines: End A (Node 0)
+- Rods: End A (Node 0)
+- No z rotations for rods (rotations along axis of rod negligible)
+- A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
+  will be zero for this case. 
+- Bodies: Center of Mass
+- Points: Center of Mass
+- Lines: End A (Node 0)
 
 Footnotes:
 
@@ -687,6 +727,9 @@ Footnotes:
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
   same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
   fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
+- The output list is not case sensistive, however all MoorDyn-F outputs will be printed to the output
+  file in all caps. When searching OpenFAST output channels, users will need to search for MoorDyn
+  channels in all caps. Example: the channel fairten1 would appear in the output file as FAIRTEN1.
 
 1. Line node forces: Line node forces output the net force on the node, which includes the tension
    vectors of the adjacent segments plus the weight, buoyancy, seabed-contact, and hydrodynamic 
@@ -845,10 +888,8 @@ data. Details on this format can be found in the :ref:`water kinematics section 
  ...any notes here...
  --------------------------- WAVES -------------------------------------
  3                    WaveKinMod  - type of wave input {0 no waves; 3 set up grid of wave data based on time series} 
- "waveelev.dat"       WaveKinFile - file containing wave elevation time series at 
- 0,0,0
- 0.5                  dtWave      - time step to use in setting up wave kinematics  
- grid (s)
+ "waveelev.dat"       WaveKinFile - file containing wave elevation time series at 0,0,0
+ 0.5                  dtWave      - time step to use in setting up wave kinematics grid (s)
  0                    WaveDir     - wave heading (deg)
  2                                - X wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
  -24, 150, 100                    - X wave grid point data
@@ -870,12 +911,18 @@ data. Details on this format can be found in the :ref:`water kinematics section 
 MoorDyn with FAST.Farm - Inputs
 -------------------------------
 
-In FAST.Farm, a new ability to use MoorDyn at the array level to simulate shared mooring systems 
-has been developed. Until the main branch of OpenFAST, the FAST.Farm capability, and the MoorDyn-C 
-capability are merged, the shared moorings capability in FAST.Farm uses the MoorDyn v1 input file 
-format, with a small adjustment to reference attachments to multiple turbines.
+MoorDyn is available at an array level in FAST.Farm using the MoorDyn-F v2 input file format.
+A nice description of FAST.Farm is found on the OpenFAST repository README: 
 
-https://github.com/mattEhall/openfast/tree/f/fast-farm
+"FAST.Farm extends the capabilities of OpenFAST to provide physics-based engineering simulation 
+of multi-turbine land-based, fixed-bottom offshore, and floating offshore wind farms. With 
+FAST.Farm, you can simulate each wind turbine in the farm with an OpenFAST model and capture 
+the relevant physics for prediction of wind farm power performance and structural loads, including 
+wind farm-wide ambient wind, super controller, and wake advection, meandering, and merging. 
+FAST.Farm maintains computational efficiency through parallelization to enable loads analysis for 
+predicting the ultimate and fatigue loads of each wind turbine in the farm."
+
+FAST.Farm can be obtained from the `OpenFAST repository <https://github.com/OpenFAST/openfast/tree/main>`_.
 
 General Organization
 ^^^^^^^^^^^^^^^^^^^^
@@ -885,46 +932,72 @@ FAST.Farm. This ability can be used for any non-shared mooring lines in all case
 simulation of shared mooring lines, which are coupled with multiple turbines, an additional 
 farm-level MoorDyn instance has been added. This MoorDyn instance is not associated with any 
 turbine but instead is called at a higher level by FAST.Farm. Attachments to different turbines 
-within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the type for any 
-points that are attached to a turbine, where "N" is the specific turbine number as listed in the 
-FAST.Farm input file.
+within this farm-level MoorDyn instance are handled by specifying "TurbineN" as the attachment for any 
+points/bodies/rods that are attached to a turbine, where "N" is the specific turbine number as listed in the 
+FAST.Farm input file. Pinned bodies and rods are not yet supported in FAST.Farm. 
 
 MoorDyn Input File
 ^^^^^^^^^^^^^^^^^^
 
 The following input file excerpt shows how points can be specified as attached to specific turbines 
-(turbines 3 and 4 in this example). When a point has "TurbineN" as its type, it acts similarly to a 
-"Vessel" type, where the X/Y/Z inputs specify the relative location of the fairlead on the platform. 
-In the farm-level MoorDyn input file, "Vessel" point types cannot be used because it is ambiguous 
-which turbine they attach to.
+(turbines 3 and 4 in this example). When a point has "TurbineN" as its attachment, it acts similarly to a 
+"BodyN" attachment, where the X/Y/Z inputs specify the relative location of the fairlead on the platform. 
+ex. For a turbine located at (200, 0, 0), a vertical line attached to it's center would have
+a fixed point at end A at (200, 0, 0) and a turbineN point at (0, 0, 0). In the farm-level MoorDyn input 
+file, "Coupled" point types cannot be used because it is ambiguous which turbine they attach to.
 
 .. code-block:: none
- :emphasize-lines: 5,6,12
+ :emphasize-lines: 5,6,11
  
  ----------------------- POINTS ----------------------------------------------
- Node      Type        X       Y         Z        M        V       CdA   CA
+ Node    Attachment    X       Y         Z        M        V       CdA   CA
  (-)       (-)        (m)     (m)       (m)      (kg)     (m^3)   (m^2)  (-)
  1         Turbine3   10.0     0      -10.00      0        0        0     0
  3         Turbine4  -10.0     0      -10.00      0        0        0     0
  2         Fixed     267.0    80      -70.00      0        0        0     0
  -------------------------- LINE PROPERTIES ----------------------------------
- 2     NLines - the number of lines
- Line    LineType  UnstrLen   NumSegs    NodeA     NodeB  Flags/Outputs
- (-)      (-)        (m)        (-)       (-)       (-)      (-)
- 1     sharedchain  300.0        20        1         2        p
- 2     anchorchain  300.0        20        1         3        p
+ ID    LineType      AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+ (-)     (-)         (-)        (-)       (m)       (-)      (-)
+ 1     sharedchain    1         2        300.0      20        p
+ 2     anchorchain    1         3        300.0      20        p
  
 In this example, Line 1 is a shared mooring line and Line 2 is an anchored mooring line that has a 
 fairlead point in common with the shared line. Individual mooring systems can be modeled in the 
 farm-level MoorDyn instance as well.
 
+The same approach is used for bodies and rods, where the attachment is defined as "TurbineN".
+The body and rod positions and rotations are defined relative to the turbines position and rotation. 
+The following code snippet shows rods using the turbine convention.
+
+.. code-block:: none
+  :emphasize-lines: 12,13,17
+
+  ---------------------- LINE TYPES --------------------------------------------------
+  TypeName    Diam     Mass/m     EA      BA/-zeta     EI        Cd      Ca      CdAx    CaAx
+  (name)      (m)      (kg/m)     (N)     (N-s/-)    (N-m^2)     (-)     (-)     (-)     (-)
+  0           0.1410    35.78  2.030e+08 -1.000e+00  8.410e+03   1.200   1.000   0.20    0.00 
+  --------------------- ROD TYPES -----------------------------------------------------
+  TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd
+  (name)        (m)      (kg/m)    (-)    (-)     (-)      (-)
+  connector    0.2000    0.00      0.000  0.000   0.000    0.000  
+  ---------------------- RODS ---------------------------------------------------------
+  ID   RodType    Attachment   Xa      Ya    Za      Xb      Yb    Zb      NumSegs  RodOutputs
+  (#)  (name)     (#/key)      (m)     (m)   (m)     (m)     (m)   (m)     (-)       (-)
+  1    connector  Turbine1     -0.62   0.00  -13.22  0.62    0.00  -14.78   0         - 
+  2    connector  Free         -947.81 0.00  -150.60 -945.82 0.00  -150.75  0         -
+  ---------------------- LINES --------------------------------------------------------
+  ID    LineType      AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+  (#)    (name)        (#)      (#)       (m)       (-)     (-)
+  1        0           R1B      R2A     299.429     10      pt
+
+In this example 0-length rods are used as bend-stiffeners for a suspended cable attached to 
+Turbine1.
 
 FAST.Farm Input File
 ^^^^^^^^^^^^^^^^^^^^
 
-In the branch of FAST.Farm that supports shared mooring capabilities, several additional lines have 
-been added to the FAST.Farm primary input file. These are highlighted in the example input file 
-excerpt below:
+Several additional lines have been added to the FAST.Farm primary input file. These are highlighted 
+in the example input file excerpt below:
 
 .. code-block:: none
  :emphasize-lines: 9,10,13,14,15

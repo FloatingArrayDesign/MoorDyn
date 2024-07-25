@@ -31,32 +31,50 @@ module moordyn
              MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, MoorDyn_Save, &
              MoorDyn_Load, MoorDyn_SaveVTK, &
              MoorDyn_GetWavesKin, &
-             MoorDyn_GetBodyState, MoorDyn_SaveBodyVTK, MoorDyn_UseBodyVTK, &
+             MoorDyn_GetBodyState, MoorDyn_GetBodyPos, MoorDyn_GetBodyAngle, &
+             MoorDyn_GetBodyVel, MoorDyn_GetBodyAngVel, MoorDyn_GetBodyForce, &
+             MoorDyn_GetBodyM, MoorDyn_SaveBodyVTK, MoorDyn_UseBodyVTK, &
+             MoorDyn_GetRodForce, MoorDyn_GetRodM, MoorDyn_GetRodNodePos, &
+             MoorDyn_GetRodNodeVel, MoorDyn_SaveRodVTK, &
              MoorDyn_GetPointPos, MoorDyn_GetPointVel, &
-             MoorDyn_GetPointForce, MoorDyn_SavePointVTK, &
-             MoorDyn_GetRodNodePos, MoorDyn_SaveRodVTK, &
-             MoorDyn_GetLineNodePos, MoorDyn_GetLineNodeTen, &
-             MoorDyn_SaveLineVTK
+             MoorDyn_GetPointForce, MoorDyn_GetPointM, MoorDyn_SavePointVTK, &
+             MoorDyn_SetLinePressInt, MoorDyn_GetLineNodePos, &
+             MoorDyn_GetLineNodeVel, MoorDyn_GetLineNodeForce, &
+             MoorDyn_GetLineNodeTen, MoorDyn_GetLineNodeBendStiff, &
+             MoorDyn_GetLineNodeWeight, MoorDyn_GetLineNodeDrag, &
+             MoorDyn_GetLineNodeFroudeKrilov, MoorDyn_GetLineNodeSeabedForce, &
+             MoorDyn_GetLineNodeM, MoorDyn_SaveLineVTK
 
   public :: MD_Create, MD_NCoupledDOF, MD_SetVerbosity, MD_SetLogFile, &
             MD_SetLogLevel, MD_Log, MD_Init, MD_Init_NoIC, MD_Step, MD_Close, &
-            MD_GetWaves, MD_ExternalWaveKinInit, MD_ExternalWaveKinGetN, &
-            MD_ExternalWaveKinGetCoordinates, MD_ExternalWaveKinSet, &
-            MD_GetNumberBodies, MD_GetBody, MD_GetNumberRods, MD_GetRod, &
-            MD_GetNumberPoints, MD_GetPoint, MD_GetNumberLines, &
-            MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, MD_SaveVTK, &
+            MD_GetWaves, MD_GetSeafloor, MD_ExternalWaveKinInit, &
+            MD_ExternalWaveKinGetN, MD_ExternalWaveKinGetCoordinates, &
+            MD_ExternalWaveKinSet, MD_GetNumberBodies, MD_GetBody, &
+            MD_GetNumberRods, MD_GetRod, MD_GetNumberPoints, MD_GetPoint, &
+            MD_GetNumberLines, MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, &
+            MD_SaveVTK, &
             MD_GetWavesKin, &
-            MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, MD_SaveBodyVTK, &
-            MD_UseBodyVTK, &
+            MD_GetDepthAt, MD_GetAverageDepth, MD_GetMinDepth, &
+            MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, MD_GetBodyPos, &
+            MD_GetBodyAngle, MD_GetBodyVel, MD_GetBodyAngVel, &
+            MD_GetBodyForce, MD_GetBodyM, MD_SaveBodyVTK, MD_UseBodyVTK, &
+            MD_GetRodID, MD_GetRodType, MD_GetRodForce, MD_GetRodM, &
+            MD_GetRodN, MD_GetRodNumberNodes, MD_GetRodNodePos, &
+            MD_GetRodNodeVel, MD_SaveRodVTK, &
             MD_GetPointID, MD_GetPointType, MD_GetPointPos, &
-            MD_GetPointVel, MD_GetPointForce, MD_GetPointNAttached, &
-            MD_GetPointAttached, MD_SavePointVTK, &
-            MD_GetRodID, MD_GetRodType, MD_GetRodN, MD_GetRodNumberNodes, &
-            MD_GetRodNodePos, MD_SaveRodVTK, &
+            MD_GetPointVel, MD_GetPointForce, MD_GetPointM, &
+            MD_GetPointNAttached, MD_GetPointAttached, MD_SavePointVTK, &
             MD_GetLineID, MD_GetLineN, MD_GetLineNumberNodes, &
-            MD_GetLineUnstretchedLength, MD_GetLineNodePos, &
-            MD_GetLineNodeTen, MD_GetLineNodeCurv, MD_GetLineMaxTen, &
-            MD_GetLineFairTen, MD_SaveLineVTK
+            MD_GetLineUnstretchedLength, MD_SetLineUnstretchedLength, &
+            MD_SetLineUnstretchedLengthVel, MD_IsLineConstantEA, &
+            MD_GetLineConstantEA, MD_SetLineConstantEA, &
+            MD_IsLinePressBend, MD_SetLinePressBend, MD_SetLinePressInt, &
+            MD_GetLineNodePos, MD_GetLineNodeVel, MD_GetLineNodeForce, &
+            MD_GetLineNodeTen, MD_GetLineNodeBendStiff, MD_GetLineNodeWeight, &
+            MD_GetLineNodeDrag, MD_GetLineNodeFroudeKrilov, &
+            MD_GetLineNodeSeabedForce, MD_GetLineNodeCurv, &
+            MD_GetLineNodeM, MD_GetLineMaxTen, MD_GetLineFairTen, &
+            MD_SaveLineVTK
 
   interface
 
@@ -78,7 +96,7 @@ module moordyn
     integer(c_int) function MD_SetVerbosity(instance, n) bind(c, name='MD_SetVerbosity')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
-      integer(c_int), intent(out) :: n
+      integer(c_int), intent(in) :: n
     end function MD_SetVerbosity
 
     function MoorDyn_SetLogFile(instance, f) bind(c, name='MoorDyn_SetLogFile') result(rc)
@@ -91,7 +109,7 @@ module moordyn
     integer(c_int) function MD_SetLogLevel(instance, n) bind(c, name='MoorDyn_SetLogLevel')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
-      integer(c_int), intent(out) :: n
+      integer(c_int), intent(in) :: n
     end function MD_SetLogLevel
 
     function MoorDyn_Log(instance, n, f) bind(c, name='MoorDyn_Log') result(rc)
@@ -138,6 +156,11 @@ module moordyn
       import :: c_ptr
       type(c_ptr), value, intent(in) :: instance
     end function MD_GetWaves
+
+    type(c_ptr) function MD_GetSeafloor(instance) bind(c, name='MoorDyn_GetSeafloor')
+      import :: c_ptr
+      type(c_ptr), value, intent(in) :: instance
+    end function MD_GetSeafloor
 
     integer(c_int) function MD_ExternalWaveKinInit(instance, n) bind(c, name='MoorDyn_ExternalWaveKinInit')
       import :: c_ptr, c_int
@@ -250,7 +273,7 @@ module moordyn
     !                                Waves.h
     ! ==========================================================================
 
-    function MoorDyn_GetWavesKin(instance, x, y, z, t, u, ud, zeta, pdyn) bind(c, name='MoorDyn_GetWavesKin') result(rc)
+    function MoorDyn_GetWavesKin(instance, x, y, z, t, u, ud, zeta, pdyn, seafloor) bind(c, name='MoorDyn_GetWavesKin') result(rc)
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       real(c_double), value, intent(in) :: x
@@ -261,8 +284,32 @@ module moordyn
       type(c_ptr), value, intent(in) :: ud
       real(c_double), intent(out) :: zeta
       real(c_double), intent(out) :: pdyn
+      type(c_ptr), value, intent(in) :: seafloor
       integer(c_int) :: rc
     end function MoorDyn_GetWavesKin
+
+    !                                Seafloor.h
+    ! ============================================================================
+
+    integer(c_int) function MD_GetDepthAt(instance, x, y, depth) bind(c, name='MoorDyn_GetDepthAt')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), value, intent(in) :: x
+      real(c_double), value, intent(in) :: y
+      real(c_double), intent(out) :: depth
+    end function MD_GetDepthAt
+
+    integer(c_int) function MD_GetAverageDepth(instance, depth) bind(c, name='MoorDyn_GetAverageDepth')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: depth
+    end function MD_GetAverageDepth
+
+    integer(c_int) function MD_GetMinDepth(instance, depth) bind(c, name='MoorDyn_GetMinDepth')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: depth
+    end function MD_GetMinDepth
 
     !                                Body.h
     ! ==========================================================================
@@ -286,6 +333,48 @@ module moordyn
       type(c_ptr), value, intent(in) :: rd
       integer(c_int) :: rc
     end function MoorDyn_GetBodyState
+
+    function MoorDyn_GetBodyPos(instance, r) bind(c, name='MoorDyn_GetBodyPos') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyPos
+
+    function MoorDyn_GetBodyAngle(instance, r) bind(c, name='MoorDyn_GetBodyAngle') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyAngle
+
+    function MoorDyn_GetBodyVel(instance, r) bind(c, name='MoorDyn_GetBodyVel') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyVel
+
+    function MoorDyn_GetBodyAngVel(instance, r) bind(c, name='MoorDyn_GetBodyAngVel') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyAngVel
+
+    function MoorDyn_GetBodyForce(instance, f) bind(c, name='MoorDyn_GetBodyForce') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: f
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyForce
+
+    function MoorDyn_GetBodyM(instance, m) bind(c, name='MoorDyn_GetBodyM') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: m
+      integer(c_int) :: rc
+    end function MoorDyn_GetBodyM
 
     function MoorDyn_SaveBodyVTK(instance, f) bind(c, name='MoorDyn_SaveBodyVTK') result(rc)
       import :: c_ptr, c_char, c_int
@@ -316,6 +405,20 @@ module moordyn
       integer(c_int), intent(out) :: n
     end function MD_GetRodType
 
+    function MoorDyn_GetRodForce(instance, f) bind(c, name='MoorDyn_GetRodForce') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: f
+      integer(c_int) :: rc
+    end function MoorDyn_GetRodForce
+
+    function MoorDyn_GetRodM(instance, m) bind(c, name='MoorDyn_GetRodM') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: m
+      integer(c_int) :: rc
+    end function MoorDyn_GetRodM
+
     integer(c_int) function MD_GetRodN(instance, n) bind(c, name='MoorDyn_GetRodN')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
@@ -335,6 +438,14 @@ module moordyn
       type(c_ptr), value, intent(in) :: r
       integer(c_int) :: rc
     end function MoorDyn_GetRodNodePos
+
+    function MoorDyn_GetRodNodeVel(instance, n, r) bind(c, name='MoorDyn_GetRodNodeVel') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetRodNodeVel
 
     function MoorDyn_SaveRodVTK(instance, f) bind(c, name='MoorDyn_SaveRodVTK') result(rc)
       import :: c_ptr, c_char, c_int
@@ -379,6 +490,13 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetPointForce
 
+    function MoorDyn_GetPointM(instance, m) bind(c, name='MoorDyn_GetPointM') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: m
+      integer(c_int) :: rc
+    end function MoorDyn_GetPointM
+
     integer(c_int) function MD_GetPointNAttached(instance, n) bind(c, name='MoorDyn_GetPointNAttached')
       import :: c_ptr, c_int
       type(c_ptr), value, intent(in) :: instance
@@ -421,11 +539,60 @@ module moordyn
       integer(c_int), intent(out) :: n
     end function MD_GetLineNumberNodes
 
+    integer(c_int) function MD_IsLineConstantEA(instance, t) bind(c, name='MoorDyn_IsLineConstantEA')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: t
+    end function MD_IsLineConstantEA
+
+    integer(c_int) function MD_GetLineConstantEA(instance, ea) bind(c, name='MoorDyn_GetLineConstantEA')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: ea
+    end function MD_GetLineConstantEA
+
+    integer(c_int) function MD_SetLineConstantEA(instance, ea) bind(c, name='MoorDyn_SetLineConstantEA')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), intent(out) :: ea
+    end function MD_SetLineConstantEA
+
+    integer(c_int) function MD_IsLinePressBend(instance, t) bind(c, name='MoorDyn_IsLinePressBend')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: t
+    end function MD_IsLinePressBend
+
+    integer(c_int) function MD_SetLinePressBend(instance, b) bind(c, name='MoorDyn_SetLinePressBend')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), intent(out) :: b
+    end function MD_SetLinePressBend
+
+    function MoorDyn_SetLinePressInt(instance, p) bind(c, name='MoorDyn_SetLinePressInt') result(rc)
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: p
+      integer(c_int) :: rc
+    end function MoorDyn_SetLinePressInt
+
     integer(c_int) function MD_GetLineUnstretchedLength(instance, l) bind(c, name='MoorDyn_GetLineUnstretchedLength')
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       real(c_double), intent(out) :: l
     end function MD_GetLineUnstretchedLength
+
+    integer(c_int) function MD_SetLineUnstretchedLength(instance, l) bind(c, name='MoorDyn_SetLineUnstretchedLength')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), value, intent(in) :: l
+    end function MD_SetLineUnstretchedLength
+
+    integer(c_int) function MD_SetLineUnstretchedLengthVel(instance, l) bind(c, name='MoorDyn_SetLineUnstretchedLengthVel')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), value, intent(in) :: l
+    end function MD_SetLineUnstretchedLengthVel
 
     function MoorDyn_GetLineNodePos(instance, n, r) bind(c, name='MoorDyn_GetLineNodePos') result(rc)
       import :: c_ptr, c_double, c_int
@@ -435,6 +602,22 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetLineNodePos
 
+    function MoorDyn_GetLineNodeVel(instance, n, r) bind(c, name='MoorDyn_GetLineNodeVel') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeVel
+
+    function MoorDyn_GetLineNodeForce(instance, n, r) bind(c, name='MoorDyn_GetLineNodeForce') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeForce
+
     function MoorDyn_GetLineNodeTen(instance, n, r) bind(c, name='MoorDyn_GetLineNodeTen') result(rc)
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
@@ -443,12 +626,60 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetLineNodeTen
 
+    function MoorDyn_GetLineNodeBendStiff(instance, n, r) bind(c, name='MoorDyn_GetLineNodeBendStiff') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeBendStiff
+
+    function MoorDyn_GetLineNodeWeight(instance, n, r) bind(c, name='MoorDyn_GetLineNodeWeight') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeWeight
+
+    function MoorDyn_GetLineNodeDrag(instance, n, r) bind(c, name='MoorDyn_GetLineNodeDrag') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeDrag
+
+    function MoorDyn_GetLineNodeFroudeKrilov(instance, n, r) bind(c, name='MoorDyn_GetLineNodeFroudeKrilov') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeFroudeKrilov
+
+    function MoorDyn_GetLineNodeSeabedForce(instance, n, r) bind(c, name='MoorDyn_GetLineNodeSeabedForce') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: r
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeSeabedForce
+
     integer(c_int) function MD_GetLineNodeCurv(instance, n, r) bind(c, name='MoorDyn_GetLineNodeCurv') result(rc)
       import :: c_ptr, c_double, c_int
       type(c_ptr), value, intent(in) :: instance
       integer(c_int), value, intent(in) :: n
       real(c_double), intent(out) :: r
     end function MD_GetLineNodeCurv
+
+    function MoorDyn_GetLineNodeM(instance, n, m) bind(c, name='MoorDyn_GetLineNodeM') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_int), value, intent(in) :: n
+      type(c_ptr), value, intent(in) :: m
+      integer(c_int) :: rc
+    end function MoorDyn_GetLineNodeM
 
     integer(c_int) function MD_GetLineFairTen(instance, r) bind(c, name='MoorDyn_GetLineFairTen') result(rc)
       import :: c_ptr, c_double, c_int
@@ -575,7 +806,7 @@ contains
   !                                Waves.h
   ! ============================================================================
 
-  integer function MD_GetWavesKin(instance, x, y, z, t, u, ud, zeta, pdyn)
+  integer function MD_GetWavesKin(instance, x, y, z, t, u, ud, zeta, pdyn, seafloor)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
     real(c_double), value, intent(in) :: x
@@ -586,7 +817,8 @@ contains
     real(c_double), intent(in), target :: ud(:)
     real(c_double), intent(out) :: zeta
     real(c_double), intent(out) :: pdyn
-    MD_GetWavesKin = MoorDyn_GetWavesKin(instance, x, y, z, t, c_loc(u), c_loc(ud), zeta, pdyn)
+    type(c_ptr), intent(in) :: seafloor
+    MD_GetWavesKin = MoorDyn_GetWavesKin(instance, x, y, z, t, c_loc(u), c_loc(ud), zeta, pdyn, seafloor)
   end function MD_GetWavesKin
 
   !                                Body.h
@@ -599,6 +831,48 @@ contains
     real(c_double), intent(in), target :: rd(:)
     MD_GetBodyState = MoorDyn_GetBodyState(instance, c_loc(r), c_loc(rd))
   end function MD_GetBodyState
+
+  integer function MD_GetBodyPos(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetBodyPos = MoorDyn_GetBodyPos(instance, c_loc(r))
+  end function MD_GetBodyPos
+
+  integer function MD_GetBodyAngle(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetBodyAngle = MoorDyn_GetBodyAngle(instance, c_loc(r))
+  end function MD_GetBodyAngle
+
+  integer function MD_GetBodyVel(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetBodyVel = MoorDyn_GetBodyVel(instance, c_loc(r))
+  end function MD_GetBodyVel
+
+  integer function MD_GetBodyAngVel(instance, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: r(:)
+    MD_GetBodyAngVel = MoorDyn_GetBodyAngVel(instance, c_loc(r))
+  end function MD_GetBodyAngVel
+
+  integer function MD_GetBodyForce(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: f(:)
+    MD_GetBodyForce = MoorDyn_GetBodyForce(instance, c_loc(f))
+  end function MD_GetBodyForce
+
+  integer function MD_GetBodyM(instance, m)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: m(:)
+    MD_GetBodyM = MoorDyn_GetBodyM(instance, c_loc(m))
+  end function MD_GetBodyM
 
   integer function MD_SaveBodyVTK(instance, f)
     use iso_c_binding
@@ -617,6 +891,20 @@ contains
   !                                Rod.h
   ! ============================================================================
 
+  integer function MD_GetRodForce(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: f(:)
+    MD_GetRodForce = MoorDyn_GetRodForce(instance, c_loc(f))
+  end function MD_GetRodForce
+
+  integer function MD_GetRodM(instance, m)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: m(:)
+    MD_GetRodM = MoorDyn_GetRodM(instance, c_loc(m))
+  end function MD_GetRodM
+
   integer function MD_GetRodNodePos(instance, n, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
@@ -624,6 +912,14 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetRodNodePos = MoorDyn_GetRodNodePos(instance, n, c_loc(r))
   end function MD_GetRodNodePos
+
+  integer function MD_GetRodNodeVel(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetRodNodeVel = MoorDyn_GetRodNodeVel(instance, n, c_loc(r))
+  end function MD_GetRodNodeVel
 
   integer function MD_SaveRodVTK(instance, f)
     use iso_c_binding
@@ -656,6 +952,13 @@ contains
     MD_GetPointForce = MoorDyn_GetPointForce(instance, c_loc(r))
   end function MD_GetPointForce
 
+  integer function MD_GetPointM(instance, m)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: m(:)
+    MD_GetPointM = MoorDyn_GetPointM(instance, c_loc(m))
+  end function MD_GetPointM
+
   integer function MD_SavePointVTK(instance, f)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
@@ -666,6 +969,13 @@ contains
   !                                Line.h
   ! ============================================================================
 
+  integer function MD_SetLinePressInt(instance, p)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: p(:)
+    MD_SetLinePressInt = MoorDyn_SetLinePressInt(instance, c_loc(p))
+  end function MD_SetLinePressInt
+
   integer function MD_GetLineNodePos(instance, n, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
@@ -674,6 +984,22 @@ contains
     MD_GetLineNodePos = MoorDyn_GetLineNodePos(instance, n, c_loc(r))
   end function MD_GetLineNodePos
 
+  integer function MD_GetLineNodeVel(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeVel = MoorDyn_GetLineNodeVel(instance, n, c_loc(r))
+  end function MD_GetLineNodeVel
+
+  integer function MD_GetLineNodeForce(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeForce = MoorDyn_GetLineNodeForce(instance, n, c_loc(r))
+  end function MD_GetLineNodeForce
+
   integer function MD_GetLineNodeTen(instance, n, r)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
@@ -681,6 +1007,54 @@ contains
     real(c_double), intent(in), target :: r(:)
     MD_GetLineNodeTen = MoorDyn_GetLineNodeTen(instance, n, c_loc(r))
   end function MD_GetLineNodeTen
+
+  integer function MD_GetLineNodeBendStiff(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeBendStiff = MoorDyn_GetLineNodeBendStiff(instance, n, c_loc(r))
+  end function MD_GetLineNodeBendStiff
+
+  integer function MD_GetLineNodeWeight(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeWeight = MoorDyn_GetLineNodeWeight(instance, n, c_loc(r))
+  end function MD_GetLineNodeWeight
+
+  integer function MD_GetLineNodeDrag(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeDrag = MoorDyn_GetLineNodeDrag(instance, n, c_loc(r))
+  end function MD_GetLineNodeDrag
+
+  integer function MD_GetLineNodeFroudeKrilov(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeFroudeKrilov = MoorDyn_GetLineNodeFroudeKrilov(instance, n, c_loc(r))
+  end function MD_GetLineNodeFroudeKrilov
+
+  integer function MD_GetLineNodeSeabedForce(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeSeabedForce = MoorDyn_GetLineNodeSeabedForce(instance, n, c_loc(r))
+  end function MD_GetLineNodeSeabedForce
+
+  integer function MD_GetLineNodeM(instance, n, r)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in), target :: r(:)
+    MD_GetLineNodeM = MoorDyn_GetLineNodeM(instance, n, c_loc(r))
+  end function MD_GetLineNodeM
 
   integer function MD_SaveLineVTK(instance, f)
     use iso_c_binding

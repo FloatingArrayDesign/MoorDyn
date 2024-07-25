@@ -46,6 +46,7 @@
 #include "Rod.hpp"
 #include "Body.hpp"
 #include "Seafloor.hpp"
+#include <limits>
 
 #ifdef USE_VTK
 #include <vtkSmartPointer.h>
@@ -315,6 +316,74 @@ class MoorDyn final : public io::IO
 	void saveVTK(const char* filename) const;
 #endif
 
+	/** @brief Get the model time step
+	 * @return The model time step
+	 */
+	inline real GetDt() const { return dtM0; }
+
+	/** @brief Set the model time step
+	 * @param dt The model time step
+	 * @note The CFL will be changed accordingly
+	 */
+	inline void SetDt(real dt) {
+		this->dtM0 = dt;
+		this->cfl = 0.0;
+		for (auto obj : LineList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+		for (auto obj : PointList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+		for (auto obj : RodList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+		for (auto obj : BodyList)
+			cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	}
+
+	/** @brief Get the model Courant–Friedrichs–Lewy factor
+	 * @return The CFL
+	 */
+	inline real GetCFL() const { return cfl; }
+
+	/** @brief Set the model Courant–Friedrichs–Lewy factor
+	 * @param cfl The CFL
+	 * @note The time step will be changed accordingly
+	 */
+	inline void SetCFL(real cfl) {
+		this->cfl = cfl;
+		this->dtM0 = (std::numeric_limits<real>::max)();
+		for (auto obj : LineList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+		for (auto obj : PointList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+		for (auto obj : RodList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+		for (auto obj : BodyList)
+			dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	}
+
+	/** @brief Get the current time integrator
+	 * @return The time integrator
+	 */
+	inline TimeScheme* GetTimeScheme() const { return _t_integrator; }
+
+	/** @brief Set the current time integrator
+	 * @return The time integrator
+	 */
+	inline void SetTimeScheme(TimeScheme* tscheme) {
+		if (_t_integrator) delete _t_integrator;
+		_t_integrator = tscheme;
+		_t_integrator->SetGround(GroundBody);
+		for (auto obj : BodyList)
+			_t_integrator->AddBody(obj);
+		for (auto obj : RodList)
+			_t_integrator->AddRod(obj);
+		for (auto obj : PointList)
+			_t_integrator->AddPoint(obj);
+		for (auto obj : LineList)
+			_t_integrator->AddLine(obj);
+		_t_integrator->SetCFL(cfl);
+		_t_integrator->Init();
+	}
+
   protected:
 	/** @brief Read the input file, setting up all the required objects and
 	 * their relationships
@@ -328,37 +397,84 @@ class MoorDyn final : public io::IO
 	 */
 	moordyn::error_id ReadInFile();
 
+	/** @brief Read the input file and store it as a set of strings, one per
+	 * line
+	 * @param in_txt The output list of strings
+	 * @return MOORDYN_SUCCESS If the input file is correctly loaded and all
+	 * the objects are consistently set, an error code otherwise
+	 * (see @ref moordyn_errors)
+	 * @see ::ReadInFile()
+	 */
 	moordyn::error_id readFileIntoBuffers(vector<string>& in_txt);
 
+	/** @brief Get the file line index where a section starts
+	 * @param in_txt The list of strings that contains the input file lines
+	 * @param sectionName The valid section name strings
+	 * @return The line index, -1 if the section cannot be found
+	 * @see ::ReadInFile()
+	 * @see ::readFileIntoBuffers()
+	 */
 	int findStartOfSection(vector<string>& in_txt, vector<string> sectionName);
 
-	/** @brief Helper function to cread a new line property given a line from
+	/** @brief Helper function to read a new line property given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Line Properties section of input file
+	 * @return The line properties
 	 */
 	LineProps* readLineProps(string inputText);
 
-	/** @brief Helper function to cread a new rod property given a line from
+	/** @brief Helper function to read a new rod property given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Rod Properties section of input file
+	 * @return The rod properties
 	 */
 	RodProps* readRodProps(string inputText);
 
-	/** @brief Helper function to cread a new rod given a line from
+	/** @brief Helper function to read a new rod given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Rod List section of input file
+	 * @return The rod object
 	 */
 	Rod* readRod(string inputText);
 
+	/** @brief Helper function to read a new body given a line from
+	 * the input file.
+	 *
+	 * @param inputText a string from the Body List section of input file
+	 * @return The body object
+	 */
 	Body* readBody(string inputText);
 
+	/** @brief Helper function to read an option given a line from
+	 * the input file.
+	 *
+	 * @param in_txt The list of strings that contains the input file lines
+	 * @param index The option line index
+	 */
 	void readOptionsLine(vector<string>& in_txt, int index);
 
+	/** @brief Check that the provided entries match the expected ones
+	 *
+	 * If a wrong number of entries is provided an error is printed out
+	 * @param entries Provided entries
+	 * @param supposedNumberOfEntries Expected number of entries
+	 */
 	bool checkNumberOfEntriesInLine(vector<string> entries,
 	                                int supposedNumberOfEntries);
+
+	/** @brief Compute an initial condition using the stationary solver
+	 * @see ::ICgenDynamic
+	 */
+	moordyn::error_id icStationary();
+
+	/** @brief Compute an initial condition using the legacy upscaled drag
+	 * dynamic solver
+	 * @see ::ICgenDynamic
+	 */
+	moordyn::error_id icLegacy();
 
 	/** @brief Get the forces
 	 * @param f The forces array
@@ -432,11 +548,15 @@ class MoorDyn final : public io::IO
 	real ICTmax;
 	// threshold for relative change in tensions to call it converged
 	real ICthresh;
+	// use dynamic (true) or stationary (false) inital condition solver
+	bool ICgenDynamic;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
-	/// (s) desired mooring line model time step
+	/// (s) desired mooring line model maximum time step
 	real dtM0;
+	/// desired mooring line model maximum CFL factor
+	real cfl;
 	/// (s) desired output interval (the default zero value provides output at
 	/// every call to MoorDyn)
 	real dtOut;
@@ -506,12 +626,6 @@ class MoorDyn final : public io::IO
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
-
-	/// Previous time step velocity for calculating coupled point acceleration (first time step assumed stationary)
-	vec6 rd_b = vec6::Zero(); // body
-	vec6 rd_r = vec6::Zero(); // coupled rod
-	vec3 rd3_r = vec3::Zero(); // coupled pinned rod
-	vec3 rd3_b = vec3::Zero(); // coupled pinned body
 
 	/// main output file
 	ofstream outfileMain;
@@ -599,13 +713,22 @@ class MoorDyn final : public io::IO
 		}
 
 		vector<string> flines;
+		int i = 0;
 		while (f.good()) {
 			string fline;
 			getline(f, fline);
-			moordyn::str::rtrim(fline);
-			flines.push_back(fline);
+			if (i>2) { // skip first three lines as headers 
+				moordyn::str::rtrim(fline);
+				flines.push_back(fline);
+			}
+			i++;
 		}
 		f.close();
+
+		if (i < 5) {
+			LOGERR << "Error: Not enough curve data in curve file" << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
 
 		for (auto fline : flines) {
 			vector<string> entries = moordyn::str::split(fline, ' ');
@@ -621,7 +744,7 @@ class MoorDyn final : public io::IO
 			LOGDBG << "(" << x.back() << ", " << y.back() << ")" << std::endl;
 		}
 
-		LOGMSG << "OK" << std::endl;
+		LOGMSG << (i-3) << " lines of curve successfully loaded" << std::endl;
 		return MOORDYN_SUCCESS;
 	}
 

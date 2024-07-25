@@ -63,6 +63,23 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetRodType(MoorDynRod l, int* t);
 
+	/** @brief Get the net force acting on the rod, as well as the moment at
+	 * end point A if the node is not pinned
+	 * @param l The Moordyn rod
+	 * @param f The output force
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+	 * MOORDYN_SUCCESS otherwise
+	 */
+	int DECLDIR MoorDyn_GetRodForce(MoorDynRod l, double f[6]);
+
+	/** @brief Get the total rod mass matrix
+	 * @param l The Moordyn rod
+	 * @param m The output mass matrix
+	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+	 * MOORDYN_SUCCESS otherwise
+	 */
+	int DECLDIR MoorDyn_GetRodM(MoorDynRod l, double m[6][6]);
+
 	/** @brief Get the line number of segments
 	 *
 	 * The number of nodes is equal to this value plus 1
@@ -82,7 +99,7 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_GetRodNumberNodes(MoorDynRod l, unsigned int* n);
 
-	/** @brief Get a line node position
+	/** @brief Get a rod node position
 	 * @param l The Moordyn rod
 	 * @param i The node index
 	 * @param pos The output node position
@@ -92,6 +109,17 @@ extern "C"
 	int DECLDIR MoorDyn_GetRodNodePos(MoorDynRod l,
 	                                  unsigned int i,
 	                                  double pos[3]);
+
+	/** @brief Get a rod node velocity
+	 * @param l The Moordyn rod
+	 * @param i The node index
+	 * @param vel The output node velocity
+	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
+	 * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
+	 */
+	int DECLDIR MoorDyn_GetRodNodeVel(MoorDynRod l,
+	                                  unsigned int i,
+	                                  double vel[3]);
 
 	/** @brief Save the line to a VTK (.vtp) file
 	 * @param l The Moordyn rod

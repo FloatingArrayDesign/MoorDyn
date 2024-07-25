@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Util/CFL.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -66,7 +67,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class Point final : public io::IO
+class Point final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -247,7 +248,16 @@ class Point final : public io::IO
 	 */
 	std::pair<vec, vec> initialize();
 
+	/** @brief Get the point position
+	 * @return The position [x,y,z]
+	 */
 	inline const vec& getPosition() const { return r; }
+
+	/** @brief Get the point velocity
+	 * @return The velocity [x,y,z]
+	 */
+	inline const vec& getVelocity() const { return rd; }
+
 	/** @brief Get the point state
 	 * @param r_out The output position [x,y,z]
 	 * @param rd_out The output velocity [x,y,z]
@@ -266,12 +276,22 @@ class Point final : public io::IO
 	/** @brief Get the force on the point
 	 * @param Fnet_out The output force [x,y,z]
 	 */
-	void getFnet(vec& Fnet_out);
+	inline void getFnet(vec& Fnet_out) const { Fnet_out = Fnet; }
+
+	/** @brief Get the force on the point
+	 * @return The output force [x,y,z]
+	 */
+	inline const vec& getFnet() const { return Fnet; }
 
 	/** @brief Get the mass matrix
 	 * @param M_out The output mass matrix
 	 */
-	void getM(mat& M_out);
+	inline void getM(mat& M_out) const { M_out = M; }
+
+	/** @brief Get the mass matrix
+	 * @return The mass matrix
+	 */
+	inline const mat& getM() const { return M; };
 
 	/** @brief Get the output
 	 * @param outChan The query
@@ -347,11 +367,13 @@ class Point final : public io::IO
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
-	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
+	 * @param rBody The body position
+	 * @param vBody The body velocity
 	 */
 	void getNetForceAndMass(vec6& Fnet_out,
 	                        mat6& M_out,
-	                        vec rBody = vec::Zero());
+	                        vec rBody = vec::Zero(),
+	                        vec6 vBody = vec6::Zero());
 
 	/** @brief Calculates the forces and mass on the point, including from
 	 * attached lines
@@ -400,9 +422,17 @@ class Point final : public io::IO
 	void saveVTK(const char* filename) const;
 #endif
 
-#ifdef USEGL
-	void drawGL(void);
-#endif
+  private:
+	/** @brief Calculate the centripetal force on a body
+	 * @param r The body position
+	 * @param w The body angular velocity
+	 * @return Centripetal force on the body
+	 */
+	inline vec getCentripetalForce(vec r, vec w) const
+	{
+		return -M * (w.cross(w.cross(this->r - r)));
+	}
+
 };
 
 } // ::moordyn

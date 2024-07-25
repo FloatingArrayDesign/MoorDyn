@@ -28,20 +28,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file minimal.cpp
+/** @file quasi_static_chain.cpp
  * Validation against Orcaflex
  */
 
 #include "MoorDyn2.h"
-#include <stdexcept>
-#include <iostream>
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <iostream>
 #include <sstream>
 #include <fstream>
-#include <iostream>
 #include <cmath>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace std;
 
@@ -88,10 +87,8 @@ read_tab_file(const char* filepath)
 	vector<vector<double>> data;
 	fstream f;
 	f.open(filepath, ios::in);
-	if (!f.is_open()) {
-		cerr << "Cannot open file " << filepath << endl;
+	if (!f.is_open())
 		return data;
-	}
 	string line;
 	while (getline(f, line)) {
 		data.push_back(parse_tab_line(line.c_str()));
@@ -104,14 +101,11 @@ read_tab_file(const char* filepath)
 /** @brief Run a validation against a quasi-static code
  * @return true if the test worked, false otherwise
  */
-bool
+void
 validation(const char* depth, const char* motion)
 {
 	auto it = std::find(DEPTHS.begin(), DEPTHS.end(), depth);
-	if (it == DEPTHS.end()) {
-		cerr << "Unhandled water depth: " << depth << endl;
-		return false;
-	}
+	REQUIRE(it != DEPTHS.end());
 	const unsigned int depth_i = (it - DEPTHS.begin());
 
 	stringstream lines_file, motion_file, ref_file;
@@ -124,59 +118,31 @@ validation(const char* depth, const char* motion)
 	auto ref_data = read_tab_file(ref_file.str().c_str());
 
 	MoorDyn system = MoorDyn_Create(lines_file.str().c_str());
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
 	unsigned int n_dof;
-	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
-		MoorDyn_Close(system);
-		return false;
-	}
-	if (n_dof != 3) {
-		cerr << "3x1 = 3 DOFs were expected, but " << n_dof << "were reported"
-		     << endl;
-		MoorDyn_Close(system);
-		return false;
-	}
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 3);
 
-	int err;
 	double x[3], dx[3];
 	// Set the fairlead points, as they are in the config file
 	std::fill(x, x + 3, 0.0);
 	std::fill(dx, dx + 3, 0.0);
-	err = MoorDyn_Init(system, x, dx);
-	if (err != MOORDYN_SUCCESS) {
-		MoorDyn_Close(system);
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, x, dx) == MOORDYN_SUCCESS);
 
 	// Compute the static tension
 	int num_lines = 1;
 	float fh, fv, ah, av;
-	err = MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av);
-	if (err != MOORDYN_SUCCESS) {
-		MoorDyn_Close(system);
-		cerr << "Failure getting the initial tension: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_GetFASTtens(
+		system, &num_lines, &fh, &fv, &ah, &av) == MOORDYN_SUCCESS);
 	const double ffair0 = sqrt(fh * fh + fv * fv);
 	const double ffair_ref0 = 1.e3 * STATIC_FAIR_TENSION[depth_i];
-	cout << "Static tension on the fairlead = " << ffair0 << endl;
-	cout << "    Reference value = " << ffair_ref0 << endl;
 	const double fanch0 = sqrt(ah * ah + av * av);
 	const double fanch_ref0 = 1.e3 * STATIC_ANCHOR_TENSION[depth_i];
-	cout << "Static tension on the anchor = " << fanch0 << endl;
-	cout << "    Reference value = " << fanch_ref0 << endl;
 	const double efair0 = (ffair0 - ffair_ref0) / ffair_ref0;
 	const double eanch0 = (fanch0 - fanch_ref0) / fanch_ref0;
-	if ((efair0 > MAX_STATIC_ERROR) || (eanch0 > MAX_STATIC_ERROR)) {
-		MoorDyn_Close(system);
-		cerr << "Too large error" << endl;
-		return false;
-	}
+	REQUIRE(efair0 <= MAX_STATIC_ERROR);
+	REQUIRE(eanch0 <= MAX_STATIC_ERROR);
 
 	// Start integrating. The integration have a first chunk of initialization
 	// motion to get something more periodic. In that chunk of the simulation
@@ -198,22 +164,13 @@ validation(const char* depth, const char* motion)
 			x[j] = motion_data[i][j + 1];
 			dx[j] = (motion_data[i + 1][j + 1] - x[j]) / dt;
 		}
-		err = MoorDyn_Step(system, x, dx, f, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			MoorDyn_Close(system);
-			cerr << "Failure during the mooring step: " << err << endl;
-			return false;
-		}
+		REQUIRE(MoorDyn_Step(system, x, dx, f, &t, &dt) == MOORDYN_SUCCESS);
 
 		if (t_ref < 0.0)
 			continue;
 
-		err = MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av);
-		if (err != MOORDYN_SUCCESS) {
-			MoorDyn_Close(system);
-			cerr << "Failure getting the initial tension: " << err << endl;
-			return false;
-		}
+		REQUIRE(MoorDyn_GetFASTtens(
+			system, &num_lines, &fh, &fv, &ah, &av) == MOORDYN_SUCCESS);
 		const double ffair = sqrt(fh * fh + fv * fv) - ffair0;
 		const double ffair_ref = 1.e3 * ref_data[i_ref][3] - ffair_ref0;
 		const double fanch = sqrt(ah * ah + av * av) - fanch0;
@@ -234,44 +191,20 @@ validation(const char* depth, const char* motion)
 		i_ref++;
 	}
 
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 
-	cout << "Maximum dynamic error in the fairlead = " << ef_value << endl;
-	cout << "    at time = " << ef_time << endl;
 	ef_value = ef_value / (2.0 * ef_ref);
-	if (ef_value > MAX_DYNAMIC_ERROR) {
-		cerr << ef_value << " is an excesively large error" << endl;
-		return false;
-	}
-	cout << "Maximum dynamic error in the anchor = " << ea_value << endl;
-	cout << "    at time = " << ea_time << endl;
+	REQUIRE(ef_value <= MAX_DYNAMIC_ERROR);
 	ea_value = ea_value / (2.0 * ea_ref);
-	/*  For the time being we better ignore these errors
-	if (ea_value > MAX_DYNAMIC_ERROR)
-	{
-	    cerr << ea_value << " is an excesively large error" << endl;
-	    return false;
-	}
-	*/
-
-	return true;
+	// For the time being we better ignore these errors
+	// REQUIRE(ea_value <= MAX_DYNAMIC_ERROR);
 }
 
-/** @brief Runs all the test
- * @return 0 if the tests have ran just fine, 1 otherwise
- */
-int
-main(int, char**)
+TEST_CASE("Validation")
 {
 	for (auto depth : DEPTHS) {
 		for (auto motion : MOTIONS) {
-			if (!validation(depth.c_str(), motion.c_str()))
-				return 1;
+			validation(depth.c_str(), motion.c_str());
 		}
 	}
-	return 0;
 }

@@ -88,11 +88,6 @@ main(int narg, char** arg)
 		printf("GetNodePos() test failed...");
 		return 255;
 	}
-	ret_code = DrawWithGL();
-	if (ret_code != MOORDYN_MEM_ERROR) {
-		printf("DrawWithGL() test failed...");
-		return 255;
-	}
 
 	// MoorDyn2.h
 	MoorDyn system = MoorDyn_Create("nofile");
@@ -250,11 +245,6 @@ main(int narg, char** arg)
 		printf("MoorDyn_Load() test failed...");
 		return 255;
 	}
-	ret_code = MoorDyn_DrawWithGL(NULL);
-	if (ret_code != MOORDYN_INVALID_VALUE) {
-		printf("MoorDyn_DrawWithGL() test failed...");
-		return 255;
-	}
 	ret_code = MoorDyn_SaveVTK(NULL, "nofile");
 	if (ret_code != MOORDYN_INVALID_VALUE && ret_code != MOORDYN_NON_IMPLEMENTED) {
 		printf("MoorDyn_SaveVTK() test failed...");
@@ -275,6 +265,46 @@ main(int narg, char** arg)
 	ret_code = MoorDyn_GetBodyState(NULL, NULL, NULL);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_GetBodyState() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyPos(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyPos() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyAngle(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyAngle() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyVel(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyVel() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyAngVel(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyAngVel() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyForce(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyForce() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyM(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyM() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyAngVel(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyPos() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetBodyAngVel(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetBodyPos() test failed...");
 		return 255;
 	}
 	ret_code = MoorDyn_SaveBodyVTK(NULL, "nofile");
@@ -324,7 +354,42 @@ main(int narg, char** arg)
 		printf("MoorDyn_GetLineNodePos() test failed...");
 		return 255;
 	}
+	ret_code = MoorDyn_GetLineNodeVel(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodePos() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeForce(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
+		return 255;
+	}
 	ret_code = MoorDyn_GetLineNodeTen(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeBendStiff(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeWeight(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeDrag(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeFroudeKrilov(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeSeabedForce(NULL, un, NULL);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_GetLineNodeTen() test failed...");
 		return 255;
@@ -332,6 +397,11 @@ main(int narg, char** arg)
 	ret_code = MoorDyn_GetLineNodeCurv(NULL, un, &d);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_GetLineNodeCurv() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetLineNodeM(NULL, un, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetLineNodeTen() test failed...");
 		return 255;
 	}
 	ret_code = MoorDyn_GetLineFairTen(NULL, &d);
@@ -376,6 +446,11 @@ main(int narg, char** arg)
 		printf("MoorDyn_GetPointForce() test failed...");
 		return 255;
 	}
+	ret_code = MoorDyn_GetPointM(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetPointM() test failed...");
+		return 255;
+	}
 	ret_code = MoorDyn_GetPointNAttached(NULL, &un);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_GetPointNAttached() test failed...");
@@ -401,6 +476,16 @@ main(int narg, char** arg)
 	ret_code = MoorDyn_GetRodType(NULL, &n);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_GetRodType() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetRodForce(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetRodForce() test failed...");
+		return 255;
+	}
+	ret_code = MoorDyn_GetRodM(NULL, NULL);
+	if (ret_code != MOORDYN_INVALID_VALUE) {
+		printf("MoorDyn_GetRodM() test failed...");
 		return 255;
 	}
 	ret_code = MoorDyn_GetRodN(NULL, &un);

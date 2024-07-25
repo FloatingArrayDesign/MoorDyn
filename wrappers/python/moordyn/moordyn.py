@@ -257,6 +257,24 @@ def GetWaves(instance):
     return cmoordyn.get_waves(instance)
 
 
+def GetSeafloor(instance):
+    """Get the 3D seafloor instance
+
+    The is not None just if a SeafloorPath option was set in the input file.
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    cmoordyn.MoorDynSeafloor: The seafloor instance
+    """
+    import cmoordyn
+    try:
+        return cmoordyn.get_seafloor(instance)
+    except RuntimeError:
+        return None
+
+
 def ExternalWaveKinInit(instance):
     """Initializes the external Wave kinetics
 
@@ -553,11 +571,12 @@ def SaveVTK(instance, filename):
     import cmoordyn
     return cmoordyn.save_vtk(instance, filename)
 
+
 #                                  Waves.h
 #  =============================================================================
 
 
-def GetWavesKin(instance, x, y, z, t):
+def GetWavesKin(instance, x, y, z, t, seafloor=None):
     """ Get the wave kinematics
 
     Parameters:
@@ -566,6 +585,7 @@ def GetWavesKin(instance, x, y, z, t):
     y (float): The y coordinate
     z (float): The z coordinate
     t (float): The simulation time
+    seafloor (cmoordyn.MoorDynSeafloor): The 3D seafloor instance
 
     Returns:
     u: The velocity (a tuple with 3 components)
@@ -574,8 +594,57 @@ def GetWavesKin(instance, x, y, z, t):
     pdyn: The dynamic pressure
     """
     import cmoordyn
-    return cmoordyn.waves_getkin(instance, x, y, z, t)
+    return cmoordyn.waves_getkin(instance, x, y, z, t, seafloor)
 
+
+#                                  Seafloor.h
+#  =============================================================================
+
+
+def GetDepthAt(instance, x, y):
+    """ Get the depth of the seafloor at some x and y
+
+    Parameters:
+    instance (cmoordyn.MoorDynSeafloor): The 3D seafloor instance
+    x (float): The x coordinate
+    y (float): The y coordinate
+
+    Returns:
+    depth: The output seafloor depth at that (x, y) point
+    """
+    import cmoordyn
+    return cmoordyn.seafloor_getdepth(instance, x, y)
+    
+
+def GetAverageDepth(instance):
+    """ Get the average of depth of the seafloor
+
+    This value is calculated as the average value of every depth point
+
+    If the rectilinear grid is not even, this average may not be the actual
+    average depth of the surface the data describes.
+
+    Parameters:
+    instance (cmoordyn.MoorDynSeafloor): The 3D seafloor instance
+
+    Returns:
+    depth: The averaged seafloor depth
+    """
+    import cmoordyn
+    return cmoordyn.seafloor_getavgdepth(instance)
+    
+
+def GetMinDepth(instance):
+    """ The depth of the seafloor at the shallowest point
+
+    Parameters:
+    instance (cmoordyn.MoorDynSeafloor): The 3D seafloor instance
+
+    Returns:
+    depth: The minimum seafloor depth
+    """
+    import cmoordyn
+    return cmoordyn.seafloor_getmindepth(instance)
 
 #                                  Body.h
 #  =============================================================================
@@ -614,11 +683,89 @@ def GetBodyState(instance):
     instance (cmoordyn.MoorDynBody): The body instance
 
     Returns:
-    r: The position (a tuple with 3 components)
-    u: The velocity (a tuple with 3 components)
+    r: The position (a tuple with 6 components)
+    u: The velocity (a tuple with 6 components)
     """
     import cmoordyn
     return cmoordyn.body_get_state(instance)
+
+
+def GetBodyPos(instance):
+    """ Get the body position
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    r: The position (a tuple with 3 components)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_pos(instance)
+
+
+def GetBodyAngle(instance):
+    """ Get the body Euler XYZ angles
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    r: The angles (a tuple with 3 components)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_angle(instance)
+
+
+def GetBodyVel(instance):
+    """ Get the body velocity
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    r: The velocity (a tuple with 3 components)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_vel(instance)
+
+
+def GetBodyAngVel(instance):
+    """ Get the body angular velocity
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    r: The angular velocity (a tuple with 3 components)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_angvel(instance)
+
+
+def GetBodyForce(instance):
+    """ Get the net force on the body
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    f: The force and the moment (a tuple with 6 components)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_force(instance)
+
+
+def GetBodyM(instance):
+    """ Get the mass matrix of the body
+
+    Parameters:
+    instance (cmoordyn.MoorDynBody): The body instance
+
+    Returns:
+    m: The mass matrix (a 6x6 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.body_get_m(instance)
 
 
 def SaveBodyVTK(instance, filename):
@@ -666,7 +813,7 @@ def GetRodID(instance):
 
 
 def GetRodType(instance):
-    """ Get the rod id
+    """ Get the rod type
 
     Parameters:
     instance (cmoordyn.MoorDynRod): The rod instance
@@ -676,6 +823,32 @@ def GetRodType(instance):
     """
     import cmoordyn
     return cmoordyn.rod_get_type(instance)
+
+
+def GetRodForce(instance):
+    """ Get the net force and moment acting over the rod
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    f: The rod force (a 6 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_force(instance)
+
+
+def GetRodM(instance):
+    """ Get the rod mass matrix
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    i: The rod mass matrix (a 6x6 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_m(instance)
 
 
 def GetRodN(instance):
@@ -699,10 +872,24 @@ def GetRodNodePos(instance, i):
     i (int): The node index
 
     Returns:
-    r: The node pos
+    r: The node position
     """
     import cmoordyn
     return cmoordyn.rod_get_node_pos(instance, i)
+
+
+def GetRodNodeVel(instance, i):
+    """ Get a rod node position
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+    i (int): The node index
+
+    Returns:
+    r: The node velocity
+    """
+    import cmoordyn
+    return cmoordyn.rod_get_node_vel(instance, i)
 
 
 def SaveRodVTK(instance, filename):
@@ -781,10 +968,23 @@ def GetPointForce(instance):
     instance (cmoordyn.MoorDynPoint): The point instance
 
     Returns:
-    v: The point force
+    f: The point force (a 3 components tuple)
     """
     import cmoordyn
     return cmoordyn.point_get_force(instance)
+
+
+def GetPointM(instance):
+    """ Get the point mass matrix
+
+    Parameters:
+    instance (cmoordyn.MoorDynPoint): The point instance
+
+    Returns:
+    m: The mass matrix (a 3x3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.point_get_m(instance)
 
 
 def GetPointNAttached(instance):
@@ -893,6 +1093,87 @@ def SetLineUnstretchedLengthVel(instance, v):
     return cmoordyn.line_set_ulenv(instance, v)
 
 
+def IsLineConstantEA(instance):
+    """ Get whether the line is governed by a non-linear stiffness or a
+    constant one
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    b: True if the stiffness of the line is constant, False if a non-linear
+       stiffness has been set
+    """
+    import cmoordyn
+    return cmoordyn.line_is_const_ea(instance) != 0
+
+
+def GetLineConstantEA(instance):
+    """ Get the constant stiffness of the line
+    
+    This value is useless if non-linear stiffness is considered
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    ea: The constant stiffness EA value
+    """
+    import cmoordyn
+    return cmoordyn.line_get_const_ea(instance)
+
+
+def SetLineConstantEA(instance, ea):
+    """ Set the constant stiffness of the line
+    
+    This value is useless if non-linear stiffness is considered
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    ea (float): The constant stiffness EA value
+    """
+    import cmoordyn
+    return cmoordyn.line_set_const_ea(instance, ea)
+
+
+def IsLinePressBend(instance):
+    """ Get whether the line pressure bending is considered or not
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    b: True if the pressure bending of the line is enabled, False otherwise
+    """
+    import cmoordyn
+    return cmoordyn.line_is_pbend(b)
+
+
+def SetLinePressBend(instance, b):
+    """ Set whether the line pressure bending is considered or not
+    
+    This value is useless if non-linear stiffness is considered
+    
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    b (bool): True if the pressure bending of the line shall be considered,
+              False otherwise
+    """
+    import cmoordyn
+    return cmoordyn.line_set_pbend(instance, b)
+
+
+def SetLinePressInt(instance, p):
+    """Set the line internal pressure values at the nodes
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    p (list): Pressure values
+    """
+    import cmoordyn
+    return cmoordyn.line_set_pint(instance, list(p))
+
+
 def GetLineNodePos(instance, i):
     """ Get a line node position
 
@@ -907,18 +1188,128 @@ def GetLineNodePos(instance, i):
     return cmoordyn.line_get_node_pos(instance, i)
 
 
-def GetLineNodeTen(instance, i):
-    """ Get a line node tension
+def GetLineNodeVel(instance, i):
+    """ Get a line node velocity
 
     Parameters:
     instance (cmoordyn.MoorDynLine): The line instance
     i (int): The node index
 
     Returns:
-    t: The node tension
+    rd: The node velocity
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_vel(instance, i)
+
+
+def GetLineNodeForce(instance, i):
+    """ Get a line node net force
+
+    To get the components of the force use moordyn.GetLineNodeTen() ,
+    moordyn.GetLineNodeBendStiff(), moordyn.GetLineNodeWeight() ,
+    moordyn.GetLineNodeDrag() , moordyn.GetLineNodeFroudeKrilov() and
+    moordyn.GetLineNodeSeaBedForce()
+
+    Note that the net force is *NOT* the sum of all those components. For
+    instance, the tension contribution on the internal nodes is the difference
+    between the tensions of the adjacent segments, while
+    moordyn.GetLineNodeTen() is returning the averaged value.
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    f: The node force (a 3 components tuple)
     """
     import cmoordyn
     return cmoordyn.line_get_node_force(instance, i)
+
+
+def GetLineNodeTen(instance, i):
+    """ Get a line node tension
+
+    This comprises the axial stiffness as well as the internal damping
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    t: The node tension (a 3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_ten(instance, i)
+
+
+def GetLineNodeBendStiff(instance, i):
+    """ Get a line node bending stiffness force
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    f: The node force (a 3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_bend(instance, i)
+
+
+def GetLineNodeWeight(instance, i):
+    """ Get a line node weight and bouyancy
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    f: The node force (a 3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_w(instance, i)
+
+
+def GetLineNodeDrag(instance, i):
+    """ Get a line node drag force
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    f: The node force (a 3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_drag(instance, i)
+
+
+def GetLineNodeFroudeKrilov(instance, i):
+    """ Get a line node Froude-Krilov force
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    f: The node force (a 3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_froudekrylov(instance, i)
+
+
+def GetLineNodeSeabedForce(instance, i):
+    """ Get a line node seabed reaction
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    f: The node force (a 3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_froudekrylov(instance, i)
 
 
 def GetLineNodeCurv(instance, i):
@@ -933,6 +1324,20 @@ def GetLineNodeCurv(instance, i):
     """
     import cmoordyn
     return cmoordyn.line_get_node_curv(instance, i)
+
+
+def GetLineNodeM(instance, i):
+    """ Get a line node mass matrix
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+    i (int): The node index
+
+    Returns:
+    r: The node mass matrix (a 3x3 components tuple)
+    """
+    import cmoordyn
+    return cmoordyn.line_get_node_m(instance, i)
 
 
 def GetLineFairTen(instance):

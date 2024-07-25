@@ -47,11 +47,7 @@
 #include <filesystem>
 
 #include <memory>
-
-// #ifdef USEGL
-//  #include <GL/gl.h>  // for openGL drawing option
-//  #include <GL/glu.h> // used in arrow function
-// #endif
+#include <limits>
 
 #ifdef OSX
 #include <sys/uio.h>
@@ -83,6 +79,12 @@ typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 6, 6> Matrix6d;
 typedef Matrix<int, 6, 1> Vector6i;
 typedef Matrix<int, 6, 6> Matrix6i;
+// It is also convenient for us to define a generic Eigen dynamic matrix class
+#ifdef MOORDYN_SINGLEPRECISSION
+typedef MatrixXf MatrixXr;
+#else
+typedef MatrixXd MatrixXr;
+#endif
 }
 
 /** @brief MoorDyn2 C++ API namespace
@@ -139,14 +141,39 @@ typedef Eigen::Vector6i ivec6;
 /// Renaming of ivec3
 typedef ivec3 ivec;
 
-/// COmplex numbers
+/// Complex numbers
 typedef std::complex<real> complex;
 
-inline vec3 
+/** @brief This function compares two real numbers and determines if they are
+ * "almost" equal
+ *
+ * "almost" equal means equal within some relative tolerance (basically
+ * ignoring the last 2 significant digits) (see "Safe Comparisons" suggestion
+ * from http://www.lahey.com/float.htm)
+ * @param a1 The first real number to compare
+ * @param a2 The second real number to compare
+ * @return true if and only if the numbers are almost equal, false otherwise
+ * @note The numbers are added together in this routine, so overflow can result
+ * if comparing two "huge" numbers.
+ * @note Use this function instead of directly calling a specific routine in
+ * the generic interface.
+ */
+inline bool
+EqualRealNos(const real a1, const real a2)
+{
+	constexpr real eps = std::numeric_limits<moordyn::real>::epsilon();
+	constexpr real tol = ((real)100.0) * eps / ((real)2.0);
+
+	const real fraction = (std::max)(std::abs(a1 + a2), ((real)1.0));
+	return std::abs(a1 - a2) <= fraction * tol;
+}
+
+inline vec3
 canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 {
-	// From issue #163: https://github.com/FloatingArrayDesign/MoorDyn/issues/163
-	mat3 coeff = quat.toRotationMatrix();
+	// From issue #163:
+	// https://github.com/FloatingArrayDesign/MoorDyn/issues/163
+	mat3 coeff = quat.normalized().toRotationMatrix();
 	vec3 res{};
 	using Index = int;
 	using Scalar = real;
@@ -228,7 +255,8 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 inline vec3
 Quat2Euler(const quaternion& q)
 {
-	return canonicalEulerAngles(q, 0, 1, 2); // 0, 1, 2 correspond to axes leading to XYZ rotation 
+	// 0, 1, 2 correspond to axes leading to XYZ rotation
+	return canonicalEulerAngles(q, 0, 1, 2);
 }
 
 inline quaternion
@@ -709,7 +737,9 @@ namespace fileIO {
  */
 std::vector<std::string>
 fileToLines(const std::filesystem::path& path);
+
 }
+
 /**
  * @}
  */
@@ -759,9 +789,10 @@ solveMat6(const mat6& mat, const vec6& vec);
 inline moordyn::real
 unitvector(vec& u, const vec& r1, const vec& r2)
 {
-	vec v = r2 - r1;
-	const double l = v.norm();
-	u = v / l;
+	u = r2 - r1;
+	const double l = u.norm();
+	if (!EqualRealNos(l, 0.0))
+		u /= l;
 	return l;
 }
 
@@ -777,7 +808,7 @@ inline void
 scalevector(const vec& u, T newlength, vec& y)
 {
 	const moordyn::real l2 = u.squaredNorm();
-	if (l2 == 0.0) {
+	if (EqualRealNos(l2, 0.0)) {
 		y = u;
 		return;
 	}
@@ -799,8 +830,8 @@ getH(vec r)
 {
 	mat H;
 	// clang-format off
-	H <<   0, r[2], -r[1], 
-		-r[2],     0, r[0],
+	H << 0, r[2], -r[1],
+		-r[2], 0, r[0],
 		r[1], -r[0], 0;
 	// clang-format on
 	return H;
@@ -1009,6 +1040,10 @@ typedef struct _FailProps
 const int nCoef = 30; // maximum number of entries to allow in nonlinear
                       // coefficient lookup tables
 
+/** \ingroup environment
+ *  @{
+ */
+
 struct EnvCond
 {
 	/// Gavity acceleration (m/s^2)
@@ -1044,6 +1079,8 @@ struct EnvCond
 };
 
 typedef std::shared_ptr<EnvCond> EnvCondRef;
+
+/// @}
 
 typedef struct _LineProps // (matching Line Dictionary inputs)
 {

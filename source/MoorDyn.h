@@ -142,8 +142,6 @@ extern "C"
 	int DECLDIR GetPointForce(int l, double force[3]);
 	int DECLDIR GetNodePos(int LineNum, int NodeNum, double pos[3]);
 
-	int DECLDIR DrawWithGL(void);
-
 	int AllOutput(double, double);
 
 	/**

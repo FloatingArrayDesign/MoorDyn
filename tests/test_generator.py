@@ -1,3 +1,4 @@
+import sys
 from unittest import TestCase, main as unittest_main
 import moordyn
 

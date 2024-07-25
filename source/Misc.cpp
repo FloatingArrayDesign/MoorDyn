@@ -331,14 +331,21 @@ orientationAngles(vec v)
 moordyn::real
 GetCurvature(moordyn::real length, const vec& q1, const vec& q2)
 {
+	// There are several ways to compute the discrete curvature. See for
+	// instance the notes on
+	// https://www.cs.utexas.edu/users/evouga/uploads/4/5/6/8/45689883/notes1.pdf
+	// Here the expression k = 4 / l * sin(phi/2) is considered, with the
+	// following trigonometric identity:
+	// cos(phi) = q1.q2 = 1 - 2 sin^2(phi/2)
+
 	// note "length" here is combined from both segments
 
-	auto q1_dot_q2 = q1.dot(q2);
+	const auto q1_dot_q2 = q1.dot(q2);
 
-	if (q1_dot_q2 >
-	    1.0) // this is just a small numerical error, so set q1_dot_q2 to 1
-		return 0.0; // this occurs when there's no curvature, so return zero
-		            // curvature
+	if (q1_dot_q2 + std::numeric_limits<moordyn::real>::epsilon() > 1.0) {
+		// this occurs when there's no curvature, so return zero curvature
+		return 0.0;
+	}
 
 	// else if (q1_dot_q2 < 0)   // this is a bend of more than 90 degrees, too
 	// much, call an error! {	 //<<< maybe throwing an error is overkill,

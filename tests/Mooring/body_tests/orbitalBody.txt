@@ -1,0 +1,34 @@
+--------------------- MoorDyn Input File -------------------------------------------------------
+Testing body kinematics when body origin != COM
+---------------------- ROD TYPES ------------------------------------
+TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd
+(name)        (m)      (kg/m)    (-)    (-)     (-)      (-)
+buoy          1        1.0e1     0.0    0.0     0.0      0.0
+---------------------------- BODIES -----------------------------------------------------
+ID      Attachment  X0     Y0      Z0      r0        p0     y0      Mass  CG*        I*        Volume   CdA*   Ca
+(#)     (-)         (m)    (m)     (m)     (deg)     (deg)  (deg)   (kg)  (m)        (kg-m^2)  (m^3)    (m^2)  (-)
+1       free        0      10      20      0.0       0      0       0     0|-10|0    0         0        0      0
+2       free        0      10      20      0.0       0      0       0     0|-10|0    0         0        0      0
+----------------------- POINTS ----------------------------------------------
+Node      Type       X         Y          Z        M        V          CdA    CA
+(-)       (-)        (m)       (m)        (m)      (kg)     (m^3)      (m^2)  (-)
+1         Body1      0.0       -10        -2       20.0     0          0      0
+2         Body1      0.0       -10        2        20.0     0          0      0
+---------------------- RODS ----------------------------------------
+ID     RodType   Attachment  Xa    Ya    Za    Xb    Yb     Zb    NumSegs   RodOutputs
+(#)    (name)    (#/key)     (m)   (m)   (m)   (m)   (m)    (m)   (-)       (-)
+1      buoy      Body2       0     -10   -2    0     -10.0  2     10        pvf
+-------------------------- SOLVER OPTIONS---------------------------------------------------
+2        writeLog     - Write a log file
+0.0      g            - No gravity
+1e-3     dtM          - time step to use in mooring integration
+3.0e6    kb           - bottom stiffness
+3.0e5    cb           - bottom damping
+70       WtrDpth      - water depth
+3.0      ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
+0.015    threshIC     - threshold for IC convergence
+0.0      TmaxIC       - threshold for IC convergence
+0.01     dtIC         - Time lapse between convergence tests (s)
+0        Currents     - Whether or not to pull in currents
+0        WaveKin      - Whether or not to pull in waves
+--------------------------- need this line -------------------------------------------------

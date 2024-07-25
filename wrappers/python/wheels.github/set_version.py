@@ -28,21 +28,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 # Read the version from the CMakeLists.txt
-version = ""
+version = []
 with open('CMakeLists.txt', 'r') as f:
     txt = f.read()
     for name in ('MAJOR', 'MINOR', 'PATCH'):
         prefix = 'set(MOORDYN_{}_VERSION '.format(name)
         subtxt = txt[txt.find(prefix) + len(prefix):]
         subtxt = subtxt[:subtxt.find(')\n')]
-        version = version + subtxt + '.'
-    version = version[:-1]
+        version += subtxt
 
 
-with open('pyproject.toml', 'r') as f:
-    txt = f.read()
+for fname in ('pyproject.toml', 'setup.py'):
+    with open(fname, 'r') as f:
+        txt = f.read()
 
-txt = txt.replace(r"${MOORDYN_VERSION}", version)
+    for i, name in enumerate(('MAJOR', 'MINOR', 'PATCH')):
+        txt = txt.replace(r"${MOORDYN_" + name + r"_VERSION}", version[i])
+    txt = txt.replace(r"${MOORDYN_VERSION}",
+                    version[0] + "." + version[1] + "." + version[2])
 
-with open('pyproject.toml', 'w') as f:
-    f.write(txt)
+    with open(fname, 'w') as f:
+        f.write(txt)

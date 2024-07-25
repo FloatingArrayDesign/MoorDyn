@@ -54,6 +54,7 @@ using namespace waves;
 Line::Line(moordyn::Log* log, size_t lineId)
   : io::IO(log)
   , lineId(lineId)
+  , isPb(false)
 {
 }
 
@@ -166,6 +167,12 @@ Line::setup(int number_in,
 		stiffYs.push_back(props->stiffYs[I] / A);
 	}
 
+	// Use the last entry on the lookup table. see Line::initialize()
+	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
+	NatFreqCFL::length(UnstrLen / N);
+	NatFreqCFL::stiffness(EA * N / UnstrLen);
+	NatFreqCFL::mass(props->w * UnstrLen / N);
+
 	// copy in nonlinear bent stiffness data if applicable
 	bstiffXs.clear();
 	bstiffYs.clear();
@@ -184,27 +191,34 @@ Line::setup(int number_in,
 		dampYs.push_back(props->dampYs[I]);
 	}
 
+	// Initialize API provided info
+	isPb = false;
+
 	// ------------------------- size vectors -------------------------
 
-	r.assign(N + 1, vec::Zero());  // node positions [i][x/y/z]
-	rd.assign(N + 1, vec::Zero()); // node velocities [i][x/y/z]
+	pin.assign(N + 1, 0.0);           // Internal pressure at node points (Pa)
+
+	r.assign(N + 1, vec::Zero());     // node positions [i][x/y/z]
+	rd.assign(N + 1, vec::Zero());    // node velocities [i][x/y/z]
 	rdd_old.assign(N + 1, vec::Zero()); // node accelerations previous timestep [i][x/y/z]
 	VIV.assign(N+1, vec::Zero()); // node viv states [i][phase/amplitude/smoothed amplitude]
 	VIVd.assign(N+1, vec::Zero()); // node viv state derivatives [i][phase/amplitude/smoothed amplitude]
-	q.assign(N + 1, vec::Zero());  // unit tangent vectors for each node
-	qs.assign(N, vec::Zero());     // unit tangent vectors for each segment
-	l.assign(N, 0.0);              // line unstretched segment lengths
-	lstr.assign(N, 0.0);           // stretched lengths
-	ldstr.assign(N, 0.0);          // rate of stretch
-	Kurv.assign(N + 1, 0.0);       // curvatures at node points (1/m)
+	q.assign(N + 1, vec::Zero());     // unit tangent vectors for each node
+	pvec.assign(N + 1, vec::Zero());  // unit normal vectors for each node
+	qs.assign(N, vec::Zero());        // unit tangent vectors for each segment
+	l.assign(N, 0.0);                 // line unstretched segment lengths
+	lstr.assign(N, 0.0);              // stretched lengths
+	ldstr.assign(N, 0.0);             // rate of stretch
+	Kurv.assign(N + 1, 0.0);          // curvatures at node points (1/m)
 
-	M.assign(N + 1, mat::Zero()); // mass matrices (3x3) for each node
-	V.assign(N, 0.0);             // segment volume?
+	M.assign(N + 1, mat::Zero());     // mass matrices (3x3) for each node
+	V.assign(N, 0.0);                 // segment volume?
 
 	// forces
 	T.assign(N, vec::Zero());        // segment tensions
 	Td.assign(N, vec::Zero());       // segment damping forces
 	Bs.assign(N + 1, vec::Zero());   // bending stiffness forces
+	Pb.assign(N + 1, vec::Zero());   // Pressure bending forces
 	W.assign(N + 1, vec::Zero());    // node weights
 	Dp.assign(N + 1, vec::Zero());   // node drag (transverse)
 	Dq.assign(N + 1, vec::Zero());   // node drag (axial)
@@ -484,11 +498,17 @@ Line::initialize()
 
 	real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 	if (XF > 0.0001) { // tolerance for calculation of XF when points are not along x or y axis
-
-		real ZF = dir[2];
-		real LW = ((rho - env->rho_w) * A) * env->g;
-		real CB = 0.;
-		real Tol = 0.00001;
+		// Check if the line touches the seabed, so we are modelling it. Just
+		// the end points are checked
+		const real Tol = 1e-5;
+		real CB = -1.0;
+		for (unsigned int i = 0; i <= N; i += N) {
+			const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+			if(r[i][2] <= waterDepth * (1.0 - Tol))
+				CB = 0.0;
+		}
+		const real ZF = dir[2];
+		const real LW = ((rho - env->rho_w) * A) * env->g;
 
 		// locations of line nodes along line length - evenly distributed
 		// here
@@ -575,18 +595,21 @@ Line::GetLineOutput(OutChanProps outChan)
 		return rd[outChan.NodeID][1];
 	else if (outChan.QType == VelZ)
 		return rd[outChan.NodeID][2];
-	else if (outChan.QType == Ten)
+	else if (outChan.QType == Ten) {
+		if ((outChan.NodeID == 0) || (outChan.NodeID == N))
+			return getNodeForce(outChan.NodeID).norm();
 		return getNodeTen(outChan.NodeID).norm();
+	}
 	else if (outChan.QType == TenA)
-		return getNodeTen(0).norm();
+		return getNodeForce(0).norm();
 	else if (outChan.QType == TenB)
-		return getNodeTen(N).norm();
+		return getNodeForce(N).norm();
 	else if (outChan.QType == FX)
-		return Fnet[outChan.NodeID][0];
+		return getNodeForce(outChan.NodeID)[0];
 	else if (outChan.QType == FY)
-		return Fnet[outChan.NodeID][1];
+		return getNodeForce(outChan.NodeID)[1];
 	else if (outChan.QType == FZ)
-		return Fnet[outChan.NodeID][2];
+		return getNodeForce(outChan.NodeID)[2];
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
 }
@@ -636,8 +659,8 @@ Line::calcSubSeg(unsigned int firstNodeIdx,
                  unsigned int secondNodeIdx,
                  real surface_height)
 {
-	real firstNodeZ = r[firstNodeIdx][2] - surface_height;
-	real secondNodeZ = r[secondNodeIdx][2] - surface_height;
+	const real firstNodeZ = r[firstNodeIdx][2] - surface_height;
+	const real secondNodeZ = r[secondNodeIdx][2] - surface_height;
 	if (firstNodeZ <= 0.0 && secondNodeZ < 0.0) {
 		return 1.0; // Both nodes below water; segment must be too
 	} else if (firstNodeZ > 0.0 && secondNodeZ > 0.0) {
@@ -674,6 +697,16 @@ Line::calcSubSeg(unsigned int firstNodeIdx,
 
 		return fabs(lowerEnd[2]) / (fabs(lowerEnd[2]) + upperEnd[2]);
 	}
+}
+
+void
+Line::setPin(std::vector<real> p)
+{
+	if (p.size() != pin.size()) {
+		LOGERR << "Invalid input size" << endl;
+		throw moordyn::invalid_value_error("Invalid input size");
+	}
+	pin = p;
 }
 
 void
@@ -813,12 +846,9 @@ Line::getStateDeriv()
 		// vectors (qs) for each segment (this is used for bending calculations)
 		lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 
-		// this is the denominator of how the stretch rate equation was
-		// formulated
-		const double ldstr_top = (r[i + 1] - r[i]).dot(rd[i + 1] - rd[i]);
-		ldstr[i] = ldstr_top / lstr[i]; // strain rate of segment
+		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
 
-		V[i] = A * l[i]; // volume attributed to segment
+		// V[i] = A * l[i]; // volume attributed to segment
 	}
 
 	// calculate unit tangent vectors (q) for each internal node. note: I've
@@ -831,17 +861,54 @@ Line::getStateDeriv()
 		    r[i + 1]); // compute unit vector q ... using adjacent two nodes!
 
 	// calculate unit tangent vectors for either end node if the line has no
-	// bending stiffness of if either end is pinned (otherwise it's already been
-	// set via setEndStateFromRod)
-	if ((endTypeA == PINNED) || (EI == 0))
+	// bending stiffness of if either end is pinned (otherwise it's already
+	// been set via ::setEndOrientation())
+	const bool isEI = (EI > 0) || (nEIpoints > 0);
+	if ((endTypeA == PINNED) || !isEI)
 		unitvector(q[0], r[0], r[1]);
-	if ((endTypeB == PINNED) || (EI == 0))
+	if ((endTypeB == PINNED) || !isEI)
 		unitvector(q[N], r[N - 1], r[N]);
+
+	// calculate the curvatures and normal vectors (just if needed)
+	if (isEI || isPb) {
+		for (unsigned int i = 0; i <= N; i++) {
+			if (i == 0) {
+				// end node A case (only if attached to a Rod, i.e. a
+				// cantilever rather than pinned point)
+				Kurv[i] = (endTypeA == CANTILEVERED) ?
+					GetCurvature(lstr[0], q[0], qs[0]) : 0.0;
+			} else if (i == N) {
+				// end node B case (only if attached to a Rod, i.e. a
+				// cantilever rather than pinned point)
+				Kurv[i] = (endTypeB == CANTILEVERED) ?
+					GetCurvature(lstr[i - 1], qs[i - 1], q[i]) : 0.0;
+			} else {
+				// internal node
+				// curvature <<< remember to check sign, or just take abs
+				Kurv[i] = GetCurvature(lstr[i - 1] + lstr[i], qs[i - 1], qs[i]);
+			}
+			if (EqualRealNos(Kurv[i], 0.0)) {
+				pvec[i] = vec::Zero();
+				continue;
+			}
+
+			if (i == 0)
+				pvec[i] = q[0].cross(qs[0]);
+			else if (i == N)
+				pvec[i] = qs[i - 1].cross(q[N]);
+			else
+				pvec[i] = qs[i - 1].cross(qs[i]);
+			const real l_pvec = pvec[i].norm();
+			// We can renormalize it for afterwards simplicity
+			if (!EqualRealNos(l_pvec, 0.0))
+				pvec[i] /= l_pvec;
+		}
+	}
 
 	//============================================================================================
 	// --------------------------------- apply wave kinematics
 	// -----------------------------
-	auto [zeta, U, Ud] = waves->getWaveKinLine(lineId);
+	auto [zeta, U, Ud, pdyn] = waves->getWaveKinLine(lineId);
 
 	// If in still water, iterate over all the segments and calculate
 	// volume of segment submerged. This is later used to calculate
@@ -863,13 +930,13 @@ Line::getStateDeriv()
 
 		if (i == 0) {
 			m_i = pi / 8. * d * d * l[0] * rho;
-			v_i = 1. / 2. * F[i] * V[i];
+			v_i = 0.5 * F[0] * V[0];
 		} else if (i == N) {
 			m_i = pi / 8. * d * d * l[N - 1] * rho;
-			v_i = 1. / 2. * F[i - 1] * V[i - 1];
+			v_i = 0.5 * F[i - 1] * V[i - 1];
 		} else {
 			m_i = pi / 8. * (d * d * rho * (l[i] + l[i - 1]));
-			v_i = 1. / 2. * (F[i - 1] * V[i - 1] + F[i] * V[i]);
+			v_i = 0.5 * (F[i - 1] * V[i - 1] + F[i] * V[i]);
 		}
 
 		// Make node mass matrix
@@ -888,68 +955,55 @@ Line::getStateDeriv()
 			E = getNonlinearE(lstr[i], l[i]);
 
 		if (lstr[i] / l[i] > 1.0) {
-			T[i] = E * A * (1. / l[i] - 1. / lstr[i]) * (r[i + 1] - r[i]);
+			T[i] = E * A * (lstr[i] - l[i]) / l[i] * qs[i];
 		} else {
 			// cable can't "push" ...
 			// or can it, if bending stiffness is nonzero? <<<<<<<<<
-			T[i] = vec(0.0, 0.0, 0.0);
+			T[i] = vec::Zero();
 		}
 
 		// line internal damping force
 		if (nCpoints > 0)
 			c = getNonlinearC(ldstr[i], l[i]);
-
-		Td[i] = c * A * (ldstr[i] / l[i]) * (r[i + 1] - r[i]) / lstr[i];
+		Td[i] = c * A * ldstr[i] / l[i] * qs[i];
 	}
 
 	// Bending loads
 	// first zero out the forces from last run
-	for (unsigned int i = 0; i <= N; i++)
-		Bs[i] = vec(0.0, 0.0, 0.0);
+	for (unsigned int i = 0; i <= N; i++) {
+		Bs[i] = vec::Zero();
+		Pb[i] = vec::Zero();
+	}
 
 	// and now compute them (if possible)
-	if ((EI > 0) || (nEIpoints > 0)) {
+	if (isEI) {
 		// loop through all nodes to calculate bending forces
 		for (unsigned int i = 0; i <= N; i++) {
-			moordyn::real Kurvi = 0.0;
-			vec pvec;
-			vec Mforce_im1(0.0, 0.0, 0.0);
-			vec Mforce_ip1(0.0, 0.0, 0.0);
-			vec Mforce_i;
+			const real Kurvi = Kurv[i];
+			if (EqualRealNos(Kurvi, 0.0))
+				continue;
 
 			// calculate force on each node due to bending stiffness!
 
-			// end node A case (only if attached to a Rod, i.e. a cantilever
-			// rather than pinned point)
 			if (i == 0) {
-				if (endTypeA == CANTILEVERED) // if attached to Rod i.e.
-				                              // cantilever point
+				// end node A case (only if attached to a Rod, i.e. a
+				// cantilever rather than pinned point)
+				if (endTypeA == CANTILEVERED)
 				{
-					// curvature <<< check if this approximation works for an
-					// end (assuming rod angle is node angle which is middle of
-					// if there was a segment -1/2
-					Kurvi = GetCurvature(lstr[i], q[i], qs[i]);
 					if (nEIpoints > 0)
 						EI = getNonlinearEI(Kurvi);
 
-					// get direction of bending radius axis
-					pvec = q[0].cross(qs[i]);
-
-					// get direction of resulting force from bending to apply on
-					// node i+1
-					Mforce_ip1 = qs[i].cross(pvec);
-
-					// record bending moment at end for potential application to
-					// attached object   <<<< do double check this....
-					scalevector(pvec, Kurvi * EI, endMomentA);
+					// get direction of resulting force from bending to apply
+					// on node i+1
+					vec Mforce_ip1 = qs[0].cross(pvec[i]);
 
 					// scale force direction vectors by desired moment force
 					// magnitudes to get resulting forces on adjacent nodes
-					scalevector(Mforce_ip1, Kurvi * EI / lstr[i], Mforce_ip1);
+					Mforce_ip1 *= Kurvi * EI / lstr[i];
 
 					// set force on node i to cancel out forces on adjacent
 					// nodes
-					Mforce_i = -Mforce_ip1;
+					vec Mforce_i = -Mforce_ip1;
 
 					// apply these forces to the node forces
 					Bs[i] += Mforce_i;
@@ -966,32 +1020,20 @@ Line::getStateDeriv()
 					// works for an end (assuming rod angle is node
 					// angle which is middle of if there was a
 					// segment -1/2
-					Kurvi = GetCurvature(lstr[i - 1], qs[i - 1], q[i]);
 					if (nEIpoints > 0)
 						EI = getNonlinearEI(Kurvi);
 
-					// get direction of bending radius axis
-					pvec = qs[i - 1].cross(q[N]);
-
 					// get direction of resulting force from bending to apply on
 					// node i-1
-					Mforce_im1 = qs[i - 1].cross(pvec);
-
-					// record bending moment at end for potential application to
-					// attached object   <<<< do double check this....
-					scalevector(
-					    pvec,
-					    -Kurvi * EI,
-					    endMomentB); // note end B is oposite sign as end A
+					vec Mforce_im1 = qs[i - 1].cross(pvec[i]);
 
 					// scale force direction vectors by desired moment force
 					// magnitudes to get resulting forces on adjacent nodes
-					scalevector(
-					    Mforce_im1, Kurvi * EI / lstr[i - 1], Mforce_im1);
+					Mforce_im1 *= Kurvi * EI / lstr[i - 1];
 
 					// set force on node i to cancel out forces on adjacent
 					// nodes
-					Mforce_i = -Mforce_im1;
+					vec Mforce_i = -Mforce_im1;
 
 					// apply these forces to the node forces
 					Bs[i - 1] += Mforce_im1;
@@ -1002,51 +1044,29 @@ Line::getStateDeriv()
 			else {
 				// curvature <<< remember to check
 				// sign, or just take abs
-				Kurvi = GetCurvature(lstr[i - 1] + lstr[i], qs[i - 1], qs[i]);
 				if (nEIpoints > 0)
 					EI = getNonlinearEI(Kurvi);
 
-				// get direction of bending radius axis
-				pvec = qs[i - 1].cross(q[i]);
-
 				// get direction of resulting force from bending to apply on
 				// node i-1
-				Mforce_im1 = qs[i - 1].cross(pvec);
+				vec Mforce_im1 = qs[i - 1].cross(pvec[i]);
 				// get direction of resulting force from bending to apply on
 				// node i+1
-				Mforce_ip1 = qs[i].cross(pvec);
+				vec Mforce_ip1 = qs[i].cross(pvec[i]);
 
 				// scale force direction vectors by desired moment force
 				// magnitudes to get resulting forces on adjacent nodes
-				scalevector(Mforce_im1, Kurvi * EI / lstr[i - 1], Mforce_im1);
-				scalevector(Mforce_ip1, Kurvi * EI / lstr[i], Mforce_ip1);
+				Mforce_im1 *= Kurvi * EI / lstr[i - 1];
+				Mforce_ip1 *= Kurvi * EI / lstr[i];
 
 				// set force on node i to cancel out forces on adjacent nodes
-				Mforce_i = -Mforce_im1 - Mforce_ip1;
+				vec Mforce_i = -Mforce_im1 - Mforce_ip1;
 
 				// apply these forces to the node forces
 				Bs[i - 1] += Mforce_im1;
 				Bs[i] += Mforce_i;
 				Bs[i + 1] += Mforce_ip1;
 			}
-
-			// check for NaNs <<<<<<<<<<<<<<< temporary measure <<<<<<<
-			if (isnan(Bs[i][0]) || isnan(Bs[i][1]) || isnan(Bs[i][2])) {
-				cout << "   Error: NaN value detected in bending force at Line "
-				     << number << " node " << i << endl;
-				cout << lstr[i - 1] + lstr[i] << endl;
-				cout << sqrt(0.5 * (1 - qs[i - 1].dot(qs[i]))) << endl;
-
-				cout << Bs[i - 1] << endl;
-				cout << Bs[i] << endl;
-				cout << Bs[i + 1] << endl;
-				cout << Mforce_im1 << endl;
-				cout << Mforce_i << endl;
-				cout << Mforce_ip1 << endl;
-			}
-
-			// record curvature at node!!
-			Kurv[i] = Kurvi;
 
 			// any damping forces for bending? I hope not...
 
@@ -1097,6 +1117,27 @@ Line::getStateDeriv()
 			*/
 		} // for i=0,N (looping through nodes)
 	}     // if EI > 0
+
+	if (isPb) {
+		// loop through all nodes to calculate bending forces
+		for (unsigned int i = 0; i <= N; i++) {
+			const real Kurvi = Kurv[i];
+			if (EqualRealNos(Kurvi, 0.0))
+				continue;
+			// The driving pressure
+			const real h = (std::max)(0.0, zeta[i] - r[i].z());
+			const real p = pin[i] - (env->rho_w * env->g * h + pdyn[i]);
+			// The direction
+			const vec nvec = q[i].cross(pvec[i]);
+			// So we can compute the force
+			if (i == 0)
+				Pb[i] = 0.5 * A * l[i] * p * Kurvi * nvec;
+			else if (i == N)
+				Pb[i] = 0.5 * A * l[i - 1] * p * Kurvi * nvec;
+			else
+				Pb[i] = 0.5 * A * (l[i] + l[i - 1]) * p * Kurvi * nvec;
+		}
+	}
 
 	// loop through the nodes
 	for (unsigned int i = 0; i <= N; i++) {
@@ -1287,7 +1328,8 @@ Line::getStateDeriv()
 			Fnet[i] = -T[i - 1] - Td[i - 1];
 		else
 			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
-		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i] + Lf[i];
+		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] +
+			Bs[i] + Lf[i] + Pb[i];
 	}
 
 	// loop through internal nodes and compute the accelerations
@@ -1371,7 +1413,7 @@ Line::Output(real time)
 		}
 		// output wave velocities?
 		if (channels.find("U") != string::npos) {
-			auto [_z, U, _ud] = waves->getWaveKinLine(lineId);
+			auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
 			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
 					*outfile << U[i][J] << "\t ";
@@ -1539,7 +1581,7 @@ Line::getVTK() const
 	auto vtk_Fnet = vector_to_vtk_array("Fnet", this->Fnet);
 	auto vtk_M = io::vtk_farray("M", 9, num_points);
 	auto vtk_D = io::vtk_farray("Drag", 3, num_points);
-	auto [z, U, Ud] = waves->getWaveKinLine(lineId);
+	auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
 	auto vtk_U = vector_to_vtk_array("U", U);
 
 	// Segment fields, i.e. r.size()-1 number of tuples
@@ -1618,77 +1660,6 @@ Line::saveVTK(const char* filename) const
 }
 #endif
 
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Line::drawGL(void)
-{
-	double maxTen = 0.0;
-	double normTen;
-	double rgb[3];
-	for (int i = 0; i <= N; i++) {
-		double newTen = getNodeTen(i).norm();
-		if (newTen > maxTen)
-			maxTen = newTen;
-	}
-
-	glColor3f(0.5, 0.5, 1.0);
-	glBegin(GL_LINE_STRIP);
-	for (int i = 0; i <= N; i++) {
-		glVertex3d(r[i][0], r[i][1], r[i][2]);
-		if (i < N) {
-			normTen = getNodeTen(i).norm() / maxTen;
-			ColorMap(normTen, rgb);
-			glColor3d(rgb[0], rgb[1], rgb[2]);
-		}
-	}
-	glEnd();
-};
-
-void
-Line::drawGL2(void)
-{
-	double maxTen = 0.0;
-	double normTen;
-	double rgb[3];
-	for (int i = 0; i <= N; i++) {
-		double newTen = getNodeTen(i).norm();
-		if (newTen > maxTen)
-			maxTen = newTen;
-	}
-
-	// line
-	for (unsigned int i = 0; i < N; i++) {
-		normTen = 0.2 + 0.8 * pow(getNodeTen(i).norm() / maxTen, 4.0);
-		ColorMap(normTen, rgb);
-		glColor3d(rgb[0], rgb[1], rgb[2]);
-
-		Cylinder(r[i][0],
-		         r[i][1],
-		         r[i][2],
-		         r[i + 1][0],
-		         r[i + 1][1],
-		         r[i + 1][2],
-		         27,
-		         0.5);
-	}
-	// velocity vectors
-	for (int i = 0; i <= N; i++) {
-		glColor3d(0.0, 0.2, 0.8);
-		double vscal = 5.0;
-
-		Arrow(r[i][0],
-		      r[i][1],
-		      r[i][2],
-		      vscal * rd[i][0],
-		      vscal * rd[i][1],
-		      vscal * rd[i][2],
-		      0.1,
-		      0.7);
-	}
-};
-#endif
-
 } // ::moordyn
 
 // =============================================================================
@@ -1759,6 +1730,61 @@ MoorDyn_SetLineUnstretchedLengthVel(MoorDynLine l, double v)
 }
 
 int DECLDIR
+MoorDyn_IsLineConstantEA(MoorDynLine l, int* b)
+{
+	CHECK_LINE(l);
+	*b = (int)((moordyn::Line*)l)->isConstantEA();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetLineConstantEA(MoorDynLine l, double* EA)
+{
+	CHECK_LINE(l);
+	*EA = ((moordyn::Line*)l)->getConstantEA();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetLineConstantEA(MoorDynLine l, double EA)
+{
+	CHECK_LINE(l);
+	((moordyn::Line*)l)->setConstantEA(EA);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_IsLinePressBend(MoorDynLine l, int* b)
+{
+	CHECK_LINE(l);
+	*b = (int)((moordyn::Line*)l)->enabledPb();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetLinePressBend(MoorDynLine l, int b)
+{
+	CHECK_LINE(l);
+	if (b)
+		((moordyn::Line*)l)->enablePb();
+	else
+		((moordyn::Line*)l)->disablePb();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetLinePressInt(MoorDynLine l, const double* p)
+{
+	CHECK_LINE(l);
+	unsigned int n = ((moordyn::Line*)l)->getN() + 1;
+	std::vector<moordyn::real> pin(n);
+	for (unsigned int i = 0; i < n; i++)
+		pin[i] = (moordyn::real)p[i];
+	((moordyn::Line*)l)->setPin(pin);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 {
 	CHECK_LINE(l);
@@ -1767,6 +1793,34 @@ MoorDyn_GetLineNodePos(MoorDynLine l, unsigned int i, double pos[3])
 	try {
 		const moordyn::vec r = ((moordyn::Line*)l)->getNodePos(i);
 		moordyn::vec2array(r, pos);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeVel(MoorDynLine l, unsigned int i, double vel[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec rd = ((moordyn::Line*)l)->getNodeVel(i);
+		moordyn::vec2array(rd, vel);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeForce(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeForce(i);
+		moordyn::vec2array(force, f);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
@@ -1787,6 +1841,76 @@ MoorDyn_GetLineNodeTen(MoorDynLine l, unsigned int i, double ten[3])
 }
 
 int DECLDIR
+MoorDyn_GetLineNodeBendStiff(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeBendStiff(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeWeight(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeWeight(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeDrag(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeDrag(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeFroudeKrilov(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeFroudeKrilov(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeSeabedForce(MoorDynLine l, unsigned int i, double f[3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::vec force = ((moordyn::Line*)l)->getNodeSeabedForce(i);
+		moordyn::vec2array(force, f);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
 MoorDyn_GetLineNodeCurv(MoorDynLine l, unsigned int i, double* curv)
 {
 	CHECK_LINE(l);
@@ -1795,6 +1919,20 @@ MoorDyn_GetLineNodeCurv(MoorDynLine l, unsigned int i, double* curv)
 	try {
 		const auto c = ((moordyn::Line*)l)->getNodeCurv(i);
 		*curv = c;
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	return err;
+}
+
+int DECLDIR
+MoorDyn_GetLineNodeM(MoorDynLine l, unsigned int i, double m[3][3])
+{
+	CHECK_LINE(l);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		const moordyn::mat mass = ((moordyn::Line*)l)->getNodeM(i);
+		moordyn::mat2array(mass, m);
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;

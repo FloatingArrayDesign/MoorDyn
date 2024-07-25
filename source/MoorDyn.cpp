@@ -281,11 +281,3 @@ GetNodePos(int LineNum, int NodeNum, double pos[3])
 	auto line = MoorDyn_GetLine(md_singleton, LineNum);
 	return MoorDyn_GetLineNodePos(line, NodeNum, pos);
 }
-
-int DECLDIR
-DrawWithGL()
-{
-	if (!md_singleton)
-		return MOORDYN_MEM_ERROR;
-	return MoorDyn_DrawWithGL(md_singleton);
-}

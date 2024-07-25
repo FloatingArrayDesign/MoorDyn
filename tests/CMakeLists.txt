@@ -26,23 +26,31 @@ set(CPP_TESTS
     minimal
     lifting
     pendulum
-    beam
     time_schemes
     io
     rods
     bodies_and_rods
-    quasi_static_chain
     wavekin_4
     tripod
     seafloor
     wavekin
     wavekin_7
-    bodies
 )
 
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    bodies
+    beam
+    conveying_fluid
+    polyester
+    quasi_static_chain
+    lowe_and_langley_2006
+    local_euler
+    beuler
+    midpoint
+    aca
+    wilson
 )
 
 function(make_executable test_name, extension)
@@ -109,6 +117,17 @@ if(${FORTRAN_WRAPPER})
     add_dependencies(fortran_bindings Test_MooringConfigFiles)
     add_test(NAME fortran_bindings
              COMMAND fortran_bindings)
+endif()
+
+if(${PYTHON_WRAPPER})
+    add_test (NAME python-tests
+        COMMAND ${Python_EXECUTABLE} -m pytest -s
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    set_tests_properties(python-tests
+        PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/wrappers/python/:$ENV{PYTHONPATH}")
+    set_tests_properties(python-tests
+        PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/source/:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 if(${MATLAB_WRAPPER})

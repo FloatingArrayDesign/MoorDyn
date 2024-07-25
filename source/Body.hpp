@@ -41,6 +41,7 @@
 
 #include "Misc.hpp"
 #include "IO.hpp"
+#include "Util/CFL.hpp"
 #include <vector>
 #include <utility>
 
@@ -72,7 +73,7 @@ class Rod;
  * moordyn::Body extends the io::IO class, allowing it to perform input/output
  * in a consistent manner.
  */
-class Body final : public io::IO
+class Body final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -247,7 +248,17 @@ class Body final : public io::IO
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	void initializeUnfreeBody(vec6 r = vec6::Zero(), vec6 rd = vec6::Zero(), vec6 rdd = vec6::Zero());
+	void initializeUnfreeBody(vec6 r = vec6::Zero(),
+	                          vec6 rd = vec6::Zero(),
+	                          vec6 rdd = vec6::Zero());
+
+	/** @brief Get the last setted velocity for an unfree body
+	 *
+	 * For free bodies the behaviour is undetermined
+	 *
+	 * @return The velocity (6 dof)
+	 */
+	inline vec6 getUnfreeVel() const { return rd_ves; }
 
 	/** @brief Initialize the FREE point state
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
@@ -303,33 +314,33 @@ class Body final : public io::IO
 	/** @brief Get the body position
 	 * @return The body position
 	 */
-	inline vec getPosition() const { return r7.pos; }
+	inline const vec getPosition() const { return r7.pos; }
 
 	/** @brief Get the body Euler XYZ angles
 	 * @return The body Euler XYZ angles
 	 */
-	inline vec getAngles() const { return Quat2Euler(r7.quat); }
+	inline const vec getAngles() const { return Quat2Euler(r7.quat); }
 	// inline vec getAngles() const { return r6(Eigen::seqN(3, 3)); }
 
 	/** @brief Get the body velocity
 	 * @return The body velocity
 	 */
-	inline vec getVelocity() const { return v6(Eigen::seqN(0, 3)); }
+	inline const vec getVelocity() const { return v6(Eigen::seqN(0, 3)); }
 
 	/** @brief Get the body angular velocity
 	 * @return The body angular velocity
 	 */
-	inline vec getAngularVelocity() const { return v6(Eigen::seqN(3, 3)); }
+	inline const vec getAngularVelocity() const { return v6(Eigen::seqN(3, 3)); }
 
 	/** @brief Get the forces and moments exerted over the body
 	 * @return The net force
 	 */
-	vec6 getFnet();
+	const vec6 getFnet() const;
 
 	/** @brief Get the mass and intertia matrix
 	 * @return The mass and inertia matrix
 	 */
-	inline mat6 getM() const { return M; };
+	inline const mat6& getM() const { return M; };
 
 	/** @brief Get body output
 	 *
@@ -348,11 +359,11 @@ class Body final : public io::IO
 	 * boundary conditions (body kinematics) for the proceeding time steps
 	 * @param r The input position
 	 * @param rd The input velocity
-	 * @param rdd The input velocity
+	 * @param rdd The input acceleration
 	 * @throw moordyn::invalid_value_error If the body is not of type
 	 * moordyn::Body::COUPLED or moordyn::Body::FIXED
 	 */
-	void initiateStep(vec6 r_in, vec6 rd_in, vec6 rdd_in);
+	void initiateStep(vec6 r, vec6 rd, vec6 rdd);
 
 	/** @brief Sets the kinematics based on the position and velocity of the
 	 * fairlead.
@@ -368,7 +379,7 @@ class Body final : public io::IO
 	 * @param r The position
 	 * @param rd The velocity
 	 */
-	void setState(XYZQuat r, vec6 rd);
+	void DECLDIR setState(XYZQuat r, vec6 rd);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *
@@ -437,10 +448,6 @@ class Body final : public io::IO
 	 * any other error
 	 */
 	void saveVTK(const char* filename) const;
-#endif
-
-#ifdef USEGL
-	void drawGL(void);
 #endif
 
   private:

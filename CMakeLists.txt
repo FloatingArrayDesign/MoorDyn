@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 set(MOORDYN_MAJOR_VERSION 2)
 set(MOORDYN_MINOR_VERSION 3)
-set(MOORDYN_PATCH_VERSION 0)
+set(MOORDYN_PATCH_VERSION 4)
 set(MOORDYN_VERSION ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION})
 project(Moordyn VERSION ${MOORDYN_VERSION})
 
@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_compile_definitions("MOORDYN_MAJOR_VERSION=${MOORDYN_MAJOR_VERSION}")
 add_compile_definitions("MOORDYN_MINOR_VERSION=${MOORDYN_MINOR_VERSION}")
+add_compile_definitions("MOORDYN_PATCH_VERSION=${MOORDYN_PATCH_VERSION}")
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -139,6 +140,14 @@ if(${MOORDYN_FASTMATH})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
     endif()
 endif()
+
+find_program(MEMORYCHECK_COMMAND valgrind)
+if(NOT MEMORYCHECK_COMMAND)
+    message(WARNING "valgrind is not found, you will not be able to run memchecks")
+else(NOT ${MEMORYCHECK_COMMAND})
+    set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind_suppress.txt")
+endif()
+
 
 # Compile the library
 add_subdirectory(source)

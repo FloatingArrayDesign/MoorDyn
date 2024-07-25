@@ -43,11 +43,11 @@ breathe_default_project = "MoorDyn"
 # -- Project information -----------------------------------------------------
 
 project = 'MoorDyn'
-copyright = '2023, National Renewable Energy Laboratory'
+copyright = '2024, National Renewable Energy Laboratory'
 author = 'Matt Hall'
 
 # The full version, including alpha/beta/rc tags
-release = '2.2.2'
+release = '2.3.1' # TODO: can we automate this?
 
 
 # -- General configuration ---------------------------------------------------
@@ -80,7 +80,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 #
 # need to run pip install sphinx_rtd_theme to use locally
 html_theme = 'sphinx_rtd_theme'
-# html_theme_options = {'style_nav_header_background': 'slateblue'}
+html_theme_options = {
+    'collapse_navigation': False
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
