@@ -192,7 +192,7 @@ class Rod final : public io::IO, public SuperCFL
 
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	std::vector<moordyn::real> VOF;
+	std::vector<moordyn::real> VOF; // TODO: This doesnt need to be a vector, can be a double reused for each node
 	/// instantaneous axial submerged length [m]
 	real h0;
 
