@@ -49,11 +49,6 @@
 #include <memory>
 #include <limits>
 
-// #ifdef USEGL
-//  #include <GL/gl.h>  // for openGL drawing option
-//  #include <GL/glu.h> // used in arrow function
-// #endif
-
 #ifdef OSX
 #include <sys/uio.h>
 #elif defined WIN32
@@ -84,6 +79,12 @@ typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 6, 6> Matrix6d;
 typedef Matrix<int, 6, 1> Vector6i;
 typedef Matrix<int, 6, 6> Matrix6i;
+// It is also convenient for us to define a generic Eigen dynamic matrix class
+#ifdef MOORDYN_SINGLEPRECISSION
+typedef MatrixXf MatrixXr;
+#else
+typedef MatrixXd MatrixXr;
+#endif
 }
 
 /** @brief MoorDyn2 C++ API namespace
@@ -167,12 +168,12 @@ EqualRealNos(const real a1, const real a2)
 	return std::abs(a1 - a2) <= fraction * tol;
 }
 
-
-inline vec3 
+inline vec3
 canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 {
-	// From issue #163: https://github.com/FloatingArrayDesign/MoorDyn/issues/163
-	mat3 coeff = quat.toRotationMatrix();
+	// From issue #163:
+	// https://github.com/FloatingArrayDesign/MoorDyn/issues/163
+	mat3 coeff = quat.normalized().toRotationMatrix();
 	vec3 res{};
 	using Index = int;
 	using Scalar = real;
@@ -254,7 +255,8 @@ canonicalEulerAngles(const quaternion& quat, int a0, int a1, int a2)
 inline vec3
 Quat2Euler(const quaternion& q)
 {
-	return canonicalEulerAngles(q, 0, 1, 2); // 0, 1, 2 correspond to axes leading to XYZ rotation 
+	// 0, 1, 2 correspond to axes leading to XYZ rotation
+	return canonicalEulerAngles(q, 0, 1, 2);
 }
 
 inline quaternion
@@ -735,7 +737,9 @@ namespace fileIO {
  */
 std::vector<std::string>
 fileToLines(const std::filesystem::path& path);
+
 }
+
 /**
  * @}
  */
@@ -826,8 +830,8 @@ getH(vec r)
 {
 	mat H;
 	// clang-format off
-	H <<   0, r[2], -r[1], 
-		-r[2],     0, r[0],
+	H << 0, r[2], -r[1],
+		-r[2], 0, r[0],
 		r[1], -r[0], 0;
 	// clang-format on
 	return H;

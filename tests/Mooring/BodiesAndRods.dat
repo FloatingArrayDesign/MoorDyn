@@ -52,5 +52,5 @@ Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 0.01     dtIC         - Time lapse between convergence tests (s)
 ------------------------------ OUTPUTS -----------------------------------------------------
 FairTen1 FairTen2 FairTen3
-Con2px Con2py Con2pz
+Point2px Point2py Point2pz
 --------------------------- need this line -------------------------------------------------

@@ -18,7 +18,7 @@ set(MOORDYN_SRCS
     Waves/SpectrumKin.cpp
     Waves/WaveOptions.cpp
     Waves/WaveGrid.cpp
-    )
+)
 
 set(MOORDYN_HEADERS
     Body.hpp
@@ -48,6 +48,7 @@ set(MOORDYN_HEADERS
     Waves/WaveOptions.hpp
     Waves/WaveGrid.hpp
     Util/Interp.hpp
+    Util/CFL.hpp
 )
 
 set(MOORDYN_PUBLIC_DEPS "")

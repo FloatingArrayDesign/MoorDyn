@@ -1,6 +1,4 @@
 import sys
-print('HERE')
-print(sys.path)
 from unittest import TestCase, main as unittest_main
 import moordyn
 

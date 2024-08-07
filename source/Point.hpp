@@ -37,6 +37,7 @@
 #include "Misc.hpp"
 #include "IO.hpp"
 #include "Seafloor.hpp"
+#include "Util/CFL.hpp"
 #include <utility>
 
 #ifdef USE_VTK
@@ -66,7 +67,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class Point final : public io::IO
+class Point final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -366,11 +367,13 @@ class Point final : public io::IO
 	 * parent body
 	 * @param Fnet_out Output Force about body ref point
 	 * @param M_out Output Mass matrix about body ref point
-	 * @param rBody The body position. If NULL, {0, 0, 0} is considered
+	 * @param rBody The body position
+	 * @param vBody The body velocity
 	 */
 	void getNetForceAndMass(vec6& Fnet_out,
 	                        mat6& M_out,
-	                        vec rBody = vec::Zero());
+	                        vec rBody = vec::Zero(),
+	                        vec6 vBody = vec6::Zero());
 
 	/** @brief Calculates the forces and mass on the point, including from
 	 * attached lines
@@ -419,9 +422,17 @@ class Point final : public io::IO
 	void saveVTK(const char* filename) const;
 #endif
 
-#ifdef USEGL
-	void drawGL(void);
-#endif
+  private:
+	/** @brief Calculate the centripetal force on a body
+	 * @param r The body position
+	 * @param w The body angular velocity
+	 * @return Centripetal force on the body
+	 */
+	inline vec getCentripetalForce(vec r, vec w) const
+	{
+		return -M * (w.cross(w.cross(this->r - r)));
+	}
+
 };
 
 } // ::moordyn

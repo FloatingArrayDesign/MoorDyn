@@ -107,6 +107,7 @@ Point::addLine(Line* theLine, EndPoints end_point)
 
 	attachment a = { theLine, end_point };
 	attached.push_back(a);
+	SuperCFL::AddChild(theLine);
 };
 
 EndPoints
@@ -120,6 +121,7 @@ Point::removeLine(Line* line)
 		// This is the line's entry in the attachment list
 		end_point = it->end_point;
 		attached.erase(it);
+		SuperCFL::RemoveChild(line);
 
 		LOGMSG << "Detached line " << line->number << " from Point " << number
 		       << endl;
@@ -297,7 +299,7 @@ Point::getStateDeriv()
 };
 
 void
-Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
+Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody, vec6 vBody)
 {
 	doRHS();
 
@@ -308,6 +310,8 @@ Point::getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody)
 	// convert segment net force into 6dof force about body ref point
 	Fnet_out(Eigen::seqN(0, 3)) = Fnet;
 	Fnet_out(Eigen::seqN(3, 3)) = rRel.cross(Fnet);
+	// add the centripetal force
+	Fnet_out(Eigen::seqN(0, 3)) += getCentripetalForce(rBody, vBody.tail<3>());
 
 	// convert segment mass matrix to 6by6 mass matrix about body ref point
 	M_out = translateMass(rRel, M);
@@ -469,16 +473,6 @@ Point::saveVTK(const char* filename) const
 		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
 	}
 }
-#endif
-
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Point::drawGL(void)
-{
-	double radius = pow(pointV / (4 / 3 * pi), 0.33333); // pointV
-	Sphere(r[0], r[1], r[2], radius);
-};
 #endif
 
 } // ::moordyn

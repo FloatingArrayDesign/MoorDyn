@@ -127,7 +127,7 @@ Body::setup(int number_in,
 	v6 = vec6::Zero();
 
 	// calculate orientation matrix based on latest angles
-	OrMat = r7.quat.toRotationMatrix();
+	OrMat = r7.quat.normalized().toRotationMatrix();
 
 	LOGDBG << "Set up Body " << number << ", type " << TypeName(type) << ". "
 	       << endl;
@@ -140,6 +140,7 @@ Body::addPoint(moordyn::Point* point, vec coords)
 
 	// store Point address
 	attachedP.push_back(point);
+	SuperCFL::AddChild(point);
 
 	// store Point relative location
 	rPointRel.push_back(coords);
@@ -152,6 +153,7 @@ Body::addRod(Rod* rod, vec6 coords)
 
 	// store Rod address
 	attachedR.push_back(rod);
+	SuperCFL::AddChild(rod);
 
 	// store Rod end A relative position and unit vector from end A to B
 	vec tempUnitVec;
@@ -267,6 +269,7 @@ Body::setDependentStates()
 		                    rPoint,
 		                    rdPoint); //<<< should double check this function
 
+
 		// pass above to the point and get it to calculate the forces
 		try {
 			attachedP[i]->setKinematics(rPoint, rdPoint);
@@ -286,13 +289,13 @@ Body::setDependentStates()
 
 		// do 3d details of Rod ref point
 		vec tmpr, tmprd;
+		// set first three entires (end A translation) of rRod and rdRod
 		transformKinematics(r6RodRel[i](Eigen::seqN(0, 3)),
 		                    OrMat,
 		                    r7.pos,
 		                    v6,
 		                    tmpr,
-		                    tmprd); // set first three entires (end A
-		                            // translation) of rRod and rdRod
+		                    tmprd);
 		// does the above function need to take in all 6 elements of r6RodRel??
 		rRod(Eigen::seqN(0, 3)) = tmpr;
 		rdRod(Eigen::seqN(0, 3)) = tmprd;
@@ -428,7 +431,7 @@ Body::updateFairlead(real time)
 		a6 = rdd_ves;
 
 		// calculate orientation matrix based on latest angles
-		OrMat = r7.quat.toRotationMatrix();
+		OrMat = r7.quat.normalized().toRotationMatrix();
 
 		// set positions of any dependent points and rods
 		setDependentStates();
@@ -463,7 +466,7 @@ Body::setState(XYZQuat pos, vec6 vel)
 	}
 
 	// calculate orientation matrix based on latest angles
-	OrMat = r7.quat.toRotationMatrix();
+	OrMat = r7.quat.normalized().toRotationMatrix();
 
 	// set positions of any dependent points and rods
 	setDependentStates();
@@ -555,6 +558,11 @@ Body::doRHS()
 	F6net(Eigen::seqN(0, 3)) = Fgrav;
 	F6net(Eigen::seqN(3, 3)) = body_rCGrotated.cross(Fgrav);
 
+	// Centrifugal force due to COM not being at body origin
+	const vec w = v6.tail<3>();
+	F6net.head<3>() -=
+		M.topLeftCorner(3, 3) * (w.cross(w.cross(body_rCGrotated)));
+
 	// --------------------------------- apply wave kinematics
 	// ------------------------------------
 
@@ -585,7 +593,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos, v6);
 
 		// sum quantitites
 		F6net += F6_i;
@@ -598,7 +606,7 @@ Body::doRHS()
 		// orientation)
 		vec6 F6_i;
 		mat6 M6_i;
-		attached->getNetForceAndMass(F6_i, M6_i, r7.pos);
+		attached->getNetForceAndMass(F6_i, M6_i, r7.pos, v6);
 
 		//			// calculate relative location of rod about body center in
 		// global orientation 			double rRod_i[3];
@@ -768,16 +776,6 @@ Body::defaultVTK()
 	vtk_body->GetCellData()->AddArray(axes);
 	vtk_body->GetCellData()->SetActiveScalars("axis");
 }
-#endif
-
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Body::drawGL(void)
-{
-	double radius = pow(BodyV / (4 / 3 * pi), 0.33333); // pointV
-	Sphere(r[0], r[1], r[2], radius);
-};
 #endif
 
 } // ::moordyn

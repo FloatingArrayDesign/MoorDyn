@@ -1,5 +1,4 @@
 import sys
-print(sys.path)
 from unittest import TestCase, main as unittest_main
 import os
 import tempfile
@@ -45,6 +44,7 @@ class MinimalTests(TestCase):
         cwd = os.getcwd()
         os.chdir(tmp_folder)
         system = moordyn.Create()
+        os.chdir(cwd)
         x = []
         for i in range(4, 7):
             point = moordyn.GetPoint(system, i)
@@ -55,7 +55,6 @@ class MinimalTests(TestCase):
         self.assertEqual(moordyn.NCoupledDOF(system), 9,
                          "Wrong number of coupled DOFs")
         self.assertEqual(moordyn.GetNumberLines(system), 3)
-        os.chdir(cwd)
         v[0] = 0.1
         forces = moordyn.Step(system, x, v, 0.0, 0.5)
         print(forces)

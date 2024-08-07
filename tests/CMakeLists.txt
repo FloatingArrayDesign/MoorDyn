@@ -30,21 +30,27 @@ set(CPP_TESTS
     io
     rods
     bodies_and_rods
-    quasi_static_chain
     wavekin_4
     tripod
     seafloor
     wavekin
     wavekin_7
-    bodies
 )
 
 set(CATCH2_TESTS 
     math_tests
     testDecomposeString
+    bodies
     beam
     conveying_fluid
     polyester
+    quasi_static_chain
+    lowe_and_langley_2006
+    local_euler
+    beuler
+    midpoint
+    aca
+    wilson
 )
 
 function(make_executable test_name, extension)

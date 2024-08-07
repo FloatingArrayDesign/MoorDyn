@@ -1,0 +1,26 @@
+{
+   <initialize_env 1>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:gomp_malloc
+   fun:gomp_init_num_threads
+   fun:initialize_env
+   fun:call_init
+   fun:call_init
+   fun:_dl_init
+   obj:/usr/lib/ld-linux-x86-64.so.2
+} 
+{
+   <initialize_env 2>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:gomp_malloc_cleared
+   fun:add_initial_icv_to_list
+   fun:initialize_env
+   fun:call_init
+   fun:call_init
+   fun:_dl_init
+   obj:/usr/lib/ld-linux-x86-64.so.2
+}

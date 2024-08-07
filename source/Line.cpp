@@ -160,6 +160,12 @@ Line::setup(int number_in,
 		stiffYs.push_back(props->stiffYs[I] / A);
 	}
 
+	// Use the last entry on the lookup table. see Line::initialize()
+	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
+	NatFreqCFL::length(UnstrLen / N);
+	NatFreqCFL::stiffness(EA * N / UnstrLen);
+	NatFreqCFL::mass(props->w * UnstrLen / N);
+
 	// copy in nonlinear bent stiffness data if applicable
 	bstiffXs.clear();
 	bstiffYs.clear();
@@ -458,11 +464,17 @@ Line::initialize()
 
 	real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
 	if (XF > 0.0) {
-
-		real ZF = dir[2];
-		real LW = ((rho - env->rho_w) * A) * env->g;
-		real CB = 0.;
-		real Tol = 0.00001;
+		// Check if the line touches the seabed, so we are modelling it. Just
+		// the end points are checked
+		const real Tol = 1e-5;
+		real CB = -1.0;
+		for (unsigned int i = 0; i <= N; i += N) {
+			const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
+			if(r[i][2] <= waterDepth * (1.0 - Tol))
+				CB = 0.0;
+		}
+		const real ZF = dir[2];
+		const real LW = ((rho - env->rho_w) * A) * env->g;
 
 		// locations of line nodes along line length - evenly distributed
 		// here
@@ -787,10 +799,7 @@ Line::getStateDeriv()
 		// vectors (qs) for each segment (this is used for bending calculations)
 		lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 
-		// this is the denominator of how the stretch rate equation was
-		// formulated
-		const double ldstr_top = (r[i + 1] - r[i]).dot(rd[i + 1] - rd[i]);
-		ldstr[i] = ldstr_top / lstr[i]; // strain rate of segment
+		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
 
 		// V[i] = A * l[i]; // volume attributed to segment
 	}
@@ -899,18 +908,17 @@ Line::getStateDeriv()
 			E = getNonlinearE(lstr[i], l[i]);
 
 		if (lstr[i] / l[i] > 1.0) {
-			T[i] = E * A * (1. / l[i] - 1. / lstr[i]) * (r[i + 1] - r[i]);
+			T[i] = E * A * (lstr[i] - l[i]) / l[i] * qs[i];
 		} else {
 			// cable can't "push" ...
 			// or can it, if bending stiffness is nonzero? <<<<<<<<<
-			T[i] = vec(0.0, 0.0, 0.0);
+			T[i] = vec::Zero();
 		}
 
 		// line internal damping force
 		if (nCpoints > 0)
 			c = getNonlinearC(ldstr[i], l[i]);
-
-		Td[i] = c * A * (ldstr[i] / l[i]) * (r[i + 1] - r[i]) / lstr[i];
+		Td[i] = c * A * ldstr[i] / l[i] * qs[i];
 	}
 
 	// Bending loads
@@ -1535,85 +1543,6 @@ Line::saveVTK(const char* filename) const
 		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
 	}
 }
-#endif
-
-// new function to draw instantaneous line positions in openGL context
-#ifdef USEGL
-void
-Line::drawGL(void)
-{
-	double maxTen = 0.0;
-	double normTen;
-	double rgb[3];
-	for (int i = 0; i <= N; i++) {
-		const double newTen = ((i == 0) || (i == N)) ?
-			getNodeForce(i).norm() :
-			getNodeTen(i).norm();
-		if (newTen > maxTen)
-			maxTen = newTen;
-	}
-
-	glColor3f(0.5, 0.5, 1.0);
-	glBegin(GL_LINE_STRIP);
-	for (int i = 0; i <= N; i++) {
-		glVertex3d(r[i][0], r[i][1], r[i][2]);
-		if (i < N) {
-			const double normTen = (((i == 0) || (i == N)) ?
-				getNodeForce(i).norm() :
-				getNodeTen(i).norm()) / maxTen;
-			ColorMap(normTen, rgb);
-			glColor3d(rgb[0], rgb[1], rgb[2]);
-		}
-	}
-	glEnd();
-};
-
-void
-Line::drawGL2(void)
-{
-	double maxTen = 0.0;
-	double normTen;
-	double rgb[3];
-	for (int i = 0; i <= N; i++) {
-		const double newTen = ((i == 0) || (i == N)) ?
-			getNodeForce(i).norm() :
-			(0.5 * (T[i] + T[i - 1])).norm();
-		if (newTen > maxTen)
-			maxTen = newTen;
-	}
-
-	// line
-	for (unsigned int i = 0; i < N; i++) {
-		const double normTen = 0.2 + 0.8 * pow((((i == 0) || (i == N)) ?
-			getNodeForce(i).norm() :
-			getNodeTen(i).norm()) / maxTen, 4.0);
-		ColorMap(normTen, rgb);
-		glColor3d(rgb[0], rgb[1], rgb[2]);
-
-		Cylinder(r[i][0],
-		         r[i][1],
-		         r[i][2],
-		         r[i + 1][0],
-		         r[i + 1][1],
-		         r[i + 1][2],
-		         27,
-		         0.5);
-	}
-	// velocity vectors
-	for (int i = 0; i <= N; i++) {
-		glColor3d(0.0, 0.2, 0.8);
-		double vscal = 5.0;
-
-		Arrow(r[i][0],
-		      r[i][1],
-		      r[i][2],
-		      vscal * rd[i][0],
-		      vscal * rd[i][1],
-		      vscal * rd[i][2],
-		      0.1,
-		      0.7);
-	}
-};
 #endif
 
 } // ::moordyn

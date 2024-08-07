@@ -8,15 +8,13 @@ MoorDyn - Lumped-Mass Mooring Dynamics
 .. _index:
 
 .. toctree::
-   :maxdepth: 5
-   :hidden:
+   :maxdepth: 2
 
    compiling
    drivers
    inputs
    structure
    api_c
-   troubleshooting
    waterkinematics
    theory
 

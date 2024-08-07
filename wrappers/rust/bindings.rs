@@ -399,7 +399,3 @@ extern "C" {
         filepath: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
-    #[doc = " @brief Draw the lines and points in the active OpenGL context\n\n The OpenGL context is assumed to be created by the caller before calling\n this function\n @param system The Moordyn system\n @return MOORDYN_SUCESS If the data is correctly set, an error code\n otherwise (see @ref moordyn_errors)"]
-    pub fn MoorDyn_DrawWithGL(system: MoorDyn) -> ::std::os::raw::c_int;
-}

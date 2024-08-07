@@ -34,7 +34,6 @@
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
-#include <limits>
 
 #ifdef LINUX
 #include <cmath>
@@ -87,9 +86,11 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , ICTmax(120.0)
   , ICthresh(0.001)
   , WaveKinTemp(waves::WAVES_NONE)
-  , dtM0(0.001)
+  , dtM0((std::numeric_limits<real>::max)())
+  , cfl(0.5)
   , dtOut(0.0)
   , _t_integrator(NULL)
+  , ICgenDynamic(false)
   , env(std::make_shared<EnvCond>())
   , GroundBody(NULL)
   , waves(nullptr)
@@ -139,6 +140,9 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	waves = std::make_shared<moordyn::Waves>(_log);
 
 	const moordyn::error_id err = ReadInFile();
+	if (err != MOORDYN_SUCCESS) {
+		delete GetLogger();
+	}
 	MOORDYN_THROW(err, "Exception while reading the input file");
 
 	LOGDBG << "MoorDyn is expecting " << NCoupledDOF()
@@ -178,141 +182,20 @@ moordyn::MoorDyn::~MoorDyn()
 	for (auto obj : LineList)
 		delete obj;
 
-	delete _log;
+	delete GetLogger();
 }
 
 moordyn::error_id
-moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
+moordyn::MoorDyn::icLegacy()
 {
-	if (NCoupledDOF() && !x) {
-		LOGERR << "ERROR: "
-		       << "MoorDyn::Init received a Null position vector, "
-		       << "but " << NCoupledDOF() << "components are required" << endl;
-	}
-
-	// <<<<<<<<< need to add bodys
-
-	// Allocate past line fairlead tension array, which is used for convergence
-	// test during IC gen
+	// dtIC set to fraction of input so convergence is over dtIC (as described in docs)
 	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
-	vector<real> FairTensLast_col(convergence_iters, 0.0);
-	for (unsigned int i = 0; i < convergence_iters; i++)
-		FairTensLast_col[i] = 1.0 * i;
-	vector<vector<real>> FairTensLast(LineList.size(), FairTensLast_col);
+	ICdt = ICdt / (convergence_iters+1);
 
-	// ------------------ do static bodies and lines ---------------------------
+	_t_integrator->Init();
 
-	LOGMSG << "Creating mooring system..." << endl;
-
-	// call ground body to update all the fixed things...
-	GroundBody->initializeUnfreeBody();
-
-	// intialize fixed bodies and attached objects
-	for (auto l : FixedBodyIs){
-		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, vec6::Zero());
-	}
-
-	// initialize coupled objects based on passed kinematics
-	int ix = 0;
-
-	for (auto l : CpldBodyIs) {
-		LOGMSG << "Initializing coupled Body " << l+1 << " at " << x[ix] << ", "
-		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
-
-		// BUG: These conversions will not be needed in the future
-		vec6 r, rd, rdd;
-		if (BodyList[l]->type == Body::COUPLED){
-			moordyn::array2vec6(x + ix, r);
-			moordyn::array2vec6(xd + ix, rd);
-			// determine acceleration 
-			rdd = (rd - rd_b) / dtM0;
-			rd_b = rd;
-
-			ix += 6;
-		} else {
-			// for pinned body 3 entries will be taken
-			vec3 r3, rd3, rdd3;
-			moordyn::array2vec(x + ix, r3);
-			r(Eigen::seqN(0, 3)) = r3;
-			moordyn::array2vec(xd + ix, rd3);
-			rd(Eigen::seqN(0, 3)) = rd3;
-			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_b) / dtM0;
-			rd3_b = rd3;
-
-			ix += 3;
-		}
-		BodyList[l]->initializeUnfreeBody(r, rd, rdd);
-	}
-
-	for (auto l : CpldRodIs) {
-		LOGMSG << "Initializing coupled Rod " << l+1 << " at " << x[ix] << ", "
-		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
-		vec6 r, rd, rdd;
-		if (RodList[l]->type == Rod::COUPLED) {
-			// for cantilevered rods 6 entries will be taken
-			moordyn::array2vec6(x + ix, r);
-			moordyn::array2vec6(xd + ix, rd);
-			// determine acceleration 
-		    rdd = (rd - rd_r) / dtM0;
-			rd_r = rd;
-
-			ix += 6;
-		} else {
-			// for pinned rods 3 entries will be taken
-			vec3 r3, rd3, rdd3;
-			moordyn::array2vec(x + ix, r3);
-			r(Eigen::seqN(0, 3)) = r3;
-			moordyn::array2vec(xd + ix, rd3);
-			rd(Eigen::seqN(0, 3)) = rd3;
-			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_r) / dtM0;
-			rd3_r = rd3;
-
-			ix += 3;
-		}
-		RodList[l]->initiateStep(r, rd, rdd);
-		RodList[l]->updateFairlead(0.0);
-		// call this just to set up the output file header
-		RodList[l]->initialize();
-	}
-
-	for (auto l : CpldPointIs) {
-		LOGMSG << "Initializing coupled Point " << l+1 << " at " << x[ix] << ", "
-		       << x[ix + 1] << ", " << x[ix + 2] << endl;
-		vec r, rd;
-		moordyn::array2vec(x + ix, r);
-		moordyn::array2vec(xd + ix, rd);
-		PointList[l]->initiateStep(r, rd);
-
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
-		try {
-			PointList[l]->updateFairlead(0.0);
-		}
-		MOORDYN_CATCHER(err, err_msg);
-		if (err != MOORDYN_SUCCESS) {
-			LOGERR << "Error initializing coupled point" << l << ": " << err_msg
-			       << endl;
-			return err;
-		}
-		// call this just to set WaterKin (may also set up output file in
-		// future)
-		PointList[l]->initialize();
-		ix += 3;
-	}
-
-	// Initialize the system state
-	_t_integrator->init();
-
-	// ------------------ do dynamic relaxation IC gen --------------------
-
-	if (!skip_ic) {
-		LOGMSG << "Finalizing ICs using dynamic relaxation (" << ICDfac
-		       << "X normal drag)" << endl;
-	}
-
-	// boost drag coefficients to speed static equilibrium convergence
+	LOGMSG << "Finalizing ICs using dynamic solve (" << ICDfac
+	       << "X normal drag)" << endl;
 	for (auto obj : LineList)
 		obj->scaleDrag(ICDfac);
 	for (auto obj : PointList)
@@ -325,22 +208,22 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// vector to store tensions for analyzing convergence
 	vector<real> FairTens(LineList.size(), 0.0);
 
+	vector<real> FairTensLast_col(convergence_iters, 0.0);
+	for (unsigned int i = 0; i < convergence_iters; i++)
+		FairTensLast_col[i] = 1.0 * i;
+	vector<vector<real>> FairTensLast(LineList.size(), FairTensLast_col);
+
 	unsigned int iic = 1; // To match MDF indexing
 	real t = 0;
 	bool converged = true;
 	real max_error = 0.0;
 	unsigned int max_error_line = 0;
-	// The function is enclosed in parenthesis to avoid Windows min() and max()
-	// macros break it
-	// See
-	// https://stackoverflow.com/questions/1825904/error-c2589-on-stdnumeric-limitsdoublemin
 	real best_score = (std::numeric_limits<real>::max)();
 	real best_score_t = 0.0;
 	unsigned int best_score_line = 0;
 
-	// //dtIC set to fraction of input so convergence is over dtIC
 	ICdt = ICdt / (convergence_iters+1);
-	while (((ICTmax-t) > 0.00000001) && (!skip_ic)) { // tol of 0.00000001 should be smaller than anything anyone puts in as a ICdt
+	while ((ICTmax - t) > (std::numeric_limits<real>::min)()) {
 		// Integrate one ICD timestep (ICdt)
 		real t_target = ICdt;
 		real dt;
@@ -372,7 +255,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		// go through points to get fairlead forces
 		for (unsigned int lf = 0; lf < LineList.size(); lf++)
 			FairTens[lf] =
-			    LineList[lf]->getNodeTen(LineList[lf]->getN()).norm();
+				LineList[lf]->getNodeTen(LineList[lf]->getN()).norm();
 
 		// check for convergence (compare current tension at each fairlead with
 		// previous convergence_iters-1 values)
@@ -384,7 +267,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			for (unsigned int lf = 0; lf < LineList.size(); lf++) {
 				for (unsigned int pt = 0; pt < convergence_iters; pt++) {
 					const real error =
-					    abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
+						abs(FairTens[lf] / FairTensLast[lf][pt] - 1.0);
 					if (error > max_error) {
 						max_error = error;
 						max_error_line = LineList[lf]->number;
@@ -399,8 +282,8 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			if (max_error > ICthresh) {
 				converged = false;
 				LOGDBG << "Dynamic relaxation t = " << t << "s (time step "
-				       << iic << "), error = " << 100.0 * max_error
-				       << "% on line " << max_error_line << "     \r";
+					<< iic << "), error = " << 100.0 * max_error
+					<< "% on line " << max_error_line << "     \r";
 			}
 
 			if (converged)
@@ -410,24 +293,26 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		iic++;
 	}
 
-	if (!skip_ic) {
-		if (converged) {
-			LOGMSG << "Fairlead tensions converged" << endl;
-		} else {
-			LOGWRN << "Fairlead tensions did not converge" << endl;
-		}
-		LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
-		       << "% on line " << max_error_line << endl;
-		if (!converged) {
-			LOGMSG << "Best score at " << best_score_t
-			       << " s = " << 100.0 * best_score << "% on line "
-			       << best_score_line << endl;
-		}
+	if (converged) {
+		LOGMSG << "Fairlead tensions converged" << endl;
+	} else {
+		LOGWRN << "Fairlead tensions did not converge" << endl;
 	}
+	LOGMSG << "Remaining error after " << t << " s = " << 100.0 * max_error
+		<< "% on line " << max_error_line << endl;
+	if (!converged) {
+		LOGMSG << "Best score at " << best_score_t
+			<< " s = " << 100.0 * best_score << "% on line "
+			<< best_score_line << endl;
+	}
+
+
+	// We are setting the timer again later, but better doing it here as well,
+	// so no regressions might happens on the subinstances setTime() callings
+	_t_integrator->SetTime(0.0);
 
 	// restore drag coefficients to normal values and restart time counter of
 	// each object
-	_t_integrator->SetTime(0.0);
 	for (auto obj : LineList) {
 		obj->scaleDrag(1.0 / ICDfac);
 		obj->setTime(0.0);
@@ -440,6 +325,220 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 	for (auto obj : BodyList)
 		obj->scaleDrag(1.0 / ICDfac);
+	return MOORDYN_SUCCESS;
+}
+
+moordyn::error_id
+moordyn::MoorDyn::icStationary()
+{
+	real t = 0;
+	real error_prev = (std::numeric_limits<real>::max)();
+	real error = (std::numeric_limits<real>::max)();
+	real error0 = error;
+	real best_score = (std::numeric_limits<real>::max)();
+	real best_score_t = 0.0;
+
+	LOGMSG << "Finalizing ICs using static solve" << endl;
+
+	StationaryScheme t_integrator(_log, waves);
+	t_integrator.SetGround(GroundBody);
+	for (auto obj : BodyList)
+		t_integrator.AddBody(obj);
+	for (auto obj : RodList)
+		t_integrator.AddRod(obj);
+	for (auto obj : PointList)
+		t_integrator.AddPoint(obj);
+	for (auto obj : LineList)
+		t_integrator.AddLine(obj);
+	t_integrator.SetCFL((std::min)(cfl, 1.0));
+	t_integrator.Init();
+	auto n_states = t_integrator.NStates();
+	while ((ICTmax - t) > (std::numeric_limits<real>::min)()) {
+		// Integrate one ICD timestep (ICdt)
+		real t_target = ICdt;
+		real dt;
+		t_integrator.Next();
+		while ((dt = t_target) > 0.0) {
+			if (dtM0 < dt)
+				dt = dtM0;
+			moordyn::error_id err = MOORDYN_SUCCESS;
+			string err_msg;
+			try {
+				t_integrator.Step(dt);
+				error = t_integrator.Error();
+				if (!t)
+					error0 = error;
+				t = t_integrator.GetTime();
+				t_target -= dt;
+			}
+			MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS) {
+				LOGERR << "t = " << t << " s" << endl;
+				return err;
+			}
+		}
+
+		if (error < best_score) {
+			best_score = error;
+			best_score_t = t;
+		}
+
+		const real error_rel = error / error0;
+		const real error_deriv = std::abs(error_prev - error) / error_prev;
+		if (!error || (error_rel < ICthresh) || (error_deriv < ICthresh))
+			break;
+		error_prev = error;
+
+		LOGDBG << "Stationary solution t = " << t << "s, "
+			<< "error avg = " << error / n_states << " m/s2, "
+			<< "error change = " << 100.0 * error_deriv << "%     \r";
+	}
+
+	_t_integrator->SetState(t_integrator.GetState());
+	LOGMSG << "Remaining error after " << t << " s = "
+			<< error / n_states << " m/s2" << endl;
+	LOGMSG << "Best score at " << best_score_t
+			<< " s = " << best_score / n_states << " m/s2" << endl;
+	return MOORDYN_SUCCESS;
+}
+
+moordyn::error_id
+moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
+{
+	if (NCoupledDOF() && !x) {
+		LOGERR << "ERROR: "
+		       << "MoorDyn::Init received a Null position vector, "
+		       << "but " << NCoupledDOF() << "components are required" << endl;
+	}
+
+	// <<<<<<<<< need to add bodys
+
+	// ------------------ do static bodies and lines ---------------------------
+
+	LOGMSG << "Creating mooring system..." << endl;
+
+	// call ground body to update all the fixed things...
+	GroundBody->initializeUnfreeBody();
+
+	// intialize fixed bodies and attached objects
+	for (auto l : FixedBodyIs){
+		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, vec6::Zero());
+	}
+
+	// initialize coupled objects based on passed kinematics
+	int ix = 0;
+
+	for (auto l : CpldBodyIs) {
+		LOGMSG << "Initializing coupled Body " << l+1 << " at " << x[ix] << ", "
+		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
+
+		// BUG: These conversions will not be needed in the future
+		vec6 r, rd;
+		if (BodyList[l]->type == Body::COUPLED){
+			moordyn::array2vec6(x + ix, r);
+			moordyn::array2vec6(xd + ix, rd);
+			ix += 6;
+		} else {
+			// for pinned body 3 entries will be taken
+			vec3 r3, rd3, rdd3;
+			moordyn::array2vec(x + ix, r3);
+			r(Eigen::seqN(0, 3)) = r3;
+			moordyn::array2vec(xd + ix, rd3);
+			rd(Eigen::seqN(0, 3)) = rd3;
+			ix += 3;
+		}
+		BodyList[l]->initializeUnfreeBody(r, rd, vec6::Zero());
+	}
+
+	for (auto l : CpldRodIs) {
+		LOGMSG << "Initializing coupled Rod " << l+1 << " at " << x[ix] << ", "
+		       << x[ix + 1] << ", " << x[ix + 2] << "..." << endl;
+		vec6 r, rd, rdd;
+		if (RodList[l]->type == Rod::COUPLED) {
+			// for cantilevered rods 6 entries will be taken
+			moordyn::array2vec6(x + ix, r);
+			moordyn::array2vec6(xd + ix, rd);
+			ix += 6;
+		} else {
+			// for pinned rods 3 entries will be taken
+			vec3 r3, rd3, rdd3;
+			moordyn::array2vec(x + ix, r3);
+			r(Eigen::seqN(0, 3)) = r3;
+			moordyn::array2vec(xd + ix, rd3);
+			rd(Eigen::seqN(0, 3)) = rd3;
+			ix += 3;
+		}
+		RodList[l]->initiateStep(r, rd, vec6::Zero());
+		RodList[l]->updateFairlead(0.0);
+		// call this just to set up the output file header
+		RodList[l]->initialize();
+	}
+
+	for (auto l : CpldPointIs) {
+		LOGMSG << "Initializing coupled Point " << l+1 << " at " << x[ix] << ", "
+		       << x[ix + 1] << ", " << x[ix + 2] << endl;
+		vec r, rd;
+		moordyn::array2vec(x + ix, r);
+		moordyn::array2vec(xd + ix, rd);
+		PointList[l]->initiateStep(r, rd);
+
+		moordyn::error_id err = MOORDYN_SUCCESS;
+		string err_msg;
+		try {
+			PointList[l]->updateFairlead(0.0);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS) {
+			LOGERR << "Error initializing coupled point" << l << ": " << err_msg
+			       << endl;
+			return err;
+		}
+		// call this just to set WaterKin (may also set up output file in
+		// future)
+		PointList[l]->initialize();
+		ix += 3;
+	}
+
+	if (dtM0 < (0.9 * (std::numeric_limits<real>::max)()))
+		cfl = (std::numeric_limits<real>::max)(); // Is 90% of max sufficient tolerance for this check?
+
+	// Compute the timestep
+	for (auto obj : LineList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	for (auto obj : PointList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	for (auto obj : RodList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	for (auto obj : BodyList)
+		dtM0 = (std::min)(dtM0, obj->cfl2dt(cfl));
+	// And get the resulting CFL
+	cfl = 0.0;
+	for (auto obj : LineList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	for (auto obj : PointList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	for (auto obj : RodList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	for (auto obj : BodyList)
+		cfl = (std::max)(cfl, obj->dt2cfl(dtM0));
+	LOGMSG << "dtM = " << dtM0 << " s (CFL = " << cfl << ")" << endl;
+
+	// Initialize the system state
+	_t_integrator->SetCFL(cfl);
+
+	// ------------------ do IC gen --------------------
+	if (!skip_ic) {
+		moordyn::error_id err;
+		if (ICgenDynamic)
+			err = icLegacy();
+		else
+			err = icStationary();
+		if (err != MOORDYN_SUCCESS)
+			return err;
+	} else {
+		_t_integrator->Init();
+	}
+	_t_integrator->SetTime(0.0);
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
@@ -540,13 +639,12 @@ moordyn::MoorDyn::Step(const double* x,
 	for (auto l : CpldBodyIs) {
 		// BUG: These conversions will not be needed in the future
 		vec6 r, rd, rdd;
+		const vec6 rd_b = BodyList[l]->getUnfreeVel();
 		if (BodyList[l]->type == Body::COUPLED){
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
 			// determine acceleration 
-			rdd = (rd - rd_b) / dtM0;
-			rd_b = rd;
-
+			rdd = (rd - rd_b) / dt;
 			ix += 6;
 		} else {
 			// for pinned body 3 entries will be taken
@@ -556,23 +654,21 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
 			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_b) / dt;
-			rd3_b = rd3;
-
+		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd_b.head<3>()) / dt;
 			ix += 3;
 		}
-		BodyList[l]->initiateStep(r, rd, rdd); // acceleration required for inertial terms
+		// acceleration required for inertial terms
+		BodyList[l]->initiateStep(r, rd, rdd);
 	}
 	for (auto l : CpldRodIs) {
 		vec6 r, rd, rdd;
+		const vec6 rd_r = RodList[l]->getUnfreeVel();
 		if (RodList[l]->type == Rod::COUPLED) {
 			// for cantilevered rods 6 entries will be taken
 			moordyn::array2vec6(x + ix, r);
 			moordyn::array2vec6(xd + ix, rd);
 			// determine acceleration 
 		    rdd = (rd - rd_r) / dt;
-			rd_r = rd;
-
 			ix += 6;
 		} else {
 			// for pinned rods 3 entries will be taken
@@ -582,12 +678,11 @@ moordyn::MoorDyn::Step(const double* x,
 			moordyn::array2vec(xd + ix, rd3);
 			rd(Eigen::seqN(0, 3)) = rd3;
 			// determine acceleration 
-		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd3_r) / dt;
-			rd3_r = rd3;
-
+		    rdd(Eigen::seqN(0, 3)) = (rd3 - rd_r.head<3>()) / dt;
 			ix += 3;
 		}
-		RodList[l]->initiateStep(r, rd, rdd); // acceleration required for inertial terms
+		// acceleration required for inertial terms
+		RodList[l]->initiateStep(r, rd, rdd);
 	}
 	for (auto l : CpldPointIs) {
 		vec r, rd;
@@ -752,16 +847,15 @@ MoorDyn::saveVTK(const char* filename) const
 moordyn::error_id
 moordyn::MoorDyn::ReadInFile()
 {
-	unsigned int i = 0;
+	int i = 0;
+
+	vector<string> in_txt;
+	if (readFileIntoBuffers(in_txt) != MOORDYN_SUCCESS) {
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
 
 	// We are really interested in looking for the writeLog option, to start
 	// logging as soon as possible
-	vector<string> in_txt;
-	if (readFileIntoBuffers(in_txt) != MOORDYN_SUCCESS) {
-		// BREAK
-		return MOORDYN_INVALID_INPUT_FILE;
-	}
-	// Skip until we find the options header line
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
@@ -775,16 +869,31 @@ moordyn::MoorDyn::ReadInFile()
 			const string name = entries[1];
 
 			if (name == "writeLog") {
-				env->writeLog = atoi(entries[0].c_str());
+				env->writeLog = atoi(value.c_str());
 				const moordyn::error_id err = SetupLog();
 				if (err != MOORDYN_SUCCESS)
 					return err;
-				i++;
-
-			} else {
-				readOptionsLine(in_txt, i);
-				i++;
+				break;
 			}
+			i++;
+		}
+	}
+	// Now we can read all the options
+	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
+		LOGDBG << "   Reading options:" << endl;
+		// Parse options until the next header or the end of the file
+		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+			if (entries.size() < 2) {
+				i++;
+				continue;
+			}
+			const string name = entries[1];
+
+			if (name != "writeLog") {
+				readOptionsLine(in_txt, i);
+			}
+			i++;
 		}
 	}
 
@@ -1159,7 +1268,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			std::string let1, num1, let2, num2, let3;
 			// divided outWord into letters and numbers
-			str::decomposeString(entries[0], let1, num1, let2, num2, let3);
+			str::decomposeString(entries[1], let1, num1, let2, num2, let3);
 
 			if (num1.empty()) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1209,7 +1318,7 @@ moordyn::MoorDyn::ReadInFile()
 				return MOORDYN_INVALID_INPUT;
 			}
 
-			vector<string> lineNums = moordyn::str::split(entries[1], ',');
+			vector<string> lineNums = moordyn::str::split(entries[2], ',');
 			obj->lines.reserve(lineNums.size());
 			obj->line_end_points.reserve(lineNums.size());
 			for (unsigned int il = 0; il < lineNums.size(); il++) {
@@ -1225,8 +1334,8 @@ moordyn::MoorDyn::ReadInFile()
 				obj->line_end_points.push_back(ENDPOINT_A);
 			}
 
-			obj->time = atof(entries[2].c_str());
-			obj->ten = atof(entries[3].c_str());
+			obj->time = atof(entries[3].c_str());
+			obj->ten = atof(entries[4].c_str());
 
 			LOGDBG << "fail time is " << obj->time << " s" << endl;
 			LOGDBG << "fail ten is " << obj->ten << " N" << endl;
@@ -1998,6 +2107,8 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 	// DT is old way, should phase out
 	if ((name == "dtM") || (name == "DT"))
 		dtM0 = atof(entries[0].c_str());
+	else if ((name == "CFL") || (name == "cfl"))
+		cfl = atof(entries[0].c_str());
 	else if (name == "writeLog") {
 		// This was actually already did, so we do not need to do that again
 		// But we really want to have this if to avoid showing a warning for
@@ -2020,9 +2131,9 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		env->rho_w = atof(entries[0].c_str());
 	else if (name == "WtrDpth")
 		env->WtrDpth = atof(entries[0].c_str());
-	else if ((name == "kBot") || (name == "kb"))
+	else if ((name == "kBot") || (name == "kbot") || (name == "kb"))
 		env->kb = atof(entries[0].c_str());
-	else if ((name == "cBot") || (name == "cb"))
+	else if ((name == "cBot") || (name == "cbot") || (name == "cb"))
 		env->cb = atof(entries[0].c_str());
 	else if ((name == "dtIC") || (name == "ICdt"))
 		ICdt = atof(entries[0].c_str());
@@ -2070,7 +2181,9 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
 		std::string filepath = entries[0];
 		this->seafloor->setup(env, filepath);
-	} else
+	} else if (name == "ICgenDynamic")
+		ICgenDynamic = bool(atof(entries[0].c_str()));
+	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 
@@ -2516,6 +2629,79 @@ MoorDyn_GetFASTtens(MoorDyn system,
 }
 
 int DECLDIR
+MoorDyn_GetDt(MoorDyn system, double* dt)
+{
+	CHECK_SYSTEM(system);
+	*dt = ((moordyn::MoorDyn*)system)->GetDt();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetDt(MoorDyn system, double dt)
+{
+	CHECK_SYSTEM(system);
+	moordyn::real casted = (moordyn::real)dt;
+	((moordyn::MoorDyn*)system)->SetDt(casted);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetCFL(MoorDyn system, double* cfl)
+{
+	CHECK_SYSTEM(system);
+	*cfl = ((moordyn::MoorDyn*)system)->GetCFL();
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetCFL(MoorDyn system, double cfl)
+{
+	CHECK_SYSTEM(system);
+	moordyn::real casted = (moordyn::real)cfl;
+	((moordyn::MoorDyn*)system)->SetCFL(casted);
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_GetTimeScheme(MoorDyn system, char* name, size_t* name_len)
+{
+	CHECK_SYSTEM(system);
+	moordyn::TimeScheme* tscheme = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+	std::string out = tscheme->GetName();
+	if (name_len)
+		*name_len = out.size() + 1;
+	if (name) {
+		strncpy(name, out.c_str(), out.size());
+		name[out.size()] = '\0';
+	}
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SetTimeScheme(MoorDyn system, const char* name)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	moordyn::MoorDyn* sys = (moordyn::MoorDyn*)system;
+	moordyn::TimeScheme* tscheme;
+	try {
+		tscheme = create_time_scheme(name, sys->GetLogger(), sys->GetWaves());
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+		return err;
+	}
+	auto state = sys->GetTimeScheme()->GetState();
+	sys->SetTimeScheme(tscheme);
+	tscheme->SetState(state);
+
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
 MoorDyn_Serialize(MoorDyn system, size_t* size, uint64_t* data)
 {
 	CHECK_SYSTEM(system);
@@ -2591,22 +2777,6 @@ MoorDyn_Load(MoorDyn system, const char* filepath)
 		     << err_msg << endl;
 	}
 	return err;
-}
-
-int DECLDIR
-MoorDyn_DrawWithGL(MoorDyn system)
-{
-	CHECK_SYSTEM(system);
-
-#ifdef USEGL
-	// draw the mooring system with OpenGL commands (assuming a GL context has
-	// been created by the calling program)
-	for (auto line : ((moordyn::MoorDyn*)system)->GetLines())
-		line->drawGL2();
-	for (auto point : ((moordyn::MoorDyn*)system)->GetPoints())
-		point->drawGL();
-#endif
-	return MOORDYN_SUCCESS;
 }
 
 int DECLDIR

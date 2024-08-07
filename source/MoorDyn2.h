@@ -415,6 +415,57 @@ extern "C"
 	                                float AnchHTen[],
 	                                float AnchVTen[]);
 
+	/** @brief Get the current model time step
+	 * @param system The Moordyn system
+	 * @param dt The output time step
+	 * @return MOORDYN_SUCESS if the data is correctly got, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_GetDt(MoorDyn system, double* dt);
+
+	/** @brief Set the model time step
+	 * @param system The Moordyn system
+	 * @param dt The new time step
+	 * @return MOORDYN_SUCESS if the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_SetDt(MoorDyn system, double dt);
+
+	/** @brief Get the current model Courant–Friedrichs–Lewy factor
+	 * @param system The Moordyn system
+	 * @param cfl The output Courant–Friedrichs–Lewy factor
+	 * @return MOORDYN_SUCESS if the data is correctly got, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_GetCFL(MoorDyn system, double* cfl);
+
+	/** @brief Set the model Courant–Friedrichs–Lewy factor
+	 * @param system The Moordyn system
+	 * @param cfl The new Courant–Friedrichs–Lewy factor
+	 * @return MOORDYN_SUCESS if the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_SetCFL(MoorDyn system, double cfl);
+
+	/** @brief Get the current time scheme name
+	 * @param system The Moordyn system
+	 * @param name The output name. Can be NULL.
+	 * @param name_len The output number of bytes written. Can be NULL.
+	 * @return MOORDYN_SUCESS if the data is correctly got, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_GetTimeScheme(MoorDyn system,
+	                                  char* name,
+	                                  size_t* name_len);
+
+	/** @brief Set the time scheme by its name
+	 * @param system The Moordyn system
+	 * @param name The new time scheme name.
+	 * @return MOORDYN_SUCESS if the data is correctly got, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 */
+	int DECLDIR MoorDyn_SetTimeScheme(MoorDyn system, const char* name);
+
 	/** @brief Serialize the system to bytes
 	 *
 	 * Typically you want to call this function twice. A first call to know the
@@ -469,16 +520,6 @@ extern "C"
 	 * @see MoorDyn_Init_NoIC
 	 */
 	int DECLDIR MoorDyn_Load(MoorDyn system, const char* filepath);
-
-	/** @brief Draw the lines and points in the active OpenGL context
-	 *
-	 * The OpenGL context is assumed to be created by the caller before calling
-	 * this function
-	 * @param system The Moordyn system
-	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
-	 * otherwise (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_DrawWithGL(MoorDyn system);
 
 	/** @brief Save the whole system to a VTK (.vtm) file
 	 *

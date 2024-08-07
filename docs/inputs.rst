@@ -152,7 +152,7 @@ including seabed properties, initial condition (IC) generation settings, and the
 .. code-block:: none
 
  -------------------------- SOLVER OPTIONS---------------------------------------------------
- 0.001    dtM           - time step to use in mooring integration
+ 0.001    dtM          - time step to use in mooring integration
  3.0e6    kb           - bottom stiffness
  3.0e5    cb           - bottom damping
  70       WtrDpth      - water depth
@@ -492,8 +492,7 @@ triggered by a time or attachment tension threshold, which ever comes first. Use
 multiple failures for a given point, but duplicate failure configurations will be ignored.
 If two lines attached to a point are listed to fail (failure 1 for example), then after the failure
 the lines will remain attached to each other by a free point. In this multi line case, if any line
-reaches the tension threshold then the failure will be triggered. The theory behind failures can be
-found :ref:`here <theory>`.
+reaches the tension threshold then the failure will be triggered.
 
 .. code-block:: none
 
@@ -548,13 +547,19 @@ indicate which version has that as the default. As such, they are all optional s
 some of them (such as time step size) often needs to be set by the user for proper operation. 
 The list of possible options is:
 
- - writeLog (0 C, -1 F): If >0 a log file is written recording information. The bigger the number 
-   the more verbose. Please, be mindful that big values would critically reduce the performance!
- - dtM (0.001 C): The time step (s). In MoorDyn-F if this is left blank it defaults to the 
-   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.   
- - tScheme (RK2): The time integrator. It should be one of Euler, Heun, RK2, RK4, AB2, AB3, AB4, 
-   BEuler2, BEuler3, BEuler4, BEuler5, Midpoint2, Midpoint3, Midpoint4, Midpoint5. RK stands for 
-   Runge-Kutta while AB stands for Adams-Bashforth
+ - writeLog (0 C, -1 F): If >0 a log file is written recording information. The
+   bigger the number the more verbose. Please, be mindful that big values would
+   critically reduce the performance!
+ - dtM (3.402823e+38) – desired mooring model maximum time step (s). In
+   MoorDyn-F if this is left blank it defaults to the
+   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.
+ - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor. CFL is the ratio 
+   between the time step and the natural period, computed considering the math described in
+   :ref:`the troubleshooting section <troubleshooting>`.
+ - tScheme (RK2): The time integrator. It should be one of
+   Euler, LEuler, Heun, RK2, RK4, AB2, AB3, AB4, LAB2, LAB3, LAB4, 
+   BEuler\ *N*, Midpoint\ *N*, ACA\ *N*, Wilson\ *N*. Look at the
+   :ref:`time schemes documentation <tschemes>` to learn more about this.
  - g (9.81): The gravity acceleration (m/s^2)
  - rho (1025): The water density (kg/m^3)
  - WtrDpth (0.0): The water depth (m). In MoorDyn-F the bathymetry file path can be inputted here.
@@ -585,13 +590,28 @@ The list of possible options is:
  - StatDynFricScale (1.0): Rate between Static and Dynamic friction coefficients
  - dtOut (0.0): Time step size to be written to output files. A value of zero will use dtM as a 
    step size (s)
- - Seafloor file: A path to the :ref:`bathymetry file <seafloor_in>`
+ - SeafloorFile: A path to the :ref:`bathymetry file <seafloor_in>`
+ - ICgenDynamic (0): MoorDyn-C switch for using older dynamic relaxation method (same as MoorDyn-F).
+   If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
+   The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
+   but it can take longer to reach equilibrium.
 
-In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values provided by FAST, so it is 
-recommended to not use custom values for the sake of consistency.
+A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
+no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
+runs using the user time step. If no time step is provided, then the user provided CFL factor is 
+used to calculate the time step and MoorDyn-C uses this calculated time step. If both the time step
+and CFL are provided, MoorDyn-C uses the smaller time step between user provided and CFL 
+calculated.
+
+In MoorDyn-F, the default values for g, rhoW, and WtrDpth are the values
+provided by FAST, so it is  recommended to not use custom values for the sake
+of consistency.
 
 The following MoorDyn-C options are not supported by MoorDyn-F: 
 
+ - CFL: In MoorDyn-F the time step is governed by the
+   :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step. To
+   override it just the option dtM is available.
  - WaveKin & Currents: In MoorDyn-F waves and currents are combined into a single option called 
    WaterKin which takes a file path as a value and defaults to an empty string (i.e. no WaterKin). 
    The file provided should be formatted as described in the additional MoorDyn inputs 
@@ -602,12 +622,13 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - unifyCurrentGrid: Not available in MoorDyn-F because currents and waves are handled in the same 
    input file.
  - writeUnits: Units are always written to output file headers
- - Seafloor file: MoorDyn-F accepts a bathymetry file path as an alternative to a number in the 
-   WtrDpth option
+ - SeafloorFile: MoorDyn-F accepts a bathymetry file path as an alternative to
+   a number in the WtrDpth option
  - FrictionCoefficient: MoorDyn-F contains friction coefficients for lines in both the axial and 
    transverse directions while MoorDyn-C only has a general seafloor contact coefficient of friction
  - FricDamp: Same as CV in MoorDyn-F.
  - StatDynFricScale: Same as MC in MoorDyn-F.
+ - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 
@@ -619,7 +640,10 @@ The following options from MoorDyn-F are not supported by MoorDyn-C:
  - CV (200.0): Same as FricDamp in MoorDyn-C.
  - inertialF (0): Toggle to include inertial components in the returned forces from coupled 
    bodies and rods. Transients in the acceleration passed into MoorDy-F by OpenFAST can result 
-   in large non-physical forces and moments which can cause instability in the model [0: on, 1: off]
+   in large non-physical forces and moments which can cause instability in the model [0: no, 
+   1: yes, 2: yes with ramp to inertialF_rampT]
+ - inertialF_rampT (30.0): Ramp time for inertial forces to reduce coupled object instability (s). 
+   This is ignored unless inertialF = 2
 
 Outputs
 ^^^^^^^
@@ -675,13 +699,13 @@ number looks like [OBJECT#][SUFFIX], i.e. ROD1SUB.
 
 Reference Points:
 
--	Rods: End A (Node 0)
-  - No z rotations for rods (rotations along axis of rod negligible)
-  - A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
-    will be zero for this case. 
--	Bodies: Center of Mass
--	Points: Center of Mass
--	Lines: End A (Node 0)
+- Rods: End A (Node 0)
+- No z rotations for rods (rotations along axis of rod negligible)
+- A vertical rod with end A below end B is defined as a rod with zero rotation. ROD#RX and ROD#RY 
+  will be zero for this case. 
+- Bodies: Center of Mass
+- Points: Center of Mass
+- Lines: End A (Node 0)
 
 Footnotes:
 

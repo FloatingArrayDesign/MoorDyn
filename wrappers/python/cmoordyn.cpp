@@ -494,14 +494,12 @@ ext_wave_coords(PyObject*, PyObject* args)
 		return NULL;
 
 	// We need to know the number of coordinates to allocate
-	unsigned int nlines;
-	MoorDyn_GetNumberLines(system, &nlines);
-	unsigned int n = 0;
-	for (unsigned int i = 0; i < nlines; i++) {
-		unsigned int nnodes;
-		MoorDynLine l = MoorDyn_GetLine(system, i + 1);
-		MoorDyn_GetLineNumberNodes(l, &nnodes);
-		n += nnodes;
+	int err;
+	unsigned int n;
+	err = MoorDyn_ExternalWaveKinGetN(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
 	}
 
 	double* coords = (double*)malloc(n * 3 * sizeof(double));
@@ -509,7 +507,7 @@ ext_wave_coords(PyObject*, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "Failure allocating memory");
 		return NULL;
 	}
-	const int err = MoorDyn_ExternalWaveKinGetCoordinates(system, coords);
+	err = MoorDyn_ExternalWaveKinGetCoordinates(system, coords);
 	if (err != 0) {
 		free(coords);
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
@@ -543,16 +541,14 @@ ext_wave_set(PyObject*, PyObject* args)
 		return NULL;
 
 	// We need to know the number of coordinates to avoid errors
-	unsigned int nlines;
-	MoorDyn_GetNumberLines(system, &nlines);
-	unsigned int n = 0;
-	for (unsigned int i = 0; i < nlines; i++) {
-		unsigned int nnodes;
-		MoorDynLine l = MoorDyn_GetLine(system, i + 1);
-		MoorDyn_GetLineNumberNodes(l, &nnodes);
-		n += nnodes;
-		n *= 3;
+	int err;
+	unsigned int n;
+	err = MoorDyn_ExternalWaveKinGetN(system, &n);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
 	}
+	n *= 3;
 
 	v_lst = PySequence_Fast(v_lst, "1st argument must be iterable");
 	if (!v_lst)
@@ -584,7 +580,7 @@ ext_wave_set(PyObject*, PyObject* args)
 	}
 
 	// Now we can call MoorDyn
-	const int err = MoorDyn_ExternalWaveKinSet(system, v_arr, a_arr, t);
+	err = MoorDyn_ExternalWaveKinSet(system, v_arr, a_arr, t);
 	free(v_arr);
 	free(a_arr);
 	return PyLong_FromLong(err);
