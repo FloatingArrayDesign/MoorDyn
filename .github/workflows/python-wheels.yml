@@ -122,18 +122,11 @@ jobs:
           pattern: python-wheels-*
           merge-multiple: true
 
-      - name: Publish package to TestPyPI
+      - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.MOORDYN_TESTPYPI_API }}
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
-
-      - name: Publish package to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
+          # password: ${{ secrets.MOORDYN_TESTPYPI_API }}
+          # repository-url: https://test.pypi.org/legacy/
           password: ${{ secrets.MOORDYN_PYPI_API }}
           repository-url: https://upload.pypi.org/legacy/
           skip-existing: true
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
