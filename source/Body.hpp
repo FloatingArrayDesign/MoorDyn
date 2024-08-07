@@ -63,7 +63,7 @@ class Rod;
 /** @class Body Body.hpp
  * @brief A rigid body
  *
- * Some really basic dynamics are implemented for rigid bodiesout of the box,
+ * Some really basic dynamics are implemented for rigid bodies out of the box,
  * which can be extended through the usage of coupled ones.
  *
  * In the configuration file the options are:
@@ -144,7 +144,7 @@ class Body final : public io::IO, public SuperCFL
 	/// total body mass + added mass matrix including all elements
 	mat6 M;
 	/// starting mass and added mass matrix (6x6) of body without any rod
-	/// elements in inertital orientation
+	/// elements in inertial orientation
 	mat6 M0;
 
 	/// orientation matrix of body (rotation matrix that gets it to its current

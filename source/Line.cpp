@@ -552,7 +552,7 @@ Line::GetLineOutput(OutChanProps outChan)
 	else if (outChan.QType == VelZ)
 		return rd[outChan.NodeID][2];
 	else if (outChan.QType == Ten) {
-		if ((outChan.NodeID == 0) || (outChan.NodeID == N))
+		if ((outChan.NodeID == 0) || (outChan.NodeID == (int)N))
 			return getNodeForce(outChan.NodeID).norm();
 		return getNodeTen(outChan.NodeID).norm();
 	}
@@ -775,7 +775,7 @@ Line::getStateDeriv()
 	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the
 	// whole library, just because it is called every single time substep and
-	// it shall makecomputations in every single line node. Thus it is worthy
+	// it shall make computations in every single line node. Thus it is worthy
 	// to invest effort on keeping it optimized.
 
 	// attempting error handling <<<<<<<<

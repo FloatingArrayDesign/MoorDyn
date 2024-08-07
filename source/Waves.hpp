@@ -173,7 +173,7 @@ class AbstractWaveKin
 };
 
 /**
- * @brief Wrapper around waves::SpectrumKin to make it adhere to teh
+ * @brief Wrapper around waves::SpectrumKin to make it adhere to the
  * AbstractWaveKin interface
  *
  * This probably shouldn't exist, and SpectrumKin should do this by itself, but
@@ -189,7 +189,7 @@ class SpectrumKinWrapper : public AbstractWaveKin
 	 * @brief Construct a new Spectrum Kin Wrapper object
 	 *
 	 * SpectrumKin should be fully initialized, including having called setup.
-	 * Move the spectrum into the wrapper just to avoid an unecessary copy.
+	 * Move the spectrum into the wrapper just to avoid an unnecessary copy.
 	 *
 	 * @param spectrum
 	 */

@@ -270,7 +270,7 @@ class TimeScheme : public io::IO
 	{};
 
   protected:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 */
 	TimeScheme(moordyn::Log* log)
@@ -719,7 +719,7 @@ class TimeSchemeBase : public TimeScheme
 	}
 
   protected:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves The simulation waves object, needed so that we can tell it
 	 * about substeps
@@ -783,7 +783,7 @@ class TimeSchemeBase : public TimeScheme
 class StationaryScheme : public TimeSchemeBase<2, 1>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -835,12 +835,12 @@ class StationaryScheme : public TimeSchemeBase<2, 1>
  * @brief The simplest 1st order Euler's time scheme
  *
  * This time scheme is strongly discourage, and use only for testing/debugging
- * puposes
+ * purposes
  */
 class EulerScheme : public TimeSchemeBase<1, 1>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -948,7 +948,7 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -973,7 +973,7 @@ class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
 class HeunScheme : public TimeSchemeBase<1, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -998,7 +998,7 @@ class HeunScheme : public TimeSchemeBase<1, 2>
 class RK2Scheme : public TimeSchemeBase<2, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1026,7 +1026,7 @@ class RK2Scheme : public TimeSchemeBase<2, 2>
 class RK4Scheme : public TimeSchemeBase<5, 4>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1057,7 +1057,7 @@ template<unsigned int order, bool local>
 class ABScheme : public LocalTimeSchemeBase<1, 5>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1163,7 +1163,7 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1229,7 +1229,7 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1283,7 +1283,7 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 	 * @return true if the maximum residue has fallen below the tolerance,
 	 * false otherwise
 	 */
-	inline const bool converged() const
+	inline bool converged() const
 	{
 		const real g = _g.col(1).cwiseAbs().mean();
 		return (g < _tol) || (g / _g0 < _tol_rel);
@@ -1395,7 +1395,7 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1432,7 +1432,7 @@ class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1470,7 +1470,7 @@ class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
 class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1515,7 +1515,7 @@ class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 class ImplicitWilsonScheme : public ImplicitSchemeBase<2, 3>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative

@@ -109,7 +109,7 @@ Rod::setup(int number_in,
 
 	// forces
 	W.assign(N + 1, vec::Zero());    // node weights
-	Bo.assign(N + 1, vec::Zero());   // node boyancy
+	Bo.assign(N + 1, vec::Zero());   // node buoyancy
 	Pd.assign(N + 1, vec::Zero());   // dynamic pressure
 	Dp.assign(N + 1, vec::Zero());   // node drag (transverse)
 	Dq.assign(N + 1, vec::Zero());   // node drag (axial)
@@ -144,7 +144,7 @@ Rod::setup(int number_in,
 	// -------------------------
 
 	// Initialize the accelerations to avoid border cases, like Pinned rods
-	// reading the linear acceleration without ssetting it
+	// reading the linear acceleration without setting it
 	acc6 = vec6::Zero();
 	// set Rod positions if applicable
 	if (type == FREE) {
@@ -880,7 +880,7 @@ Rod::doRHS()
 	const real cosBeta = cos(beta);
 
 	// save to internal roll and pitch variables for use in output <<< should
-	// check these, make Euler angles isntead of independent <<<
+	// check these, make Euler angles instead of independent <<<
 	roll = -phi * sinBeta;
 	pitch = phi * cosBeta;
 
@@ -1069,7 +1069,7 @@ Rod::doRHS()
 			W[i][0] = W[i][1] = 0.0;
 			W[i][2] = -m_i * env->g;
 
-			// Buoyance. As it happens with the lines, the bouyancy can be
+			// Buoyancy. As it happens with the lines, the buoyancy can be
 			// computed assuming a collection of submerged cylinders, since
 			// the forces on the missing caps are balanced.
 			// NOTE: There are though some unhandled situations, like free
@@ -1217,9 +1217,9 @@ Rod::doRHS()
 		// point The above may require rearrangement of point indices,
 		// expansion of state vector, etc.
 
-		// sum quantitites
+		// sum quantities
 		Fnet[0] += Fnet_i; // forces
-		FextA += Fnet_i;   // a copy for outputting totalled line loads
+		FextA += Fnet_i;   // a copy for outputting totaled line loads
 		Mext += Mnet_i;    // moments
 		M[0] += M_i;       // mass matrix
 	}
@@ -1254,7 +1254,7 @@ Rod::doRHS()
 	// question: do I really want to neglect the rotational inertia/drag/etc
 	// across the length of each segment?
 
-	// make sure 6DOF quantiaties are zeroed before adding them up
+	// make sure 6DOF quantities are zeroed before adding them up
 	F6net = vec6::Zero();
 	M6net = mat6::Zero();
 
@@ -1286,9 +1286,9 @@ Rod::doRHS()
 	// real mass = UnstrLen * 0.25 * pi * pi * rho;
 	real mass = UnstrLen * 0.25 * pi * d * d * rho;
 
-	// Below is not needed becasue node mass matricies include node masses
+	// Below is not needed because node mass matrices include node masses
 	// (lines 920-932)
-	// // Because the individual nodes mass matricies just include
+	// // Because the individual nodes mass matrices just include
 	// // the added mass, we have to manually compensate for the mass
 	// vec3 cg = 0.5 * UnstrLen * q;
 	// mat H = getH(cg);

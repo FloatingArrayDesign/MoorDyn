@@ -508,7 +508,7 @@ Waves::setup(EnvCondRef env_in,
 void
 Waves::addLine(moordyn::Line* line)
 {
-	if (line->lineId == static_cast<int>(nodeKin.lines.structures.size())) {
+	if (line->lineId == static_cast<size_t>(nodeKin.lines.structures.size())) {
 		auto num_nodes = line->getN() + 1;
 		genericAdd(line, num_nodes, nodeKin.lines);
 		// At some point we should figure out how to determine when to not do
@@ -524,7 +524,7 @@ Waves::addLine(moordyn::Line* line)
 void
 Waves::addRod(moordyn::Rod* rod)
 {
-	if (rod->rodId == static_cast<int>(nodeKin.rods.structures.size())) {
+	if (rod->rodId == static_cast<size_t>(nodeKin.rods.structures.size())) {
 		auto num_nodes = rod->getN() + 1;
 		genericAdd(rod, num_nodes, nodeKin.rods);
 		// TODO - only do this when needed, see comment in addLIne
@@ -536,7 +536,7 @@ Waves::addRod(moordyn::Rod* rod)
 void
 Waves::addBody(moordyn::Body* body)
 {
-	if (body->bodyId == static_cast<int>(nodeKin.bodies.structures.size())) {
+	if (body->bodyId == static_cast<size_t>(nodeKin.bodies.structures.size())) {
 		auto num_nodes = 1;
 		genericAdd(body, num_nodes, nodeKin.bodies);
 		// TODO - only do this when needed, see comment in addLIne
@@ -549,7 +549,7 @@ Waves::addBody(moordyn::Body* body)
 void
 Waves::addPoint(moordyn::Point* point)
 {
-	if (point->pointId == static_cast<int>(nodeKin.points.structures.size())) {
+	if (point->pointId == static_cast<size_t>(nodeKin.points.structures.size())) {
 		auto num_nodes = 1;
 		genericAdd(point, num_nodes, nodeKin.points);
 		// TODO - only do this when needed, see comment in addLIne
