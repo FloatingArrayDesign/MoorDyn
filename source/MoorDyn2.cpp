@@ -420,7 +420,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// call ground body to update all the fixed things...
 	GroundBody->initializeUnfreeBody();
 
-	// intialize fixed bodies and attached objects
+	// initialize fixed bodies and attached objects
 	for (auto l : FixedBodyIs){
 		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, vec6::Zero());
 	}
@@ -859,7 +859,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 2) {
 				i++;
@@ -882,7 +882,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 2) {
 				i++;
@@ -926,7 +926,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading line types:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			LineProps* obj = readLineProps(in_txt[i]);
 			if (obj)
 				LinePropList.push_back(obj);
@@ -943,7 +943,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading rod types:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			RodProps* obj = readRodProps(in_txt[i]);
 
 			if (obj)
@@ -961,7 +961,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading body list:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			Body* obj = readBody(in_txt[i]);
 
 			if (obj) {
@@ -983,7 +983,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading point list:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 9) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1104,7 +1104,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading rod list:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			Rod* obj = readRod(in_txt[i]);
 			RodList.push_back(obj);
 
@@ -1122,7 +1122,7 @@ moordyn::MoorDyn::ReadInFile()
 		}
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 7) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1249,7 +1249,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "FAILURE" })) != -1) {
 		LOGDBG << "   Reading failure conditions:" << endl;
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 4) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1349,7 +1349,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "OUTPUT" })) != -1) {
 		LOGDBG << "   Reading output options:" << endl;
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 
 			for (unsigned int j = 0; j < entries.size();
@@ -1584,7 +1584,7 @@ moordyn::MoorDyn::ReadInFile()
 	}
 
 	// do some input validity checking?
-	// should there be a flag in the input file that clearly distingiushes
+	// should there be a flag in the input file that clearly distinguishes
 	// the coupling type?
 	// <<<<< I guess it's implied by whether bodies are coupled or not??
 
@@ -1697,13 +1697,13 @@ moordyn::MoorDyn::findStartOfSection(vector<string>& in_txt,
                                      vector<string> sectionName)
 {
 	int i = 0;
-	while (i < in_txt.size() &&
+	while (i < (int)in_txt.size() &&
 	       ((in_txt[i].find("---") == string::npos) ||
 	        !moordyn::str::has(moordyn::str::upper(in_txt[i]), sectionName))) {
 		i++;
 	}
 
-	if (i == in_txt.size())
+	if (i == (int)in_txt.size())
 		return -1; // indicates section not found
 	if (sectionName[0] == "OPTIONS" || sectionName[0] == "OUTPUT")
 		i++; // Increment once to get to the options
@@ -2191,7 +2191,7 @@ bool
 moordyn::MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
                                              int supposedNumberOfEntries)
 {
-	if (entries.size() < supposedNumberOfEntries) {
+	if ((int)entries.size() < supposedNumberOfEntries) {
 		LOGERR << "Error in " << _filepath << ":" << endl
 		       << supposedNumberOfEntries << " fields are required, but just "
 		       << entries.size() << " are provided" << endl;

@@ -53,7 +53,7 @@ extern "C"
 	typedef struct __MoorDynWaves* MoorDynWaves;
 
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
-	 * at a specific positon and time
+	 * at a specific position and time
 	 * @param waves The Waves instance
 	 * @param x The point x coordinate
 	 * @param y The point y coordinate

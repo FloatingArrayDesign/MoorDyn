@@ -53,7 +53,7 @@ namespace moordyn {
 namespace io {
 
 /** @class IO IO.hpp
- * @brief A base class for all the entitites that must save/load data to/from
+ * @brief A base class for all the entities that must save/load data to/from
  * disk
  *
  * @note Since this class already publicly inherits moordyn::LogUser, all the
@@ -108,91 +108,91 @@ class IO : public LogUser
 	virtual uint64_t* Deserialize(const uint64_t* data) = 0;
 
   protected:
-	/** @brief Pack an unsigned integer to make it writtable
+	/** @brief Pack an unsigned integer to make it writable
 	 * @param i The unsigned integer number
 	 * @return The packed number
 	 */
 	uint64_t Serialize(const uint64_t& i);
 
-	/** @brief Pack an integer to make it writtable
+	/** @brief Pack an integer to make it writable
 	 * @param i The integer number
 	 * @return The packed number
 	 */
 	uint64_t Serialize(const int64_t& i);
 
-	/** @brief Pack a float to make it writtable
+	/** @brief Pack a float to make it writable
 	 * @param f The float number
 	 * @return The packed number
 	 */
 	uint64_t Serialize(const real& f);
 
-	/** @brief Pack a 3D vector to make it writtable
+	/** @brief Pack a 3D vector to make it writable
 	 * @param m The matrix
 	 * @return The packed matrix
 	 */
 	std::vector<uint64_t> Serialize(const vec& m);
 
-	/** @brief Pack a 6D vector to make it writtable
+	/** @brief Pack a 6D vector to make it writable
 	 * @param m The matrix
 	 * @return The packed matrix
 	 */
 	std::vector<uint64_t> Serialize(const vec6& m);
 
-	/** @brief Pack a 3x3 matrix to make it writtable
+	/** @brief Pack a 3x3 matrix to make it writable
 	 * @param m The matrix
 	 * @return The packed matrix
 	 */
 	std::vector<uint64_t> Serialize(const mat& m);
 
-	/** @brief Pack a 6x6 matrix to make it writtable
+	/** @brief Pack a 6x6 matrix to make it writable
 	 * @param m The matrix
 	 * @return The packed matrix
 	 */
 	std::vector<uint64_t> Serialize(const mat6& m);
 
-	/** @brief Pack a quaternion to make it writtable
+	/** @brief Pack a quaternion to make it writable
 	 * @param m The quaternion
 	 * @return The packed quaternion
 	 */
 	std::vector<uint64_t> Serialize(const quaternion& m);
 
-	/** @brief Pack an XYZQuat to make it writtable
+	/** @brief Pack an XYZQuat to make it writable
 	 * @param m The XYZQuat
 	 * @return The packed XYZQuat
 	 */
 	std::vector<uint64_t> Serialize(const XYZQuat& m);
 
-	/** @brief Pack a list of floating point numbers to make it writtable
+	/** @brief Pack a list of floating point numbers to make it writable
 	 * @param l The list
 	 * @return The packed list
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<real>& l);
 
-	/** @brief Pack a list of 3D vectors to make it writtable
+	/** @brief Pack a list of 3D vectors to make it writable
 	 * @param l The list
 	 * @return The packed list
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<vec>& l);
 
-	/** @brief Pack a list of 6D vectors to make it writtable
+	/** @brief Pack a list of 6D vectors to make it writable
 	 * @param l The list
 	 * @return The packed list
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<vec6>& l);
 
-	/** @brief Pack a list of 3x3 matrices to make it writtable
+	/** @brief Pack a list of 3x3 matrices to make it writable
 	 * @param l The list
 	 * @return The packed list
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<mat>& l);
 
-	/** @brief Pack a list of 6x6 matrices to make it writtable
+	/** @brief Pack a list of 6x6 matrices to make it writable
 	 * @param l The list
 	 * @return The packed list
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<mat6>& l);
 
-	/** @brief Pack a list of lists to make it writtable
+	/** @brief Pack a list of lists to make it writable
 	 * This function might act recursively
 	 * @param l The list
 	 * @return The packed list
