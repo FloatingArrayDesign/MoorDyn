@@ -1,0 +1,113 @@
+name: Python-manylinux-arch
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'Host OS'
+        required: false
+        type: string
+        default: '["ubuntu-22.04"]'
+      arch:
+        description: 'Architecture target'
+        required: true
+        type: string
+        
+permissions: write-all
+
+jobs:
+  build_wheels:
+    name: Build Python wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+    env:
+      # Skip 32-bit windows wheels builds.
+      CIBW_SKIP: "*-win32* *musllinux*"
+      CIBW_ARCHS: ${{inputs.arch}}
+      CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/install/lib"
+      CIBW_BEFORE_ALL_LINUX: >
+        echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
+        mkdir -p vtk &&
+        tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/ &&
+        if [ -d "vtk/lib" ]; then
+            VTK_DIR=vtk/lib/cmake/vtk-9.2/
+        else
+            VTK_DIR=vtk/lib64/cmake/vtk-9.2/        
+        fi &&
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=$VTK_DIR -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
+        cmake --build build --config Release &&
+        cmake --install build --config Release
+      CIBW_BEFORE_ALL_WINDOWS: >
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-9.2/ -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
+        cmake --build ${{github.workspace}}/build --config Release &&
+        cmake --install ${{github.workspace}}/build --config Release
+      CIBW_BEFORE_ALL_MACOS: >
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 &&
+        cmake --build ${{github.workspace}}/build --config Release &&
+        cmake --install ${{github.workspace}}/build --config Release
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' 
+
+      - name: Create setup.py
+        run: |
+            mv wrappers/python/wheels.github/* ./
+            python set_version.py
+            python set_eigen_data.py
+            rm set_version.py set_eigen_data.py            
+            cat pyproject.toml
+        shell: bash
+
+      - name: download pre-built VTK static library (Linux)
+        uses: suisei-cn/actions-download-file@v1.6.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.6-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
+          target: ${{github.workspace}}/
+        if: runner.os == 'Linux'
+
+      - name: download pre-built VTK static library (Windows)
+        uses: suisei-cn/actions-download-file@v1.6.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.6-static/vtk-Windows-x86_64.tar.gz
+          target: ${{github.workspace}}/
+        if: runner.os == 'Windows'
+
+      - name: Install VTK (MacOS)
+        run: |
+          brew install vtk
+        if: runner.os == 'MacOS'
+
+      - name: Create folders
+        run: |
+            mkdir -p ${{github.workspace}}/vtk
+            mkdir -p ${{github.workspace}}/build
+            mkdir -p ${{github.workspace}}/install
+
+      - name: Extract VTK tgz (Windows)
+        run: |
+            tar -xvzf vtk-Windows-x86_64.tar.gz -C vtk/
+        if: runner.os == 'Windows'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+        if: runner.os == 'Linux'
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.20.0
+        with:
+            output-dir: dist
+
+      - uses: actions/upload-artifact@v4
+        id: build_wheels
+        with:
+          name: python-wheels-${{runner.os}}_${{inputs.arch}}
+          path: ./dist/*

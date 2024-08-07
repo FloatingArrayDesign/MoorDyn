@@ -782,9 +782,6 @@ class TimeSchemeBase : public TimeScheme
  */
 class StationaryScheme : public TimeSchemeBase<2, 1>
 {
-	template<unsigned int NSTATE, unsigned int NDERIV>
-	friend class TimeSchemeBase;
-
   public:
 	/** @brief Costructor
 	 * @param log Logging handler
