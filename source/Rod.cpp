@@ -917,29 +917,17 @@ Rod::doRHS()
 
 	// just use the wave elevation computed at the location of the top node for
 	// now
-	vec r_top, r_bottom;
-	real zeta_i;
-	if (r[N][2] > r[0][2]) {
-			r_top = r[N];
-			r_bottom = r[0];
-		zeta_i = zeta[N];
-	} else {
-			r_top = r[0];
-			r_bottom = r[N];
-		zeta_i = zeta[0];
-	}
+	real zeta_i = zeta[N];
 
-	if ((r_bottom[2] < zeta_i) && (r_top[2] > zeta_i)) {
-		// the water plane is crossing the rod
-		// (should also add some limits to avoid near-horizontals at some point)
-		h0 = (zeta_i - r_bottom[2]) / fabs(q[2]);
-	} else if (r[0][2] < zeta_i) {
-		// fully submerged case
-		h0 = UnstrLen;
-	} else {
-		// fully unsubmerged case (ever applicable?)
-		h0 = 0.0;
-	}
+	// get approximate location of waterline crossing along Rod axis (note: negative h0 indicates end A is above end B, and measures -distance from end A to waterline crossing)
+	if ((r[0][2] < zeta_i) && (r[N][2] < zeta_i))        // fully submerged case  
+		h0 = UnstrLen;                                       
+	else if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i))    // check if it's crossing the water plane (should also add some limits to avoid near-horizontals at some point)
+		h0 = (zeta_i - r[0][2])/q[2];                       // distance along rod centerline from end A to the waterplane
+	else if ((r[N][2] < zeta_i) && (r[0][2] > zeta_i))   // check if it's crossing the water plane but upside down
+		h0 = -(zeta_i - r[0][2])/q[2];                       // negative distance along rod centerline from end A to the waterplane
+	else 
+		h0 = 0.0;                                         // fully unsubmerged case (ever applicable?)
 
 	Mext = vec::Zero();
 
@@ -1165,6 +1153,7 @@ Rod::doRHS()
 			M[i] += VOF[i] * env->rho_w * CaEnd * V_temp * Q;
 		}
 
+		// end B
 		if ((i == N) && (z1lo < zeta_i)) {
 			// buoyancy force
 			Ftemp = VOF[i] * Area * env->rho_w * env->g * zA;
