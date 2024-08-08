@@ -30,24 +30,78 @@ Pre-Compiled Releases
 ---------------------
 .. _releases:
 
-Pre-compiled releases can be found at the
-`releases page <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_. These releases contain the 
-libraries and header files required by driver scripts. These provide the same libraries as compiling 
-as a :ref:`simple library <compile_simple>` and as compiling with :ref:`cmake <CMake_compile>`. Typically 
-if you are just looking for the compiled libraries, this is the easiest way to obtain them.
+Typically if you are just looking for the compiled libraries,
+either because it is a dependency of some other software,
+or because you are integrating it on your C/C++ project,
+this is the easiest way to obtain them.
 
-The lastest release corresponds to the current state of the master branch of MoorDyn. The releases 
-contain the source code, as well as three executables (OS dependent) that install the libraries and 
-header files. The executables correspond to the following OS:
+Depending on your OS, you have several options to download and install
+precompiled packages.
+No matter the way you install it, the precompiled package will provide you with
+the same libraries, headers and CMake project files as compiling with
+:ref:`cmake <CMake_compile>`.
 
-* Windows: Moordyn-X.Y.Z-win64.exe (with X.Y.Z replaced by the specific version)
-* Linux: Moordyn-X.Y.Z-Linux.sh 
-* MacOS: Moordyn-X.Y.Z-Darwin.sh
+Windows
+^^^^^^^
 
-To install the MoorDyn libraries, download the appropriate executable for your library and execute it.  
+An installer for each released version can be found at the
+`releases page <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_.
+Just select/expand the latest release, download the file named
+"Moordyn-X.Y.Z-win64.exe" (with X.Y.Z the specific version you chosen) and
+execute it.
 
-NOTE: When you download the self-extracting files for Linux and MacOS they
-cannot be launched until you give them execution permissions. This can be done by executing the following command:
+MacOS
+^^^^^
+
+Similarly to Windows, just head your browser to the
+`releases page <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_,
+select/expand the latest release, download the file named
+"Moordyn-X.Y.Z-Darwin.sh" (with X.Y.Z the specific version you chosen) and
+execute it.
+
+NOTE: The self-extracting file you have downloaded cannot be executed until you
+give it execution permissions.
+This can be done by executing the following command:
+
+.. code-block:: bash
+   
+   chmod u=rwx <executable name>
+
+Linux
+^^^^^
+
+Some GNU/Linux distributions have already packages deployed for their package
+managers, which would make your life way easier.
+Otherwise, a self-extracting package is also provided.
+
+Arch
+""""
+
+There is an AUR package that you can easily install on your system, just typing
+
+.. code-block:: bash
+   
+   yay -S moordyn
+
+This is also valid for Arch derivatives, like Manjaro or Endeavour OS.
+
+Others
+""""""
+
+On other Linux distributions you can give a shot to the self-extracting
+package.
+However, it is strongly recommended to compile it yourself with
+:ref:`cmake <CMake_compile>`.
+
+To use the self-extracting package head your browser to the
+`releases page <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_,
+select/expand the latest release, download the file named
+"Moordyn-X.Y.Z-Linux.sh" (with X.Y.Z the specific version you chosen) and
+execute it.
+
+NOTE: The self-extracting file you have downloaded cannot be executed until you
+give it execution permissions.
+This can be done by executing the following command:
 
 .. code-block:: bash
    
