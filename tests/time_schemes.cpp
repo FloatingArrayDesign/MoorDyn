@@ -70,26 +70,26 @@ static std::vector<std::string> schemes({ "Euler",
                                           "ACA15",
                                           "ACA20",
                                           "Wilson20" });
-static std::vector<std::string> dts({ "1.5E-4",
-                                      "1.8E-4",
-                                      "2.6E-4",
-                                      "4.9E-4",
-                                      "1.4E-4",
-                                      "1.1E-4",
-                                      "1.0E-4",
-                                      "9.6E-4",
-                                      "1.4E-3",
-                                      "1.5E-3",
-                                      "1.6E-3",
-                                      "1.4E-3",
-                                      "1.9E-3",
-                                      "1.9E-3",
-                                      "1.9E-3",
-                                      "9.4E-4",
-                                      "1.5E-3",
-                                      "1.5E-3",
-                                      "1.6E-3",
-                                      "2.4E-3"});
+static std::vector<std::string> dts({ "1.5E-4",   // Euler
+                                      "1.8E-4",   // Heun
+                                      "2.6E-4",   // RK2
+                                      "4.9E-4",   // RK4
+                                      "1.4E-4",   // AB2
+                                      "1.1E-4",   // AB3
+                                      "1.0E-4",   // AB5
+                                      "6.0E-4",   // BEuler5
+                                      "1.0E-3",   // BEuler10
+                                      "1.3E-3",   // BEuler15
+                                      "1.5E-3",   // BEuler20
+                                      "1.0E-3",   // Midpoint5
+                                      "1.9E-3",   // Midpoint10
+                                      "1.9E-3",   // Midpoint15
+                                      "1.9E-3",   // Midpoint20
+                                      "9.4E-4",   // ACA5
+                                      "1.5E-3",   // ACA10
+                                      "1.5E-3",   // ACA15
+                                      "1.6E-3",   // ACA20
+                                      "2.4E-3"}); // Wilson20
 
 using namespace std;
 
