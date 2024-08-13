@@ -30,8 +30,6 @@
 
 #include "IO.hpp"
 #include <climits>
-#include <iostream>
-#include <fstream>
 #include <stdlib.h>
 
 namespace moordyn {
@@ -213,17 +211,7 @@ IO::~IO() {}
 void
 IO::Save(const std::string filepath)
 {
-	ofstream f(filepath, ios::out | ios::binary);
-	if (!f) {
-		LOGERR << "The file '" << filepath << "' cannot be written" << endl;
-		throw moordyn::output_file_error("Invalid file");
-	}
-	// Write some magic number
-	const uint8_t major = MOORDYN_MAJOR_VERSION;
-	const uint8_t minor = MOORDYN_MINOR_VERSION;
-	f.write("MoorDyn", 7 * sizeof(char));
-	f.write((char*)&major, sizeof(uint8_t));
-	f.write((char*)&minor, sizeof(uint8_t));
+	auto f = MakeFile(filepath);
 	// Produce the data
 	std::vector<uint64_t> data = Serialize();
 	// Save the total size, which is simplifying the reading process
@@ -237,6 +225,39 @@ IO::Save(const std::string filepath)
 
 void
 IO::Load(const std::string filepath)
+{
+	auto [length, data] = LoadFile(filepath);
+	// Do the unpacking job
+	const uint64_t* end = Deserialize(data);
+	if (data + length != end) {
+		const uint64_t l = end - data;
+		LOGERR << l * sizeof(uint64_t) << " bytes (vs. " << length
+		       << " bytes expected) unpacked from '" << filepath << "'" << endl;
+		throw moordyn::mem_error("Allocation error");
+	}
+
+	free(data);
+}
+
+ofstream
+IO::MakeFile(const std::string filepath) const
+{
+	ofstream f(filepath, ios::out | ios::binary);
+	if (!f) {
+		LOGERR << "The file '" << filepath << "' cannot be written" << endl;
+		throw moordyn::output_file_error("Invalid file");
+	}
+	// Write some magic number
+	const uint8_t major = MOORDYN_MAJOR_VERSION;
+	const uint8_t minor = MOORDYN_MINOR_VERSION;
+	f.write("MoorDyn", 7 * sizeof(char));
+	f.write((char*)&major, sizeof(uint8_t));
+	f.write((char*)&minor, sizeof(uint8_t));
+	return f;
+}
+
+std::tuple<uint64_t, uint64_t*>
+IO::LoadFile(const std::string filepath) const
 {
 	ifstream f(filepath, ios::in | ios::binary);
 	if (!f) {
@@ -292,16 +313,7 @@ IO::Load(const std::string filepath)
 	f.read((char*)data, size);
 	f.close();
 
-	// So do the unpacking job
-	const uint64_t* end = Deserialize(data);
-	if (data + length != end) {
-		const uint64_t l = end - data;
-		LOGERR << l * sizeof(uint64_t) << " bytes (vs. " << size
-		       << " bytes expected) unpacked from '" << filepath << "'" << endl;
-		throw moordyn::mem_error("Allocation error");
-	}
-
-	free(data);
+	return {length, data};
 }
 
 uint64_t

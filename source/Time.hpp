@@ -269,6 +269,24 @@ class TimeScheme : public io::IO
 	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
 	{};
 
+	/** @brief Save the system state on a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to serialize
+	 * @see ::SerializeState()
+	 */
+	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	{
+	}
+
+	/** @brief Load the system state from a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to overwrite
+	 * @see ::DeserializeState()
+	 */
+	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	{
+	}
+
   protected:
 	/** @brief Constructor
 	 * @param log Logging handler
@@ -587,6 +605,106 @@ class TimeSchemeBase : public TimeScheme
 	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
 	{
 		r[i] = state;
+	}
+
+	/** @brief Pack the system state
+	 * @param i The index of the state variable to serialize
+	 * @return The serialized state variable, including positions and
+	 * velocities
+	 */
+	inline virtual std::vector<uint64_t> SerializeState(unsigned int i=0)
+	{
+		std::vector<uint64_t> data, subdata;
+		for (unsigned int j = 0; j < bodies.size(); j++) {
+			subdata = io::IO::Serialize(r[i].bodies[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].bodies[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		for (unsigned int j = 0; j < rods.size(); j++) {
+			subdata = io::IO::Serialize(r[i].rods[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].rods[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		for (unsigned int j = 0; j < points.size(); j++) {
+			subdata = io::IO::Serialize(r[i].points[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].points[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		for (unsigned int j = 0; j < lines.size(); j++) {
+			subdata = io::IO::Serialize(r[i].lines[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].lines[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		return data;
+	}
+
+	/** @brief Unpack and set the system state
+	 * @param data The packed system state
+	 * @param i The index of the state variable to overwrite
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	inline virtual uint64_t* DeserializeState(const uint64_t* data,
+	                                          unsigned int i=0)
+	{
+		uint64_t* ptr = (uint64_t*)data;
+		for (unsigned int j = 0; j < bodies.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].bodies[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].bodies[j].vel);
+		}
+		for (unsigned int j = 0; j < rods.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].rods[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].rods[j].vel);
+		}
+		for (unsigned int j = 0; j < points.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].points[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].points[j].vel);
+		}
+		for (unsigned int j = 0; j < lines.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].lines[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].lines[j].vel);
+		}
+		return ptr;
+	}
+
+	/** @brief Save the system state on a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to serialize
+	 * @see ::SerializeState()
+	 */
+	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	{
+		auto f = MakeFile(filepath);
+		std::vector<uint64_t> data = SerializeState(i);
+		const uint64_t size = data.size();
+		f.write((char*)&size, sizeof(uint64_t));
+		for (auto v : data) {
+			f.write((char*)&v, sizeof(uint64_t));
+		}
+		f.close();
+	}
+
+	/** @brief Load the system state from a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to overwrite
+	 * @see ::DeserializeState()
+	 */
+	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	{
+		auto [length, data] = LoadFile(filepath);
+		const uint64_t* end = DeserializeState(data, i);
+		if (data + length != end) {
+			const uint64_t l = end - data;
+			LOGERR << l * sizeof(uint64_t) << " bytes (vs. " << length
+			       << " bytes expected) unpacked from '" << filepath << "'"
+			       << endl;
+			throw moordyn::mem_error("Allocation error");
+		}
+
+		free(data);
 	}
 
 	/** @brief Produce the packed data to be saved

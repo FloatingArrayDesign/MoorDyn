@@ -39,6 +39,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <tuple>
 #ifdef USE_VTK
 #include <vtkSmartPointer.h>
 #include <vtkCharArray.h>
@@ -73,10 +76,10 @@ class IO : public LogUser
 
 	/** @brief Save the entity into a file
 	 *
-	 * It is of course possible to save each entity in a separate file. However,
-	 * since this function is just redirecting the work to save(void), which
-	 * might produce the data to save recursively, actually the whole system
-	 * can be saved in the same file
+	 * It is of course possible to save each entity in a separate file.
+	 * However, since this function is just redirecting the work to save(void),
+	 * which might produce the data to save recursively, actually the whole
+	 * system can be saved in the same file
 	 * @param filepath The output file path
 	 */
 	void Save(const std::string filepath);
@@ -108,6 +111,18 @@ class IO : public LogUser
 	virtual uint64_t* Deserialize(const uint64_t* data) = 0;
 
   protected:
+	/** @brief Create an output file and write the MoorDyn magic header
+	 * @param filepath The output file path
+	 */
+	ofstream MakeFile(const std::string filepath) const;
+
+	/** @brief Open an input file and load the data
+	 * @param filepath The input file path
+	 * @return the size of the data into the file and the allocated memory
+	 * with the data inside. Remember to call free() on the returned pointer
+	 */
+	std::tuple<uint64_t, uint64_t*> LoadFile(const std::string filepath) const;
+
 	/** @brief Pack an unsigned integer to make it writable
 	 * @param i The unsigned integer number
 	 * @return The packed number

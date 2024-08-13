@@ -498,6 +498,36 @@ def GetFASTtens(instance, n_lines):
     return data[0], data[1], data[2], data[3]
 
 
+def SaveState(instance, filepath):
+    """Save the MoorDyn system state into a file
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.save_state(instance, filepath)
+
+
+def LoadState(instance, filepath):
+    """Load and set a previously MoorDyn system state
+
+    This can be used to load initial conditions exported with MoorPy
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.load_state(instance, filepath)
+
+
 def Serialize(instance):
     """Serialize the MoorDyn system into a bytes array that can be restored
     afterwards to resume the simulation

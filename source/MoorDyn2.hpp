@@ -550,6 +550,9 @@ class MoorDyn final : public io::IO
 	real ICthresh;
 	// use dynamic (true) or stationary (false) initial condition solver
 	bool ICgenDynamic;
+	// Load the initial state (before the initial condition solver) from a
+	// file. Empty to do not load it.
+	string ICfile;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;

@@ -91,6 +91,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , dtOut(0.0)
   , _t_integrator(NULL)
   , ICgenDynamic(false)
+  , ICfile("")
   , env(std::make_shared<EnvCond>())
   , GroundBody(NULL)
   , waves(nullptr)
@@ -188,11 +189,21 @@ moordyn::MoorDyn::~MoorDyn()
 moordyn::error_id
 moordyn::MoorDyn::icLegacy()
 {
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
 	// dtIC set to fraction of input so convergence is over dtIC (as described in docs)
 	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
 	ICdt = ICdt / (convergence_iters+1);
 
 	_t_integrator->Init();
+	if (ICfile != "") {
+		try {
+			_t_integrator->LoadState(_basepath + ICfile);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
+	}
 
 	LOGMSG << "Finalizing ICs using dynamic solve (" << ICDfac
 	       << "X normal drag)" << endl;
@@ -231,8 +242,6 @@ moordyn::MoorDyn::icLegacy()
 		while ((dt = t_target) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
-			moordyn::error_id err = MOORDYN_SUCCESS;
-			string err_msg;
 			try {
 				_t_integrator->Step(dt);
 				t = _t_integrator->GetTime();
@@ -331,6 +340,8 @@ moordyn::MoorDyn::icLegacy()
 moordyn::error_id
 moordyn::MoorDyn::icStationary()
 {
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
 	real t = 0;
 	real error_prev = (std::numeric_limits<real>::max)();
 	real error = (std::numeric_limits<real>::max)();
@@ -352,6 +363,15 @@ moordyn::MoorDyn::icStationary()
 		t_integrator.AddLine(obj);
 	t_integrator.SetCFL((std::min)(cfl, 1.0));
 	t_integrator.Init();
+	if (ICfile != "") {
+		try {
+			t_integrator.LoadState(_basepath + ICfile);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
+	}
+
 	auto n_states = t_integrator.NStates();
 	while ((ICTmax - t) > (std::numeric_limits<real>::min)()) {
 		// Integrate one ICD timestep (ICdt)
@@ -361,8 +381,6 @@ moordyn::MoorDyn::icStationary()
 		while ((dt = t_target) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
-			moordyn::error_id err = MOORDYN_SUCCESS;
-			string err_msg;
 			try {
 				t_integrator.Step(dt);
 				error = t_integrator.Error();
@@ -405,6 +423,8 @@ moordyn::MoorDyn::icStationary()
 moordyn::error_id
 moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 {
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
 	if (NCoupledDOF() && !x) {
 		LOGERR << "ERROR: "
 		       << "MoorDyn::Init received a Null position vector, "
@@ -482,8 +502,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		moordyn::array2vec(xd + ix, rd);
 		PointList[l]->initiateStep(r, rd);
 
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
 		try {
 			PointList[l]->updateFairlead(0.0);
 		}
@@ -537,14 +555,20 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			return err;
 	} else {
 		_t_integrator->Init();
+		if (ICfile != "") {
+			try {
+				_t_integrator->LoadState(_basepath + ICfile);
+			}
+			MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		}
 	}
 	_t_integrator->SetTime(0.0);
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
 	env->waterKinOptions.waveMode = WaveKinTemp;
-	moordyn::error_id err = MOORDYN_SUCCESS;
-	string err_msg;
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
@@ -2143,6 +2167,10 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		ICDfac = atof(entries[0].c_str());
 	else if ((name == "threshIC") || (name == "ICthresh"))
 		ICthresh = atof(entries[0].c_str());
+	else if ((name == "genDynamicIC") || (name == "ICgenDynamic"))
+		ICgenDynamic = bool(atof(entries[0].c_str()));
+	else if ((name == "fileIC") || (name == "ICfile"))
+		ICfile = entries[0];
 	else if (name == "WaveKin") {
 		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
 		if ((WaveKinTemp < waves::WAVES_NONE) ||
@@ -2181,8 +2209,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
 		std::string filepath = entries[0];
 		this->seafloor->setup(env, filepath);
-	} else if (name == "ICgenDynamic")
-		ICgenDynamic = bool(atof(entries[0].c_str()));
+	}
 	else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
@@ -2699,6 +2726,42 @@ MoorDyn_SetTimeScheme(MoorDyn system, const char* name)
 	tscheme->SetState(state);
 
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SaveState(MoorDyn system, const char* filepath)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		moordyn::TimeScheme* t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+		t->SaveState(filepath);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
+int DECLDIR
+MoorDyn_LoadState(MoorDyn system, const char* filepath)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		moordyn::TimeScheme* t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+		t->LoadState(filepath);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
 }
 
 int DECLDIR

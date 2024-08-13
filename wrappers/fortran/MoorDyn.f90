@@ -28,8 +28,9 @@ module moordyn
   private :: MoorDyn_Create, MoorDyn_SetLogFile, MoorDyn_Log, MoorDyn_Init, &
              MoorDyn_Init_NoIC, MoorDyn_Step, &
              MoorDyn_ExternalWaveKinGetCoordinates, &
-             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, MoorDyn_Save, &
-             MoorDyn_Load, MoorDyn_SaveVTK, &
+             MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
+             MoorDyn_SaveState, MoorDyn_LoadState, &
+             MoorDyn_Save, MoorDyn_Load, MoorDyn_SaveVTK, &
              MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, MoorDyn_GetBodyPos, MoorDyn_GetBodyAngle, &
              MoorDyn_GetBodyVel, MoorDyn_GetBodyAngVel, MoorDyn_GetBodyForce, &
@@ -51,7 +52,8 @@ module moordyn
             MD_ExternalWaveKinGetN, MD_ExternalWaveKinGetCoordinates, &
             MD_ExternalWaveKinSet, MD_GetNumberBodies, MD_GetBody, &
             MD_GetNumberRods, MD_GetRod, MD_GetNumberPoints, MD_GetPoint, &
-            MD_GetNumberLines, MD_GetLine, MD_GetFASTtens, MD_Save, MD_Load, &
+            MD_GetNumberLines, MD_GetLine, MD_GetFASTtens, &
+            MD_SaveState, MD_LoadState, MD_Save, MD_Load, &
             MD_SaveVTK, &
             MD_GetWavesKin, &
             MD_GetDepthAt, MD_GetAverageDepth, MD_GetMinDepth, &
@@ -248,6 +250,20 @@ module moordyn
       type(c_ptr), value, intent(in) :: avt
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
+
+    function MoorDyn_SaveState(instance, f) bind(c, name='MoorDyn_SaveState') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SaveState
+
+    function MoorDyn_LoadState(instance, f) bind(c, name='MoorDyn_LoadState') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: f(*)
+      integer(c_int) :: rc
+    end function MoorDyn_LoadState
 
     function MoorDyn_Save(instance, f) bind(c, name='MoorDyn_Save') result(rc)
       import :: c_ptr, c_char, c_int
@@ -781,6 +797,20 @@ contains
     real(c_double), intent(in), target :: avt(:)
     MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
   end function MD_GetFASTtens
+
+  integer function MD_SaveState(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_SaveState = MoorDyn_SaveState(instance, trim(f) // c_null_char)
+  end function MD_SaveState
+
+  integer function MD_LoadState(instance, f)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: f
+    MD_LoadState = MoorDyn_LoadState(instance, trim(f) // c_null_char)
+  end function MD_LoadState
 
   integer function MD_Save(instance, f)
     use iso_c_binding
