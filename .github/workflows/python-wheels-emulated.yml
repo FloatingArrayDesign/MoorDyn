@@ -38,17 +38,20 @@ jobs:
         fi &&
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=$VTK_DIR -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
         cmake --build build --config Release &&
-        cmake --install build --config Release
+        cmake --install build --config Release &&
+        rm -rf docs extern source tests
       CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
       CIBW_BEFORE_ALL_WINDOWS: >
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-9.2/ -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
         cmake --build build --config Release &&
-        cmake --install build --config Release
+        cmake --install build --config Release &&
+        rm -rf docs extern source tests
       CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair --add-path install/bin -w {dest_dir} {wheel}"
       CIBW_BEFORE_ALL_MACOS: >
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 &&
         cmake --build build --config Release &&
-        cmake --install build --config Release
+        cmake --install build --config Release &&
+        rm -rf docs extern source tests
       
     steps:
       - uses: actions/checkout@v4
