@@ -1,3 +1,16 @@
+## [](https://github.com/core-marine-dev/MoorDyn/compare/v2.3.5...v) (2024-08-14)
+
+### Bug Fixes
+
+* **python-wheels:** {project} placeholder seems to be ignored/invalid ([0a97f4d](https://github.com/core-marine-dev/MoorDyn/commit/0a97f4dcff2bfa1f83c0b943f0c1695b71e33f69))
+* **python-wheels:** Add the DLL path to delvewheel ([9310754](https://github.com/core-marine-dev/MoorDyn/commit/9310754b965ee3602db579e22fd1f242970dff05))
+* **python-wheels:** Remove the useless folders after installing ([e6aa341](https://github.com/core-marine-dev/MoorDyn/commit/e6aa341be866183266afacd996accf0afde30837))
+* **python-wheels:** Temporary disable pypy3.10, which is not working on the CI ([49dd580](https://github.com/core-marine-dev/MoorDyn/commit/49dd5805db58c21a09a7012cdf6cce685ceeaf72))
+* **python-wheels:** Temporary disable pypy3.8, which is not working on the CI ([27166f6](https://github.com/core-marine-dev/MoorDyn/commit/27166f6575586727d2893bc9094eb3fb121aed05))
+* **python-wheels:** Temporary disable pypy3.9, which is not working on the CI ([b5b4003](https://github.com/core-marine-dev/MoorDyn/commit/b5b400327b9ec1debeab328c57a314715b0740d9))
+* **python-wheels:** Use delvewheel on Windows ([89b5ddc](https://github.com/core-marine-dev/MoorDyn/commit/89b5ddcbc5f64404ff902c8a536e304052ab580a))
+* **python-wheels:** Use the installed headers ([ad18025](https://github.com/core-marine-dev/MoorDyn/commit/ad18025c6ff5353f4c99fa7bd58a988c5016c9cd))
+* resolves typos and warnings thrown at compiling ([e4a8f08](https://github.com/core-marine-dev/MoorDyn/commit/e4a8f08195e031cbfecfd30574edaad08b15a4d0))
 ## [](https://github.com/core-marine-dev/MoorDyn/compare/v2.3.3...v) (2024-08-07)
 
 ### Features
