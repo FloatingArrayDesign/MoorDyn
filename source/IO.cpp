@@ -91,7 +91,7 @@ pack754(long double f, unsigned bits, unsigned expbits)
 	}
 	fnorm = fnorm - 1.0;
 
-	// calculate the binary form (non-float) of the significand data
+	// calculate the binary form (non-float) of the significant data
 	significand = fnorm * ((1LL << significandbits) + 0.5f);
 
 	// get the biased exponent

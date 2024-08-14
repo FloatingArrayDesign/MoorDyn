@@ -75,7 +75,7 @@ int OwnConsoleWindow = 0;
  */
 
 /// The singleton of the very only MoorDyn instance that this process might hold
-/// This only applies if the old API is cosidered. See @ref old_api
+/// This only applies if the old API is considered. See @ref old_api
 MoorDyn md_singleton = NULL;
 
 /**

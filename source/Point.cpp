@@ -344,7 +344,7 @@ Point::doRHS()
 		// new point The above may require rearrangement of point
 		// indices, expansion of state vector, etc.
 
-		// sum quantitites
+		// sum quantities
 		Fnet += Fnet_i;
 		M += M_i;
 	}

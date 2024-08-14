@@ -70,7 +70,7 @@ typedef std::shared_ptr<Waves> WavesRef;
 class Point final : public io::IO, public SuperCFL
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param id Unique identifier of this instance
 	 */
@@ -200,7 +200,7 @@ class Point final : public io::IO, public SuperCFL
 
 	/** @brief Setup the point
 	 *
-	 * Always call this function after the construtor
+	 * Always call this function after the constructor
 	 * @param number_in The point identifier. The identifiers starts at 1,
 	 * not at 0.
 	 * @param type_in One of COUPLED, FREE or FIXED
@@ -229,7 +229,7 @@ class Point final : public io::IO, public SuperCFL
 	 */
 	void addLine(moordyn::Line* theLine, EndPoints end_point);
 
-	/** @brief Dettach a line
+	/** @brief Detach a line
 	 * @param line The line
 	 * @return The line end point that was attached to the point
 	 * @throws moordyn::invalid_value_error If there is no an attached line
