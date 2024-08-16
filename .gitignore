@@ -53,6 +53,7 @@ compile/SO/test*
 .eggs
 moordyn.egg-info
 tests/__pycache__
+wrappers/python/moordyn/__pycache__
 /out/build
 /.vs/MoorDyn/FileContentIndex
 /.vs
