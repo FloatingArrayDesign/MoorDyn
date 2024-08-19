@@ -40,9 +40,10 @@ jobs:
       - name: Install and run
         run: |
             cd dist/
+            rm -f *musllinux*.whl
             pip debug --verbose
             ls -alh
-            pip install $(ls *cp312*.whl -I "*musllinux*") --break-system-packages
+            pip install $(ls *cp312*.whl) --break-system-packages
             cd ../tests
             python test_minimal.py
         shell: bash
