@@ -63,9 +63,6 @@ jobs:
         rm -rf docs extern source tests
       CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair --add-path install/bin -w {dest_dir} {wheel}"
       CIBW_BEFORE_ALL_MACOS: >
-        echo "Considering vtk-macOS_`uname -m`.tar.gz..." &&
-        mkdir -p vtk &&
-        tar -xvzf vtk-macOS_`uname -m`.tar.gz -C vtk/ &&
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}} -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_INSTALL_NAME_DIR:PATH=$(pwd)/install/lib &&
         cmake --build build --config Release &&
         cmake --install build --config Release &&
@@ -119,6 +116,11 @@ jobs:
         run: |
             tar -xvzf vtk-Windows-x86_64.tar.gz -C vtk/
         if: runner.os == 'Windows'
+
+      - name: Extract VTK tgz (MacOS)
+        run: |
+            tar -xvzf vtk-macOS_${{inputs.arch}}.tar.gz -C vtk/
+        if: runner.os == 'MacOS'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
