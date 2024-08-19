@@ -24,7 +24,7 @@ jobs:
         os: ${{ fromJSON(inputs.os) }}
     env:
       # Skip 32-bit windows wheels builds.
-      CIBW_SKIP: "*-win32* pp38* pp39* pp310*"
+      CIBW_SKIP: "*-win32*"
       CIBW_ARCHS: ${{inputs.arch}}
       CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/install/lib"
       CIBW_BEFORE_ALL_LINUX: >
