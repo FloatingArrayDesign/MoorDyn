@@ -47,9 +47,9 @@ jobs:
         mkdir -p vtk &&
         tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/ &&
         if [ -d "vtk/lib" ]; then
-            VTK_DIR=$(ls -d vtk/lib/cmake/vtk-*)
+            VTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}
         else
-            VTK_DIR=$(ls -d vtk/lib64/cmake/vtk-*)
+            VTK_DIR=vtk/lib64/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}
         fi &&
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=$VTK_DIR -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
         cmake --build build --config Release &&
@@ -57,8 +57,7 @@ jobs:
         rm -rf docs extern source tests
       CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
       CIBW_BEFORE_ALL_WINDOWS: >
-        VTK_DIR=$(ls -d vtk/lib/cmake/vtk-*) &&
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=$VTK_DIR -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}} -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
         cmake --build build --config Release &&
         cmake --install build --config Release &&
         rm -rf docs extern source tests
