@@ -62,6 +62,7 @@ jobs:
         cmake --install build --config Release &&
         rm -rf docs extern source tests
       CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair --add-path install/bin -w {dest_dir} {wheel}"
+      CIBW_ENVIRONMENT_MACOS: 'MACOSX_DEPLOYMENT_TARGET="10.15"'
       CIBW_BEFORE_ALL_MACOS: >
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}} -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_INSTALL_NAME_DIR:PATH=$(pwd)/install/lib &&
         cmake --build build --config Release &&
