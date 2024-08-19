@@ -6,13 +6,6 @@ on:
 
 permissions: write-all
 
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
-  VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 3
-  VTK_VERSION_PATCH: 1
-
 jobs:
   build_wheels:
     name: Build Python wheels x86_64
