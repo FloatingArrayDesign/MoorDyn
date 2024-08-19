@@ -39,13 +39,18 @@ jobs:
         os: ${{ fromJSON(inputs.os) }}
     env:
       # Skip 32-bit windows wheels builds.
-      CIBW_SKIP: "*-win32* pp38-* pp39-* pp310-* *musllinux*ppc64le*"
+      CIBW_SKIP: "*-win32* pp38-* pp39-* pp310-*"
       CIBW_ARCHS: ${{inputs.arch}}
       CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/install/lib"
       CIBW_BEFORE_ALL_LINUX: >
-        echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
+        if pip debug --verbose | grep -q 'musllinux'; then
+            DISTRO=musllinux_1_2
+        else
+            DISTRO=manylinux2014
+        fi &&
+        echo "Considering vtk-${DISTRO}_`uname -m`.tar.gz..." &&
         mkdir -p vtk &&
-        tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/ &&
+        tar -xvzf vtk-${DISTRO}_`uname -m`.tar.gz -C vtk/ &&
         if [ -d "vtk/lib" ]; then
             VTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}
         else
@@ -86,10 +91,17 @@ jobs:
             cat pyproject.toml
         shell: bash
 
-      - name: download pre-built VTK static library (Linux)
+      - name: download pre-built VTK static library (ManyLinux)
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
+          target: ${{github.workspace}}/
+        if: runner.os == 'Linux'
+
+      - name: download pre-built VTK static library (MUSLLinux)
+        uses: suisei-cn/actions-download-file@v1.6.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-musllinux_1_2_${{inputs.arch}}.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
