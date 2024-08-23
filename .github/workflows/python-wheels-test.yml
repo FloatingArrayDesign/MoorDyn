@@ -1,0 +1,49 @@
+name: Python-manylinux-arch
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'Host OS'
+        required: false
+        type: string
+        default: '["ubuntu-22.04"]'
+      arch:
+        description: 'Architecture target'
+        required: true
+        type: string
+        
+permissions: write-all
+
+jobs:
+  test_wheels:
+    name: Test Python wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+
+      - name: Download the wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          pattern: python-wheels-${{runner.os}}_${{inputs.arch}}*
+          merge-multiple: true
+
+      - name: Install and run
+        run: |
+            cd dist/
+            rm -f *musllinux*.whl
+            pip debug --verbose
+            ls -alh
+            pip install $(ls *cp312*.whl) --break-system-packages
+            cd ../tests
+            python test_minimal.py
+        shell: bash

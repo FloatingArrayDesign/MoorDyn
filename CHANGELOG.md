@@ -1,3 +1,23 @@
+## [](https://github.com/core-marine-dev/MoorDyn/compare/v2.3.6...v) (2024-08-23)
+
+### Bug Fixes
+
+* **ci:** Ignore MUSLLinux wheels when testing ([63698bd](https://github.com/core-marine-dev/MoorDyn/commit/63698bd87f4224c8d062f4b3b732b2f52e5dbeef))
+* **ci:** List of dependencies to publish a package ([2c9ea79](https://github.com/core-marine-dev/MoorDyn/commit/2c9ea79d89002287bc0e718dcd433b9c891a3b92))
+* **ci:** Remove the MUSLLinux wheels before testing ([20a35bf](https://github.com/core-marine-dev/MoorDyn/commit/20a35bf0ad51f4500b84b03e266848f503665720))
+* **ci:** Removed unused env variables ([584bda5](https://github.com/core-marine-dev/MoorDyn/commit/584bda5581864d779d467875ee2b1a459cab8b91))
+* **ci:** Setting the VTK version ([3be2478](https://github.com/core-marine-dev/MoorDyn/commit/3be24786c21753f8aaba898ee4bdf551ca3196af))
+* **ci:** The VTK tar.gz can be directly extracted on MacOS ([9422fb2](https://github.com/core-marine-dev/MoorDyn/commit/9422fb21063254dc3e943f5a8b0399341aed491b))
+* **ci:** Update to VTK-9.3.1 ([154ab66](https://github.com/core-marine-dev/MoorDyn/commit/154ab66d5d7442ad15fd31a855577a848f91f5a9))
+* **ci:** Use directly the VTK version placeholders ([e528054](https://github.com/core-marine-dev/MoorDyn/commit/e5280542245ae5e7617aafb011c0f0f7a85cf7f9))
+* **ci:** Wrong VTK URI ([6ef95f9](https://github.com/core-marine-dev/MoorDyn/commit/6ef95f92ab826f8f4e09661728a54f7d6cb3d870))
+* **python-wheels:** Test the wheels ([f534b48](https://github.com/core-marine-dev/MoorDyn/commit/f534b48bd9eb508b00e6ff102e62a7d84addea0a))
+* **python:** Avoid using brew on MacOS-13 statically linking VTK ([a521444](https://github.com/core-marine-dev/MoorDyn/commit/a521444281e9117c09135640f49154c2d3d0a18a))
+* **python:** Enable MUSLLinux builds ([7f20dab](https://github.com/core-marine-dev/MoorDyn/commit/7f20dab357b8863320d35bee1723f21099900023))
+* **python:** Enable pypy builds again ([224f8e4](https://github.com/core-marine-dev/MoorDyn/commit/224f8e4f31271a96b6a4ef170d8337d252305cb7))
+* **python:** Set the install name id on MacOS ([32a9fca](https://github.com/core-marine-dev/MoorDyn/commit/32a9fcae8a8aee0558c632fe236f92d9e6bfda8d))
+* **python:** Set the MACOSX_DEPLOYMENT_TARGET to 10.15 ([f44e9c4](https://github.com/core-marine-dev/MoorDyn/commit/f44e9c4df1c1c9645d1a08255f16722baa519188))
+* **python:** Use the MUSLLinux VTK compilation when needed ([e5fe619](https://github.com/core-marine-dev/MoorDyn/commit/e5fe6190d5fdc67f6bb48c3fc7133a6ed5c5a4ec))
 ## [](https://github.com/core-marine-dev/MoorDyn/compare/v2.3.5...v) (2024-08-14)
 
 ### Bug Fixes

@@ -12,6 +12,21 @@ on:
         description: 'Architecture target'
         required: true
         type: string
+      vtk_major:
+        description: 'VTK major version'
+        required: false
+        type: string
+        default: '9'
+      vtk_minor:
+        description: 'VTK minor version'
+        required: false
+        type: string
+        default: '3'
+      vtk_patch:
+        description: 'VTK patch version'
+        required: false
+        type: string
+        default: '1'
         
 permissions: write-all
 
@@ -24,17 +39,22 @@ jobs:
         os: ${{ fromJSON(inputs.os) }}
     env:
       # Skip 32-bit windows wheels builds.
-      CIBW_SKIP: "*-win32* *musllinux* pp38* pp39* pp310*"
+      CIBW_SKIP: "*-win32* pp38-* pp39-* pp310-*"
       CIBW_ARCHS: ${{inputs.arch}}
       CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/install/lib"
       CIBW_BEFORE_ALL_LINUX: >
-        echo "Considering vtk-manylinux2014_`uname -m`.tar.gz..." &&
-        mkdir -p vtk &&
-        tar -xvzf vtk-manylinux2014_`uname -m`.tar.gz -C vtk/ &&
-        if [ -d "vtk/lib" ]; then
-            VTK_DIR=vtk/lib/cmake/vtk-9.2/
+        if pip debug --verbose | grep -q 'musllinux'; then
+            DISTRO=musllinux_1_2
         else
-            VTK_DIR=vtk/lib64/cmake/vtk-9.2/        
+            DISTRO=manylinux2014
+        fi &&
+        echo "Considering vtk-${DISTRO}_`uname -m`.tar.gz..." &&
+        mkdir -p vtk &&
+        tar -xvzf vtk-${DISTRO}_`uname -m`.tar.gz -C vtk/ &&
+        if [ -d "vtk/lib" ]; then
+            VTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}
+        else
+            VTK_DIR=vtk/lib64/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}
         fi &&
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=$VTK_DIR -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
         cmake --build build --config Release &&
@@ -42,13 +62,14 @@ jobs:
         rm -rf docs extern source tests
       CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
       CIBW_BEFORE_ALL_WINDOWS: >
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-9.2/ -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}} -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF &&
         cmake --build build --config Release &&
         cmake --install build --config Release &&
         rm -rf docs extern source tests
       CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair --add-path install/bin -w {dest_dir} {wheel}"
+      CIBW_ENVIRONMENT_MACOS: 'MACOSX_DEPLOYMENT_TARGET="10.15"'
       CIBW_BEFORE_ALL_MACOS: >
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 &&
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DEXTERNAL_EIGEN:BOOL=OFF -DPYTHON_WRAPPER:BOOL=OFF -DFORTRAN_WRAPPER:BOOL=OFF -DRUST_WRAPPER:BOOL=OFF -DUSE_VTK=ON -DVTK_DIR=vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}} -DMOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY=ON -DBUILD_TESTING=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_INSTALL_NAME_DIR:PATH=$(pwd)/install/lib &&
         cmake --build build --config Release &&
         cmake --install build --config Release &&
         rm -rf docs extern source tests
@@ -70,23 +91,32 @@ jobs:
             cat pyproject.toml
         shell: bash
 
-      - name: download pre-built VTK static library (Linux)
+      - name: download pre-built VTK static library (ManyLinux)
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.6-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
+          target: ${{github.workspace}}/
+        if: runner.os == 'Linux'
+
+      - name: download pre-built VTK static library (MUSLLinux)
+        uses: suisei-cn/actions-download-file@v1.6.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-musllinux_1_2_${{inputs.arch}}.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Windows)
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-9.2.6-static/vtk-Windows-x86_64.tar.gz
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-Windows-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Windows'
 
-      - name: Install VTK (MacOS)
-        run: |
-          brew install vtk
+      - name: download pre-built VTK static library (MacOS)
+        uses: suisei-cn/actions-download-file@v1.6.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-macOS-${{inputs.arch}}.tar.gz
+          target: ${{github.workspace}}/
         if: runner.os == 'MacOS'
 
       - name: Create folders
@@ -99,6 +129,11 @@ jobs:
         run: |
             tar -xvzf vtk-Windows-x86_64.tar.gz -C vtk/
         if: runner.os == 'Windows'
+
+      - name: Extract VTK tgz (MacOS)
+        run: |
+            tar -xvzf vtk-macOS-${{inputs.arch}}.tar.gz -C vtk/
+        if: runner.os == 'MacOS'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

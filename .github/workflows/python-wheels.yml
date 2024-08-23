@@ -6,13 +6,6 @@ on:
 
 permissions: write-all
 
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
-  VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 2
-  VTK_VERSION_PATCH: 6
-
 jobs:
   build_wheels:
     name: Build Python wheels x86_64
@@ -69,8 +62,16 @@ jobs:
     name: Build MacOS_x86_64
     uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-emulated.yml@master
     with:
-      os: '["macOS-latest"]'
+      os: '["macOS-13"]'
       arch: "x86_64"
+    secrets: inherit
+
+  build_MacOS_arm64:
+    name: Build MacOS_arm64
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-emulated.yml@master
+    with:
+      os: '["macOS-14"]'
+      arch: "arm64"
     secrets: inherit
 
   build_Linux_i686:
@@ -105,9 +106,36 @@ jobs:
       arch: "s390x"
     secrets: inherit
 
+  test_Linux_x86_64:
+    name: Test Linux_x86_64
+    needs: [build_Linux_x86_64]
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-test.yml@master
+    with:
+      os: '["ubuntu-22.04"]'
+      arch: "x86_64"
+    secrets: inherit
+
+  test_Windows_AMD64:
+    name: Test Windows_AMD64
+    needs: [build_Windows_AMD64]
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-test.yml@master
+    with:
+      os: '["windows-latest"]'
+      arch: "AMD64"
+    secrets: inherit
+
+  test_MacOS_arm64:
+    name: Test MacOS_arm64
+    needs: [build_MacOS_arm64]
+    uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-test.yml@master
+    with:
+      os: '["macOS-14"]'
+      arch: "arm64"
+    secrets: inherit
+
   publish:
     runs-on: ${{ matrix.os }}
-    needs: [build_wheels, build_Linux_x86_64, build_Windows_AMD64, build_MacOS_x86_64, build_Linux_i686, build_Linux_aarch64, build_Linux_ppc64le, build_Linux_s390x]
+    needs: [build_wheels, build_Linux_x86_64, build_Windows_AMD64, build_MacOS_x86_64, build_MacOS_arm64, build_Linux_i686, build_Linux_aarch64, build_Linux_ppc64le, build_Linux_s390x, test_Linux_x86_64, test_Windows_AMD64, test_MacOS_arm64]
     strategy:
         matrix:
             os: [ubuntu-22.04]
