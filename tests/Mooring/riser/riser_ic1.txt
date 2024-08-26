@@ -1,0 +1,50 @@
+riser_ic1.txt: The system boot up with the stationary solver
+------------------------- LINE TYPES --------------------------------------------------
+LineType  Diam    MassDenInAir    EA       BA/-zeta    EI    Can   Cat  Cdn   Cdt
+(-)       (m)       (kg/m)        (N)      (Pa-s/-)  (n-m^2) (-)   (-)  (-)   (-)
+cable     0.116      25         362e6      -1.0      38e3    1.0   0.0  1.1   0.008
+bouyancy  0.361      59         362e6      -1.0      38e3    1.0  0.469 2.617 0.345
+nylon     0.116      25         362e6      -1.0      38e3    1.0   0.0  1.1   0.008
+---------------------- ROD TYPES ------------------------------------
+TypeName      Diam     Mass/m    Cd     Ca      CdEnd    CaEnd
+(name)        (m)      (kg/m)    (-)    (-)     (-)      (-)
+conn          0.116    25        1.1    1.0     1.1      1.0
+conn_stiff    0.116    25        1.1    1.0     1.1      1.0
+clamp         0.116    25        1.2    1.0     1.2      1.0
+---------------------------- BODIES -----------------------------------------------------
+ID   Attachment  X0     Y0    Z0      r0      p0     y0     Mass  CG*   I*        Volume  CdA*     Ca
+(#)     (-)      (m)    (m)   (m)     (deg)   (deg)  (deg)  (kg)  (m)   (kg-m^2)  (m^3)   (m^2)    (-)
+1      Free      452.0   0    -313.0  0       0      0      29.5   0    0.098     0.014   0.5|0.5  1.0
+---------------------- RODS ----------------------------------------
+ID   RodType  Attachment  Xa    Ya    Za     Xb     Yb    Zb      NumSegs  RodOutputs
+(#)  (name)    (#/key)    (m)   (m)   (m)    (m)    (m)   (m)     (-)       (-)
+1    clamp       Body1    0.1   0     0.0    -0.1   0     0.0     1         -
+2    conn        Free     375.0 0     -250.0 375.0  0     -250.0  0         -
+3    conn        Free     290.0 0     -215.0 290.0  0     -215.0  0         -
+----------------------- POINTS ----------------------------------------------
+Node      Type      X        Y         Z        M        V         CdA   CA
+(-)       (-)      (m)      (m)       (m)      (kg)     (m^3)     (m^2)  (-)
+1         Fixed    600.0     0      -320.0       0        0          0     0
+2         Fixed    452.0     0      -320.0       0        0          0     0
+3         Body1    0.0       0         0.0       0        0          0     0
+4         Coupled  0.0       0       -63.6       0        0          0     0
+-------------------------- LINES -------------------------------------------------
+Line     LineType NodeA     NodeB  UnstrLen   NumSegs     Flags/Outputs
+(-)      (-)       (-)       (-)    (m)         (-)          (-)
+1        nylon       2         3      7.0        1           -
+2        cable       1       R1A    150.0       15           -
+3        cable     R1B       R2A    110.0       11           -
+4      bouyancy    R2B       R3A     80.0        8           -
+5        cable     R3B         4    340.0       34           -
+-------------------------- SOLVER OPTIONS---------------------------------------------------
+3.0e6      kb           - bottom stiffness
+3.0e5      cb           - bottom damping
+320        WtrDpth      - water depth
+midpoint5  tScheme      - Time integrator
+0.25       cfl          - Courant-Friedich-Lewy factor
+0          ICgenDynamic - 0 for stationary solver, 1 for upscaled drag legacy solver
+4.0        ICDfac       - factor by which to scale drag coefficients during dynamic relaxation IC gen
+1e-3       threshIC     - threshold for IC convergence
+0.5        dtIC         - Time lapse between convergence tests (s)
+2.0        TmaxIC       - threshold for IC convergence
+--------------------------- need this line -------------------------------------------------
