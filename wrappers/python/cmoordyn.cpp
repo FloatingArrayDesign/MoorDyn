@@ -862,6 +862,58 @@ get_fast_tens(PyObject*, PyObject* args)
 	return lst;
 }
 
+/** @brief Wrapper to MoorDyn_SaveState() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+save_state(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	const int err = MoorDyn_SaveState(system, filepath);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return Py_None;
+}
+
+/** @brief Wrapper to MoorDyn_LoadState() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+load_state(PyObject*, PyObject* args)
+{
+	PyObject* capsule;
+	char* filepath = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+
+	const int err = MoorDyn_LoadState(system, filepath);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+	return Py_None;
+}
+
 /** @brief Wrapper to MoorDyn_Serialize() function
  * @param args Python passed arguments
  * @return The bytes array
@@ -2808,6 +2860,8 @@ static PyMethodDef moordyn_methods[] = {
 	  get_fast_tens,
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "save_state", save_state, METH_VARARGS, "Save the system state" },
+	{ "load_state", load_state, METH_VARARGS, "Load the system state" },
 	{ "serialize",
 	  serialize,
 	  METH_VARARGS,

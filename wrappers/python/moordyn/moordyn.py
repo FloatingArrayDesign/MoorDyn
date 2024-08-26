@@ -1,5 +1,5 @@
 """
-Copyright (c) 2022, Jose Luis Cercos-Pita <jlc@core-marine.com>
+Copyright (c) 2022-2024, Jose Luis Cercos-Pita <jlc@core-marine.com>
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -496,6 +496,36 @@ def GetFASTtens(instance, n_lines):
     import cmoordyn
     data = cmoordyn.get_fast_tens(instance, n_lines)
     return data[0], data[1], data[2], data[3]
+
+
+def SaveState(instance, filepath):
+    """Save the MoorDyn system state into a file
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.save_state(instance, filepath)
+
+
+def LoadState(instance, filepath):
+    """Load and set a previously MoorDyn system state
+
+    This can be used to load initial conditions exported with MoorPy
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    filepath (str): The file path
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.load_state(instance, filepath)
 
 
 def Serialize(instance):

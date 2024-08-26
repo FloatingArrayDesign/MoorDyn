@@ -6,5 +6,6 @@ Theoretical aspects
    :maxdepth: 1
 
    troubleshooting
+   initialization
    tschemes
    features
