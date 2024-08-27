@@ -1,12 +1,3 @@
-The system initialization, i.e., the generation of the Initial Condition (IC), is of paramount importance, as it can significantly impact the performance and accuracy of the simulation. Several methods are offered in MoorDyn-C version 2, which can be concatenated to achieve the required accuracy at a minimum cost.
-
-.. note:: As of now, only the catenary solver and the so-called Upscaled-drag dynamics method are available in MoorDyn-F.
-
-Please refer to the :ref:V2 Input File documentation <v2_inputs> for further information on all the available options to control the system initialization.
-
-
-
-
 Initialization
 ==============
 .. _initialization:
