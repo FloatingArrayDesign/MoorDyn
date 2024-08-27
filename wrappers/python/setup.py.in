@@ -41,7 +41,7 @@ def cmakepath(p):
 
 cmoordyn = Extension(
     'cmoordyn',
-    sources=[cmakepath('${CMAKE_CURRENT_BINARY_DIR}/cmoordyn.cpp'), ],
+    sources=['cmoordyn.cpp', ],
     language='c++',
     include_dirs=[cmakepath('${CMAKE_SOURCE_DIR}/source'), ],
     library_dirs=[cmakepath('${CMAKE_BINARY_DIR}/source'), ],
