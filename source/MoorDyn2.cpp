@@ -635,12 +635,14 @@ moordyn::MoorDyn::Step(const double* x,
                        double& dt)
 {
 	// should check if wave kinematics have been set up if expected!
-	const auto default_precision{std::cout.precision()};
-	std::cout << std::fixed << setprecision(1);
-	LOGDBG << "t = " << t << "s     \r";
-	std::cout << std::defaultfloat << setprecision(default_precision);
+	if (!disableOutput) {
+		const auto default_precision{ std::cout.precision() };
+		std::cout << std::fixed << setprecision(1);
+		LOGDBG << "t = " << t << "s     \r";
+		std::cout << std::defaultfloat << setprecision(default_precision);
 
-	cout << "\rt = " << t << " " << flush;
+		cout << "\rt = " << t << " " << flush;
+	}
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
@@ -2305,6 +2307,8 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 moordyn::error_id
 moordyn::MoorDyn::AllOutput(double t, double dt)
 {
+	if (disableOutput)
+		return MOORDYN_SUCCESS;
 	// if (env->writeLog == 0)
 	// 	return MOORDYN_SUCCESS;
 

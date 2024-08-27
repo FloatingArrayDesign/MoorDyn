@@ -22,6 +22,7 @@ endfunction()
 
 add_bench(WaveBenchmark WaveBench.cpp)
 add_bench(MoordynBenchmark MDBench.cpp)
+add_bench(LinesBenchmark LinesBench.cpp)
 
 add_custom_target(run_benchmarks
     COMMAND $<TARGET_FILE:WaveBenchmark>
