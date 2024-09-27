@@ -308,6 +308,18 @@ tabulated file with 3 header lines and then a strain column and a tension column
   0.0       0.0
   ...       ...
 
+Note: MoorDyn-F has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
+:ref:` theory section <theory>`, allows a user to specify a bar-seperated constant dynamic and static stiffness. The second method allows the user 
+to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
+`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Example inputs are below: 
+
+.. code-block:: none
+
+  TypeName   Diam    Mass/m     EA           
+  (name)     (m)     (kg/m)     (N)             
+  Polyester  ...      ...    EA_s|EA_d          <-- Constant dynamic stiffness method
+  Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm <-- Load dependent dynamic stiffness method
+
 Rod Types
 ^^^^^^^^^
 
