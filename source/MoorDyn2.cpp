@@ -554,6 +554,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		if (seafloor) {
 			env->WtrDpth = -seafloor->getAverageDepth();
 		}
+		LOGMSG << "Water kinematics for runtime:" << endl;
 		waves->setup(env, seafloor, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
 	}
@@ -1645,6 +1646,7 @@ moordyn::MoorDyn::ReadInFile()
 		if (seafloor) {
 			env->WtrDpth = -seafloor->getAverageDepth();
 		}
+		LOGMSG << "Water kinematics for IC gen:" << endl;
 		waves->setup(env, seafloor, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
 	}

@@ -1238,7 +1238,14 @@ Line::getStateDeriv()
 			// VIVd[i][1] = A_int_dot;
 			// VIVd[i][2] = As_dot;
 
-			Lf[i] = 0.5 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp);
+			// The Lift force
+			if (i == 0)
+				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i] * l[i]);
+			else if (i == N)
+				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i - 1] * l[i - 1]);
+			else 
+				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i] * l[i] + F[i - 1] * l[i - 1]);
+
 			if ((t >= t_old + dtm) || (t == 0.0)) { 
 				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
 				yd_old[i] = yd; // for updating rms back indexing (one moordyn timestep back)
