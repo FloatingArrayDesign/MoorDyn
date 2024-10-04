@@ -98,8 +98,8 @@ TimeSchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	for (unsigned int i = 0; i < lines.size(); i++) {
 		if (!_calc_mask.lines[i])
 			continue;
-		std::tie(rd[substep].lines[i].vel, rd[substep].lines[i].acc) =
-		    lines[i]->getStateDeriv();
+		lines[i]->getStateDeriv(rd[substep].lines[i].vel,
+		                        rd[substep].lines[i].acc);
 	}
 
 	for (unsigned int i = 0; i < points.size(); i++) {

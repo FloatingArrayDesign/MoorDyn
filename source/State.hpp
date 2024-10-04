@@ -50,12 +50,6 @@ template<typename T, typename V = T>
 class StateVar
 {
   public:
-	/// @brief Costructor
-	StateVar() {}
-
-	/// @brief Destructor
-	~StateVar() {}
-
 	/// The position
 	T pos;
 	/// The velocity
@@ -108,12 +102,6 @@ template<class T, class V = T>
 class StateVarDeriv
 {
   public:
-	/// @brief Constructor
-	StateVarDeriv() {}
-
-	/// @brief Destructor
-	~StateVarDeriv() {}
-
 	/// The velocity
 	T vel;
 	/// The acceleration
@@ -261,12 +249,6 @@ typedef StateVarDeriv<XYZQuat, vec6> DBodyStateDt;
 class MoorDynState
 {
   public:
-	/// @brief Constructor
-	MoorDynState() {}
-
-	/// @brief Destructor
-	~MoorDynState() {}
-
 	/// The states of the lines
 	std::vector<LineState> lines;
 
@@ -321,12 +303,6 @@ class MoorDynState
 class DMoorDynStateDt
 {
   public:
-	/// @brief Constructor
-	DMoorDynStateDt() {}
-
-	/// @brief Destructor
-	~DMoorDynStateDt() {}
-
 	/// The state derivatives of the lines
 	std::vector<DLineStateDt> lines;
 
