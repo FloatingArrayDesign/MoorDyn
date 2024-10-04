@@ -168,7 +168,7 @@ class StateVarDeriv
 	 * @return The module of the linear acceleration, or their sum in case
 	 * of lists of accelerations
 	 */
-	real MakeStationary(const real &dt);
+	real MakeStationary(const real& dt);
 
 	/** @brief Carry out a Newmark step
 	 *
@@ -382,7 +382,7 @@ class DMoorDynStateDt
 	 * @param dt Time step.
 	 * @return The sum of the linear acceleration norms
 	 */
-	real MakeStationary(const real &dt);
+	real MakeStationary(const real& dt);
 
 	/** @brief Carry out a Newmark step
 	 *
@@ -441,5 +441,75 @@ class DMoorDynStateDt
 	 */
 	void Mix(const DMoorDynStateDt& visitor, const real& f);
 };
+
+/**
+ * @brief Do the computation for a row of a Butcher Tableau for an explicit
+ * integrator
+ *
+ * This function unwraps the computation so that is avoids any allocation.
+ * This function essentially computes:
+ * out_state = start_state + sum(scales[i] * derivs[i] for i = 1:N)
+ *
+ * out_state and start_state can be the same state.
+ *
+ * @tparam N Number of columns in the row
+ * @param out_state Where to save the new state
+ * @param start_state Starting state
+ * @param scales Derivative weights, one for each derivative state
+ * @param derivs State derivative values
+ */
+template<unsigned int N>
+constexpr void
+butcher_row(MoorDynState& out_state,
+            const MoorDynState& start_state,
+            const std::array<real, N>& scales,
+            const std::array<const DMoorDynStateDt* const, N>& derivs)
+{
+	static_assert(N > 0, "butcher_row must have at least one state deriv");
+
+	for (unsigned int lineIdx = 0; lineIdx < out_state.lines.size();
+	     lineIdx++) {
+		auto& line = out_state.lines[lineIdx];
+		for (unsigned int i = 0; i < line.pos.size(); i++) {
+			line.pos[i] = start_state.lines[lineIdx].pos[i];
+			line.vel[i] = start_state.lines[lineIdx].vel[i];
+			for (unsigned int j = 0; j < N; j++) {
+				line.pos[i] += scales[j] * derivs[j]->lines[lineIdx].vel[i];
+				line.vel[i] += scales[j] * derivs[j]->lines[lineIdx].acc[i];
+			}
+		}
+	}
+
+	for (unsigned int pointIdx = 0; pointIdx < out_state.points.size();
+	     pointIdx++) {
+		auto& conn = out_state.points[pointIdx];
+		conn.pos = start_state.points[pointIdx].pos;
+		conn.vel = start_state.points[pointIdx].vel;
+		for (unsigned int j = 0; j < N; j++) {
+			conn.pos += scales[j] * derivs[j]->points[pointIdx].vel;
+			conn.vel += scales[j] * derivs[j]->points[pointIdx].acc;
+		}
+	}
+
+	for (unsigned int rodIdx = 0; rodIdx < out_state.rods.size(); rodIdx++) {
+		auto& rod = out_state.rods[rodIdx];
+		rod.pos = start_state.rods[rodIdx].pos;
+		rod.vel = start_state.rods[rodIdx].vel;
+		for (unsigned int j = 0; j < N; j++) {
+			rod.pos = rod.pos + derivs[j]->rods[rodIdx].vel * scales[j];
+			rod.vel = rod.vel + scales[j] * derivs[j]->rods[rodIdx].acc;
+		}
+	}
+	for (unsigned int bodyIdx = 0; bodyIdx < out_state.bodies.size();
+	     bodyIdx++) {
+		auto& body = out_state.bodies[bodyIdx];
+		body.pos = start_state.bodies[bodyIdx].pos;
+		body.vel = start_state.bodies[bodyIdx].vel;
+		for (unsigned int j = 0; j < N; j++) {
+			body.pos = body.pos + derivs[j]->bodies[bodyIdx].vel * scales[j];
+			body.vel = body.vel + scales[j] * derivs[j]->bodies[bodyIdx].acc;
+		}
+	}
+}
 
 } // ::moordyn

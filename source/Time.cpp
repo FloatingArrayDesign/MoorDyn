@@ -29,6 +29,7 @@
  */
 
 #include "Time.hpp"
+#include "State.hpp"
 #include "Waves.hpp"
 #include <sstream>
 
@@ -382,11 +383,13 @@ RK2Scheme::Step(real& dt)
 	// Compute the intermediate state
 	CalcStateDeriv(0);
 	t += 0.5 * dt;
-	r[1] = r[0] + rd[0] * (0.5 * dt);
+	// r[1] = r[0] + rd[0] * (0.5 * dt);
+	butcher_row<1>(r[1], r[0], { 0.5 * dt }, { &rd[0] });
 	Update(0.5 * dt, 1);
 	// And so we can compute the new derivative and apply it
 	CalcStateDeriv(1);
-	r[0] = r[0] + rd[1] * dt;
+	// r[0] = r[0] + rd[1] * dt;
+	butcher_row<1>(r[0], r[0], { dt }, { &rd[1] });
 	t += 0.5 * dt;
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);
@@ -408,23 +411,35 @@ RK4Scheme::Step(real& dt)
 
 	// k2
 	t += 0.5 * dt;
-	r[1] = r[0] + rd[0] * (0.5 * dt);
+	// r[1] = r[0] + rd[0] * (0.5 * dt);
+	butcher_row<1>(r[1], r[0], { 0.5 * dt }, { &rd[0] });
+
 	Update(0.5 * dt, 1);
 	CalcStateDeriv(1);
 
 	// k3
-	r[1] = r[0] + rd[1] * (0.5 * dt);
+
+	// r[1] = r[0] + rd[1] * (0.5 * dt);
+	butcher_row<1>(r[1], r[0], { 0.5 * dt }, { &rd[1] });
 	Update(0.5 * dt, 1);
 	CalcStateDeriv(2);
 
 	// k4
 	t += 0.5 * dt;
-	r[2] = r[0] + rd[2] * dt;
+
+	// r[2] = r[0] + rd[2] * dt;
+	butcher_row<1>(r[2], r[0], { dt }, { &rd[2] });
+
 	Update(dt, 2);
 	CalcStateDeriv(3);
 
 	// Apply
-	r[0] = r[0] + (rd[0] + rd[3]) * (dt / 6.0) + (rd[1] + rd[2]) * (dt / 3.0);
+	// r[0] = r[0] + (rd[0] + rd[3]) * (dt / 6.0) + (rd[1] + rd[2]) * (dt
+	// / 3.0);
+	butcher_row<4>(r[0],
+	               r[0],
+	               { dt / 6.0, dt / 3.0, dt / 3.0, dt / 6.0 },
+	               { &rd[0], &rd[1], &rd[2], &rd[3] });
 
 	Update(dt, 0);
 	TimeSchemeBase::Step(dt);
