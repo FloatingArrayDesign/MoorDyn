@@ -1,4 +1,4 @@
-Theoretical aspects
+Theory
 ===================
 .. _theory_global:
 
@@ -8,4 +8,4 @@ Theoretical aspects
    troubleshooting
    initialization
    tschemes
-   features
+   references
