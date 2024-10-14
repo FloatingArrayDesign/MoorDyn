@@ -29,7 +29,7 @@ The main difference between MoorDyn-C and MoorDyn-F is that MoorDyn-C uses quate
 Orientation of 6 DOF objects:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-MoorDyn-C, MoorDyn-F and `MoorPy <https://github.com/NREL/MoorPy>`_ share the
+MoorDyn-C, MoorDyn-F, and `MoorPy <https://github.com/NREL/MoorPy>`_ share the
 same Intrinsic Euler-XYZ (Tait-Bryan) angles criteria to compute orientations.
 You can learn more about this on
 `Hall M. Generalized Quasi-Static Mooring System Modeling with Analytic Jacobians. Energies. 2024; 17(13):3155. https://doi.org/10.3390/en17133155 <https://www.mdpi.com/1996-1073/17/13/3155>`_
@@ -106,7 +106,7 @@ The Fortran version of MoorDyn is available as a module inside of OpenFAST:
   
   https://openfast.readthedocs.io/en/main/
 
-Dynamics of 6DOF objects follows a similar approach to Hydrodyn:
+Hydrodynamics of 6DOF objects follows a similar approach to Hydrodyn:
 
   https://www.nrel.gov/wind/nwtc/assets/downloads/HydroDyn/HydroDyn_Manual.pdf
 

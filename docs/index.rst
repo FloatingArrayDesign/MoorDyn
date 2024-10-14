@@ -7,17 +7,6 @@ MoorDyn - Lumped-Mass Mooring Dynamics
 ======================================
 .. _index:
 
-.. toctree::
-   :maxdepth: 2
-
-   compiling
-   drivers
-   inputs
-   structure
-   api_c
-   waterkinematics
-   theory
-
 Welcome to MoorDyn's online documentation. MoorDyn is a simple, efficient,
 and versatile mooring system dynamics model designed to work in concert 
 with other simulation tools. It is based on a
@@ -101,4 +90,18 @@ couplings already exist and can be found :ref:`here <coupling>` (e.g. WEC-Sim
 and DualSPHysics). For Coupling with other codes or more manual driving of 
 MoorDyn from your own script, several APIs, wrappers, and example driver 
 scripts are available :ref:`here <drivers>`.
+
+Table of Contents:
+------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   compiling
+   drivers
+   inputs
+   structure
+   api_c
+   waterkinematics
+   theory
 
