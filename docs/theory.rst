@@ -1,4 +1,4 @@
-Theory
+Theory and troubleshooting
 ===================
 .. _theory_global:
 
