@@ -269,8 +269,26 @@ class TimeScheme : public io::IO
 	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
 	{};
 
+	/** @brief Save the system state on a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to serialize
+	 * @see ::SerializeState()
+	 */
+	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	{
+	}
+
+	/** @brief Load the system state from a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to overwrite
+	 * @see ::DeserializeState()
+	 */
+	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	{
+	}
+
   protected:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 */
 	TimeScheme(moordyn::Log* log)
@@ -597,6 +615,106 @@ class TimeSchemeBase : public TimeScheme
 		r[i] = state;
 	}
 
+	/** @brief Pack the system state
+	 * @param i The index of the state variable to serialize
+	 * @return The serialized state variable, including positions and
+	 * velocities
+	 */
+	inline virtual std::vector<uint64_t> SerializeState(unsigned int i=0)
+	{
+		std::vector<uint64_t> data, subdata;
+		for (unsigned int j = 0; j < bodies.size(); j++) {
+			subdata = io::IO::Serialize(r[i].bodies[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].bodies[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		for (unsigned int j = 0; j < rods.size(); j++) {
+			subdata = io::IO::Serialize(r[i].rods[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].rods[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		for (unsigned int j = 0; j < points.size(); j++) {
+			subdata = io::IO::Serialize(r[i].points[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].points[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		for (unsigned int j = 0; j < lines.size(); j++) {
+			subdata = io::IO::Serialize(r[i].lines[j].pos);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+			subdata = io::IO::Serialize(r[i].lines[j].vel);
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		return data;
+	}
+
+	/** @brief Unpack and set the system state
+	 * @param data The packed system state
+	 * @param i The index of the state variable to overwrite
+	 * @return A pointer to the end of the file, for debugging purposes
+	 */
+	inline virtual uint64_t* DeserializeState(const uint64_t* data,
+	                                          unsigned int i=0)
+	{
+		uint64_t* ptr = (uint64_t*)data;
+		for (unsigned int j = 0; j < bodies.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].bodies[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].bodies[j].vel);
+		}
+		for (unsigned int j = 0; j < rods.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].rods[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].rods[j].vel);
+		}
+		for (unsigned int j = 0; j < points.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].points[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].points[j].vel);
+		}
+		for (unsigned int j = 0; j < lines.size(); j++) {
+			ptr = io::IO::Deserialize(ptr, r[i].lines[j].pos);
+			ptr = io::IO::Deserialize(ptr, r[i].lines[j].vel);
+		}
+		return ptr;
+	}
+
+	/** @brief Save the system state on a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to serialize
+	 * @see ::SerializeState()
+	 */
+	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	{
+		auto f = MakeFile(filepath);
+		std::vector<uint64_t> data = SerializeState(i);
+		const uint64_t size = data.size();
+		f.write((char*)&size, sizeof(uint64_t));
+		for (auto v : data) {
+			f.write((char*)&v, sizeof(uint64_t));
+		}
+		f.close();
+	}
+
+	/** @brief Load the system state from a file
+	 * @param filepath The output file path
+	 * @param i The index of the state variable to overwrite
+	 * @see ::DeserializeState()
+	 */
+	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	{
+		auto [length, data] = LoadFile(filepath);
+		const uint64_t* end = DeserializeState(data, i);
+		if (data + length != end) {
+			const uint64_t l = end - data;
+			LOGERR << l * sizeof(uint64_t) << " bytes (vs. " << length
+			       << " bytes expected) unpacked from '" << filepath << "'"
+			       << endl;
+			throw moordyn::mem_error("Allocation error");
+		}
+
+		free(data);
+	}
+
 	/** @brief Produce the packed data to be saved
 	 *
 	 * The produced data can be used afterwards to restore the saved information
@@ -727,7 +845,7 @@ class TimeSchemeBase : public TimeScheme
 	}
 
   protected:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves The simulation waves object, needed so that we can tell it
 	 * about substeps
@@ -790,11 +908,8 @@ class TimeSchemeBase : public TimeScheme
  */
 class StationaryScheme : public TimeSchemeBase<2, 1>
 {
-	template<unsigned int NSTATE, unsigned int NDERIV>
-	friend class TimeSchemeBase;
-
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -846,12 +961,12 @@ class StationaryScheme : public TimeSchemeBase<2, 1>
  * @brief The simplest 1st order Euler's time scheme
  *
  * This time scheme is strongly discourage, and use only for testing/debugging
- * puposes
+ * purposes
  */
 class EulerScheme : public TimeSchemeBase<1, 1>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -959,7 +1074,7 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -984,7 +1099,7 @@ class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
 class HeunScheme : public TimeSchemeBase<1, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1009,7 +1124,7 @@ class HeunScheme : public TimeSchemeBase<1, 2>
 class RK2Scheme : public TimeSchemeBase<2, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1037,7 +1152,7 @@ class RK2Scheme : public TimeSchemeBase<2, 2>
 class RK4Scheme : public TimeSchemeBase<5, 4>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1068,7 +1183,7 @@ template<unsigned int order, bool local>
 class ABScheme : public LocalTimeSchemeBase<1, 5>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 */
@@ -1174,7 +1289,7 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1240,7 +1355,7 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1294,7 +1409,7 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 	 * @return true if the maximum residue has fallen below the tolerance,
 	 * false otherwise
 	 */
-	inline const bool converged() const
+	inline bool converged() const
 	{
 		const real g = _g.col(1).cwiseAbs().mean();
 		return (g < _tol) || (g / _g0 < _tol_rel);
@@ -1406,7 +1521,7 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
 class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1443,7 +1558,7 @@ class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1481,7 +1596,7 @@ class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
 class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative
@@ -1526,7 +1641,7 @@ class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 class ImplicitWilsonScheme : public ImplicitSchemeBase<2, 3>
 {
   public:
-	/** @brief Costructor
+	/** @brief Constructor
 	 * @param log Logging handler
 	 * @param waves Waves instance
 	 * @param iters The number of inner iterations to find the derivative

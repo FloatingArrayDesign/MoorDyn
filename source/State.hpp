@@ -44,7 +44,7 @@ namespace moordyn {
 /** @class StateVar Time.hpp
  * @brief Generic state variables
  *
- * This is holding the position and velocitites
+ * This is holding the position and velocities
  */
 template<typename T, typename V = T>
 class StateVar
@@ -108,7 +108,7 @@ template<class T, class V = T>
 class StateVarDeriv
 {
   public:
-	/// @brief Costructor
+	/// @brief Constructor
 	StateVarDeriv() {}
 
 	/// @brief Destructor
@@ -254,11 +254,14 @@ typedef StateVarDeriv<XYZQuat, vec6> DBodyStateDt;
 
 /** @class MoorDynState Time.hpp
  * @brief The collection of state variables of the whole system
+ * @attention New state variables will be added to implement visco-elasticity
+ * and VIV on a close future. That will break the serialization and
+ * deserialization (see moordyn::io::IO)
  */
 class MoorDynState
 {
   public:
-	/// @brief Costructor
+	/// @brief Constructor
 	MoorDynState() {}
 
 	/// @brief Destructor
@@ -314,11 +317,14 @@ class MoorDynState
 
 /** @class DMoorDynStateDt Time.hpp
  * @brief The collection of state variable derivatives of the whole system
+ * @attention New state variables will be added to implement visco-elasticity
+ * and VIV on a close future. That will break the serialization and
+ * deserialization (see moordyn::io::IO)
  */
 class DMoorDynStateDt
 {
   public:
-	/// @brief Costructor
+	/// @brief Constructor
 	DMoorDynStateDt() {}
 
 	/// @brief Destructor

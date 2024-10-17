@@ -106,7 +106,7 @@ control:
     for i in range(3):
         # 4 = first fairlead id
         point = moordyn.GetPoint(system, i + 4)
-        x = x + moordyn.GetPointPos(point)
+        x = x + list(moordyn.GetPointPos(point))
 
     # Setup the initial condition
     moordyn.Init(system, x, xd)
@@ -123,8 +123,8 @@ control:
         print("Line {}".format(line_id))
         print("=======")
         line = moordyn.GetLine(system, line_id)
-        n_nodes = moordyn.GetLineNumberNodes(line)
-        for node_id in range(n_nodes):
+        n_segs = moordyn.GetLineN(line)
+        for node_id in range(n_segs+1):
             print("  node {}:".format(node_id))
             pos = moordyn.GetLineNodePos(line, node_id)
             printf("  pos = {}".format(pos))

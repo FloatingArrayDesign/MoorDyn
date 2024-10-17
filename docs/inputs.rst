@@ -316,6 +316,18 @@ tabulated file with 3 header lines and then a strain column and a tension column
   0.0       0.0
   ...       ...
 
+Note: MoorDyn-F has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
+:ref:`theory section <theory>`, allows a user to specify a bar-seperated constant dynamic and static stiffness. The second method allows the user 
+to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
+`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Example inputs are below: 
+
+.. code-block:: none
+
+  TypeName   Diam    Mass/m     EA           
+  (name)     (m)     (kg/m)     (N)             
+  Polyester  ...      ...    EA_s|EA_d          <-- Constant dynamic stiffness method
+  Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm <-- Load dependent dynamic stiffness method
+
 Rod Types
 ^^^^^^^^^
 
@@ -517,7 +529,9 @@ Control (MoorDyn-F only)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 This section (optional) is only available for MoorDyn-F and describes which lines are assigned to 
-which control channel in the ServoDyn input file. 
+which control channel in the ServoDyn input file. Setting up active tension controls involves 
+modifying the MoorDyn and ServoDyn input file and passing deltaL and deltaLdot control command values 
+into the appropriate channel of the OpenFAST S function (``FAST_SFunc``).
 
 .. code-block:: none
 
@@ -527,10 +541,43 @@ which control channel in the ServoDyn input file.
   1        1,2,3,4 
   2        5
 
-In the example above channel 1 is used to control lines 1-4 and channel 2 is used to control line 5.
+In the example above, channel 1 is used to control lines 1-4 and channel 2 is used to control line 5.
 These channel numbers must correspond to control channels in the ServoDyn input file. The ServoDyn 
-summary file (enabled with ``SumPrint`` option) will contain a list of all cable control channels in 
+summary file (enabled with ``SumPrint`` option) will contain a list of all line control channels in 
 use and what they are assigned to.
+
+An example set up using controls in Simulink would look like this:
+ 
+For MoorDyn, add the control section below and specify which lines should be actuated using the tension 
+control. In the below snippet, 5 lines are being independently controlled.
+
+.. code-block:: none
+
+  ---------------------- CONTROL ----------------------
+  ChannelID Line(s)
+  () (,)
+  1 1
+  2 2
+  3 3
+  4 4
+  5 5
+ 
+There are a total of 20 available channels for line deltaL command in the S function, and 20 available for 
+the line deltaLdot command in the S function. So when passing in an array of values, pass in 0 for any unused 
+channels. With all the other inputs (see example file described below for other controllers), the S function 
+will take in a total of 51 channels.
+ 
+In ServoDyn, change the cable control channel to 4 for Simulink control.
+
+.. code-block:: none
+
+  ---------------------- CABLE CONTROL -------------------------------------------
+            4   CCmode       - Cable control mode {0: none, 4: user-defined from Simulink/Labview, 5: user-defined from Bladed-style DLL} (switch)
+ 
+To run the active tension control using Simulink, an example .mdl Simulink file and a .m matlab script 
+to run the .mdl file are available in the OpenFAST GitHub repo under `glue-codes/simulink/examples <https://github.com/OpenFAST/openfast/tree/main/glue-codes/simulink/examples>`_
+to show how to pass in values. A .dll OpenFAST shared library file and .mex OpenFAST S function file need to be in 
+the same directory the controller is being run from.
 
 Options
 ^^^^^^^
@@ -597,7 +644,7 @@ The list of possible options is:
  - FrictionCoefficient (0.0): The seabed friction coefficient
  - FricDamp (200.0): The seabed friction damping, to scale from no friction at null velocity to 
    full friction when the velocity is large
- - StatDynFricScale (1.0): Rate between Static and Dynamic friction coefficients
+ - StatDynFricScale (1.0): Ratio between Static and Dynamic friction coefficients
  - dtOut (0.0): Time step size to be written to output files. A value of zero will use dtM as a 
    step size (s)
  - SeafloorFile: A path to the :ref:`bathymetry file <seafloor_in>`

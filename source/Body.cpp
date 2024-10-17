@@ -108,7 +108,7 @@ Body::setup(int number_in,
 	rPointRel.clear();
 	r6RodRel.clear();
 
-	// set up body initial mass matrix (excluding any rods or attachements)
+	// set up body initial mass matrix (excluding any rods or attachments)
 	mat6 Mtemp = mat6::Zero();
 	Mtemp(Eigen::seqN(0, 3), Eigen::seqN(0, 3)) = mat::Identity() * bodyM;
 	Mtemp(Eigen::seqN(3, 3), Eigen::seqN(3, 3)) = bodyI.asDiagonal();

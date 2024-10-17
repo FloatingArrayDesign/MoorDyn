@@ -51,7 +51,7 @@ log_level_name(int level);
 
 /** @brief Utility to log messages
  *
- * This macro is assuming you hava access to the log handler as the _log
+ * This macro is assuming you have access to the log handler as the _log
  * variable. The easiest way to grant you can safety use this macro is
  * inheriting the LogUser class
  */
@@ -84,7 +84,7 @@ class MultiStream
 	~MultiStream();
 
 	/** @brief Get the output file path
-	 * @return The otput file path, an empty string if no file has been set
+	 * @return The output file path, an empty string if no file has been set
 	 */
 	inline const char* GetFile() const { return _fpath.c_str(); }
 
@@ -151,13 +151,13 @@ class Log
 	/** @brief Constructor
 	 * @param verbosity The verbosity level (see @ref moordyn_log)
 	 * @param log_file_level The same than @p verbosity, but for the log file
-	 * (if any is open with SetFile(). It is disableby default)
+	 * (if any is open with SetFile(). It is disabled by default)
 	 * @throws moordyn::mem_error If the inner streamer cannot be built
 	 */
 	Log(const int verbosity = MOORDYN_MSG_LEVEL,
 	    const int log_file_level = MOORDYN_DBG_LEVEL);
 
-	/** @brief Destuctor
+	/** @brief Destructor
 	 */
 	~Log();
 
@@ -233,7 +233,7 @@ class LogUser
 	{
 	}
 
-	/** @brief Destuctor
+	/** @brief Destructor
 	 */
 	~LogUser() {}
 

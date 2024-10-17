@@ -132,7 +132,7 @@ class Line final : public io::IO, public NatFreqCFL
 	unsigned int N;
 	/// Unstretched line length
 	moordyn::real UnstrLen;
-	/// Unstretched line length at the beggining of the time step
+	/// Unstretched line length at the beginning of the time step
 	moordyn::real UnstrLen0;
 	/// Unstretched line length rate of change
 	moordyn::real UnstrLend;
@@ -761,7 +761,7 @@ class Line final : public io::IO, public NatFreqCFL
 
 	/** @brief Get line output
 	 *
-	 * This funtion is useful when outputs are set in the line properties
+	 * This function is useful when outputs are set in the line properties
 	 * @param outChan The output channel/field
 	 * @return The output value, 0.0 if a non-valid field is set
 	 */
@@ -911,7 +911,7 @@ class Line final : public io::IO, public NatFreqCFL
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
 
 	/** @brief Calculate forces and get the derivative of the line's states
-	 * @return The velocties of the internal nodes (first) and the accelerations
+	 * @return The velocities of the internal nodes (first) and the accelerations
 	 * of the internal nodes (second) and the viv derivatives (third)
 	 * @throws nan_error If nan values are detected in any node position
 	 */

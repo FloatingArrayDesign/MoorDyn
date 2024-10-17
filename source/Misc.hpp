@@ -1021,7 +1021,7 @@ typedef struct _FailProps
 	/// The attached lines
 	std::vector<Line*> lines;
 	/// The attached line end points. This is actually an array to be filled
-	/// with the end points where each line is dettached
+	/// with the end points where each line is detached
 	std::vector<EndPoints> line_end_points;
 	/// Failure criteria based on simulation time (s)
 	real time;

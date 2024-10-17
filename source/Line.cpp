@@ -173,7 +173,7 @@ Line::setup(int number_in,
 	}
 
 	// Use the last entry on the lookup table. see Line::initialize()
-	const real EA = nEApoints ? stiffYs.back() / stiffXs.back(): props->EA;
+	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
 	NatFreqCFL::length(UnstrLen / N);
 	NatFreqCFL::stiffness(EA * N / UnstrLen);
 	NatFreqCFL::mass(props->w * UnstrLen / N);
@@ -602,7 +602,7 @@ Line::GetLineOutput(OutChanProps outChan)
 	else if (outChan.QType == VelZ)
 		return rd[outChan.NodeID][2];
 	else if (outChan.QType == Ten) {
-		if ((outChan.NodeID == 0) || (outChan.NodeID == N))
+		if ((outChan.NodeID == 0) || (outChan.NodeID == (int)N))
 			return getNodeForce(outChan.NodeID).norm();
 		return getNodeTen(outChan.NodeID).norm();
 	}
@@ -828,7 +828,7 @@ Line::getStateDeriv()
 	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the
 	// whole library, just because it is called every single time substep and
-	// it shall makecomputations in every single line node. Thus it is worthy
+	// it shall make computations in every single line node. Thus it is worthy
 	// to invest effort on keeping it optimized.
 
 	// attempting error handling <<<<<<<<
@@ -1011,7 +1011,7 @@ Line::getStateDeriv()
             if (dl >= 0.0) // if both spring 1 (the spring dashpot in parallel) and the whole segment are not in compression
                T[i]  = (EA_1*Misc[i][1] / l[i]) * qs[i];  // compute tension based on static portion (dynamic portion would give same). See eqn. 14 in paper
             else 
-               T[i] = 0.0 * qs[i]; // cable can't "push"
+               T[i] = vec::Zero(); // cable can't "push"
 
             Td[i] = BA*ld_1 / l[i] * qs[i];
             // update state derivative for static stiffness stretch (last N entries in the state vector)

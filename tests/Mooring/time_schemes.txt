@@ -22,7 +22,7 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1000.0        WtrDnsty      water density (kg/m^3)
 500           WtrDpth       water depth (m)
 1.0           dtIC          time interval for analyzing convergence during IC gen (s)
-10.0          TmaxIC        max time for ic gen (s)
+0             TmaxIC        max time for ic gen (s)
 1e-4          threshIC      threshold for IC convergence (-)
 0             ICgenDynamic  IC generator (0 = stationary, 1 = legacy upscale dynamics)
 ------------------------- need this line -------------------------------------- 

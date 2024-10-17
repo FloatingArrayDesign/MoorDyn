@@ -75,7 +75,7 @@ class MoorDyn final : public io::IO
 	DECLDIR MoorDyn(const char* infilename = NULL,
 	                int log_level = MOORDYN_MSG_LEVEL);
 
-	/** @brief Destuctor
+	/** @brief Destructor
 	 */
 	DECLDIR ~MoorDyn();
 
@@ -84,7 +84,7 @@ class MoorDyn final : public io::IO
 	 * @param x Position vector
 	 * @param xd Velocity vector
 	 * @param skip_ic true to skip computing the initial condition, false
-	 * otherwise. You might be insterested on skipping the initial condition
+	 * otherwise. You might be interested on skipping the initial condition
 	 * computation if for install you plan to load a previously saved simulation
 	 * state
 	 * @note You can know the number of components required for \p x and \p xd
@@ -548,8 +548,11 @@ class MoorDyn final : public io::IO
 	real ICTmax;
 	// threshold for relative change in tensions to call it converged
 	real ICthresh;
-	// use dynamic (true) or stationary (false) inital condition solver
+	// use dynamic (true) or stationary (false) initial condition solver
 	bool ICgenDynamic;
+	// Load the initial state (before the initial condition solver) from a
+	// file. Empty to do not load it.
+	string ICfile;
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
@@ -564,7 +567,7 @@ class MoorDyn final : public io::IO
 	/// The time integration scheme
 	TimeScheme* _t_integrator;
 
-	/// General options of the Mooryng system
+	/// General options of the Mooring system
 	EnvCondRef env;
 	/// The ground body, which is unique
 	Body* GroundBody;
@@ -591,7 +594,7 @@ class MoorDyn final : public io::IO
 
 	/// array of starting indices for Lines in "states" array
 	vector<unsigned int> LineStateIs;
-	/// array of starting indices for indendent Points in "states" array
+	/// array of starting indices for independent Points in "states" array
 	vector<unsigned int> PointStateIs;
 	/// array of starting indices for independent Rods in "states" array
 	vector<unsigned int> RodStateIs;
@@ -797,7 +800,7 @@ class MoorDyn final : public io::IO
 
 	/** @brief Get the value of a specific output channel
 	 *
-	 * This function might trhow moordyn::invalid_value_error exceptions
+	 * This function might throw moordyn::invalid_value_error exceptions
 	 * @param channel Output channel
 	 * @return The corresponding value
 	 */
@@ -825,7 +828,7 @@ class MoorDyn final : public io::IO
 
 	/** @brief Print the output files
 	 *
-	 * Ths function is indeed chcking before that the output should be printed
+	 * This function is indeed checking before that the output should be printed
 	 * @param t Time instant
 	 * @param dt Time step
 	 * @return MOORDYN_SUCCESS if the output is correctly printed, an error

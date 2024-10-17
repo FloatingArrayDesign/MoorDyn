@@ -1,4 +1,4 @@
-Theoretical aspects
+Theory and troubleshooting
 ===================
 .. _theory_global:
 
@@ -6,5 +6,6 @@ Theoretical aspects
    :maxdepth: 1
 
    troubleshooting
+   initialization
    tschemes
-   features
+   references

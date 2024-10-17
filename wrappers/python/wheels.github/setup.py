@@ -60,28 +60,12 @@ def arefiles(files):
 MODULE_PATH = os.path.join('wrappers', 'python', 'moordyn')
 MOORDYN_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'source')
-MOORDYN_SRCS = get_sources('source')
-MOORDYN_SRCS.append(os.path.join('wrappers', 'python', 'cmoordyn.cpp'))
+MOORDYN_SRCS = [os.path.join('wrappers', 'python', 'cmoordyn.cpp')]
 
 if os.path.isdir(MODULE_PATH):
     # We better copy the moordyn module on the root
     shutil.rmtree('moordyn', ignore_errors=True)
     shutil.copytree(MODULE_PATH, 'moordyn')
-
-# Get everything required to compile with VTK support
-vtk_version = '9.2'
-try:
-    vtk_version = os.environ['VTK_VERSION_MAJOR'] + "." + \
-        os.environ['VTK_VERSION_MINOR']
-except KeyError:
-    print("$VTK_VERSION_MAJOR.$VTK_VERSION_MINOR env variables missing")
-vtk_libraries = ["vtkCommonCore", "vtkIOXML", "vtkIOGeometry",
-                 "vtkIOXMLParser", "vtkIOLegacy", "vtkIOCore",
-                 "vtkCommonExecutionModel", "vtkCommonDataModel",
-                 "vtkCommonTransforms", "vtkCommonMath", "vtkCommonMisc",
-                 "vtkCommonSystem", "vtkFiltersGeneral", "vtkFiltersCore",
-                 "vtkdoubleconversion", "vtklz4", "vtklzma", "vtkzlib",
-                 "vtkkissfft", "vtkpugixml", "vtkexpat", "vtkloguru", "vtksys"]
 
 # Eigen needs at least C++ 14, and Moordyn itself uses C++ 17
 extra_compile_args = ["-std=c++17"]
@@ -94,32 +78,18 @@ definitions = [('MoorDyn_EXPORTS', '1'),
                ('MOORDYN_MAJOR_VERSION', '${MOORDYN_MAJOR_VERSION}'),
                ('MOORDYN_MINOR_VERSION', '${MOORDYN_MINOR_VERSION}'),
                ('MOORDYN_PATCH_VERSION', '${MOORDYN_PATCH_VERSION}')]
-include_dirs = [MOORDYN_PATH, "vtk/include/vtk-" + vtk_version]
-if platform.system() == "Windows":
-    extra_link_args = [
-        "ws2_32.lib", "dbghelp.lib", "psapi.lib", "kernel32.lib", "user32.lib",
-        "gdi32.lib", "winspool.lib", "shell32.lib", "ole32.lib",
-        "oleaut32.lib", "uuid.lib", "comdlg32.lib", "advapi32.lib"]
-    vtk_libs = ["vtk/lib/" + lib + "-" + vtk_version + ".lib"
-        for lib in vtk_libraries]
-else:
-    extra_link_args = []
-    vtk_libs = ["vtk/lib/lib" + lib + "-" + vtk_version + ".a"
-        for lib in vtk_libraries]
-
-if arefiles(vtk_libs):
-    extra_link_args = vtk_libs + extra_link_args
-    definitions = definitions + [('USE_VTK', '1'),]
-else:
-    print("WARNING: Installing without VTK support")
+include_dirs = ['install/include/moordyn']
+library_dirs = ['install/lib/', 'install/lib64/']
+libraries = ['moordyn']
 
 cmoordyn = Extension('cmoordyn',
                      sources=MOORDYN_SRCS,
                      language='c++',
                      define_macros=definitions,
                      include_dirs=include_dirs,
+                     library_dirs=library_dirs,
+                     libraries=libraries,
                      extra_compile_args=extra_compile_args,
-                     extra_link_args=extra_link_args,
                      )
 
 setup(

@@ -298,7 +298,7 @@ transformKinematics(const vec& rRelBody,
 	// rd_in should be in global orientation frame
 	// note: it's okay if r_out and rd_out are 6-size. Only the first 3 will be
 	// written, and 4-6 will
-	//       already be correct or can be assigned seperately from r_in and
+	//       already be correct or can be assigned separately from r_in and
 	//       rd_in (assuming orientation frames are identical)
 
 	// locations (unrotated reference frame) about platform reference point

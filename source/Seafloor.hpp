@@ -56,8 +56,8 @@ class Seafloor : LogUser
 
 	/** @brief Setup the seafloor
 	 *
-	 * Always call this function after the construtor
-	 * @param env The enviromental options
+	 * Always call this function after the constructor
+	 * @param env The environmental options
 	 * @param filepath The depths map file
 	 * @throws moordyn::input_file_error If an input file cannot be read, or if
 	 * a file is ill-formatted

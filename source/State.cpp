@@ -721,7 +721,6 @@ MoorDynState::operator-(const MoorDynState& rhs)
 void
 MoorDynState::Mix(const MoorDynState& visitor, const real& f)
 {
-	real ret = 0.0;
 	for (unsigned int i = 0; i < lines.size(); i++)
 		lines[i].Mix(visitor.lines[i], f);
 	for (unsigned int i = 0; i < points.size(); i++)
@@ -960,7 +959,6 @@ DMoorDynStateDt::Wilson(const DMoorDynStateDt& rhs,
 void
 DMoorDynStateDt::Mix(const DMoorDynStateDt& visitor, const real& f)
 {
-	real ret = 0.0;
 	for (unsigned int i = 0; i < lines.size(); i++)
 		lines[i].Mix(visitor.lines[i], f);
 	for (unsigned int i = 0; i < points.size(); i++)

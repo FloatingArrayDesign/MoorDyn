@@ -139,7 +139,7 @@ class Rod final : public io::IO, public SuperCFL
 	vec6 v6;
 	/// Final 6dof rod velocity (for output)
 	XYZQuat vel7;
-	/// Final 6dof rod accelration (for output)
+	/// Final 6dof rod acceleration (for output)
 	vec6 acc6;
 
 	// kinematics
@@ -172,7 +172,7 @@ class Rod final : public io::IO, public SuperCFL
 	// forces
 	/// node dry weights
 	std::vector<vec> W;
-	/// node bouyancy
+	/// node buoyancy
 	std::vector<vec> Bo;
 	/// Dynamic pressure
 	std::vector<vec> Pd;
@@ -192,7 +192,7 @@ class Rod final : public io::IO, public SuperCFL
 
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	std::vector<moordyn::real> VOF; // TODO: This doesnt need to be a vector, can be a double reused for each node
+	std::vector<moordyn::real> VOF; // TODO: This doesn't need to be a vector, can be a double reused for each node
 	/// instantaneous axial submerged length [m]
 	real h0;
 

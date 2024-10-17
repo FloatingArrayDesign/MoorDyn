@@ -281,7 +281,7 @@ extern "C"
 	 * the water density, \f$F(i)\f$ the portion of the segment submerged and
 	 * \f$\bar{g}\f$ the gravity acceleration.
 	 *
-	 * The weight and bounyancy force at any internal node is computed as the
+	 * The weight and buoyancy force at any internal node is computed as the
 	 * average of the surrounding segments, while on the line-ends \b half of
 	 * the associated ending segment weight force is returned.
 	 *

@@ -50,7 +50,7 @@ DiscreteWaveSpectrum::interpEvenlySpaced()
 	std::vector<real> omegas(size());
 	std::vector<std::complex<real>> amplitudes(size());
 	std::vector<real> betas(size());
-	for (auto i = 0; i < size(); i++) {
+	for (auto i = 0; i < (int)size(); i++) {
 		omegas[i] = components[i].omega;
 		amplitudes[i] = components[i].amplitude;
 		betas[i] = components[i].beta;

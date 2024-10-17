@@ -139,8 +139,8 @@ validation(const char* depth, const char* motion)
 	const double ffair_ref0 = 1.e3 * STATIC_FAIR_TENSION[depth_i];
 	const double fanch0 = sqrt(ah * ah + av * av);
 	const double fanch_ref0 = 1.e3 * STATIC_ANCHOR_TENSION[depth_i];
-	const double efair0 = (ffair0 - ffair_ref0) / ffair_ref0;
-	const double eanch0 = (fanch0 - fanch_ref0) / fanch_ref0;
+	const double efair0 = fabs(ffair0 - ffair_ref0) / ffair_ref0;
+	const double eanch0 = fabs(fanch0 - fanch_ref0) / fanch_ref0;
 	REQUIRE(efair0 <= MAX_STATIC_ERROR);
 	REQUIRE(eanch0 <= MAX_STATIC_ERROR);
 
@@ -154,7 +154,6 @@ validation(const char* depth, const char* motion)
 	double ea_value = 0.0;
 	double ea_ref = 0.0;
 	unsigned int i_ref = 0; // To track the line in the ref values file
-	double f[3];
 	double t_ref0 = motion_data[0][0];
 	for (unsigned int i = 0; i < motion_data.size() - 1; i++) {
 		double t_ref = motion_data[i][0];
@@ -164,6 +163,7 @@ validation(const char* depth, const char* motion)
 			x[j] = motion_data[i][j + 1];
 			dx[j] = (motion_data[i + 1][j + 1] - x[j]) / dt;
 		}
+		double f[3];
 		REQUIRE(MoorDyn_Step(system, x, dx, f, &t, &dt) == MOORDYN_SUCCESS);
 
 		if (t_ref < 0.0)

@@ -243,7 +243,9 @@ describe its direction vector. This case is meant for making cantilever points o
 bending stiffness. A fixed zero-length rod can be used to make a cantilever point of a power cable 
 to the ground, a body, or a coupling point. A free zero-length rod can be used to join two 
 different types of power cable segments, and it will pass moments between the cable segments 
-without adding any mass or other characteristics.
+without adding any mass or other characteristics. In this case, the two cables being joined need 
+to be attached to end A and end B respectively (with the rod unit vector pointing from the first to 
+the second cable).
 
 Rod objects have the following variables:
 

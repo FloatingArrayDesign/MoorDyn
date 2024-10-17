@@ -466,6 +466,32 @@ extern "C"
 	 */
 	int DECLDIR MoorDyn_SetTimeScheme(MoorDyn system, const char* name);
 
+	/** @brief Save the system state, so it can be loaded afterwards
+	 *
+	 * The system state contains the system position and velocity.
+	 * @param system The Moordyn system
+	 * @param filepath The path of the file to write
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 * @see MoorDyn_LoadState
+	 * @see MoorDyn_Init_NoIC
+	 * @note This function can be used to load the state exported by MoorPy
+	 */
+	int DECLDIR MoorDyn_SaveState(MoorDyn system, const char* filepath);
+
+	/** @brief Load and set a system state
+	 *
+	 * The system state contains the system position and velocity.
+	 * @param system The Moordyn system
+	 * @param filepath The path of the MoorDyn saved system
+	 * @return MOORDYN_SUCESS If the data is correctly set, an error code
+	 * otherwise (see @ref moordyn_errors)
+	 * @see MoorDyn_SaveState
+	 * @see MoorDyn_Init_NoIC
+	 * @note This function can be used to load the state exported by MoorPy
+	 */
+	int DECLDIR MoorDyn_LoadState(MoorDyn system, const char* filepath);
+
 	/** @brief Serialize the system to bytes
 	 *
 	 * Typically you want to call this function twice. A first call to know the

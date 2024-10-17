@@ -91,6 +91,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , dtOut(0.0)
   , _t_integrator(NULL)
   , ICgenDynamic(false)
+  , ICfile("")
   , env(std::make_shared<EnvCond>())
   , GroundBody(NULL)
   , waves(nullptr)
@@ -188,11 +189,21 @@ moordyn::MoorDyn::~MoorDyn()
 moordyn::error_id
 moordyn::MoorDyn::icLegacy()
 {
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
 	// dtIC set to fraction of input so convergence is over dtIC (as described in docs)
 	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
 	ICdt = ICdt / (convergence_iters+1);
 
 	_t_integrator->Init();
+	if (ICfile != "") {
+		try {
+			_t_integrator->LoadState(_basepath + ICfile);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
+	}
 
 	LOGMSG << "Finalizing ICs using dynamic solve (" << ICDfac
 	       << "X normal drag)" << endl;
@@ -231,8 +242,6 @@ moordyn::MoorDyn::icLegacy()
 		while ((dt = t_target) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
-			moordyn::error_id err = MOORDYN_SUCCESS;
-			string err_msg;
 			try {
 				_t_integrator->Step(dt);
 				t = _t_integrator->GetTime();
@@ -331,6 +340,8 @@ moordyn::MoorDyn::icLegacy()
 moordyn::error_id
 moordyn::MoorDyn::icStationary()
 {
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
 	real t = 0;
 	real error_prev = (std::numeric_limits<real>::max)();
 	real error = (std::numeric_limits<real>::max)();
@@ -352,6 +363,15 @@ moordyn::MoorDyn::icStationary()
 		t_integrator.AddLine(obj);
 	t_integrator.SetCFL((std::min)(cfl, 1.0));
 	t_integrator.Init();
+	if (ICfile != "") {
+		try {
+			t_integrator.LoadState(_basepath + ICfile);
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
+	}
+
 	auto n_states = t_integrator.NStates();
 	while ((ICTmax - t) > (std::numeric_limits<real>::min)()) {
 		// Integrate one ICD timestep (ICdt)
@@ -361,8 +381,6 @@ moordyn::MoorDyn::icStationary()
 		while ((dt = t_target) > 0.0) {
 			if (dtM0 < dt)
 				dt = dtM0;
-			moordyn::error_id err = MOORDYN_SUCCESS;
-			string err_msg;
 			try {
 				t_integrator.Step(dt);
 				error = t_integrator.Error();
@@ -405,6 +423,8 @@ moordyn::MoorDyn::icStationary()
 moordyn::error_id
 moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 {
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
 	if (NCoupledDOF() && !x) {
 		LOGERR << "ERROR: "
 		       << "MoorDyn::Init received a Null position vector, "
@@ -420,7 +440,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// call ground body to update all the fixed things...
 	GroundBody->initializeUnfreeBody();
 
-	// intialize fixed bodies and attached objects
+	// initialize fixed bodies and attached objects
 	for (auto l : FixedBodyIs){
 		BodyList[l]->initializeUnfreeBody(BodyList[l]->body_r6, vec6::Zero());
 	}
@@ -482,8 +502,6 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		moordyn::array2vec(xd + ix, rd);
 		PointList[l]->initiateStep(r, rd);
 
-		moordyn::error_id err = MOORDYN_SUCCESS;
-		string err_msg;
 		try {
 			PointList[l]->updateFairlead(0.0);
 		}
@@ -540,20 +558,27 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			err = icStationary();
 		if (err != MOORDYN_SUCCESS)
 			return err;
-
+		
 		for (unsigned int l = 0; l < LineList.size(); l++){
 			LineList[l]->IC_gen = false; // turn off IC_gen flag
 		}
+
 	} else {
 		_t_integrator->Init();
+		if (ICfile != "") {
+			try {
+				_t_integrator->LoadState(_basepath + ICfile);
+			}
+			MOORDYN_CATCHER(err, err_msg);
+			if (err != MOORDYN_SUCCESS)
+				return err;
+		}
 	}
 	_t_integrator->SetTime(0.0);
 
 	// store passed WaveKin value to enable waves in simulation if applicable
 	// (they're not enabled during IC gen)
 	env->waterKinOptions.waveMode = WaveKinTemp;
-	moordyn::error_id err = MOORDYN_SUCCESS;
-	string err_msg;
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
@@ -869,7 +894,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 2) {
 				i++;
@@ -892,7 +917,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "OPTIONS" })) != -1) {
 		LOGDBG << "   Reading options:" << endl;
 		// Parse options until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 2) {
 				i++;
@@ -936,7 +961,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading line types:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			LineProps* obj = readLineProps(in_txt[i]);
 			if (obj)
 				LinePropList.push_back(obj);
@@ -953,7 +978,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading rod types:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			RodProps* obj = readRodProps(in_txt[i]);
 
 			if (obj)
@@ -971,7 +996,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading body list:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			Body* obj = readBody(in_txt[i]);
 
 			if (obj) {
@@ -993,7 +1018,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading point list:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 9) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1083,8 +1108,10 @@ moordyn::MoorDyn::ReadInFile()
 			// make default water depth at least the depth of the lowest
 			// node (so water depth input is optional)
 			// TODO - this probably doesn't care about 3d seafloor?
+			// Note - this is not in MD-F
 			if (r0[2] < -env->WtrDpth)
 				env->WtrDpth = -r0[2];
+				LOGWRN << "\t Water depth set to point " << PointList.size() << " z position because point was specified below the seabed" << endl;
 
 			LOGDBG << "\t'" << number << "'"
 			       << " - of type " << Point::TypeName(type) << " with id "
@@ -1114,7 +1141,7 @@ moordyn::MoorDyn::ReadInFile()
 		LOGDBG << "   Reading rod list:" << endl;
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			Rod* obj = readRod(in_txt[i]);
 			RodList.push_back(obj);
 
@@ -1132,7 +1159,7 @@ moordyn::MoorDyn::ReadInFile()
 		}
 
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 7) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1260,7 +1287,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "FAILURE" })) != -1) {
 		LOGDBG << "   Reading failure conditions:" << endl;
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 4) {
 				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
@@ -1360,7 +1387,7 @@ moordyn::MoorDyn::ReadInFile()
 	if ((i = findStartOfSection(in_txt, { "OUTPUT" })) != -1) {
 		LOGDBG << "   Reading output options:" << endl;
 		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) && (i < in_txt.size())) {
+		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 
 			for (unsigned int j = 0; j < entries.size();
@@ -1595,7 +1622,7 @@ moordyn::MoorDyn::ReadInFile()
 	}
 
 	// do some input validity checking?
-	// should there be a flag in the input file that clearly distingiushes
+	// should there be a flag in the input file that clearly distinguishes
 	// the coupling type?
 	// <<<<< I guess it's implied by whether bodies are coupled or not??
 
@@ -1709,13 +1736,13 @@ moordyn::MoorDyn::findStartOfSection(vector<string>& in_txt,
                                      vector<string> sectionName)
 {
 	int i = 0;
-	while (i < in_txt.size() &&
+	while (i < (int)in_txt.size() &&
 	       ((in_txt[i].find("---") == string::npos) ||
 	        !moordyn::str::has(moordyn::str::upper(in_txt[i]), sectionName))) {
 		i++;
 	}
 
-	if (i == in_txt.size())
+	if (i == (int)in_txt.size())
 		return -1; // indicates section not found
 	if (sectionName[0] == "OPTIONS" || sectionName[0] == "OUTPUT")
 		i++; // Increment once to get to the options
@@ -2203,6 +2230,10 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		ICDfac = atof(entries[0].c_str());
 	else if ((name == "threshIC") || (name == "ICthresh"))
 		ICthresh = atof(entries[0].c_str());
+	else if ((name == "genDynamicIC") || (name == "ICgenDynamic"))
+		ICgenDynamic = bool(atof(entries[0].c_str()));
+	else if ((name == "fileIC") || (name == "ICfile"))
+		ICfile = entries[0];
 	else if (name == "WaveKin") {
 		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
 		if ((WaveKinTemp < waves::WAVES_NONE) ||
@@ -2251,7 +2282,7 @@ bool
 moordyn::MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
                                              int supposedNumberOfEntries)
 {
-	if (entries.size() < supposedNumberOfEntries) {
+	if ((int)entries.size() < supposedNumberOfEntries) {
 		LOGERR << "Error in " << _filepath << ":" << endl
 		       << supposedNumberOfEntries << " fields are required, but just "
 		       << entries.size() << " are provided" << endl;
@@ -2759,6 +2790,42 @@ MoorDyn_SetTimeScheme(MoorDyn system, const char* name)
 	tscheme->SetState(state);
 
 	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_SaveState(MoorDyn system, const char* filepath)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		moordyn::TimeScheme* t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+		t->SaveState(filepath);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
+}
+
+int DECLDIR
+MoorDyn_LoadState(MoorDyn system, const char* filepath)
+{
+	CHECK_SYSTEM(system);
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		moordyn::TimeScheme* t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+		t->LoadState(filepath);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+	}
+	return err;
 }
 
 int DECLDIR
