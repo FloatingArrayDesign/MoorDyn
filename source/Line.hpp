@@ -83,18 +83,18 @@ class Line final : public io::IO, public NatFreqCFL
 	~Line();
 
   private:
-	/** @brief Get the non-linear Young's modulus. This is interpolated from a
+	/** @brief Get the non-linear stiffness. This is interpolated from a
 	 * curve provided in the input file.
 	 * @param l_stretched The actual length of the segment
 	 * @param l_unstretched The unstretched length of the segment
 	 */
-	real getNonlinearE(real l_stretched, real l_unstretched) const;
+	real getNonlinearEA(real l_stretched, real l_unstretched) const;
 
 	/** @brief Get the non-linear Damping coefficient
 	 * @param ld_stretched The segment rate of stretch
 	 * @param l_unstretched The unstretched length of the segment
 	 */
-	real getNonlinearC(real ld_stretched, real l_unstretched) const;
+	real getNonlinearBA(real ld_stretched, real l_unstretched) const;
 
 	/** @brief Get the non-linear bending stiffness
 	 * @param curv The curvature
@@ -140,19 +140,29 @@ class Line final : public io::IO, public NatFreqCFL
 	moordyn::real d;
 	/// line density (kg/m^3)
 	moordyn::real rho;
-	/// line elasticity modulus (Young's modulus) [Pa]
-	moordyn::real E;
+	/// Elasticity model flag
+	unsigned int ElasticMod;
+	/// line normal/static elasticity modulus (Young's modulus) [Pa]
+	moordyn::real EA;
+	/// line dynamic stiffness modulus * area for viscoelastic stuff
+	moordyn::real EA_D;
+	/// Alpha * MBL in load dependent dynamic stiffness equation Kd = Alpha * MBL + vbeta * Lm for viscoelastic model
+    moordyn::real alphaMBL; 
+	/// beta in load dependent dynamic stiffness equation Kd = Alpha * MBL + vbeta * Lm for viscoelastic model
+	moordyn::real vbeta;
 	/// line bending stiffness [Nm^2]
 	moordyn::real EI;
 	/** line axial internal damping coefficient [Pa-s]
 	 *
-	 * The provided value in moordyn::Line::props::c can be either the literal
+	 * The provided value in moordyn::Line::props::BA can be either the literal
 	 * damping coefficient, or a negative value in which case it represents the
-	 * fraction of the critical damping,
+	 * fraction of the critical damping * area,
 	 *
 	 * \f$ C_{crit} = \frac{l}{n} \sqrt{\rho E} \f$
 	 */
-	moordyn::real c;
+	moordyn::real BA;
+	/// Line axial damping coefficient corresponding to the dynamic spring in the viscoelastic model
+	moordyn::real BA_D;
 	/// normal added mass coefficient [-]
 	/// with respect to line displacement
 	moordyn::real Can;
@@ -192,7 +202,7 @@ class Line final : public io::IO, public NatFreqCFL
 	/// y array for bent stiffness lookup table
 	std::vector<moordyn::real> bstiffYs;
 	/// number of values in stress-strainrate lookup table (0 for constant c)
-	unsigned int nCpoints;
+	unsigned int nBApoints;
 	/// x array for stress-strainrate lookup table
 	std::vector<moordyn::real> dampXs;
 	/// y array for stress-strainrate lookup table
@@ -466,7 +476,7 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @return The constant stiffness EA value
 	 * @see ::IsConstantEA()
 	 */
-	inline moordyn::real getConstantEA() const { return E * A; }
+	inline moordyn::real getConstantEA() const { return EA; }
 
 	/** @brief Set the constant stiffness of the line
 	 *
@@ -474,7 +484,7 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @param EA The constant stiffness EA value
 	 * @see ::IsConstantEA()
 	 */
-	inline void setConstantEA(moordyn::real EA) { E = EA / A; }
+	inline void setConstantEA(moordyn::real EA) { EA = EA; }
 
 	/** @brief Get the position of a node
 	 * @param i The line node index

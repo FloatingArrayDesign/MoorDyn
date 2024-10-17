@@ -61,10 +61,10 @@ Line::Line(moordyn::Log* log, size_t lineId)
 Line::~Line() {}
 
 real
-Line::getNonlinearE(real l_stretched, real l_unstretched) const
+Line::getNonlinearEA(real l_stretched, real l_unstretched) const
 {
 	if (!nEApoints)
-		return E;
+		return EA;
 
 	real Xi = l_stretched / l_unstretched - 1.0; // strain rate based on inputs
 	if (Xi < 0.0) {
@@ -93,10 +93,10 @@ Line::getNonlinearEI(real curv) const
 }
 
 real
-Line::getNonlinearC(real ld_stretched, real l_unstretched) const
+Line::getNonlinearBA(real ld_stretched, real l_unstretched) const
 {
-	if (!nCpoints)
-		return c;
+	if (!nBApoints)
+		return BA;
 
 	real Xi = ld_stretched / l_unstretched; // stretching/compressing rate
 	real Yi = 0.0;
@@ -147,9 +147,14 @@ Line::setup(int number_in,
 	d = props->d;
 	A = pi / 4. * d * d;
 	rho = props->w / A;
-	E = props->EA / A;
+	ElasticMod = props->ElasticMod;
+	EA = props->EA;
+	EA_D = props->EA_D;
+	alphaMBL = props->alphaMBL;
+	vbeta = props->vbeta;
 	EI = props->EI;
-	BAin = props->c;
+	BAin = props->BA;
+	BA_D = props->BA_D;
 	Can = props->Can;
 	Cat = props->Cat;
 	Cdn = props->Cdn;
@@ -164,11 +169,11 @@ Line::setup(int number_in,
 	nEApoints = props->nEApoints;
 	for (unsigned int I = 0; I < nEApoints; I++) {
 		stiffXs.push_back(props->stiffXs[I]);
-		stiffYs.push_back(props->stiffYs[I] / A);
+		stiffYs.push_back(props->stiffYs[I]);
 	}
 
 	// Use the last entry on the lookup table. see Line::initialize()
-	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
+	const real EA = nEApoints ? stiffYs.back() / stiffXs.back(): props->EA;
 	NatFreqCFL::length(UnstrLen / N);
 	NatFreqCFL::stiffness(EA * N / UnstrLen);
 	NatFreqCFL::mass(props->w * UnstrLen / N);
@@ -185,8 +190,8 @@ Line::setup(int number_in,
 	// copy in nonlinear stress-strainrate data if applicable
 	dampXs.clear();
 	dampYs.clear();
-	nCpoints = props->nCpoints;
-	for (unsigned int I = 0; I < nCpoints; I++) {
+	nBApoints = props->nBApoints;
+	for (unsigned int I = 0; I < nBApoints; I++) {
 		dampXs.push_back(props->dampXs[I]);
 		dampYs.push_back(props->dampYs[I]);
 	}
@@ -259,22 +264,23 @@ std::tuple<std::vector<vec>, std::vector<vec>, std::vector<vec>>
 Line::initialize()
 {
 	LOGMSG << "  - Line" << number << ":" << endl
-	       << "    ID: " << number << endl
+	       << "    ID      : " << number << endl
 	       << "    UnstrLen: " << UnstrLen << endl
-	       << "    N   : " << N << endl
-	       << "    d   : " << d << endl
-	       << "    rho : " << rho << endl
-	       << "    E   : " << E << endl
-	       << "    EI  : " << EI << endl
-	       << "    BAin: " << BAin << endl
-	       << "    Can : " << Can << endl
-	       << "    Cat : " << Cat << endl
-	       << "    Cdn : " << Cdn << endl
-	       << "    Cdt : " << Cdt << endl
-		   << "    Cl  : " << Cl << endl
-		   << "    dF  : " << dF << endl
-		   << "    cF  : " << cF << endl
-	       << "    ww_l: " << ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81
+	       << "    N       : " << N << endl
+	       << "    d       : " << d << endl
+	       << "    rho     : " << rho << endl
+		   << "    EAMod   : " << ElasticMod << endl
+	       << "    EA      : " << EA << endl
+		   << "    BA      : " << BA << endl
+	       << "    EI      : " << EI << endl
+	       << "    Can     : " << Can << endl
+	       << "    Cat     : " << Cat << endl
+	       << "    Cdn     : " << Cdn << endl
+	       << "    Cdt     : " << Cdt << endl
+		   << "    Cl      : " << Cl << endl
+		   << "    dF      : " << dF << endl
+		   << "    cF      : " << cF << endl
+	       << "    ww_l    : " << ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81
 	       << endl;
 
 	if (outfile) {
@@ -470,21 +476,21 @@ Line::initialize()
 		// For the sake of the following initialization steps, if using a
 		// nonlinear stiffness model, set the stiffness based on the last
 		// entries in the lookup table
-		E = stiffYs.back() / stiffXs.back();
+		EA = stiffYs.back() / stiffXs.back();
 	}
 
 	// process internal damping input
 	if (BAin < 0) {
 		// automatic internal damping option (if negative BA provided (stored as
 		// BAin), then -BAin indicates desired damping ratio)
-		c = -BAin * UnstrLen / N * sqrt(E * rho); // rho = w/A
-		LOGMSG << "Line " << number << " damping set to " << c
-		       << " Pa-s = " << c * A << " Ns, based on input of " << BAin
+		BA = -BAin * UnstrLen / N * sqrt(EA * rho); // rho = w/A
+		LOGMSG << "Line " << number << " damping set to " << BA / A
+		       << " Pa-s = " << BA << " Ns, based on input of " << BAin
 		       << endl;
 	} else {
 		// otherwise it's the regular internal damping coefficient, which should
 		// be divided by area to get a material coefficient
-		c = BAin / A;
+		BA = BAin;
 	}
 
 	// initialize line node positions as distributed linearly between the
@@ -531,7 +537,7 @@ Line::initialize()
 		int success = Catenary(XF,
 		                       ZF,
 		                       UnstrLen,
-		                       E * A,
+		                       EA,
 		                       LW,
 		                       CB,
 		                       Tol,
@@ -950,22 +956,67 @@ Line::getStateDeriv()
 
 	// loop through the segments
 	for (unsigned int i = 0; i < N; i++) {
-		// line tension
-		if (nEApoints > 0)
-			E = getNonlinearE(lstr[i], l[i]);
+		if (ElasticMod == 1) {
+			// line tension
+			if (nEApoints > 0)
+				EA = getNonlinearEA(lstr[i], l[i]);
 
-		if (lstr[i] / l[i] > 1.0) {
-			T[i] = E * A * (lstr[i] - l[i]) / l[i] * qs[i];
-		} else {
-			// cable can't "push" ...
-			// or can it, if bending stiffness is nonzero? <<<<<<<<<
-			T[i] = vec::Zero();
+			if (lstr[i] / l[i] > 1.0) {
+				T[i] = EA * (lstr[i] - l[i]) / l[i] * qs[i];
+			} else {
+				// cable can't "push" ...
+				// or can it, if bending stiffness is nonzero? <<<<<<<<<
+				T[i] = vec::Zero();
+			}
+
+			// line internal damping force
+			if (nBApoints > 0)
+				BA = getNonlinearBA(ldstr[i], l[i]);
+			Td[i] = BA * ldstr[i] / l[i] * qs[i];
 		}
+		// viscoelastic model from https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018 
+         else if (ElasticMod > 1){
 
-		// line internal damping force
-		if (nCpoints > 0)
-			c = getNonlinearC(ldstr[i], l[i]);
-		Td[i] = c * A * ldstr[i] / l[i] * qs[i];
+			double EA_2;
+
+			// note that Misc[i][1] is the same as Line%dl_1 in MD-F. This is the deltaL of the first static spring k1.
+
+            if (ElasticMod == 3){
+            	if (Misc[i][1] >= 0.0) 
+                	// Mean load dependent dynamic stiffness: from combining eqn. 2 and eqn. 10 from original MD viscoelastic paper, taking mean load = k1 delta_L1 / MBL, and solving for k_D using WolframAlpha with following conditions: k_D > k_s, (MBL,alpha,beta,unstrLen,delta_L1) > 0
+                	EA_2 = 0.5 * ((alphaMBL) + (vbeta*Misc[i][1]*(EA / l[i])) + EA + sqrt((alphaMBL * alphaMBL) + (2*alphaMBL*(EA / l[i]) * (vbeta*Misc[i][1] - l[i])) + ((EA / l[i])*(EA / l[i]) * (vbeta*Misc[i][1] + l[i])*(vbeta*Misc[i][1] + l[i]))));
+            	else
+                	EA_2 = alphaMBL; // mean load is considered to be 0 in this case. The second term in the above equation is not valid for delta_L1 < 0.
+               
+
+			} else if (ElasticMod == 2) {
+               // constant dynamic stiffness
+               EA_2 = EA_D;
+            }
+
+            if (EA_2 == 0.0) { // Make sure EA != EA_D or else nans, also make sure EA_D != 0  or else nans. 
+               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal zero" << endl;
+			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal zero");
+			} else if (EA_2 == EA) {
+               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal static stiffness" << endl;
+			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal static stiffness");
+			}
+         
+            const double EA_1 = EA_2*EA/(EA_2 - EA); // calculated EA_1 which is the stiffness in series with EA_D that will result in the desired static stiffness of EA_S. 
+         
+            const double dl = lstr[i] - l[i]; // delta l of this segment
+         
+            const double ld_1 = (EA_2*dl - (EA_2 + EA_1)*Misc[i][1] + BA_D*ldstr[i]) /( BA_D + BA); // rate of change of static stiffness portion [m/s]
+
+            if (dl >= 0.0) // if both spring 1 (the spring dashpot in parallel) and the whole segment are not in compression
+               T[i]  = (EA_1*Misc[i][1] / l[i]) * qs[i];  // compute tension based on static portion (dynamic portion would give same). See eqn. 14 in paper
+            else 
+               T[i] = 0.0 * qs[i]; // cable can't "push"
+
+            Td[i] = BA*ld_1 / l[i] * qs[i];
+            // update state derivative for static stiffness stretch (last N entries in the state vector)
+			Miscd[i][1] = ld_1;
+		}
 	}
 
 	// Bending loads

@@ -1757,16 +1757,47 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	} else return nullptr;
 
 	moordyn::error_id err;
-	err = read_curve(entries[3].c_str(),
-	                 &(obj->EA),
-	                 &(obj->nEApoints),
-	                 obj->stiffXs,
-	                 obj->stiffYs);
+	vector<string> EA_stuff = moordyn::str::split(entries[3],'|');
+	const int EA_N = EA_stuff.size();
+	if (EA_N == 1) {
+		obj->ElasticMod = 1; // normal case
+	}
+	else if (EA_N==2){
+		obj->ElasticMod = 2; // viscoelastic model, constant dynamic stiffness
+		obj->EA_D = atof(EA_stuff[1].c_str());
+	} else if (EA_N==3){
+		obj->ElasticMod = 3; // viscoelastic model load dependent dynamic stiffness
+		obj->alphaMBL = atof(EA_stuff[1].c_str());
+		obj->vbeta = atof(EA_stuff[2].c_str());
+	} else {
+		LOGERR << "A line type EA entry can have at most 3 (bar-separated) values." << endl;
+		return nullptr;
+	}
+	err = read_curve(EA_stuff[0].c_str(),
+					&(obj->EA),
+					&(obj->nEApoints),
+					obj->stiffXs,
+					obj->stiffYs);
 	if (err)
 		return nullptr;
-	err = read_curve(entries[4].c_str(),
-	                 &(obj->c),
-	                 &(obj->nCpoints),
+
+	vector<string> BA_stuff = moordyn::str::split(entries[4],'|');
+	unsigned int BA_N = BA_stuff.size();
+	if (BA_N > EA_N) {
+		LOGERR << "A line type BA entry cannot have more (bar-separated) values than its EA entry." << endl;
+		return nullptr;
+	} else if (BA_N == 2){
+		obj->BA_D = atof(BA_stuff[1].c_str());
+	} else if (obj->ElasticMod>1){
+		LOGWRN << "Warning, viscoelastic model being used with zero damping on the dynamic stiffness." << endl;	
+		obj->BA_D = 0.0;
+	} else {
+		LOGERR << "A line type BA entry can have at most 2 (bar-separated) values." << endl;
+		return nullptr;
+	}
+	err = read_curve(BA_stuff[0].c_str(),
+	                 &(obj->BA),
+	                 &(obj->nBApoints),
 	                 obj->dampXs,
 	                 obj->dampYs);
 	if (err)
@@ -1778,6 +1809,9 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	                 obj->bstiffYs);
 	if (err)
 		return nullptr;
+
+	if (obj->Cl > 0.0) nX = nX+1;
+	if (obj->ElasticMod > 1) nX = nX+1;
 
 	LOGDBG << "\t'" << obj->type << "'"
 	       << " - with id " << LinePropList.size() << endl
