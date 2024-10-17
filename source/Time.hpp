@@ -337,24 +337,24 @@ class TimeSchemeBase : public TimeScheme
 		// Build up the states and states derivatives
 		unsigned int n = obj->getN() - 1;
 		LineState state;
-		LineState vstate;
+		LineState mstate; // misc state stuff
 		state.pos.assign(n, vec::Zero());
 		state.vel.assign(n, vec::Zero());
-		vstate.pos.assign(n+2, vec::Zero());
-		vstate.vel.assign(n+2, vec::Zero());
+		mstate.pos.assign(n+2, vec::Zero());
+		mstate.vel.assign(n+2, vec::Zero());
 		for (unsigned int i = 0; i < r.size(); i++) {
 			r[i].lines.push_back(state);
-			r[i].viv.push_back(vstate);
+			r[i].misc.push_back(mstate);
 		}
 		DLineStateDt dstate;
-		DLineStateDt vdstate;
+		DLineStateDt mdstate; // misc state stuff
 		dstate.vel.assign(n, vec::Zero());
 		dstate.acc.assign(n, vec::Zero());
-		vdstate.vel.assign(n+2, vec::Zero());
-		vdstate.acc.assign(n+2, vec::Zero());
+		mdstate.vel.assign(n+2, vec::Zero());
+		mdstate.acc.assign(n+2, vec::Zero());
 		for (unsigned int i = 0; i < rd.size(); i++) {
 			rd[i].lines.push_back(dstate);
-			rd[i].viv.push_back(vdstate);
+			rd[i].misc.push_back(mdstate);
 		}
 		// Add the mask value
 		_calc_mask.lines.push_back(true);
@@ -565,7 +565,7 @@ class TimeSchemeBase : public TimeScheme
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
-			std::tie(r[0].lines[i].pos, r[0].lines[i].vel, r[0].viv[i].pos) =
+			std::tie(r[0].lines[i].pos, r[0].lines[i].vel, r[0].misc[i].pos) =
 			    lines[i]->initialize();
 		}
 	}

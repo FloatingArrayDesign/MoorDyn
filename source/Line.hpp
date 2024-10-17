@@ -270,10 +270,10 @@ class Line final : public io::IO, public NatFreqCFL
 	// VIV stuff
 	// /// VIV amplitude updated every zero crossing of crossflow velcoity
 	// std::vector<moordyn::real> Amp;
-	/// VIV state (phase,amplitude,smoothed amplitude)
-	std::vector<vec> VIV;
-	/// derivative of VIV state (phase,amplitude,smoothed amplitude)
-	std::vector<vec> VIVd;
+	/// Misc states (viv phase,viscoelastic,unused)
+	std::vector<vec> Misc;
+	/// derivative of Misc states (viv phase,viscoelastic,unused)
+	std::vector<vec> Miscd;
 	/// Num timesteps for rolling RMS of crossflow velocity phase
 	const unsigned int n_m = 500;
 

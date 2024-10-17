@@ -483,6 +483,8 @@ outputs are wanted. Eight output properties are currently possible:
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
  - c – internal damping force at each segment
+ - V - the cross-flow VIV lift force at each node
+ - K - the curvature at each node
  - s – strain of each segment
  - d – rate of strain of each segment
 

@@ -528,6 +528,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// ------------------ do IC gen --------------------
 	if (!skip_ic) {
+
+		for (unsigned int l = 0; l < LineList.size(); l++){
+			LineList[l]->IC_gen = true; // turn on IC_gen flag
+		}
+
 		moordyn::error_id err;
 		if (ICgenDynamic)
 			err = icLegacy();
@@ -535,6 +540,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			err = icStationary();
 		if (err != MOORDYN_SUCCESS)
 			return err;
+
+		for (unsigned int l = 0; l < LineList.size(); l++){
+			LineList[l]->IC_gen = false; // turn off IC_gen flag
+		}
 	} else {
 		_t_integrator->Init();
 	}

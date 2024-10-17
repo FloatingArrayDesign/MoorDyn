@@ -201,8 +201,8 @@ Line::setup(int number_in,
 	r.assign(N + 1, vec::Zero());     // node positions [i][x/y/z]
 	rd.assign(N + 1, vec::Zero());    // node velocities [i][x/y/z]
 	rdd_old.assign(N + 1, vec::Zero()); // node accelerations previous timestep [i][x/y/z]
-	VIV.assign(N+1, vec::Zero()); // node viv states [i][phase/amplitude/smoothed amplitude]
-	VIVd.assign(N+1, vec::Zero()); // node viv state derivatives [i][phase/amplitude/smoothed amplitude]
+	Misc.assign(N+1, vec::Zero()); // node misc states [i][viv phase/viscoelastic/unused]
+	Miscd.assign(N+1, vec::Zero()); // node misc state derivatives [i][viv phase/viscoelastic/unused]
 	q.assign(N + 1, vec::Zero());     // unit tangent vectors for each node
 	pvec.assign(N + 1, vec::Zero());  // unit normal vectors for each node
 	qs.assign(N, vec::Zero());        // unit tangent vectors for each segment
@@ -566,18 +566,18 @@ Line::initialize()
 	// initial state vector! (velocities leave at 0)
 	std::vector<vec> vel(N - 1, vec::Zero());
 	// inital viv state vector (phase,amplitude,smoothed amplitude)
-	std::vector<vec> viv(N+1, vec::Zero());
+	std::vector<vec> misc(N+1, vec::Zero());
 	/// give a random distribution between 0 and 2pi for inital phase of lift force to avoid initial transient
 	if (Cl > 0.0) {
 		std::vector<moordyn::real> phase_range(N+1);
 		for (unsigned int i = 0; i < N+1; i++) phase_range[i] = (i/moordyn::real(N))*2*pi;
 		shuffle(phase_range.begin(),phase_range.end(),random_device());
-		for (unsigned int i = 0; i < N+1; i++) viv[i][0] = phase_range[i];
+		for (unsigned int i = 0; i < N+1; i++) misc[i][0] = phase_range[i];
 	}
 
 	LOGMSG << "Initialized Line " << number << endl;
 
-	return std::make_tuple(vector_slice(r, 1, N - 1), vel, viv);
+	return std::make_tuple(vector_slice(r, 1, N - 1), vel, misc);
 };
 
 real
@@ -710,20 +710,20 @@ Line::setPin(std::vector<real> p)
 }
 
 void
-Line::setState(std::vector<vec> pos, std::vector<vec> vel, std::vector<vec> viv)
+Line::setState(std::vector<vec> pos, std::vector<vec> vel, std::vector<vec> misc)
 {
-	if ((pos.size() != N - 1) || (vel.size() != N - 1) || (viv.size() != N + 1)) {
+	if ((pos.size() != N - 1) || (vel.size() != N - 1) || (misc.size() != N + 1)) {
 		LOGERR << "Invalid input size" << endl;
 		throw moordyn::invalid_value_error("Invalid input size");
 	}
 
-	// set interior node positions and velocities and all VIV based on state vector
+	// set interior node positions and velocities and all misc states based on state vector
 	for (unsigned int i = 0; i < N+1; i++) {
 		if ((i != 0) && (i != N)) {
 			r[i] = pos[i - 1];
 			rd[i] = vel[i - 1];
 		}
-		VIV[i] = viv[i]; // VIV[i][0,1,2] correspond to phase, amplitude, smoothed amplitude.
+		Misc[i] = misc[i]; // Misc[i][0,1,2] correspond to viv phase, viscoelastic, unused.
 	}
 }
 
@@ -1192,31 +1192,30 @@ Line::getStateDeriv()
 
 		// Vortex Induced Vibration (VIV) cross-flow lift force
 		if ((Cl > 0.0) && (!IC_gen)) { // If non-zero lift coefficient and not during IC_gen then VIV to be calculated
-			// Note: amplitude calculations commented out. Would be needed if a Cl vs A lookup table was implemented
+			
+			// Note: amplitude calculations and states commented out. Would be needed if a Cl vs A lookup table was ever implemented
 
-			const moordyn::real phi = VIV[i][0] - (2 * pi * floor(VIV[i][0] / (2*pi))); // Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b) is the same if b is 100 pi or 2pi
-			// const moordyn::real A_int = VIV[i][1];
-			// const moordyn::real As = VIV[i][2];
+			const moordyn::real phi = Misc[i][0] - (2 * pi * floor(Misc[i][0] / (2*pi))); // Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b) is the same if b is 100 pi or 2pi
+			// const moordyn::real A_int = Misc[i][1];
+			// const moordyn::real As = Misc[i][2];
 			
 			// Crossflow velocity
 			const moordyn::real yd = rd[i].dot(q[i].cross(vp.normalized()));
 
-			// // Vortex shedding period
-			// const moordyn::real T_s = d / (Ui_mag * 0.2); // We are assuming strouhal number of 0.2 for sub-critical flow regime based on Reynolds number.
-
-			// phase of y_dot
+			// Phase of cross-flow velocity
 			// const moordyn::real T_m = 5 * T_s; // take the sampling time to be 5x the sheddding period
 			// const moordyn::real n_m = int(T_m/dtm)+1;
 			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd_old[i]*yd_old[i]))/n_m); // RMS approximation from Jorgen
 			const moordyn::real ydd_old = rdd_old[i].dot(dir_old[i]);
 			const moordyn::real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd_old*ydd_old))/n_m);
-			moordyn::real phi_yd;
+			moordyn::real phi_yd; // this is only updated once per dtm time step, while the lift force phase is updated every internal time integration timestep
 			if ((yd_rms==0.0) || (ydd_rms == 0.0)) phi_yd = atan2(-ydd_old, yd_old[i]); // To avoid divide by zero
 			else phi_yd = atan2(-ydd_old/ydd_rms, yd_old[i]/yd_rms); 
+			
 			if (phi_yd < 0) phi_yd = 2*pi + phi_yd; // atan2 to 0-2Pi range
 
 			// non-dimensional frequency
-			const moordyn::real f_hat = cF + dF *sin(phi_yd - phi); // phi to be integrated from state
+			const moordyn::real f_hat = cF + dF *sin(phi_yd - phi); // phi is integrated from state deriv phi_dot
 			// frequency of lift force (rad/s)
 			const moordyn::real phi_dot = 2*pi*f_hat*vp_mag / d;// to be added to state
 
@@ -1233,11 +1232,6 @@ Line::getStateDeriv()
 			// // Lift coefficient from lookup table
 			// const moordyn::real C_l = cl_lookup(x = As/d); // create function in Line.hpp that uses lookup table 
 
-			// Prep for returning VIV state derivatives
-			VIVd[i][0] = phi_dot;
-			// VIVd[i][1] = A_int_dot;
-			// VIVd[i][2] = As_dot;
-
 			// The Lift force
 			if (i == 0)
 				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i] * l[i]);
@@ -1246,6 +1240,12 @@ Line::getStateDeriv()
 			else 
 				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i] * l[i] + F[i - 1] * l[i - 1]);
 
+			// Prep for returning VIV state derivatives
+			Miscd[i][0] = phi_dot;
+			// Miscd[i][1] = A_int_dot;
+			// Miscd[i][2] = As_dot;
+
+
 			if ((t >= t_old + dtm) || (t == 0.0)) { 
 				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
 				yd_old[i] = yd; // for updating rms back indexing (one moordyn timestep back)
@@ -1253,7 +1253,6 @@ Line::getStateDeriv()
 				ydd_rms_old[i] = ydd_rms; // for updating rms back indexing (one moordyn timestep back)
 				dir_old[i] = q[i].cross(Ui_hat); // direction from previous timestep, to make sure ydd_old and yd_old have same direction
 			}
-			// FIXME: make sure that in the case of no currents, it runs fine without bugs
 		}	
 
 		// tangential component of fluid acceleration
@@ -1373,7 +1372,7 @@ Line::getStateDeriv()
 		rdd_old = a; // saving acceleration for VIV RMS calculation
 		t_old = t; // for updating back indexing if statements 
 	}
-	return make_tuple(u, a, VIVd);
+	return make_tuple(u, a, Miscd);
 };
 
 // write output file for line  (accepts time parameter since retained time value
