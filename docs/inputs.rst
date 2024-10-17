@@ -247,7 +247,8 @@ two fixed points located far from where your system is located.
 Most of the sections are set up to contain a table of input information. These
 tables begin with two preset lines that contain the column names and the
 corresponding units. These lines are followed by any number of lines containing
-the entries in that section's table of inputs.
+the entries in that section's table of inputs. # is the general comment chacater. If you are adding notes 
+to self after any of the lines, # will prevent MoorDyn from reading them. 
 
 Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs becasue they are for tests).
 
