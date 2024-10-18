@@ -173,7 +173,7 @@ Line::setup(int number_in,
 	}
 
 	// Use the last entry on the lookup table. see Line::initialize()
-	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() * A : props->EA;
+	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() : props->EA;
 	NatFreqCFL::length(UnstrLen / N);
 	NatFreqCFL::stiffness(EA * N / UnstrLen);
 	NatFreqCFL::mass(props->w * UnstrLen / N);
@@ -271,7 +271,7 @@ Line::initialize()
 	       << "    rho     : " << rho << endl
 		   << "    EAMod   : " << ElasticMod << endl
 	       << "    EA      : " << EA << endl
-		   << "    BA      : " << BA << endl
+		   << "    BA      : " << BAin << endl
 	       << "    EI      : " << EI << endl
 	       << "    Can     : " << Can << endl
 	       << "    Cat     : " << Cat << endl
@@ -483,7 +483,7 @@ Line::initialize()
 	if (BAin < 0) {
 		// automatic internal damping option (if negative BA provided (stored as
 		// BAin), then -BAin indicates desired damping ratio)
-		BA = -BAin * UnstrLen / N * sqrt(EA * rho); // rho = w/A
+		BA = -BAin * UnstrLen / N * sqrt(EA * rho * A); // rho = w/A
 		LOGMSG << "Line " << number << " damping set to " << BA / A
 		       << " Pa-s = " << BA << " Ns, based on input of " << BAin
 		       << endl;
