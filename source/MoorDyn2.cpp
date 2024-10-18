@@ -1109,9 +1109,10 @@ moordyn::MoorDyn::ReadInFile()
 			// node (so water depth input is optional)
 			// TODO - this probably doesn't care about 3d seafloor?
 			// Note - this is not in MD-F
-			if (r0[2] < -env->WtrDpth)
+			if (r0[2] < -env->WtrDpth) {
 				env->WtrDpth = -r0[2];
-				LOGWRN << "\t Water depth set to point " << PointList.size() << " z position because point was specified below the seabed" << endl;
+				LOGWRN << "\t Water depth set to point " << PointList.size()+1 << " z position because point was specified below the seabed" << endl;
+			}
 
 			LOGDBG << "\t'" << number << "'"
 			       << " - of type " << Point::TypeName(type) << " with id "
@@ -1191,7 +1192,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			// Make the output file (if queried)
 			if ((outchannels.size() > 0) &&
-			    (strcspn(outchannels.c_str(), "pvUDVctsd") <
+			    (strcspn(outchannels.c_str(), "pvUDVKctsd") <
 			     strlen(outchannels.c_str()))) {
 				// if 1+ output flag chars are given and they're valid
 				stringstream oname;
@@ -1816,9 +1817,9 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	} else if (BA_N == 2){
 		obj->BA_D = atof(BA_stuff[1].c_str());
 	} else if (obj->ElasticMod>1){
-		LOGWRN << "Warning, viscoelastic model being used with zero damping on the dynamic stiffness." << endl;	
+		LOGMSG << "Message: viscoelastic model being used with zero damping on the dynamic stiffness." << endl;	
 		obj->BA_D = 0.0;
-	} else {
+	} else if (BA_N > 2) {
 		LOGERR << "A line type BA entry can have at most 2 (bar-separated) values." << endl;
 		return nullptr;
 	}
