@@ -622,7 +622,7 @@ constructDynamicCurrentGrid(const std::string& folder,
                             moordyn::Log* _log)
 {
 
-	const string CurrentsFilename = folder + "/current_profile_dynamic.txt";
+	const string CurrentsFilename = folder + "current_profile_dynamic.txt";
 	LOGMSG << "   Reading currents dynamic profile from '" << CurrentsFilename
 	       << "'..." << endl;
 
