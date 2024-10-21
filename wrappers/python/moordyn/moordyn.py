@@ -1004,6 +1004,18 @@ def GetRodN(instance):
     return cmoordyn.rod_get_n(instance)
 
 
+def GetRodNumberNodes(instance):
+    """ Get the rod number of nodes
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    n: The number of nodes
+    """
+    return GetRodN(instance) + 1
+
+
 def GetRodNodePos(instance, i):
     """ Get a rod node position
 
@@ -1196,6 +1208,18 @@ def GetLineN(instance):
     """
     import cmoordyn
     return cmoordyn.line_get_n(instance)
+
+
+def GetLineNumberNodes(instance):
+    """ Get the line number of nodes
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    n: The number of nodes
+    """
+    return GetLineN(instance) + 1
 
 
 def GetLineUnstretchedLength(instance):
