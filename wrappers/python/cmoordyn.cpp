@@ -999,7 +999,7 @@ get_tscheme(PyObject*, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "Failure allocating memory");
 		return NULL;
 	}
-	err = MoorDyn_GetTimeScheme(system, name_len, &name_len);
+	err = MoorDyn_GetTimeScheme(system, name, &name_len);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
