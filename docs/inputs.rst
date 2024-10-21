@@ -645,8 +645,8 @@ The list of possible options is:
  - FricDamp (200.0): The seabed friction damping, to scale from no friction at null velocity to 
    full friction when the velocity is large
  - StatDynFricScale (1.0): Ratio between Static and Dynamic friction coefficients
- - dtOut (0.0): Time step size to be written to output files. A value of zero will use dtM as a 
-   step size (s)
+ - dtOut (0.0): Time step size to be written to output files. A value of zero will use the coupling 
+   timestep as a step size (s)
  - SeafloorFile: A path to the :ref:`bathymetry file <seafloor_in>`
  - ICgenDynamic (0): MoorDyn-C switch for using older dynamic relaxation method (same as MoorDyn-F).
    If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
