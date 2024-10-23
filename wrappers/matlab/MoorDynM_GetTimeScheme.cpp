@@ -39,11 +39,12 @@ using matlab::mex::ArgumentList;
 
 MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 1)
 {
+	int err;
 	size_t name_len;
-	const int err = MoorDyn_GetTimeScheme(instance, NULL, &name_len);
+	int err = MoorDyn_GetTimeScheme(instance, NULL, &name_len);
 	MOORDYNM_CHECK_ERROR(err);
 	char* name = (char*)malloc(name_len * sizeof(char));
-	const int err = MoorDyn_GetTimeScheme(instance, name, NULL);
+	int err = MoorDyn_GetTimeScheme(instance, name, NULL);
 	MOORDYNM_CHECK_ERROR(err);
 	outputs[0] = factory.createCharArray(std::string(name));
 }
