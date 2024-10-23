@@ -39,11 +39,12 @@ using matlab::mex::ArgumentList;
 
 MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 1)
 {
+	int err;
 	size_t data_size;
-	const int err = MoorDyn_Serialize(instance, &data_size, NULL);
+	err = MoorDyn_Serialize(instance, &data_size, NULL);
 	MOORDYNM_CHECK_ERROR(err);
 	std::vector<uint64_t> v(data_size / sizeof(uint64_t), 0);
-	const int err = MoorDyn_Serialize(instance, NULL, v.data());
+	err = MoorDyn_Serialize(instance, NULL, v.data());
 	MOORDYNM_CHECK_ERROR(err);
 	outputs[0] = factory.createArray<uint64_t>(
 	    { 1, v.size() }, v.data(), v.data() + v.size());
