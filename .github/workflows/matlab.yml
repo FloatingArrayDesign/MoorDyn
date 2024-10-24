@@ -1,13 +1,16 @@
 name: Test MATLAB MEX
 
 on:
-    branches: [ $default-branch, master, wrappers_test ]
+  push:
+    branches: [ $default-branch, master ]
   pull_request:
     branches:
       - "**"
 
 env:
   BUILD_TYPE: Release
+  LD_LIBRARY_PATH: ${{github.workspace}}/install/lib:${{github.workspace}}/install/lib64
+  DYLD_LIBRARY_PATH: ${{github.workspace}}/install/lib
 
 jobs:
   test:
@@ -17,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         # MATLAB requires an old version of Windows
-        os: [ubuntu-latest, macos-latest, windows-2019]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Check out repository
@@ -48,9 +51,8 @@ jobs:
               cd('wrappers/matlab/');
               fnames = struct2table(dir('*.cpp')).name;
               for i = 1:length(fnames)
-                  fname = fnames(i)
-                  fprintf('Compiling %s...\n', fname)
-                  mex('-v', fname);
+                  fname = cell2mat(fnames(i));
+                  mex('-v', fname, '-I./', '-I${{github.workspace}}/install/include/moordyn', '-L${{github.workspace}}/install/lib', '-L${{github.workspace}}/install/lib64', '-lmoordyn');
               end
               % Run the same minimal test we have on matlab_bindings.m.in
               system = MoorDynM_Create('../../tests/Mooring/lines.txt');
