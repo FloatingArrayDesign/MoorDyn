@@ -1098,9 +1098,10 @@ moordyn::MoorDyn::ReadInFile()
 			// node (so water depth input is optional)
 			// TODO - this probably doesn't care about 3d seafloor?
 			// Note - this is not in MD-F
-			if (r0[2] < -env->WtrDpth)
+			if (r0[2] < -env->WtrDpth) {
 				env->WtrDpth = -r0[2];
 				LOGWRN << "\t Water depth set to point " << PointList.size() << " z position because point was specified below the seabed" << endl;
+			}
 
 			LOGDBG << "\t'" << number << "'"
 			       << " - of type " << Point::TypeName(type) << " with id "
