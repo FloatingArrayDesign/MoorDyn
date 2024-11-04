@@ -1473,7 +1473,7 @@ def GetLineNodeSeabedForce(instance, i):
     f: The node force (a 3 components tuple)
     """
     import cmoordyn
-    return cmoordyn.line_get_node_froudekrylov(instance, i)
+    return cmoordyn.line_get_node_seabed(instance, i)
 
 
 def GetLineNodeCurv(instance, i):
