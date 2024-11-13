@@ -1253,10 +1253,8 @@ Line::getStateDeriv()
 			// Crossflow velocity
 			const moordyn::real yd = rd[i].dot(q[i].cross(vp.normalized()));
 
-			// Phase of cross-flow velocity
-			// const moordyn::real T_m = 5 * T_s; // take the sampling time to be 5x the sheddding period
-			// const moordyn::real n_m = int(T_m/dtm)+1;
-			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd_old[i]*yd_old[i]))/n_m); // RMS approximation from Jorgen
+			// Phase of cross-flow velocity: This calcualtes the RMS of the previous timestep, using the vel and accel of t-dtm, and the rms value calculated in the previous timestep, which by definition is rms(t-2dtm)
+			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd_old[i]*yd_old[i]))/n_m); // RMS approximation from Thorsen
 			const moordyn::real ydd_old = rdd_old[i].dot(dir_old[i]);
 			const moordyn::real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd_old*ydd_old))/n_m);
 			moordyn::real phi_yd; // this is only updated once per dtm time step, while the lift force phase is updated every internal time integration timestep
