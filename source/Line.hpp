@@ -292,14 +292,10 @@ class Line final : public io::IO, public NatFreqCFL
 	moordyn::real t_old = 0.0;
 	// /// running amplitude total, from previous zero crossing of yd
 	// std::vector<moordyn::real> A_int_old;
-	/// node old cf vel
-	std::vector<moordyn::real> yd_old;
 	/// node old cf vel rms
 	std::vector<moordyn::real> yd_rms_old;
 	/// node old cf accel rms
 	std::vector<moordyn::real> ydd_rms_old;
-	/// node old CF direction
-	std::vector<vec> dir_old;
 	/// node old accelerations
 	std::vector<vec> rdd_old;
 

@@ -205,7 +205,7 @@ Line::setup(int number_in,
 
 	r.assign(N + 1, vec::Zero());     // node positions [i][x/y/z]
 	rd.assign(N + 1, vec::Zero());    // node velocities [i][x/y/z]
-	rdd_old.assign(N + 1, vec::Zero()); // node accelerations previous timestep [i][x/y/z]
+	rdd_old.assign(N + 1, vec::Zero()); // node accelerations previous iteration [i][x/y/z]
 	Misc.assign(N+1, vec::Zero()); // node misc states [i][viv phase/viscoelastic/unused]
 	Miscd.assign(N+1, vec::Zero()); // node misc state derivatives [i][viv phase/viscoelastic/unused]
 	q.assign(N + 1, vec::Zero());     // unit tangent vectors for each node
@@ -240,10 +240,8 @@ Line::setup(int number_in,
 	// Back indexing things for VIV (amplitude disabled, only needed if lift coefficient table is added)
 	// A_int_old.assign(N + 1, 0.0); // running amplitude total, from previous zero crossing of yd
 	// Amp.assign(N + 1, 0.0); // VIV Amplitude updated every zero crossing of crossflow velcoity
-	yd_old.assign(N + 1, 0.0); // node old CF vel
 	yd_rms_old.assign(N + 1, 0.0); // node old yd_rms
 	ydd_rms_old.assign(N + 1, 0.0);// node old ydd_rms
-	dir_old.assign(N + 1, vec::Zero()); // node old CF vel direction
 
 	// ensure end moments start at zero
 	endMomentA = vec::Zero();
@@ -577,7 +575,7 @@ Line::initialize()
 	if (Cl > 0.0) {
 		std::vector<moordyn::real> phase_range(N+1);
 		for (unsigned int i = 0; i < N+1; i++) phase_range[i] = (i/moordyn::real(N))*2*pi;
-		shuffle(phase_range.begin(),phase_range.end(),random_device());
+		// shuffle(phase_range.begin(),phase_range.end(),random_device());
 		for (unsigned int i = 0; i < N+1; i++) misc[i][0] = phase_range[i];
 	}
 
@@ -1243,30 +1241,48 @@ Line::getStateDeriv()
 
 		// Vortex Induced Vibration (VIV) cross-flow lift force
 		if ((Cl > 0.0) && (!IC_gen)) { // If non-zero lift coefficient and not during IC_gen then VIV to be calculated
+
+			// ----- The Synchronization Model ------
+			// Crossflow velocity
+			const moordyn::real yd = rd[i].dot(q[i].cross(vp.normalized()));
+			const moordyn::real ydd = rdd_old[i].dot(q[i].cross(vp.normalized()));
+
+			// Rolling RMS calculation
+			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd*yd))/n_m); // RMS approximation from Thorsen
+			const moordyn::real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd*ydd))/n_m);
+
+			if ((t >= t_old + dtm) || (t == 0.0)) { // Update the stormed RMS vaues
+				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
+				yd_rms_old[i] = yd_rms; // for rms back indexing (one moordyn timestep back)
+				ydd_rms_old[i] = ydd_rms; // for rms back indexing (one moordyn timestep back)
+			}
+
+			moordyn::real phi_yd; // The crossflow motion phase
+			if ((yd_rms==0.0) || (ydd_rms == 0.0)) phi_yd = atan2(-ydd, yd); // To avoid divide by zero
+			else phi_yd = atan2(-ydd/ydd_rms, yd/yd_rms); 
 			
+			if (phi_yd < 0) phi_yd = 2*pi + phi_yd; // atan2 to 0-2Pi range
+
+			// if ((i == 50) && (t > 20) && (t < 20.001)){ 
+			// 	if ((t >= t_old + dtm) || (t == 0.0)) cout << "----- new time " << t << "-----" << endl;
+			// 	// cout << "yd: " << yd << endl;
+			// 	// cout << "ydd: " << ydd << endl;
+			// 	// cout << "ydd via rdd_old: " << rdd_old[i].dot(q[i].cross(vp.normalized())) << endl;
+			// 	cout << "phi_yd: " << phi_yd << endl;
+			// }
+
 			// Note: amplitude calculations and states commented out. Would be needed if a Cl vs A lookup table was ever implemented
 
 			const moordyn::real phi = Misc[i][0] - (2 * pi * floor(Misc[i][0] / (2*pi))); // Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b) is the same if b is 100 pi or 2pi
 			// const moordyn::real A_int = Misc[i][1];
 			// const moordyn::real As = Misc[i][2];
-			
-			// Crossflow velocity
-			const moordyn::real yd = rd[i].dot(q[i].cross(vp.normalized()));
-
-			// Phase of cross-flow velocity: This calcualtes the RMS of the previous timestep, using the vel and accel of t-dtm, and the rms value calculated in the previous timestep, which by definition is rms(t-2dtm)
-			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd_old[i]*yd_old[i]))/n_m); // RMS approximation from Thorsen
-			const moordyn::real ydd_old = rdd_old[i].dot(dir_old[i]);
-			const moordyn::real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd_old*ydd_old))/n_m);
-			moordyn::real phi_yd; // this is only updated once per dtm time step, while the lift force phase is updated every internal time integration timestep
-			if ((yd_rms==0.0) || (ydd_rms == 0.0)) phi_yd = atan2(-ydd_old, yd_old[i]); // To avoid divide by zero
-			else phi_yd = atan2(-ydd_old/ydd_rms, yd_old[i]/yd_rms); 
-			
-			if (phi_yd < 0) phi_yd = 2*pi + phi_yd; // atan2 to 0-2Pi range
 
 			// non-dimensional frequency
 			const moordyn::real f_hat = cF + dF *sin(phi_yd - phi); // phi is integrated from state deriv phi_dot
 			// frequency of lift force (rad/s)
 			const moordyn::real phi_dot = 2*pi*f_hat*vp_mag / d;// to be added to state
+
+			// ----- The rest of the model -----
 
 			// // Oscillation amplitude 
 			// const moordyn::real A_int_dot = abs(yd);
@@ -1294,14 +1310,6 @@ Line::getStateDeriv()
 			// Miscd[i][1] = A_int_dot;
 			// Miscd[i][2] = As_dot;
 
-
-			if ((t >= t_old + dtm) || (t == 0.0)) { 
-				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
-				yd_old[i] = yd; // for updating rms back indexing (one moordyn timestep back)
-				yd_rms_old[i] = yd_rms; // for updating rms back indexing (one moordyn timestep back)
-				ydd_rms_old[i] = ydd_rms; // for updating rms back indexing (one moordyn timestep back)
-				dir_old[i] = q[i].cross(vp.normalized()); // direction from previous timestep, to make sure ydd_old and yd_old have same direction
-			}
 		}	
 
 		// tangential component of fluid acceleration
@@ -1418,9 +1426,10 @@ Line::getStateDeriv()
 	}
 
 	if ((t >= t_old + dtm) || (t == 0.0)) { // update back indexing one moordyn time step (regardless of time integration scheme)
-		rdd_old = a; // saving acceleration for VIV RMS calculation
 		t_old = t; // for updating back indexing if statements 
 	}
+	rdd_old = a; // saving the acceleration for VIV RMS calculation
+
 	return make_tuple(u, a, Miscd);
 };
 
