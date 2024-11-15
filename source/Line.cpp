@@ -1300,7 +1300,7 @@ Line::getStateDeriv()
 				yd_old[i] = yd; // for updating rms back indexing (one moordyn timestep back)
 				yd_rms_old[i] = yd_rms; // for updating rms back indexing (one moordyn timestep back)
 				ydd_rms_old[i] = ydd_rms; // for updating rms back indexing (one moordyn timestep back)
-				dir_old[i] = q[i].cross(Ui_hat); // direction from previous timestep, to make sure ydd_old and yd_old have same direction
+				dir_old[i] = q[i].cross(vp.normalized()); // direction from previous timestep, to make sure ydd_old and yd_old have same direction
 			}
 		}	
 
