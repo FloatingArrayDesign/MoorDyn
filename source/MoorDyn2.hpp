@@ -640,6 +640,9 @@ class MoorDyn final : public io::IO
 	/// Disabled writing to output files or console when running
 	bool disableOutput = false;
 
+	/// Disabledtime updates to console when running (for MATLAB wrapper)
+	bool disableOutTime = false;
+
 	/// main output file
 	ofstream outfileMain;
 

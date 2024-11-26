@@ -641,7 +641,7 @@ moordyn::MoorDyn::Step(const double* x,
 		LOGDBG << "t = " << t << "s     \r";
 		std::cout << std::defaultfloat << setprecision(default_precision);
 
-		cout << "\rt = " << t << " " << flush;
+		if (!disableOutTime) cout << "\rt = " << t << " " << flush;
 	}
 
 	if (dt <= 0) {
@@ -2218,6 +2218,15 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 			disableOutput = false;
 		} else {
 			LOGWRN << "Unrecognized disableOutput value "
+			       << std::quoted(value) << ". Should be 0 or 1" << endl;
+		}
+	} else if (name == "disableouttime"){
+		if (value == "1") {
+			disableOutTime = true;
+		} else if (value == "0") {
+			disableOutTime = false;
+		} else {
+			LOGWRN << "Unrecognized disableOutTime value "
 			       << std::quoted(value) << ". Should be 0 or 1" << endl;
 		}
 	} else
