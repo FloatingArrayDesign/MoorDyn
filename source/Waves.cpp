@@ -361,7 +361,7 @@ Waves::setup(EnvCondRef env_in,
 	// NOTE: nodal settings should use storeWaterKin in objects
 	// now go through each applicable WaveKin option
 	if (wave_mode == waves::WAVES_SUM_COMPONENTS_NODE) {
-		const string WaveFilename = (string)folder + "/wave_frequencies.txt";
+		const string WaveFilename = (string)folder + "wave_frequencies.txt";
 		LOGMSG << "Reading waves spectrum frequencies from '" << WaveFilename
 		       << "'..." << endl;
 		auto waveSpectrum = spectrumFromFile(WaveFilename, _log);

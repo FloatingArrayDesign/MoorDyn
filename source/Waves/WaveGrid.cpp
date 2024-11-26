@@ -356,7 +356,7 @@ constructWaveGridSpectrumData(const std::string& folder,
                               moordyn::Log* _log)
 {
 
-	const string WaveFilename = folder + "/wave_frequencies.txt";
+	const string WaveFilename = folder + "wave_frequencies.txt";
 	LOGMSG << "Reading waves FFT from '" << WaveFilename << "'..." << endl;
 
 	// NOTE: need to decide what inputs/format to expect in file
@@ -391,7 +391,7 @@ constructWaveGridSpectrumData(const std::string& folder,
 	auto nt = static_cast<unsigned int>(2 * (evenFreqComps.size() - 1));
 
 	auto [px, py, pz] =
-	    rectilinearGridFromFile(folder + "/water_grid.txt", _log);
+	    rectilinearGridFromFile(folder + "water_grid.txt", _log);
 
 	auto waveGrid = make_unique<WaveGrid>(
 	    _log, px, py, pz, nt, env->waterKinOptions.dtWave);
@@ -414,7 +414,7 @@ constructWaveGridElevationData(const std::string& folder,
 
 	// load wave elevation time series from file (similar to what's done in
 	// GenerateWaveExtnFile.py, and was previously in misc2.cpp)
-	const string WaveFilename = folder + "/wave_elevation.txt";
+	const string WaveFilename = folder + "wave_elevation.txt";
 	LOGMSG << "Reading waves elevation from '" << WaveFilename << "'..."
 	       << endl;
 
@@ -529,11 +529,11 @@ constructWaveGridElevationData(const std::string& folder,
 	// make a grid for wave kinematics based on settings in
 	// water_grid.txt
 	auto [px, py, pz] =
-	    rectilinearGridFromFile(folder + "/water_grid.txt", _log);
+	    rectilinearGridFromFile(folder + "water_grid.txt", _log);
 
 	waveGrid = make_unique<WaveGrid>(_log, px, py, pz, nt, dtWave);
 	waveGrid->allocateKinematicArrays();
-	// makeGrid(((string)folder + "/water_grid.txt").c_str());
+	// makeGrid(((string)folder + "water_grid.txt").c_str());
 	std::vector<real> betas(nw, 0);
 	return fillWaveGrid(
 	    std::move(waveGrid), zetaC0.data(), nw, betas, dw, env, _log);
@@ -545,7 +545,7 @@ constructSteadyCurrentGrid(const std::string& folder,
                            moordyn::Log* _log)
 {
 
-	const string CurrentsFilename = folder + "/current_profile.txt";
+	const string CurrentsFilename = folder + "current_profile.txt";
 	LOGMSG << "Reading currents profile from '" << CurrentsFilename << "'..."
 	       << endl;
 
@@ -622,7 +622,7 @@ constructDynamicCurrentGrid(const std::string& folder,
                             moordyn::Log* _log)
 {
 
-	const string CurrentsFilename = folder + "/current_profile_dynamic.txt";
+	const string CurrentsFilename = folder + "current_profile_dynamic.txt";
 	LOGMSG << "Reading currents dynamic profile from '" << CurrentsFilename
 	       << "'..." << endl;
 
