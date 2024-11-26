@@ -2132,19 +2132,19 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 
 	// DT is old way, should phase out
 	if ((name == "dtM") || (name == "DT"))
-		dtM0 = atof(entries[0].c_str());
+		dtM0 = atof(value.c_str());
 	else if ((name == "CFL") || (name == "cfl"))
-		cfl = atof(entries[0].c_str());
+		cfl = atof(value.c_str());
 	else if (name == "writeLog") {
 		// This was actually already did, so we do not need to do that again
 		// But we really want to have this if to avoid showing a warning for
 		// Unrecognized option writeLog
-		// env->writeLog = atoi(entries[0].c_str());
+		// env->writeLog = atoi(value.c_str());
 	} else if (name == "tScheme") {
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			_t_integrator = create_time_scheme(entries[0], _log, waves);
+			_t_integrator = create_time_scheme(value, _log, waves);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -2152,67 +2152,75 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 			LOGERR << err_msg << endl;
 		}
 	} else if ((name == "g") || (name == "gravity"))
-		env->g = atof(entries[0].c_str());
+		env->g = atof(value.c_str());
 	else if ((name == "Rho") || (name == "rho") || (name == "WtrDnsty"))
-		env->rho_w = atof(entries[0].c_str());
+		env->rho_w = atof(value.c_str());
 	else if (name == "WtrDpth")
-		env->WtrDpth = atof(entries[0].c_str());
+		env->WtrDpth = atof(value.c_str());
 	else if ((name == "kBot") || (name == "kbot") || (name == "kb"))
-		env->kb = atof(entries[0].c_str());
+		env->kb = atof(value.c_str());
 	else if ((name == "cBot") || (name == "cbot") || (name == "cb"))
-		env->cb = atof(entries[0].c_str());
+		env->cb = atof(value.c_str());
 	else if ((name == "dtIC") || (name == "ICdt"))
-		ICdt = atof(entries[0].c_str());
+		ICdt = atof(value.c_str());
 	else if ((name == "TmaxIC") || (name == "ICTmax"))
-		ICTmax = atof(entries[0].c_str());
+		ICTmax = atof(value.c_str());
 	else if ((name == "CdScaleIC") || (name == "ICDfac"))
-		ICDfac = atof(entries[0].c_str());
+		ICDfac = atof(value.c_str());
 	else if ((name == "threshIC") || (name == "ICthresh"))
-		ICthresh = atof(entries[0].c_str());
+		ICthresh = atof(value.c_str());
 	else if ((name == "genDynamicIC") || (name == "ICgenDynamic"))
-		ICgenDynamic = bool(atof(entries[0].c_str()));
+		ICgenDynamic = bool(atof(value.c_str()));
 	else if ((name == "fileIC") || (name == "ICfile"))
-		ICfile = entries[0];
+		ICfile = value;
 	else if (name == "WaveKin") {
-		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
+		WaveKinTemp = (waves::waves_settings)stoi(value);
 		if ((WaveKinTemp < waves::WAVES_NONE) ||
 		    (WaveKinTemp > waves::WAVES_SUM_COMPONENTS_NODE))
 			LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
 	} else if (name == "dtWave")
-		env->waterKinOptions.dtWave = stof(entries[0]);
+		env->waterKinOptions.dtWave = stof(value);
 	else if (name == "Currents") {
-		auto current_mode = (waves::currents_settings)stoi(entries[0]);
+		auto current_mode = (waves::currents_settings)stoi(value);
 		env->waterKinOptions.currentMode = current_mode;
 		if ((current_mode < waves::CURRENTS_NONE) ||
 		    (current_mode > waves::CURRENTS_4D))
 			LOGWRN << "Unknown Currents option value " << current_mode << endl;
 	} else if (name == "UnifyCurrentGrid") {
-		if (entries[0] == "1") {
+		if (value == "1") {
 			env->waterKinOptions.unifyCurrentGrid = true;
-		} else if (entries[0] == "0") {
+		} else if (value == "0") {
 			env->waterKinOptions.unifyCurrentGrid = false;
 		} else {
 			LOGWRN << "Unrecognized UnifyCurrentGrid value "
-			       << std::quoted(entries[1]) << ". Should be 0 or 1" << endl;
+			       << std::quoted(value) << ". Should be 0 or 1" << endl;
 		}
 	} else if (name == "WriteUnits")
-		env->WriteUnits = atoi(entries[0].c_str());
+		env->WriteUnits = atoi(value.c_str());
 	else if (name == "FrictionCoefficient")
-		env->FrictionCoefficient = atof(entries[0].c_str());
+		env->FrictionCoefficient = atof(value.c_str());
 	else if (name == "FricDamp")
-		env->FricDamp = atof(entries[0].c_str());
+		env->FricDamp = atof(value.c_str());
 	else if (name == "StatDynFricScale")
-		env->StatDynFricScale = atof(entries[0].c_str());
+		env->StatDynFricScale = atof(value.c_str());
 	// output writing period (0 for at every call)
 	else if (name == "dtOut")
-		dtOut = atof(entries[0].c_str());
+		dtOut = atof(value.c_str());
 	else if (name == "SeafloorFile") {
 		env->SeafloorMode = seafloor_settings::SEAFLOOR_3D;
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
-		std::string filepath = entries[0];
+		std::string filepath = value;
 		this->seafloor->setup(env, filepath);
-	}
-	else
+	} else if (name == "disableOutput"){
+		if (value == "1") {
+			disableOutput = true;
+		} else if (value == "0") {
+			disableOutput = false;
+		} else {
+			LOGWRN << "Unrecognized disableOutput value "
+			       << std::quoted(value) << ". Should be 0 or 1" << endl;
+		}
+	} else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 
