@@ -716,7 +716,7 @@ def SaveVTK(instance, filename):
 #  =============================================================================
 
 
-def GetWavesKin(instance, x, y, z, t, seafloor=None):
+def GetWavesKin(instance, x, y, z, seafloor=None):
     """ Get the wave kinematics
 
     Parameters:
@@ -724,7 +724,6 @@ def GetWavesKin(instance, x, y, z, t, seafloor=None):
     x (float): The x coordinate
     y (float): The y coordinate
     z (float): The z coordinate
-    t (float): The simulation time
     seafloor (cmoordyn.MoorDynSeafloor): The 3D seafloor instance
 
     Returns:
@@ -734,7 +733,7 @@ def GetWavesKin(instance, x, y, z, t, seafloor=None):
     pdyn: The dynamic pressure
     """
     import cmoordyn
-    return cmoordyn.waves_getkin(instance, x, y, z, t, seafloor)
+    return cmoordyn.waves_getkin(instance, x, y, z, seafloor)
 
 
 #                                  Seafloor.h
