@@ -1,4 +1,3 @@
-import sys
 from unittest import TestCase, main as unittest_main
 import os
 import tempfile
