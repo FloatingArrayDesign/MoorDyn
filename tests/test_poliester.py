@@ -25,12 +25,12 @@ def get_average_tension(line, anchor, fairlead):
     # connections instead of the line end up nodes, as long as the latter are
     # not that accurate
     tension = 0.0
-    force = moordyn.GetPointForce(anchor)
-    tension += vec_norm(force)
+    # force = moordyn.GetPointForce(anchor)
+    # tension += vec_norm(force)
     force = moordyn.GetPointForce(fairlead)
     tension += vec_norm(force)
     for i in range(n):
-        force = moordyn.GetLineNodeTen(line, i + 1)
+        force = moordyn.GetLineNodeTen(line, i)
         tension += vec_norm(force)
     return tension / (n + 1)
 

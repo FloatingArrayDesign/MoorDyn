@@ -68,12 +68,12 @@ double get_average_tension(MoorDynLine line,
 	// not that accurate
 	double tension = 0.0;
 	double force[3];
-	REQUIRE(MoorDyn_GetPointForce(anchor, force) == MOORDYN_SUCCESS);
-	tension += vec_norm(force);
+	// REQUIRE(MoorDyn_GetPointForce(anchor, force) == MOORDYN_SUCCESS);
+	// tension += vec_norm(force);
 	REQUIRE(MoorDyn_GetPointForce(fairlead, force) == MOORDYN_SUCCESS);
 	tension += vec_norm(force);
 	for (unsigned int i = 0; i < n; i++) {
-		REQUIRE(MoorDyn_GetLineNodeTen(line, i + 1, force) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_GetLineNodeTen(line, i, force) == MOORDYN_SUCCESS);
 		tension += vec_norm(force);
 	}
 	return tension / (n + 1);
