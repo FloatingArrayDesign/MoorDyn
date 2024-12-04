@@ -126,6 +126,13 @@ class MoorDyn final : public io::IO
 	 */
 	inline vector<Line*> GetLines() const { return LineList; }
 
+	/**
+	 * @brief Set whether console and file output is disabled.
+	 * 
+	 * @param disable 
+	 */
+	inline void SetDisableOutput(bool disable) { disableOutput = disable; }
+
 	/** @brief Return the number of coupled Degrees Of Freedom (DOF)
 	 *
 	 * This should match with the number of components of the positions and
@@ -629,6 +636,12 @@ class MoorDyn final : public io::IO
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
+
+	/// Disabled writing to output files or console when running
+	bool disableOutput = false;
+
+	/// Disabledtime updates to console when running (for MATLAB wrapper)
+	bool disableOutTime = false;
 
 	/// main output file
 	ofstream outfileMain;

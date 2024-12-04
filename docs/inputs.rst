@@ -642,6 +642,8 @@ The list of possible options is:
    If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
    The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
    but it can take longer to reach equilibrium.
+ - disableOutput (0): Disables some console and file outputs to improve runtime. 
+ - disableOutTime (0): Disables the printing of the current timestep to the console, useful for the MATLAB wrapper
 
 A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
 no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
@@ -676,6 +678,8 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - FricDamp: Same as CV in MoorDyn-F.
  - StatDynFricScale: Same as MC in MoorDyn-F.
  - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
+ - disableOutput: MoorDyn-F output verbosity is controlled by OpenFAST
+ - disableOutTime: MoorDyn-F output verbosity is controlled by OpenFAST
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 
