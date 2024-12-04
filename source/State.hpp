@@ -458,12 +458,12 @@ butcher_row(MoorDynState& out_state,
 
 	for (unsigned int pointIdx = 0; pointIdx < out_state.points.size();
 	     pointIdx++) {
-		auto& conn = out_state.points[pointIdx];
-		conn.pos = start_state.points[pointIdx].pos;
-		conn.vel = start_state.points[pointIdx].vel;
+		auto& point = out_state.points[pointIdx];
+		point.pos = start_state.points[pointIdx].pos;
+		point.vel = start_state.points[pointIdx].vel;
 		for (unsigned int j = 0; j < N; j++) {
-			conn.pos += scales[j] * derivs[j]->points[pointIdx].vel;
-			conn.vel += scales[j] * derivs[j]->points[pointIdx].acc;
+			point.pos += scales[j] * derivs[j]->points[pointIdx].vel;
+			point.vel += scales[j] * derivs[j]->points[pointIdx].acc;
 		}
 	}
 
