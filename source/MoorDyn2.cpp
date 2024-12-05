@@ -624,7 +624,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	// write t=0 output
-	return AllOutput(0.0, 0.0);
+	return WriteOutputs(0.0, 0.0);
 }
 
 moordyn::error_id DECLDIR
@@ -761,7 +761,7 @@ moordyn::MoorDyn::Step(const double* x,
 	// specifying max tension things)
 
 	// ------------------------ write outputs --------------------------
-	const moordyn::error_id err = AllOutput(t, dt);
+	const moordyn::error_id err = WriteOutputs(t, dt);
 	if (err != MOORDYN_SUCCESS)
 		return err;
 
@@ -2325,7 +2325,7 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 }
 
 moordyn::error_id
-moordyn::MoorDyn::AllOutput(double t, double dt)
+moordyn::MoorDyn::WriteOutputs(double t, double dt)
 {
 	if (disableOutput)
 		return MOORDYN_SUCCESS;

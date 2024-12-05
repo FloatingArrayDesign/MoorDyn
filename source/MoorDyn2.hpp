@@ -847,7 +847,7 @@ class MoorDyn final : public io::IO
 	 * @return MOORDYN_SUCCESS if the output is correctly printed, an error
 	 * code otherwise
 	 */
-	moordyn::error_id AllOutput(double t, double dt);
+	moordyn::error_id WriteOutputs(double t, double dt);
 };
 
 } // ::moordyn
