@@ -282,10 +282,10 @@ GetNodePos(int LineNum, int NodeNum, double pos[3])
 	return MoorDyn_GetLineNodePos(line, NodeNum, pos);
 }
 
-int DECLDIR
+void DECLDIR
 AllOutput(double t, double dt)
 {
 	if (!md_singleton)
-		return MOORDYN_MEM_ERROR;
+		return;
 	std::cout << "In version 2, AllOutput is automatically called by MoorDynStep" << std::endl;
 }
