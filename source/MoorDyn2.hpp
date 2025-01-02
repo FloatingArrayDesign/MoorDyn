@@ -756,7 +756,7 @@ class MoorDyn final : public io::IO
 				return MOORDYN_INVALID_INPUT;
 			}
 			x.push_back(atof(entries[0].c_str()));
-			y.push_back(atof(entries[0].c_str()));
+			y.push_back(atof(entries[1].c_str()));
 			LOGDBG << "(" << x.back() << ", " << y.back() << ")" << std::endl;
 		}
 
