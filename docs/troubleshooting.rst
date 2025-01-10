@@ -15,7 +15,7 @@ lines. The highest axial vibration mode of the lumped-mass cable representation 
 be when adjacent nodes oscillate out of phase with each other, as depicted below.
  
 In this mode, the midpoint of each segment would not move.  The motion of each node can
-then be characterized by mass-spring-damper values of
+then be characterized by mass-spring-damper values of (where *w* is mass per length):
 
 .. math::
 
