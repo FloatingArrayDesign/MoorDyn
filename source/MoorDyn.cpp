@@ -287,5 +287,5 @@ AllOutput(double t, double dt)
 {
 	if (!md_singleton)
 		return;
-	std::cout << "In version 2, AllOutput is automatically called by MoorDynInit and MoorDynStep" << std::endl;
+	MoorDyn_Log(md_singleton, MOORDYN_MSG_LEVEL, "In version 2, AllOutput is automatically called by MoorDynInit and MoorDynStep");
 }
