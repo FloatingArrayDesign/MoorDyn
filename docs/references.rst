@@ -51,7 +51,7 @@ Version 1
 The v1 lumped-mass formulation of MoorDyn as well as its validation against experiments:
 
   `M. Hall and A. Goupee, “Validation of a lumped-mass mooring line model with DeepCwind semisubmersible model test data,” 
-  Ocean Engineering, vol. 104, pp. 590–603, Aug. 2015.' <http://www.sciencedirect.com/science/article/pii/S0029801815002279>`_
+  Ocean Engineering, vol. 104, pp. 590–603, Aug. 2015. <http://www.sciencedirect.com/science/article/pii/S0029801815002279>`_
 
 Coupling with WEC-Sim or any Simulink code for wave energy converter simulation:
 
@@ -101,6 +101,11 @@ Viscoelastic approach for non-linear rope behavior:
 
   `Hall, Matthew, Brian Duong, and Ericka Lozon, “Streamlined Loads Analysis of Floating Wind Turbines With Fiber Rope Mooring Lines.” In ASME 2023 
   5th International Offshore Wind Technical Conference, V001T01A029. Exeter, UK: American Society of Mechanical Engineers, 2023. <https://doi.org/10.1115/IOWTC2023-119524>`_
+
+Updated MoorDyn-OpenFOAM Coupling:
+  `Haifei Chen, Tanausú Almeida Medina, and Jose Luis Cercos-Pita, "CFD simulation of multiple moored floating structures using OpenFOAM: An open-access mooring restraints 
+  library." Ocean Engineering, vol. 303, Jul. 2024. <https://doi.org/10.1016/j.oceaneng.2024.117697>`_`
+
 
 The Fortran version of MoorDyn is available as a module inside of OpenFAST:
   
