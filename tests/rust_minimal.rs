@@ -25,8 +25,6 @@ fn main() {
             x[slc..slc+3].clone_from_slice(&pos);
         }
 
-        let ln = x.len();
-        println!("{ln}");
         err = moordyn::MoorDyn_Init(system, x.as_ptr(), dx.as_ptr());
         assert_eq!(err, moordyn::MOORDYN_SUCCESS as i32);
 
