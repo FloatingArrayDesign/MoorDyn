@@ -297,6 +297,7 @@ this time developed in C:
 
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h>
     #include <moordyn/MoorDyn2.h>
 
     int main(int, char**)
