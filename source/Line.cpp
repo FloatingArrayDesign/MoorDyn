@@ -480,8 +480,8 @@ Line::initialize()
 	// process internal damping input
 	if (BAin < 0) {
 		// automatic internal damping option (if negative BA provided (stored as
-		// BAin), then -BAin indicates desired damping ratio)
-		BA = -BAin * UnstrLen / N * sqrt(EA * rho * A); // rho = w/A
+		// BAin), then -BAin indicates desired damping ratio [unitless])
+		BA = -BAin * UnstrLen / N * sqrt(EA * rho * A); // rho = w/A. Units: no unit * m * sqrt(kg-m/s^2 *kg/m) = Ns 
 		LOGMSG << "Line " << number << " damping set to " << BA / A
 		       << " Pa-s = " << BA << " Ns, based on input of " << BAin
 		       << endl;
@@ -714,7 +714,7 @@ Line::setPin(std::vector<real> p)
 }
 
 void
-Line::setState(const std::vector<vec>& pos, const std::vector<vec>& vel, const std::vector<vec> misc)
+Line::setState(const std::vector<vec>& pos, const std::vector<vec>& vel, const std::vector<vec>& misc)
 {
 	if ((pos.size() != N - 1) || (vel.size() != N - 1) || (misc.size() != N + 1)) {
 		LOGERR << "Invalid input size" << endl;
@@ -839,33 +839,7 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 
 	// dt is possibly used for stability tricks...
 
-	// -------------------- calculate various kinematic quantities
-	// ---------------------------
-	for (unsigned int i = 0; i < N; i++) {
-		// calculate current (Stretched) segment lengths and unit tangent
-		// vectors (qs) for each segment (this is used for bending calculations)
-		lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
-
-		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
-
-		// V[i] = A * l[i]; // volume attributed to segment
-
-		if (nEApoints)
-			E = getNonlinearE(lstr[i], l[i]);
-
-		if (lstr[i] > l[i]) {
-			T[i] = E * A * (lstr[i] - l[i]) / l[i] * qs[i];
-		} else {
-			// cable can't "push" ...
-			// or can it, if bending stiffness is nonzero? <<<<<<<<<
-			T[i] = vec::Zero();
-		}
-
-		// line internal damping force
-		if (nCpoints)
-			c = getNonlinearC(ldstr[i], l[i]);
-		Td[i] = c * A * ldstr[i] / l[i] * qs[i];
-	}
+	// ======= calculate various kinematic quantities and stiffness forces =======
 
 	// calculate unit tangent vectors (q) for each internal node. note: I've
 	// reversed these from pointing toward 0 rather than N. Check sign of wave
@@ -884,6 +858,77 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 		unitvector(q[0], r[0], r[1]);
 	if ((endTypeB == PINNED) || !isEI)
 		unitvector(q[N], r[N - 1], r[N]);
+
+	// loop through the segments for stiffness forces and segment lengths
+	for (unsigned int i = 0; i < N; i++) {
+		// calculate current (Stretched) segment lengths and unit tangent
+		// vectors (qs) for each segment (this is used for bending and stiffness calculations)
+		lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
+
+		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
+
+		// V[i] = A * l[i]; // volume attributed to segment
+
+		// Calculate segment stiffness
+		if (ElasticMod == 1) {
+			// line tension
+			if (nEApoints > 0)
+				EA = getNonlinearEA(lstr[i], l[i]);
+
+			if (lstr[i] / l[i] > 1.0) {
+				T[i] = EA * (lstr[i] - l[i]) / l[i] * qs[i];
+			} else {
+				// cable can't "push" ...
+				// or can it, if bending stiffness is nonzero? <<<<<<<<<
+				T[i] = vec::Zero();
+			}
+
+			// line internal damping force
+			if (nBApoints > 0)
+				BA = getNonlinearBA(ldstr[i], l[i]);
+			Td[i] = BA * ldstr[i] / l[i] * qs[i];
+
+		} else if (ElasticMod > 1){ // viscoelastic model from https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018 
+			// note that Misc[i][1] is the same as Line%dl_1 in MD-F. This is the deltaL of the first static spring k1.
+               
+			if (ElasticMod == 2) {
+               // constant dynamic stiffness
+               EA_2 = EA_D;
+
+            } else if (ElasticMod == 3){
+            	if (Misc[i][1] >= 0.0) // spring k1 is in tension
+                	// Mean load dependent dynamic stiffness: from combining eqn. 2 and eqn. 10 from original MD viscoelastic paper, taking mean load = k1 delta_L1 / MBL, and solving for k_D using WolframAlpha with following conditions: k_D > k_s, (MBL,alpha,beta,unstrLen,delta_L1) > 0
+                	EA_2 = 0.5 * ((alphaMBL) + (vbeta*Misc[i][1]*(EA / l[i])) + EA + sqrt((alphaMBL * alphaMBL) + (2*alphaMBL*(EA / l[i]) * (vbeta*Misc[i][1] - l[i])) + ((EA / l[i])*(EA / l[i]) * (vbeta*Misc[i][1] + l[i])*(vbeta*Misc[i][1] + l[i]))));
+            	
+				else // spring k1 is in compression
+                	EA_2 = alphaMBL; // mean load is considered to be 0 in this case. The second term in the above equation is not valid for delta_L1 < 0.
+            }
+
+            if (EA_2 == 0.0) { // Make sure EA_2 != 0 or else nans, also make sure EA != EA_D or else nans. 
+               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal zero" << endl;
+			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal zero");
+			} else if (EA_2 == EA) {
+               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal static stiffness" << endl;
+			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal static stiffness");
+			}
+         
+            const real EA_1 = EA_2*EA/(EA_2 - EA); // calculated EA_1 which is the stiffness in series with EA_D that will result in the desired static stiffness of EA_S. 
+         
+            const real dl = lstr[i] - l[i]; // delta l of this segment
+         
+            const real ld_1 = (EA_2*dl - (EA_2 + EA_1)*Misc[i][1] + BA_D*ldstr[i]) /( BA_D + BA); // rate of change of static stiffness portion [m/s]
+
+            if (dl >= 0.0) // if both spring 1 (the spring dashpot in parallel) and the whole segment are not in compression
+               T[i]  = (EA_1*Misc[i][1] / l[i]) * qs[i];  // compute tension based on static portion (dynamic portion would give same). See eqn. 14 in paper
+            else 
+               T[i] = vec::Zero(); // cable can't "push"
+
+            Td[i] = BA*ld_1 / l[i] * qs[i];
+
+            // update state derivative for static stiffness stretch
+			Miscd[i][1] = ld_1;
+		}
+	}
 
 	// calculate the curvatures and normal vectors (just if needed)
 	if (isEI || isPb) {
@@ -939,73 +984,7 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 	}
 	//============================================================================================
 
-	// ============  CALCULATE FORCES ON EACH NODE
-	// ===============================
-
-	// loop through the segments
-	for (unsigned int i = 0; i < N; i++) {
-		if (ElasticMod == 1) {
-			// line tension
-			if (nEApoints > 0)
-				EA = getNonlinearEA(lstr[i], l[i]);
-
-			if (lstr[i] / l[i] > 1.0) {
-				T[i] = EA * (lstr[i] - l[i]) / l[i] * qs[i];
-			} else {
-				// cable can't "push" ...
-				// or can it, if bending stiffness is nonzero? <<<<<<<<<
-				T[i] = vec::Zero();
-			}
-
-			// line internal damping force
-			if (nBApoints > 0)
-				BA = getNonlinearBA(ldstr[i], l[i]);
-			Td[i] = BA * ldstr[i] / l[i] * qs[i];
-		}
-		// viscoelastic model from https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018 
-         else if (ElasticMod > 1){
-
-			double EA_2;
-
-			// note that Misc[i][1] is the same as Line%dl_1 in MD-F. This is the deltaL of the first static spring k1.
-
-            if (ElasticMod == 3){
-            	if (Misc[i][1] >= 0.0) 
-                	// Mean load dependent dynamic stiffness: from combining eqn. 2 and eqn. 10 from original MD viscoelastic paper, taking mean load = k1 delta_L1 / MBL, and solving for k_D using WolframAlpha with following conditions: k_D > k_s, (MBL,alpha,beta,unstrLen,delta_L1) > 0
-                	EA_2 = 0.5 * ((alphaMBL) + (vbeta*Misc[i][1]*(EA / l[i])) + EA + sqrt((alphaMBL * alphaMBL) + (2*alphaMBL*(EA / l[i]) * (vbeta*Misc[i][1] - l[i])) + ((EA / l[i])*(EA / l[i]) * (vbeta*Misc[i][1] + l[i])*(vbeta*Misc[i][1] + l[i]))));
-            	else
-                	EA_2 = alphaMBL; // mean load is considered to be 0 in this case. The second term in the above equation is not valid for delta_L1 < 0.
-               
-
-			} else if (ElasticMod == 2) {
-               // constant dynamic stiffness
-               EA_2 = EA_D;
-            }
-
-            if (EA_2 == 0.0) { // Make sure EA != EA_D or else nans, also make sure EA_D != 0  or else nans. 
-               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal zero" << endl;
-			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal zero");
-			} else if (EA_2 == EA) {
-               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal static stiffness" << endl;
-			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal static stiffness");
-			}
-         
-            const double EA_1 = EA_2*EA/(EA_2 - EA); // calculated EA_1 which is the stiffness in series with EA_D that will result in the desired static stiffness of EA_S. 
-         
-            const double dl = lstr[i] - l[i]; // delta l of this segment
-         
-            const double ld_1 = (EA_2*dl - (EA_2 + EA_1)*Misc[i][1] + BA_D*ldstr[i]) /( BA_D + BA); // rate of change of static stiffness portion [m/s]
-
-            if (dl >= 0.0) // if both spring 1 (the spring dashpot in parallel) and the whole segment are not in compression
-               T[i]  = (EA_1*Misc[i][1] / l[i]) * qs[i];  // compute tension based on static portion (dynamic portion would give same). See eqn. 14 in paper
-            else 
-               T[i] = vec::Zero(); // cable can't "push"
-
-            Td[i] = BA*ld_1 / l[i] * qs[i];
-            // update state derivative for static stiffness stretch (last N entries in the state vector)
-			Miscd[i][1] = ld_1;
-		}
-	}
+	// ============  CALCULATE FORCES ON EACH NODE  ===============================
 
 	// Bending loads
 	// first zero out the forces from last run
@@ -1216,19 +1195,18 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 
 
 		// magnitude of current
-		const moordyn::real Ui_mag = U[i].norm();
+		const real Ui_mag = U[i].norm();
 		// Unit vector of current flow
 		const vec Ui_hat = U[i].normalized();
 		// relative flow velocity over node
 		const vec vi = U[i] - rd[i];
 		// tangential relative flow component
-		// <<<<<<< check sign since I've reversed q
 		const real vql = vi.dot(q[i]);
 		const vec vq = vql * q[i];
-		const moordyn::real vq_mag = vq.norm();
 		// transverse relative flow component
 		const vec vp = vi - vq;
 
+		// magnitudes of relative flow
 		const real vq_mag = vq.norm();
 		const real vp_mag = vp.norm();
 
@@ -1243,12 +1221,12 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 
 			// ----- The Synchronization Model ------
 			// Crossflow velocity
-			const moordyn::real yd = rd[i].dot(q[i].cross(vp.normalized()));
-			const moordyn::real ydd = rdd_old[i].dot(q[i].cross(vp.normalized()));
+			const real yd = rd[i].dot(q[i].cross(vp.normalized()));
+			const real ydd = rdd_old[i].dot(q[i].cross(vp.normalized()));
 
 			// Rolling RMS calculation
-			const moordyn::real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd*yd))/n_m); // RMS approximation from Thorsen
-			const moordyn::real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd*ydd))/n_m);
+			const real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd*yd))/n_m); // RMS approximation from Thorsen
+			const real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd*ydd))/n_m);
 
 			if ((t >= t_old + dtm) || (t == 0.0)) { // Update the stormed RMS vaues
 				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
@@ -1256,53 +1234,39 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 				ydd_rms_old[i] = ydd_rms; // for rms back indexing (one moordyn timestep back)
 			}
 
-			moordyn::real phi_yd; // The crossflow motion phase
 			if ((yd_rms==0.0) || (ydd_rms == 0.0)) phi_yd = atan2(-ydd, yd); // To avoid divide by zero
 			else phi_yd = atan2(-ydd/ydd_rms, yd/yd_rms); 
 			
 			if (phi_yd < 0) phi_yd = 2*pi + phi_yd; // atan2 to 0-2Pi range
 
-			// if ((i == 50) && (t > 20) && (t < 20.001)){ 
-			// 	if ((t >= t_old + dtm) || (t == 0.0)) cout << "----- new time " << t << "-----" << endl;
-			// 	// cout << "yd: " << yd << endl;
-			// 	// cout << "ydd: " << ydd << endl;
-			// 	// cout << "ydd via rdd_old: " << rdd_old[i].dot(q[i].cross(vp.normalized())) << endl;
-			// 	cout << "phi_yd: " << phi_yd << endl;
-			// }
-
 			// Note: amplitude calculations and states commented out. Would be needed if a Cl vs A lookup table was ever implemented
 
-			const moordyn::real phi = Misc[i][0] - (2 * pi * floor(Misc[i][0] / (2*pi))); // Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b) is the same if b is 100 pi or 2pi
-			// const moordyn::real A_int = Misc[i][1];
-			// const moordyn::real As = Misc[i][2];
+			const real phi = Misc[i][0] - (2 * pi * floor(Misc[i][0] / (2*pi))); // Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b) is the same if b is 100 pi or 2pi
+			// const real A_int = Misc[i][1];
+			// const real As = Misc[i][2];
 
 			// non-dimensional frequency
-			const moordyn::real f_hat = cF + dF *sin(phi_yd - phi); // phi is integrated from state deriv phi_dot
+			const real f_hat = cF + dF *sin(phi_yd - phi); // phi is integrated from state deriv phi_dot
 			// frequency of lift force (rad/s)
-			const moordyn::real phi_dot = 2*pi*f_hat*vp_mag / d;// to be added to state
+			const real phi_dot = 2*pi*f_hat*vp_mag / d;// to be added to state
 
 			// ----- The rest of the model -----
 
 			// // Oscillation amplitude 
-			// const moordyn::real A_int_dot = abs(yd);
+			// const real A_int_dot = abs(yd);
 			// // Note: Check if this actually measures zero crossings
 			// if ((yd * yd_old[i]) < 0) { // if sign changed, i.e. a zero crossing
 			// 	Amp[i] = A_int-A_int_old[i]; // amplitude calculation since last zero crossing
 			// 	A_int_old[i] = A_int; // stores amplitude of previous zero crossing for finding Amp
 			// }
 			// // Careful with integrating smoothed amplitude, as 0.1 was a calibarated value based on a very simple integration method
-			// const moordyn::real As_dot = (0.1/dtm)*(Amp[i]-As); // As to be variable integrated from the state. stands for amplitude smoothed
+			// const real As_dot = (0.1/dtm)*(Amp[i]-As); // As to be variable integrated from the state. stands for amplitude smoothed
 
 			// // Lift coefficient from lookup table
-			// const moordyn::real C_l = cl_lookup(x = As/d); // create function in Line.hpp that uses lookup table 
+			// const real C_l = cl_lookup(x = As/d); // create function in Line.hpp that uses lookup table 
 
 			// The Lift force
-			if (i == 0)
-				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i] * l[i]);
-			else if (i == N)
-				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i - 1] * l[i - 1]);
-			else 
-				Lf[i] = 0.25 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * (F[i] * l[i] + F[i - 1] * l[i - 1]);
+			Lf[i] = 0.5 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * submerged_length;
 
 			// Prep for returning VIV state derivatives
 			Miscd[i][0] = phi_dot;
@@ -1385,7 +1349,7 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 	if ((t >= t_old + dtm) || (t == 0.0)) { // update back indexing one moordyn time step (regardless of time integration scheme)
 		t_old = t; // for updating back indexing if statements 
 	}
-	rdd_old = a; // saving the acceleration for VIV RMS calculation
+	rdd_old = acc; // saving the acceleration for VIV RMS calculation
 
 };
 

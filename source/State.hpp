@@ -462,6 +462,19 @@ butcher_row(MoorDynState& out_state,
 		}
 	}
 
+	for (unsigned int miscIdx = 0; miscIdx < out_state.misc.size();
+	     miscIdx++) {
+		auto& misc = out_state.misc[miscIdx];
+		for (unsigned int i = 0; i < misc.pos.size(); i++) {
+			misc.pos[i] = start_state.misc[miscIdx].pos[i];
+			misc.vel[i] = start_state.misc[miscIdx].vel[i];
+			for (unsigned int j = 0; j < N; j++) {
+				misc.pos[i] += scales[j] * derivs[j]->misc[miscIdx].vel[i];
+				misc.vel[i] += scales[j] * derivs[j]->misc[miscIdx].acc[i];
+			}
+		}
+	}
+
 	for (unsigned int pointIdx = 0; pointIdx < out_state.points.size();
 	     pointIdx++) {
 		auto& point = out_state.points[pointIdx];

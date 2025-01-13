@@ -143,13 +143,16 @@ class Line final : public io::IO, public NatFreqCFL
 	/// Elasticity model flag
 	unsigned int ElasticMod;
 	/// line normal/static elasticity modulus (Young's modulus) [Pa]
-	moordyn::real EA;
-	/// line dynamic stiffness modulus * area for viscoelastic stuff
+	moordyn::real EA; // TODO: units
+	/// constant line dynamic stiffness modulus * area for viscoelastic stuff
 	moordyn::real EA_D;
 	/// Alpha * MBL in load dependent dynamic stiffness equation Kd = Alpha * MBL + vbeta * Lm for viscoelastic model
     moordyn::real alphaMBL; 
 	/// beta in load dependent dynamic stiffness equation Kd = Alpha * MBL + vbeta * Lm for viscoelastic model
 	moordyn::real vbeta;
+	/// stiffness of spring 2 in viscoelastic model (dynamic stiffness). This is the spring in series with the parallel spring-dashpot.
+	/// if ElasticMod = 2, EA_2 = EA_D. If ElasticMod = 3, EA_2 is load dependent dynamic stiffness.
+	moordyn::real EA_2;
 	/// line bending stiffness [Nm^2]
 	moordyn::real EI;
 	/** line axial internal damping coefficient [Pa-s]
@@ -184,6 +187,8 @@ class Line final : public io::IO, public NatFreqCFL
 	/// Center VIV synchronization [-]
 	/// in non-dimensional frequency
 	moordyn::real cF;
+	/// The crossflow motion phase [-]
+	real phi_yd; 
 
 	/// line axial internal damping coefficient (before proceessing) [Ns]
 	moordyn::real BAin;
