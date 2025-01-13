@@ -635,7 +635,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	// write t=0 output
-	return AllOutput(0.0, 0.0);
+	return WriteOutputs(0.0, 0.0);
 }
 
 moordyn::error_id DECLDIR
@@ -646,12 +646,14 @@ moordyn::MoorDyn::Step(const double* x,
                        double& dt)
 {
 	// should check if wave kinematics have been set up if expected!
-	const auto default_precision{std::cout.precision()};
-	std::cout << std::fixed << setprecision(1);
-	LOGDBG << "t = " << t << "s     \r";
-	std::cout << std::defaultfloat << setprecision(default_precision);
+	if (!disableOutput) {
+		const auto default_precision{ std::cout.precision() };
+		std::cout << std::fixed << setprecision(1);
+		LOGDBG << "t = " << t << "s     \r";
+		std::cout << std::defaultfloat << setprecision(default_precision);
 
-	cout << "\rt = " << t << " " << flush;
+		if (!disableOutTime) cout << "\rt = " << t << " " << flush;
+	}
 
 	if (dt <= 0) {
 		// Nothing to do, just recover the forces if there are coupled DOFs
@@ -770,7 +772,7 @@ moordyn::MoorDyn::Step(const double* x,
 	// specifying max tension things)
 
 	// ------------------------ write outputs --------------------------
-	const moordyn::error_id err = AllOutput(t, dt);
+	const moordyn::error_id err = WriteOutputs(t, dt);
 	if (err != MOORDYN_SUCCESS)
 		return err;
 
@@ -2190,23 +2192,23 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 
 	LOGDBG << "\t" << entries[1] << " = " << entries[0] << endl;
 	const string value = entries[0];
-	const string name = entries[1];
+	const string name = str::lower(entries[1]);
 
 	// DT is old way, should phase out
-	if ((name == "dtM") || (name == "DT"))
-		dtM0 = atof(entries[0].c_str());
-	else if ((name == "CFL") || (name == "cfl"))
-		cfl = atof(entries[0].c_str());
-	else if (name == "writeLog") {
+	if ((name == "dtm") || (name == "dt"))
+		dtM0 = atof(value.c_str());
+	else if (name == "cfl")
+		cfl = atof(value.c_str());
+	else if (name == "writelog") {
 		// This was actually already did, so we do not need to do that again
 		// But we really want to have this if to avoid showing a warning for
 		// Unrecognized option writeLog
-		// env->writeLog = atoi(entries[0].c_str());
-	} else if (name == "tScheme") {
+		// env->writeLog = atoi(value.c_str());
+	} else if (name == "tscheme") {
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			_t_integrator = create_time_scheme(entries[0], _log, waves);
+			_t_integrator = create_time_scheme(value, _log, waves);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -2214,68 +2216,84 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 			LOGERR << err_msg << endl;
 		}
 	} else if ((name == "g") || (name == "gravity"))
-		env->g = atof(entries[0].c_str());
-	else if ((name == "Rho") || (name == "rho") || (name == "WtrDnsty"))
-		env->rho_w = atof(entries[0].c_str());
-	else if (name == "WtrDpth")
-		env->WtrDpth = atof(entries[0].c_str());
-	else if ((name == "kBot") || (name == "kbot") || (name == "kb"))
-		env->kb = atof(entries[0].c_str());
-	else if ((name == "cBot") || (name == "cbot") || (name == "cb"))
-		env->cb = atof(entries[0].c_str());
-	else if ((name == "dtIC") || (name == "ICdt"))
-		ICdt = atof(entries[0].c_str());
-	else if ((name == "TmaxIC") || (name == "ICTmax"))
-		ICTmax = atof(entries[0].c_str());
-	else if ((name == "CdScaleIC") || (name == "ICDfac"))
-		ICDfac = atof(entries[0].c_str());
-	else if ((name == "threshIC") || (name == "ICthresh"))
-		ICthresh = atof(entries[0].c_str());
-	else if ((name == "genDynamicIC") || (name == "ICgenDynamic"))
-		ICgenDynamic = bool(atof(entries[0].c_str()));
-	else if ((name == "fileIC") || (name == "ICfile"))
-		ICfile = entries[0];
-	else if (name == "WaveKin") {
-		WaveKinTemp = (waves::waves_settings)stoi(entries[0]);
+		env->g = atof(value.c_str());
+	else if ((name == "rho") || (name == "wtrdnsty"))
+		env->rho_w = atof(value.c_str());
+	else if (name == "wtrdpth")
+		env->WtrDpth = atof(value.c_str());
+	else if ((name == "kbot") || (name == "kb"))
+		env->kb = atof(value.c_str());
+	else if ((name == "cbot") || (name == "cb"))
+		env->cb = atof(value.c_str());
+	else if ((name == "dtic") || (name == "icdt"))
+		ICdt = atof(value.c_str());
+	else if ((name == "tmaxic") || (name == "ictmax"))
+		ICTmax = atof(value.c_str());
+	else if ((name == "cdscaleic") || (name == "icdfac"))
+		ICDfac = atof(value.c_str());
+	else if ((name == "threshic") || (name == "icthresh"))
+		ICthresh = atof(value.c_str());
+	else if ((name == "gendynamicic") || (name == "icgendynamic"))
+		ICgenDynamic = bool(atof(value.c_str()));
+	else if ((name == "fileic") || (name == "icfile"))
+		ICfile = value;
+	else if (name == "wavekin") {
+		WaveKinTemp = (waves::waves_settings)stoi(value);
 		if ((WaveKinTemp < waves::WAVES_NONE) ||
 		    (WaveKinTemp > waves::WAVES_SUM_COMPONENTS_NODE))
 			LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
-	} else if (name == "dtWave")
-		env->waterKinOptions.dtWave = stof(entries[0]);
-	else if (name == "Currents") {
-		auto current_mode = (waves::currents_settings)stoi(entries[0]);
+	} else if (name == "dtwave")
+		env->waterKinOptions.dtWave = stof(value);
+	else if (name == "currents") {
+		auto current_mode = (waves::currents_settings)stoi(value);
 		env->waterKinOptions.currentMode = current_mode;
 		if ((current_mode < waves::CURRENTS_NONE) ||
 		    (current_mode > waves::CURRENTS_4D))
 			LOGWRN << "Unknown Currents option value " << current_mode << endl;
-	} else if (name == "UnifyCurrentGrid") {
-		if (entries[0] == "1") {
+	} else if (name == "unifycurrentgrid") {
+		if (value == "1") {
 			env->waterKinOptions.unifyCurrentGrid = true;
-		} else if (entries[0] == "0") {
+		} else if (value == "0") {
 			env->waterKinOptions.unifyCurrentGrid = false;
 		} else {
 			LOGWRN << "Unrecognized UnifyCurrentGrid value "
-			       << std::quoted(entries[1]) << ". Should be 0 or 1" << endl;
+			       << std::quoted(value) << ". Should be 0 or 1" << endl;
 		}
-	} else if (name == "WriteUnits")
-		env->WriteUnits = atoi(entries[0].c_str());
-	else if (name == "FrictionCoefficient")
-		env->FrictionCoefficient = atof(entries[0].c_str());
-	else if (name == "FricDamp")
-		env->FricDamp = atof(entries[0].c_str());
-	else if (name == "StatDynFricScale")
-		env->StatDynFricScale = atof(entries[0].c_str());
+	} else if (name == "writeunits")
+		env->WriteUnits = atoi(value.c_str());
+	else if (name == "frictioncoefficient")
+		env->FrictionCoefficient = atof(value.c_str());
+	else if (name == "fricdamp")
+		env->FricDamp = atof(value.c_str());
+	else if (name == "statdynfricscale")
+		env->StatDynFricScale = atof(value.c_str());
 	// output writing period (0 for at every call)
-	else if (name == "dtOut")
-		dtOut = atof(entries[0].c_str());
-	else if (name == "SeafloorFile") {
+	else if (name == "dtout")
+		dtOut = atof(value.c_str());
+	else if (name == "seafloorfile") {
 		env->SeafloorMode = seafloor_settings::SEAFLOOR_3D;
 		this->seafloor = make_shared<moordyn::Seafloor>(_log);
-		std::string filepath = entries[0];
+		std::string filepath = value;
 		this->seafloor->setup(env, filepath);
-	} else if (name == "ICgenDynamic")
-		ICgenDynamic = bool(atof(entries[0].c_str()));
-	else
+	} else if (name == "disableoutput"){
+		if (value == "1") {
+			disableOutput = true;
+		} else if (value == "0") {
+			disableOutput = false;
+		} else {
+			LOGWRN << "Unrecognized disableOutput value "
+			       << std::quoted(value) << ". Should be 0 or 1" << endl;
+		}
+	} else if (name == "disableouttime"){
+		if (value == "1") {
+			disableOutTime = true;
+		} else if (value == "0") {
+			disableOutTime = false;
+		} else {
+			LOGWRN << "Unrecognized disableOutTime value "
+			       << std::quoted(value) << ". Should be 0 or 1" << endl;
+		}
+	} else
 		LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
 }
 
@@ -2368,8 +2386,10 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 }
 
 moordyn::error_id
-moordyn::MoorDyn::AllOutput(double t, double dt)
+moordyn::MoorDyn::WriteOutputs(double t, double dt)
 {
+	if (disableOutput)
+		return MOORDYN_SUCCESS;
 	// if (env->writeLog == 0)
 	// 	return MOORDYN_SUCCESS;
 

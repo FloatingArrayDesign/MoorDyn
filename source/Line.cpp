@@ -714,7 +714,7 @@ Line::setPin(std::vector<real> p)
 }
 
 void
-Line::setState(std::vector<vec> pos, std::vector<vec> vel, std::vector<vec> misc)
+Line::setState(const std::vector<vec>& pos, const std::vector<vec>& vel, const std::vector<vec> misc)
 {
 	if ((pos.size() != N - 1) || (vel.size() != N - 1) || (misc.size() != N + 1)) {
 		LOGERR << "Invalid input size" << endl;
@@ -722,13 +722,9 @@ Line::setState(std::vector<vec> pos, std::vector<vec> vel, std::vector<vec> misc
 	}
 
 	// set interior node positions and velocities and all misc states based on state vector
-	for (unsigned int i = 0; i < N+1; i++) {
-		if ((i != 0) && (i != N)) {
-			r[i] = pos[i - 1];
-			rd[i] = vel[i - 1];
-		}
-		Misc[i] = misc[i]; // Misc[i][0,1,2] correspond to viv phase, viscoelastic, unused.
-	}
+	std::copy(pos.begin(), pos.end(), r.begin() + 1);
+	std::copy(vel.begin(), vel.end(), rd.begin() + 1);
+	std::copy(misc.begin(), misc.end(), Misc.begin() + 1); // Misc[i][0,1,2] correspond to viv phase, viscoelastic, unused.
 }
 
 void
@@ -820,8 +816,8 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 	return qEnd * EIEnd / dlEnd;
 }
 
-std::tuple<std::vector<vec>, std::vector<vec>, std::vector<vec>>
-Line::getStateDeriv()
+void
+Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<vec>& misc)
 {
 	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the
@@ -853,6 +849,22 @@ Line::getStateDeriv()
 		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
 
 		// V[i] = A * l[i]; // volume attributed to segment
+
+		if (nEApoints)
+			E = getNonlinearE(lstr[i], l[i]);
+
+		if (lstr[i] > l[i]) {
+			T[i] = E * A * (lstr[i] - l[i]) / l[i] * qs[i];
+		} else {
+			// cable can't "push" ...
+			// or can it, if bending stiffness is nonzero? <<<<<<<<<
+			T[i] = vec::Zero();
+		}
+
+		// line internal damping force
+		if (nCpoints)
+			c = getNonlinearC(ldstr[i], l[i]);
+		Td[i] = c * A * ldstr[i] / l[i] * qs[i];
 	}
 
 	// calculate unit tangent vectors (q) for each internal node. note: I've
@@ -926,28 +938,6 @@ Line::getStateDeriv()
 		F[i] = calcSubSeg(i, i + 1, surface_height);
 	}
 	//============================================================================================
-
-	// calculate mass matrix
-	for (unsigned int i = 0; i <= N; i++) {
-		real m_i; // node mass
-		real v_i; // node submerged volume
-
-		if (i == 0) {
-			m_i = pi / 8. * d * d * l[0] * rho;
-			v_i = 0.5 * F[0] * V[0];
-		} else if (i == N) {
-			m_i = pi / 8. * d * d * l[N - 1] * rho;
-			v_i = 0.5 * F[i - 1] * V[i - 1];
-		} else {
-			m_i = pi / 8. * (d * d * rho * (l[i] + l[i - 1]));
-			v_i = 0.5 * (F[i - 1] * V[i - 1] + F[i] * V[i]);
-		}
-
-		// Make node mass matrix
-		const mat I = mat::Identity();
-		const mat Q = q[i] * q[i].transpose();
-		M[i] = m_i * I + env->rho_w * v_i * (Can * (I - Q) + Cat * Q);
-	}
 
 	// ============  CALCULATE FORCES ON EACH NODE
 	// ===============================
@@ -1188,20 +1178,41 @@ Line::getStateDeriv()
 		}
 	}
 
+	// This mostly just simplifies the code, but also sometimes helps the
+	// compiler avoid repeated pointer lookup.
+	const real rho_w = env->rho_w;
+	const real g = env->g;
+
 	// loop through the nodes
 	for (unsigned int i = 0; i <= N; i++) {
-		W[i][0] = W[i][1] = 0.0;
+		// Nodes are considered to have a line length of half the length of the
+		// line on either side.
+		const real length_left = i == 0 ? 0.0 : l[i - 1];
+		const real length_right = i == N ? 0.0 : l[i];
+		const real length = 0.5 * (length_left + length_right);
+		const real submergence_left = i == 0 ? 0.0 : F[i - 1];
+		const real submergence_right = i == N ? 0.0 : F[i];
+		// Submerged length is half the submerged length of the neighboring
+		// segments
+		const real submerged_length = 0.5 * (length_left * submergence_left +
+		                                     length_right * submergence_right);
+
+		const real submerged_volume = submerged_length * A;
+
+		const real m_i = A * length * rho; // node mass
+		const real v_i = submerged_volume; // node submerged volume
+
+		// Make node mass matrix
+		const mat I = mat::Identity();
+		const mat Q = q[i] * q[i].transpose();
+		// calculate mass matrix
+		M[i] = m_i * I + rho_w * v_i * (Can * (I - Q) + Cat * Q);
+
 		// submerged weight (including buoyancy)
-		if (i == 0)
-			W[i][2] = 0.5 * A * (l[i] * (rho - F[i] * env->rho_w)) * (-env->g);
-		else if (i == N)
-			W[i][2] = 0.5 * A * (l[i - 1] * (rho - F[i - 1] * env->rho_w)) *
-			          (-env->g); // missing the "W[i][2] =" previously!
-		else
-			W[i][2] = 0.5 * A *
-			          (l[i] * (rho - F[i] * env->rho_w) +
-			           l[i - 1] * (rho - F[i - 1] * env->rho_w)) *
-			          (-env->g);
+
+		// submerged weight (including buoyancy)
+		W[i][0] = W[i][1] = 0.0;
+		W[i][2] = -g * (m_i - v_i * rho_w);
 
 
 		// magnitude of current
@@ -1211,33 +1222,21 @@ Line::getStateDeriv()
 		// relative flow velocity over node
 		const vec vi = U[i] - rd[i];
 		// tangential relative flow component
-		const moordyn::real vql = vi.dot(q[i]);
+		// <<<<<<< check sign since I've reversed q
+		const real vql = vi.dot(q[i]);
 		const vec vq = vql * q[i];
 		const moordyn::real vq_mag = vq.norm();
 		// transverse relative flow component
 		const vec vp = vi - vq;
-		const moordyn::real vp_mag = vp.norm();
 
+		const real vq_mag = vq.norm();
+		const real vp_mag = vp.norm();
+
+		const real shared_part = 0.5 * rho_w * d * submerged_length;
 		// transverse drag
-		if (i == 0)
-			Dp[i] = 0.25 * vp_mag * env->rho_w * Cdn * d * (F[i] * l[i]) * vp;
-		else if (i == N)
-			Dp[i] = 0.25 * vp_mag * env->rho_w * Cdn * d *
-			        (F[i - 1] * l[i - 1]) * vp;
-		else
-			Dp[i] = 0.25 * vp_mag * env->rho_w * Cdn * d *
-			        (F[i] * l[i] + F[i - 1] * l[i - 1]) * vp;
-
+		Dp[i] = vp_mag * Cdn * shared_part * vp;
 		// tangential drag
-		if (i == 0)
-			Dq[i] =
-			    0.25 * vq_mag * env->rho_w * Cdt * pi * d * (F[i] * l[i]) * vq;
-		else if (i == N)
-			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
-			        (F[i - 1] * l[i - 1]) * vq;
-		else
-			Dq[i] = 0.25 * vq_mag * env->rho_w * Cdt * pi * d *
-			        (F[i] * l[i] + F[i - 1] * l[i - 1]) * vq;
+		Dq[i] = vq_mag * Cdt * pi * shared_part * vq;
 
 		// Vortex Induced Vibration (VIV) cross-flow lift force
 		if ((Cl > 0.0) && (!IC_gen)) { // If non-zero lift coefficient and not during IC_gen then VIV to be calculated
@@ -1307,52 +1306,29 @@ Line::getStateDeriv()
 
 			// Prep for returning VIV state derivatives
 			Miscd[i][0] = phi_dot;
-			// Miscd[i][1] = A_int_dot;
-			// Miscd[i][2] = As_dot;
+			// Miscd[i][2] = As_dot; // unused state that could be used for future amplitude calculations
 
 		}	
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
-		const moordyn::real aql = Ud[i].dot(q[i]);
+		const real aql = Ud[i].dot(q[i]);
 		const vec aq = aql * q[i];
 		// normal component of fluid acceleration
 		const vec ap = Ud[i] - aq;
 
 		// transverse Froude-Krylov force
-		if (i == 0)
-			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (F[i] * V[i]) * ap;
-		else if (i == N)
-			Ap[i] = env->rho_w * (1. + Can) * 0.5 * (F[i - 1] * V[i - 1]) * ap;
-		else
-			Ap[i] = env->rho_w * (1. + Can) * 0.5 *
-			        (F[i] * V[i] + F[i - 1] * V[i - 1]) * ap;
+		Ap[i] = rho_w * (1. + Can) * submerged_volume * ap;
 		// tangential Froude-Krylov force
-		if (i == 0)
-			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (F[i] * V[i]) * aq;
-		else if (i == N)
-			Aq[i] = env->rho_w * (1. + Cat) * 0.5 * (F[i - 1] * V[i - 1]) * aq;
-		else
-			Aq[i] = env->rho_w * (1. + Cat) * 0.5 *
-			        (F[i] * V[i] + F[i - 1] * V[i - 1]) * aq;
+		Aq[i] = rho_w * (1. + Cat) * submerged_volume * aq;
 
 		// bottom contact (stiffness and damping, vertical-only for now) -
 		// updated for general case of potentially anchor or fairlead end in
 		// contact
 		const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
 		if (r[i][2] < waterDepth) {
-			if (i == 0)
-				B[i][2] =
-				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
-				    0.5 * d * (l[i]);
-			else if (i == N)
-				B[i][2] =
-				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
-				    0.5 * d * (l[i - 1]);
-			else
-				B[i][2] =
-				    ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
-				    0.5 * d * (l[i - 1] + l[i]);
+			B[i][2] = ((waterDepth - r[i][2]) * env->kb - rd[i][2] * env->cb) *
+			          d * (length);
 
 			// new rough-draft addition of seabed friction
 			real FrictionMax =
@@ -1396,33 +1372,14 @@ Line::getStateDeriv()
 	}
 
 	// loop through internal nodes and compute the accelerations
-	std::vector<vec> u, a;
-	u.reserve(N - 1);
-	a.reserve(N - 1);
+	vel.reserve(N - 1);
+	acc.reserve(N - 1);
 	for (unsigned int i = 1; i < N; i++) {
-		//	double M_out[9];
-		//	double F_out[3];
-		//	for (int I=0; I<3; I++)
-		//	{	F_out[I] = Fnet[i][I];
-		//		for (int J=0; J<3; J++) M_out[3*I + J] = M[i][I][J];
-		//	}
-
-		// solve for accelerations in [M]{a}={f} using LU decomposition
-		//	double LU[9];                        // serialized matrix that will
-		// hold LU matrices combined 	Crout(3, M_out, LU);                  //
-		// perform LU decomposition on mass matrix 	double acc[3]; //
-		// acceleration vector to solve for 	solveCrout(3, LU, F_out, acc);
-		// // solve for acceleration vector
-
-		//	LUsolve3(M[i], acc, Fnet[i]);
-
-		//	Solve3(M[i], acc, (const double*)Fnet[i]);
-
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		a.push_back(M[i].inverse() * Fnet[i]);
-		u.push_back(rd[i]);
+		acc[i - 1] = M[i].inverse() * Fnet[i];
+		vel[i - 1] = rd[i];
 	}
 
 	if ((t >= t_old + dtm) || (t == 0.0)) { // update back indexing one moordyn time step (regardless of time integration scheme)
@@ -1430,7 +1387,6 @@ Line::getStateDeriv()
 	}
 	rdd_old = a; // saving the acceleration for VIV RMS calculation
 
-	return make_tuple(u, a, Miscd);
 };
 
 // write output file for line  (accepts time parameter since retained time value

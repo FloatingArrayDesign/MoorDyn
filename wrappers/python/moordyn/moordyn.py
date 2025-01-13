@@ -306,7 +306,7 @@ def ExternalWaveKinGetN(instance):
     return cmoordyn.ext_wave_init(instance)
 
 
-def GetWaveKinCoordinates(instance):
+def ExternalWaveKinGetCoordinates(instance):
     """Get the points where the waves kinematics shall be provided
 
     The kinematics on those points shall be provided just if WaveKin is set
@@ -328,7 +328,19 @@ def GetWaveKinCoordinates(instance):
     return points
 
 
-def SetWaveKin(instance, u, a, t):
+def GetWaveKinCoordinates(instance):
+    """Just an alias for moordyn.ExternalWaveKinGetCoordinates()
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    list (n, 3): The list of points
+    """
+    return ExternalWaveKinGetCoordinates(instance)
+
+
+def ExternalWaveKinSet(instance, u, a, t):
     """Set the kinematics of the waves
 
     Use this function if WaveKin option is set to 1 in the input file
@@ -353,6 +365,23 @@ def SetWaveKin(instance, u, a, t):
         uu += u[i]
         aa += a[i]
     return cmoordyn.ext_wave_set(instance, uu, aa, t)
+
+
+def SetWaveKin(instance, u, a, t):
+    """Just an alias for moordyn.ExternalWaveKinSet()
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    u (list (n, 3)): The list of velocities evaluated in the points provided
+                     by moordyn.GetWaveKinCoordinates()
+    a (list (n, 3)): The list of accelerations evaluated in the points provided
+                     by moordyn.GetWaveKinCoordinates()
+    t (float): The simulation time
+
+    Returns:
+    int: 0 uppon success, an error code otherwise
+    """
+    return ExternalWaveKinSet(instance, uu, aa, t)
 
 
 def GetNumberBodies(instance):
@@ -498,6 +527,87 @@ def GetFASTtens(instance, n_lines):
     return data[0], data[1], data[2], data[3]
 
 
+def GetDt(instance):
+    """Get the current model time step
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    dt (float): The time step
+    """
+    import cmoordyn
+    cmoordyn.get_dt(instance)
+
+
+def SetDt(instance, dt):
+    """Set the model time step
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    dt (float): The new time step
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.set_dt(instance, dt)
+
+
+def GetCFL(instance):
+    """Get the current model Courant–Friedrichs–Lewy factor
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    cfl (float): The Courant–Friedrichs–Lewy factor
+    """
+    import cmoordyn
+    cmoordyn.get_cfl(instance)
+
+
+def SetCFL(instance, cfl):
+    """Set the model Courant–Friedrichs–Lewy factor
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    cfl (float): The new Courant–Friedrichs–Lewy factor
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.set_cfl(instance, cfl)
+
+
+def GetTimeScheme(instance):
+    """Get the current time scheme name
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+
+    Returns:
+    name (str): The time scheme name
+    """
+    import cmoordyn
+    cmoordyn.get_tscheme(instance)
+
+
+def SetTimeScheme(instance, name):
+    """Set the time scheme by its name
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    name (str): The new time scheme name
+
+    Returns:
+    None
+    """
+    import cmoordyn
+    cmoordyn.set_tscheme(instance, name)
+
+
 def SaveState(instance, filepath):
     """Save the MoorDyn system state into a file
 
@@ -606,7 +716,7 @@ def SaveVTK(instance, filename):
 #  =============================================================================
 
 
-def GetWavesKin(instance, x, y, z, t, seafloor=None):
+def GetWavesKin(instance, x, y, z, seafloor=None):
     """ Get the wave kinematics
 
     Parameters:
@@ -614,7 +724,6 @@ def GetWavesKin(instance, x, y, z, t, seafloor=None):
     x (float): The x coordinate
     y (float): The y coordinate
     z (float): The z coordinate
-    t (float): The simulation time
     seafloor (cmoordyn.MoorDynSeafloor): The 3D seafloor instance
 
     Returns:
@@ -624,7 +733,7 @@ def GetWavesKin(instance, x, y, z, t, seafloor=None):
     pdyn: The dynamic pressure
     """
     import cmoordyn
-    return cmoordyn.waves_getkin(instance, x, y, z, t, seafloor)
+    return cmoordyn.waves_getkin(instance, x, y, z, seafloor)
 
 
 #                                  Seafloor.h
@@ -894,6 +1003,18 @@ def GetRodN(instance):
     return cmoordyn.rod_get_n(instance)
 
 
+def GetRodNumberNodes(instance):
+    """ Get the rod number of nodes
+
+    Parameters:
+    instance (cmoordyn.MoorDynRod): The rod instance
+
+    Returns:
+    n: The number of nodes
+    """
+    return GetRodN(instance) + 1
+
+
 def GetRodNodePos(instance, i):
     """ Get a rod node position
 
@@ -1086,6 +1207,18 @@ def GetLineN(instance):
     """
     import cmoordyn
     return cmoordyn.line_get_n(instance)
+
+
+def GetLineNumberNodes(instance):
+    """ Get the line number of nodes
+
+    Parameters:
+    instance (cmoordyn.MoorDynLine): The line instance
+
+    Returns:
+    n: The number of nodes
+    """
+    return GetLineN(instance) + 1
 
 
 def GetLineUnstretchedLength(instance):
@@ -1339,7 +1472,7 @@ def GetLineNodeSeabedForce(instance, i):
     f: The node force (a 3 components tuple)
     """
     import cmoordyn
-    return cmoordyn.line_get_node_froudekrylov(instance, i)
+    return cmoordyn.line_get_node_seabed(instance, i)
 
 
 def GetLineNodeCurv(instance, i):

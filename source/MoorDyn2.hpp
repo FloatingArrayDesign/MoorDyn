@@ -126,6 +126,13 @@ class MoorDyn final : public io::IO
 	 */
 	inline vector<Line*> GetLines() const { return LineList; }
 
+	/**
+	 * @brief Set whether console and file output is disabled.
+	 * 
+	 * @param disable 
+	 */
+	inline void SetDisableOutput(bool disable) { disableOutput = disable; }
+
 	/** @brief Return the number of coupled Degrees Of Freedom (DOF)
 	 *
 	 * This should match with the number of components of the positions and
@@ -630,6 +637,12 @@ class MoorDyn final : public io::IO
 	/// (if using env.WaveKin=1)
 	unsigned int npW;
 
+	/// Disabled writing to output files or console when running
+	bool disableOutput = false;
+
+	/// Disabledtime updates to console when running (for MATLAB wrapper)
+	bool disableOutTime = false;
+
 	/// main output file
 	ofstream outfileMain;
 
@@ -743,7 +756,7 @@ class MoorDyn final : public io::IO
 				return MOORDYN_INVALID_INPUT;
 			}
 			x.push_back(atof(entries[0].c_str()));
-			y.push_back(atof(entries[0].c_str()));
+			y.push_back(atof(entries[1].c_str()));
 			LOGDBG << "(" << x.back() << ", " << y.back() << ")" << std::endl;
 		}
 
@@ -834,7 +847,7 @@ class MoorDyn final : public io::IO
 	 * @return MOORDYN_SUCCESS if the output is correctly printed, an error
 	 * code otherwise
 	 */
-	moordyn::error_id AllOutput(double t, double dt);
+	moordyn::error_id WriteOutputs(double t, double dt);
 };
 
 } // ::moordyn

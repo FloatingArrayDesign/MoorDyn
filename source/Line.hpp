@@ -867,7 +867,7 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @see moordyn::Line::setEndState
 	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
 	 */
-	void setState(std::vector<vec> r, std::vector<vec> u, std::vector<vec> v);
+	void setState(const std::vector<vec>& r, const std::vector<vec>& u, const std::vector<vec>& v);
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r Position
@@ -907,11 +907,12 @@ class Line final : public io::IO, public NatFreqCFL
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
 
 	/** @brief Calculate forces and get the derivative of the line's states
-	 * @return The velocities of the internal nodes (first) and the accelerations
-	 * of the internal nodes (second) and the viv derivatives (third)
+	 * @param vel Where to store the velocities of the internal nodes
+	 * @param acc Where to store the accelerations of the internal nodes 
+	 * @param misc Where to store the misc states of lines (viv phase, viscoelastic, unused)
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	std::tuple<std::vector<vec>, std::vector<vec>, std::vector<vec>> getStateDeriv();
+	void getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<vec>& misc);
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);

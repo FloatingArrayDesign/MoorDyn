@@ -579,6 +579,31 @@ to run the .mdl file are available in the OpenFAST GitHub repo under `glue-codes
 to show how to pass in values. A .dll OpenFAST shared library file and .mex OpenFAST S function file need to be in 
 the same directory the controller is being run from.
 
+External Loads (MoorDyn-F only)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section (optional) allows users to specify external forces (constant) and translational linear and quadratic 
+damping coefficients to MoorDyn point, rod, and body objects.
+
+.. code-block:: none
+
+  ---------------------- EXTERNAL LOADS --------------------------------
+  ID    Object          Fext             Blin          Bquad         CSys
+  (#)   (name)           (N)            (Ns/m)       (Ns^2/m^2)      (-)
+  1    Body1        0.0|0.0|0.0     0.0|0.0|0.0     0.0|0.0|0.0      G
+  2    Body1        0.0|0.0|0.0     0.0|0.0|0.0     0.0|0.0|0.0      L
+  3    Point1       0.0|0.0|0.0     0.0|0.0|0.0     0.0|0.0|0.0      -
+  4    Rod1         0.0|0.0|0.0     0.0|0.0         0.0|0.0          -
+  
+For bodies, the force and damping are applied at the 
+body reference point in the global earth-fixed coordinate system if CSys is G for global or in the local body-fixed 
+coordinate system if CSys is L for local. CSys can only be G or L for bodies. For points, the force and damping are 
+applied at the point location in the global earth-fixed coordinate system always. CSys should be -. Otherwise, a 
+warning message with explanation will be shown. For rods, the force is applied at the rod end A in the earth-fixed 
+coordinate system always. Only two linear and two quadratic damping coefficients can be specified for rods. The first 
+one is for the transverse direction, and the second one is for the axial/tangential direction. The damping force is 
+always evaluated in the body-fixed system. CSys should be -. Otherwise, a warning message with explanation will be shown. 
+
 Options
 ^^^^^^^
 
@@ -652,6 +677,8 @@ The list of possible options is:
    If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
    The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
    but it can take longer to reach equilibrium.
+ - disableOutput (0): Disables some console and file outputs to improve runtime. 
+ - disableOutTime (0): Disables the printing of the current timestep to the console, useful for the MATLAB wrapper
 
 A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
 no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
@@ -686,6 +713,8 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - FricDamp: Same as CV in MoorDyn-F.
  - StatDynFricScale: Same as MC in MoorDyn-F.
  - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
+ - disableOutput: MoorDyn-F output verbosity is controlled by OpenFAST
+ - disableOutTime: MoorDyn-F output verbosity is controlled by OpenFAST
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 

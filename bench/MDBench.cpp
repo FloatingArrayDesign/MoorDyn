@@ -21,8 +21,10 @@ LineGetStateDeriv(benchmark::State& state, std::string input_file)
 
 	auto line = system.GetLines().front();
 
+	std::vector<moordyn::vec> vel{};
+	std::vector<moordyn::vec> acc{};
 	for (auto _ : state) {
-		line->getStateDeriv();
+		line->getStateDeriv(vel, acc);
 	}
 }
 BENCHMARK_CAPTURE(LineGetStateDeriv,

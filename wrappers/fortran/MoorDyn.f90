@@ -3,7 +3,7 @@ module moordyn
   use, intrinsic :: iso_fortran_env, only: int64, real32, real64, &
                                            stderr => error_unit
   use, intrinsic :: iso_c_binding, only: c_char, c_null_char, c_int, c_double, &
-                                         c_ptr, c_loc
+                                         c_ptr, c_loc, c_size_t, c_int64_t
 
   implicit none
 
@@ -29,7 +29,10 @@ module moordyn
              MoorDyn_Init_NoIC, MoorDyn_Step, &
              MoorDyn_ExternalWaveKinGetCoordinates, &
              MoorDyn_ExternalWaveKinSet, MoorDyn_GetFASTtens, &
+             MoorDyn_GetDt, MoorDyn_GetCFL, &
+             MoorDyn_GetTimeScheme, MoorDyn_SetTimeScheme, &
              MoorDyn_SaveState, MoorDyn_LoadState, &
+             MoorDyn_Serialize, MoorDyn_Deserialize, &
              MoorDyn_Save, MoorDyn_Load, MoorDyn_SaveVTK, &
              MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, MoorDyn_GetBodyPos, MoorDyn_GetBodyAngle, &
@@ -53,8 +56,10 @@ module moordyn
             MD_ExternalWaveKinSet, MD_GetNumberBodies, MD_GetBody, &
             MD_GetNumberRods, MD_GetRod, MD_GetNumberPoints, MD_GetPoint, &
             MD_GetNumberLines, MD_GetLine, MD_GetFASTtens, &
-            MD_SaveState, MD_LoadState, MD_Save, MD_Load, &
-            MD_SaveVTK, &
+            MD_GetDt, MD_SetDt, MD_GetCFL, MD_SetCFL, &
+            MD_GetTimeScheme, MD_SetTimeScheme, &
+            MD_SaveState, MD_LoadState, MD_Serialize, MD_Deserialize, &
+            MD_Save, MD_Load, MD_SaveVTK, &
             MD_GetWavesKin, &
             MD_GetDepthAt, MD_GetAverageDepth, MD_GetMinDepth, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, MD_GetBodyPos, &
@@ -251,6 +256,47 @@ module moordyn
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
 
+    function MoorDyn_GetDt(instance, dt) bind(c, name='MoorDyn_GetDt') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: dt
+      integer(c_int) :: rc
+    end function MoorDyn_GetDt
+
+    integer(c_int) function MD_SetDt(instance, dt) bind(c, name='MoorDyn_SetDt')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), value, intent(in) :: dt
+    end function MD_SetDt
+
+    function MoorDyn_GetCFL(instance, cfl) bind(c, name='MoorDyn_GetCFL') result(rc)
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: cfl
+      integer(c_int) :: rc
+    end function MoorDyn_GetCFL
+
+    integer(c_int) function MD_SetCFL(instance, cfl) bind(c, name='MoorDyn_SetCFL')
+      import :: c_ptr, c_double, c_int
+      type(c_ptr), value, intent(in) :: instance
+      real(c_double), value, intent(in) :: cfl
+    end function MD_SetCFL
+
+    function MoorDyn_GetTimeScheme(instance, name, name_len) bind(c, name='MoorDyn_GetTimeScheme') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(out) :: name(*)
+      integer(c_int), intent(inout) :: name_len
+      integer(c_int) :: rc
+    end function MoorDyn_GetTimeScheme
+
+    function MoorDyn_SetTimeScheme(instance, name) bind(c, name='MoorDyn_SetTimeScheme') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      character(kind=c_char), intent(in) :: name(*)
+      integer(c_int) :: rc
+    end function MoorDyn_SetTimeScheme
+
     function MoorDyn_SaveState(instance, f) bind(c, name='MoorDyn_SaveState') result(rc)
       import :: c_ptr, c_char, c_int
       type(c_ptr), value, intent(in) :: instance
@@ -264,6 +310,21 @@ module moordyn
       character(kind=c_char), intent(in) :: f(*)
       integer(c_int) :: rc
     end function MoorDyn_LoadState
+
+    function MoorDyn_Serialize(instance, data_size, data) bind(c, name='MoorDyn_Serialize') result(rc)
+      import :: c_ptr, c_size_t, c_int
+      type(c_ptr), value, intent(in) :: instance
+      integer(c_size_t), intent(inout) :: data_size
+      type(c_ptr), value, intent(in) :: data
+      integer(c_int) :: rc
+    end function MoorDyn_Serialize
+
+    function MoorDyn_Deserialize(instance, data) bind(c, name='MoorDyn_Deserialize') result(rc)
+      import :: c_ptr, c_char, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: data
+      integer(c_int) :: rc
+    end function MoorDyn_Deserialize
 
     function MoorDyn_Save(instance, f) bind(c, name='MoorDyn_Save') result(rc)
       import :: c_ptr, c_char, c_int
@@ -798,6 +859,39 @@ contains
     MD_GetFASTtens = MoorDyn_GetFASTtens(instance, n, c_loc(fht), c_loc(fvt), c_loc(aht), c_loc(avt))
   end function MD_GetFASTtens
 
+  integer function MD_GetDt(instance, dt)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: dt(:)
+    MD_GetDt = MoorDyn_GetDt(instance, c_loc(dt))
+  end function MD_GetDt
+
+  integer function MD_GetCFL(instance, cfl)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    real(c_double), intent(in), target :: cfl(:)
+    MD_GetCFL = MoorDyn_GetCFL(instance, c_loc(cfl))
+  end function MD_GetCFL
+
+  integer function MD_GetTimeScheme(instance, name, name_len)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(len=*), intent(out) :: name
+    integer(c_int), intent(inout) :: name_len
+    character(:, kind=c_char), allocatable :: cname
+    integer(c_int) :: i
+    allocate(character(name_len + 1) :: cname)
+    MD_GetTimeScheme = MoorDyn_GetTimeScheme(instance, cname, name_len)
+    name = cname(1:name_len-1)
+  end function MD_GetTimeScheme
+
+  integer function MD_SetTimeScheme(instance, name)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    character(*), intent(in) :: name
+    MD_SetTimeScheme = MoorDyn_SetTimeScheme(instance, trim(name) // c_null_char)
+  end function MD_SetTimeScheme
+
   integer function MD_SaveState(instance, f)
     use iso_c_binding
     type(c_ptr), intent(in) :: instance
@@ -811,6 +905,21 @@ contains
     character(*), intent(in) :: f
     MD_LoadState = MoorDyn_LoadState(instance, trim(f) // c_null_char)
   end function MD_LoadState
+
+  integer function MD_Serialize(instance, data_size, data)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_size_t), intent(inout) :: data_size
+    integer(c_int64_t), intent(in), target :: data(:)
+    MD_Serialize = MoorDyn_Serialize(instance, data_size, c_loc(data))
+  end function MD_Serialize
+
+  integer function MD_Deserialize(instance, data)
+    use iso_c_binding
+    type(c_ptr), intent(in) :: instance
+    integer(c_int64_t), intent(in), target :: data(:)
+    MD_Deserialize = MoorDyn_Deserialize(instance, c_loc(data))
+  end function MD_Deserialize
 
   integer function MD_Save(instance, f)
     use iso_c_binding

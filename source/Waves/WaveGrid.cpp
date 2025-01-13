@@ -357,8 +357,8 @@ constructWaveGridSpectrumData(const std::string& folder,
 {
 
 	const string WaveFilename = folder + "wave_frequencies.txt";
-	LOGMSG << "   Reading waves FFT from '" << WaveFilename << "'..." << endl;
-   
+	LOGMSG << "Reading waves FFT from '" << WaveFilename << "'..." << endl;
+
 	// NOTE: need to decide what inputs/format to expect in file
 	// (1vs2-sided spectrum?)
 
@@ -415,7 +415,7 @@ constructWaveGridElevationData(const std::string& folder,
 	// load wave elevation time series from file (similar to what's done in
 	// GenerateWaveExtnFile.py, and was previously in misc2.cpp)
 	const string WaveFilename = folder + "wave_elevation.txt";
-	LOGMSG << "   Reading waves elevation from '" << WaveFilename << "'..."
+	LOGMSG << "Reading waves elevation from '" << WaveFilename << "'..."
 	       << endl;
 
 	vector<string> lines;
@@ -533,7 +533,7 @@ constructWaveGridElevationData(const std::string& folder,
 
 	waveGrid = make_unique<WaveGrid>(_log, px, py, pz, nt, dtWave);
 	waveGrid->allocateKinematicArrays();
-	// makeGrid(((string)folder + "/water_grid.txt").c_str());
+	// makeGrid(((string)folder + "water_grid.txt").c_str());
 	std::vector<real> betas(nw, 0);
 	return fillWaveGrid(
 	    std::move(waveGrid), zetaC0.data(), nw, betas, dw, env, _log);
@@ -546,7 +546,7 @@ constructSteadyCurrentGrid(const std::string& folder,
 {
 
 	const string CurrentsFilename = folder + "current_profile.txt";
-	LOGMSG << "   Reading currents profile from '" << CurrentsFilename << "'..."
+	LOGMSG << "Reading currents profile from '" << CurrentsFilename << "'..."
 	       << endl;
 
 	vector<string> lines;
@@ -623,7 +623,7 @@ constructDynamicCurrentGrid(const std::string& folder,
 {
 
 	const string CurrentsFilename = folder + "current_profile_dynamic.txt";
-	LOGMSG << "   Reading currents dynamic profile from '" << CurrentsFilename
+	LOGMSG << "Reading currents dynamic profile from '" << CurrentsFilename
 	       << "'..." << endl;
 
 	vector<string> lines;
