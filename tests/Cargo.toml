@@ -1,0 +1,11 @@
+[package]
+name = "moordyn-tests"
+version = "0.1.0"
+edition = "2018"
+[[bin]]
+name = "rust_minimal"
+test = true
+bench = false
+path = "rust_minimal.rs"
+[dependencies]
+moordyn-sys = { path = "../wrappers/rust/" }

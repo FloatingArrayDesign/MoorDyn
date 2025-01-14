@@ -7,6 +7,7 @@ edition = "2018"
 [lib]
 plugin = true
 path = "./lib.rs"
+name = "moordyn"
 [dependencies]
 libc = "0.2"
 [build-dependencies]
