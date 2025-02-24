@@ -48,17 +48,25 @@ def moorpy_export(moorpy_system, filename,
         out.write(b'MoorDyn')
         out.write(struct.pack('<B', version_major))
         out.write(struct.pack('<B', version_minor))
-        # Serialize the data
-        data = b''
-        for body in moorpy_system.bodyList:
-            # MoorDyn is expecting a position vector:
-            data += struct.pack('<ddd', *body.r6[:3])
-            # A quaternion orientation:
-            r = R.from_matrix(body.R)
-            data += struct.pack('<dddd', *r.as_quat())
-            # And a 6DOF velocity vector
-            data += struct.pack('<d', 0.0) * 6
+        data = {"pos": b'', "vel": b''}
+        ndof = 0
+        for line in moorpy_system.lineList:
+            x, y, z, _ = line.getLineCoords(-1)
+            n = len(x)
+            ndof += n - 2
+            for i in range(1, n - 1):
+                data["pos"] += struct.pack('<Q', 3)
+                data["pos"] += struct.pack('<ddd', x[i], y[i], z[i])
+                data["vel"] += struct.pack('<Q', 3)
+                data["vel"] += struct.pack('<d', 0.0) * 3
+        for point in moorpy_system.pointList:
+            ndof += 1
+            data["pos"] += struct.pack('<Q', 3)
+            data["pos"] += struct.pack('<ddd', *point.r)
+            data["vel"] += struct.pack('<Q', 3)
+            data["vel"] += struct.pack('<d', 0.0) * 3
         for rod in moorpy_system.rodList:
+            ndof += 1
             if isinstance(rod, moorpy.Line):
                 x, y, z, _ = rod.getLineCoords(-1)
                 rA = np.asarray([x[0], y[0], z[0]])
@@ -67,9 +75,6 @@ def moorpy_export(moorpy_system, filename,
             else:
                 rA = rB = rod.r
                 L = 0
-            # MoorDyn is expecting a position vector:
-            data += struct.pack('<ddd', *rA)
-            # A quaternion orientation:
             if L > 0.0:
                 k = (rB - rA) / L
                 Rmat = np.array(rotationMatrix(
@@ -79,28 +84,26 @@ def moorpy_export(moorpy_system, filename,
                 r = R.from_matrix(Rmat)
             else:
                 r = R.from_matrix(np.eye(3))
-            data += struct.pack('<dddd', *r.as_quat())
-            # And a 6DOF velocity vector
-            data += struct.pack('<d', 0.0) * 6
-        for point in moorpy_system.pointList:
-            # MoorDyn is expecting a position vector:
-            data += struct.pack('<ddd', *point.r)
-            # And a velocity vector
-            data += struct.pack('<d', 0.0) * 3
-        for line in moorpy_system.lineList:
-            x, y, z, _ = line.getLineCoords(-1)
-            # MoorDyn is expecting first the number of points
-            n = len(x)
-            data += struct.pack('<Q', n - 2)
-            # And then the coordinates
-            for i in range(1, n - 1):
-                data += struct.pack('<ddd', x[i], y[i], z[i])
-            # And the same for the velocity
-            data += struct.pack('<Q', n - 2)
-            data += struct.pack('<d', 0.0) * 3 * (n - 2)
+            data["pos"] += struct.pack('<Q', 7)
+            data["pos"] += struct.pack('<ddd', *rA)
+            data["pos"] += struct.pack('<dddd', *r.as_quat())
+            data["vel"] += struct.pack('<Q', 6)
+            data["vel"] += struct.pack('<d', 0.0) * 6
+        for body in moorpy_system.bodyList:
+            ndof += 1
+            r = R.from_matrix(body.R)
+            data["pos"] += struct.pack('<Q', 7)
+            data["pos"] += struct.pack('<ddd', *body.r6[:3])
+            data["pos"] += struct.pack('<dddd', *r.as_quat())
+            data["vel"] += struct.pack('<Q', 6)
+            data["vel"] += struct.pack('<d', 0.0) * 6
         # Save it
-        out.write(struct.pack('<Q', len(data) // 8))
-        out.write(data)
+        out.write(struct.pack('<Q',
+                              (len(data["pos"]) + len(data["vel"])) // 8 + 2))
+        out.write(struct.pack('<Q', ndof))
+        out.write(data["pos"])
+        out.write(struct.pack('<Q', ndof))
+        out.write(data["vel"])
 
 
 def moorpy_ic(infile,

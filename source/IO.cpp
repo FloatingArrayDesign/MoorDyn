@@ -196,7 +196,7 @@ IO::IO(moordyn::Log* log)
   : LogUser(log)
   , _is_big_endian(false)
   , _min_major_version(2)
-  , _min_minor_version(2)
+  , _min_minor_version(4)
 {
 	_is_big_endian = is_big_endian();
 	if (_min_major_version <= MOORDYN_MAJOR_VERSION) {
@@ -205,8 +205,6 @@ IO::IO(moordyn::Log* log)
 			_min_minor_version = MOORDYN_MINOR_VERSION;
 	}
 }
-
-IO::~IO() {}
 
 void
 IO::Save(const std::string filepath)
@@ -401,6 +399,18 @@ IO::Serialize(const XYZQuat& m)
 }
 
 std::vector<uint64_t>
+IO::Serialize(const list& m)
+{
+	std::vector<uint64_t> data;
+	const uint64_t n = m.rows();
+	data.reserve(1 + n);
+	data.push_back(Serialize(n));
+	for (uint64_t i = 0; i < n; i++)
+		data.push_back(Serialize(m(i)));
+	return data;
+}
+
+std::vector<uint64_t>
 IO::Serialize(const std::vector<real>& l)
 {
 	std::vector<uint64_t> data;
@@ -548,6 +558,21 @@ IO::Deserialize(const uint64_t* in, XYZQuat& out)
 {
 	uint64_t* remaining = Deserialize(in, out.pos);
 	remaining = Deserialize(remaining, out.quat);
+	return remaining;
+}
+
+uint64_t*
+IO::Deserialize(const uint64_t* in, list& out)
+{
+	uint64_t n;
+	uint64_t* remaining = Deserialize(in, n);
+	if (out.rows() != n)
+		out.resize(n);
+	for (unsigned int i = 0; i < n; i++) {
+		real v;
+		remaining = Deserialize(remaining, v);
+		out(i) = v;
+	}
 	return remaining;
 }
 

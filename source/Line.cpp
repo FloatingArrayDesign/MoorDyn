@@ -679,6 +679,25 @@ Line::setState(const std::vector<vec>& pos, const std::vector<vec>& vel)
 }
 
 void
+Line::setState(const StateVarRef pos, const StateVarRef vel)
+{
+	if ((pos.rows() != N - 1) || (vel.rows() != N - 1)) {
+		LOGERR << "Invalid input size" << endl;
+		throw moordyn::invalid_value_error("Invalid input size");
+	}
+	for (unsigned int i = 1; i < N; i++) {
+		if ((pos(i - 1).rows() != 3) || (vel(i - 1).rows() != 3)) {
+			LOGERR << "Invalid point input size on line " << number
+			       << " node " << i << ". pos size is " << pos(i - 1).rows()
+			       << " and vel size is " << vel(i - 1).rows() << endl;
+			throw moordyn::invalid_value_error("Invalid input size");
+		}
+		r[i] = pos(i - 1);
+		rd[i] = vel(i - 1);
+	}
+}
+
+void
 Line::setEndKinematics(vec pos, vec vel, EndPoints end_point)
 {
 	switch (end_point) {
@@ -768,7 +787,7 @@ Line::getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const
 }
 
 void
-Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc)
+Line::getStateDeriv(StateVarRef vel, StateVarRef acc)
 {
 	// NOTE:
 	// Jose Luis Cercos-Pita: This is by far the most consuming function of the
@@ -1177,14 +1196,12 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc)
 	}
 
 	// loop through internal nodes and compute the accelerations
-	vel.reserve(N - 1);
-	acc.reserve(N - 1);
 	for (unsigned int i = 1; i < N; i++) {
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
-		acc[i - 1] = M[i].inverse() * Fnet[i];
-		vel[i - 1] = rd[i];
+		acc(i - 1) = M[i].inverse() * Fnet[i];
+		vel(i - 1) = rd[i];
 	}
 };
 
