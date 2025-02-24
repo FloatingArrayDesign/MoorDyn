@@ -351,7 +351,7 @@ moordyn::MoorDyn::icStationary()
 
 	LOGMSG << "Finalizing ICs using static solve" << endl;
 
-	StationaryScheme t_integrator(_log, waves);
+	time::StationaryScheme t_integrator(_log, waves);
 	t_integrator.SetGround(GroundBody);
 	for (auto obj : BodyList)
 		t_integrator.AddBody(obj);
@@ -1644,7 +1644,7 @@ moordyn::MoorDyn::ReadInFile()
 	string err_msg;
 	if (!_t_integrator) {
 		try {
-			_t_integrator = create_time_scheme("RK2", _log, waves);
+			_t_integrator = time::create_time_scheme("RK2", _log, waves);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -2147,7 +2147,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			_t_integrator = create_time_scheme(value, _log, waves);
+			_t_integrator = time::create_time_scheme(value, _log, waves);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {
@@ -2717,7 +2717,7 @@ int DECLDIR
 MoorDyn_GetTimeScheme(MoorDyn system, char* name, size_t* name_len)
 {
 	CHECK_SYSTEM(system);
-	moordyn::TimeScheme* tscheme = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+	auto tscheme = ((moordyn::MoorDyn*)system)->GetTimeScheme();
 	std::string out = tscheme->GetName();
 	if (name_len)
 		*name_len = out.size() + 1;
@@ -2735,9 +2735,10 @@ MoorDyn_SetTimeScheme(MoorDyn system, const char* name)
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	moordyn::MoorDyn* sys = (moordyn::MoorDyn*)system;
-	moordyn::TimeScheme* tscheme;
+	moordyn::time::Scheme* tscheme;
 	try {
-		tscheme = create_time_scheme(name, sys->GetLogger(), sys->GetWaves());
+		tscheme = moordyn::time::create_time_scheme(
+			name, sys->GetLogger(), sys->GetWaves());
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	if (err != MOORDYN_SUCCESS) {
@@ -2759,7 +2760,7 @@ MoorDyn_SaveState(MoorDyn system, const char* filepath)
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		moordyn::TimeScheme* t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+		auto t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
 		t->SaveState(filepath);
 	}
 	MOORDYN_CATCHER(err, err_msg);
@@ -2777,7 +2778,7 @@ MoorDyn_LoadState(MoorDyn system, const char* filepath)
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
 	try {
-		moordyn::TimeScheme* t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
+		auto t = ((moordyn::MoorDyn*)system)->GetTimeScheme();
 		t->LoadState(filepath);
 	}
 	MOORDYN_CATCHER(err, err_msg);

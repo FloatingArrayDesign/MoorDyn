@@ -370,12 +370,12 @@ class MoorDyn final : public io::IO
 	/** @brief Get the current time integrator
 	 * @return The time integrator
 	 */
-	inline TimeScheme* GetTimeScheme() const { return _t_integrator; }
+	inline time::Scheme* GetTimeScheme() const { return _t_integrator; }
 
 	/** @brief Set the current time integrator
 	 * @return The time integrator
 	 */
-	inline void SetTimeScheme(TimeScheme* tscheme) {
+	inline void SetTimeScheme(time::Scheme* tscheme) {
 		if (_t_integrator) delete _t_integrator;
 		_t_integrator = tscheme;
 		_t_integrator->SetGround(GroundBody);
@@ -572,7 +572,7 @@ class MoorDyn final : public io::IO
 	real dtOut;
 
 	/// The time integration scheme
-	TimeScheme* _t_integrator;
+	time::Scheme* _t_integrator;
 
 	/// General options of the Mooring system
 	EnvCondRef env;

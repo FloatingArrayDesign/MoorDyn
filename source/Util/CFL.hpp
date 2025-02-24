@@ -62,7 +62,7 @@ class CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~CFL() {};
+	virtual ~CFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
@@ -118,7 +118,7 @@ class NatFreqCFL : public CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~NatFreqCFL() {};
+	virtual ~NatFreqCFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
@@ -200,7 +200,7 @@ class SuperCFL : public CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~SuperCFL() {};
+	virtual ~SuperCFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor

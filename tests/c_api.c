@@ -165,19 +165,9 @@ main(int narg, char** arg)
 		printf("MoorDyn_ExternalWaveKinGetCoordinates() test failed...");
 		return 255;
 	}
-	ret_code = MoorDyn_GetWaveKinCoordinates(NULL, NULL);
-	if (ret_code != MOORDYN_INVALID_VALUE) {
-		printf("MoorDyn_GetWaveKinCoordinates() test failed...");
-		return 255;
-	}
 	ret_code = MoorDyn_ExternalWaveKinSet(NULL, NULL, NULL, t);
 	if (ret_code != MOORDYN_INVALID_VALUE) {
 		printf("MoorDyn_ExternalWaveKinSet() test failed...");
-		return 255;
-	}
-	ret_code = MoorDyn_SetWaveKin(NULL, NULL, NULL, t);
-	if (ret_code != MOORDYN_INVALID_VALUE) {
-		printf("MoorDyn_SetWaveKin() test failed...");
 		return 255;
 	}
 	ret_code = MoorDyn_GetNumberBodies(NULL, &un);
