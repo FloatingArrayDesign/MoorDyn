@@ -34,900 +34,477 @@ using namespace std;
 
 namespace moordyn {
 
-template<>
-string
-StateVar<vec>::AsString() const
-{
-	stringstream s;
-	s << "pos = [" << pos.transpose() << "]; ";
-	s << "vel = [" << vel.transpose() << "]" << endl;
-	return s.str();
-}
+namespace state {
 
-template<>
-string
-StateVar<vec6>::AsString() const
-{
-	stringstream s;
-	s << "pos = [" << pos.transpose() << "]; ";
-	s << "vel = [" << vel.transpose() << "]" << endl;
-	return s.str();
-}
-
-template<>
-string
-StateVar<XYZQuat, vec6>::AsString() const
-{
-	stringstream s;
-	s << "pos = [" << pos.toVec7().transpose() << "]; ";
-	s << "vel = [" << vel.transpose() << "]" << endl;
-	return s.str();
-}
-
-template<>
-string
-StateVar<std::vector<vec>>::AsString() const
-{
-	stringstream s;
-	s << "pos = [";
-	for (auto v : pos)
-		s << "[" << v.transpose() << "], ";
-	s << "]" << endl;
-	s << "vel = [";
-	for (auto v : vel)
-		s << "[" << v.transpose() << "], ";
-	s << "]" << endl;
-	return s.str();
-}
-
-template<>
-StateVar<vec>
-StateVar<vec>::operator+(const StateVar<vec>& rhs)
-{
-	StateVar<vec> out;
-	out.pos = pos + rhs.pos;
-	out.vel = vel + rhs.vel;
-	return out;
-}
-
-template<>
-StateVar<vec6>
-StateVar<vec6>::operator+(const StateVar<vec6>& rhs)
-{
-	StateVar<vec6> out;
-	out.pos = pos + rhs.pos;
-	out.vel = vel + rhs.vel;
-	return out;
-}
-
-template<>
-StateVar<XYZQuat, vec6>
-StateVar<XYZQuat, vec6>::operator+(const StateVar<XYZQuat, vec6>& rhs)
-{
-	StateVar<XYZQuat, vec6> out;
-	out.pos = pos + rhs.pos;
-	out.vel = vel + rhs.vel;
-	return out;
-}
-
-template<>
-StateVar<XYZQuat, vec6>
-StateVar<XYZQuat, vec6>::operator-(const StateVar<XYZQuat, vec6>& rhs)
-{
-	StateVar<XYZQuat, vec6> out;
-	out.pos = pos + rhs.pos;
-	out.vel = vel + rhs.vel;
-	return out;
-}
-
-template<>
-StateVar<std::vector<vec>>
-StateVar<std::vector<vec>>::operator+(const StateVar<std::vector<vec>>& rhs)
-{
-	if ((pos.size() != rhs.pos.size()) || (vel.size() != rhs.vel.size()))
-		throw moordyn::invalid_value_error("Invalid input size");
-	StateVar<std::vector<vec>> out;
-	out.pos.reserve(pos.size());
-	out.vel.reserve(vel.size());
-	// NOTE: At this point we are assuming that both pos and vel have the same
-	// length
-	for (unsigned int i = 0; i < pos.size(); i++) {
-		out.pos.push_back(pos[i] + rhs.pos[i]);
-		out.vel.push_back(vel[i] + rhs.vel[i]);
-	}
-	return out;
-}
-
-template<>
-StateVar<vec>
-StateVar<vec>::operator-(const StateVar<vec>& rhs)
-{
-	StateVar<vec> out;
-	out.pos = pos - rhs.pos;
-	out.vel = vel - rhs.vel;
-	return out;
-}
-
-template<>
-StateVar<vec6>
-StateVar<vec6>::operator-(const StateVar<vec6>& rhs)
-{
-	StateVar<vec6> out;
-	out.pos = pos - rhs.pos;
-	out.vel = vel - rhs.vel;
-	return out;
-}
-
-template<>
-StateVar<std::vector<vec>>
-StateVar<std::vector<vec>>::operator-(const StateVar<std::vector<vec>>& rhs)
-{
-	if ((pos.size() != rhs.pos.size()) || (vel.size() != rhs.vel.size()))
-		throw moordyn::invalid_value_error("Invalid input size");
-	StateVar<std::vector<vec>> out;
-	out.pos.reserve(pos.size());
-	out.vel.reserve(vel.size());
-	// NOTE: At this point we are assuming that both pos and vel have the same
-	// length
-	for (unsigned int i = 0; i < pos.size(); i++) {
-		out.pos.push_back(pos[i] - rhs.pos[i]);
-		out.vel.push_back(vel[i] - rhs.vel[i]);
-	}
-	return out;
-}
-
-template<>
 void
-StateVar<vec>::Mix(const StateVar<vec>& rhs, const real& f)
+State::addLine(Line* obj)
 {
-	pos = pos * (1.0 - f) + rhs.pos * f;
-	vel = vel * (1.0 - f) + rhs.vel * f;
+	if (std::find(lines.begin(), lines.end(), obj) != lines.end()) {
+		throw moordyn::invalid_value_error("Repeated line");
+	}
+	lines.push_back(obj);
+	resize();
 }
 
-template<>
+unsigned int
+State::removeLine(Line* obj)
+{
+	auto it = std::find(lines.begin(), lines.end(), obj);
+	if (it == lines.end()) {
+		throw moordyn::invalid_value_error("Missing line");
+	}
+	const unsigned int i = std::distance(lines.begin(), it);
+	lines.erase(it);
+	resize();
+	return i;
+}
+
 void
-StateVar<vec6>::Mix(const StateVar<vec6>& rhs, const real& f)
+State::addPoint(Point* obj)
 {
-	pos = pos * (1.0 - f) + rhs.pos * f;
-	vel = vel * (1.0 - f) + rhs.vel * f;
+	if (std::find(points.begin(), points.end(), obj) != points.end()) {
+		throw moordyn::invalid_value_error("Repeated point");
+	}
+	points.push_back(obj);
+	resize();
 }
 
-template<>
+unsigned int
+State::removePoint(Point* obj)
+{
+	auto it = std::find(points.begin(), points.end(), obj);
+	if (it == points.end()) {
+		throw moordyn::invalid_value_error("Missing point");
+	}
+	const unsigned int i = std::distance(points.begin(), it);
+	points.erase(it);
+	resize();
+	return i;
+}
+
 void
-StateVar<XYZQuat, vec6>::Mix(const StateVar<XYZQuat, vec6>& rhs, const real& f)
+State::addRod(Rod* obj)
 {
-	pos = pos * (1.0 - f) + rhs.pos * f;
-	vel = vel * (1.0 - f) + rhs.vel * f;
+	if (std::find(rods.begin(), rods.end(), obj) != rods.end()) {
+		throw moordyn::invalid_value_error("Repeated rod");
+	}
+	rods.push_back(obj);
+	resize();
 }
 
-template<>
+unsigned int
+State::removeRod(Rod* obj)
+{
+	auto it = std::find(rods.begin(), rods.end(), obj);
+	if (it == rods.end()) {
+		throw moordyn::invalid_value_error("Missing rod");
+	}
+	const unsigned int i = std::distance(rods.begin(), it);
+	rods.erase(it);
+	resize();
+	return i;
+}
+
 void
-StateVar<std::vector<vec>>::Mix(const StateVar<std::vector<vec>>& rhs, const real& f)
+State::addBody(Body* obj)
 {
-	for (unsigned int i = 0; i < pos.size(); i++) {
-		pos[i] = pos[i] * (1.0 - f) + rhs.pos[i] * f;
-		vel[i] = vel[i] * (1.0 - f) + rhs.vel[i] * f;
+	if (std::find(bodies.begin(), bodies.end(), obj) != bodies.end()) {
+		throw moordyn::invalid_value_error("Repeated body");
 	}
+	bodies.push_back(obj);
+	resize();
 }
 
-template<>
-string
-StateVarDeriv<vec>::AsString() const
+unsigned int
+State::removeBody(Body* obj)
 {
-	stringstream s;
-	s << "vel = [" << vel.transpose() << "]; ";
-	s << "acc = [" << acc.transpose() << "]" << endl;
-	return s.str();
-}
-
-template<>
-string
-StateVarDeriv<vec6>::AsString() const
-{
-	stringstream s;
-	s << "vel = [" << vel.transpose() << "]; ";
-	s << "acc = [" << acc.transpose() << "]" << endl;
-	return s.str();
-}
-
-template<>
-string
-StateVarDeriv<XYZQuat, vec6>::AsString() const
-{
-	stringstream s;
-	s << "vel = [" << vel.toVec7().transpose() << "]; ";
-	s << "acc = [" << acc.transpose() << "]" << endl;
-	return s.str();
-}
-
-template<>
-string
-StateVarDeriv<std::vector<vec>>::AsString() const
-{
-	stringstream s;
-	s << "vel = [";
-	for (auto v : vel)
-		s << "[" << v.transpose() << "], ";
-	s << "]" << endl;
-	s << "acc = [";
-	for (auto v : acc)
-		s << "[" << v.transpose() << "], ";
-	s << "]" << endl;
-	return s.str();
-}
-
-template<>
-StateVar<vec>
-StateVarDeriv<vec>::operator*(const real& dt)
-{
-	StateVar<vec> out;
-	out.pos = vel * dt;
-	out.vel = acc * dt;
-	return out;
-}
-
-template<>
-StateVar<vec6>
-StateVarDeriv<vec6>::operator*(const real& dt)
-{
-	StateVar<vec6> out;
-	out.pos = vel * dt;
-	out.vel = acc * dt;
-	return out;
-}
-
-template<>
-StateVar<XYZQuat, vec6>
-StateVarDeriv<XYZQuat, vec6>::operator*(const real& dt)
-{
-	StateVar<XYZQuat, vec6> out;
-	out.pos = vel * dt;
-	out.vel = acc * dt;
-	return out;
-}
-
-template<>
-StateVar<std::vector<vec>>
-StateVarDeriv<std::vector<vec>>::operator*(const real& dt)
-{
-	StateVar<std::vector<vec>> out;
-	out.pos.reserve(vel.size());
-	out.vel.reserve(acc.size());
-	// NOTE: At this point we are assuming that both vel and acc have the same
-	// length
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		out.pos.push_back(vel[i] * dt);
-		out.vel.push_back(acc[i] * dt);
+	auto it = std::find(bodies.begin(), bodies.end(), obj);
+	if (it == bodies.end()) {
+		throw moordyn::invalid_value_error("Missing body");
 	}
-	return out;
+	const unsigned int i = std::distance(bodies.begin(), it);
+	bodies.erase(it);
+	resize();
+	return i;
 }
 
-template<>
-StateVarDeriv<vec>
-StateVarDeriv<vec>::operator+(const StateVarDeriv<vec>& rhs)
-{
-	StateVarDeriv<vec> out;
-	out.vel = vel + rhs.vel;
-	out.acc = acc + rhs.acc;
-	return out;
+#define TYPE_GETTER(T, TDEF)                                                   \
+template <>                                                                    \
+VarBase::types                                                                 \
+State::getType<T>()                                                            \
+{                                                                              \
+	return VarBase::types::TDEF;                                               \
 }
 
-template<>
-StateVarDeriv<vec6>
-StateVarDeriv<vec6>::operator+(const StateVarDeriv<vec6>& rhs)
-{
-	StateVarDeriv<vec6> out;
-	out.vel = vel + rhs.vel;
-	out.acc = acc + rhs.acc;
-	return out;
+TYPE_GETTER(real, REAL)
+TYPE_GETTER(VarScalar, REAL)
+TYPE_GETTER(vec, VEC)
+TYPE_GETTER(VarVec, VEC)
+TYPE_GETTER(vec6, VEC6)
+TYPE_GETTER(VarVec6, VEC6)
+TYPE_GETTER(XYZQuat, QUAT)
+TYPE_GETTER(VarQuat, QUAT)
+TYPE_GETTER(list, LIST)
+TYPE_GETTER(VarList, LIST)
+
+#define STATE_ADDER(T, TBASE)                                                  \
+template <>                                                                    \
+void                                                                           \
+State::addVar<T>(const char* name)                                             \
+{                                                                              \
+	TBASE* var = new TBASE();                                                  \
+	var->resize(ndof());                                                       \
+	vars[name] = var;                                                          \
+	types[name] = getType<T>();                                                \
 }
 
-template<>
-StateVarDeriv<XYZQuat, vec6>
-StateVarDeriv<XYZQuat, vec6>::operator+(const StateVarDeriv<XYZQuat, vec6>& rhs)
-{
-	StateVarDeriv<XYZQuat, vec6> out;
-	out.vel = vel + rhs.vel;
-	out.acc = acc + rhs.acc;
-	return out;
-}
 
-template<>
-StateVarDeriv<std::vector<vec>>
-StateVarDeriv<std::vector<vec>>::operator+(
-    const StateVarDeriv<std::vector<vec>>& rhs)
-{
-	if ((vel.size() != rhs.vel.size()) || (acc.size() != rhs.acc.size()))
-		throw moordyn::invalid_value_error("Invalid input size");
-	StateVarDeriv<std::vector<vec>> out;
-	out.vel.reserve(vel.size());
-	out.acc.reserve(acc.size());
-	// NOTE: At this point we are assuming that both vel and acc have the same
-	// length
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		out.vel.push_back(vel[i] + rhs.vel[i]);
-		out.acc.push_back(acc[i] + rhs.acc[i]);
-	}
-	return out;
-}
+STATE_ADDER(VarScalar, VarScalar)
+STATE_ADDER(real, VarScalar)
+STATE_ADDER(VarVec, VarVec)
+STATE_ADDER(vec, VarVec)
+STATE_ADDER(VarVec6, VarVec6)
+STATE_ADDER(vec6, VarVec6)
+STATE_ADDER(VarQuat, VarQuat)
+STATE_ADDER(XYZQuat, VarQuat)
+STATE_ADDER(VarList, VarList)
+STATE_ADDER(list, VarList)
 
-template<>
-StateVarDeriv<vec>
-StateVarDeriv<vec>::operator-(const StateVarDeriv<vec>& rhs)
-{
-	StateVarDeriv<vec> out;
-	out.vel = vel - rhs.vel;
-	out.acc = acc - rhs.acc;
-	return out;
-}
-
-template<>
-StateVarDeriv<vec6>
-StateVarDeriv<vec6>::operator-(const StateVarDeriv<vec6>& rhs)
-{
-	StateVarDeriv<vec6> out;
-	out.vel = vel - rhs.vel;
-	out.acc = acc - rhs.acc;
-	return out;
-}
-
-template<>
-StateVarDeriv<XYZQuat, vec6>
-StateVarDeriv<XYZQuat, vec6>::operator-(const StateVarDeriv<XYZQuat, vec6>& rhs)
-{
-	StateVarDeriv<XYZQuat, vec6> out;
-	out.vel = vel - rhs.vel;
-	out.acc = acc - rhs.acc;
-	return out;
-}
-
-template<>
-StateVarDeriv<std::vector<vec>>
-StateVarDeriv<std::vector<vec>>::operator-(
-    const StateVarDeriv<std::vector<vec>>& rhs)
-{
-	if ((vel.size() != rhs.vel.size()) || (acc.size() != rhs.acc.size()))
-		throw moordyn::invalid_value_error("Invalid input size");
-	StateVarDeriv<std::vector<vec>> out;
-	out.vel.reserve(vel.size());
-	out.acc.reserve(acc.size());
-	// NOTE: At this point we are assuming that both vel and acc have the same
-	// length
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		out.vel.push_back(vel[i] - rhs.vel[i]);
-		out.acc.push_back(acc[i] - rhs.acc[i]);
-	}
-	return out;
-}
-
-template<>
-real StateVarDeriv<vec>::MakeStationary(const real &dt)
-{
-	real ret = acc.norm();
-	vel = 0.5 * dt * acc;
-	acc = vec::Zero();
-	return ret;
-}
-
-template<>
-real StateVarDeriv<vec6>::MakeStationary(const real &dt)
-{
-	real ret = acc.head<3>().norm();
-	vel = 0.5 * dt * acc;
-	acc = vec6::Zero();
-	return ret;
-}
-
-template<>
-real StateVarDeriv<XYZQuat, vec6>::MakeStationary(const real &dt)
-{
-	real ret = acc.head<3>().norm();
-	vel = XYZQuat::fromVec6(0.5 * dt * acc);
-	acc = vec6::Zero();
-	return ret;
-}
-
-template<>
-real StateVarDeriv<std::vector<vec>>::MakeStationary(const real &dt)
-{
-	real ret = 0.0;
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		ret += acc[i].norm();
-		vel[i] = 0.5 * dt * acc[i];
-		acc[i] = vec::Zero();
-	}
-	return ret;
-}
-
-template<>
-StateVarDeriv<vec>
-StateVarDeriv<vec>::Newmark(
-	const StateVarDeriv<vec>& visitor, const real& dt,
-	real gamma, real beta)
-{
-	StateVarDeriv<vec> ret;
-	const vec acc_gamma = (1 - gamma) * acc + gamma * visitor.acc;
-	const vec acc_beta = (0.5 - beta) * acc + beta * visitor.acc;
-	ret.vel = vel + dt * acc_beta;
-	ret.acc = acc_gamma;
-	return ret;
-}
-
-template<>
-StateVarDeriv<vec6>
-StateVarDeriv<vec6>::Newmark(
-	const StateVarDeriv<vec6>& visitor, const real& dt,
-	real gamma, real beta)
-{
-	StateVarDeriv<vec6> ret;
-	const vec6 acc_gamma = (1 - gamma) * acc + gamma * visitor.acc;
-	const vec6 acc_beta = (0.5 - beta) * acc + beta * visitor.acc;
-	ret.vel = vel + dt * acc_beta;
-	ret.acc = acc_gamma;
-	return ret;
-}
-
-template<>
-StateVarDeriv<XYZQuat, vec6>
-StateVarDeriv<XYZQuat, vec6>::Newmark(
-	const StateVarDeriv<XYZQuat, vec6>& visitor, const real& dt,
-	real gamma, real beta)
-{
-	StateVarDeriv<XYZQuat, vec6> ret;
-	const vec6 acc_gamma = (1 - gamma) * acc + gamma * visitor.acc;
-	const vec6 acc_beta = (0.5 - beta) * acc + beta * visitor.acc;
-	ret.vel = vel + XYZQuat::fromVec6(dt * acc_beta);
-	ret.acc = acc_gamma;
-	return ret;
-}
-
-template<>
-StateVarDeriv<std::vector<vec>>
-StateVarDeriv<std::vector<vec>>::Newmark(
-	const StateVarDeriv<std::vector<vec>>& visitor, const real& dt,
-	real gamma, real beta)
-{
-	StateVarDeriv<std::vector<vec>> ret;
-	ret.vel.reserve(vel.size());
-	ret.acc.reserve(acc.size());
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		const vec acc_gamma = (1 - gamma) * acc[i] + gamma * visitor.acc[i];
-		const vec acc_beta = (0.5 - beta) * acc[i] + beta * visitor.acc[i];
-		ret.vel.push_back(vel[i] + dt * acc_beta);
-		ret.acc.push_back(acc_gamma);
-	}
-	return ret;
-}
-
-template<>
-StateVarDeriv<vec>
-StateVarDeriv<vec>::Wilson(
-	const StateVarDeriv<vec>& visitor, const real& tau, const real& dt)
-{
-	StateVarDeriv<vec> ret;
-	const real f = tau / dt;
-	ret.acc = (1 - 0.5 * f) * acc + 0.5 * f * visitor.acc;
-	ret.vel = vel + 0.5 * dt * (
-		(1 - 1.0 / 3.0 * f) * acc + 1.0 / 3.0 * f * visitor.acc);
-	return ret;
-}
-
-template<>
-StateVarDeriv<vec6>
-StateVarDeriv<vec6>::Wilson(
-	const StateVarDeriv<vec6>& visitor, const real& tau, const real& dt)
-{
-	StateVarDeriv<vec6> ret;
-	const real f = tau / dt;
-	ret.acc = (1 - 0.5 * f) * acc + 0.5 * f * visitor.acc;
-	ret.vel = vel + 0.5 * dt * (
-		(1 - 1.0 / 3.0 * f) * acc + 1.0 / 3.0 * f * visitor.acc);
-	return ret;
-}
-
-template<>
-StateVarDeriv<XYZQuat, vec6>
-StateVarDeriv<XYZQuat, vec6>::Wilson(
-	const StateVarDeriv<XYZQuat, vec6>& visitor,
-	const real& tau,
-	const real& dt)
-{
-	StateVarDeriv<XYZQuat, vec6> ret;
-	const real f = tau / dt;
-	ret.acc = (1 - 0.5 * f) * acc + 0.5 * f * visitor.acc;
-	ret.vel = vel + XYZQuat::fromVec6(0.5 * dt * (
-		(1 - 1.0 / 3.0 * f) * acc + 1.0 / 3.0 * f * visitor.acc));
-	return ret;
-}
-
-template<>
-StateVarDeriv<std::vector<vec>>
-StateVarDeriv<std::vector<vec>>::Wilson(
-	const StateVarDeriv<std::vector<vec>>& visitor,
-	const real& tau,
-	const real& dt)
-{
-	StateVarDeriv<std::vector<vec>> ret;
-	ret.vel.reserve(vel.size());
-	ret.acc.reserve(acc.size());
-	const real f = tau / dt;
-	const real f2 = 0.5 * f;
-	const real f3 = 1.0 / 3.0 * f;
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		ret.acc.push_back((1 - f2) * acc[i] + f2 * visitor.acc[i]);
-		ret.vel.push_back(vel[i] + 0.5 * dt * (
-			(1 - f3) * acc[i] + f3 * visitor.acc[i]));
-	}
-	return ret;
-}
-
-template<>
 void
-StateVarDeriv<vec>::Mix(const StateVarDeriv<vec>& rhs, const real& f)
+State::addVar(const char* name, VarBase::types t)
 {
-	vel = vel * (1.0 - f) + rhs.vel * f;
-	acc = acc * (1.0 - f) + rhs.acc * f;
+	switch (t) {
+		case VarBase::types::REAL:
+			addVar<VarScalar>(name);
+			break;
+		case VarBase::types::VEC:
+			addVar<VarVec>(name);
+			break;
+		case VarBase::types::VEC6:
+			addVar<VarVec6>(name);
+			break;
+		case VarBase::types::QUAT:
+			addVar<VarQuat>(name);
+			break;
+		case VarBase::types::LIST:
+			addVar<VarList>(name);
+			break;
+		default:
+			throw moordyn::invalid_type_error("Unrecognized variable type");
+	}
 }
 
-template<>
 void
-StateVarDeriv<vec6>::Mix(const StateVarDeriv<vec6>& rhs, const real& f)
+State::setListLength(const char* name, size_t n, void* obj)
 {
-	vel = vel * (1.0 - f) + rhs.vel * f;
-	acc = acc * (1.0 - f) + rhs.acc * f;
+	checkVar<list>(name);
+	std::pair<size_t, size_t> ids = obj ?
+		indexes[obj] : std::make_pair((size_t)0, ndof());
+	for (size_t i = ids.first; i < ids.second; i++) {
+		((VarList*)vars[name])->operator()(i).resize(n);
+	}
 }
 
-template<>
+#define STATE_SETTER(T, TBASE)                                                 \
+template <>                                                                    \
+void                                                                           \
+State::set<T>(const char* name,                                                \
+              Eigen::Matrix<T, Eigen::Dynamic, 1> v)                           \
+{                                                                              \
+	checkVar<T>(name);                                                         \
+	TBASE* var = (TBASE*)vars[name];                                           \
+	if(var->rows() != v.rows())                                                \
+		throw moordyn::invalid_value_error("Inconsistent lengths");            \
+	var->asMatrix() = v;                                                       \
+}
+
+STATE_SETTER(real, VarScalar)
+STATE_SETTER(vec, VarVec)
+STATE_SETTER(vec6, VarVec6)
+STATE_SETTER(XYZQuat, VarQuat)
+STATE_SETTER(list, VarList)
+
+#define STATE_OBJ_SETTER(T, TBASE)                                             \
+template <>                                                                    \
+void                                                                           \
+State::set<T>(const char* name,                                                \
+              void* obj,                                                       \
+              Eigen::Matrix<T, Eigen::Dynamic, 1> v)                           \
+{                                                                              \
+	checkVar<T>(name);                                                         \
+	TBASE* var = (TBASE*)vars[name];                                           \
+	auto ids = indexes[obj];                                                   \
+	if((ids.second - ids.first) != v.rows())                                   \
+		throw moordyn::invalid_value_error("Inconsistent lengths");            \
+	var->operator()(Eigen::seq(ids.first, ids.second - 1)) = v;                \
+}
+
+STATE_OBJ_SETTER(real, VarScalar)
+STATE_OBJ_SETTER(vec, VarVec)
+STATE_OBJ_SETTER(vec6, VarVec6)
+STATE_OBJ_SETTER(XYZQuat, VarQuat)
+STATE_OBJ_SETTER(list, VarList)
+
+std::vector<uint64_t>
+State::Serialize(void)
+{
+	std::vector<uint64_t> data, subdata;
+
+	for (const auto& [key, var] : vars) {
+		switch (var->inner_type()) {
+			case VarBase::types::REAL:
+				subdata = io::IO::Serialize(((VarScalar*)var)->asMatrix());
+				break;
+			case VarBase::types::VEC:
+				subdata = io::IO::Serialize(((VarVec*)var)->asMatrix());
+				break;
+			case VarBase::types::VEC6:
+				subdata = io::IO::Serialize(((VarVec6*)var)->asMatrix());
+				break;
+			case VarBase::types::QUAT:
+				subdata = io::IO::Serialize(((VarQuat*)var)->asMatrix());
+				break;
+			case VarBase::types::LIST:
+				subdata = io::IO::Serialize(((VarList*)var)->asMatrix());
+				break;
+			default:
+				throw moordyn::invalid_type_error("Unhandled variable type");
+		}
+		data.insert(data.end(), subdata.begin(), subdata.end());
+	}
+	return data;
+}
+
+uint64_t*
+State::Deserialize(const uint64_t* data)
+{
+	uint64_t* ptr = (uint64_t*)data;
+	for (const auto& [key, var] : vars) {
+		switch (var->inner_type()) {
+			case VarBase::types::REAL:
+				ptr = io::IO::Deserialize(ptr, ((VarScalar*)var)->asMatrix());
+				break;
+			case VarBase::types::VEC:
+				ptr = io::IO::Deserialize(ptr, ((VarVec*)var)->asMatrix());
+				break;
+			case VarBase::types::VEC6:
+				ptr = io::IO::Deserialize(ptr, ((VarVec6*)var)->asMatrix());
+				break;
+			case VarBase::types::QUAT:
+				ptr = io::IO::Deserialize(ptr, ((VarQuat*)var)->asMatrix());
+				break;
+			case VarBase::types::LIST:
+				ptr = io::IO::Deserialize(ptr, ((VarList*)var)->asMatrix());
+				break;
+			default:
+				throw moordyn::invalid_type_error("Unhandled variable type");
+		}
+	}
+	return ptr;
+}
+
+#define STATE_GETTER(T, TBASE)                                                 \
+template <>                                                                    \
+Eigen::Matrix<T, Eigen::Dynamic, 1>&                                           \
+State::getRef<T>(const char* name)                                             \
+{                                                                              \
+	checkVar<T>(name);                                                         \
+	TBASE* var = (TBASE*)vars[name];                                           \
+	return var->asMatrix();                                                    \
+}
+
+STATE_GETTER(real, VarScalar)
+STATE_GETTER(vec, VarVec)
+STATE_GETTER(vec6, VarVec6)
+STATE_GETTER(XYZQuat, VarQuat)
+STATE_GETTER(list, VarList)
+
 void
-StateVarDeriv<XYZQuat, vec6>::Mix(const StateVarDeriv<XYZQuat, vec6>& rhs, const real& f)
+State::clear()
 {
-	vel = vel * (1.0 - f) + rhs.vel * f;
-	acc = acc * (1.0 - f) + rhs.acc * f;
-}
-
-template<>
-void
-StateVarDeriv<std::vector<vec>>::Mix(const StateVarDeriv<std::vector<vec>>& rhs, const real& f)
-{
-	for (unsigned int i = 0; i < vel.size(); i++) {
-		vel[i] = vel[i] * (1.0 - f) + rhs.vel[i] * f;
-		acc[i] = acc[i] * (1.0 - f) + rhs.acc[i] * f;
+	for (auto& [key, value] : vars) {
+		switch (value->inner_type()) {
+			case VarBase::types::REAL:
+				delete (VarScalar*)value;
+				break;
+			case VarBase::types::VEC:
+				delete (VarVec*)value;
+				break;
+			case VarBase::types::VEC6:
+				delete (VarVec6*)value;
+				break;
+			case VarBase::types::QUAT:
+				delete (VarQuat*)value;
+				break;
+			case VarBase::types::LIST:
+				delete (VarList*)value;
+				break;
+			default:
+				break;
+		}
 	}
-}
-
-string
-MoorDynState::AsString() const
-{
-	stringstream s;
-	for (unsigned int i = 0; i < lines.size(); i++) {
-		s << "Line " << i << ":" << endl;
-		s << lines[i].AsString();
-	}
-	for (unsigned int i = 0; i < points.size(); i++) {
-		s << "Point " << i << ":" << endl;
-		s << points[i].AsString();
-	}
-	for (unsigned int i = 0; i < rods.size(); i++) {
-		s << "Rod " << i << ":" << endl;
-		s << rods[i].AsString();
-	}
-	for (unsigned int i = 0; i < bodies.size(); i++) {
-		s << "Body " << i << ":" << endl;
-		s << bodies[i].AsString();
-	}
-	s << endl;
-	return s.str();
-}
-
-MoorDynState&
-MoorDynState::operator=(const MoorDynState& rhs)
-{
+	vars.clear();
+	types.clear();
 	lines.clear();
+	points.clear();
+	rods.clear();
+	bodies.clear();
+	indexes.clear();
+}
+
+void
+State::copy(const State& rhs)
+{
+	clear();
+
 	lines.reserve(rhs.lines.size());
 	for (auto l : rhs.lines)
-		lines.push_back(l);
-	points.clear();
+		addLine(l);
 	points.reserve(rhs.points.size());
 	for (auto l : rhs.points)
-		points.push_back(l);
-	rods.clear();
+		addPoint(l);
 	rods.reserve(rhs.rods.size());
 	for (auto l : rhs.rods)
-		rods.push_back(l);
-	bodies.clear();
+		addRod(l);
 	bodies.reserve(rhs.bodies.size());
 	for (auto l : rhs.bodies)
-		bodies.push_back(l);
+		addBody(l);
 
-	return *this;
-}
-
-MoorDynState
-MoorDynState::operator+(const MoorDynState& rhs)
-{
-	MoorDynState out;
-
-	if (lines.size() != rhs.lines.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i] + rhs.lines[i]);
-	if (points.size() != rhs.points.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i] + rhs.points[i]);
-	if (rods.size() != rhs.rods.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i] + rhs.rods[i]);
-	if (bodies.size() != rhs.bodies.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i] + rhs.bodies[i]);
-
-	return out;
-}
-
-MoorDynState
-MoorDynState::operator-(const MoorDynState& rhs)
-{
-	MoorDynState out;
-
-	if (lines.size() != rhs.lines.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i] - rhs.lines[i]);
-	if (points.size() != rhs.points.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i] - rhs.points[i]);
-	if (rods.size() != rhs.rods.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i] - rhs.rods[i]);
-	if (bodies.size() != rhs.bodies.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i] - rhs.bodies[i]);
-
-	return out;
-}
-
-void
-MoorDynState::Mix(const MoorDynState& visitor, const real& f)
-{
-	for (unsigned int i = 0; i < lines.size(); i++)
-		lines[i].Mix(visitor.lines[i], f);
-	for (unsigned int i = 0; i < points.size(); i++)
-		points[i].Mix(visitor.points[i], f);
-	for (unsigned int i = 0; i < rods.size(); i++)
-		rods[i].Mix(visitor.rods[i], f);
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		bodies[i].Mix(visitor.bodies[i], f);
-}
-
-string
-DMoorDynStateDt::AsString() const
-{
-	stringstream s;
-	for (unsigned int i = 0; i < lines.size(); i++) {
-		s << "Line " << i << ":" << endl;
-		s << lines[i].AsString();
+	for (const auto& [key, var] : rhs.vars) {
+		addVar(key.c_str(), var->inner_type());
+		switch (var->inner_type()) {
+			case VarBase::types::REAL:
+				*((VarScalar*)vars[key]) = *((VarScalar*)var);
+				break;
+			case VarBase::types::VEC:
+				*((VarVec*)vars[key]) = *((VarVec*)var);
+				break;
+			case VarBase::types::VEC6:
+				*((VarVec6*)vars[key]) = *((VarVec6*)var);
+				break;
+			case VarBase::types::QUAT:
+				*((VarQuat*)vars[key]) = *((VarQuat*)var);
+				break;
+			case VarBase::types::LIST:
+				*((VarList*)vars[key]) = *((VarList*)var);
+				break;
+			default:
+				throw moordyn::invalid_type_error("Unhandled variable type");
+		}
 	}
-	for (unsigned int i = 0; i < points.size(); i++) {
-		s << "Point " << i << ":" << endl;
-		s << points[i].AsString();
+}
+
+#define STATE_TYPE_CHECKER(T, TDEF)                                            \
+template <>                                                                    \
+bool                                                                           \
+State::checkType<T>(const char* name)                                          \
+{                                                                              \
+	return types[name] == VarBase::types::TDEF;                                \
+}
+
+STATE_TYPE_CHECKER(VarScalar, REAL)
+STATE_TYPE_CHECKER(real, REAL)
+STATE_TYPE_CHECKER(VarVec, VEC)
+STATE_TYPE_CHECKER(vec, VEC)
+STATE_TYPE_CHECKER(VarVec6, VEC6)
+STATE_TYPE_CHECKER(vec6, VEC6)
+STATE_TYPE_CHECKER(VarQuat, QUAT)
+STATE_TYPE_CHECKER(XYZQuat, QUAT)
+STATE_TYPE_CHECKER(VarList, LIST)
+STATE_TYPE_CHECKER(list, LIST)
+
+void State::resize()
+{
+	auto indexes_old = indexes;
+	size_t n_old = 0;
+	for (const auto& [key, value] : indexes_old) {
+		n_old = value.second > n_old ? value.second : n_old;
 	}
-	for (unsigned int i = 0; i < rods.size(); i++) {
-		s << "Rod " << i << ":" << endl;
-		s << rods[i].AsString();
+
+	size_t n = ndof();
+
+	if (n > n_old) {
+		// A new entity has been added
+		std::pair<size_t, size_t> ids;
+		for (const auto& [key, value] : indexes) {
+			if (indexes_old.find(key) == indexes_old.end()) {
+				ids = value;
+				break;
+			}
+		}
+		for (const auto& [key, value] : vars) {
+			grow(value, n, ids);
+		}
+	} else {
+		// An entity has been removed, find its indexes
+		std::pair<size_t, size_t> ids;
+		for (const auto& [key, value] : indexes_old) {
+			if (indexes.find(key) == indexes.end()) {
+				ids = value;
+				break;
+			}
+		}
+		for (const auto& [key, value] : vars) {
+			shrink(value, n, ids);
+		}
 	}
-	for (unsigned int i = 0; i < bodies.size(); i++) {
-		s << "Body " << i << ":" << endl;
-		s << bodies[i].AsString();
+}
+
+void State::grow(VarBase* var, size_t n, std::pair<size_t, size_t> ids)
+{
+	switch (var->inner_type()) {
+		case VarBase::types::REAL:
+			grow(((VarScalar*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::VEC:
+			grow(((VarVec*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::VEC6:
+			grow(((VarVec6*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::QUAT:
+			grow(((VarQuat*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::LIST:
+			grow(((VarList*)var)->asMatrix(), n, ids);
+			break;
+		default:
+			throw moordyn::invalid_type_error("Unrecognized variable type");
 	}
-	s << endl;
-	return s.str();
 }
 
-DMoorDynStateDt&
-DMoorDynStateDt::operator=(const DMoorDynStateDt& rhs)
+void State::shrink(VarBase* var, size_t n, std::pair<size_t, size_t> ids)
 {
-	lines.clear();
-	lines.reserve(rhs.lines.size());
-	for (auto l : rhs.lines)
-		lines.push_back(l);
-	points.clear();
-	points.reserve(rhs.points.size());
-	for (auto l : rhs.points)
-		points.push_back(l);
-	rods.clear();
-	rods.reserve(rhs.rods.size());
-	for (auto l : rhs.rods)
-		rods.push_back(l);
-	bodies.clear();
-	bodies.reserve(rhs.bodies.size());
-	for (auto l : rhs.bodies)
-		bodies.push_back(l);
-
-	return *this;
+	switch (var->inner_type()) {
+		case VarBase::types::REAL:
+			shrink(((VarScalar*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::VEC:
+			shrink(((VarVec*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::VEC6:
+			shrink(((VarVec6*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::QUAT:
+			shrink(((VarQuat*)var)->asMatrix(), n, ids);
+			break;
+		case VarBase::types::LIST:
+			shrink(((VarList*)var)->asMatrix(), n, ids);
+			break;
+		default:
+			throw moordyn::invalid_type_error("Unrecognized variable type");
+	}
 }
 
-MoorDynState
-DMoorDynStateDt::operator*(const real& dt)
-{
-	MoorDynState out;
-
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i] * dt);
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i] * dt);
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i] * dt);
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i] * dt);
-
-	return out;
-}
-
-DMoorDynStateDt
-DMoorDynStateDt::operator+(const DMoorDynStateDt& rhs)
-{
-	DMoorDynStateDt out;
-
-	if (lines.size() != rhs.lines.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i] + rhs.lines[i]);
-	if (points.size() != rhs.points.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i] + rhs.points[i]);
-	if (rods.size() != rhs.rods.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i] + rhs.rods[i]);
-	if (bodies.size() != rhs.bodies.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i] + rhs.bodies[i]);
-
-	return out;
-}
-
-DMoorDynStateDt
-DMoorDynStateDt::operator-(const DMoorDynStateDt& rhs)
-{
-	DMoorDynStateDt out;
-
-	if (lines.size() != rhs.lines.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i] - rhs.lines[i]);
-	if (points.size() != rhs.points.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i] - rhs.points[i]);
-	if (rods.size() != rhs.rods.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i] - rhs.rods[i]);
-	if (bodies.size() != rhs.bodies.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i] - rhs.bodies[i]);
-
-	return out;
-}
-
-real
-DMoorDynStateDt::MakeStationary(const real &dt)
-{
-	real ret = 0.0;
-	for (unsigned int i = 0; i < lines.size(); i++)
-		ret += lines[i].MakeStationary(dt);
-	for (unsigned int i = 0; i < points.size(); i++)
-		ret += points[i].MakeStationary(dt);
-	for (unsigned int i = 0; i < rods.size(); i++)
-		ret += rods[i].MakeStationary(dt);
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		ret += bodies[i].MakeStationary(dt);
-	return ret;
-}
-
-DMoorDynStateDt
-DMoorDynStateDt::Newmark(const DMoorDynStateDt& rhs,
-	                     const real& dt,
-	                     real gamma,
-	                     real beta)
-{
-	DMoorDynStateDt out;
-
-	if (lines.size() != rhs.lines.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i].Newmark(rhs.lines[i], dt, gamma, beta));
-	if (points.size() != rhs.points.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i].Newmark(rhs.points[i], dt, gamma, beta));
-	if (rods.size() != rhs.rods.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i].Newmark(rhs.rods[i], dt, gamma, beta));
-	if (bodies.size() != rhs.bodies.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i].Newmark(rhs.bodies[i], dt, gamma, beta));
-
-	return out;
-}
-
-DMoorDynStateDt
-DMoorDynStateDt::Wilson(const DMoorDynStateDt& rhs,
-                        const real& tau,
-                        const real& dt)
-{
-	DMoorDynStateDt out;
-
-	if (lines.size() != rhs.lines.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.lines.reserve(lines.size());
-	for (unsigned int i = 0; i < lines.size(); i++)
-		out.lines.push_back(lines[i].Wilson(rhs.lines[i], tau, dt));
-	if (points.size() != rhs.points.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.points.reserve(points.size());
-	for (unsigned int i = 0; i < points.size(); i++)
-		out.points.push_back(points[i].Wilson(rhs.points[i], tau, dt));
-	if (rods.size() != rhs.rods.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.rods.reserve(rods.size());
-	for (unsigned int i = 0; i < rods.size(); i++)
-		out.rods.push_back(rods[i].Wilson(rhs.rods[i], tau, dt));
-	if (bodies.size() != rhs.bodies.size())
-		throw moordyn::invalid_value_error("Invalid input size");
-	out.bodies.reserve(bodies.size());
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		out.bodies.push_back(bodies[i].Wilson(rhs.bodies[i], tau, dt));
-
-	return out;
-}
-
-void
-DMoorDynStateDt::Mix(const DMoorDynStateDt& visitor, const real& f)
-{
-	for (unsigned int i = 0; i < lines.size(); i++)
-		lines[i].Mix(visitor.lines[i], f);
-	for (unsigned int i = 0; i < points.size(); i++)
-		points[i].Mix(visitor.points[i], f);
-	for (unsigned int i = 0; i < rods.size(); i++)
-		rods[i].Mix(visitor.rods[i], f);
-	for (unsigned int i = 0; i < bodies.size(); i++)
-		bodies[i].Mix(visitor.bodies[i], f);
-}
+} // ::state
 
 } // ::moordyn
+
+moordyn::state::VarListBase operator*(const moordyn::real& k,
+                                      moordyn::state::VarListBase v)
+{
+	for (unsigned int i = 0; i < v.rows(); i++) {
+		v(i) *= k;
+	}
+	return v;
+}

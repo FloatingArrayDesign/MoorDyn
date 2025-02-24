@@ -51,6 +51,7 @@ namespace moordyn {
 
 class Waves;
 typedef std::shared_ptr<Waves> WavesRef;
+typedef Eigen::Ref<Eigen::Matrix<list, Eigen::Dynamic, 1>> StateVarRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
@@ -815,8 +816,14 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
 	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
+	 * @{
 	 */
 	void setState(const std::vector<vec>& r, const std::vector<vec>& u);
+
+	void setState(const StateVarRef r, const StateVarRef u);
+	/**
+	 * @}
+	 */
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r Position
@@ -834,8 +841,8 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @param q The direction unit vector
 	 * @param end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @param rod_end_point Either ENDPOINT_B or ENDPOINT_A
-	 * @throws invalid_value_error If either @p end_point or @p end_point are
-	 * not valid end point qualifiers
+	 * @throws invalid_value_error If either @p end_point or @p rod_end_point
+	 * are not valid end point qualifiers
 	 */
 	void setEndOrientation(vec q, EndPoints end_point, EndPoints rod_end_point);
 
@@ -850,8 +857,8 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @param end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @param rod_end_point Either ENDPOINT_B or ENDPOINT_A
 	 * @return The moment vector
-	 * @throws invalid_value_error If either @p end_point or @p end_point are
-	 * not valid end point qualifiers
+	 * @throws invalid_value_error If either @p end_point or @p rod_end_point
+	 * are not valid end point qualifiers
 	 */
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
 
@@ -860,7 +867,7 @@ class Line final : public io::IO, public NatFreqCFL
 	 * @param acc Where to store the accelerations of the internal nodes
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	void getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc);
+	void getStateDeriv(StateVarRef vel, StateVarRef acc);
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);
