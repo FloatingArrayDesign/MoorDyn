@@ -1236,38 +1236,38 @@ class ABScheme final : public LocalSchemeBase<1, 5>
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			if (!_calc_mask.lines[i])
 				continue;
-			rd(dst)->get<list>("vel", lines[i]) =
-				rd(org)->get<list>("vel", lines[i]);
-			rd(dst)->get<list>("acc", lines[i]) =
-				rd(org)->get<list>("acc", lines[i]);
+			AS_STATE(rd(dst))->get<list>("vel", lines[i]) =
+				AS_STATE(rd(org))->get<list>("vel", lines[i]);
+			AS_STATE(rd(dst))->get<list>("acc", lines[i]) =
+				AS_STATE(rd(org))->get<list>("acc", lines[i]);
 		}
 
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (!_calc_mask.points[i] && (points[i]->type == Point::FREE))
 				continue;
-			rd(dst)->get<list>("vel", points[i]) =
-				rd(org)->get<list>("vel", points[i]);
-			rd(dst)->get<list>("acc", points[i]) =
-				rd(org)->get<list>("acc", points[i]);
+			AS_STATE(rd(dst))->get<list>("vel", points[i]) =
+				AS_STATE(rd(org))->get<list>("vel", points[i]);
+			AS_STATE(rd(dst))->get<list>("acc", points[i]) =
+				AS_STATE(rd(org))->get<list>("acc", points[i]);
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if (!_calc_mask.rods[i] && ((rods[i]->type != Rod::FREE) ||
 			                            (rods[i]->type != Rod::PINNED)))
 				continue;
-			rd(dst)->get<list>("vel", rods[i]) =
-				rd(org)->get<list>("vel", rods[i]);
-			rd(dst)->get<list>("acc", rods[i]) =
-				rd(org)->get<list>("acc", rods[i]);
+			AS_STATE(rd(dst))->get<list>("vel", rods[i]) =
+				AS_STATE(rd(org))->get<list>("vel", rods[i]);
+			AS_STATE(rd(dst))->get<list>("acc", rods[i]) =
+				AS_STATE(rd(org))->get<list>("acc", rods[i]);
 		}
 
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if (!_calc_mask.bodies[i] && (bodies[i]->type == Body::FREE))
 				continue;
-			rd(dst)->get<list>("vel", bodies[i]) =
-				rd(org)->get<list>("vel", bodies[i]);
-			rd(dst)->get<list>("acc", bodies[i]) =
-				rd(org)->get<list>("acc", bodies[i]);
+			AS_STATE(rd(dst))->get<list>("vel", bodies[i]) =
+				AS_STATE(rd(org))->get<list>("vel", bodies[i]);
+			AS_STATE(rd(dst))->get<list>("acc", bodies[i]) =
+				AS_STATE(rd(org))->get<list>("acc", bodies[i]);
 		}
 	}
 
