@@ -127,7 +127,7 @@ spectrumFromFile(const std::string& path, moordyn::Log* _log)
 }
 
 std::vector<FrequencyComponent>
-ParametricSpectrum::getAmplitudes(real minOmega, real maxOmega, real numComps)
+ParametricSpectrum::getAmplitudes(real minOmega, real maxOmega, size_t numComps)
 {
 	real dw = (maxOmega - minOmega) / (numComps - 1);
 	auto omegas = Eigen::ArrayX<real>::LinSpaced(numComps, minOmega, maxOmega);

@@ -62,7 +62,7 @@ namespace io {
  * @note Since this class already publicly inherits moordyn::LogUser, all the
  * classes inheriting this class do not require inheriting also LogUser
  */
-class IO : public LogUser
+class DECLDIR IO : public LogUser
 {
   public:
 	/** @brief Costructor
@@ -72,7 +72,7 @@ class IO : public LogUser
 
 	/** @brief Destructor
 	 */
-	~IO();
+	virtual ~IO() = default;
 
 	/** @brief Save the entity into a file
 	 *
@@ -177,6 +177,12 @@ class IO : public LogUser
 	 */
 	std::vector<uint64_t> Serialize(const XYZQuat& m);
 
+	/** @brief Pack a list to make it writable
+	 * @param m The list
+	 * @return The packed list
+	 */
+	std::vector<uint64_t> Serialize(const list& m);
+
 	/** @brief Pack a list of floating point numbers to make it writable
 	 * @param l The list
 	 * @return The packed list
@@ -207,6 +213,25 @@ class IO : public LogUser
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<mat6>& l);
 
+	/** @brief Pack an arbitrarily large vector
+	 * @param l The list
+	 * @return The packed list
+	 */
+	template<typename T>
+	inline std::vector<uint64_t> Serialize(
+		const Eigen::Matrix<T, Eigen::Dynamic, 1>& l)
+	{
+		std::vector<uint64_t> data;
+		const uint64_t n = l.rows();
+		data.push_back(Serialize(n));
+		for (uint64_t i = 0; i < n; i++) {
+			std::vector<uint64_t> subdata = Serialize(l(i));
+			data.insert(data.end(), subdata.begin(), subdata.end());
+		}
+		return data;
+
+	}
+
 	/** @brief Pack a list of lists to make it writable
 	 * This function might act recursively
 	 * @param l The list
@@ -219,7 +244,7 @@ class IO : public LogUser
 		const uint64_t n = l.size();
 		data.push_back(Serialize(n));
 		for (auto v : l) {
-			auto subdata = Serialize(v);
+			std::vector<uint64_t> subdata = Serialize(v);
 			data.insert(data.end(), subdata.begin(), subdata.end());
 		}
 		return data;
@@ -288,6 +313,13 @@ class IO : public LogUser
 	 */
 	uint64_t* Deserialize(const uint64_t* in, XYZQuat& out);
 
+	/** @brief Unpack a loaded list
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked value
+	 * @return The new pointer to the remaining data to be read
+	 */
+	uint64_t* Deserialize(const uint64_t* in, list& out);
+
 	/** @brief Unpack a loaded list of floating point numbers
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
@@ -322,6 +354,25 @@ class IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	uint64_t* Deserialize(const uint64_t* in, std::vector<mat6>& out);
+
+	/** @brief Unpack an arbitrarily large vector
+	 * @param in The pointer to the next unread value
+	 * @param out The unpacked vector
+	 * @return The new pointer to the remaining data to be read
+	 */
+	template<typename Type>
+	uint64_t* Deserialize(const uint64_t* in,
+	                      Eigen::Matrix<Type, Eigen::Dynamic, 1>& out)
+	{
+		uint64_t n;
+		uint64_t* remaining = Deserialize(in, n);
+		if (out.rows() != n)
+			out.resize(n);
+		for (unsigned int i = 0; i < n; i++) {
+			remaining = Deserialize(remaining, out(i));
+		}
+		return remaining;
+	}
 
 	/** @brief Unpack a loaded list of lists
 	 *

@@ -63,7 +63,7 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class Rod final : public io::IO, public SuperCFL
+class DECLDIR Rod final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -466,8 +466,17 @@ class Rod final : public io::IO, public SuperCFL
 	 * pinned rods)
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
+	 * @{
 	 */
 	void setState(XYZQuat pos, vec6 vel);
+
+	inline void setState(vec7 r, vec6 rd)
+	{
+		setState(XYZQuat::fromVec7(r), rd);
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps

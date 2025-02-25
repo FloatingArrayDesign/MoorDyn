@@ -73,7 +73,7 @@ class Rod;
  * moordyn::Body extends the io::IO class, allowing it to perform input/output
  * in a consistent manner.
  */
-class Body final : public io::IO, public SuperCFL
+class DECLDIR Body final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -378,8 +378,17 @@ class Body final : public io::IO, public SuperCFL
 	/** @brief Set the states to the body to the position r and velocity rd
 	 * @param r The position
 	 * @param rd The velocity
+	 * @{
 	 */
-	void DECLDIR setState(XYZQuat r, vec6 rd);
+	void setState(XYZQuat r, vec6 rd);
+
+	inline void setState(vec7 r, vec6 rd)
+	{
+		setState(XYZQuat::fromVec7(r), rd);
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *

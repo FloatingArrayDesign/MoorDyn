@@ -53,7 +53,7 @@ namespace moordyn {
  * Thus can be used for entitites which does not impose any kind of limitation
  * on the timestep
  */
-class CFL
+class DECLDIR CFL
 {
   public:
 	/** @brief Constructor
@@ -62,7 +62,7 @@ class CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~CFL() {};
+	virtual ~CFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
@@ -109,7 +109,7 @@ class CFL
 /** @class NatFreqCFL CFL.hpp
  * @brief CFL for objects based on a natural frequency
  */
-class NatFreqCFL : public CFL
+class DECLDIR NatFreqCFL : public CFL
 {
   public:
 	/** @brief Constructor
@@ -118,7 +118,7 @@ class NatFreqCFL : public CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~NatFreqCFL() {};
+	virtual ~NatFreqCFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
@@ -191,7 +191,7 @@ class NatFreqCFL : public CFL
  * Some objects has not an actual CFL definition, but they instead compute it
  * from the entities attached to it.
  */
-class SuperCFL : public CFL
+class DECLDIR SuperCFL : public CFL
 {
   public:
 	/** @brief Constructor
@@ -200,7 +200,7 @@ class SuperCFL : public CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~SuperCFL() {};
+	virtual ~SuperCFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor

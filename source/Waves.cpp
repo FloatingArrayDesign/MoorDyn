@@ -256,7 +256,7 @@ Waves::~Waves() {}
 void
 Waves::setup(EnvCondRef env_in,
              SeafloorRef seafloor,
-             TimeScheme* t,
+             time::Scheme* t,
              const char* folder)
 {
 	// make sure to reset the kinematics if setup gets called multiple times

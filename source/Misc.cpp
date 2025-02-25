@@ -189,6 +189,13 @@ XYZQuat::operator-(const XYZQuat& visitor) const
 	result.quat = this->quat.coeffs() - visitor.quat.coeffs();
 	return result;
 }
+XYZQuat&
+XYZQuat::operator*=(const real& visitor)
+{
+	this->pos *= visitor;
+	this->quat.coeffs() *= visitor;
+	return *this;
+}
 XYZQuat
 XYZQuat::operator*(const real& visitor) const
 {
@@ -361,6 +368,12 @@ GetCurvature(moordyn::real length, const vec& q1, const vec& q2)
 }
 
 } // ::moordyn
+
+moordyn::quaternion operator*(const moordyn::real& k,
+                              const moordyn::quaternion& v)
+{
+	return moordyn::quaternion(k * v.coeffs());
+}
 
 /*
 
