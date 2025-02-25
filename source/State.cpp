@@ -205,6 +205,22 @@ State::setListLength(const char* name, size_t n, void* obj)
 	}
 }
 
+#define STATE_GETTER(T, TBASE)                                                 \
+template <>                                                                    \
+Eigen::Matrix<T, Eigen::Dynamic, 1>& DECLDIR                                   \
+State::getRef<T>(const char* name)                                             \
+{                                                                              \
+	checkVar<T>(name);                                                         \
+	TBASE* var = (TBASE*)vars[name];                                           \
+	return var->asMatrix();                                                    \
+}
+
+STATE_GETTER(real, VarScalar)
+STATE_GETTER(vec, VarVec)
+STATE_GETTER(vec6, VarVec6)
+STATE_GETTER(XYZQuat, VarQuat)
+STATE_GETTER(list, VarList)
+
 #define STATE_SETTER(T, TBASE)                                                 \
 template <>                                                                    \
 void DECLDIR                                                                   \
@@ -302,22 +318,6 @@ State::Deserialize(const uint64_t* data)
 	}
 	return ptr;
 }
-
-#define STATE_GETTER(T, TBASE)                                                 \
-template <>                                                                    \
-Eigen::Matrix<T, Eigen::Dynamic, 1>& DECLDIR                                   \
-State::getRef<T>(const char* name)                                             \
-{                                                                              \
-	checkVar<T>(name);                                                         \
-	TBASE* var = (TBASE*)vars[name];                                           \
-	return var->asMatrix();                                                    \
-}
-
-STATE_GETTER(real, VarScalar)
-STATE_GETTER(vec, VarVec)
-STATE_GETTER(vec6, VarVec6)
-STATE_GETTER(XYZQuat, VarQuat)
-STATE_GETTER(list, VarList)
 
 void
 State::clear()

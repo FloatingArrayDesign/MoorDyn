@@ -310,6 +310,17 @@ class DECLDIR State final : public moordyn::io::IO
 	void setListLength(const char* name, size_t n=1, void* obj=NULL);
 
 	/** @brief Get a variable by its name
+	 *
+	 * If you want to get a editable view of the state variable, ::get() is
+	 * in general preferred.
+	 * @param name Name of the variable
+	 * @throw moordyn::invalid_value_error If the variable does not exist
+	 * @throw moordyn::invalid_type_error If the variable type is not correct
+	 */
+	template <typename T>
+	Eigen::Matrix<T, Eigen::Dynamic, 1>& getRef(const char* name);
+
+	/** @brief Get a variable by its name
 	 * @param name Name of the variable
 	 * @throw moordyn::invalid_value_error If the variable does not exist
 	 * @throw moordyn::invalid_type_error If the variable type is not correct
@@ -436,17 +447,6 @@ class DECLDIR State final : public moordyn::io::IO
 	}
 
   private:
-	/** @brief Get a variable by its name
-	 *
-	 * The returned variable can be casted down to its basis Eigen::Matrix
-	 * if required.
-	 * @param name Name of the variable
-	 * @throw moordyn::invalid_value_error If the variable does not exist
-	 * @throw moordyn::invalid_type_error If the variable type is not correct
-	 */
-	template <typename T>
-	Eigen::Matrix<T, Eigen::Dynamic, 1>& getRef(const char* name);
-
 	/** @brief Clear the state
 	 */
 	void clear();
