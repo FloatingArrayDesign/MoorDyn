@@ -70,7 +70,7 @@ typedef Eigen::Ref<Eigen::Matrix<list, Eigen::Dynamic, 1>> StateVarRef;
  * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
  * this natural period to avoid numerical instabilities
  */
-class Line final : public io::IO, public NatFreqCFL
+class DECLDIR Line final : public io::IO, public NatFreqCFL
 {
   public:
 	/** @brief Constructor
