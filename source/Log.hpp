@@ -219,7 +219,7 @@ class DECLDIR Log
  * Inheriting this class you can grant the class will have everything required
  * to use the macros LOGGER, LOGDBG, LOGMSG, LOGWRN and LOGERR
  */
-class LogUser
+class DECLDIR LogUser
 {
   public:
 	/** @brief Constructor
