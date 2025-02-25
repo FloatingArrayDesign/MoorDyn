@@ -149,7 +149,7 @@ TYPE_GETTER(VarList, LIST)
 
 #define STATE_ADDER(T, TBASE)                                                  \
 template <>                                                                    \
-void                                                                           \
+void DECLDIR                                                                   \
 State::addVar<T>(const char* name)                                             \
 {                                                                              \
 	TBASE* var = new TBASE();                                                  \
@@ -207,7 +207,7 @@ State::setListLength(const char* name, size_t n, void* obj)
 
 #define STATE_SETTER(T, TBASE)                                                 \
 template <>                                                                    \
-void                                                                           \
+void DECLDIR                                                                   \
 State::set<T>(const char* name,                                                \
               Eigen::Matrix<T, Eigen::Dynamic, 1> v)                           \
 {                                                                              \
@@ -226,7 +226,7 @@ STATE_SETTER(list, VarList)
 
 #define STATE_OBJ_SETTER(T, TBASE)                                             \
 template <>                                                                    \
-void                                                                           \
+void DECLDIR                                                                   \
 State::set<T>(const char* name,                                                \
               void* obj,                                                       \
               Eigen::Matrix<T, Eigen::Dynamic, 1> v)                           \
@@ -305,7 +305,7 @@ State::Deserialize(const uint64_t* data)
 
 #define STATE_GETTER(T, TBASE)                                                 \
 template <>                                                                    \
-Eigen::Matrix<T, Eigen::Dynamic, 1>&                                           \
+Eigen::Matrix<T, Eigen::Dynamic, 1>& DECLDIR                                   \
 State::getRef<T>(const char* name)                                             \
 {                                                                              \
 	checkVar<T>(name);                                                         \
