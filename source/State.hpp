@@ -108,14 +108,6 @@ public:
 			(Eigen::Matrix<T, Eigen::Dynamic, 1>*)this;
 		return *m;
 	}
-
-	VarTyped<T>& operator*=(const real& v)
-	{
-		for (unsigned int i = 0; i < this->rows(); i++) {
-			this->operator()(i) *= v;
-		}
-		return *this;
-	}
   protected:
 	/** @brief Constructor
 	 * @param t Type definition, to be used later
