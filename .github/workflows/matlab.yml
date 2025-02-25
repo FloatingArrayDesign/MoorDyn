@@ -20,7 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         # MATLAB requires an old version of Windows
-        os: [ubuntu-latest, macos-latest]
+        # Ubuntu dropped because of libcstd++ incompatibilities
+        os: [macos-latest]
 
     steps:
       - name: Check out repository
