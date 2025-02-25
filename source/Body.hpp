@@ -380,7 +380,7 @@ class DECLDIR Body final : public io::IO, public SuperCFL
 	 * @param rd The velocity
 	 * @{
 	 */
-	void DECLDIR setState(XYZQuat r, vec6 rd);
+	void setState(XYZQuat r, vec6 rd);
 
 	inline void setState(vec7 r, vec6 rd)
 	{
