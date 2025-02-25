@@ -273,7 +273,7 @@ Body::setDependentStates()
 		// pass above to the point and get it to calculate the forces
 		try {
 			attachedP[i]->setKinematics(rPoint, rdPoint);
-		} catch (moordyn::invalid_value_error& exception) {
+		} catch (moordyn::invalid_value_error) {
 			// Just rethrow the exception
 			throw;
 		}
@@ -313,7 +313,7 @@ Body::setDependentStates()
 		// rdRod = [baseDX, baseDY, baseDZ, endDX, endDY, endDZ]
 		try {
 			attachedR[i]->setKinematics(rRod, rdRod);
-		} catch (moordyn::invalid_value_error& exception) {
+		} catch (moordyn::invalid_value_error) {
 			// Just rethrow the exception
 			throw;
 		}
