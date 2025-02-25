@@ -194,7 +194,7 @@ typedef Eigen::Index Indexer;
 /** @class State State.hpp
  * @brief The collection of state variables of the whole system
  */
-class State final : public moordyn::io::IO
+class DECLDIR State final : public moordyn::io::IO
 {
   public:
 	/** @brief Constructor

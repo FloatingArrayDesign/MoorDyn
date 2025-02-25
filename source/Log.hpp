@@ -145,7 +145,7 @@ operator<<(MultiStream& st, T val)
  * This class is a sensible replacement for std::cout and std::cerr ofstream
  * entities, providing the appropriate streaming channel to each entity
  */
-class Log
+class DECLDIR Log
 {
   public:
 	/** @brief Constructor

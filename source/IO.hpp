@@ -62,7 +62,7 @@ namespace io {
  * @note Since this class already publicly inherits moordyn::LogUser, all the
  * classes inheriting this class do not require inheriting also LogUser
  */
-class IO : public LogUser
+class DECLDIR IO : public LogUser
 {
   public:
 	/** @brief Costructor

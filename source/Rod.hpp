@@ -63,7 +63,7 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class Rod final : public io::IO, public SuperCFL
+class DECLDIR Rod final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor

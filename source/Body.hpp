@@ -73,7 +73,7 @@ class Rod;
  * moordyn::Body extends the io::IO class, allowing it to perform input/output
  * in a consistent manner.
  */
-class Body final : public io::IO, public SuperCFL
+class DECLDIR Body final : public io::IO, public SuperCFL
 {
   public:
 	/** @brief Costructor
