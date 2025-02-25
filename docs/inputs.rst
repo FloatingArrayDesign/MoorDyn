@@ -297,7 +297,8 @@ The columns in order are as follows:
  - CaAx – tangential added mass coefficient (with respect to line displacement)
  - Cl – OPTIONAL - the crossflow VIV lift coefficient. If set to 0, then VIV calculations are disabled for the
    line. This coefficient has been made backwards compatible. If it is not provided, then it is 
-   assumed to be 0.0. The theory of vortex induced vibrations can be found :ref:`here <version2>`
+   assumed to be 0.0. The theory of vortex induced vibrations can be found :ref:`here <version2>`. Note that VIV is disabled
+   for end nodes (and thus end half-segments), so if simulating VIV users should ensure to include a higher number of segments. 
  - dF - OPTIONAL - the cF +- range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
  - cF - OPTIONAL - the center of the range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
@@ -319,14 +320,16 @@ tabulated file with 3 header lines and then a strain column and a tension column
 Note: MoorDyn has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
 :ref:`theory section <theory>`, allows a user to specify a bar-seperated constant dynamic and static stiffness. The second method allows the user 
 to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
-`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Example inputs are below: 
+`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Both of these methods allow users to provide static 
+and dynamic damping coefficients as values seperated by |. While the static damping can be described as a fraction of cricial, the dyanamic damping 
+needs to be input as a value. Example inputs are below: 
 
 .. code-block:: none
 
-  TypeName   Diam    Mass/m     EA           
-  (name)     (m)     (kg/m)     (N)             
-  Polyester  ...      ...    EA_s|EA_d          <-- Constant dynamic stiffness method
-  Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm <-- Load dependent dynamic stiffness method
+  TypeName   Diam    Mass/m     EA                   BA
+  (name)     (m)     (kg/m)     (N)                 (N-s)
+  Polyester  ...      ...    EA_s|EA_d            BA_s|BA_d <-- Constant dynamic stiffness method with static and dynamic damping
+  Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm   BA_s|BA_d <-- Load dependent dynamic stiffness method with static and dynamic damping
 
 Rod Types
 ^^^^^^^^^
@@ -730,6 +733,9 @@ The following options from MoorDyn-F are not supported by MoorDyn-C:
    1: yes, 2: yes with ramp to inertialF_rampT]
  - inertialF_rampT (30.0): Ramp time for inertial forces to reduce coupled object instability (s). 
    This is ignored unless inertialF = 2
+ - OutSwitch (1): Switch to disable outputs when running with full OpenFAST simulations, where the 
+   MoorDyn-F output channels are written to the main FAST output file. 
+   0: no MD main outfile, 1: write MD main outfile
 
 Outputs
 ^^^^^^^

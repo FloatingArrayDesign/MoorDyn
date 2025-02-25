@@ -141,7 +141,7 @@ Line::setup(int number_in,
 	// assign number of nodes to line
 	N = NumSegs;
 	// save the moordyn internal timestep
-	dtm = dtM0;
+	dtm0 = dtM0;
 
 	// store passed line properties (and convert to numbers)
 	d = props->d;
@@ -1222,13 +1222,13 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 			// ----- The Synchronization Model ------
 			// Crossflow velocity
 			const real yd = rd[i].dot(q[i].cross(vp.normalized()));
-			const real ydd = rdd_old[i].dot(q[i].cross(vp.normalized()));
+			const real ydd = rdd_old[i].dot(q[i].cross(vp.normalized())); // note: rdd_old initializes as 0's. End nodes don't ever get updated, thus stay at zero 
 
 			// Rolling RMS calculation
 			const real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd*yd))/n_m); // RMS approximation from Thorsen
 			const real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd*ydd))/n_m);
 
-			if ((t >= t_old + dtm) || (t == 0.0)) { // Update the stormed RMS vaues
+			if ((t >= t_old + dtm0) || (t == 0.0)) { // Update the stormed RMS vaues
 				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
 				yd_rms_old[i] = yd_rms; // for rms back indexing (one moordyn timestep back)
 				ydd_rms_old[i] = ydd_rms; // for rms back indexing (one moordyn timestep back)
@@ -1266,7 +1266,12 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 			// const real C_l = cl_lookup(x = As/d); // create function in Line.hpp that uses lookup table 
 
 			// The Lift force
-			Lf[i] = 0.5 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * submerged_length;
+			if (i == 0) // Disable for end nodes for now, node acceleration needed for synch model
+				Lf[i] = vec::Zero();
+			else if (i==N) // Disable for end nodes for now, node acceleration needed for synch model
+				Lf[i] = vec::Zero();
+			else
+				Lf[i] = 0.5 * env->rho_w * d * vp_mag * Cl * cos(phi) * q[i].cross(vp) * submerged_length;
 
 			// Prep for returning VIV state derivatives
 			Miscd[i][0] = phi_dot;
@@ -1344,13 +1349,20 @@ Line::getStateDeriv(std::vector<vec>& vel, std::vector<vec>& acc, std::vector<ve
 		// https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
 		acc[i - 1] = M[i].inverse() * Fnet[i];
 		vel[i - 1] = rd[i];
+
+		if (Cl > 0) rdd_old[i] = acc[i - 1]; // saving the acceleration for VIV RMS calculation. End nodes are left at zero, VIV disabled for end nodes
 	}
 
-	if ((t >= t_old + dtm) || (t == 0.0)) { // update back indexing one moordyn time step (regardless of time integration scheme)
+	if ((t >= t_old + dtm0) || (t == 0.0)) { // update back indexing one moordyn time step (regardless of time integration scheme)
 		t_old = t; // for updating back indexing if statements 
 	}
-	rdd_old = acc; // saving the acceleration for VIV RMS calculation
 
+	// if (t <0.5+dtm && t >0.5-dtm && not IC_gen) {
+	// 	cout << "rdd_old at t = " << t << endl;
+	// 	for (int i = 0; i < 4; i++) cout << "I = " << i << " rdd_old = " << rdd_old[i][0] << ", " << rdd_old[i][1] << ", " << rdd_old[i][2] <<endl;
+	// 	cout << "..." << endl;
+	// 	for (int i = N-4; i < N+1; i++) cout << "I = " << i << " rdd_old = " << rdd_old[i][0] << ", " << rdd_old[i][1] << ", " << rdd_old[i][2] <<endl;
+	// }
 };
 
 // write output file for line  (accepts time parameter since retained time value

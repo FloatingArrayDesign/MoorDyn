@@ -187,8 +187,6 @@ class Line final : public io::IO, public NatFreqCFL
 	/// Center VIV synchronization [-]
 	/// in non-dimensional frequency
 	moordyn::real cF;
-	/// The crossflow motion phase [-]
-	real phi_yd; 
 
 	/// line axial internal damping coefficient (before proceessing) [Ns]
 	moordyn::real BAin;
@@ -280,7 +278,7 @@ class Line final : public io::IO, public NatFreqCFL
 	/// simulation time
 	moordyn::real t;
 	/// MoorDyn internal time step
-	moordyn::real dtm;
+	moordyn::real dtm0;
 	
 	// VIV stuff
 	// /// VIV amplitude updated every zero crossing of crossflow velcoity
@@ -291,6 +289,8 @@ class Line final : public io::IO, public NatFreqCFL
 	std::vector<vec> Miscd;
 	/// Num timesteps for rolling RMS of crossflow velocity phase
 	const unsigned int n_m = 500;
+	/// The crossflow motion phase [-]
+	real phi_yd; 
 
 	// back indexing one dtm for VIV
 	/// old t
@@ -565,7 +565,9 @@ class Line final : public io::IO, public NatFreqCFL
 	 * 
 	 * If it is an inner node, the average of the
 	 * tension at the surrounding segments is provided. If the node is a
-	 * line-end, the associated ending segment tension is provided
+	 * line-end, the associated ending segment tension is provided. This 
+	 * does not account for the direction of pull. In the calculation of
+	 * Fnet for the node, the direction of pull is accounted for.
 	 * @param i The line node index
 	 * @return The tension
 	 * @throws invalid_value_error If the node index \p i is bigger than the
@@ -578,11 +580,11 @@ class Line final : public io::IO, public NatFreqCFL
 			       << ", which only has " << N + 1 << " nodes" << std::endl;
 			throw moordyn::invalid_value_error("Invalid node index");
 		}
-		if (i == 0)
+		if (i == 0) // bottom node, return ten and damping of bottom section
 			return T[0] + Td[0];
-		else if (i == N)
+		else if (i == N) // top node, return ten and damping of top section
 			return T[N - 1] + Td[N - 1];
-		// take average of tension in adjacent segments
+		// internal node, take average of tension in adjacent segments. 
 		return (0.5 * (T[i] + T[i - 1] + Td[i] + Td[i - 1]));
 	};
 
