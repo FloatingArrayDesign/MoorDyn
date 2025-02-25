@@ -1512,8 +1512,8 @@ Rod::getVTK() const
 {
 	auto points = vtkSmartPointer<vtkPoints>::New();
 	auto cells = vtkSmartPointer<vtkCellArray>::New();
-	auto vtk_rd = io::vtk_farray("rd", 3, r.size());
-	auto vtk_Fnet = io::vtk_farray("Fnet", 3, r.size());
+	auto vtk_rd = io::vtk_farray("rd", 3, (unsigned int)r.size());
+	auto vtk_Fnet = io::vtk_farray("Fnet", 3, (unsigned int)r.size());
 	if (N) {
 		auto line = vtkSmartPointer<vtkPolyLine>::New();
 		line->GetPointIds()->SetNumberOfIds(r.size());

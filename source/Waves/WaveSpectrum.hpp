@@ -135,7 +135,7 @@ class ParametricSpectrum
 	virtual real getSpectrum(real f) = 0;
 	std::vector<FrequencyComponent> getAmplitudes(real minOmega,
 	                                              real maxOmega,
-	                                              real numComps);
+	                                              size_t numComps);
 };
 
 class PMSpectrum : ParametricSpectrum

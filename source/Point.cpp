@@ -550,7 +550,7 @@ int DECLDIR
 MoorDyn_GetPointNAttached(MoorDynPoint point, unsigned int* n)
 {
 	CHECK_POINT(point);
-	*n = ((moordyn::Point*)point)->getLines().size();
+	*n = (unsigned int)((moordyn::Point*)point)->getLines().size();
 	return MOORDYN_SUCCESS;
 }
 

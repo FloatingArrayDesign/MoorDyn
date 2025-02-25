@@ -921,9 +921,9 @@ class StationaryScheme final : public SchemeBase<2, 1>
 	 * no matter if the state is a scalar, a vector or a quaternion, it is
 	 * considered as a single entry
 	 */
-	inline unsigned int NStates() const {
-		unsigned int n = bodies.size() + rods.size() + points.size();
-		for (unsigned int i = 0; i < lines.size(); i++)
+	inline size_t NStates() const {
+		size_t n = bodies.size() + rods.size() + points.size();
+		for (size_t i = 0; i < lines.size(); i++)
 			n += lines[i]->getN() - 1;
 		return n;
 	}
