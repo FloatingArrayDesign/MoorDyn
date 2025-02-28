@@ -46,7 +46,7 @@
 namespace moordyn {
 
 Point::Point(moordyn::Log* log, size_t id)
-  : io::IO(log)
+  : Instance(log)
   , seafloor(nullptr)
   , pointId(id)
 {
