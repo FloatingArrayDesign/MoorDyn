@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
 #include <utility>
@@ -67,7 +67,7 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class DECLDIR Point final : public io::IO, public SuperCFL
+class DECLDIR Point final : public Instance, public SuperCFL
 {
   public:
 	/** @brief Constructor

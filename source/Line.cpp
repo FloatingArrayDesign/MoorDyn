@@ -51,7 +51,7 @@ namespace moordyn {
 using namespace waves;
 
 Line::Line(moordyn::Log* log, size_t lineId)
-  : io::IO(log)
+  : Instance(log)
   , lineId(lineId)
   , isPb(false)
 {

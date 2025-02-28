@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
 #include <vector>
@@ -63,7 +63,7 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class DECLDIR Rod final : public io::IO, public SuperCFL
+class DECLDIR Rod final : public Instance, public SuperCFL
 {
   public:
 	/** @brief Costructor

@@ -54,7 +54,7 @@ namespace moordyn {
 //   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [point (node N)]
 
 Rod::Rod(moordyn::Log* log, size_t rodId)
-  : io::IO(log)
+  : Instance(log)
   , seafloor(nullptr)
   , rodId(rodId)
 {
