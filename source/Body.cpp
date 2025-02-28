@@ -39,7 +39,7 @@ using namespace std;
 namespace moordyn {
 
 Body::Body(moordyn::Log* log, size_t id)
-  : io::IO(log)
+  : Instance(log)
   , bodyId(id)
 {
 #ifdef USE_VTK

@@ -40,7 +40,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Util/CFL.hpp"
 #include <vector>
 #include <utility>
@@ -69,11 +69,8 @@ class Rod;
  * In the configuration file the options are:
  *
  * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
- *
- * moordyn::Body extends the io::IO class, allowing it to perform input/output
- * in a consistent manner.
  */
-class DECLDIR Body final : public io::IO, public SuperCFL
+class DECLDIR Body final : public Instance, public SuperCFL
 {
   public:
 	/** @brief Costructor
