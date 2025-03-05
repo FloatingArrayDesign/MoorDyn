@@ -353,15 +353,24 @@ class DECLDIR Point final : public Instance, public SuperCFL
 	 * @param pos Position
 	 * @param vel Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
+	 * @{
 	 */
 	void setState(vec pos, vec vel);
 
+	inline void setState(const InstanceStateVarView r)
+	{
+		setState(r.row(0).head<3>(), r.row(0).tail<3>());
+	}
+	/**
+	 * @}
+	 */
+
 	/** @brief Calculate the forces and state derivatives of the point
-	 * @return The states derivatives, i.e. the velocity (first) and the
-	 * acceleration (second)
+	 * @param drdt The states derivatives, i.e. the velocity and the
+	 * acceleration
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
-	std::pair<vec, vec> getStateDeriv();
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
@@ -381,6 +390,18 @@ class DECLDIR Point final : public Instance, public SuperCFL
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
 	moordyn::error_id doRHS();
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return 1
+	 */
+	inline const size_t stateN() const { return 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 3 components for positions and 3 components for velocities, i.e.
+	 * 6 components
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 6; }
 
 	/** @brief Produce the packed data to be saved
 	 *

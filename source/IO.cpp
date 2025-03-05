@@ -399,18 +399,6 @@ IO::Serialize(const XYZQuat& m)
 }
 
 std::vector<uint64_t>
-IO::Serialize(const list& m)
-{
-	std::vector<uint64_t> data;
-	const uint64_t n = m.rows();
-	data.reserve(1 + n);
-	data.push_back(Serialize(n));
-	for (uint64_t i = 0; i < n; i++)
-		data.push_back(Serialize(m(i)));
-	return data;
-}
-
-std::vector<uint64_t>
 IO::Serialize(const std::vector<real>& l)
 {
 	std::vector<uint64_t> data;
@@ -558,21 +546,6 @@ IO::Deserialize(const uint64_t* in, XYZQuat& out)
 {
 	uint64_t* remaining = Deserialize(in, out.pos);
 	remaining = Deserialize(remaining, out.quat);
-	return remaining;
-}
-
-uint64_t*
-IO::Deserialize(const uint64_t* in, list& out)
-{
-	uint64_t n;
-	uint64_t* remaining = Deserialize(in, n);
-	if (out.rows() != n)
-		out.resize(n);
-	for (unsigned int i = 0; i < n; i++) {
-		real v;
-		remaining = Deserialize(remaining, v);
-		out(i) = v;
-	}
 	return remaining;
 }
 

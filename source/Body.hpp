@@ -123,8 +123,6 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	// vec6 r6;
 	/// body 6dof velocity[x/y/z]
 	vec6 v6;
-	/// body quaternion position derivative
-	XYZQuat dPos;
 	/// body 6dof acceleration[x/y/z]
 	vec6 a6;
 
@@ -379,9 +377,9 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	 */
 	void setState(XYZQuat r, vec6 rd);
 
-	inline void setState(vec7 r, vec6 rd)
+	inline void setState(const InstanceStateVarView r)
 	{
-		setState(XYZQuat::fromVec7(r), rd);
+		setState(XYZQuat::fromVec7(r.row(0).head<7>()), r.row(0).tail<6>());
 	}
 	/**
 	 * @}
@@ -390,12 +388,12 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	/** @brief calculate the forces and state derivatives of the body
 	 *
 	 * This function is only meant for free bodies
-	 * @return The states derivatives, i.e. the velocity (first) and the
-	 * acceleration (second)
+	 * @param drdt The states derivatives, i.e. the velocity and the
+	 * acceleration
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	std::pair<XYZQuat, vec6> getStateDeriv();
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	/** @brief calculates the forces on the body
 	 * @throw moordyn::invalid_value_error If the body is of type
@@ -404,6 +402,18 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	void doRHS();
 
 	void Output(real time);
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return 1
+	 */
+	inline const size_t stateN() const { return 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 7 components for position quaternion and 6 components for
+	 * linear and angular velocities, i.e. 13 components
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 13; }
 
 	/** @brief Produce the packed data to be saved
 	 *

@@ -34,6 +34,7 @@
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
+#include <atomic>
 
 #ifdef LINUX
 #include <cmath>
@@ -76,6 +77,8 @@ const char* UnitList[] = {
 	"(Nm)      ", "(frac)    "
 };
 
+std::atomic<size_t> __systems_counter(0);
+
 moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   : io::IO(NULL)
   , _filepath("Mooring/lines.txt")
@@ -100,6 +103,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , nXtra(0)
   , npW(0)
 {
+	++__systems_counter;
 	SetLogger(new Log(log_level));
 
 	if (infilename && (strlen(infilename) > 0)) {
@@ -184,6 +188,10 @@ moordyn::MoorDyn::~MoorDyn()
 		delete obj;
 
 	delete GetLogger();
+
+	if (--__systems_counter == 0) {
+		reset_instance_ids();
+	}
 }
 
 moordyn::error_id
