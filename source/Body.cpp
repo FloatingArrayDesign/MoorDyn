@@ -472,13 +472,15 @@ Body::setState(XYZQuat pos, vec6 vel)
 	setDependentStates();
 }
 
-std::pair<XYZQuat, vec6>
-Body::getStateDeriv()
+void
+Body::getStateDeriv(InstanceStateVarView drdt)
 {
 	if ((type != FREE) && (type != CPLDPIN)) {
 		LOGERR << "getStateDeriv called for non-free body" << endl;
 		throw moordyn::invalid_value_error("Invalid body type");
 	}
+
+	XYZQuat u7;
 
 	// Get contributions from attached points (and lines attached to
 	// them) and store in FNet:
@@ -488,10 +490,10 @@ Body::getStateDeriv()
 		a6 = solveMat6(M, F6net);
 
 		// NOTE; is the above still valid even though it includes rotational DOFs?
-		dPos.pos = v6.head<3>();
+		u7.pos = v6.head<3>();
 		// this assumes that the angular velocity is about the global coordinates
 		// which is true for bodies
-		dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
+		u7.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
 	} else { // Pinned body
 
 		// account for moment in response to acceleration due to inertial coupling (off-diagonal sub-matrix terms)
@@ -504,10 +506,12 @@ Body::getStateDeriv()
 		a6(Eigen::seqN(3, 3)) = M_out3.inverse() * Fnet_out3;
 
 		// dxdt = V   (velocities)
-		dPos.pos = vec::Zero();
-		dPos.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
+		u7.pos = vec::Zero();
+		u7.quat = 0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
 	}
-	return std::make_pair(dPos, a6);
+
+	drdt.row(0).head<7>() = u7.toVec7();
+	drdt.row(0).tail<6>() = a6;
 };
 
 const vec6

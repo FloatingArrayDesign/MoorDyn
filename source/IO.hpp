@@ -177,12 +177,6 @@ class DECLDIR IO : public LogUser
 	 */
 	std::vector<uint64_t> Serialize(const XYZQuat& m);
 
-	/** @brief Pack a list to make it writable
-	 * @param m The list
-	 * @return The packed list
-	 */
-	std::vector<uint64_t> Serialize(const list& m);
-
 	/** @brief Pack a list of floating point numbers to make it writable
 	 * @param l The list
 	 * @return The packed list
@@ -213,23 +207,25 @@ class DECLDIR IO : public LogUser
 	 */
 	std::vector<uint64_t> Serialize(const std::vector<mat6>& l);
 
-	/** @brief Pack an arbitrarily large vector
-	 * @param l The list
+	/** @brief Pack an arbitrarily large matrix
+	 * @param l The matrix
 	 * @return The packed list
 	 */
-	template<typename T>
 	inline std::vector<uint64_t> Serialize(
-		const Eigen::Matrix<T, Eigen::Dynamic, 1>& l)
+		const Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>& l)
 	{
 		std::vector<uint64_t> data;
 		const uint64_t n = l.rows();
+		const uint64_t m = l.cols();
+		data.reserve(2 + n * m);
 		data.push_back(Serialize(n));
+		data.push_back(Serialize(m));
 		for (uint64_t i = 0; i < n; i++) {
-			std::vector<uint64_t> subdata = Serialize(l(i));
-			data.insert(data.end(), subdata.begin(), subdata.end());
+			for (uint64_t j = 0; j < m; j++) {
+				data.push_back(Serialize(l(i, j)));
+			}
 		}
 		return data;
-
 	}
 
 	/** @brief Pack a list of lists to make it writable
@@ -313,13 +309,6 @@ class DECLDIR IO : public LogUser
 	 */
 	uint64_t* Deserialize(const uint64_t* in, XYZQuat& out);
 
-	/** @brief Unpack a loaded list
-	 * @param in The pointer to the next unread value
-	 * @param out The unpacked value
-	 * @return The new pointer to the remaining data to be read
-	 */
-	uint64_t* Deserialize(const uint64_t* in, list& out);
-
 	/** @brief Unpack a loaded list of floating point numbers
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked value
@@ -355,21 +344,25 @@ class DECLDIR IO : public LogUser
 	 */
 	uint64_t* Deserialize(const uint64_t* in, std::vector<mat6>& out);
 
-	/** @brief Unpack an arbitrarily large vector
+	/** @brief Unpack an arbitrarily large matrix
 	 * @param in The pointer to the next unread value
 	 * @param out The unpacked vector
 	 * @return The new pointer to the remaining data to be read
 	 */
-	template<typename Type>
-	uint64_t* Deserialize(const uint64_t* in,
-	                      Eigen::Matrix<Type, Eigen::Dynamic, 1>& out)
+	uint64_t* Deserialize(
+		const uint64_t* in,
+		Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>& out)
 	{
-		uint64_t n;
-		uint64_t* remaining = Deserialize(in, n);
-		if (out.rows() != n)
-			out.resize(n);
+		uint64_t* remaining;
+		uint64_t n, m;
+		remaining = Deserialize(in, n);
+		remaining = Deserialize(remaining, m);
+		if ((out.rows() != n) || (out.cols() != m))
+			out.resize(n, m);
 		for (unsigned int i = 0; i < n; i++) {
-			remaining = Deserialize(remaining, out(i));
+			for (unsigned int j = 0; j < m; j++) {
+				remaining = Deserialize(remaining, out(i, j));
+			}
 		}
 		return remaining;
 	}

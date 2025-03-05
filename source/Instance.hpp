@@ -35,6 +35,7 @@
 
 #pragma once
 
+#include "Misc.hpp"
 #include "IO.hpp"
 #include "Log.hpp"
 #include <utility>
@@ -67,26 +68,45 @@ class DECLDIR Instance : public io::IO
 	 * The unique identifier is a growing index which identifies every single
 	 * created instance. Even if an instance is removed, the index will remain
 	 * taken.
+	 * That applies even for multiple instances generation.
 	 * @return The unique identifier
+	 * @warning It cannot be assumed that the first taken index will be 0
+	 * @warning It cannot be assumed that consequtive ids will be assigned
 	 */
-	inline const size_t Id() const { return _id; }
+	inline const size_t id() const { return _id; }
+
+	/** @brief Set the state
+	 * @param r The state variable
+	 */
+	virtual void setState(const InstanceStateVarView r) = 0;
+
+	/** @brief Calculate forces and get the derivative of the states
+	 * @param drdt Output state derivatives
+	 * @throws nan_error If nan values are detected in any node position
+	 */
+	virtual void getStateDeriv(InstanceStateVarView drdt) = 0;
 
 	/** @brief Get the number of state variables required by this instance
 	 *
 	 * This can be seen as the number of rows on the state variables holder.
 	 * @return The number of state variables
 	 */
-	virtual inline const size_t state_n() const { return 1; }
+	virtual inline const size_t stateN() const { return 1; }
 
 	/** @brief Get the dimension of the state variable.
 	 *
 	 * This can be seen as the number of columns on the state variables holder.
 	 * @return The dimension of the state variable
 	 */
-	virtual inline const size_t state_dims() const { return 6; }
+	virtual inline const size_t stateDims() const { return 6; }
   private:
 	/// Unique identifier of this instance
 	size_t _id;
 };
+
+/** @brief Reset the instances Ids, so they will be assigned again starting
+ * from 0
+ */
+void reset_instance_ids();
 
 } // ::moordyn

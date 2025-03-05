@@ -276,8 +276,8 @@ Point::setState(vec pos, vec vel)
 		a.line->setEndKinematics(r, rd, a.end_point);
 }
 
-std::pair<vec, vec>
-Point::getStateDeriv()
+void
+Point::getStateDeriv(InstanceStateVarView drdt)
 {
 	// the RHS is only relevant (there are only states to worry about) if it is
 	// a Point type of Point
@@ -295,7 +295,8 @@ Point::getStateDeriv()
 	acc = M.inverse() * Fnet;
 
 	// update states
-	return std::make_pair(rd, acc);
+	drdt.row(0).head<3>() = rd;
+	drdt.row(0).tail<3>() = acc;
 };
 
 void
