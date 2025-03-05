@@ -161,6 +161,15 @@ typedef ivec3 ivec;
 /// Complex numbers
 typedef std::complex<real> complex;
 
+/// State variables for a particular instance
+typedef Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic> InstanceStateVar;
+/// View of the State variables for a particular instance
+typedef Eigen::Block<InstanceStateVar, Eigen::Dynamic> InstanceStateVarView;
+/// State variable
+typedef Eigen::Matrix<InstanceStateVar, Eigen::Dynamic, 1> StateVar;
+/// View of the State variable
+typedef Eigen::VectorBlock<StateVar, Eigen::Dynamic> StateVarView;
+
 /** @brief This function compares two real numbers and determines if they are
  * "almost" equal
  *
@@ -586,7 +595,7 @@ MAKE_EXCEPTION(nan_error)
 MAKE_EXCEPTION(mem_error)
 /// Exception thrown when invalid values are found
 MAKE_EXCEPTION(invalid_value_error)
-/// Exception thrown when invalid values are found
+/// Exception thrown when something is not implemented yet
 MAKE_EXCEPTION(non_implemented_error)
 /// Exception thrown when an invalid type is asked
 MAKE_EXCEPTION(invalid_type_error)

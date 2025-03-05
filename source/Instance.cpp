@@ -28,4 +28,9 @@ Instance::Instance(moordyn::Log* log)
 	_id = __instances_counter++;
 }
 
+void reset_instance_ids()
+{
+	__instances_counter = 0;
+}
+
 }  // ::moordyn

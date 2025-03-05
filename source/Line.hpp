@@ -811,16 +811,14 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	inline void setTime(real time) { t = time; }
 
 	/** @brief Set the line state
-	 * @param r The moordyn::Line::getN() - 1 positions
-	 * @param u The moordyn::Line::getN() - 1 velocities
+	 * @param r The positions and velocities on the internal nodes
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
-	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
 	 * @{
 	 */
-	void setState(const std::vector<vec>& r, const std::vector<vec>& u);
+	void setState(const std::vector<vec>& pos, const std::vector<vec>& vel);
 
-	void setState(const StateVarRef r, const StateVarRef u);
+	void setState(const InstanceStateVarView r);
 	/**
 	 * @}
 	 */
@@ -863,16 +861,30 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
 
 	/** @brief Calculate forces and get the derivative of the line's states
-	 * @param vel Where to store the velocities of the internal nodes
-	 * @param acc Where to store the accelerations of the internal nodes
+	 * @param drdt Output state derivatives
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	void getStateDeriv(StateVarRef vel, StateVarRef acc);
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);
 
 	void Output(real);
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return The number of internal nodes
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateN() const { return getN() - 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 3 components for positions and 3 components for velocities, i.e.
+	 * 6 components
+	 * @note In future developments this function might return different
+	 * numbers depending on the line configuration. e.g. the viscoelasticity.
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 6; }
 
 	/** @brief Produce the packed data to be saved
 	 *
