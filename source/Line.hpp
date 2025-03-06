@@ -51,7 +51,6 @@ namespace moordyn {
 
 class Waves;
 typedef std::shared_ptr<Waves> WavesRef;
-typedef Eigen::Ref<Eigen::Matrix<list, Eigen::Dynamic, 1>> StateVarRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
