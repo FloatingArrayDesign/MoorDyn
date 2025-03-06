@@ -47,6 +47,7 @@ State::addInstance(moordyn::Instance* obj)
 		new_var(i) = _var(i);
 	}
 	InstanceStateVar obj_var(obj->stateN(), obj->stateDims());
+	obj_var.setZero();
 	new_var(_objs.size()) = obj_var;
 	_var = new_var;
 	_objs.push_back(obj);

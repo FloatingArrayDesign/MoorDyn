@@ -517,9 +517,8 @@ class SchemeBase : public Scheme
 	}
 
 	/** @brief Create an initial state for all the entities
-	 * @note Just the first state is written. None of the following states are
-	 * initialized in any way.
-	 * @note All the derivatives are nullified
+	 * @note Just the first state is written. None of the following states nor
+	 * the derivatives are initialized in any way.
 	 * @note It is assumed that the coupled entities were already initialized
 	 */
 	virtual void Init()
@@ -534,18 +533,18 @@ class SchemeBase : public Scheme
 			    (bodies[i]->type != Body::CPLDPIN))
 				continue;
 			auto [pos, vel] = bodies[i]->initialize();
-			AS_STATE(_r[0])->get(bodies[i]).row(0).head<7>() = pos.toVec7();
-			AS_STATE(_r[0])->get(bodies[i]).row(0).tail<6>() = vel;
-			for (unsigned int j = 0; j < NDERIV; j++)
-				AS_STATE(_rd[j])->get(bodies[i]).setZero();
+			auto r = AS_STATE(_r[0])->get(bodies[i]);
+			r.row(0).head(7) = pos.toVec7();
+			r.row(0).tail(6) = vel;
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
 			auto [pos, vel] = rods[i]->initialize();
-			AS_STATE(_r[0])->get(rods[i]).row(0).head<7>() = pos.toVec7();
-			AS_STATE(_r[0])->get(rods[i]).row(0).tail<6>() = vel;
+			auto r = AS_STATE(_r[0])->get(rods[i]);
+			r.row(0).head(7) = pos.toVec7();
+			r.row(0).tail(6) = vel;
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(rods[i]).setZero();
 		}
@@ -554,17 +553,19 @@ class SchemeBase : public Scheme
 			if (points[i]->type != Point::FREE)
 				continue;
 			auto [pos, vel] = points[i]->initialize();
-			AS_STATE(_r[0])->get(points[i]).row(0).head<3>() = pos;
-			AS_STATE(_r[0])->get(points[i]).row(0).tail<3>() = vel;
+			auto r = AS_STATE(_r[0])->get(points[i]);
+			r.row(0).head(3) = pos;
+			r.row(0).tail(3) = vel;
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(points[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			auto [pos, vel] = lines[i]->initialize();
+			auto r = AS_STATE(_r[0])->get(lines[i]);
 			for (unsigned int j = 0; j < pos.size(); j++) {
-				AS_STATE(_r[0])->get(lines[i]).row(j).head<3>() = pos[j];
-				AS_STATE(_r[0])->get(lines[i]).row(j).segment<3>(3) = vel[j];
+				r.row(j).head(3) = pos[j];
+				r.row(j).segment(3, 3) = vel[j];
 			}
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(lines[i]).setZero();
@@ -616,7 +617,7 @@ class SchemeBase : public Scheme
 	{
 		if (i >= NSTATE) {
 			LOGERR << "State " << i << " cannot be setted on a '" << name
-				<< "' scheme that has " << NSTATE << "states"
+				<< "' scheme that has " << NSTATE << " states"
 				<< endl;
 			throw moordyn::invalid_value_error("Invalid state");
 		}

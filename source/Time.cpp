@@ -423,7 +423,8 @@ HeunScheme::Step(real& dt)
 	Update(0.0, 0);
 	CalcStateDeriv(0);
 	// Correct the integration
-	r0 += 0.5 * dt * (drdt0 - drdt1);
+	r0 += (0.5 * dt) * (drdt0 - drdt1);
+
 	t += dt;
 	Update(dt, 0);
 	SchemeBase::Step(dt);
