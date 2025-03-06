@@ -534,9 +534,8 @@ class SchemeBase : public Scheme
 			    (bodies[i]->type != Body::CPLDPIN))
 				continue;
 			auto [pos, vel] = bodies[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(bodies[i]);
-			r.row(0).head<7>() = pos.toVec7();
-			r.row(0).tail<6>() = vel;
+			AS_STATE(_r[0])->get(bodies[i]).row(0).head<7>() = pos.toVec7();
+			AS_STATE(_r[0])->get(bodies[i]).row(0).tail<6>() = vel;
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(bodies[i]).setZero();
 		}
@@ -545,9 +544,8 @@ class SchemeBase : public Scheme
 			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
 			auto [pos, vel] = rods[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(rods[i]);
-			r.row(0).head<7>() = pos.toVec7();
-			r.row(0).tail<6>() = vel;
+			AS_STATE(_r[0])->get(rods[i]).row(0).head<7>() = pos.toVec7();
+			AS_STATE(_r[0])->get(rods[i]).row(0).tail<6>() = vel;
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(rods[i]).setZero();
 		}
@@ -556,20 +554,17 @@ class SchemeBase : public Scheme
 			if (points[i]->type != Point::FREE)
 				continue;
 			auto [pos, vel] = points[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(points[i]);
-			r.row(0) << pos.transpose(), vel.transpose();
-			r.row(0).head<3>() = pos;
-			r.row(0).tail<3>() = vel;
+			AS_STATE(_r[0])->get(points[i]).row(0).head<3>() = pos;
+			AS_STATE(_r[0])->get(points[i]).row(0).tail<3>() = vel;
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(points[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			auto [pos, vel] = lines[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(lines[i]);
 			for (unsigned int j = 0; j < pos.size(); j++) {
-				r.row(j).head<3>() = pos[j];
-				r.row(j).segment<3>(3) = vel[j];
+				AS_STATE(_r[0])->get(lines[i]).row(j).head<3>() = pos[j];
+				AS_STATE(_r[0])->get(lines[i]).row(j).segment<3>(3) = vel[j];
 			}
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(lines[i]).setZero();
