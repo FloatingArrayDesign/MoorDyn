@@ -427,33 +427,37 @@ class MoorDyn final : public io::IO
 	 * the input file.
 	 *
 	 * @param inputText a string from the Line Properties section of input file
+	 * @param lineNum the file line number for error messages
 	 * @return The line properties
 	 */
-	LineProps* readLineProps(string inputText);
+	LineProps* readLineProps(string inputText, int lineNum);
 
 	/** @brief Helper function to read a new rod property given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Rod Properties section of input file
+	 * @param lineNum the file line number for error messages
 	 * @return The rod properties
 	 */
-	RodProps* readRodProps(string inputText);
+	RodProps* readRodProps(string inputText, int lineNum);
 
 	/** @brief Helper function to read a new rod given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Rod List section of input file
+	 * @param lineNum the file line number for error messages
 	 * @return The rod object
 	 */
-	Rod* readRod(string inputText);
+	Rod* readRod(string inputText, int lineNum);
 
 	/** @brief Helper function to read a new body given a line from
 	 * the input file.
 	 *
 	 * @param inputText a string from the Body List section of input file
+	 * @param lineNum the file line number for error messages
 	 * @return The body object
 	 */
-	Body* readBody(string inputText);
+	Body* readBody(string inputText, int lineNum);
 
 	/** @brief Helper function to read an option given a line from
 	 * the input file.
@@ -468,9 +472,10 @@ class MoorDyn final : public io::IO
 	 * If a wrong number of entries is provided an error is printed out
 	 * @param entries Provided entries
 	 * @param supposedNumberOfEntries Expected number of entries
+	 * @param lineNum the file line number for error messages
 	 */
 	bool checkNumberOfEntriesInLine(vector<string> entries,
-	                                int supposedNumberOfEntries);
+	                                int supposedNumberOfEntries, int lineNum);
 
 	/** @brief Compute an initial condition using the stationary solver
 	 * @see ::ICgenDynamic
