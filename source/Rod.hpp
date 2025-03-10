@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
 #include <vector>
@@ -63,7 +63,7 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class DECLDIR Rod final : public io::IO, public SuperCFL
+class DECLDIR Rod final : public Instance, public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -470,9 +470,9 @@ class DECLDIR Rod final : public io::IO, public SuperCFL
 	 */
 	void setState(XYZQuat pos, vec6 vel);
 
-	inline void setState(vec7 r, vec6 rd)
+	inline void setState(const InstanceStateVarView r)
 	{
-		setState(XYZQuat::fromVec7(r), rd);
+		setState(XYZQuat::fromVec7(r.row(0).head<7>()), r.row(0).tail<6>());
 	}
 	/**
 	 * @}
@@ -528,13 +528,13 @@ class DECLDIR Rod final : public io::IO, public SuperCFL
 	void setDependentStates();
 
 	/** @brief calculate the forces and state derivatives of the rod
-	 * @return The linear and angular velocity (first), and the linear and
-	 * angular accelerations (second)
+	 * @param drdt The velocity quaternion and the linear and angular
+	 * accelerations
 	 * @throws nan_error If nan values are detected in any node position
 	 * @note The returned linear velocity and accelerations for pinned rods
 	 * should be ignored
 	 */
-	std::pair<XYZQuat, vec6> getStateDeriv();
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	/** @brief Get the net force on rod (and possibly moment at end A if it's
 	 * not pinned)
@@ -579,6 +579,18 @@ class DECLDIR Rod final : public io::IO, public SuperCFL
 	void doRHS();
 
 	void Output(real);
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return 1
+	 */
+	inline const size_t stateN() const { return 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 7 components for position quaternion and 6 components for
+	 * linear and angular velocities, i.e. 13 components
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 13; }
 
 	/** @brief Produce the packed data to be saved
 	 *

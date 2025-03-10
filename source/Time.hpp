@@ -363,39 +363,10 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and state derivatives
-		AS_STATE(_r[0])->addLine(obj);
-		AS_STATE(_r[0])->setListLength("pos", 3, obj);
-		AS_STATE(_r[0])->setListLength("vel", 3, obj);
-		for (unsigned int i = 0; i < obj->getN() - 1; i++) {
-			AS_STATE(_r[0])->get<list>("pos", obj)(i) = vec::Zero();
-			AS_STATE(_r[0])->get<list>("vel", obj)(i) = vec::Zero();
-		}
-		for (unsigned int i = 1; i < NSTATE; i++) {
-			AS_STATE(_r[i])->addLine(obj);
-			AS_STATE(_r[i])->setListLength("pos", 3, obj);
-			AS_STATE(_r[i])->setListLength("vel", 3, obj);
-			AS_STATE(_r[i])->get<list>("pos", obj) =
-				AS_STATE(_r[0])->get<list>("pos", obj);
-			AS_STATE(_r[i])->get<list>("vel", obj) =
-				AS_STATE(_r[0])->get<list>("vel", obj);
-		}
-		AS_STATE(_rd[0])->addLine(obj);
-		AS_STATE(_rd[0])->setListLength("vel", 3, obj);
-		AS_STATE(_rd[0])->setListLength("acc", 3, obj);
-		for (unsigned int i = 0; i < obj->getN() - 1; i++) {
-			AS_STATE(_rd[0])->get<list>("vel", obj)(i) = vec::Zero();
-			AS_STATE(_rd[0])->get<list>("acc", obj)(i) = vec::Zero();
-		}
-		for (unsigned int i = 1; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->addLine(obj);
-			AS_STATE(_rd[i])->setListLength("vel", 3, obj);
-			AS_STATE(_rd[i])->setListLength("acc", 3, obj);
-			AS_STATE(_rd[i])->get<list>("vel", obj) =
-				AS_STATE(_rd[0])->get<list>("vel", obj);
-			AS_STATE(_rd[i])->get<list>("acc", obj) =
-				AS_STATE(_rd[0])->get<list>("acc", obj);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.lines.push_back(true);
 	}
@@ -447,12 +418,11 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->removeLine(obj);
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->removeLine(obj);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
+		_calc_mask.lines.erase(_calc_mask.lines.begin() + i);
 		return i;
 	}
 
@@ -487,21 +457,10 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and state derivatives
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->addPoint(obj);
-			AS_STATE(_r[i])->setListLength("pos", 3, obj);
-			AS_STATE(_r[i])->setListLength("vel", 3, obj);
-			AS_STATE(_r[i])->get<list>("pos", obj)(0) = vec::Zero();
-			AS_STATE(_r[i])->get<list>("vel", obj)(0) = vec::Zero();
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->addPoint(obj);
-			AS_STATE(_rd[i])->setListLength("vel", 3, obj);
-			AS_STATE(_rd[i])->setListLength("acc", 3, obj);
-			AS_STATE(_rd[i])->get<list>("vel", obj)(0) = vec::Zero();
-			AS_STATE(_rd[i])->get<list>("acc", obj)(0) = vec::Zero();
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.points.push_back(true);
 	}
@@ -520,12 +479,10 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->removePoint(obj);
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->removePoint(obj);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.points.erase(_calc_mask.points.begin() + i);
 		return i;
 	}
@@ -541,21 +498,10 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and state derivatives
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->addRod(obj);
-			AS_STATE(_r[i])->setListLength("pos", 7, obj);
-			AS_STATE(_r[i])->setListLength("vel", 6, obj);
-			AS_STATE(_r[i])->get<list>("pos", obj)(0) = vec7::Zero();
-			AS_STATE(_r[i])->get<list>("vel", obj)(0) = vec6::Zero();
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->addRod(obj);
-			AS_STATE(_rd[i])->setListLength("vel", 7, obj);
-			AS_STATE(_rd[i])->setListLength("acc", 6, obj);
-			AS_STATE(_rd[i])->get<list>("vel", obj)(0) = vec7::Zero();
-			AS_STATE(_rd[i])->get<list>("acc", obj)(0) = vec6::Zero();
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.rods.push_back(true);
 	}
@@ -574,12 +520,10 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->removeRod(obj);
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->removeRod(obj);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.rods.erase(_calc_mask.rods.begin() + i);
 		return i;
 	}
@@ -595,21 +539,10 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and state derivatives
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->addBody(obj);
-			AS_STATE(_r[i])->setListLength("pos", 7, obj);
-			AS_STATE(_r[i])->setListLength("vel", 6, obj);
-			AS_STATE(_r[i])->get<list>("pos", obj)(0) = vec7::Zero();
-			AS_STATE(_r[i])->get<list>("vel", obj)(0) = vec6::Zero();
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->addBody(obj);
-			AS_STATE(_rd[i])->setListLength("vel", 7, obj);
-			AS_STATE(_rd[i])->setListLength("acc", 6, obj);
-			AS_STATE(_rd[i])->get<list>("vel", obj)(0) = vec7::Zero();
-			AS_STATE(_rd[i])->get<list>("acc", obj)(0) = vec6::Zero();
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.bodies.push_back(true);
 	}
@@ -628,18 +561,16 @@ class SchemeBase : public Scheme
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < NSTATE; i++) {
-			AS_STATE(_r[i])->removeBody(obj);
-		}
-		for (unsigned int i = 0; i < NDERIV; i++) {
-			AS_STATE(_rd[i])->removeBody(obj);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.bodies.erase(_calc_mask.bodies.begin() + i);
 		return i;
 	}
 
 	/** @brief Create an initial state for all the entities
-	 * @note Just the first state is written. None of the following states, nor
+	 * @note Just the first state is written. None of the following states nor
 	 * the derivatives are initialized in any way.
 	 * @note It is assumed that the coupled entities were already initialized
 	 */
@@ -655,32 +586,42 @@ class SchemeBase : public Scheme
 			    (bodies[i]->type != Body::CPLDPIN))
 				continue;
 			auto [pos, vel] = bodies[i]->initialize();
-			AS_STATE(_r[0])->get<list>("pos", bodies[i])(0) = pos.toVec7();
-			AS_STATE(_r[0])->get<list>("vel", bodies[i])(0) = vel;
+			auto r = AS_STATE(_r[0])->get(bodies[i]);
+			r.row(0).head(7) = pos.toVec7();
+			r.row(0).tail(6) = vel;
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
 			auto [pos, vel] = rods[i]->initialize();
-			AS_STATE(_r[0])->get<list>("pos", rods[i])(0) = pos.toVec7();
-			AS_STATE(_r[0])->get<list>("vel", rods[i])(0) = vel;
+			auto r = AS_STATE(_r[0])->get(rods[i]);
+			r.row(0).head(7) = pos.toVec7();
+			r.row(0).tail(6) = vel;
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(rods[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (points[i]->type != Point::FREE)
 				continue;
 			auto [pos, vel] = points[i]->initialize();
-			AS_STATE(_r[0])->get<list>("pos", points[i])(0) = pos;
-			AS_STATE(_r[0])->get<list>("vel", points[i])(0) = vel;
+			auto r = AS_STATE(_r[0])->get(points[i]);
+			r.row(0).head(3) = pos;
+			r.row(0).tail(3) = vel;
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(points[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			auto [pos, vel] = lines[i]->initialize();
+			auto r = AS_STATE(_r[0])->get(lines[i]);
 			for (unsigned int j = 0; j < pos.size(); j++) {
-				AS_STATE(_r[0])->get<list>("pos", lines[i])(j) = pos[j];
-				AS_STATE(_r[0])->get<list>("vel", lines[i])(j) = vel[j];
+				r.row(j).head(3) = pos[j];
+				r.row(j).segment(3, 3) = vel[j];
 			}
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(lines[i]).setZero();
 		}
 	}
 
@@ -729,7 +670,7 @@ class SchemeBase : public Scheme
 	{
 		if (i >= NSTATE) {
 			LOGERR << "State " << i << " cannot be setted on a '" << name
-				<< "' scheme that has " << NSTATE << "states"
+				<< "' scheme that has " << NSTATE << " states"
 				<< endl;
 			throw moordyn::invalid_value_error("Invalid state");
 		}
@@ -878,16 +819,10 @@ class SchemeBase : public Scheme
 		// points, moordyn::XYZQuat for rods and bodies), so better using lists
 		// that we can resize on demand
 		for (unsigned int substep = 0; substep < NSTATE; substep++) {
-			moordyn::state::State* state = new moordyn::state::State(log);
-			state->addVar<list>("pos");
-			state->addVar<list>("vel");
-			_r[substep] = state;
+			_r[substep] = new moordyn::state::State(log);
 		}
 		for (unsigned int substep = 0; substep < NDERIV; substep++) {
-			moordyn::state::State* state = new moordyn::state::State(log);
-			state->addVar<list>("vel");
-			state->addVar<list>("acc");
-			_rd[substep] = state;
+			_rd[substep] = new moordyn::state::State(log);
 		}
 	}
 
@@ -1289,38 +1224,30 @@ class ABScheme final : public LocalSchemeBase<1, 5>
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			if (!_calc_mask.lines[i])
 				continue;
-			AS_STATE(rd(dst))->get<list>("vel", lines[i]) =
-				AS_STATE(rd(org))->get<list>("vel", lines[i]);
-			AS_STATE(rd(dst))->get<list>("acc", lines[i]) =
-				AS_STATE(rd(org))->get<list>("acc", lines[i]);
+			AS_STATE(rd(dst))->get(lines[i]) =
+				AS_STATE(rd(org))->get(lines[i]);
 		}
 
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (!_calc_mask.points[i] && (points[i]->type == Point::FREE))
 				continue;
-			AS_STATE(rd(dst))->get<list>("vel", points[i]) =
-				AS_STATE(rd(org))->get<list>("vel", points[i]);
-			AS_STATE(rd(dst))->get<list>("acc", points[i]) =
-				AS_STATE(rd(org))->get<list>("acc", points[i]);
+			AS_STATE(rd(dst))->get(points[i]) =
+				AS_STATE(rd(org))->get(points[i]);
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if (!_calc_mask.rods[i] && ((rods[i]->type != Rod::FREE) ||
 			                            (rods[i]->type != Rod::PINNED)))
 				continue;
-			AS_STATE(rd(dst))->get<list>("vel", rods[i]) =
-				AS_STATE(rd(org))->get<list>("vel", rods[i]);
-			AS_STATE(rd(dst))->get<list>("acc", rods[i]) =
-				AS_STATE(rd(org))->get<list>("acc", rods[i]);
+			AS_STATE(rd(dst))->get(rods[i]) =
+				AS_STATE(rd(org))->get(rods[i]);
 		}
 
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if (!_calc_mask.bodies[i] && (bodies[i]->type == Body::FREE))
 				continue;
-			AS_STATE(rd(dst))->get<list>("vel", bodies[i]) =
-				AS_STATE(rd(org))->get<list>("vel", bodies[i]);
-			AS_STATE(rd(dst))->get<list>("acc", bodies[i]) =
-				AS_STATE(rd(org))->get<list>("acc", bodies[i]);
+			AS_STATE(rd(dst))->get(bodies[i]) =
+				AS_STATE(rd(org))->get(bodies[i]);
 		}
 	}
 

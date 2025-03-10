@@ -1,6 +1,7 @@
 set(MOORDYN_SRCS
     Body.cpp
     Point.cpp
+    Instance.cpp
     IO.cpp
     Line.cpp
     Log.cpp
@@ -23,6 +24,7 @@ set(MOORDYN_SRCS
 set(MOORDYN_HEADERS
     Body.hpp
     Point.hpp
+    Instance.hpp
     IO.hpp
     Line.hpp
     Log.hpp

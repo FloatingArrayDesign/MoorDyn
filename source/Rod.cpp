@@ -54,7 +54,7 @@ namespace moordyn {
 //   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [point (node N)]
 
 Rod::Rod(moordyn::Log* log, size_t rodId)
-  : io::IO(log)
+  : Instance(log)
   , seafloor(nullptr)
   , rodId(rodId)
 {
@@ -601,8 +601,8 @@ Rod::setDependentStates()
 		attached.line->setEndOrientation(q, attached.end_point, ENDPOINT_B);
 }
 
-std::pair<XYZQuat, vec6>
-Rod::getStateDeriv()
+void
+Rod::getStateDeriv(InstanceStateVarView drdt)
 {
 	// attempting error handling <<<<<<<<
 	for (unsigned int i = 0; i <= N; i++) {
@@ -683,7 +683,8 @@ Rod::getStateDeriv()
 		    0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
 	}
 
-	return std::make_pair(vel7, acc6);
+	drdt.row(0).head<7>() = vel7.toVec7();
+	drdt.row(0).tail<6>() = acc6;
 }
 
 const vec6

@@ -37,239 +37,52 @@ namespace moordyn {
 namespace state {
 
 void
-State::addLine(Line* obj)
+State::addInstance(moordyn::Instance* obj)
 {
-	if (std::find(lines.begin(), lines.end(), obj) != lines.end()) {
-		throw moordyn::invalid_value_error("Repeated line");
+	if (std::find(_objs.begin(), _objs.end(), obj) != _objs.end()) {
+		throw moordyn::invalid_value_error("Repeated instance");
 	}
-	lines.push_back(obj);
-	resize();
+	StateVar new_var(_objs.size() + 1);
+	for (size_t i = 0; i < _objs.size(); i++) {
+		new_var(i) = _var(i);
+	}
+	InstanceStateVar obj_var(obj->stateN(), obj->stateDims());
+	obj_var.setZero();
+	new_var(_objs.size()) = obj_var;
+	_var = new_var;
+	_objs.push_back(obj);
+	_indexes = make_indexes();
 }
 
 unsigned int
-State::removeLine(Line* obj)
+State::removeInstance(moordyn::Instance* obj)
 {
-	auto it = std::find(lines.begin(), lines.end(), obj);
-	if (it == lines.end()) {
-		throw moordyn::invalid_value_error("Missing line");
+	auto it = std::find(_objs.begin(), _objs.end(), obj);
+	if (it == _objs.end()) {
+		throw moordyn::invalid_value_error("Missing instance");
 	}
-	const unsigned int i = std::distance(lines.begin(), it);
-	lines.erase(it);
-	resize();
-	return i;
-}
-
-void
-State::addPoint(Point* obj)
-{
-	if (std::find(points.begin(), points.end(), obj) != points.end()) {
-		throw moordyn::invalid_value_error("Repeated point");
+	const unsigned int removed = std::distance(_objs.begin(), it);
+	StateVar new_var(_objs.size() - 1);
+	for (size_t i = 0; i < removed; i++) {
+		new_var(i) = _var(i);
 	}
-	points.push_back(obj);
-	resize();
-}
-
-unsigned int
-State::removePoint(Point* obj)
-{
-	auto it = std::find(points.begin(), points.end(), obj);
-	if (it == points.end()) {
-		throw moordyn::invalid_value_error("Missing point");
+	for (size_t i = removed; i < _objs.size() - 1; i++) {
+		new_var(i) = _var(i + 1);
 	}
-	const unsigned int i = std::distance(points.begin(), it);
-	points.erase(it);
-	resize();
-	return i;
+	_var = new_var;
+	_objs.erase(it);
+	_indexes = make_indexes();
+	return removed;
 }
-
-void
-State::addRod(Rod* obj)
-{
-	if (std::find(rods.begin(), rods.end(), obj) != rods.end()) {
-		throw moordyn::invalid_value_error("Repeated rod");
-	}
-	rods.push_back(obj);
-	resize();
-}
-
-unsigned int
-State::removeRod(Rod* obj)
-{
-	auto it = std::find(rods.begin(), rods.end(), obj);
-	if (it == rods.end()) {
-		throw moordyn::invalid_value_error("Missing rod");
-	}
-	const unsigned int i = std::distance(rods.begin(), it);
-	rods.erase(it);
-	resize();
-	return i;
-}
-
-void
-State::addBody(Body* obj)
-{
-	if (std::find(bodies.begin(), bodies.end(), obj) != bodies.end()) {
-		throw moordyn::invalid_value_error("Repeated body");
-	}
-	bodies.push_back(obj);
-	resize();
-}
-
-unsigned int
-State::removeBody(Body* obj)
-{
-	auto it = std::find(bodies.begin(), bodies.end(), obj);
-	if (it == bodies.end()) {
-		throw moordyn::invalid_value_error("Missing body");
-	}
-	const unsigned int i = std::distance(bodies.begin(), it);
-	bodies.erase(it);
-	resize();
-	return i;
-}
-
-#define TYPE_GETTER(T, TDEF)                                                   \
-template <>                                                                    \
-VarBase::types                                                                 \
-State::getType<T>()                                                            \
-{                                                                              \
-	return VarBase::types::TDEF;                                               \
-}
-
-TYPE_GETTER(real, REAL)
-TYPE_GETTER(VarScalar, REAL)
-TYPE_GETTER(vec, VEC)
-TYPE_GETTER(VarVec, VEC)
-TYPE_GETTER(vec6, VEC6)
-TYPE_GETTER(VarVec6, VEC6)
-TYPE_GETTER(XYZQuat, QUAT)
-TYPE_GETTER(VarQuat, QUAT)
-TYPE_GETTER(list, LIST)
-TYPE_GETTER(VarList, LIST)
-
-#define STATE_ADDER(T, TBASE)                                                  \
-template <>                                                                    \
-void DECLDIR                                                                   \
-State::addVar<T>(const char* name)                                             \
-{                                                                              \
-	TBASE* var = new TBASE();                                                  \
-	var->resize(ndof());                                                       \
-	vars[name] = var;                                                          \
-	types[name] = getType<T>();                                                \
-}
-
-
-STATE_ADDER(VarScalar, VarScalar)
-STATE_ADDER(real, VarScalar)
-STATE_ADDER(VarVec, VarVec)
-STATE_ADDER(vec, VarVec)
-STATE_ADDER(VarVec6, VarVec6)
-STATE_ADDER(vec6, VarVec6)
-STATE_ADDER(VarQuat, VarQuat)
-STATE_ADDER(XYZQuat, VarQuat)
-STATE_ADDER(VarList, VarList)
-STATE_ADDER(list, VarList)
-
-void
-State::addVar(const char* name, VarBase::types t)
-{
-	switch (t) {
-		case VarBase::types::REAL:
-			addVar<VarScalar>(name);
-			break;
-		case VarBase::types::VEC:
-			addVar<VarVec>(name);
-			break;
-		case VarBase::types::VEC6:
-			addVar<VarVec6>(name);
-			break;
-		case VarBase::types::QUAT:
-			addVar<VarQuat>(name);
-			break;
-		case VarBase::types::LIST:
-			addVar<VarList>(name);
-			break;
-		default:
-			throw moordyn::invalid_type_error("Unrecognized variable type");
-	}
-}
-
-void
-State::setListLength(const char* name, size_t n, void* obj)
-{
-	checkVar<list>(name);
-	std::pair<size_t, size_t> ids = obj ?
-		indexes[obj] : std::make_pair((size_t)0, ndof());
-	for (size_t i = ids.first; i < ids.second; i++) {
-		((VarList*)vars[name])->operator()(i).resize(n);
-	}
-}
-
-#define STATE_SETTER(T, TBASE)                                                 \
-template <>                                                                    \
-void DECLDIR                                                                   \
-State::set<T>(const char* name,                                                \
-              Eigen::Matrix<T, Eigen::Dynamic, 1> v)                           \
-{                                                                              \
-	checkVar<T>(name);                                                         \
-	TBASE* var = (TBASE*)vars[name];                                           \
-	if(var->rows() != v.rows())                                                \
-		throw moordyn::invalid_value_error("Inconsistent lengths");            \
-	var->asMatrix() = v;                                                       \
-}
-
-STATE_SETTER(real, VarScalar)
-STATE_SETTER(vec, VarVec)
-STATE_SETTER(vec6, VarVec6)
-STATE_SETTER(XYZQuat, VarQuat)
-STATE_SETTER(list, VarList)
-
-#define STATE_OBJ_SETTER(T, TBASE)                                             \
-template <>                                                                    \
-void DECLDIR                                                                   \
-State::set<T>(const char* name,                                                \
-              void* obj,                                                       \
-              Eigen::Matrix<T, Eigen::Dynamic, 1> v)                           \
-{                                                                              \
-	checkVar<T>(name);                                                         \
-	TBASE* var = (TBASE*)vars[name];                                           \
-	auto ids = indexes[obj];                                                   \
-	if((ids.second - ids.first) != v.rows())                                   \
-		throw moordyn::invalid_value_error("Inconsistent lengths");            \
-	var->operator()(Eigen::seq(ids.first, ids.second - 1)) = v;                \
-}
-
-STATE_OBJ_SETTER(real, VarScalar)
-STATE_OBJ_SETTER(vec, VarVec)
-STATE_OBJ_SETTER(vec6, VarVec6)
-STATE_OBJ_SETTER(XYZQuat, VarQuat)
-STATE_OBJ_SETTER(list, VarList)
 
 std::vector<uint64_t>
 State::Serialize(void)
 {
 	std::vector<uint64_t> data, subdata;
-
-	for (const auto& [key, var] : vars) {
-		switch (var->inner_type()) {
-			case VarBase::types::REAL:
-				subdata = io::IO::Serialize(((VarScalar*)var)->asMatrix());
-				break;
-			case VarBase::types::VEC:
-				subdata = io::IO::Serialize(((VarVec*)var)->asMatrix());
-				break;
-			case VarBase::types::VEC6:
-				subdata = io::IO::Serialize(((VarVec6*)var)->asMatrix());
-				break;
-			case VarBase::types::QUAT:
-				subdata = io::IO::Serialize(((VarQuat*)var)->asMatrix());
-				break;
-			case VarBase::types::LIST:
-				subdata = io::IO::Serialize(((VarList*)var)->asMatrix());
-				break;
-			default:
-				throw moordyn::invalid_type_error("Unhandled variable type");
-		}
+	const uint64_t n = _var.rows();
+	data.push_back(io::IO::Serialize(n));
+	for (unsigned int i = 0; i < n; i++) {
+		subdata = io::IO::Serialize(_var(i));
 		data.insert(data.end(), subdata.begin(), subdata.end());
 	}
 	return data;
@@ -279,77 +92,25 @@ uint64_t*
 State::Deserialize(const uint64_t* data)
 {
 	uint64_t* ptr = (uint64_t*)data;
-	for (const auto& [key, var] : vars) {
-		switch (var->inner_type()) {
-			case VarBase::types::REAL:
-				ptr = io::IO::Deserialize(ptr, ((VarScalar*)var)->asMatrix());
-				break;
-			case VarBase::types::VEC:
-				ptr = io::IO::Deserialize(ptr, ((VarVec*)var)->asMatrix());
-				break;
-			case VarBase::types::VEC6:
-				ptr = io::IO::Deserialize(ptr, ((VarVec6*)var)->asMatrix());
-				break;
-			case VarBase::types::QUAT:
-				ptr = io::IO::Deserialize(ptr, ((VarQuat*)var)->asMatrix());
-				break;
-			case VarBase::types::LIST:
-				ptr = io::IO::Deserialize(ptr, ((VarList*)var)->asMatrix());
-				break;
-			default:
-				throw moordyn::invalid_type_error("Unhandled variable type");
-		}
+	uint64_t n;
+	ptr = io::IO::Deserialize(ptr, n);
+	if (n != _var.rows()) {
+		LOGERR << "A state variable with " << n << " instances cannot be "
+		       << "deserialized into a state variable with " << _var.rows()
+		       << " instances" << std::endl;
+		throw moordyn::input_error("Incorrect number of instances");
 	}
+	for (unsigned int i = 0; i < n; i++)
+		ptr = io::IO::Deserialize(ptr, _var(i));
 	return ptr;
 }
-
-#define STATE_GETTER(T, TBASE)                                                 \
-template <>                                                                    \
-DECLDIR Eigen::Matrix<T, Eigen::Dynamic, 1>&                                   \
-State::getRef<T>(const char* name)                                             \
-{                                                                              \
-	checkVar<T>(name);                                                         \
-	TBASE* var = (TBASE*)vars[name];                                           \
-	return var->asMatrix();                                                    \
-}
-
-STATE_GETTER(real, VarScalar)
-STATE_GETTER(vec, VarVec)
-STATE_GETTER(vec6, VarVec6)
-STATE_GETTER(XYZQuat, VarQuat)
-STATE_GETTER(list, VarList)
 
 void
 State::clear()
 {
-	for (auto& [key, value] : vars) {
-		switch (value->inner_type()) {
-			case VarBase::types::REAL:
-				delete (VarScalar*)value;
-				break;
-			case VarBase::types::VEC:
-				delete (VarVec*)value;
-				break;
-			case VarBase::types::VEC6:
-				delete (VarVec6*)value;
-				break;
-			case VarBase::types::QUAT:
-				delete (VarQuat*)value;
-				break;
-			case VarBase::types::LIST:
-				delete (VarList*)value;
-				break;
-			default:
-				break;
-		}
-	}
-	vars.clear();
-	types.clear();
-	lines.clear();
-	points.clear();
-	rods.clear();
-	bodies.clear();
-	indexes.clear();
+	_var.resize(0);
+	_objs.clear();
+	_indexes.clear();
 }
 
 void
@@ -357,154 +118,13 @@ State::copy(const State& rhs)
 {
 	clear();
 
-	lines.reserve(rhs.lines.size());
-	for (auto l : rhs.lines)
-		addLine(l);
-	points.reserve(rhs.points.size());
-	for (auto l : rhs.points)
-		addPoint(l);
-	rods.reserve(rhs.rods.size());
-	for (auto l : rhs.rods)
-		addRod(l);
-	bodies.reserve(rhs.bodies.size());
-	for (auto l : rhs.bodies)
-		addBody(l);
+	_objs.reserve(rhs._objs.size());
+	for (auto obj : rhs._objs)
+		addInstance(obj);
 
-	for (const auto& [key, var] : rhs.vars) {
-		addVar(key.c_str(), var->inner_type());
-		switch (var->inner_type()) {
-			case VarBase::types::REAL:
-				*((VarScalar*)vars[key]) = *((VarScalar*)var);
-				break;
-			case VarBase::types::VEC:
-				*((VarVec*)vars[key]) = *((VarVec*)var);
-				break;
-			case VarBase::types::VEC6:
-				*((VarVec6*)vars[key]) = *((VarVec6*)var);
-				break;
-			case VarBase::types::QUAT:
-				*((VarQuat*)vars[key]) = *((VarQuat*)var);
-				break;
-			case VarBase::types::LIST:
-				*((VarList*)vars[key]) = *((VarList*)var);
-				break;
-			default:
-				throw moordyn::invalid_type_error("Unhandled variable type");
-		}
-	}
-}
-
-#define STATE_TYPE_CHECKER(T, TDEF)                                            \
-template <>                                                                    \
-bool                                                                           \
-State::checkType<T>(const char* name)                                          \
-{                                                                              \
-	return types[name] == VarBase::types::TDEF;                                \
-}
-
-STATE_TYPE_CHECKER(VarScalar, REAL)
-STATE_TYPE_CHECKER(real, REAL)
-STATE_TYPE_CHECKER(VarVec, VEC)
-STATE_TYPE_CHECKER(vec, VEC)
-STATE_TYPE_CHECKER(VarVec6, VEC6)
-STATE_TYPE_CHECKER(vec6, VEC6)
-STATE_TYPE_CHECKER(VarQuat, QUAT)
-STATE_TYPE_CHECKER(XYZQuat, QUAT)
-STATE_TYPE_CHECKER(VarList, LIST)
-STATE_TYPE_CHECKER(list, LIST)
-
-void State::resize()
-{
-	auto indexes_old = indexes;
-	size_t n_old = 0;
-	for (const auto& [key, value] : indexes_old) {
-		n_old = value.second > n_old ? value.second : n_old;
-	}
-
-	size_t n = ndof();
-
-	if (n > n_old) {
-		// A new entity has been added
-		std::pair<size_t, size_t> ids;
-		for (const auto& [key, value] : indexes) {
-			if (indexes_old.find(key) == indexes_old.end()) {
-				ids = value;
-				break;
-			}
-		}
-		for (const auto& [key, value] : vars) {
-			grow(value, n, ids);
-		}
-	} else {
-		// An entity has been removed, find its indexes
-		std::pair<size_t, size_t> ids;
-		for (const auto& [key, value] : indexes_old) {
-			if (indexes.find(key) == indexes.end()) {
-				ids = value;
-				break;
-			}
-		}
-		for (const auto& [key, value] : vars) {
-			shrink(value, n, ids);
-		}
-	}
-}
-
-void State::grow(VarBase* var, size_t n, std::pair<size_t, size_t> ids)
-{
-	switch (var->inner_type()) {
-		case VarBase::types::REAL:
-			grow(((VarScalar*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::VEC:
-			grow(((VarVec*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::VEC6:
-			grow(((VarVec6*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::QUAT:
-			grow(((VarQuat*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::LIST:
-			grow(((VarList*)var)->asMatrix(), n, ids);
-			break;
-		default:
-			throw moordyn::invalid_type_error("Unrecognized variable type");
-	}
-}
-
-void State::shrink(VarBase* var, size_t n, std::pair<size_t, size_t> ids)
-{
-	switch (var->inner_type()) {
-		case VarBase::types::REAL:
-			shrink(((VarScalar*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::VEC:
-			shrink(((VarVec*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::VEC6:
-			shrink(((VarVec6*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::QUAT:
-			shrink(((VarQuat*)var)->asMatrix(), n, ids);
-			break;
-		case VarBase::types::LIST:
-			shrink(((VarList*)var)->asMatrix(), n, ids);
-			break;
-		default:
-			throw moordyn::invalid_type_error("Unrecognized variable type");
-	}
+	_var = rhs._var;
 }
 
 } // ::state
 
 } // ::moordyn
-
-moordyn::state::VarListBase operator*(const moordyn::real& k,
-                                      moordyn::state::VarListBase v)
-{
-	for (unsigned int i = 0; i < v.rows(); i++) {
-		v(i) *= k;
-	}
-	return v;
-}

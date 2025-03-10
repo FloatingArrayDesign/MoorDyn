@@ -77,7 +77,7 @@ CreateLine(md::Log* log, EnvCondRef env, unsigned int n,
 	outfile->close();                                                          \
 	delete log;
 
-TEST_CASE("Scalar state var generation")
+TEST_CASE("State generation")
 {
 	SYS_STARTER
 
@@ -86,29 +86,23 @@ TEST_CASE("Scalar state var generation")
 	auto l = CreateLine(log, env, 20, outfile);
 
 	md::state::State state(log);
-	state.addPoint(p1);
-	state.addPoint(p2);
-	state.addLine(l);
-	state.addVar<md::real>("scalar_by_type");
-	state.addVar("scalar_by_enum", md::state::VarBase::types::REAL);
+	state.addInstance(p1);
+	state.addInstance(p2);
+	state.addInstance(l);
 
-	REQUIRE(state.get<md::real>("scalar_by_type").rows() == 21);
-	REQUIRE(state.get<md::real>("scalar_by_enum").rows() == 21);
-
-	bool catched = false;
-	try {
-		state.get<md::real>("invalid_name");
-	} catch (const md::invalid_value_error& e) {
-		catched = true;
-	}
-	REQUIRE(catched);
-	catched = false;
-	try {
-		state.get<md::vec>("scalar_by_type");
-	} catch (const md::invalid_type_error& e) {
-		catched = true;
-	}
-	REQUIRE(catched);
+	REQUIRE(state.get().rows() == 3);
+	REQUIRE(state.get()(0).rows() == 1);
+	REQUIRE(state.get()(0).cols() == 6);
+	REQUIRE(state.get()(1).rows() == 1);
+	REQUIRE(state.get()(1).cols() == 6);
+	REQUIRE(state.get()(2).rows() == 19);
+	REQUIRE(state.get()(2).cols() == 6);
+	REQUIRE(state.get(p1).rows() == 1);
+	REQUIRE(state.get(p1).cols() == 6);
+	REQUIRE(state.get(p2).rows() == 1);
+	REQUIRE(state.get(p2).cols() == 6);
+	REQUIRE(state.get(l).rows() == 19);
+	REQUIRE(state.get(l).cols() == 6);
 
 	delete p1;
 	delete p2;
@@ -116,7 +110,7 @@ TEST_CASE("Scalar state var generation")
 	SYS_KILLER
 }
 
-TEST_CASE("State var setting")
+TEST_CASE("State initializing")
 {
 	SYS_STARTER
 
@@ -124,64 +118,28 @@ TEST_CASE("State var setting")
 	auto p2 = CreatePoint(log, env);
 	auto l = CreateLine(log, env, 20, outfile);
 
-	md::state::State state(log);
-	state.addPoint(p1);
-	state.addPoint(p2);
-	state.addLine(l);
-	state.addVar<md::vec>("a");
-	state.addVar<md::vec>("b");
+	md::state::State r(log);
+	r.addInstance(p1);
+	r.addInstance(p2);
+	r.addInstance(l);
 
-	// Set the full state vars
-	Eigen::Matrix<md::vec, 21, 1> ma;
-	Eigen::Matrix<md::vec, 21, 1> mb;
-	for (unsigned int i = 0; i < 21; i++) {
-		ma(i) = md::vec::Zero();
-		mb(i) = md::vec(i, 2*i, 4*i);
+	// Set the data
+	r.get(p1).row(0).head<3>() = md::vec::Zero();
+	r.get(p1).row(0).tail<3>() = md::vec::Zero();
+	r.get(p2).row(0).head<3>() = md::vec(1.0, 2.0, 3.0);
+	r.get(p2).row(0).tail<3>() = md::vec(4.0, 5.0, 6.0);
+	md::real norm = 0.0;
+	for (unsigned int i = 0; i < 19; i++) {
+		norm += md::vec6(i, 2*i, 4*i, 5*i, 6*i, 7*i).squaredNorm();
+		r.get(l).row(i).head<3>() = md::vec(i, 2*i, 4*i);
+		r.get(l).row(i).tail<3>() = md::vec(5*i, 6*i, 7*i);
 	}
-	// They can be set with the set method:
-	state.set<md::vec>("a", mb);
-	state.set<md::vec>("b", ma);
-	REQUIRE(state.get<md::vec>("a").rows() == mb.rows());
-	REQUIRE(state.get<md::vec>("b").rows() == ma.rows());
-	// Comparisons should be made element by element
-	for (unsigned int i = 0; i < mb.rows(); i++) {
-		REQUIRE(allclose(state.get<md::vec>("a")(i), mb(i)));
-	}
-	for (unsigned int i = 0; i < ma.rows(); i++) {
-		REQUIRE(allclose(state.get<md::vec>("b")(i), ma(i)));
-	}
-	// Or they can be set with the = operator
-	state.get<md::vec>("a") = ma;
-	state.get<md::vec>("b") = mb;
-	REQUIRE(state.get<md::vec>("a").rows() == ma.rows());
-	REQUIRE(state.get<md::vec>("b").rows() == mb.rows());
-	for (unsigned int i = 0; i < ma.rows(); i++) {
-		REQUIRE(allclose(state.get<md::vec>("a")(i), ma(i)));
-	}
-	for (unsigned int i = 0; i < mb.rows(); i++) {
-		REQUIRE(allclose(state.get<md::vec>("b")(i), mb(i)));
-	}
+	norm = sqrt(norm);
 
-	// The same can be done with just a subpart of the state var:
-	state.set<md::vec>("a", l, state.get<md::vec>("b", l));
-	// Internally, the state var is storing first the lines and then the points
-	for (unsigned int i = 0; i < 19; i++) {
-		REQUIRE(allclose(state.get<md::vec>("a")(i), mb(i)));
-	}
-	for (unsigned int i = 19; i < 21; i++) {
-		REQUIRE(allclose(state.get<md::vec>("a")(i), ma(i)));
-	}
-	// If we modify a, b should remain the same
-	state.get<md::vec>("a")(1) = md::vec::Zero();
-	REQUIRE(!allclose(state.get<md::vec>("a")(1), state.get<md::vec>("b")(1)));
-	// And again, we can use the = operator to set state var subparts:
-	state.get<md::vec>("a", l) = state.get<md::vec>("b", l);
-	for (unsigned int i = 0; i < 19; i++) {
-		REQUIRE(allclose(state.get<md::vec>("a")(i), mb(i)));
-	}
-	for (unsigned int i = 19; i < 21; i++) {
-		REQUIRE(allclose(state.get<md::vec>("a")(i), ma(i)));
-	}
+	REQUIRE(r.get(p1).norm() == 0.0);
+	REQUIRE(isclose(r.get(p2).norm(),
+	                md::vec6(1.0, 2.0, 3.0, 4.0, 5.0, 6.0).norm()));
+	REQUIRE(isclose(r.get(l).norm(), norm));
 
 	delete p1;
 	delete p2;
@@ -189,7 +147,7 @@ TEST_CASE("State var setting")
 	SYS_KILLER
 }
 
-TEST_CASE("State var operations")
+TEST_CASE("Operating states")
 {
 	SYS_STARTER
 
@@ -197,140 +155,34 @@ TEST_CASE("State var operations")
 	auto p2 = CreatePoint(log, env);
 	auto l = CreateLine(log, env, 20, outfile);
 
-	md::state::State state(log);
-	state.addPoint(p1);
-	state.addPoint(p2);
-	state.addLine(l);
-	state.addVar<md::vec>("a");
-	state.addVar<md::vec>("b");
-	state.addVar<md::vec>("c");
+	md::state::State r(log), r2(log), r3(log);
+	r.addInstance(p1);
+	r.addInstance(p2);
+	r.addInstance(l);
+	r2.addInstance(p1);
+	r2.addInstance(p2);
+	r2.addInstance(l);
+	r3.addInstance(p1);
+	r3.addInstance(p2);
+	r3.addInstance(l);
 
-	Eigen::Matrix<md::vec, 21, 1> ma;
-	Eigen::Matrix<md::vec, 21, 1> mb;
-	for (unsigned int i = 0; i < 21; i++) {
-		ma(i) = md::vec(0.5 * i, i, 2 * i);
-		mb(i) = md::vec(i, 2 * i, 4 * i);
-	}
-	state.set<md::vec>("a", ma);
-	state.get<md::vec>("b") = mb;
-
-	REQUIRE(state.get<md::vec>("a").rows() == ma.rows());
-	REQUIRE(state.get<md::vec>("b").rows() == mb.rows());
-
-	state.set<md::vec>("c", state.get<md::vec>("a") + state.get<md::vec>("b"));
-	for (unsigned int i = 0; i < ma.rows(); i++) {
-		REQUIRE(allclose(state.get<md::vec>("c")(i), ma(i) + mb(i)));
-	}
-
-	delete p1;
-	delete p2;
-	delete l;
-	SYS_KILLER
-}
-
-TEST_CASE("List var")
-{
-	SYS_STARTER
-
-	auto p1 = CreatePoint(log, env);
-	auto p2 = CreatePoint(log, env);
-	auto l = CreateLine(log, env, 20, outfile);
-
-	md::state::State state(log);
-	state.addPoint(p1);
-	state.addPoint(p2);
-	state.addLine(l);
-	state.addVar<md::list>("a");
-	state.addVar<md::list>("b");
-	state.addVar<md::list>("c");
- 
-	// We just fill the lists for the line, with 4 elements each
-	Eigen::Matrix<md::list, 19, 1> ma;
-	Eigen::Matrix<md::list, 19, 1> mb;
+	// Set the data
+	r.get(p1).row(0).head<3>() = md::vec::Zero();
+	r.get(p1).row(0).tail<3>() = md::vec::Zero();
+	r.get(p2).row(0).head<3>() = md::vec(1.0, 2.0, 3.0);
+	r.get(p2).row(0).tail<3>() = md::vec(4.0, 5.0, 6.0);
 	for (unsigned int i = 0; i < 19; i++) {
-		ma(i).resize(4);
-		ma(i) = Eigen::Matrix<md::real, 4, 1>(0.5 * i, i, 2 * i, 4 * i);
-		mb(i).resize(4);
-		mb(i) = Eigen::Matrix<md::real, 4, 1>(i, 2 * i, 4 * i, 8 * i);
-	}
- 
-	state.setListLength("a", 4, l);
-	state.setListLength("b", 4, l);
-	state.setListLength("c", 4, l);
-	state.get<md::list>("a", l) = ma;
-	state.get<md::list>("b", l) = mb;
-
-	REQUIRE(state.get<md::list>("a").rows() == state.get<md::list>("b").rows());
- 
-	state.get<md::list>("c") =
-		state.get<md::list>("a") + state.get<md::list>("b");
-	for (unsigned int i = 0; i < 19; i++) {
-		REQUIRE(allclose(state.get<md::list>("c")(i), ma(i) + mb(i)));
+		r.get(l).row(i).head<3>() = md::vec(i, 2*i, 4*i);
+		r.get(l).row(i).tail<3>() = md::vec(5*i, 6*i, 7*i);
 	}
 
-	delete p1;
-	delete p2;
-	delete l;
-	SYS_KILLER
-}
+	r2.get() = r.get() * 2.0;
+	r3.get() = (r.get() - r2.get());
+	r.get() += r3.get();
 
-TEST_CASE("Serialization")
-{
-	SYS_STARTER
-
-	auto p1 = CreatePoint(log, env);
-	auto p2 = CreatePoint(log, env);
-	auto l = CreateLine(log, env, 20, outfile);
-
-	md::state::State state_in(log), state_out(log);
-	state_in.addPoint(p1);
-	state_in.addPoint(p2);
-	state_in.addLine(l);
-	state_out.addPoint(p1);
-	state_out.addPoint(p2);
-	state_out.addLine(l);
-
-	state_in.addVar<md::list>("a");
-	state_in.setListLength("a", 4, l);
-	state_in.addVar<md::vec6>("b");
-	state_out.addVar<md::list>("a");
-	state_out.setListLength("a", 4, l);
-	state_out.addVar<md::vec6>("b");
- 
-	// We just fill the lists for the line, with 4 elements each
-	Eigen::Matrix<md::list, 19, 1> va_in;
-	Eigen::Matrix<md::list, 19, 1> va_out;
-	for (unsigned int i = 0; i < 19; i++) {
-		va_in(i).resize(4);
-		va_in(i) = Eigen::Matrix<md::real, 4, 1>(0.5 * i, i, 2 * i, 4 * i);
-		va_out(i).resize(4);
-		va_out(i) = Eigen::Matrix<md::real, 4, 1>::Zero();
-	}
-	state_in.get<md::list>("a", l) = va_in;
-	state_out.get<md::list>("a", l) = va_out;
-
-	for (unsigned int i = 0; i < 21; i++) {
-		state_in.get<md::vec6>("b")(i) = md::vec6(
-			i, 2 * i, 4 * i, 8 * i, 16 * i, 32 * i);
-		state_out.get<md::vec6>("b")(i) = md::vec6::Zero();
-	}
-
-	auto data_saved = state_in.Serialize();
-	state_out.Deserialize(data_saved.data());
-
-	REQUIRE(state_out.get<md::list>("a").rows() ==
-		state_in.get<md::list>("a").rows());
-	REQUIRE(state_out.get<md::vec6>("b").rows() ==
-		state_in.get<md::vec6>("b").rows());
- 
-	for (unsigned int i = 0; i < 21; i++) {
-		REQUIRE(allclose(state_out.get<md::list>("a")(i),
-		                 state_in.get<md::list>("a")(i)));
-	}
-	for (unsigned int i = 0; i < 21; i++) {
-		REQUIRE(allclose(state_out.get<md::vec6>("b")(i),
-		                 state_in.get<md::vec6>("b")(i)));
-	}
+	REQUIRE(r.get(p1).norm() == 0.0);
+	REQUIRE(r.get(p2).norm() == 0.0);
+	REQUIRE(r.get(l).norm() == 0.0);
 
 	delete p1;
 	delete p2;

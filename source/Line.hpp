@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
 #include <utility>
@@ -51,7 +51,6 @@ namespace moordyn {
 
 class Waves;
 typedef std::shared_ptr<Waves> WavesRef;
-typedef Eigen::Ref<Eigen::Matrix<list, Eigen::Dynamic, 1>> StateVarRef;
 
 /** @class Line Line.hpp
  * @brief A mooring line
@@ -70,7 +69,7 @@ typedef Eigen::Ref<Eigen::Matrix<list, Eigen::Dynamic, 1>> StateVarRef;
  * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
  * this natural period to avoid numerical instabilities
  */
-class DECLDIR Line final : public io::IO, public NatFreqCFL
+class DECLDIR Line final : public Instance, public NatFreqCFL
 {
   public:
 	/** @brief Constructor
@@ -868,12 +867,10 @@ class DECLDIR Line final : public io::IO, public NatFreqCFL
 	inline void setTime(real time) { t = time; }
 
 	/** @brief Set the line state
-	 * @param r The moordyn::Line::getN() - 1 positions
-	 * @param u The moordyn::Line::getN() - 1 velocities
+	 * @param r The positions and velocities on the internal nodes
 	 * @param v The moordyn::Line::getN() + 1 viv properties
 	 * @note This method is not affecting the line end points
 	 * @see moordyn::Line::setEndState
-	 * @throws invalid_value_error If either @p r or @p u have wrong sizes
 	 * @{
 	 */
 	void setState(const std::vector<vec>& r, const std::vector<vec>& u, const std::vector<vec>& v);
@@ -883,7 +880,7 @@ class DECLDIR Line final : public io::IO, public NatFreqCFL
 	 * @}
 	 */
 
-	void setState(const StateVarRef r, const StateVarRef u);
+	void setState(const InstanceStateVarView r);
 	/**
 	 * @}
 	 */
@@ -926,17 +923,33 @@ class DECLDIR Line final : public io::IO, public NatFreqCFL
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
 
 	/** @brief Calculate forces and get the derivative of the line's states
-	 * @param vel Where to store the velocities of the internal nodes
+	* @param drdt Output state derivatives 
+	* @param vel Where to store the velocities of the internal nodes
 	 * @param acc Where to store the accelerations of the internal nodes 
 	 * @param misc Where to store the misc states of lines (viv phase, viscoelastic, unused)
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	void getStateDeriv(StateVarRef vel, StateVarRef acc, std::vector<vec>& misc); // TODO: fixme
+	void getStateDeriv(InstanceStateVarView drdt, std::vector<vec>& misc); // TODO: fixme
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);
 
 	void Output(real);
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return The number of internal nodes
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateN() const { return getN() - 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 3 components for positions and 3 components for velocities, i.e.
+	 * 6 components
+	 * @note In future developments this function might return different
+	 * numbers depending on the line configuration. e.g. the viscoelasticity.
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 6; }
 
 	/** @brief Produce the packed data to be saved
 	 *
