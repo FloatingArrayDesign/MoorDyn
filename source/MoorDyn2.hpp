@@ -604,15 +604,6 @@ class MoorDyn final : public io::IO
 	/// array of pointers to line objects
 	vector<moordyn::Line*> LineList;
 
-	/// array of starting indices for Lines in "states" array
-	vector<unsigned int> LineStateIs;
-	/// array of starting indices for independent Points in "states" array
-	vector<unsigned int> PointStateIs;
-	/// array of starting indices for independent Rods in "states" array
-	vector<unsigned int> RodStateIs;
-	/// array of starting indices for Bodies in "states" array
-	vector<unsigned int> BodyStateIs;
-
 	/// vector of free body indices in BodyList vector
 	vector<unsigned int> FreeBodyIs;
 	/// vector of fixed body indices in BodyList vector
@@ -630,13 +621,6 @@ class MoorDyn final : public io::IO
 	vector<unsigned int> FreePointIs;
 	/// vector of coupled/fairlead point indices in PointList vector
 	vector<unsigned int> CpldPointIs;
-
-	/// Number of used state vector components
-	unsigned int nX;
-	/// full size of state vector array including extra space for detaching up
-	/// to all line ends, each which could get its own 6-state point
-	/// (nXtra = nX + 6 * 2 * LineList.size())
-	unsigned int nXtra;
 
 	/// number of points that wave kinematics are input at
 	/// (if using env.WaveKin=1)

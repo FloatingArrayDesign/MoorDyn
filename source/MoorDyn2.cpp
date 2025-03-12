@@ -99,8 +99,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , GroundBody(NULL)
   , waves(nullptr)
   , seafloor(nullptr)
-  , nX(0)
-  , nXtra(0)
   , npW(0)
 {
 	++__systems_counter;
@@ -152,13 +150,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 
 	LOGDBG << "MoorDyn is expecting " << NCoupledDOF()
 	       << " coupled degrees of freedom" << endl;
-
-	if (!nX) {
-		LOGWRN << "WARNING: MoorDyn has no state variables."
-		       << " (Is there a mooring sytem?)" << endl;
-	}
-
-	nXtra = nX + 6 * 2 * ui_size(LineList);
 }
 
 moordyn::MoorDyn::~MoorDyn()
@@ -361,7 +352,7 @@ moordyn::MoorDyn::icStationary()
 
 	time::StationaryScheme t_integrator(_log, waves);
 	t_integrator.SetGround(GroundBody);
-	for (auto obj : BodyList)
+	for (auto obj : BodyList) // TODO: make these lists only iterate over the free lines. Check other places where this is called
 		t_integrator.AddBody(obj);
 	for (auto obj : RodList)
 		t_integrator.AddRod(obj);
@@ -960,10 +951,6 @@ moordyn::MoorDyn::ReadInFile()
 	                  env,
 	                  NULL);
 
-	// Make sure the state vector counter starts at zero
-	// This will be conveniently incremented as each object is added
-	nX = 0;
-
 	// Now we can parse the whole input file
 	if ((i = findStartOfSection(in_txt, { "LINE DICTIONARY", "LINE TYPES" })) !=
 	    -1) {
@@ -1104,9 +1091,6 @@ moordyn::MoorDyn::ReadInFile()
 				// if a point, add to list and add states for it
 				type = Point::FREE;
 				FreePointIs.push_back(ui_size(PointList));
-				PointStateIs.push_back(
-				    nX); // assign start index of this point's states
-				nX += 6; // add 6 state variables for each point
 			} else {
 				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
@@ -1184,7 +1168,7 @@ moordyn::MoorDyn::ReadInFile()
 			int number = atoi(entries[0].c_str());
 			string type = entries[1];
 			double UnstrLen = atof(entries[4].c_str());
-			int NumSegs = atoi(entries[5].c_str()); // addition vs. MAP
+			int NumSegs = atoi(entries[5].c_str());
 			string outchannels = entries[6];
 
 			int TypeNum = -1;
@@ -1230,10 +1214,6 @@ moordyn::MoorDyn::ReadInFile()
 			           outchannels,
 					   dtM0);
 			LineList.push_back(obj);
-			LineStateIs.push_back(
-			    nX);                 // assign start index of this Line's states
-			nX += 6 * (NumSegs - 1); // add 6 state variables for each
-			                         // internal node of this line
 
 			for (unsigned int I = 0; I < 2; I++) {
 				const EndPoints end_point = I == 0 ? ENDPOINT_A : ENDPOINT_B;
@@ -1848,9 +1828,6 @@ moordyn::MoorDyn::readLineProps(string inputText, int lineNum)
 	if (err)
 		return nullptr;
 
-	if (obj->Cl > 0.0) nX = nX+1;
-	if (obj->ElasticMod > 1) nX = nX+1;
-
 	LOGDBG << "\t'" << obj->type << "'"
 	       << " - with id " << LinePropList.size() << endl
 	       << "\t\td   : " << obj->d << endl
@@ -2016,14 +1993,10 @@ moordyn::MoorDyn::readBody(string inputText, int lineNum)
 		FreeBodyIs.push_back(
 		    ui_size(BodyList));    // also add this pinned body to the free
 		                          // list because it is half free
-		BodyStateIs.push_back(nX); // assign start index of this body's states
-		nX += 6;                  // add 6 state variables for each pinned Body
 	} else {
 		// it is free - controlled by MoorDyn
 		type = Body::FREE;
 		FreeBodyIs.push_back(ui_size(BodyList));
-		BodyStateIs.push_back(nX); // assign start index of this body's states
-		nX += 12;                  // add 12 state variables for the body
 	}
 	stringstream oname;
 	oname << _basepath << _basename << "_Body" << number << ".out";
@@ -2075,8 +2048,6 @@ moordyn::MoorDyn::readRod(string inputText, int lineNum)
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // add this pinned rod to the free
 		                          // list because it is half free
-		RodStateIs.push_back(nX); // assign start index of this rod's states
-		nX += 6;                  // add 6 state variables for each pinned rod
 	} else if (let1 == "BODY") {
 		if (num1.empty()) {
 			LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":"
@@ -2099,8 +2070,6 @@ moordyn::MoorDyn::readRod(string inputText, int lineNum)
 			FreeRodIs.push_back(
 			    ui_size(RodList));    // add this pinned rod to the free
 			                          // list because it is half free
-			RodStateIs.push_back(nX); // assign start index of this rod's states
-			nX += 6; // add 6 state variables for each pinned rod
 		} else {
 			type = Rod::FIXED;
 		}
@@ -2117,14 +2086,10 @@ moordyn::MoorDyn::readRod(string inputText, int lineNum)
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // also add this pinned rod to the free
 		                          // list because it is half free
-		RodStateIs.push_back(nX); // assign start index of this rod's states
-		nX += 6;                  // add 6 state variables for each pinned rod
 	} else if (str::isOneOf(let1, { "POINT", "CON", "FREE" })) {
 		type = Rod::FREE;
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // add this free rod to the free list
-		RodStateIs.push_back(nX); // assign start index of this rod's states
-		nX += 12;                 // add 12 state variables for each free rod
 	} else {
 		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":"
 		       << "'" << inputText << "'" << endl
@@ -2343,12 +2308,8 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	const real Ca = 0.0;
 	const Point::types type = Point::FREE;
 
-	nX += 6; // add 6 state variables for each point
-
 	// add point to list of free ones and add states for it
 	FreePointIs.push_back(ui_size(PointList));
-	// assign start index of this point's states
-	PointStateIs.push_back(nX);
 
 	// now make Point object!
 	Point* obj = new Point(_log, PointList.size());

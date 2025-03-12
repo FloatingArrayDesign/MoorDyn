@@ -140,7 +140,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	moordyn::real d;
 	/// line density (kg/m^3)
 	moordyn::real rho;
-	/// Elasticity model flag
+	/// Elasticity model flag (1: constant EA, 2: viscoelastic model with constant dynamic stiffness, 3: mean load depenedent dynamic stiffness)
 	unsigned int ElasticMod;
 	/// line normal/static elasticity modulus (Young's modulus) [Pa]
 	moordyn::real EA; // TODO: units
@@ -153,6 +153,10 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	/// stiffness of spring 2 in viscoelastic model (dynamic stiffness). This is the spring in series with the parallel spring-dashpot.
 	/// if ElasticMod = 2, EA_2 = EA_D. If ElasticMod = 3, EA_2 is load dependent dynamic stiffness.
 	moordyn::real EA_2;
+	/// segment stretch attributed to static stiffness portion [m] (deltaL_1)
+	std::vector<moordyn::real> dl_1;
+	/// rate of change of static stiffness portion [m/s] (Ldot_1)
+	std::vector<moordyn::real> ld_1;
 	/// line bending stiffness [Nm^2]
 	moordyn::real EI;
 	/** line axial internal damping coefficient [Pa-s]
@@ -283,14 +287,14 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	// VIV stuff
 	// /// VIV amplitude updated every zero crossing of crossflow velcoity
 	// std::vector<moordyn::real> Amp;
-	/// Misc states (viv phase,viscoelastic,unused)
-	std::vector<vec> Misc;
-	/// derivative of Misc states (viv phase,viscoelastic,unused)
-	std::vector<vec> Miscd;
 	/// Num timesteps for rolling RMS of crossflow velocity phase
 	const unsigned int n_m = 500;
 	/// The crossflow motion phase [-]
-	real phi_yd; 
+	real phi_yd;
+	/// The phase of the crossflow force
+	std::vector<moordyn::real> phi;
+	/// The frequency of the lift force (rad/s) (dphi / dt)
+	std::vector<moordyn::real> phi_dot;
 
 	// back indexing one dtm for VIV
 	/// old t
@@ -374,7 +378,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	 * @param env_in Global struct that holds environmental settings
 	 * @param outfile The outfile where information shall be written
 	 * @param channels The channels/fields that shall be printed in the file
-	 * @param moordyn internal timestep. Used in VIV
+	 * @param dtM0 moordyn internal timestep. Used in VIV
 	 */
 	void setup(int number,
 	           LineProps* props,
@@ -398,13 +402,13 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	}
 
 	/** @brief Compute the stationary Initial Condition (IC)
-	 * @return The states, i.e. the positions of the internal nodes
-	 * (first) and the velocities of the internal nodes (second) and the viv states (third)
+	 * @param state The line state for initializing
+	 * @note see Line::setState for the state structure
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
 	 */
-	std::tuple<std::vector<vec>, std::vector<vec>, std::vector<vec>> initialize();
+	void initialize(InstanceStateVarView state);
 
 	/** @brief Number of segments
 	 *
@@ -866,24 +870,19 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	 */
 	inline void setTime(real time) { t = time; }
 
-	/** @brief Set the line state
-	 * @param r The positions and velocities on the internal nodes
-	 * @param v The moordyn::Line::getN() + 1 viv properties
-	 * @note This method is not affecting the line end points
-	 * @see moordyn::Line::setEndState
-	 * @{
-	 */
-	void setState(const std::vector<vec>& r, const std::vector<vec>& u, const std::vector<vec>& v);
+	// /** @brief Set the line state
+	//  * @param r The positions and velocities on the internal nodes
+	//  * @param v The moordyn::Line::getN() + 1 viv properties
+	//  * @note This method is not affecting the line end points
+	//  * @see moordyn::Line::setEndState
+	//  * @{
+	//  */
+	// void setState(const std::vector<vec>& r, const std::vector<vec>& u, const std::vector<moordyn::real>& );
 
-	void setState(const StateVarRef r, const StateVarRef u); // TODO: fixme
-	/**
+	/** // TODO: document
 	 * @}
 	 */
-
 	void setState(const InstanceStateVarView r);
-	/**
-	 * @}
-	 */
 
 	/** @brief Set the position and velocity of an end point
 	 * @param r Position
@@ -929,7 +928,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	 * @param misc Where to store the misc states of lines (viv phase, viscoelastic, unused)
 	 * @throws nan_error If nan values are detected in any node position
 	 */
-	void getStateDeriv(InstanceStateVarView drdt, std::vector<vec>& misc); // TODO: fixme
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	// void initiateStep(vector<double> &rFairIn, vector<double> &rdFairIn,
 	// double time);
@@ -937,19 +936,31 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	void Output(real);
 
 	/** @brief Get the number of state variables required by this instance
-	 * @return The number of internal nodes
+	 * @return The number of internal nodes if no viscoelastic model
+	 * otherwise, return the number of segments
+	 * @note See comments in Line::setState to see the line state structure
 	 * @warning This function shall be called after ::setup()
 	 */
-	inline const size_t stateN() const { return getN() - 1; }
+	inline const size_t stateN() const { 
+		if (ElasticMod > 1) return getN(); // N rows for viscoelastic case							 
+		else return getN() - 1; // N-1 rows for other cases									
+	} 
 
 	/** @brief Get the dimension of the state variable
 	 * @return 3 components for positions and 3 components for velocities, i.e.
-	 * 6 components
-	 * @note In future developments this function might return different
-	 * numbers depending on the line configuration. e.g. the viscoelasticity.
+	 * 6 components. An additional component is returned if the VIV model or 
+	 * viscoelastic model is activated. 
+	 * @note If VIV and vsicoelastic, return 8
+	 * if VIV xor viscoelastic, return 7
+	 * if normal, return 6
+	 * See comments in Line::setState to see the line state structure
 	 * @warning This function shall be called after ::setup()
 	 */
-	inline const size_t stateDims() const { return 6; }
+	inline const size_t stateDims() const { 
+		if (Cl > 0 && ElasticMod > 1) return 8; // 3 for position, 3 for velocity, 1 for VIV phase, 1 for viscoelasticity
+		else if ((Cl > 0) ^ (ElasticMod > 1)) return 7; // 3 for position, 3 for velocity, 1 for VIV phase or viscoelasticity
+		else return 6; 
+	} 
 
 	/** @brief Produce the packed data to be saved
 	 *

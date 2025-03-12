@@ -614,12 +614,9 @@ class SchemeBase : public Scheme
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
-			auto [pos, vel] = lines[i]->initialize();
+			
 			auto r = AS_STATE(_r[0])->get(lines[i]);
-			for (unsigned int j = 0; j < pos.size(); j++) {
-				r.row(j).head(3) = pos[j];
-				r.row(j).segment(3, 3) = vel[j];
-			}
+			lines[i]->initialize(r);
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(lines[i]).setZero();
 		}
@@ -910,9 +907,9 @@ class StationaryScheme final : public SchemeBase<2, 1>
 	 * considered as a single entry
 	 */
 	inline size_t NStates() const {
-		size_t n = bodies.size() + rods.size() + points.size();
+		size_t n = bodies.size() + rods.size() + points.size(); // one row (state) per object here. <objects>.size() gives the length of the list, i.e. the number of that kind of object
 		for (size_t i = 0; i < lines.size(); i++)
-			n += lines[i]->getN() - 1;
+			n += lines[i]->stateN();
 		return n;
 	}
 
