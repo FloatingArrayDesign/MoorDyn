@@ -343,13 +343,27 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	}
 
 	/** @brief Compute the stationary Initial Condition (IC)
+	 * @param r The output state variable
 	 * @return The states, i.e. the positions of the internal nodes
 	 * (first) and the velocities of the internal nodes (second)
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
+	 * @{
 	 */
 	std::pair<std::vector<vec>, std::vector<vec>> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		for (unsigned int i = 0; i < N - 1; i++) {
+			r.row(i).head<3>() = pos[i];
+			r.row(i).segment<3>(3) = vel[i];
+		}
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Number of segments
 	 *

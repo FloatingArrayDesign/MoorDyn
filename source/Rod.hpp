@@ -336,6 +336,7 @@ class DECLDIR Rod final : public Instance, public SuperCFL
 	inline void openoutput();
 
 	/** @brief Initialize the rod state
+	 * @param r The output state variable
 	 * @return The position and orientation angles (first) and the linear and
 	 * angular velocity (second)
 	 * @note moordyn::Rod::r6 and moordyn::Rod::v6 must already be set
@@ -345,6 +346,16 @@ class DECLDIR Rod final : public Instance, public SuperCFL
 	 * velocites shall be considered
 	 */
 	std::pair<XYZQuat, vec6> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		r.row(0).head<7>() = pos.toVec7();
+		r.row(0).tail<6>() = vel;
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Number of segments
 	 *
