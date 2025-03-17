@@ -127,6 +127,7 @@ def moorpy_ic(infile,
     success (bool): True/False whether converged to within tolerance.
     """
     import moorpy
+    print("WARNING: MoorPy does not support all features of MoorDyn, some states may not initialize")
     outfile = outfile or infile + ".ic"
     system = moorpy.System(file=infile)
     system.initialize()
