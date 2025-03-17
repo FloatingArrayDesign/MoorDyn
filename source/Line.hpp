@@ -142,9 +142,9 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	moordyn::real rho;
 	/// Elasticity model flag (1: constant EA, 2: viscoelastic model with constant dynamic stiffness, 3: mean load depenedent dynamic stiffness)
 	unsigned int ElasticMod;
-	/// line normal/static elasticity modulus (Young's modulus) [Pa]
-	moordyn::real EA; // TODO: units
-	/// constant line dynamic stiffness modulus * area for viscoelastic stuff
+	/// line normal/static elasticity modulus * crosssectional area [N]
+	moordyn::real EA;
+	/// constant line dynamic stiffness modulus * area for viscoelastic stuff [N]
 	moordyn::real EA_D;
 	/// Alpha * MBL in load dependent dynamic stiffness equation Kd = Alpha * MBL + vbeta * Lm for viscoelastic model
     moordyn::real alphaMBL; 
@@ -520,7 +520,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	/** @brief Get the constant stiffness of the line
 	 *
 	 * This value is useless if non-linear stiffness is considered
-	 * @return The constant stiffness EA value
+	 * @return The static stiffness EA value
 	 * @see ::IsConstantEA()
 	 */
 	inline moordyn::real getConstantEA() const { return EA; }
@@ -528,10 +528,17 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	/** @brief Set the constant stiffness of the line
 	 *
 	 * This value is useless if non-linear stiffness is considered
-	 * @param EA The constant stiffness EA value
+	 * @param EA The constant axial stiffness EA value (N)
 	 * @see ::IsConstantEA()
 	 */
-	inline void setConstantEA(moordyn::real EA) { EA = EA; }
+	inline void setConstantEA(moordyn::real EA_in) { 
+		if (ElasticMod > 1) {
+			LOGERR << "Cannot set constant EA for viscoelastic model" << endl;
+			throw moordyn::invalid_value_error("Cannot set constant EA for viscoelastic model");
+		} else {
+			EA = EA_in; 
+		}
+	}
 
 	/** @brief Get the position of a node
 	 * @param i The line node index

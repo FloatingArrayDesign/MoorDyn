@@ -130,7 +130,7 @@ extern "C"
 	 *
 	 * This value is useless if non-linear stiffness is considered
 	 * @param l The Moordyn line
-	 * @param EA The constant stiffness EA value
+	 * @param EA The constant axial stiffness EA value [N]
 	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
 	 * otherwise
 	 * @see MoorDyn_IsLineConstantEA()

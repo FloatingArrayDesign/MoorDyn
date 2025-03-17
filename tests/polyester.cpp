@@ -43,9 +43,9 @@
 
 
 #define MBL 25.3e6
-#define KRS 13.4
-#define KRD1 16.0
-#define KRD2 0.35
+#define KRS 13.4 // normalized static stiffness
+#define KRD1 16.0 // alpha term in dynamic stiffness eqn from ABS
+#define KRD2 0.35 // beta term in dynamic stiffness eqn from ABS
 #define TC 200.0
 // The tensions expected, on inverse order
 #define TTIMES { 320.0, 640.0, 960.0, 1280.0, 1599.0 }
@@ -121,11 +121,11 @@ TEST_CASE("Ramp up, stabilization and cycles")
 
 	// Time to move
 	double t = 0.0, dt;
-	// Data about the lenght and stiffness recomputation as a function of time
+	// Data about the length and stiffness recomputation as a function of time
 	std::deque<double> times;  
 	std::deque<double> tensions;  
 	std::deque<double> ttimes(TTIMES);
-	std::deque<double> tmeans(TMEANS);
+	std::deque<double> tmeans(TMEANS); // tension means
 	for (unsigned int i = 0; i < tdata.size(); i++) {
 		REQUIRE(MoorDyn_GetPointPos(fairlead, r) == MOORDYN_SUCCESS);
 		double t_dst = tdata.at(i);
@@ -148,8 +148,9 @@ TEST_CASE("Ramp up, stabilization and cycles")
 		times.pop_front();
 		tensions.pop_front();
 
+		// Compute the dynamic stiffness from static and tension
 		double ks = KRS * MBL;
-		double kd = (KRD1 + KRD2 * tension / MBL * 100) * MBL;
+		double kd = (KRD1 + KRD2 * tension / MBL * 100) * MBL; // rope dynamic stiffness eqn. From eqn 2 in MD visco paper
 		double l = l0 * (1.0 + tension / ks) / (1.0 + tension / kd);
 		REQUIRE(
 			MoorDyn_SetLineConstantEA(line, kd) == MOORDYN_SUCCESS);
@@ -167,3 +168,14 @@ TEST_CASE("Ramp up, stabilization and cycles")
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
+
+
+// TEST_CASE("Visco-elastic testing")
+// {
+// 	// TODO: static dynamic stiffness
+
+// 	// TODO: load dependent dynamic stiffness
+
+// 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
+// }
+
