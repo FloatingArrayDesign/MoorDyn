@@ -426,8 +426,13 @@ Rod::GetRodOutput(OutChanProps outChan)
 }
 
 void
-Rod::setState(XYZQuat pos, vec6 vel)
+Rod::setState(const InstanceStateVarView r)
 {
+
+	// unpack the state
+	const XYZQuat pos = XYZQuat::fromVec7(r.row(0).head<7>());
+	const vec6 vel = r.row(0).tail<6>();
+
 	// copy over state values for potential use during derivative calculations
 	if (type == FREE) {
 		// end A coordinates & Rod direction unit vector

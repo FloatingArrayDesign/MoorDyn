@@ -383,19 +383,11 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	void updateFairlead(real time);
 
 	/** @brief Set the states to the body to the position r and velocity rd
-	 * @param r The position
-	 * @param rd The velocity
+	 * @param r The body state
 	 * @{
 	 */
-	void setState(XYZQuat r, vec6 rd);
+	void setState(const InstanceStateVarView r);
 
-	inline void setState(const InstanceStateVarView r)
-	{
-		setState(XYZQuat::fromVec7(r.row(0).head<7>()), r.row(0).tail<6>());
-	}
-	/**
-	 * @}
-	 */
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *

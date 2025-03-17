@@ -268,7 +268,7 @@ Line::setup(int number_in,
 };
 
 void
-Line::initialize(InstanceStateVarView state)
+Line::initialize()
 {
 	LOGMSG << "  - Line" << number << ":" << endl
 	       << "    ID      : " << number << endl
@@ -582,33 +582,7 @@ Line::initialize(InstanceStateVarView state)
 
 	LOGMSG << "Initialized Line " << number << endl;
 
-	// ------ Assign the intialized values to the state (bascially Line::setState but flipped) ------
-	// Error check for number of columns (if VIV and Visco need row.size() = 8, if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)
-	if ( (state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) || (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) || (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
-		LOGERR << "Invalid state.row size for Line " << number << endl;
-		throw moordyn::mem_error("Invalid state.row size");
-	}
-
-	// Error check for number of rows (if visco need N rows, if normal need N-1 rows)
-	if ((state.rows() != N && ElasticMod > 1) || (state.rows() != N-1 && ElasticMod == 1)) {
-		LOGERR << "Invalid number of rows in state matrix for Line " << number << endl;
-		throw moordyn::mem_error("Invalid number of rows in state matrix");
-	}
-	
-	// If using the viscoelastic model, interate N rows, else iterate N-1 rows.
-	for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N-1); i++) {
-		// node number is i+1
-		// segment number is i
-		state.row(i).head<3>() = r[i+1];
-		state.row(i).segment<3>(3) = rd[i+1];
-		
-		if (ElasticMod > 1) state.row(i).tail<1>()[0] = dl_1[i]; // [0] needed becasue tail<1> returns a one element vector. Viscoelastic state is always the last element in the row
-
-		if (Cl > 0) {
-			if (ElasticMod > 1) state.row(i).tail<2>()[0] = phi[i+1]; // if both VIV and viscoelastic second to last element in the row
-			else state.row(i).tail<1>()[0] = phi[i+1]; // else last element in the row
-		} 
-	}
+	// NOTE: becasue Line.hpp is the only user of this function, no need to return any state information
 }
 
 real
@@ -740,21 +714,6 @@ Line::setPin(std::vector<real> p)
 	pin = p;
 }
 
-// void // TODO: is this even used??
-// Line::setState(const std::vector<vec>& pos, const std::vector<vec>& vel, const std::vector<moordyn::real>& ldot_1, const std::vector<moordyn::real>& dphi)
-// {
-// 	if ((pos.size() != N - 1) || (vel.size() != N - 1) || (ldot_1.size() != N) || (dphi.size() != N + 1)) {
-// 		LOGERR << "Invalid input size" << endl;
-// 		throw moordyn::invalid_value_error("Invalid input size");
-// 	}
-
-// 	// set interior node positions and velocities and all misc states based on state vector
-// 	std::copy(pos.begin(), pos.end(), r.begin() + 1);
-// 	std::copy(vel.begin(), vel.end(), rd.begin() + 1);
-// 	if (ElasticMod > 1) std::copy(ld_1.begin(), ld_1.end(), ldot_1.begin() + 1); // visco states
-// 	if (Cl > 0) std::copy(phi_dot.begin(), phi_dot.end(), dphi.begin() + 1); // visco states
-// }
-
 void
 Line::setState(const InstanceStateVarView state)
 {
@@ -777,7 +736,7 @@ Line::setState(const InstanceStateVarView state)
 	// VIV and viscoelastic case:
 	//  - N rows
 	//	- row[i] = [rix, riy, riz, rdix, rdiy, rdiz, phii, ldot_1i]
-	//  - note there will be 6 unused values in the last row
+	//  - note there will be 7 unused values in the last row
 
 
 	// Error check for number of columns (if VIV and Visco need row.size() = 8, if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)

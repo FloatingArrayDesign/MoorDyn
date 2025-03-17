@@ -104,7 +104,7 @@ Viscoelastic approach for non-linear rope behavior:
 
 Updated MoorDyn-OpenFOAM Coupling:
   `Haifei Chen, Tanausú Almeida Medina, and Jose Luis Cercos-Pita, "CFD simulation of multiple moored floating structures using OpenFOAM: An open-access mooring restraints 
-  library." Ocean Engineering, vol. 303, Jul. 2024. <https://doi.org/10.1016/j.oceaneng.2024.117697>`_`
+  library." Ocean Engineering, vol. 303, Jul. 2024. <https://doi.org/10.1016/j.oceaneng.2024.117697>`_
 
 
 The Fortran version of MoorDyn is available as a module inside of OpenFAST:

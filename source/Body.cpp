@@ -451,8 +451,12 @@ Body::updateFairlead(real time)
 }
 
 void
-Body::setState(XYZQuat pos, vec6 vel)
+Body::setState(const InstanceStateVarView r)
 {
+	// set position and velocity vectors from state vector
+	const XYZQuat pos = XYZQuat::fromVec7(r.row(0).head<7>());
+	const vec6 vel = r.row(0).tail<6>();
+
 	if (type == FREE) {
 		// set position and velocity vectors from state vector
 		r7 = pos;

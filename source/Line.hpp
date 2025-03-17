@@ -401,21 +401,51 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 		seafloor = seafloor_in;
 	}
 
-	/** @brief Compute the stationary Initial Condition (IC)
-	 * @param state The line state for initializing
-	 * @note see Line::setState for the state structure
+	/** @brief Initializse the line object
+	 * @note Becasue Line.hpp is the only function that calls this, no state 
+	 * vectors need to be returned. This is different from the structure of
+	 * the other objects initialize functions.
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
 	 */
-	std::pair<std::vector<vec>, std::vector<vec>> initialize();
+	void initialize();
 
-	inline void initialize(InstanceStateVarView r)
+	/** @brief Sets the initial line state
+	 * @param state The line state for initializing (see Line::setState for the state structure0)
+	 * @note This calls Line::Initialize()
+	 */
+	inline void initialize(InstanceStateVarView state)
 	{
-		const auto [pos, vel] = initialize();
-		for (unsigned int i = 0; i < N - 1; i++) {
-			r.row(i).head<3>() = pos[i];
-			r.row(i).segment<3>(3) = vel[i];
+		// ------ Initialize the line ------
+		initialize();
+
+		// ------ Assign the intialized values to the state (bascially Line::setState but flipped) ------
+		// Error check for number of columns (if VIV and Visco need row.size() = 8, if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)
+		if ( (state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) || (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) || (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
+			LOGERR << "Invalid state.row size for Line " << number << endl;
+			throw moordyn::mem_error("Invalid state.row size");
+		}
+
+		// Error check for number of rows (if visco need N rows, if normal need N-1 rows)
+		if ((state.rows() != N && ElasticMod > 1) || (state.rows() != N-1 && ElasticMod == 1)) {
+			LOGERR << "Invalid number of rows in state matrix for Line " << number << endl;
+			throw moordyn::mem_error("Invalid number of rows in state matrix");
+		}
+		
+		// If using the viscoelastic model, iterate N rows, else iterate N-1 rows.
+		for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N-1); i++) {
+			// node number is i+1
+			// segment number is i
+			state.row(i).head<3>() = r[i+1];
+			state.row(i).segment<3>(3) = rd[i+1];
+			
+			if (ElasticMod > 1) state.row(i).tail<1>()[0] = dl_1[i]; // [0] needed becasue tail<1> returns a one element vector. Viscoelastic state is always the last element in the row
+
+			if (Cl > 0) {
+				if (ElasticMod > 1) state.row(i).tail<2>()[0] = phi[i+1]; // if both VIV and viscoelastic second to last element in the row
+				else state.row(i).tail<1>()[0] = phi[i+1]; // else last element in the row
+			} 
 		}
 	}
 	/**
@@ -882,17 +912,11 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	 */
 	inline void setTime(real time) { t = time; }
 
-	// /** @brief Set the line state
-	//  * @param r The positions and velocities on the internal nodes
-	//  * @param v The moordyn::Line::getN() + 1 viv properties
-	//  * @note This method is not affecting the line end points
-	//  * @see moordyn::Line::setEndState
-	//  * @{
-	//  */
-	// void setState(const std::vector<vec>& r, const std::vector<vec>& u, const std::vector<moordyn::real>& );
-
-	/** // TODO: document
-	 * @}
+	/** @brief Set the line state
+	 * @param r The line state matrix. See Line::setState in Line.cpp for structure
+	 * @note End node kinematics are not handled here
+	 * @see moordyn::Line::setEndState
+	 * @{
 	 */
 	void setState(const InstanceStateVarView r);
 

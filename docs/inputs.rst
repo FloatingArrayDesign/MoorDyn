@@ -299,6 +299,8 @@ The columns in order are as follows:
    line. This coefficient has been made backwards compatible. If it is not provided, then it is 
    assumed to be 0.0. The theory of vortex induced vibrations can be found :ref:`here <version2>`. Note that VIV is disabled
    for end nodes (and thus end half-segments), so if simulating VIV users should ensure to include a higher number of segments. 
+   Also note that VIV has only been tested with explicit time schemes (specifically rk2 and rk4). There may be unexpected behavior 
+   if used with an implicit time scheme. 
  - dF - OPTIONAL - the cF +- range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
  - cF - OPTIONAL - the center of the range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
