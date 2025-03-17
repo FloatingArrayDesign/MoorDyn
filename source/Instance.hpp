@@ -75,6 +75,13 @@ class DECLDIR Instance : public io::IO
 	 */
 	inline const size_t id() const { return _id; }
 
+	/** @brief Initialize a free instance
+	 * @param r The output state variable
+	 * @throw moordyn::invalid_value_error If the instance does not have free
+	 * states. e.g. a coupled body controlled from outside
+	 */
+	virtual void initialize(InstanceStateVarView r) = 0;
+
 	/** @brief Set the state
 	 * @param r The state variable
 	 */

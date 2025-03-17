@@ -255,14 +255,26 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	 */
 	inline vec6 getUnfreeVel() const { return rd_ves; }
 
-	/** @brief Initialize the FREE point state
+	/** @brief Initialize a free instance
+	 * @param r The output state variable
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
-	 * @throw moordyn::invalid_value_error If the body is not of type
-	 * moordyn::Body::FREE
+	 * @throw moordyn::invalid_value_error If the instance does not have free
+	 * states. e.g. a coupled body controlled from outside
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
+	 * @{
 	 */
 	std::pair<XYZQuat, vec6> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		r.row(0).head<7>() = pos.toVec7();
+		r.row(0).tail<6>() = vel;
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Initialize the free body
 	 *

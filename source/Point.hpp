@@ -243,10 +243,21 @@ class DECLDIR Point final : public Instance, public SuperCFL
 	inline std::vector<attachment> getLines() const { return attached; }
 
 	/** @brief Initialize the FREE point state
+	 * @param r The output state variable
 	 * @return The position (first) and the velocity (second)
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
 	std::pair<vec, vec> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		r.row(0).head<3>() = pos;
+		r.row(0).tail<3>() = vel;
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Get the point position
 	 * @return The position [x,y,z]
