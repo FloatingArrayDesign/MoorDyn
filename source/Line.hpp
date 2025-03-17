@@ -408,7 +408,19 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	 * it cannot be written
 	 * @throws invalid_value_error If there is no enough water depth
 	 */
-	void initialize(InstanceStateVarView state);
+	std::pair<std::vector<vec>, std::vector<vec>> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		for (unsigned int i = 0; i < N - 1; i++) {
+			r.row(i).head<3>() = pos[i];
+			r.row(i).segment<3>(3) = vel[i];
+		}
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Number of segments
 	 *

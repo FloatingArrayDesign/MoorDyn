@@ -585,19 +585,15 @@ class SchemeBase : public Scheme
 			if ((bodies[i]->type != Body::FREE) &&
 			    (bodies[i]->type != Body::CPLDPIN))
 				continue;
-			auto [pos, vel] = bodies[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(bodies[i]);
-			r.row(0).head(7) = pos.toVec7();
-			r.row(0).tail(6) = vel;
+			bodies[i]->initialize(AS_STATE(_r[0])->get(bodies[i]));
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(bodies[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
-			auto [pos, vel] = rods[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(rods[i]);
-			r.row(0).head(7) = pos.toVec7();
-			r.row(0).tail(6) = vel;
+			rods[i]->initialize(AS_STATE(_r[0])->get(rods[i]));
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(rods[i]).setZero();
 		}
@@ -605,10 +601,7 @@ class SchemeBase : public Scheme
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (points[i]->type != Point::FREE)
 				continue;
-			auto [pos, vel] = points[i]->initialize();
-			auto r = AS_STATE(_r[0])->get(points[i]);
-			r.row(0).head(3) = pos;
-			r.row(0).tail(3) = vel;
+			points[i]->initialize(AS_STATE(_r[0])->get(points[i]));
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(points[i]).setZero();
 		}
