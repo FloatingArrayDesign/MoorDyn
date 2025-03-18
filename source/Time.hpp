@@ -607,9 +607,7 @@ class SchemeBase : public Scheme
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
-			
-			auto r = AS_STATE(_r[0])->get(lines[i]);
-			lines[i]->initialize(r);
+			lines[i]->initialize(AS_STATE(_r[0])->get(lines[i]));
 			for (unsigned int j = 0; j < NDERIV; j++)
 				AS_STATE(_rd[j])->get(lines[i]).setZero();
 		}
