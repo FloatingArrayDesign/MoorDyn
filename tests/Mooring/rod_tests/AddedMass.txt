@@ -24,4 +24,5 @@ rk4       tScheme      - Solver
 0         TmaxIC       - max time for ic gen (s)
 0         Currents     - Whether or not to pull in currents
 0         WaveKin      - Whether or not to pull in waves
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

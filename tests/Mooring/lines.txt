@@ -31,4 +31,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 4.0           CdScaleIC     factor by which to scale drag coefficients during dynamic relaxation (-)
 0.001         threshIC      threshold for IC convergence (-)
 lines.txt.ic  fileIC        Load a quasistatic solution before the IC solver (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

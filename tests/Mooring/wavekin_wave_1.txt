@@ -26,4 +26,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1.0e-3        threshIC             threshold for IC convergence (-)
 0.5           FrictionCoefficient  general bottom friction coefficient, as a start (-)
 1             WaveKin              the wave kinematics are provided through the API (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

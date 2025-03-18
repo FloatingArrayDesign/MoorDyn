@@ -28,4 +28,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 2e-3          dtM                  time step to use in mooring integration (s)
 150           WtrDpth              water depth (m)
 0             TmaxIC               max time for ic gen (s)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

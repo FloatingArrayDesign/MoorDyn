@@ -25,4 +25,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1.0e-4               threshIC             threshold for IC convergence (-)
 WD0200_Chain.txt.ic  fileIC               Load a quasistatic solution before the IC solver (-)
 0.5                  FrictionCoefficient  general bottom friction coefficient, as a start (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

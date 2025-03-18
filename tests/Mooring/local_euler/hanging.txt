@@ -31,4 +31,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 100.0         TmaxIC               max time for ic gen (s)
 1.0e-3        threshIC             threshold for IC convergence (-)
 lEuler        tScheme              The time integration Scheme (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 
