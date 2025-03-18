@@ -247,9 +247,6 @@ Line::setup(int number_in,
 		phi_dot.assign(N + 1, 0.0);     // synch model frequency 
 		yd_rms_old.assign(N + 1, 0.0);  // node old yd_rms
 		ydd_rms_old.assign(N + 1, 0.0); // node old ydd_rms
-
-		// give a random distribution between 0 and 2pi for inital phase of lift force to avoid initial transient
-		for (unsigned int i = 1; i < N; i++) phi[i] = (i/moordyn::real(N))*2*pi; // internal nodes only. Change if end node viv included
 	}
 
 	// ensure end moments start at zero
@@ -580,6 +577,20 @@ Line::initialize()
 		LOGDBG << "Vertical linear initial profile for Line " << number << endl;
 	}
 
+	// If using the viscoelastic model, initalize the deltaL_1 to the delta L of the segment. 
+	// This is required here to initalize the state as non-zero, which avoids an initial 
+	// transient where the segment goes from unstretched to stretched in one time step.
+	if (ElasticMod > 1) {
+		for (unsigned int i = 0; i < N; i++) {
+			lstr[i] = unitvector(qs[i], r[i], r[i + 1]); 
+			dl_1[i] = lstr[i] - l[i]; // delta l of the segment
+		}
+	}
+
+	// If using the VIV model, initalize as a distribution between 0 and 2pi for inital phase of lift force to avoid initial transient
+	if (Cl > 0)
+		for (unsigned int i = 1; i < N; i++) phi[i] = (i/moordyn::real(N))*2*pi; // internal nodes only. Change if end node viv included
+
 	LOGMSG << "Initialized Line " << number << endl;
 
 	// NOTE: becasue Line.hpp is the only user of this function, no need to return any state information
@@ -755,8 +766,10 @@ Line::setState(const InstanceStateVarView state)
 	for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N-1); i++) {
 		// node number is i+1
 		// segment number is i
-		r[i+1] = state.row(i).head<3>();
-		rd[i+1] = state.row(i).segment<3>(3);
+		if (i < N-1) { // only assign the internal nodes
+			r[i+1] = state.row(i).head<3>();
+			rd[i+1] = state.row(i).segment<3>(3);
+		}
 
 		if (ElasticMod > 1) dl_1[i] = state.row(i).tail<1>()[0]; // [0] needed becasue tail<1> returns a one element vector. Viscoelastic state is always the last element in the row
 
@@ -771,6 +784,12 @@ Line::setState(const InstanceStateVarView state)
 void
 Line::setEndKinematics(vec pos, vec vel, EndPoints end_point)
 {
+	if (t < 5 && int(t / dtm0) % 20 == 0) {
+		LOGDBG << "------" << endl;
+    	LOGDBG << "Setting end kinematics for end point " << end_point << endl;
+    	LOGDBG << "Position: " << pos.transpose() << ", Velocity: " << vel.transpose() << endl;
+	}
+
 	switch (end_point) {
 		case ENDPOINT_TOP:
 			endTypeB = PINNED; // indicate pinned
@@ -925,7 +944,8 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 	for (unsigned int i = 0; i < N; i++) {
 		// calculate current (Stretched) segment lengths and unit tangent
 		// vectors (qs) for each segment (this is used for bending and stiffness calculations)
-		lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
+
+		lstr[i] = unitvector(qs[i], r[i], r[i + 1]); // if using the viscoelastic model this is redundant for the first time step, as it is also called by Line::initalize
 
 		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
 

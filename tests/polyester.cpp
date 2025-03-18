@@ -170,12 +170,85 @@ TEST_CASE("Ramp up, stabilization and cycles")
 }
 
 
-// TEST_CASE("Visco-elastic testing")
-// {
-// 	// TODO: static dynamic stiffness
+TEST_CASE("Visco-elastic testing")
+{
+	// this is the same as the above test, but the static and dynamic stiffness coefficients have been added to MD instead of calculated externally. 
+	MoorDyn system = MoorDyn_Create("Mooring/polyester/visco.txt");
+	REQUIRE(system);
+	unsigned int n_dof;
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 3);
 
-// 	// TODO: load dependent dynamic stiffness
+	double r[3], dr[3];
+	auto anchor = MoorDyn_GetPoint(system, 1);
+	REQUIRE(anchor);
+	auto fairlead = MoorDyn_GetPoint(system, 2);
+	REQUIRE(fairlead);
+	auto line = MoorDyn_GetLine(system, 1);
+	REQUIRE(line);
 
-// 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
-// }
+	double l0;
+	REQUIRE(MoorDyn_GetLineUnstretchedLength(line, &l0) == MOORDYN_SUCCESS);
+
+	REQUIRE(MoorDyn_GetPointPos(fairlead, r) == MOORDYN_SUCCESS);
+	std::fill(dr, dr + 3, 0.0);
+	REQUIRE(MoorDyn_Init(system, r, dr) == MOORDYN_SUCCESS);
+
+	// Read the csv with the motions
+	std::ifstream csv("Mooring/polyester/motion.csv");
+	aria::csv::CsvParser csv_parser(csv);
+
+	std::vector<double> tdata, xdata;
+	unsigned int skip = 2;
+	for (auto& row : csv_parser) {
+		if (skip > 0) {
+			skip--;
+			continue;
+		}
+		if (row.size() < 2)
+			continue;
+		tdata.push_back(std::stod(row.at(0)));
+		xdata.push_back(std::stod(row.at(1)));
+	}
+
+	// Time to move
+	double t = 0.0, dt;
+	// For checking the performance
+	std::deque<double> times;  
+	std::deque<double> tensions;  
+	std::deque<double> ttimes(TTIMES);
+	std::deque<double> tmeans(TMEANS); // tension means
+	for (unsigned int i = 0; i < tdata.size(); i++) {
+		REQUIRE(MoorDyn_GetPointPos(fairlead, r) == MOORDYN_SUCCESS);
+		double t_dst = tdata.at(i);
+		double dt = t_dst - t;
+		double x_dst = xdata.at(i);
+		dr[0] = (x_dst - r[0]) / dt;
+		double f[3];
+		REQUIRE(MoorDyn_Step(system, r, dr, f, &t, &dt) == MOORDYN_SUCCESS);
+		times.push_back(t);
+		tensions.push_back(get_average_tension(line, anchor, fairlead));
+
+		// Let's check and tweak the line if there is info enough
+		if (times.back() - times.front() < TC)
+			continue;
+
+		double tension = 0.0;
+		for (auto f : tensions)
+			tension += f;
+		tension /= tensions.size();
+		times.pop_front();
+		tensions.pop_front();
+
+		if (t >= ttimes.front()) {
+			const double tmean = tmeans.front();
+			ttimes.pop_front();
+			tmeans.pop_front();
+			REQUIRE(
+				fabs(tension / MBL - tmean) < 0.025);
+		}
+	}
+
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
+}
 
