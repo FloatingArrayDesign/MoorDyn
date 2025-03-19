@@ -784,11 +784,6 @@ Line::setState(const InstanceStateVarView state)
 void
 Line::setEndKinematics(vec pos, vec vel, EndPoints end_point)
 {
-	if (t < 5 && int(t / dtm0) % 20 == 0) {
-		LOGDBG << "------" << endl;
-    	LOGDBG << "Setting end kinematics for end point " << end_point << endl;
-    	LOGDBG << "Position: " << pos.transpose() << ", Velocity: " << vel.transpose() << endl;
-	}
 
 	switch (end_point) {
 		case ENDPOINT_TOP:

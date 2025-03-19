@@ -79,7 +79,7 @@ static std::vector<std::string> dts({ "1.5E-4",   // Euler
                                       // "1.0E-4",   // AB5
                                       "6.0E-4",   // BEuler5
                                       "1.0E-3",   // BEuler10
-                                      "1.3E-3",   // BEuler15
+                                      "1.2E-3",   // BEuler15
                                       "1.5E-3",   // BEuler20
                                       "1.0E-3",   // Midpoint5
                                       "1.9E-3",   // Midpoint10

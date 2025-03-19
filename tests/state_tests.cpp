@@ -38,6 +38,7 @@ CreateLine(md::Log* log, EnvCondRef env, unsigned int n,
 	props.type = "main";
 	props.d = 0.1;
 	props.w = 100.;
+	props.ElasticMod = 1;
 	props.EA = 3.e8;
 	props.BA = -1.0;
 	props.EI = 0.0;
