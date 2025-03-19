@@ -175,6 +175,10 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, vec6 a6_in)
 	initiateStep(r6_in, v6_in, a6_in);
 	updateFairlead(0.0);
 
+	// set positions of any dependent points and rods now (before they are
+	// initialized)
+	setDependentStates();
+
 	// If any Rod is fixed to the body (not pinned), initialize it now because
 	// otherwise it won't be initialized
 	for (auto attached : attachedR)
