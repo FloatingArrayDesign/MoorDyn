@@ -206,6 +206,9 @@ TEST_CASE("Visco-elastic testing")
 	std::fill(dr, dr + 3, 0.0);
 	REQUIRE(MoorDyn_Init(system, r, dr) == MOORDYN_SUCCESS);
 
+	// check the system is still not null
+	REQUIRE(system);
+
 	// Read the csv with the motions
 	std::ifstream csv("Mooring/polyester/viscoelastic/visco_motion.csv");
 	aria::csv::CsvParser csv_parser(csv);
@@ -243,6 +246,10 @@ TEST_CASE("Visco-elastic testing")
 		double x_dst = xdata.at(i);
 		dr[0] = (x_dst - r[0]) / dt;
 		double f[3];
+		// info for if it fails
+        INFO("Time " << t);
+        INFO("r: [" << r[0] << ", " << r[1] << ", " << r[2] << "], dr: [" << dr[0] << ", " << dr[1] << ", " << dr[2] << "]");
+		REQUIRE(system);
 		REQUIRE(MoorDyn_Step(system, r, dr, f, &t, &dt) == MOORDYN_SUCCESS);
 		times.push_back(t);
 		double ten;
