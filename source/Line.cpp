@@ -130,7 +130,7 @@ Line::setup(int number_in,
             EnvCondRef env_in,
             shared_ptr<ofstream> outfile_pointer,
             string channels_in,
-			real dtM0)
+		    real dtM0)
 {
 	env = env_in; // set pointer to environment settings object
 	number = number_in;

@@ -419,7 +419,7 @@ The columns are as follows:
 
 This last entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
-outputs are wanted.  Eight output properties are currently possible:
+outputs are wanted. Eight output properties are currently possible:
 
  - p – node positions
  - v – node velocities
@@ -493,7 +493,7 @@ The columns are as follows:
    
 This last entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
-outputs are wanted. Eight output properties are currently possible:
+outputs are wanted. Ten output properties are currently possible:
 
  - p – node positions
  - v – node velocities

@@ -387,7 +387,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	           EnvCondRef env_in,
 	           shared_ptr<ofstream> outfile,
 	           string channels,
-			   real dtM0);
+               real dtM0);
 
 	/** @brief Set the environmental data
 	 * @param waves_in Global Waves object
@@ -401,7 +401,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 		seafloor = seafloor_in;
 	}
 
-	/** @brief Initializse the line object
+	/** @brief Initialize the line object
 	 * @note Becasue Line.hpp is the only function that calls this, no state 
 	 * vectors need to be returned. This is different from the structure of
 	 * the other objects initialize functions.
@@ -965,10 +965,7 @@ class DECLDIR Line final : public Instance, public NatFreqCFL
 	vec getEndSegmentMoment(EndPoints end_point, EndPoints rod_end_point) const;
 
 	/** @brief Calculate forces and get the derivative of the line's states
-	* @param drdt Output state derivatives 
-	* @param vel Where to store the velocities of the internal nodes
-	 * @param acc Where to store the accelerations of the internal nodes 
-	 * @param misc Where to store the misc states of lines (viv phase, viscoelastic, unused)
+	 * @param drdt Output state derivatives 
 	 * @throws nan_error If nan values are detected in any node position
 	 */
 	void getStateDeriv(InstanceStateVarView drdt);
