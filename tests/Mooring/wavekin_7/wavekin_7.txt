@@ -27,4 +27,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 1.0e-3        threshIC             threshold for IC convergence (-)
 0.5           FrictionCoefficient  general bottom friction coefficient, as a start (-)
 7             WaveKin              the wave kinematics are calculated by summing frequencies (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

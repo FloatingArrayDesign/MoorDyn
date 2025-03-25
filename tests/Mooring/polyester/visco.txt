@@ -1,0 +1,28 @@
+singal segement viscoelastic test
+---------------------- LINE TYPES --------------------------------------------------
+TypeName      Diam     Mass/m     EA                      BA/-zeta       EI         Cd      Ca      CdAx    CaAx 
+(name)        (m)      (kg/m)     (N)                    (N-s/-)        (N-m^2)     (-)     (-)     (-)     (-)    
+rope          0.1438    22.42  1.424e+08|1.586e+08|0.4   4E9|11E6         0.000e+00    0   00   0.0    0.00 
+---------------------- POINTS -------------------------------------------------------
+ID  Attachment     X       Y       Z           Mass  Volume  CdA    Ca
+(#)   (-)         (m)     (m)     (m)          (kg)  (m�3)  (m^2)   (-)
+1    Fixed        0.00   0.0 0.0      0.00   0.00   0.00   0.00
+2    Coupled      2     0.0   0.0      0.00   0.00   0.00   0.00
+---------------------- LINES --------------------------------------------------------
+ID    LineType      AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
+(#)    (name)        (#)      (#)       (m)       (-)     (-)
+1    rope              1       2      1.0        1       -
+---------------------- OPTIONS ------------------------------------------------------
+2               writeLog
+0.01            dtM
+3000000.0        kb
+300000.0         cb
+60               TmaxIC
+4                CdScaleIC
+5.0              dtIC
+0.001            threshIC
+0                g
+200              WtrDpth
+1025             rho
+0.0              WtrDnsty
+--------------------- need this line ------------------------------------------------

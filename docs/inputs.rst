@@ -247,7 +247,8 @@ two fixed points located far from where your system is located.
 Most of the sections are set up to contain a table of input information. These
 tables begin with two preset lines that contain the column names and the
 corresponding units. These lines are followed by any number of lines containing
-the entries in that section's table of inputs.
+the entries in that section's table of inputs. # is the general comment chacater. If you are adding notes 
+to self after any of the lines, # will prevent MoorDyn from reading them. 
 
 Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs becasue they are for tests).
 
@@ -273,10 +274,10 @@ that will be used in the simulation
 
 .. code-block:: none
 
- ---------------------- LINE TYPES -----------------------------------
- TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx          
- (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)           
- Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5           
+ ---------------------- LINE TYPES ----------------------------------------------------------------------
+ TypeName   Diam    Mass/m     EA     BA/-zeta    EI         Cd     Ca     CdAx    CaAx    Cl    dF    cF        
+ (name)     (m)     (kg/m)     (N)    (N-s/-)     (N-m^2)    (-)    (-)    (-)     (-)     (-)   (-)   (-) 
+ Chain      0.1      150.0     1e8    -1          0          2.3     1     1.0     0.5     0.8   0.08  0.18
 
 The columns in order are as follows:
 
@@ -294,6 +295,16 @@ The columns in order are as follows:
  - Ca –  transverse added mass coefficient (with respect to line displacement)
  - CdAx –  tangential drag coefficient (with respect to surface area, π*d*l)
  - CaAx – tangential added mass coefficient (with respect to line displacement)
+ - Cl – OPTIONAL - the crossflow VIV lift coefficient. If set to 0, then VIV calculations are disabled for the
+   line. This coefficient has been made backwards compatible. If it is not provided, then it is 
+   assumed to be 0.0. The theory of vortex induced vibrations can be found :ref:`here <version2>`. Note that VIV is disabled
+   for end nodes (and thus end half-segments), so if simulating VIV users should ensure to include a higher number of segments. 
+   Also note that VIV has only been tested with explicit time schemes (specifically rk2 and rk4). There may be unexpected behavior 
+   if used with an implicit time scheme. 
+ - dF - OPTIONAL - the cF +- range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+   provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
+ - cF - OPTIONAL - the center of the range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+   provided and VIV is enabled (Cl > 0) then it is default to 0.18 to align with the the theory found :ref:`here <version2>`
 
 Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
 must be located in the same folder as the main MoorDyn input file for MoorDyn-C or for MoorDyn-F 
@@ -308,17 +319,19 @@ tabulated file with 3 header lines and then a strain column and a tension column
   0.0       0.0
   ...       ...
 
-Note: MoorDyn-F has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
+Note: MoorDyn has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
 :ref:`theory section <theory>`, allows a user to specify a bar-seperated constant dynamic and static stiffness. The second method allows the user 
 to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
-`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Example inputs are below: 
+`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Both of these methods allow users to provide static 
+and dynamic damping coefficients as values seperated by |. While the static damping can be described as a fraction of cricial, the dyanamic damping 
+needs to be input as a value. Example inputs are below: 
 
 .. code-block:: none
 
-  TypeName   Diam    Mass/m     EA           
-  (name)     (m)     (kg/m)     (N)             
-  Polyester  ...      ...    EA_s|EA_d          <-- Constant dynamic stiffness method
-  Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm <-- Load dependent dynamic stiffness method
+  TypeName   Diam    Mass/m     EA                   BA
+  (name)     (m)     (kg/m)     (N)                 (N-s)
+  Polyester  ...      ...    EA_s|EA_d            BA_s|BA_d <-- Constant dynamic stiffness method with static and dynamic damping
+  Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm   BA_s|BA_d <-- Load dependent dynamic stiffness method with static and dynamic damping
 
 Rod Types
 ^^^^^^^^^
@@ -406,7 +419,7 @@ The columns are as follows:
 
 This last entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
-outputs are wanted.  Eight output properties are currently possible:
+outputs are wanted. Eight output properties are currently possible:
 
  - p – node positions
  - v – node velocities
@@ -480,7 +493,7 @@ The columns are as follows:
    
 This last entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
-outputs are wanted. Eight output properties are currently possible:
+outputs are wanted. Ten output properties are currently possible:
 
  - p – node positions
  - v – node velocities
@@ -488,6 +501,8 @@ outputs are wanted. Eight output properties are currently possible:
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
  - c – internal damping force at each segment
+ - V - the cross-flow VIV lift force at each node
+ - K - the curvature at each node
  - s – strain of each segment
  - d – rate of strain of each segment
 
@@ -660,8 +675,8 @@ The list of possible options is:
  - FricDamp (200.0): The seabed friction damping, to scale from no friction at null velocity to 
    full friction when the velocity is large
  - StatDynFricScale (1.0): Ratio between Static and Dynamic friction coefficients
- - dtOut (0.0): Time step size to be written to output files. A value of zero will use dtM as a 
-   step size (s)
+ - dtOut (0.0): Time step size to be written to output files. A value of zero will use the coupling 
+   timestep as a step size (s)
  - SeafloorFile: A path to the :ref:`bathymetry file <seafloor_in>`
  - ICgenDynamic (0): MoorDyn-C switch for using older dynamic relaxation method (same as MoorDyn-F).
    If this is enabled initial conditions are calculated with scaled drag according to CdScaleIC. 
@@ -720,6 +735,9 @@ The following options from MoorDyn-F are not supported by MoorDyn-C:
    1: yes, 2: yes with ramp to inertialF_rampT]
  - inertialF_rampT (30.0): Ramp time for inertial forces to reduce coupled object instability (s). 
    This is ignored unless inertialF = 2
+ - OutSwitch (1): Switch to disable outputs when running with full OpenFAST simulations, where the 
+   MoorDyn-F output channels are written to the main FAST output file. 
+   0: no MD main outfile, 1: write MD main outfile
 
 Outputs
 ^^^^^^^

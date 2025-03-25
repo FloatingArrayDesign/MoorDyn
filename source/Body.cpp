@@ -175,6 +175,10 @@ Body::initializeUnfreeBody(vec6 r6_in, vec6 v6_in, vec6 a6_in)
 	initiateStep(r6_in, v6_in, a6_in);
 	updateFairlead(0.0);
 
+	// set positions of any dependent points and rods now (before they are
+	// initialized)
+	setDependentStates();
+
 	// If any Rod is fixed to the body (not pinned), initialize it now because
 	// otherwise it won't be initialized
 	for (auto attached : attachedR)
@@ -451,8 +455,12 @@ Body::updateFairlead(real time)
 }
 
 void
-Body::setState(XYZQuat pos, vec6 vel)
+Body::setState(const InstanceStateVarView r)
 {
+	// set position and velocity vectors from state vector
+	const XYZQuat pos = XYZQuat::fromVec7(r.row(0).head<7>());
+	const vec6 vel = r.row(0).tail<6>();
+
 	if (type == FREE) {
 		// set position and velocity vectors from state vector
 		r7 = pos;

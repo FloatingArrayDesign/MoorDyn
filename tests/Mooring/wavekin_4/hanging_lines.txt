@@ -53,4 +53,5 @@ Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 0.00001   dtIC         - Time lapse between convergence tests (s)
 5         Currents     - 4D current profile
 0         WaveKin      - No waves
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

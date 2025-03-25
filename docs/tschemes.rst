@@ -2,15 +2,25 @@ Time Schemes
 ============
 .. _tschemes:
 
+MoorDyn advances a time step by calculating the state derivative of all 
+the objects (free and pinned bodies and rods, free points, and lines). It 
+then integrates this state derivative to determine the system state at the
+next time step. The time integration is performed by a time scheme, which 
+are detailed in this section. The following figure demonstrates the general
+flow of the time integration process:
+
+.. figure:: integration_moordyn.png
+   :alt: Time integration process in MoorDyn
+
 MoorDyn-C version 2 is deployed with several time schemes, with different
-features, strengths and weaknesses.
+features, strengths and weaknesses as detailed in this section. The time schemes 
+can be divided into 2 main categories: Explicit and implicit.
+
+MoorDyn-F only uses the Runge-Kutta 2 (RK2) or Runge-Kutte 4 (RK4) time schemes 
+in the interest of efficiency for OpenFAST simulations.
 
 .. note::
-   MoorDyn-F only uses the Runge-Kutta 2 (RK2) time scheme in the interest
-   of efficiency for OpenFAST simulations.
-   Time scheme specification is not an option in the MoorDyn-F input files.
-
-They can be deivided into 2 main categories: Explicit and implicit ones.
+   In both MoorDyn C and F, the default time scheme is RK2
 
 Explicit:
 ---------

@@ -734,7 +734,7 @@ inline vector<string>
 split(const string& s)
 {
 	vector<string> sout = split(s, ' ');
-	if (sout.size() == 1) return split(sout[0], '	');
+	if (sout.size() == 1) return split(sout[0], '	'); // if space didnt split it, try again with tab
 	else return sout;
 }
 
@@ -1123,20 +1123,28 @@ typedef struct _LineProps // (matching Line Dictionary inputs)
 	string type;
 	double d;
 	double w; // linear weight in air
+	int ElasticMod;
 	double EA;
+	double EA_D;
+	double alphaMBL;
+	double vbeta;
 	double EI;
-	double c; // internal damping
+	double BA; // internal damping
+	double BA_D;
 	double cI;
 	double Can;
 	double Cat;
 	double Cdn;
 	double Cdt;
+	double Cl; // VIV lift coefficient. If 0, VIV turned off.
+	double dF; // +- range around cF for VIV synchronization model 
+	double cF; // center non-dim frequency for VIV synch model
 	int nEApoints; // number of values in stress-strain lookup table (0 means
 	               // using constant E)
 	double
 	    stiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
 	double stiffYs[nCoef]; // y array for stress-strain lookup table
-	int nCpoints; // number of values in stress-strainrate lookup table (0 means
+	int nBApoints; // number of values in stress-strainrate lookup table (0 means
 	              // using constant c)
 	double dampXs[nCoef]; // x array for stress-strainrate lookup table (up to
 	                      // nCoef)

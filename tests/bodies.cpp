@@ -399,7 +399,8 @@ TEST_CASE("Excentric body")
 		const auto [pos, vel] = body->getState();
 		const moordyn::vec6 new_vel = moordyn::vec6(
 		    0.0, 0.0, radius * omega, omega, 0.0, 0.0);
-		body->setState(pos, new_vel);
+		body->r7 = pos;
+		body->v6 = new_vel;
 	}
 
 	REQUIRE(system.Init(nullptr, nullptr) == MOORDYN_SUCCESS);

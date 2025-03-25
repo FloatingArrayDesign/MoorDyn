@@ -102,7 +102,7 @@ fillWaveGrid(std::unique_ptr<WaveGrid> waveGrid,
 	// This computes the time distance between samples returned by the ifft
 	// We entirely ignore the env->dtWave value in this case for now
 	waveGrid->dtWave = ((2 * pi) / dw) / nt;
-	LOGMSG << "in new fillWaveGrid, setting waveGrid->dtWave to be "
+	LOGMSG << "   in new fillWaveGrid, setting waveGrid->dtWave to be "
 	       << waveGrid->dtWave << endl;
 	auto h = env->WtrDpth;
 	auto g = env->g;
@@ -112,13 +112,13 @@ fillWaveGrid(std::unique_ptr<WaveGrid> waveGrid,
 	for (unsigned int i = 0; i < nw; i++)
 		w[i] = (real)i * dw;
 
-	LOGMSG << "Wave frequencies from " << w[0] << " rad/s to " << w[nw - 1]
+	LOGMSG << "   Wave frequencies from " << w[0] << " rad/s to " << w[nw - 1]
 	       << " rad/s in increments of " << dw << " rad/s" << endl;
 
-	LOGDBG << "Wave numbers in rad/m are ";
+	LOGDBG << "   Wave numbers in rad/m are ";
 	for (unsigned int I = 0; I < nw; I++) {
 		k[I] = WaveNumber(w[I], env->g, h);
-		LOGDBG << k[I] << ", ";
+		LOGDBG << "   " << k[I] << ", ";
 	}
 	LOGDBG << endl;
 
@@ -126,7 +126,7 @@ fillWaveGrid(std::unique_ptr<WaveGrid> waveGrid,
 
 	// precalculates wave kinematics for a given set of node points for a series
 	// of time steps
-	LOGDBG << "Making wave Kinematics (iFFT)..." << endl;
+	LOGDBG << "   Making wave Kinematics (iFFT)..." << endl;
 
 	// start the FFT stuff using kiss_fft
 	unsigned int nFFT = nt;
@@ -269,7 +269,7 @@ fillWaveGrid(std::unique_ptr<WaveGrid> waveGrid,
 
 	free(cfg);
 
-	LOGDBG << "Done!" << endl;
+	LOGDBG << "   Done!" << endl;
 	return waveGrid;
 }
 
@@ -294,7 +294,7 @@ std::array<std::vector<real>, 3>
 rectilinearGridFromFile(std::filesystem::path filepath, moordyn::Log* _log)
 {
 
-	LOGMSG << "Reading waves coordinates grid from '" << filepath << "'..."
+	LOGMSG << "   Reading waves coordinates grid from '" << filepath << "'..."
 	       << endl;
 
 	// --------------------- read grid data from file ------------------------
@@ -304,7 +304,7 @@ rectilinearGridFromFile(std::filesystem::path filepath, moordyn::Log* _log)
 	lines = moordyn::fileIO::fileToLines(filepath);
 
 	if (lines.size() < 9) {
-		LOGERR << "The waves grid file '" << filepath << "' has only "
+		LOGERR << "   The waves grid file '" << filepath << "' has only "
 		       << lines.size() << "lines, but at least 9 are required" << endl;
 		throw moordyn::input_file_error("Invalid file format");
 	}
@@ -317,7 +317,7 @@ rectilinearGridFromFile(std::filesystem::path filepath, moordyn::Log* _log)
 	entries = moordyn::str::split(lines[4]);
 	auto px = gridAxisCoords(coordtype, entries);
 	if (px.empty()) {
-		LOGERR << "Invalid entry for the grid x values in file '" << filepath
+		LOGERR << "   Invalid entry for the grid x values in file '" << filepath
 		       << "'" << endl;
 		throw moordyn::invalid_value_error("Invalid line");
 	}
@@ -327,7 +327,7 @@ rectilinearGridFromFile(std::filesystem::path filepath, moordyn::Log* _log)
 	entries = moordyn::str::split(lines[6]);
 	auto py = gridAxisCoords(coordtype, entries);
 	if (py.empty()) {
-		LOGERR << "Invalid entry for the grid y values in file '" << filepath
+		LOGERR << "   Invalid entry for the grid y values in file '" << filepath
 		       << "'" << endl;
 		throw moordyn::invalid_value_error("Invalid line");
 	}
@@ -337,15 +337,15 @@ rectilinearGridFromFile(std::filesystem::path filepath, moordyn::Log* _log)
 	entries = moordyn::str::split(lines[8]);
 	auto pz = gridAxisCoords(coordtype, entries);
 	if (pz.empty()) {
-		LOGERR << "Invalid entry for the grid z values in file '" << filepath
+		LOGERR << "   Invalid entry for the grid z values in file '" << filepath
 		       << "'" << endl;
 		throw moordyn::invalid_value_error("Invalid line");
 	}
 
-	LOGDBG << "Setup the waves grid with " << px.size() << " x " << py.size()
+	LOGDBG << "   Setup the waves grid with " << px.size() << " x " << py.size()
 	       << " x " << pz.size() << " points " << endl;
 
-	LOGMSG << "'" << filepath << "' parsed" << endl;
+	LOGMSG << "   '" << filepath << "' parsed" << endl;
 
 	return { px, py, pz };
 }
@@ -363,18 +363,18 @@ constructWaveGridSpectrumData(const std::string& folder,
 	// (1vs2-sided spectrum?)
 
 	waves::DiscreteWaveSpectrum spectrum = spectrumFromFile(WaveFilename, _log);
-	LOGMSG << "'" << WaveFilename << "' parsed" << endl;
+	LOGMSG << "   '" << WaveFilename << "' parsed" << endl;
 
 	if (spectrum[0].omega != 0.0) {
-		LOGERR << "The first shall be 0 rad/s" << endl;
+		LOGERR << "   The first shall be 0 rad/s" << endl;
 		throw moordyn::invalid_value_error("Invalid frequencies");
 	}
 
 	const vector<waves::FrequencyComponent> evenFreqComps =
 	    spectrum.interpEvenlySpaced();
-	// LOGMSG << "Frequency Spectrum: \n";
+	// LOGMSG << "   Frequency Spectrum: \n";
 	// for(auto& freqComp : evenFreqComps) {
-	// 	LOGMSG << "freq(" << freqComp.omega << ") = " << freqComp.amplitude
+	// 	LOGMSG << "   freq(" << freqComp.omega << ") = " << freqComp.amplitude
 	// << endl;
 	// }
 	vector<moordyn::complex> zetaC0(evenFreqComps.size());
@@ -422,7 +422,7 @@ constructWaveGridElevationData(const std::string& folder,
 	try {
 		lines = moordyn::fileIO::fileToLines(WaveFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "Cannot read the file '" << WaveFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << WaveFilename << "'" << endl;
 		std::stringstream ss;
 		ss << "Waves::setup failed to read wave_elevation.txt file: "
 		   << err.what();
@@ -438,14 +438,14 @@ constructWaveGridElevationData(const std::string& folder,
 	for (auto line : lines) {
 		vector<string> entries = moordyn::str::split(line);
 		if (entries.size() < 2) {
-			LOGERR << "The file '" << WaveFilename << "' should have 2 columns"
+			LOGERR << "   The file '" << WaveFilename << "' should have 2 columns"
 			       << endl;
 			throw moordyn::input_file_error("Invalid file format");
 		}
 		wavetimes.push_back(stod(entries[0]));
 		waveelevs.push_back(stod(entries[1]));
 	}
-	LOGMSG << "'" << WaveFilename << "' parsed" << endl;
+	LOGMSG << "   '" << WaveFilename << "' parsed" << endl;
 
 	auto dtWave = env->waterKinOptions.dtWave;
 	// downsample to dtWave
@@ -453,7 +453,7 @@ constructWaveGridElevationData(const std::string& folder,
 	// samples the 1 extra is for the point at zero, [0.0, 1.0, 2.0] is 3
 	// points even though 2.0/1.0 = 2
 	unsigned int nt = floor(wavetimes.back() / dtWave) + 1;
-	LOGDBG << "Number of wave time samples = " << nt << "(" << wavetimes.size()
+	LOGDBG << "   Number of wave time samples = " << nt << "(" << wavetimes.size()
 	       << " samples provided in the file)" << endl;
 
 	vector<real> waveTime(nt, 0.0);
@@ -475,7 +475,7 @@ constructWaveGridElevationData(const std::string& folder,
 	}
 
 	// FFT the wave elevation using kiss_fftr
-	LOGDBG << "Computing FFT..." << endl;
+	LOGDBG << "   Computing FFT..." << endl;
 	unsigned int nFFT = nt;
 	const int is_inverse_fft = 0;
 	// number of FFT frequencies (Nyquist)
@@ -510,7 +510,7 @@ constructWaveGridElevationData(const std::string& folder,
 
 	// perform the real-valued FFT
 	kiss_fftr(cfg, cx_t_in.data(), cx_w_out.data());
-	LOGDBG << "Done!" << endl;
+	LOGDBG << "   Done!" << endl;
 
 	free(cfg);
 	// copy frequencies over from FFT output
@@ -555,7 +555,7 @@ constructSteadyCurrentGrid(const std::string& folder,
 	try {
 		lines = moordyn::fileIO::fileToLines(CurrentsFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "Cannot read the file '" << CurrentsFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'" << endl;
 		std::stringstream ss;
 		ss << "constructSteadyCurrentGrid failed to read currents_profile.txt "
 		      "file: "
@@ -564,7 +564,7 @@ constructSteadyCurrentGrid(const std::string& folder,
 	}
 
 	if (lines.size() < 4) {
-		LOGERR << "The file '" << CurrentsFilename
+		LOGERR << "   The file '" << CurrentsFilename
 		       << "' should have at least 4 lines" << endl;
 		throw moordyn::input_file_error("Invalid file format");
 	}
@@ -577,7 +577,7 @@ constructSteadyCurrentGrid(const std::string& folder,
 	for (unsigned int i = 3; i < lines.size(); i++) {
 		vector<string> entries = moordyn::str::split(lines[i]);
 		if (entries.size() < 2) {
-			LOGERR << "The file '" << CurrentsFilename
+			LOGERR << "      The file '" << CurrentsFilename
 			       << "' should have at least 2 columns" << endl;
 			throw moordyn::input_file_error("Invalid file format");
 		}
@@ -594,7 +594,7 @@ constructSteadyCurrentGrid(const std::string& folder,
 		else
 			UProfileUz.push_back(0.0);
 	}
-	LOGMSG << "'" << CurrentsFilename << "' parsed" << endl;
+	LOGMSG << "   '" << CurrentsFilename << "' parsed" << endl;
 
 	// NOTE: check data
 
@@ -631,16 +631,16 @@ constructDynamicCurrentGrid(const std::string& folder,
 	try {
 		lines = moordyn::fileIO::fileToLines(CurrentsFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "Cannot read the file '" << CurrentsFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'" << endl;
 		std::stringstream ss;
-		ss << "Waves::setup failed to read currents_profile_dynamic.txt "
+		ss << "   Waves::setup failed to read currents_profile_dynamic.txt "
 		      "file: "
 		   << err.what();
 		throw input_file_error(ss.str().c_str());
 	}
 
 	if (lines.size() < 7) {
-		LOGERR << "The file '" << CurrentsFilename
+		LOGERR << "   The file '" << CurrentsFilename
 		       << "' should have at least 7 lines" << endl;
 		throw moordyn::input_file_error("Invalid file format");
 	}
@@ -666,7 +666,7 @@ constructDynamicCurrentGrid(const std::string& folder,
 		entries = moordyn::str::split(lines[i]);
 		const unsigned int it = i - 6;
 		if (entries.size() <= nzin) {
-			LOGERR << "The file '" << CurrentsFilename
+			LOGERR << "   The file '" << CurrentsFilename
 			       << "' should have at least " << nzin + 1 << " columns"
 			       << endl;
 			throw moordyn::input_file_error("Invalid file format");
@@ -689,7 +689,7 @@ constructDynamicCurrentGrid(const std::string& folder,
 			for (unsigned int iz = 0; iz < nzin; iz++)
 				UProfileUz[iz][it] = 0.0;
 	}
-	LOGMSG << "'" << CurrentsFilename << "' parsed" << endl;
+	LOGMSG << "   '" << CurrentsFilename << "' parsed" << endl;
 
 	// A grid hasn't been set up yet, make it based on the read-in z
 	// values
@@ -738,7 +738,7 @@ construct4DCurrentGrid(const std::string& folder,
 {
 
 	const string CurrentsFilename = folder + "current_profile_4d.txt";
-	LOGMSG << "Reading 4d currents dynamic profile from '" << CurrentsFilename
+	LOGMSG << "   Reading 4d currents dynamic profile from '" << CurrentsFilename
 	       << "'..." << endl;
 
 	vector<string> lines;
@@ -746,9 +746,9 @@ construct4DCurrentGrid(const std::string& folder,
 	try {
 		lines = moordyn::fileIO::fileToLines(CurrentsFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "Cannot read the file '" << CurrentsFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'" << endl;
 		std::stringstream ss;
-		ss << "Waves::setup failed to read currents_profile_4d.txt "
+		ss << "   Waves::setup failed to read currents_profile_4d.txt "
 		      "file: "
 		   << err.what();
 		throw input_file_error(ss.str().c_str());
@@ -757,7 +757,7 @@ construct4DCurrentGrid(const std::string& folder,
 	// A better check here is that the grid is at least as large as the
 	// waves grid, i.e. nxin * nyin * nzin * ntin >= size of waves
 	if (lines.size() < 7) { // TODO: Remove this check? Depends on final format
-		LOGERR << "The file '" << CurrentsFilename
+		LOGERR << "   The file '" << CurrentsFilename
 		       << "' should have at least 7 lines" << endl;
 		throw moordyn::input_file_error("Invalid file format");
 	}
@@ -821,7 +821,7 @@ construct4DCurrentGrid(const std::string& folder,
 
 	// Need to ensure that there is an entry for each gridpoint:
 	if (lines.size() < nCurGridPoints + 5) {
-		LOGERR << "The file'" << CurrentsFilename
+		LOGERR << "   The file'" << CurrentsFilename
 		       << "' should have a line for each gridpoint\n";
 		throw moordyn::input_file_error("Invalid file format\n");
 	}

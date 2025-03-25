@@ -278,83 +278,83 @@ Waves::setup(EnvCondRef env_in,
 	auto current_mode = env->waterKinOptions.currentMode;
 	if ((wave_mode == moordyn::WAVES_NONE) &&
 	    (current_mode == moordyn::CURRENTS_NONE)) {
-		LOGMSG << "No Waves or Currents, or set externally" << endl;
+		LOGMSG << "   No Waves or Currents, or set externally" << endl;
 		return;
 	}
 
 	if (wave_mode == waves::WAVES_NONE) {
 		if (current_mode == waves::CURRENTS_STEADY_GRID)
-			LOGDBG << "Current only: option 1 - "
-			       << "read in steady current profile, grid approach "
-			       << "(current_profile.txt)" << endl;
+			LOGDBG << "   Current only: option 1 - "
+			       << "   read in steady current profile, grid approach "
+			       << "   (current_profile.txt)" << endl;
 		else if (current_mode == waves::CURRENTS_DYNAMIC_GRID)
-			LOGDBG << "Current only: option 2 - "
-			       << "read in dynamic current profile, grid approach "
-			       << "(current_profile_dynamic.txt)" << endl;
+			LOGDBG << "   Current only: option 2 - "
+			       << "   read in dynamic current profile, grid approach "
+			       << "   (current_profile_dynamic.txt)" << endl;
 		else if (current_mode == waves::CURRENTS_STEADY_NODE)
-			LOGDBG << "Current only: option TBD3 - "
-			       << "read in steady current profile, node approach "
-			       << "(current_profile.txt)" << endl;
+			LOGDBG << "   Current only: option TBD3 - "
+			       << "   read in steady current profile, node approach "
+			       << "   (current_profile.txt)" << endl;
 		else if (current_mode == waves::CURRENTS_DYNAMIC_NODE)
-			LOGDBG << "Current only: option TBD4 - "
-			       << "read in dynamic current profile, node approach "
-			       << "(current_profile_dynamic.txt)" << endl;
+			LOGDBG << "   Current only: option TBD4 - "
+			       << "   read in dynamic current profile, node approach "
+			       << "   (current_profile_dynamic.txt)" << endl;
 		else if (current_mode == waves::CURRENTS_4D)
-			LOGDBG << "Current only: option 4D - read in current profile, grid "
-			       << "approach (current_profile_4d.txt" << endl;
+			LOGDBG << "   Current only: option 4D - read in current profile, grid "
+			       << "   approach (current_profile_4d.txt" << endl;
 		else {
-			LOGDBG << "Invald current input settings (must be 0-4)" << endl;
+			LOGDBG << "   Invalid current input settings (must be 0-4)" << endl;
 			throw moordyn::invalid_value_error("Invalid settings");
 		}
 	} else if (current_mode == waves::CURRENTS_NONE) {
 		if (wave_mode == waves::WAVES_EXTERNAL)
-			LOGDBG << "Waves only: option 1 - "
-			       << "set externally for each node in each object" << endl;
+			LOGDBG << "   Waves only: option 1 - "
+			       << "   set externally for each node in each object" << endl;
 		else if (wave_mode == waves::WAVES_FFT_GRID)
-			LOGDBG << "Waves only: option 2 - "
-			       << "set from inputted wave elevation FFT, grid approach "
-			       << "(NOT IMPLEMENTED YET)" << endl;
+			LOGDBG << "   Waves only: option 2 - "
+			       << "   set from inputted wave elevation FFT, grid approach "
+			       << "   (NOT IMPLEMENTED YET)" << endl;
 		else if (wave_mode == waves::WAVES_GRID)
 			LOGDBG
-			    << "Waves only: option 3 - "
-			    << "set from inputted wave elevation time series, grid approach"
+			    << "   Waves only: option 3 - "
+			    << "   set from inputted wave elevation time series, grid approach"
 			    << endl;
 		else if (wave_mode == waves::WAVES_FFT_GRID)
-			LOGDBG << "Waves only: option TBD4 - "
-			       << "set from inputted wave elevation FFT, node approach "
-			       << "(NOT IMPLEMENTED YET)" << endl;
+			LOGDBG << "   Waves only: option TBD4 - "
+			       << "   set from inputted wave elevation FFT, node approach "
+			       << "   (NOT IMPLEMENTED YET)" << endl;
 		else if (wave_mode == waves::WAVES_NODE)
 			LOGDBG
-			    << "Waves only: option TBD5 - "
-			    << "set from inputted wave elevation time series, node approach"
+			    << "   Waves only: option TBD5 - "
+			    << "   set from inputted wave elevation time series, node approach"
 			    << endl;
 		else if (wave_mode == waves::WAVES_KIN)
-			LOGDBG << "Waves only: option TBD6 - "
-			       << "set from inputted velocity, acceleration, and wave "
-			          "elevation grid data (TBD)"
+			LOGDBG << "   Waves only: option TBD6 - "
+			       << "   set from inputted velocity, acceleration, and wave "
+			          "   elevation grid data (TBD)"
 			       << endl;
 		else if (wave_mode == waves::WAVES_SUM_COMPONENTS_NODE)
-			LOGDBG << "Waves only: option 7 - "
-			       << "set from inputted wave spectrum, computed at nodes on "
-			          "update "
+			LOGDBG << "   Waves only: option 7 - "
+			       << "   set from inputted wave spectrum, computed at nodes on "
+			          "   update "
 			       << endl;
 		else {
-			LOGDBG << "Invald wave kinematics input settings (must be 0-7)"
+			LOGDBG << "   Invald wave kinematics input settings (must be 0-7)"
 			       << endl;
 			throw moordyn::invalid_value_error("Invalid settings");
 		}
 	} else if (wave_mode == waves::WAVES_EXTERNAL &&
 	           current_mode != waves::CURRENTS_NONE) {
-		LOGDBG << "External waves as well as currents, current options: "
+		LOGDBG << "   External waves as well as currents, current options: "
 		       << current_mode << endl;
 
 	} else if (waves::is_waves_grid(wave_mode) &&
 	           waves::is_currents_grid(current_mode)) {
-		LOGDBG << "Waves and currents: options " << wave_mode << " & "
+		LOGDBG << "   Waves and currents: options " << wave_mode << " & "
 		       << current_mode << endl;
 	} else if (waves::is_waves_node(wave_mode) &&
 	           waves::is_currents_node(current_mode)) {
-		LOGDBG << "Waves and currents: options TBD " << wave_mode << " & "
+		LOGDBG << "   Waves and currents: options TBD " << wave_mode << " & "
 		       << current_mode << endl;
 	}
 
@@ -365,10 +365,10 @@ Waves::setup(EnvCondRef env_in,
 		LOGMSG << "Reading waves spectrum frequencies from '" << WaveFilename
 		       << "'..." << endl;
 		auto waveSpectrum = spectrumFromFile(WaveFilename, _log);
-		LOGMSG << "'" << WaveFilename << "' parsed" << endl;
+		LOGMSG << "   '" << WaveFilename << "' parsed" << endl;
 
 		if (waveSpectrum[0].omega != 0.0) {
-			LOGERR << "The first shall be 0 rad/s" << endl;
+			LOGERR << "   The first shall be 0 rad/s" << endl;
 			throw moordyn::invalid_value_error("Invalid frequencies");
 		}
 		SpectrumKin spectrumKin{};

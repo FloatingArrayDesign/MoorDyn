@@ -38,15 +38,17 @@ CreateLine(md::Log* log, EnvCondRef env, unsigned int n,
 	props.type = "main";
 	props.d = 0.1;
 	props.w = 100.;
+	props.ElasticMod = 1;
 	props.EA = 3.e8;
+	props.BA = -1.0;
 	props.EI = 0.0;
-	props.c = -1.0;
 	props.Cdn = 1.0;
 	props.Can = 1.0;
 	props.Cdt = 0.0;
 	props.Cat = 0.0;
+	props.Cl = 0.0;
 	props.nEApoints = 0;
-	props.nCpoints = 0;
+	props.nBApoints = 0;
 	props.nEIpoints = 0;
 	obj->setup(0,
 			   &props,
@@ -54,7 +56,8 @@ CreateLine(md::Log* log, EnvCondRef env, unsigned int n,
 			   n,
 			   env,
 			   outfile,
-			   "");
+			   "",
+			   0);
 	return obj;
 }
 

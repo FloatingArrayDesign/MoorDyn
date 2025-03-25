@@ -27,4 +27,5 @@ ID   LineType         AttachA  AttachB   UnstrLen  NumSegs  LineOutputs
 0.1           dtIC                 time interval for analyzing convergence during IC gen (s)
 100           TmaxIC               max time for ic gen (s)
 0.01          threshIC             threshold for IC convergence (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

@@ -99,8 +99,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , GroundBody(NULL)
   , waves(nullptr)
   , seafloor(nullptr)
-  , nX(0)
-  , nXtra(0)
   , npW(0)
 {
 	++__systems_counter;
@@ -152,13 +150,6 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 
 	LOGDBG << "MoorDyn is expecting " << NCoupledDOF()
 	       << " coupled degrees of freedom" << endl;
-
-	if (!nX) {
-		LOGWRN << "WARNING: MoorDyn has no state variables."
-		       << " (Is there a mooring sytem?)" << endl;
-	}
-
-	nXtra = nX + 6 * 2 * ui_size(LineList);
 }
 
 moordyn::MoorDyn::~MoorDyn()
@@ -257,7 +248,7 @@ moordyn::MoorDyn::icLegacy()
 			}
 			MOORDYN_CATCHER(err, err_msg);
 			if (err != MOORDYN_SUCCESS) {
-				LOGERR << "t = " << t << " s" << endl;
+				LOGERR << "Dynam Relax t = " << t << " s: " << err_msg << endl;
 				return err;
 			}
 		}
@@ -361,7 +352,7 @@ moordyn::MoorDyn::icStationary()
 
 	time::StationaryScheme t_integrator(_log, waves);
 	t_integrator.SetGround(GroundBody);
-	for (auto obj : BodyList)
+	for (auto obj : BodyList) // TODO: make these lists only iterate over the free lines. Check other places where this is called
 		t_integrator.AddBody(obj);
 	for (auto obj : RodList)
 		t_integrator.AddRod(obj);
@@ -554,6 +545,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 
 	// ------------------ do IC gen --------------------
 	if (!skip_ic) {
+
+		for (unsigned int l = 0; l < LineList.size(); l++){
+			LineList[l]->IC_gen = true; // turn on IC_gen flag
+		}
+
 		moordyn::error_id err;
 		if (ICgenDynamic)
 			err = icLegacy();
@@ -561,6 +557,11 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 			err = icStationary();
 		if (err != MOORDYN_SUCCESS)
 			return err;
+		
+		for (unsigned int l = 0; l < LineList.size(); l++){
+			LineList[l]->IC_gen = false; // turn off IC_gen flag
+		}
+
 	} else {
 		_t_integrator->Init();
 		if (ICfile != "") {
@@ -586,6 +587,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		if (seafloor) {
 			env->WtrDpth = -seafloor->getAverageDepth();
 		}
+		LOGMSG << "Water kinematics for runtime:" << endl;
 		waves->setup(env, seafloor, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
 	}
@@ -949,10 +951,6 @@ moordyn::MoorDyn::ReadInFile()
 	                  env,
 	                  NULL);
 
-	// Make sure the state vector counter starts at zero
-	// This will be conveniently incremented as each object is added
-	nX = 0;
-
 	// Now we can parse the whole input file
 	if ((i = findStartOfSection(in_txt, { "LINE DICTIONARY", "LINE TYPES" })) !=
 	    -1) {
@@ -961,7 +959,7 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
-			LineProps* obj = readLineProps(in_txt[i]);
+			LineProps* obj = readLineProps(in_txt[i], i);
 			if (obj)
 				LinePropList.push_back(obj);
 			else {
@@ -978,7 +976,7 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
-			RodProps* obj = readRodProps(in_txt[i]);
+			RodProps* obj = readRodProps(in_txt[i], i);
 
 			if (obj)
 				RodPropList.push_back(obj);
@@ -996,7 +994,7 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
-			Body* obj = readBody(in_txt[i]);
+			Body* obj = readBody(in_txt[i], i);
 
 			if (obj) {
 				BodyList.push_back(obj);
@@ -1020,7 +1018,7 @@ moordyn::MoorDyn::ReadInFile()
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 9) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "9 fields are required, but just " << entries.size()
@@ -1064,7 +1062,7 @@ moordyn::MoorDyn::ReadInFile()
 			} else if (let1 == "BODY") {
 				type = Point::FIXED;
 				if (num1.empty()) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "no number provided for Rod " << number
@@ -1073,7 +1071,7 @@ moordyn::MoorDyn::ReadInFile()
 				}
 				unsigned int bodyID = atoi(num1.c_str());
 				if (!bodyID || (bodyID > BodyList.size())) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "There is not " << bodyID << " bodies" << endl;
@@ -1093,11 +1091,8 @@ moordyn::MoorDyn::ReadInFile()
 				// if a point, add to list and add states for it
 				type = Point::FREE;
 				FreePointIs.push_back(ui_size(PointList));
-				PointStateIs.push_back(
-				    nX); // assign start index of this point's states
-				nX += 6; // add 6 state variables for each point
 			} else {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "Unrecognized point type '" << let1 << "'" << endl;
@@ -1110,7 +1105,7 @@ moordyn::MoorDyn::ReadInFile()
 			// Note - this is not in MD-F
 			if (r0[2] < -env->WtrDpth) {
 				env->WtrDpth = -r0[2];
-				LOGWRN << "\t Water depth set to point " << PointList.size() << " z position because point was specified below the seabed" << endl;
+				LOGWRN << "\t Water depth set to point " << PointList.size()+1 << " z position because point was specified below the seabed" << endl;
 			}
 
 			LOGDBG << "\t'" << number << "'"
@@ -1142,7 +1137,7 @@ moordyn::MoorDyn::ReadInFile()
 
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
-			Rod* obj = readRod(in_txt[i]);
+			Rod* obj = readRod(in_txt[i], i);
 			RodList.push_back(obj);
 
 			i++;
@@ -1162,7 +1157,7 @@ moordyn::MoorDyn::ReadInFile()
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 7) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "7 fields are required, but only " << entries.size()
@@ -1173,7 +1168,7 @@ moordyn::MoorDyn::ReadInFile()
 			int number = atoi(entries[0].c_str());
 			string type = entries[1];
 			double UnstrLen = atof(entries[4].c_str());
-			int NumSegs = atoi(entries[5].c_str()); // addition vs. MAP
+			int NumSegs = atoi(entries[5].c_str());
 			string outchannels = entries[6];
 
 			int TypeNum = -1;
@@ -1182,7 +1177,7 @@ moordyn::MoorDyn::ReadInFile()
 					TypeNum = J;
 			}
 			if (TypeNum == -1) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "Unrecognized line type " << type << endl;
@@ -1191,7 +1186,7 @@ moordyn::MoorDyn::ReadInFile()
 
 			// Make the output file (if queried)
 			if ((outchannels.size() > 0) &&
-			    (strcspn(outchannels.c_str(), "pvUDctsd") <
+			    (strcspn(outchannels.c_str(), "pvUDVKctsd") <
 			     strlen(outchannels.c_str()))) {
 				// if 1+ output flag chars are given and they're valid
 				stringstream oname;
@@ -1216,12 +1211,9 @@ moordyn::MoorDyn::ReadInFile()
 			           NumSegs,
 			           env,
 			           outfiles.back(),
-			           outchannels);
+			           outchannels,
+					   dtM0);
 			LineList.push_back(obj);
-			LineStateIs.push_back(
-			    nX);                 // assign start index of this Line's states
-			nX += 6 * (NumSegs - 1); // add 6 state variables for each
-			                         // internal node of this line
 
 			for (unsigned int I = 0; I < 2; I++) {
 				const EndPoints end_point = I == 0 ? ENDPOINT_A : ENDPOINT_B;
@@ -1231,7 +1223,7 @@ moordyn::MoorDyn::ReadInFile()
 				    entries[2 + I], let1, num1, let2, num2, let3);
 
 				if (num1.empty()) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "No number provided for the 1st point index"
@@ -1242,8 +1234,8 @@ moordyn::MoorDyn::ReadInFile()
 
 				if (str::isOneOf(let1, { "R", "ROD" })) {
 					if (!id || id > RodList.size()) {
-						LOGERR << "Error in " << _filepath << ":" << i + 1
-						       << "..." << endl
+						LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
+						       << endl
 						       << "'" << in_txt[i] << "'" << endl
 						       << "There are not " << id << " rods" << endl;
 						return MOORDYN_INVALID_INPUT;
@@ -1253,8 +1245,8 @@ moordyn::MoorDyn::ReadInFile()
 					else if (let2 == "B")
 						RodList[id - 1]->addLine(obj, end_point, ENDPOINT_B);
 					else {
-						LOGERR << "Error in " << _filepath << ":" << i + 1
-						       << "..." << endl
+						LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
+						       << endl
 						       << "'" << in_txt[i] << "'" << endl
 						       << "Rod end (A or B) must be specified" << endl;
 						return MOORDYN_INVALID_INPUT;
@@ -1262,15 +1254,15 @@ moordyn::MoorDyn::ReadInFile()
 				} else if (let1.empty() ||
 				           str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
 					if (!id || id > PointList.size()) {
-						LOGERR << "Error in " << _filepath << ":" << i + 1
-						       << "..." << endl
+						LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
+						       << endl
 						       << "'" << in_txt[i] << "'" << endl
 						       << "There are not " << id << " points" << endl;
 						return MOORDYN_INVALID_INPUT;
 					}
 					PointList[id - 1]->addLine(obj, end_point);
 				} else {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "Unrecognized point type " << let1 << endl;
@@ -1289,7 +1281,7 @@ moordyn::MoorDyn::ReadInFile()
 		while ((in_txt[i].find("---") == string::npos) && (i < (int)in_txt.size())) {
 			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
 			if (entries.size() < 4) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "4 fields are required, but just " << entries.size()
@@ -1308,7 +1300,7 @@ moordyn::MoorDyn::ReadInFile()
 			str::decomposeString(entries[1], let1, num1, let2, num2, let3);
 
 			if (num1.empty()) {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "No number provided for Node Failure" << endl;
@@ -1318,7 +1310,7 @@ moordyn::MoorDyn::ReadInFile()
 			const unsigned int id = atoi(num1.c_str());
 			if (str::isOneOf(let1, { "R", "ROD" })) {
 				if (!id || id > RodList.size()) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "There are not " << id << " rods" << endl;
@@ -1330,7 +1322,7 @@ moordyn::MoorDyn::ReadInFile()
 				else if (let2 == "B")
 					obj->rod_end_point = ENDPOINT_B;
 				else {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "Failure end (A or B) must be specified" << endl;
@@ -1339,7 +1331,7 @@ moordyn::MoorDyn::ReadInFile()
 			} else if (let1.empty() ||
 			           str::isOneOf(let1, { "C", "CON", "P", "POINT" })) {
 				if (!id || id > PointList.size()) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "There are not " << id << " points" << endl;
@@ -1348,7 +1340,7 @@ moordyn::MoorDyn::ReadInFile()
 				obj->point = PointList[id - 1];
 				;
 			} else {
-				LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+				LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 				       << endl
 				       << "'" << in_txt[i] << "'" << endl
 				       << "Unrecognized point type " << let1 << endl;
@@ -1361,7 +1353,7 @@ moordyn::MoorDyn::ReadInFile()
 			for (unsigned int il = 0; il < lineNums.size(); il++) {
 				const unsigned int line_id = atoi(lineNums[il].c_str());
 				if (!line_id || line_id > LineList.size()) {
-					LOGERR << "Error in " << _filepath << ":" << i + 1 << "..."
+					LOGERR << "Error in " << _filepath << " at line " << i +1 << ":"
 					       << endl
 					       << "'" << in_txt[i] << "'" << endl
 					       << "There are not " << line_id << " lines" << endl;
@@ -1681,6 +1673,7 @@ moordyn::MoorDyn::ReadInFile()
 		if (seafloor) {
 			env->WtrDpth = -seafloor->getAverageDepth();
 		}
+		LOGMSG << "Water kinematics for IC gen:" << endl;
 		waves->setup(env, seafloor, _t_integrator, _basepath.c_str());
 		env->WtrDpth = tmp;
 	}
@@ -1750,11 +1743,11 @@ moordyn::MoorDyn::findStartOfSection(vector<string>& in_txt,
 	return i;
 }
 LineProps*
-moordyn::MoorDyn::readLineProps(string inputText)
+moordyn::MoorDyn::readLineProps(string inputText, int lineNum)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
 
-	if (!checkNumberOfEntriesInLine(entries, 10)) {
+	if (!checkNumberOfEntriesInLine(entries, 10, lineNum)) {
 		return nullptr;
 	}
 
@@ -1767,18 +1760,62 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	obj->Can = atof(entries[7].c_str());
 	obj->Cdt = atof(entries[8].c_str());
 	obj->Cat = atof(entries[9].c_str());
+	if (entries.size() == 10) {
+		obj->Cl = 0.0; // If no lift coefficient, disable VIV. For backwards compatability.
+		obj->dF = 0.0;
+		obj->cF = 0.0;
+	} else if (entries.size() == 11) {
+		obj->Cl = atof(entries[10].c_str());
+		obj->dF = 0.08; // set to default Thorsen synchronization range if not provided
+		obj->cF = 0.18; // set to default Thorsen synchronization centering if not provided
+	} else if (entries.size() == 13) {
+		obj->Cl = atof(entries[10].c_str());
+		obj->dF = atof(entries[11].c_str());
+		obj->cF = atof(entries[12].c_str());
+	} else return nullptr;
 
 	moordyn::error_id err;
-	err = read_curve(entries[3].c_str(),
-	                 &(obj->EA),
-	                 &(obj->nEApoints),
-	                 obj->stiffXs,
-	                 obj->stiffYs);
+	vector<string> EA_stuff = moordyn::str::split(entries[3],'|');
+	const int EA_N = EA_stuff.size();
+	if (EA_N == 1) {
+		obj->ElasticMod = 1; // normal case
+	}
+	else if (EA_N==2){
+		obj->ElasticMod = 2; // viscoelastic model, constant dynamic stiffness
+		obj->EA_D = atof(EA_stuff[1].c_str());
+	} else if (EA_N==3){
+		obj->ElasticMod = 3; // viscoelastic model load dependent dynamic stiffness
+		obj->alphaMBL = atof(EA_stuff[1].c_str());
+		obj->vbeta = atof(EA_stuff[2].c_str());
+	} else {
+		LOGERR << "A line type EA entry can have at most 3 (bar-separated) values." << endl;
+		return nullptr;
+	}
+	err = read_curve(EA_stuff[0].c_str(),
+					&(obj->EA),
+					&(obj->nEApoints),
+					obj->stiffXs,
+					obj->stiffYs);
 	if (err)
 		return nullptr;
-	err = read_curve(entries[4].c_str(),
-	                 &(obj->c),
-	                 &(obj->nCpoints),
+
+	vector<string> BA_stuff = moordyn::str::split(entries[4],'|');
+	unsigned int BA_N = BA_stuff.size();
+	if (BA_N > EA_N) {
+		LOGERR << "A line type BA entry cannot have more (bar-separated) values than its EA entry." << endl;
+		return nullptr;
+	} else if (BA_N == 2){
+		obj->BA_D = atof(BA_stuff[1].c_str());
+	} else if (obj->ElasticMod>1){
+		LOGMSG << "Message: viscoelastic model being used with zero damping on the dynamic stiffness." << endl;	
+		obj->BA_D = 0.0;
+	} else if (BA_N > 2) {
+		LOGERR << "A line type BA entry can have at most 2 (bar-separated) values." << endl;
+		return nullptr;
+	}
+	err = read_curve(BA_stuff[0].c_str(),
+	                 &(obj->BA),
+	                 &(obj->nBApoints),
 	                 obj->dampXs,
 	                 obj->dampYs);
 	if (err)
@@ -1798,15 +1835,16 @@ moordyn::MoorDyn::readLineProps(string inputText)
 	       << "\t\tCdn : " << obj->Cdn << endl
 	       << "\t\tCan : " << obj->Can << endl
 	       << "\t\tCdt : " << obj->Cdt << endl
-	       << "\t\tCat : " << obj->Cat << endl;
+	       << "\t\tCat : " << obj->Cat << endl
+		   << "\t\tCl : " << obj->Cat << endl;
 	return obj;
 }
 
 RodProps*
-moordyn::MoorDyn::readRodProps(string inputText)
+moordyn::MoorDyn::readRodProps(string inputText, int lineNum)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
-	if (!checkNumberOfEntriesInLine(entries, 7)) {
+	if (!checkNumberOfEntriesInLine(entries, 7, lineNum)) {
 		return nullptr;
 	}
 
@@ -1833,11 +1871,11 @@ moordyn::MoorDyn::readRodProps(string inputText)
 }
 
 Body*
-moordyn::MoorDyn::readBody(string inputText)
+moordyn::MoorDyn::readBody(string inputText, int lineNum)
 {
 	vector<string> entries = moordyn::str::split(inputText, ' ');
-	if (!checkNumberOfEntriesInLine(entries, 14)) {
-		LOGERR << "Error in " << _filepath << ":" << '\n';
+	if (!checkNumberOfEntriesInLine(entries, 14, lineNum)) {
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":\n";
 		return nullptr;
 	}
 
@@ -1864,7 +1902,7 @@ moordyn::MoorDyn::readBody(string inputText)
 		rCG[1] = atof(entries_rCG[1].c_str());
 		rCG[2] = atof(entries_rCG[2].c_str());
 	} else {
-		LOGERR << "Error in " << _filepath << ":" << endl
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":" << endl
 		       << "'" << inputText << "'" << endl
 		       << "CG entry (col 10) must have 1 or 3 numbers" << endl;
 		return nullptr;
@@ -1881,7 +1919,7 @@ moordyn::MoorDyn::readBody(string inputText)
 		Inert[1] = atof(entries_I[1].c_str());
 		Inert[2] = atof(entries_I[2].c_str());
 	} else {
-		LOGERR << "Error in " << _filepath << endl
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << endl
 		       << "'" << inputText << "'" << endl
 		       << "Inertia entry (col 11) must have 1 or 3 numbers" << endl;
 		return nullptr;
@@ -1910,7 +1948,7 @@ moordyn::MoorDyn::readBody(string inputText)
 			CdA[i] = atof(entries_CdA[i].c_str());
 		}
 	} else {
-		LOGERR << "Error in " << _filepath << endl
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << endl
 		       << "'" << inputText << "'" << endl
 		       << "CdA entry (col 13) must have 1, 2, 3 or 6 numbers" << endl;
 		return nullptr;
@@ -1927,7 +1965,7 @@ moordyn::MoorDyn::readBody(string inputText)
 		Ca[1] = atof(entries_Ca[1].c_str());
 		Ca[2] = atof(entries_Ca[2].c_str());
 	} else {
-		LOGERR << "Error in " << _filepath << endl
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << endl
 		       << "'"
 		       << "'" << endl
 		       << "Ca entry (col 14) must have 1 or 3 numbers" << endl;
@@ -1955,14 +1993,10 @@ moordyn::MoorDyn::readBody(string inputText)
 		FreeBodyIs.push_back(
 		    ui_size(BodyList));    // also add this pinned body to the free
 		                          // list because it is half free
-		BodyStateIs.push_back(nX); // assign start index of this body's states
-		nX += 6;                  // add 6 state variables for each pinned Body
 	} else {
 		// it is free - controlled by MoorDyn
 		type = Body::FREE;
 		FreeBodyIs.push_back(ui_size(BodyList));
-		BodyStateIs.push_back(nX); // assign start index of this body's states
-		nX += 12;                  // add 12 state variables for the body
 	}
 	stringstream oname;
 	oname << _basepath << _basename << "_Body" << number << ".out";
@@ -1983,11 +2017,11 @@ moordyn::MoorDyn::readBody(string inputText)
 }
 
 Rod*
-moordyn::MoorDyn::readRod(string inputText)
+moordyn::MoorDyn::readRod(string inputText, int lineNum)
 {
 
 	vector<string> entries = moordyn::str::split(inputText, ' ');
-	if (!checkNumberOfEntriesInLine(entries, 11)) {
+	if (!checkNumberOfEntriesInLine(entries, 11, lineNum)) {
 		return nullptr;
 	}
 
@@ -2014,11 +2048,9 @@ moordyn::MoorDyn::readRod(string inputText)
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // add this pinned rod to the free
 		                          // list because it is half free
-		RodStateIs.push_back(nX); // assign start index of this rod's states
-		nX += 6;                  // add 6 state variables for each pinned rod
 	} else if (let1 == "BODY") {
 		if (num1.empty()) {
-			LOGERR << "Error in " << _filepath << ":"
+			LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":"
 			       << "'" << inputText << "'" << endl
 			       << "no number provided for Rod " << number
 			       << " Body attachment" << endl;
@@ -2026,7 +2058,7 @@ moordyn::MoorDyn::readRod(string inputText)
 		}
 		unsigned int bodyID = atoi(num1.c_str());
 		if (!bodyID || (bodyID > BodyList.size())) {
-			LOGERR << "Error in " << _filepath << ":"
+			LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":"
 			       << "'" << inputText << "'" << endl
 			       << "There is not " << bodyID << " bodies" << endl;
 			return nullptr;
@@ -2038,8 +2070,6 @@ moordyn::MoorDyn::readRod(string inputText)
 			FreeRodIs.push_back(
 			    ui_size(RodList));    // add this pinned rod to the free
 			                          // list because it is half free
-			RodStateIs.push_back(nX); // assign start index of this rod's states
-			nX += 6; // add 6 state variables for each pinned rod
 		} else {
 			type = Rod::FIXED;
 		}
@@ -2056,16 +2086,12 @@ moordyn::MoorDyn::readRod(string inputText)
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // also add this pinned rod to the free
 		                          // list because it is half free
-		RodStateIs.push_back(nX); // assign start index of this rod's states
-		nX += 6;                  // add 6 state variables for each pinned rod
 	} else if (str::isOneOf(let1, { "POINT", "CON", "FREE" })) {
 		type = Rod::FREE;
 		FreeRodIs.push_back(
 		    ui_size(RodList));    // add this free rod to the free list
-		RodStateIs.push_back(nX); // assign start index of this rod's states
-		nX += 12;                 // add 12 state variables for each free rod
 	} else {
-		LOGERR << "Error in " << _filepath << ":"
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":"
 		       << "'" << inputText << "'" << endl
 		       << "Unrecognized point type '" << let1 << "'" << endl;
 		return nullptr;
@@ -2077,7 +2103,7 @@ moordyn::MoorDyn::readRod(string inputText)
 			TypeNum = J;
 	}
 	if (TypeNum == -1) {
-		LOGERR << "Error in " << _filepath << ":"
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":"
 		       << "'" << inputText << "'" << endl
 		       << "Unrecognized rod type " << RodType << endl;
 		return nullptr;
@@ -2246,11 +2272,11 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 
 bool
 moordyn::MoorDyn::checkNumberOfEntriesInLine(vector<string> entries,
-                                             int supposedNumberOfEntries)
+                                             int supposedNumberOfEntries, int lineNum)
 {
 	if ((int)entries.size() < supposedNumberOfEntries) {
-		LOGERR << "Error in " << _filepath << ":" << endl
-		       << supposedNumberOfEntries << " fields are required, but just "
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1 << ":" << endl
+		       << supposedNumberOfEntries << " fields minimum are required, but just "
 		       << entries.size() << " are provided" << endl;
 		return false;
 	}
@@ -2282,12 +2308,8 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	const real Ca = 0.0;
 	const Point::types type = Point::FREE;
 
-	nX += 6; // add 6 state variables for each point
-
 	// add point to list of free ones and add states for it
 	FreePointIs.push_back(ui_size(PointList));
-	// assign start index of this point's states
-	PointStateIs.push_back(nX);
 
 	// now make Point object!
 	Point* obj = new Point(_log, PointList.size());

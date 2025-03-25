@@ -371,6 +371,39 @@ class SchemeBase : public Scheme
 		_calc_mask.lines.push_back(true);
 	}
 
+	// virtual void AddLine(Line* obj)
+	// {
+	// 	try {
+	// 		TimeScheme::AddLine(obj);
+	// 	} catch (...) {
+	// 		throw;
+	// 	}
+	// 	// Build up the states and states derivatives
+	// 	unsigned int n = obj->getN() - 1;
+	// 	LineState state;
+	// 	LineState mstate; // misc state stuff
+	// 	state.pos.assign(n, vec::Zero());
+	// 	state.vel.assign(n, vec::Zero());
+	// 	mstate.pos.assign(n+2, vec::Zero());
+	// 	mstate.vel.assign(n+2, vec::Zero());
+	// 	for (unsigned int i = 0; i < r.size(); i++) {
+	// 		r[i].lines.push_back(state);
+	// 		r[i].misc.push_back(mstate);
+	// 	}
+	// 	DLineStateDt dstate;
+	// 	DLineStateDt mdstate; // misc state stuff
+	// 	dstate.vel.assign(n, vec::Zero());
+	// 	dstate.acc.assign(n, vec::Zero());
+	// 	mdstate.vel.assign(n+2, vec::Zero());
+	// 	mdstate.acc.assign(n+2, vec::Zero());
+	// 	for (unsigned int i = 0; i < rd.size(); i++) {
+	// 		rd[i].lines.push_back(dstate);
+	// 		rd[i].misc.push_back(mdstate);
+	// 	}
+	// 	// Add the mask value
+	// 	_calc_mask.lines.push_back(true);
+	// }
+	
 	/** @brief Remove a line
 	 * @param obj The line
 	 * @return The index of the removed entity
@@ -392,6 +425,26 @@ class SchemeBase : public Scheme
 		_calc_mask.lines.erase(_calc_mask.lines.begin() + i);
 		return i;
 	}
+
+	// virtual unsigned int RemoveLine(Line* obj)
+	// {
+	// 	unsigned int i;
+	// 	try {
+	// 		i = TimeScheme::RemoveLine(obj);
+	// 	} catch (...) {
+	// 		throw;
+	// 	}
+	// 	for (unsigned int i = 0; i < r.size(); i++) {
+	// 		r[i].lines.erase(r[i].lines.begin() + i);
+	// 		r[i].misc.erase(r[i].misc.begin() + i);
+	// 	}
+	// 	for (unsigned int i = 0; i < rd.size(); i++) {
+	// 		rd[i].lines.erase(rd[i].lines.begin() + i);
+	// 		rd[i].misc.erase(rd[i].misc.begin() + i);
+	// 	}
+	// 	_calc_mask.lines.erase(_calc_mask.lines.begin() + i);
+	// 	return i;
+	// }
 
 	/** @brief Add a point
 	 * @param obj The point
@@ -845,9 +898,9 @@ class StationaryScheme final : public SchemeBase<2, 1>
 	 * considered as a single entry
 	 */
 	inline size_t NStates() const {
-		size_t n = bodies.size() + rods.size() + points.size();
+		size_t n = bodies.size() + rods.size() + points.size(); // one row (state) per object here. <objects>.size() gives the length of the list, i.e. the number of that kind of object
 		for (size_t i = 0; i < lines.size(); i++)
-			n += lines[i]->getN() - 1;
+			n += lines[i]->stateN();
 		return n;
 	}
 

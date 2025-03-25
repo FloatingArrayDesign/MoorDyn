@@ -35,6 +35,7 @@ set(CPP_TESTS
     seafloor
     wavekin
     wavekin_7
+    viv
 )
 
 set(CATCH2_TESTS 

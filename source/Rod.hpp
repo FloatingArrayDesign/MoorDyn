@@ -471,23 +471,13 @@ class DECLDIR Rod final : public Instance, public SuperCFL
 	 * [rate of change of u/v/w coordinates of unit vector pointing toward end
 	 * B, then u/v/w coordinates of unit vector pointing toward end B]
 	 *
-	 * @param pos The position and direction (position is ignored in pinned
-	 * rods)
-	 * @param vel The linear and angular velocity (linear one is ignored in
-	 * pinned rods)
+	 * @param r The rod states
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
 	 * @{
 	 */
-	void setState(XYZQuat pos, vec6 vel);
 
-	inline void setState(const InstanceStateVarView r)
-	{
-		setState(XYZQuat::fromVec7(r.row(0).head<7>()), r.row(0).tail<6>());
-	}
-	/**
-	 * @}
-	 */
+	void setState(const InstanceStateVarView r);
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps

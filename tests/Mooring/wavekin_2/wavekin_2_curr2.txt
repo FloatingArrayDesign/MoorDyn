@@ -27,4 +27,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 0.5           FrictionCoefficient  general bottom friction coefficient, as a start (-)
 2             WaveKin              the wave elevations are provided in a grid (-)
 2             Currents             the water currents are provided in a grid (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

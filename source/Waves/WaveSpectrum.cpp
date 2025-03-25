@@ -72,20 +72,20 @@ DiscreteWaveSpectrum::interpEvenlySpaced()
 moordyn::waves::DiscreteWaveSpectrum
 spectrumFromFile(const std::string& path, moordyn::Log* _log)
 {
-	LOGMSG << "reading spectrum from file: " << std::filesystem::absolute(path)
+	LOGMSG << "   reading spectrum from file: " << std::filesystem::absolute(path)
 	       << endl;
 	vector<string> lines;
 	try {
 		lines = moordyn::fileIO::fileToLines(path);
 	} catch (moordyn::input_file_error& err) {
 		std::stringstream ss;
-		ss << "Waves::setup failed to read wave_frequencies file: "
+		ss << "   Waves::setup failed to read wave_frequencies file: "
 		   << err.what();
 		throw input_file_error(ss.str().c_str());
 	}
 
 	if (lines.size() < 2) {
-		LOGERR << "At least 2 frequency components shall be provided in '"
+		LOGERR << "   At least 2 frequency components shall be provided in '"
 		       << path << "'" << endl;
 		throw moordyn::input_file_error("Invalid file format");
 	}
@@ -97,7 +97,7 @@ spectrumFromFile(const std::string& path, moordyn::Log* _log)
 	for (auto line : lines) {
 		vector<string> entries = moordyn::str::split(line);
 		if (entries.size() < 3) {
-			LOGERR << "The file '" << path << "' should have 3 or 4 columns"
+			LOGERR << "   The file '" << path << "' should have 3 or 4 columns"
 			       << endl;
 			throw moordyn::input_file_error("Invalid file format");
 		}
@@ -108,7 +108,7 @@ spectrumFromFile(const std::string& path, moordyn::Log* _log)
 			real i = stod(entries[2]);
 			real beta = entries.size() == 4 ? stod(entries[3]) : 0.0;
 			if (beta > 2 * pi || beta < -2 * pi) {
-				LOGERR << "Cannot specify a wave frequency with a direction of "
+				LOGERR << "   Cannot specify a wave frequency with a direction of "
 				          "great than 2pi or less than -2pi. The value should "
 				          "be in radians."
 				       << endl;
@@ -118,7 +118,7 @@ spectrumFromFile(const std::string& path, moordyn::Log* _log)
 			spectrum.addFreqComp(freq, r, i, beta);
 			// waveelevs.push_back(r + i1 * i);
 		} catch (std::exception& e) {
-			LOGERR << "Tried to parse the line \"" << line
+			LOGERR << "   Tried to parse the line \"" << line
 			       << "\" as 3 floats, but failed:" << e.what() << endl;
 			throw moordyn::input_file_error("Invalid file format");
 		}
