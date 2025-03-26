@@ -40,101 +40,106 @@ extern "C"
 {
 #endif
 
-	/** @addtogroup new_c_api
-	 *  @{
-	 */
+/** @addtogroup new_c_api
+ *  @{
+ */
 
-	/// A mooring line instance
-	typedef struct __MoorDynRod* MoorDynRod;
+/// A mooring line instance
+typedef struct __MoorDynRod* MoorDynRod;
 
-	/** @brief Get the line identifier
-	 * @param l The Moordyn rod
-	 * @param id The output id
-	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
-	 * MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodID(MoorDynRod l, int* id);
+/** @brief Get the line identifier
+ * @param l The Moordyn rod
+ * @param id The output id
+ * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+ * MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodID(MoorDynRod l, int* id);
 
-	/** @brief Get the line type
-	 * @param l The Moordyn rod
-	 * @param t The output type
-	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
-	 * MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodType(MoorDynRod l, int* t);
+/** @brief Get the line type
+ * @param l The Moordyn rod
+ * @param t The output type
+ * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+ * MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodType(MoorDynRod l, int* t);
 
-	/** @brief Get the net force acting on the rod, as well as the moment at
-	 * end point A if the node is not pinned
-	 * @param l The Moordyn rod
-	 * @param f The output force
-	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
-	 * MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodForce(MoorDynRod l, double f[6]);
+/** @brief Get the net force acting on the rod, as well as the moment at
+ * end point A if the node is not pinned
+ * @param l The Moordyn rod
+ * @param f The output force
+ * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+ * MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodForce(MoorDynRod l, double f[6]);
 
-	/** @brief Get the total rod mass matrix
-	 * @param l The Moordyn rod
-	 * @param m The output mass matrix
-	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
-	 * MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodM(MoorDynRod l, double m[6][6]);
+/** @brief Get the total rod mass matrix
+ * @param l The Moordyn rod
+ * @param m The output mass matrix
+ * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+ * MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodM(MoorDynRod l, double m[6][6]);
 
-	/** @brief Get the line number of segments
-	 *
-	 * The number of nodes is equal to this value plus 1
-	 * @param l The Moordyn rod
-	 * @param n The output number of nodes
-	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
-	 * otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodN(MoorDynRod l, unsigned int* n);
+/** @brief Get the line number of segments
+ *
+ * The number of nodes is equal to this value plus 1
+ * @param l The Moordyn rod
+ * @param n The output number of nodes
+ * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+ * otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodN(MoorDynRod l, unsigned int* n);
 
-	/** @brief Get the line number of nodes
-	 * @param l The Moordyn rod
-	 * @param n The output number of nodes
-	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
-	 * otherwise
-	 * @see MoorDyn_GetRodN()
-	 */
-	int DECLDIR MoorDyn_GetRodNumberNodes(MoorDynRod l, unsigned int* n);
+/** @brief Get the line number of nodes
+ * @param l The Moordyn rod
+ * @param n The output number of nodes
+ * @return MOORDYN_INVALID_VALUE if a NULL line is provided, MOORDYN_SUCCESS
+ * otherwise
+ * @see MoorDyn_GetRodN()
+ */
+int DECLDIR
+MoorDyn_GetRodNumberNodes(MoorDynRod l, unsigned int* n);
 
-	/** @brief Get a rod node position
-	 * @param l The Moordyn rod
-	 * @param i The node index
-	 * @param pos The output node position
-	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
-	 * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodNodePos(MoorDynRod l,
-	                                  unsigned int i,
-	                                  double pos[3]);
+/** @brief Get a rod node position
+ * @param l The Moordyn rod
+ * @param i The node index
+ * @param pos The output node position
+ * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
+ * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodNodePos(MoorDynRod l, unsigned int i, double pos[3]);
 
-	/** @brief Get a rod node velocity
-	 * @param l The Moordyn rod
-	 * @param i The node index
-	 * @param vel The output node velocity
-	 * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
-	 * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetRodNodeVel(MoorDynRod l,
-	                                  unsigned int i,
-	                                  double vel[3]);
+/** @brief Get a rod node velocity
+ * @param l The Moordyn rod
+ * @param i The node index
+ * @param vel The output node velocity
+ * @return MOORDYN_INVALID_VALUE if a NULL line is provided or if the node
+ * index is bigger than the number of segments, MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetRodNodeVel(MoorDynRod l, unsigned int i, double vel[3]);
 
-	/** @brief Save the line to a VTK (.vtp) file
-	 * @param l The Moordyn rod
-	 * @param filename The output maximum tension module
-	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
-	 * otherwise
-	 * @note If MoorDyn has been built without VTK support, this function will
-	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
-	 * anyway
-	 */
-	int DECLDIR MoorDyn_SaveRodVTK(MoorDynRod l, const char* filename);
+/** @brief Save the line to a VTK (.vtp) file
+ * @param l The Moordyn rod
+ * @param filename The output maximum tension module
+ * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+ * otherwise
+ * @note If MoorDyn has been built without VTK support, this function will
+ * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+ * anyway
+ */
+int DECLDIR
+MoorDyn_SaveRodVTK(MoorDynRod l, const char* filename);
 
-	/**
-	 * @}
-	 */
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

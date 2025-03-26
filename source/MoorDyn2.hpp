@@ -128,8 +128,8 @@ class MoorDyn final : public io::IO
 
 	/**
 	 * @brief Set whether console and file output is disabled.
-	 * 
-	 * @param disable 
+	 *
+	 * @param disable
 	 */
 	inline void SetDisableOutput(bool disable) { disableOutput = disable; }
 
@@ -332,7 +332,8 @@ class MoorDyn final : public io::IO
 	 * @param dt The model time step
 	 * @note The CFL will be changed accordingly
 	 */
-	inline void SetDt(real dt) {
+	inline void SetDt(real dt)
+	{
 		this->dtM0 = dt;
 		this->cfl = 0.0;
 		for (auto obj : LineList)
@@ -354,7 +355,8 @@ class MoorDyn final : public io::IO
 	 * @param cfl The CFL
 	 * @note The time step will be changed accordingly
 	 */
-	inline void SetCFL(real cfl) {
+	inline void SetCFL(real cfl)
+	{
 		this->cfl = cfl;
 		this->dtM0 = (std::numeric_limits<real>::max)();
 		for (auto obj : LineList)
@@ -375,8 +377,10 @@ class MoorDyn final : public io::IO
 	/** @brief Set the current time integrator
 	 * @return The time integrator
 	 */
-	inline void SetTimeScheme(time::Scheme* tscheme) {
-		if (_t_integrator) delete _t_integrator;
+	inline void SetTimeScheme(time::Scheme* tscheme)
+	{
+		if (_t_integrator)
+			delete _t_integrator;
 		_t_integrator = tscheme;
 		_t_integrator->SetGround(GroundBody);
 		for (auto obj : BodyList)
@@ -475,7 +479,8 @@ class MoorDyn final : public io::IO
 	 * @param lineNum the file line number for error messages
 	 */
 	bool checkNumberOfEntriesInLine(vector<string> entries,
-	                                int supposedNumberOfEntries, int lineNum);
+	                                int supposedNumberOfEntries,
+	                                int lineNum);
 
 	/** @brief Compute an initial condition using the stationary solver
 	 * @see ::ICgenDynamic
@@ -722,7 +727,7 @@ class MoorDyn final : public io::IO
 		while (f.good()) {
 			string fline;
 			getline(f, fline);
-			if (i>2) { // skip first three lines as headers 
+			if (i > 2) { // skip first three lines as headers
 				moordyn::str::rtrim(fline);
 				flines.push_back(fline);
 			}
@@ -749,7 +754,7 @@ class MoorDyn final : public io::IO
 			LOGDBG << "(" << x.back() << ", " << y.back() << ")" << std::endl;
 		}
 
-		LOGMSG << (i-3) << " lines of curve successfully loaded" << std::endl;
+		LOGMSG << (i - 3) << " lines of curve successfully loaded" << std::endl;
 		return MOORDYN_SUCCESS;
 	}
 

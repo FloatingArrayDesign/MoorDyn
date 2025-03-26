@@ -438,8 +438,8 @@ constructWaveGridElevationData(const std::string& folder,
 	for (auto line : lines) {
 		vector<string> entries = moordyn::str::split(line);
 		if (entries.size() < 2) {
-			LOGERR << "   The file '" << WaveFilename << "' should have 2 columns"
-			       << endl;
+			LOGERR << "   The file '" << WaveFilename
+			       << "' should have 2 columns" << endl;
 			throw moordyn::input_file_error("Invalid file format");
 		}
 		wavetimes.push_back(stod(entries[0]));
@@ -453,8 +453,8 @@ constructWaveGridElevationData(const std::string& folder,
 	// samples the 1 extra is for the point at zero, [0.0, 1.0, 2.0] is 3
 	// points even though 2.0/1.0 = 2
 	unsigned int nt = floor(wavetimes.back() / dtWave) + 1;
-	LOGDBG << "   Number of wave time samples = " << nt << "(" << wavetimes.size()
-	       << " samples provided in the file)" << endl;
+	LOGDBG << "   Number of wave time samples = " << nt << "("
+	       << wavetimes.size() << " samples provided in the file)" << endl;
 
 	vector<real> waveTime(nt, 0.0);
 	vector<real> waveElev(nt, 0.0);
@@ -555,7 +555,8 @@ constructSteadyCurrentGrid(const std::string& folder,
 	try {
 		lines = moordyn::fileIO::fileToLines(CurrentsFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'"
+		       << endl;
 		std::stringstream ss;
 		ss << "constructSteadyCurrentGrid failed to read currents_profile.txt "
 		      "file: "
@@ -631,7 +632,8 @@ constructDynamicCurrentGrid(const std::string& folder,
 	try {
 		lines = moordyn::fileIO::fileToLines(CurrentsFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'"
+		       << endl;
 		std::stringstream ss;
 		ss << "   Waves::setup failed to read currents_profile_dynamic.txt "
 		      "file: "
@@ -738,15 +740,16 @@ construct4DCurrentGrid(const std::string& folder,
 {
 
 	const string CurrentsFilename = folder + "current_profile_4d.txt";
-	LOGMSG << "   Reading 4d currents dynamic profile from '" << CurrentsFilename
-	       << "'..." << endl;
+	LOGMSG << "   Reading 4d currents dynamic profile from '"
+	       << CurrentsFilename << "'..." << endl;
 
 	vector<string> lines;
 
 	try {
 		lines = moordyn::fileIO::fileToLines(CurrentsFilename);
 	} catch (moordyn::input_file_error& err) {
-		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'" << endl;
+		LOGERR << "   Cannot read the file '" << CurrentsFilename << "'"
+		       << endl;
 		std::stringstream ss;
 		ss << "   Waves::setup failed to read currents_profile_4d.txt "
 		      "file: "

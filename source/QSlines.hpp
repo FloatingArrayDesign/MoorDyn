@@ -111,13 +111,14 @@ Catenary(T XF,
 
 	// Checking inverted points at line ends: from catenary.py in MoorPy
 	bool reverseFlag;
-	if ( ZF <  0.0 ){ // True if the fairlead has passed below its anchor
-        ZF = -ZF;
-        reverseFlag = true;
+	if (ZF < 0.0) { // True if the fairlead has passed below its anchor
+		ZF = -ZF;
+		reverseFlag = true;
 		if (longwinded == 1)
-     		cout << " Warning from catenary: "
-			 	 << "Anchor point is above the fairlead point" << endl;
-    } else reverseFlag = false;
+			cout << " Warning from catenary: "
+			     << "Anchor point is above the fairlead point" << endl;
+	} else
+		reverseFlag = false;
 
 	// Maximum stretched length of the line with seabed interaction beyond which
 	// the line would have to double-back on itself; here the line forms an "L"
@@ -585,7 +586,7 @@ Catenary(T XF,
 		reverse(X.begin(), X.end());
 		reverse(Z.begin(), Z.end());
 		reverse(Te.begin(), Te.end());
-		for (unsigned int I = 0; I < Nnodes; I++){
+		for (unsigned int I = 0; I < Nnodes; I++) {
 			s[I] = L - s[I];
 			X[I] = XF - X[I];
 			Z[I] = Z[I] - ZF;

@@ -106,6 +106,7 @@ class DECLDIR Instance : public io::IO
 	 * @return The dimension of the state variable
 	 */
 	virtual inline const size_t stateDims() const { return 6; }
+
   private:
 	/// Unique identifier of this instance
 	size_t _id;
@@ -114,6 +115,7 @@ class DECLDIR Instance : public io::IO
 /** @brief Reset the instances Ids, so they will be assigned again starting
  * from 0
  */
-void reset_instance_ids();
+void
+reset_instance_ids();
 
 } // ::moordyn

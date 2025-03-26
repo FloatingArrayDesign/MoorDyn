@@ -72,8 +72,8 @@ DiscreteWaveSpectrum::interpEvenlySpaced()
 moordyn::waves::DiscreteWaveSpectrum
 spectrumFromFile(const std::string& path, moordyn::Log* _log)
 {
-	LOGMSG << "   reading spectrum from file: " << std::filesystem::absolute(path)
-	       << endl;
+	LOGMSG << "   reading spectrum from file: "
+	       << std::filesystem::absolute(path) << endl;
 	vector<string> lines;
 	try {
 		lines = moordyn::fileIO::fileToLines(path);
@@ -108,10 +108,11 @@ spectrumFromFile(const std::string& path, moordyn::Log* _log)
 			real i = stod(entries[2]);
 			real beta = entries.size() == 4 ? stod(entries[3]) : 0.0;
 			if (beta > 2 * pi || beta < -2 * pi) {
-				LOGERR << "   Cannot specify a wave frequency with a direction of "
-				          "great than 2pi or less than -2pi. The value should "
-				          "be in radians."
-				       << endl;
+				LOGERR
+				    << "   Cannot specify a wave frequency with a direction of "
+				       "great than 2pi or less than -2pi. The value should "
+				       "be in radians."
+				    << endl;
 				throw moordyn::input_file_error(
 				    "Invalid wave_frequencies.txt file");
 			}

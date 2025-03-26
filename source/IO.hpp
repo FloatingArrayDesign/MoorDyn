@@ -212,7 +212,7 @@ class DECLDIR IO : public LogUser
 	 * @return The packed list
 	 */
 	inline std::vector<uint64_t> Serialize(
-		const Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>& l)
+	    const Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>& l)
 	{
 		std::vector<uint64_t> data;
 		const uint64_t n = l.rows();
@@ -350,8 +350,8 @@ class DECLDIR IO : public LogUser
 	 * @return The new pointer to the remaining data to be read
 	 */
 	uint64_t* Deserialize(
-		const uint64_t* in,
-		Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>& out)
+	    const uint64_t* in,
+	    Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>& out)
 	{
 		uint64_t* remaining;
 		uint64_t n, m;

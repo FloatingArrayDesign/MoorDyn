@@ -44,7 +44,9 @@
 
 // NOTE: this is largely built on the pendulum test framework
 
-#define TOL 1.0e-2 // absolute tolerance. In setting this up, max error was 0.008069, but this can vary slightly with every simulation
+#define TOL                                                                    \
+	1.0e-2 // absolute tolerance. In setting this up, max error was 0.008069,
+	       // but this can vary slightly with every simulation
 
 bool
 compare(double v1, double v2, double tol)
@@ -94,19 +96,23 @@ VIV()
 		return false;
 	}
 
-    // get the moordyn line object
-    const MoorDynLine line1 = MoorDyn_GetLine(system, 1);
-    
+	// get the moordyn line object
+	const MoorDynLine line1 = MoorDyn_GetLine(system, 1);
 
-	const double T = 1/(2*1.04); // Target VIV period, fairten frequency is 2x target CF strain frequency of 1.04 Hz. 
-    double dt = 0.0001; // time step (same as dtM)
-	double t = 0.0; // time
-    double ten = 0.0; // tension (initialize as zero)
+	const double T =
+	    1 / (2 * 1.04); // Target VIV period, fairten frequency is 2x target CF
+	                    // strain frequency of 1.04 Hz.
+	double dt = 0.0001; // time step (same as dtM)
+	double t = 0.0;     // time
+	double ten = 0.0;   // tension (initialize as zero)
 	std::vector<double> ten_peaks = { 0.0 }; // tension peaks?
-    std::vector<double> peak_times = {}; // tracking the time of peaks (empty to start, will be filled in for every peak)
-	double d_peak = 0.0; // last peak tracker. For checking if there is a change in the peak
-	
-    while (t < 15) { // run for 15 seconds
+	std::vector<double>
+	    peak_times = {}; // tracking the time of peaks (empty to start, will be
+	                     // filled in for every peak)
+	double d_peak =
+	    0.0; // last peak tracker. For checking if there is a change in the peak
+
+	while (t < 15) { // run for 15 seconds
 
 		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
 		if (err != MOORDYN_SUCCESS) {
@@ -119,27 +125,39 @@ VIV()
 			cerr << "Failure getting the fairlead tension: " << err << endl;
 			return false;
 		}
-		
-        if (t > 10) { // only check period after 10 seconds. Before then, there isn't complete lock in
-            // check for peaks in tension. These are used to determine the period
-            const double d = fabs(ten - ten_peaks.back()); // tension delta
-            if (d > d_peak)
-                d_peak = d;
-            else {
-                ten_peaks.push_back(ten);
-                peak_times.push_back(t);
-                d_peak = 0.0;
-            }
-        }
+
+		if (t > 10) { // only check period after 10 seconds. Before then, there
+			          // isn't complete lock in
+			// check for peaks in tension. These are used to determine the
+			// period
+			const double d = fabs(ten - ten_peaks.back()); // tension delta
+			if (d > d_peak)
+				d_peak = d;
+			else {
+				ten_peaks.push_back(ten);
+				peak_times.push_back(t);
+				d_peak = 0.0;
+			}
+		}
 	}
 
-    if (peak_times.size() == 0) cerr << "No peaks detected in fairten signal" << endl; // if no peaks something is wrong, like viv model was broken or disabled
+	if (peak_times.size() == 0)
+		cerr << "No peaks detected in fairten signal"
+		     << endl; // if no peaks something is wrong, like viv model was
+		              // broken or disabled
 
-    // Check period is correct
+	// Check period is correct
 	for (unsigned int i = 2; i < peak_times.size(); i++) {
-        cout << "Target Period: " << T << " s. Calculated period: " << peak_times[i]-peak_times[i-2] << " s" << endl;
-        // check that peak_times[i]-peak_times[i-2] is within TOL of T
-		CHECK_VALUE("Period", T, peak_times[i]-peak_times[i-2], TOL, peak_times[i]); // note that peak_times[i]-peak_times[i-1] would be a half period
+		cout << "Target Period: " << T
+		     << " s. Calculated period: " << peak_times[i] - peak_times[i - 2]
+		     << " s" << endl;
+		// check that peak_times[i]-peak_times[i-2] is within TOL of T
+		CHECK_VALUE("Period",
+		            T,
+		            peak_times[i] - peak_times[i - 2],
+		            TOL,
+		            peak_times[i]); // note that peak_times[i]-peak_times[i-1]
+		                            // would be a half period
 	}
 
 	err = MoorDyn_Close(system);

@@ -300,8 +300,9 @@ Waves::setup(EnvCondRef env_in,
 			       << "   read in dynamic current profile, node approach "
 			       << "   (current_profile_dynamic.txt)" << endl;
 		else if (current_mode == waves::CURRENTS_4D)
-			LOGDBG << "   Current only: option 4D - read in current profile, grid "
-			       << "   approach (current_profile_4d.txt" << endl;
+			LOGDBG
+			    << "   Current only: option 4D - read in current profile, grid "
+			    << "   approach (current_profile_4d.txt" << endl;
 		else {
 			LOGDBG << "   Invalid current input settings (must be 0-4)" << endl;
 			throw moordyn::invalid_value_error("Invalid settings");
@@ -315,29 +316,30 @@ Waves::setup(EnvCondRef env_in,
 			       << "   set from inputted wave elevation FFT, grid approach "
 			       << "   (NOT IMPLEMENTED YET)" << endl;
 		else if (wave_mode == waves::WAVES_GRID)
-			LOGDBG
-			    << "   Waves only: option 3 - "
-			    << "   set from inputted wave elevation time series, grid approach"
-			    << endl;
+			LOGDBG << "   Waves only: option 3 - "
+			       << "   set from inputted wave elevation time series, grid "
+			          "approach"
+			       << endl;
 		else if (wave_mode == waves::WAVES_FFT_GRID)
 			LOGDBG << "   Waves only: option TBD4 - "
 			       << "   set from inputted wave elevation FFT, node approach "
 			       << "   (NOT IMPLEMENTED YET)" << endl;
 		else if (wave_mode == waves::WAVES_NODE)
-			LOGDBG
-			    << "   Waves only: option TBD5 - "
-			    << "   set from inputted wave elevation time series, node approach"
-			    << endl;
+			LOGDBG << "   Waves only: option TBD5 - "
+			       << "   set from inputted wave elevation time series, node "
+			          "approach"
+			       << endl;
 		else if (wave_mode == waves::WAVES_KIN)
 			LOGDBG << "   Waves only: option TBD6 - "
 			       << "   set from inputted velocity, acceleration, and wave "
 			          "   elevation grid data (TBD)"
 			       << endl;
 		else if (wave_mode == waves::WAVES_SUM_COMPONENTS_NODE)
-			LOGDBG << "   Waves only: option 7 - "
-			       << "   set from inputted wave spectrum, computed at nodes on "
-			          "   update "
-			       << endl;
+			LOGDBG
+			    << "   Waves only: option 7 - "
+			    << "   set from inputted wave spectrum, computed at nodes on "
+			       "   update "
+			    << endl;
 		else {
 			LOGDBG << "   Invald wave kinematics input settings (must be 0-7)"
 			       << endl;
@@ -549,7 +551,8 @@ Waves::addBody(moordyn::Body* body)
 void
 Waves::addPoint(moordyn::Point* point)
 {
-	if (point->pointId == static_cast<size_t>(nodeKin.points.structures.size())) {
+	if (point->pointId ==
+	    static_cast<size_t>(nodeKin.points.structures.size())) {
 		auto num_nodes = 1;
 		genericAdd(point, num_nodes, nodeKin.points);
 		// TODO - only do this when needed, see comment in addLIne

@@ -67,7 +67,9 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class DECLDIR Point final : public Instance, public SuperCFL
+class DECLDIR Point final
+  : public Instance
+  , public SuperCFL
 {
   public:
 	/** @brief Constructor
@@ -359,8 +361,8 @@ class DECLDIR Point final : public Instance, public SuperCFL
 
 	/** @brief Set the state variables
 	 *
-	 * sets Point position and velocity and ends of attached lines ONLY if this Point
-	 * is free, i.e. type = FREE (otherwise shouldn't be called)
+	 * sets Point position and velocity and ends of attached lines ONLY if this
+	 * Point is free, i.e. type = FREE (otherwise shouldn't be called)
 	 * @param pos Position
 	 * @param vel Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
@@ -378,7 +380,10 @@ class DECLDIR Point final : public Instance, public SuperCFL
 	 */
 	inline void setState(const InstanceStateVarView r)
 	{
-		setState(r.row(0).head<3>(), r.row(0).tail<3>()); // TODO: when working on line failures, make this setState call match rods, bodies, and lines structure
+		setState(r.row(0).head<3>(),
+		         r.row(0).tail<3>()); // TODO: when working on line failures,
+		                              // make this setState call match rods,
+		                              // bodies, and lines structure
 	}
 
 	/** @brief Calculate the forces and state derivatives of the point
@@ -469,7 +474,6 @@ class DECLDIR Point final : public Instance, public SuperCFL
 	{
 		return -M * (w.cross(w.cross(this->r - r)));
 	}
-
 };
 
 } // ::moordyn

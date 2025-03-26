@@ -260,22 +260,22 @@ class Scheme : public io::IO
 	 * @param i The index of the state variable to take
 	 * @return The state variable
 	 */
-	virtual moordyn::state::State GetState(unsigned int i=0) = 0;
+	virtual moordyn::state::State GetState(unsigned int i = 0) = 0;
 
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
 	 * @param i The index of the state variable to take
 	 */
 	inline virtual void SetState(const moordyn::state::State& state,
-	                             unsigned int i=0)
-	{};
+	                             unsigned int i = 0) {};
 
 	/** @brief Save the system state on a file
 	 * @param filepath The output file path
 	 * @param i The index of the state variable to serialize
 	 * @see ::SerializeState()
 	 */
-	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	inline virtual void SaveState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 	}
 
@@ -283,7 +283,8 @@ class Scheme : public io::IO
 	 * @param filepath The output file path
 	 * @param i The index of the state variable to overwrite
 	 */
-	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	inline virtual void LoadState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 	}
 
@@ -403,7 +404,7 @@ class SchemeBase : public Scheme
 	// 	// Add the mask value
 	// 	_calc_mask.lines.push_back(true);
 	// }
-	
+
 	/** @brief Remove a line
 	 * @param obj The line
 	 * @return The index of the removed entity
@@ -629,21 +630,17 @@ class SchemeBase : public Scheme
 	 * equal than the number of states
 	 * @{
 	 */
-	inline state::State* r(unsigned int i=0)
+	inline state::State* r(unsigned int i = 0)
 	{
 		if (i >= NSTATE) {
 			LOGERR << "State " << i << " cannot be got on a '" << name
-			    << "' scheme that has " << NSTATE << "states"
-			    << endl;
+			       << "' scheme that has " << NSTATE << "states" << endl;
 			throw moordyn::invalid_value_error("Invalid state");
 		}
 		return _r[i];
 	}
 
-	inline state::State GetState(unsigned int i=0)
-	{
-		return *r(i);
-	}
+	inline state::State GetState(unsigned int i = 0) { return *r(i); }
 	/**
 	 * @}
 	 */
@@ -654,12 +651,11 @@ class SchemeBase : public Scheme
 	 * @throws moordyn::invalid_value_error if the @p i index is greater or
 	 * equal than the number of states
 	 */
-	inline virtual void SetState(const state::State& state, unsigned int i=0)
+	inline virtual void SetState(const state::State& state, unsigned int i = 0)
 	{
 		if (i >= NSTATE) {
 			LOGERR << "State " << i << " cannot be setted on a '" << name
-				<< "' scheme that has " << NSTATE << " states"
-				<< endl;
+			       << "' scheme that has " << NSTATE << " states" << endl;
 			throw moordyn::invalid_value_error("Invalid state");
 		}
 		*_r[i] = state;
@@ -671,13 +667,13 @@ class SchemeBase : public Scheme
 	 * @throws moordyn::invalid_value_error if the @p i index is greater or
 	 * equal than the number of states
 	 */
-	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	inline virtual void SaveState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 		auto f = MakeFile(filepath);
 		if (i >= NSTATE) {
 			LOGERR << "State " << i << " cannot be saved on a '" << name
-			       << "' scheme that has " << NSTATE << "states"
-			       << endl;
+			       << "' scheme that has " << NSTATE << "states" << endl;
 			throw moordyn::invalid_value_error("Invalid state");
 		}
 		std::vector<uint64_t> data = AS_STATE(_r[i])->Serialize();
@@ -697,13 +693,13 @@ class SchemeBase : public Scheme
 	 * @throws moordyn::mem_error if the expected size of the serialized data
 	 * is not met
 	 */
-	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	inline virtual void LoadState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 		auto [length, data] = LoadFile(filepath);
 		if (i >= NSTATE) {
 			LOGERR << "State " << i << " cannot be loaded on a '" << name
-			       << "' scheme that has " << NSTATE << "states"
-			       << endl;
+			       << "' scheme that has " << NSTATE << "states" << endl;
 			throw moordyn::invalid_value_error("Invalid state");
 		}
 		const uint64_t* end = AS_STATE(_r[i])->Deserialize(data);
@@ -725,12 +721,12 @@ class SchemeBase : public Scheme
 	 * @throws moordyn::invalid_value_error if the @p i index is greater or
 	 * equal than the number of state derivatives
 	 */
-	inline state::State* rd(unsigned int i=0)
+	inline state::State* rd(unsigned int i = 0)
 	{
 		if (i >= NDERIV) {
 			LOGERR << "State derivative " << i << " cannot be got on a '"
-			    << name << "' scheme that has " << NDERIV
-			    << "state derivatives" << endl;
+			       << name << "' scheme that has " << NDERIV
+			       << "state derivatives" << endl;
 			throw moordyn::invalid_value_error("Invalid state derivative");
 		}
 		return _rd[i];
@@ -840,10 +836,11 @@ class SchemeBase : public Scheme
 	std::shared_ptr<Waves> waves;
 
 	/** @brief A mask to determine which entities shall be computed.
-	 * 
+	 *
 	 * Useful for local time steps
 	 */
-	typedef struct _mask {
+	typedef struct _mask
+	{
 		/// The lines mask
 		std::vector<bool> lines;
 		/// The points mask
@@ -897,8 +894,13 @@ class StationaryScheme final : public SchemeBase<2, 1>
 	 * no matter if the state is a scalar, a vector or a quaternion, it is
 	 * considered as a single entry
 	 */
-	inline size_t NStates() const {
-		size_t n = bodies.size() + rods.size() + points.size(); // one row (state) per object here. <objects>.size() gives the length of the list, i.e. the number of that kind of object
+	inline size_t NStates() const
+	{
+		size_t n =
+		    bodies.size() + rods.size() +
+		    points.size(); // one row (state) per object here. <objects>.size()
+		                   // gives the length of the list, i.e. the number of
+		                   // that kind of object
 		for (size_t i = 0; i < lines.size(); i++)
 			n += lines[i]->stateN();
 		return n;
@@ -913,7 +915,7 @@ class StationaryScheme final : public SchemeBase<2, 1>
 	 * @param i The index of the state
 	 * @param id The index of the state derivative
 	 */
-	void MakeStationary(real& dt, unsigned int i=0, unsigned int id=0);
+	void MakeStationary(real& dt, unsigned int i = 0, unsigned int id = 0);
 
 	/** The last computed acceleration module
 	 * @see DMoorDynStateDt::MakeStationary()
@@ -978,7 +980,7 @@ class LocalSchemeBase : public SchemeBase<NSTATE, NDERIV>
 	 * @param state The stationary solution
 	 * @param i The index of the state variable to take
 	 */
-	inline virtual void SetState(const state::State& state, unsigned int i=0)
+	inline virtual void SetState(const state::State& state, unsigned int i = 0)
 	{
 		SchemeBase<NSTATE, NDERIV>::SetState(state, i);
 		ComputeDt();
@@ -1010,7 +1012,8 @@ class LocalSchemeBase : public SchemeBase<NSTATE, NDERIV>
 
 	/** @brief The timestep of each instance
 	 */
-	typedef struct _sdeltat {
+	typedef struct _sdeltat
+	{
 		/// The lines mask
 		std::vector<real> lines;
 		/// The points mask
@@ -1031,11 +1034,11 @@ class LocalSchemeBase : public SchemeBase<NSTATE, NDERIV>
 /** @class LocalEulerScheme Time.hpp
  * @brief A modification of the 1st order Euler's time scheme, which is
  * considering different time steps for each instance.
- * 
+ *
  * The local time step of each entity is computed according to the maximum CFL
  * factor of all entities. Such local time step is indeed an integer times the
  * time step provided to LocalEulerScheme::Step().
- * 
+ *
  * Thus, the derivatives recomputation is delayed until those time steps are
  * fulfilled
  */
@@ -1212,30 +1215,28 @@ class ABScheme final : public LocalSchemeBase<1, 5>
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			if (!_calc_mask.lines[i])
 				continue;
-			AS_STATE(rd(dst))->get(lines[i]) =
-				AS_STATE(rd(org))->get(lines[i]);
+			AS_STATE(rd(dst))->get(lines[i]) = AS_STATE(rd(org))->get(lines[i]);
 		}
 
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (!_calc_mask.points[i] && (points[i]->type == Point::FREE))
 				continue;
 			AS_STATE(rd(dst))->get(points[i]) =
-				AS_STATE(rd(org))->get(points[i]);
+			    AS_STATE(rd(org))->get(points[i]);
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if (!_calc_mask.rods[i] && ((rods[i]->type != Rod::FREE) ||
 			                            (rods[i]->type != Rod::PINNED)))
 				continue;
-			AS_STATE(rd(dst))->get(rods[i]) =
-				AS_STATE(rd(org))->get(rods[i]);
+			AS_STATE(rd(dst))->get(rods[i]) = AS_STATE(rd(org))->get(rods[i]);
 		}
 
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if (!_calc_mask.bodies[i] && (bodies[i]->type == Body::FREE))
 				continue;
 			AS_STATE(rd(dst))->get(bodies[i]) =
-				AS_STATE(rd(org))->get(bodies[i]);
+			    AS_STATE(rd(org))->get(bodies[i]);
 		}
 	}
 
@@ -1370,10 +1371,10 @@ class ImplicitNewmarkScheme final : public ImplicitSchemeBase<2, 3>
 	 * @param beta The beta factor
 	 */
 	ImplicitNewmarkScheme(moordyn::Log* log,
-	                    WavesRef waves,
-	                    unsigned int iters = 10,
-	                    real gamma = 0.5,
-	                    real beta = 0.25);
+	                      WavesRef waves,
+	                      unsigned int iters = 10,
+	                      real gamma = 0.5,
+	                      real beta = 0.25);
 
 	/// @brief Destructor
 	~ImplicitNewmarkScheme() {}
@@ -1421,7 +1422,8 @@ class ImplicitNewmarkScheme final : public ImplicitSchemeBase<2, 3>
  * With the computed acceleration a Taylor series expansion is practised to
  * integrate.
  *
- * @see https://www.academia.edu/download/59040594/wilson197220190426-49259-kipdfs.pdf
+ * @see
+ * https://www.academia.edu/download/59040594/wilson197220190426-49259-kipdfs.pdf
  */
 class ImplicitWilsonScheme final : public ImplicitSchemeBase<2, 3>
 {

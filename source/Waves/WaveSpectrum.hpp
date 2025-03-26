@@ -29,7 +29,7 @@ struct FrequencyComponent
 	/// Angle, in radians, of the frequency component
 	real beta = 0;
 
-	FrequencyComponent(){};
+	FrequencyComponent() {};
 	FrequencyComponent(real omega, moordyn::complex amplitude, real beta = 0)
 	  : omega(omega)
 	  , amplitude(amplitude)

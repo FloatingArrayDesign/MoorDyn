@@ -130,7 +130,7 @@ Line::setup(int number_in,
             EnvCondRef env_in,
             shared_ptr<ofstream> outfile_pointer,
             string channels_in,
-		    real dtM0)
+            real dtM0)
 {
 	env = env_in; // set pointer to environment settings object
 	number = number_in;
@@ -201,21 +201,22 @@ Line::setup(int number_in,
 
 	// ------------------------- size vectors -------------------------
 
-	pin.assign(N + 1, 0.0);           // Internal pressure at node points (Pa)
+	pin.assign(N + 1, 0.0); // Internal pressure at node points (Pa)
 
-	r.assign(N + 1, vec::Zero());     // node positions [i][x/y/z]
-	rd.assign(N + 1, vec::Zero());    // node velocities [i][x/y/z]
-	rdd_old.assign(N + 1, vec::Zero()); // node accelerations previous iteration [i][x/y/z]
-	q.assign(N + 1, vec::Zero());     // unit tangent vectors for each node
-	pvec.assign(N + 1, vec::Zero());  // unit normal vectors for each node
-	qs.assign(N, vec::Zero());        // unit tangent vectors for each segment
-	l.assign(N, 0.0);                 // line unstretched segment lengths
-	lstr.assign(N, 0.0);              // stretched lengths
-	ldstr.assign(N, 0.0);             // rate of stretch
-	Kurv.assign(N + 1, 0.0);          // curvatures at node points (1/m)
+	r.assign(N + 1, vec::Zero());  // node positions [i][x/y/z]
+	rd.assign(N + 1, vec::Zero()); // node velocities [i][x/y/z]
+	rdd_old.assign(
+	    N + 1, vec::Zero()); // node accelerations previous iteration [i][x/y/z]
+	q.assign(N + 1, vec::Zero());    // unit tangent vectors for each node
+	pvec.assign(N + 1, vec::Zero()); // unit normal vectors for each node
+	qs.assign(N, vec::Zero());       // unit tangent vectors for each segment
+	l.assign(N, 0.0);                // line unstretched segment lengths
+	lstr.assign(N, 0.0);             // stretched lengths
+	ldstr.assign(N, 0.0);            // rate of stretch
+	Kurv.assign(N + 1, 0.0);         // curvatures at node points (1/m)
 
-	M.assign(N + 1, mat::Zero());     // mass matrices (3x3) for each node
-	V.assign(N, 0.0);                 // segment volume?
+	M.assign(N + 1, mat::Zero()); // mass matrices (3x3) for each node
+	V.assign(N, 0.0);             // segment volume?
 
 	// forces
 	T.assign(N, vec::Zero());        // segment tensions
@@ -228,23 +229,27 @@ Line::setup(int number_in,
 	Ap.assign(N + 1, vec::Zero());   // node added mass forcing (transverse)
 	Aq.assign(N + 1, vec::Zero());   // node added mass forcing (axial)
 	B.assign(N + 1, vec::Zero());    // node bottom contact force
-	Lf.assign(N + 1, vec::Zero());    // viv crossflow lift force
+	Lf.assign(N + 1, vec::Zero());   // viv crossflow lift force
 	Fnet.assign(N + 1, vec::Zero()); // total force on node
 
 	// wave things
 	F.assign(N + 1, 0.0); // VOF scaler for each NODE (mean of two half adjacent
 	                      // segments) (1 = fully submerged, 0 = out of water)
 
-	// viscoelastic things 
+	// viscoelastic things
 	if (ElasticMod > 1) {
-		dl_1.assign(N, 0.0);  // segment stretch attributed to static stiffness portion [m] 
-		ld_1.assign(N, 0.0);  // rate of change of static stiffness portion [m/s] (Ldot_1)
+		dl_1.assign(
+		    N,
+		    0.0); // segment stretch attributed to static stiffness portion [m]
+		ld_1.assign(
+		    N,
+		    0.0); // rate of change of static stiffness portion [m/s] (Ldot_1)
 	}
 
 	// VIV things
 	if (Cl > 0) {
 		phi.assign(N + 1, 0.0);         // synch model phase
-		phi_dot.assign(N + 1, 0.0);     // synch model frequency 
+		phi_dot.assign(N + 1, 0.0);     // synch model frequency
 		yd_rms_old.assign(N + 1, 0.0);  // node old yd_rms
 		ydd_rms_old.assign(N + 1, 0.0); // node old ydd_rms
 	}
@@ -273,19 +278,19 @@ Line::initialize()
 	       << "    N       : " << N << endl
 	       << "    d       : " << d << endl
 	       << "    rho     : " << rho << endl
-		   << "    EAMod   : " << ElasticMod << endl
+	       << "    EAMod   : " << ElasticMod << endl
 	       << "    EA      : " << EA << endl
-		   << "    BA      : " << BAin << endl
+	       << "    BA      : " << BAin << endl
 	       << "    EI      : " << EI << endl
 	       << "    Can     : " << Can << endl
 	       << "    Cat     : " << Cat << endl
 	       << "    Cdn     : " << Cdn << endl
 	       << "    Cdt     : " << Cdt << endl
-		   << "    Cl      : " << Cl << endl
-		   << "    dF      : " << dF << endl
-		   << "    cF      : " << cF << endl
-	       << "    ww_l    : " << ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81
-	       << endl;
+	       << "    Cl      : " << Cl << endl
+	       << "    dF      : " << dF << endl
+	       << "    cF      : " << cF << endl
+	       << "    ww_l    : "
+	       << ((rho - env->rho_w) * (pi / 4. * d * d)) * 9.81 << endl;
 
 	if (outfile) {
 		if (!outfile->is_open()) {
@@ -487,10 +492,13 @@ Line::initialize()
 	if (BAin < 0) {
 		// automatic internal damping option (if negative BA provided (stored as
 		// BAin), then -BAin indicates desired damping ratio [unitless])
-		BA = -BAin * UnstrLen / N * sqrt(EA * rho * A); // rho = w/A. Units: no unit * m * sqrt(kg-m/s^2 *kg/m) = Ns 
+		BA =
+		    -BAin * UnstrLen / N *
+		    sqrt(
+		        EA * rho *
+		        A); // rho = w/A. Units: no unit * m * sqrt(kg-m/s^2 *kg/m) = Ns
 		LOGMSG << "Line " << number << " damping set to " << BA / A
-		       << " Pa-s = " << BA << " Ns, based on input of " << BAin
-		       << endl;
+		       << " Pa-s = " << BA << " Ns, based on input of " << BAin << endl;
 	} else {
 		// otherwise it's the regular internal damping coefficient, which should
 		// be divided by area to get a material coefficient
@@ -498,8 +506,10 @@ Line::initialize()
 	}
 
 	if (BA_D < 0) {
-		LOGERR << "Line dynamic damping cannot be a ratio for Line " << number << endl;
-		throw moordyn::invalid_value_error("Line dynamic damping cannot be a ratio");
+		LOGERR << "Line dynamic damping cannot be a ratio for Line " << number
+		       << endl;
+		throw moordyn::invalid_value_error(
+		    "Line dynamic damping cannot be a ratio");
 	}
 
 	// initialize line node positions as distributed linearly between the
@@ -512,14 +522,15 @@ Line::initialize()
 	// catenary routine (from FAST v.7)
 
 	real XF = dir(Eigen::seqN(0, 2)).norm(); // horizontal spread
-	if (XF > 0.0001) { // tolerance for calculation of XF when points are not along x or y axis
+	if (XF > 0.0001) { // tolerance for calculation of XF when points are not
+		               // along x or y axis
 		// Check if the line touches the seabed, so we are modelling it. Just
 		// the end points are checked
 		const real Tol = 1e-5;
 		real CB = -1.0;
 		for (unsigned int i = 0; i <= N; i += N) {
 			const real waterDepth = getWaterDepth(r[i][0], r[i][1]);
-			if(r[i][2] <= waterDepth * (1.0 - Tol))
+			if (r[i][2] <= waterDepth * (1.0 - Tol))
 				CB = 0.0;
 		}
 		const real ZF = dir[2];
@@ -554,17 +565,17 @@ Line::initialize()
 		                       &VF,
 		                       &HA,
 		                       &VA,
-		                       N+1,
+		                       N + 1,
 		                       snodes,
 		                       Xl,
 		                       Zl,
 		                       Te);
 
 		if (success >= 0) {
-			
+
 			// the catenary solve is successful, update the node positions
-			LOGDBG << "Catenary initial profile available for Line "
-					<< number << endl;
+			LOGDBG << "Catenary initial profile available for Line " << number
+			       << endl;
 			for (unsigned int i = 1; i < N; i++) {
 				vec l(Xl[i] * COSPhi, Xl[i] * SINPhi, Zl[i]);
 				r[i] = r[0] + l;
@@ -577,23 +588,28 @@ Line::initialize()
 		LOGDBG << "Vertical linear initial profile for Line " << number << endl;
 	}
 
-	// If using the viscoelastic model, initalize the deltaL_1 to the delta L of the segment. 
-	// This is required here to initalize the state as non-zero, which avoids an initial 
-	// transient where the segment goes from unstretched to stretched in one time step.
+	// If using the viscoelastic model, initalize the deltaL_1 to the delta L of
+	// the segment. This is required here to initalize the state as non-zero,
+	// which avoids an initial transient where the segment goes from unstretched
+	// to stretched in one time step.
 	if (ElasticMod > 1) {
 		for (unsigned int i = 0; i < N; i++) {
-			lstr[i] = unitvector(qs[i], r[i], r[i + 1]); 
+			lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 			dl_1[i] = lstr[i] - l[i]; // delta l of the segment
 		}
 	}
 
-	// If using the VIV model, initalize as a distribution between 0 and 2pi for inital phase of lift force to avoid initial transient
+	// If using the VIV model, initalize as a distribution between 0 and 2pi for
+	// inital phase of lift force to avoid initial transient
 	if (Cl > 0)
-		for (unsigned int i = 1; i < N; i++) phi[i] = (i/moordyn::real(N))*2*pi; // internal nodes only. Change if end node viv included
+		for (unsigned int i = 1; i < N; i++)
+			phi[i] = (i / moordyn::real(N)) * 2 *
+			         pi; // internal nodes only. Change if end node viv included
 
 	LOGMSG << "Initialized Line " << number << endl;
 
-	// NOTE: becasue Line.hpp is the only user of this function, no need to return any state information
+	// NOTE: becasue Line.hpp is the only user of this function, no need to
+	// return any state information
 }
 
 real
@@ -615,8 +631,7 @@ Line::GetLineOutput(OutChanProps outChan)
 		if ((outChan.NodeID == 0) || (outChan.NodeID == (int)N))
 			return getNodeForce(outChan.NodeID).norm();
 		return getNodeTen(outChan.NodeID).norm();
-	}
-	else if (outChan.QType == TenA)
+	} else if (outChan.QType == TenA)
 		return getNodeForce(0).norm();
 	else if (outChan.QType == TenB)
 		return getNodeForce(N).norm();
@@ -730,9 +745,10 @@ Line::setState(const InstanceStateVarView state)
 {
 
 	// ----- State Instance Structure for Line -----
-	// Each row corresponds to an internal node. When the viscoelastic case is 
-	// activated the last column corresponds to the viscoelastic state for each segment. 
-	// This means indexing the rows for the viscoelastic state is shifted by one.
+	// Each row corresponds to an internal node. When the viscoelastic case is
+	// activated the last column corresponds to the viscoelastic state for each
+	// segment. This means indexing the rows for the viscoelastic state is
+	// shifted by one.
 	//
 	// Normal case:
 	//  - N-1 rows
@@ -749,35 +765,53 @@ Line::setState(const InstanceStateVarView state)
 	//	- row[i] = [rix, riy, riz, rdix, rdiy, rdiz, phii, ldot_1i]
 	//  - note there will be 7 unused values in the last row
 
-
-	// Error check for number of columns (if VIV and Visco need row.size() = 8, if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)
-	if ( (state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) || (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) || (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
+	// Error check for number of columns (if VIV and Visco need row.size() = 8,
+	// if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)
+	if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) ||
+	    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) ||
+	    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
 		LOGERR << "Invalid state.row size for Line " << number << endl;
 		throw moordyn::mem_error("Invalid state.row size");
 	}
 
-	// Error check for number of rows (if visco need N rows, if normal need N-1 rows)
-	if ((state.rows() != N && ElasticMod > 1) || (state.rows() != N-1 && ElasticMod == 1)) {
-		LOGERR << "Invalid number of rows in state matrix for Line " << number << endl;
+	// Error check for number of rows (if visco need N rows, if normal need N-1
+	// rows)
+	if ((state.rows() != N && ElasticMod > 1) ||
+	    (state.rows() != N - 1 && ElasticMod == 1)) {
+		LOGERR << "Invalid number of rows in state matrix for Line " << number
+		       << endl;
 		throw moordyn::mem_error("Invalid number of rows in state matrix");
 	}
 
 	// If using the viscoelastic model, interate N rows, else iterate N-1 rows.
-	for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N-1); i++) {
+	for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N - 1); i++) {
 		// node number is i+1
 		// segment number is i
-		if (i < N-1) { // only assign the internal nodes
-			r[i+1] = state.row(i).head<3>();
-			rd[i+1] = state.row(i).segment<3>(3);
+		if (i < N - 1) { // only assign the internal nodes
+			r[i + 1] = state.row(i).head<3>();
+			rd[i + 1] = state.row(i).segment<3>(3);
 		}
 
-		if (ElasticMod > 1) dl_1[i] = state.row(i).tail<1>()[0]; // [0] needed becasue tail<1> returns a one element vector. Viscoelastic state is always the last element in the row
+		if (ElasticMod > 1)
+			dl_1[i] =
+			    state.row(i)
+			        .tail<1>()[0]; // [0] needed becasue tail<1> returns a one
+			                       // element vector. Viscoelastic state is
+			                       // always the last element in the row
 
-		if (Cl > 0 && !(IC_gen)) { // not needed in IC_gen. Initializes as distribution on 0-2pi. State is initialized by init function in this code, which sets phi to range 0-2pi
-			if (ElasticMod > 1) phi[i+1] = state.row(i).tail<2>()[0]; // if both VIV and viscoelastic second to last element in the row
-			else phi[i+1] = state.row(i).tail<1>()[0]; // else last element in the row
-		} 
-		
+		if (Cl > 0 &&
+		    !(IC_gen)) { // not needed in IC_gen. Initializes as distribution on
+			             // 0-2pi. State is initialized by init function in this
+			             // code, which sets phi to range 0-2pi
+			if (ElasticMod > 1)
+				phi[i + 1] =
+				    state.row(i)
+				        .tail<2>()[0]; // if both VIV and viscoelastic second to
+				                       // last element in the row
+			else
+				phi[i + 1] =
+				    state.row(i).tail<1>()[0]; // else last element in the row
+		}
 	}
 }
 
@@ -876,9 +910,10 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 {
 
 	// ----- State Instance Structure for Line -----
-	// Each row corresponds to an internal node. When the viscoelastic case is 
-	// activated the last column corresponds to the viscoelastic state for each segment. 
-	// This means indexing the rows for the viscoelastic state is shifted by one.
+	// Each row corresponds to an internal node. When the viscoelastic case is
+	// activated the last column corresponds to the viscoelastic state for each
+	// segment. This means indexing the rows for the viscoelastic state is
+	// shifted by one.
 	//
 	// Normal case:
 	//  - N-1 rows
@@ -915,7 +950,8 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 
 	// dt is possibly used for stability tricks...
 
-	// ======= calculate various kinematic quantities and stiffness forces =======
+	// ======= calculate various kinematic quantities and stiffness forces
+	// =======
 
 	// calculate unit tangent vectors (q) for each internal node. note: I've
 	// reversed these from pointing toward 0 rather than N. Check sign of wave
@@ -938,9 +974,13 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 	// loop through the segments for stiffness forces and segment lengths
 	for (unsigned int i = 0; i < N; i++) {
 		// calculate current (Stretched) segment lengths and unit tangent
-		// vectors (qs) for each segment (this is used for bending and stiffness calculations)
+		// vectors (qs) for each segment (this is used for bending and stiffness
+		// calculations)
 
-		lstr[i] = unitvector(qs[i], r[i], r[i + 1]); // if using the viscoelastic model this is redundant for the first time step, as it is also called by Line::initalize
+		lstr[i] = unitvector(
+		    qs[i], r[i], r[i + 1]); // if using the viscoelastic model this is
+		                            // redundant for the first time step, as it
+		                            // is also called by Line::initalize
 
 		ldstr[i] = qs[i].dot(rd[i + 1] - rd[i]); // strain rate of segment
 
@@ -965,46 +1005,82 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 				BA = getNonlinearBA(ldstr[i], l[i]);
 			Td[i] = BA * ldstr[i] / l[i] * qs[i];
 
-		} else if (ElasticMod > 1){ // viscoelastic model from https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018 
-			// note that dl_1[i] is the same as Line%dl_1 in MD-F. This is the deltaL of the first static spring k1.
-               
+		} else if (
+		    ElasticMod >
+		    1) { // viscoelastic model from
+			     // https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018
+			// note that dl_1[i] is the same as Line%dl_1 in MD-F. This is the
+			// deltaL of the first static spring k1.
+
 			if (ElasticMod == 2) {
-               // constant dynamic stiffness
-               EA_2 = EA_D;
+				// constant dynamic stiffness
+				EA_2 = EA_D;
 
-            } else if (ElasticMod == 3){
-            	if (dl_1[i] >= 0.0) // spring k1 is in tension
-                	// Mean load dependent dynamic stiffness: from combining eqn. 2 and eqn. 10 from original MD viscoelastic paper, taking mean load = k1 delta_L1 / MBL, and solving for k_D using WolframAlpha with following conditions: k_D > k_s, (MBL,alpha,beta,unstrLen,delta_L1) > 0
-                	EA_2 = 0.5 * ((alphaMBL) + (vbeta*dl_1[i]*(EA / l[i])) + EA + sqrt((alphaMBL * alphaMBL) + (2*alphaMBL*(EA / l[i]) * (vbeta*dl_1[i] - l[i])) + ((EA / l[i])*(EA / l[i]) * (vbeta*dl_1[i] + l[i])*(vbeta*dl_1[i] + l[i]))));
-            	
-				else // spring k1 is in compression
-                	EA_2 = alphaMBL; // mean load is considered to be 0 in this case. The second term in the above equation is not valid for delta_L1 < 0.
-            }
+			} else if (ElasticMod == 3) {
+				if (dl_1[i] >= 0.0) // spring k1 is in tension
+					// Mean load dependent dynamic stiffness: from combining
+					// eqn. 2 and eqn. 10 from original MD viscoelastic paper,
+					// taking mean load = k1 delta_L1 / MBL, and solving for k_D
+					// using WolframAlpha with following conditions: k_D > k_s,
+					// (MBL,alpha,beta,unstrLen,delta_L1) > 0
+					EA_2 = 0.5 *
+					       ((alphaMBL) + (vbeta * dl_1[i] * (EA / l[i])) + EA +
+					        sqrt((alphaMBL * alphaMBL) +
+					             (2 * alphaMBL * (EA / l[i]) *
+					              (vbeta * dl_1[i] - l[i])) +
+					             ((EA / l[i]) * (EA / l[i]) *
+					              (vbeta * dl_1[i] + l[i]) *
+					              (vbeta * dl_1[i] + l[i]))));
 
-            if (EA_2 == 0.0) { // Make sure EA_2 != 0 or else nans, also make sure EA != EA_D or else nans. 
-               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal zero" << endl;
-			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal zero");
-			} else if (EA_2 == EA) {
-               LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal static stiffness" << endl;
-			   throw moordyn::invalid_value_error("Viscoelastic model: Dynamic stiffness cannot equal static stiffness");
+				else                 // spring k1 is in compression
+					EA_2 = alphaMBL; // mean load is considered to be 0 in this
+					                 // case. The second term in the above
+					                 // equation is not valid for delta_L1 < 0.
 			}
-         
-            const real EA_1 = EA_2*EA/(EA_2 - EA); // calculated EA_1 which is the stiffness in series with EA_D that will result in the desired static stiffness of EA_S. 
-         
-            const real dl = lstr[i] - l[i]; // delta l of this segment
-            
+
+			if (EA_2 == 0.0) { // Make sure EA_2 != 0 or else nans, also make
+				               // sure EA != EA_D or else nans.
+				LOGERR
+				    << "Viscoelastic model: Dynamic stiffness cannot equal zero"
+				    << endl;
+				throw moordyn::invalid_value_error(
+				    "Viscoelastic model: Dynamic stiffness cannot equal zero");
+			} else if (EA_2 == EA) {
+				LOGERR << "Viscoelastic model: Dynamic stiffness cannot equal "
+				          "static stiffness"
+				       << endl;
+				throw moordyn::invalid_value_error(
+				    "Viscoelastic model: Dynamic stiffness cannot equal static "
+				    "stiffness");
+			}
+
+			const real EA_1 =
+			    EA_2 * EA /
+			    (EA_2 - EA); // calculated EA_1 which is the stiffness in series
+			                 // with EA_D that will result in the desired static
+			                 // stiffness of EA_S.
+
+			const real dl = lstr[i] - l[i]; // delta l of this segment
+
 			// update state derivative for static stiffness stretch
-            ld_1[i] = (EA_2*dl - (EA_2 + EA_1)*dl_1[i] + BA_D*ldstr[i]) /( BA_D + BA); // rate of change of static stiffness portion [m/s]
+			ld_1[i] =
+			    (EA_2 * dl - (EA_2 + EA_1) * dl_1[i] + BA_D * ldstr[i]) /
+			    (BA_D + BA); // rate of change of static stiffness portion [m/s]
 
-            if (dl >= 0.0) // if both spring 1 (the spring dashpot in parallel) and the whole segment are not in compression
-               T[i]  = (EA_1*dl_1[i] / l[i]) * qs[i];  // compute tension based on static portion (dynamic portion would give same). See eqn. 14 in paper
-            else 
-               T[i] = vec::Zero(); // cable can't "push"
+			if (dl >= 0.0) // if both spring 1 (the spring dashpot in parallel)
+			               // and the whole segment are not in compression
+				T[i] =
+				    (EA_1 * dl_1[i] / l[i]) *
+				    qs[i]; // compute tension based on static portion (dynamic
+				           // portion would give same). See eqn. 14 in paper
+			else
+				T[i] = vec::Zero(); // cable can't "push"
 
-            Td[i] = BA*ld_1[i] / l[i] * qs[i];
- 			
-			// update state derivative for static stiffness stretch. The visco state is always the last element in the row.
-			drdt.row(i).tail<1>()[0] = ld_1[i]; 
+			Td[i] = BA * ld_1[i] / l[i] * qs[i];
+
+			// update state derivative for static stiffness stretch. The visco
+			// state is always the last element in the row.
+			drdt.row(i).tail<1>()[0] = ld_1[i];
 		}
 	}
 
@@ -1014,13 +1090,15 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			if (i == 0) {
 				// end node A case (only if attached to a Rod, i.e. a
 				// cantilever rather than pinned point)
-				Kurv[i] = (endTypeA == CANTILEVERED) ?
-					GetCurvature(lstr[0], q[0], qs[0]) : 0.0;
+				Kurv[i] = (endTypeA == CANTILEVERED)
+				              ? GetCurvature(lstr[0], q[0], qs[0])
+				              : 0.0;
 			} else if (i == N) {
 				// end node B case (only if attached to a Rod, i.e. a
 				// cantilever rather than pinned point)
-				Kurv[i] = (endTypeB == CANTILEVERED) ?
-					GetCurvature(lstr[i - 1], qs[i - 1], q[i]) : 0.0;
+				Kurv[i] = (endTypeB == CANTILEVERED)
+				              ? GetCurvature(lstr[i - 1], qs[i - 1], q[i])
+				              : 0.0;
 			} else {
 				// internal node
 				// curvature <<< remember to check sign, or just take abs
@@ -1062,7 +1140,8 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 	}
 	//============================================================================================
 
-	// ============  CALCULATE FORCES ON EACH NODE  ===============================
+	// ============  CALCULATE FORCES ON EACH NODE
+	// ===============================
 
 	// Bending loads
 	// first zero out the forces from last run
@@ -1084,8 +1163,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			if (i == 0) {
 				// end node A case (only if attached to a Rod, i.e. a
 				// cantilever rather than pinned point)
-				if (endTypeA == CANTILEVERED)
-				{
+				if (endTypeA == CANTILEVERED) {
 					if (nEIpoints > 0)
 						EI = getNonlinearEI(Kurvi);
 
@@ -1212,7 +1290,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			}
 			*/
 		} // for i=0,N (looping through nodes)
-	}     // if EI > 0
+	} // if EI > 0
 
 	if (isPb) {
 		// loop through all nodes to calculate bending forces
@@ -1271,7 +1349,6 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 		W[i][0] = W[i][1] = 0.0;
 		W[i][2] = -g * (m_i - v_i * rho_w);
 
-
 		// magnitude of current
 		const real Ui_mag = U[i].norm();
 		// Unit vector of current flow
@@ -1296,52 +1373,85 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 
 		// Vortex Induced Vibration (VIV) cross-flow lift force
 		Lf[i] = vec::Zero();
-		if (Cl > 0 && !IC_gen && i != 0 && i != N) { // If non-zero lift coefficient and not during IC_gen and internal node then VIV to be calculated
+		if (Cl > 0 && !IC_gen && i != 0 &&
+		    i != N) { // If non-zero lift coefficient and not during IC_gen and
+			          // internal node then VIV to be calculated
 
-			// Note: This logic is slightly different than MD-F, but equivalent. MD-F runs the VIV model for all nodes 
-			// (including end nodes), and then zeros the lift force for the end nodes. That means in MD-F the state vector
-			// has N+1 extra states when using the VIV model. That approach means in the future if we can get the end node
-			// accelerations, we can easily add those into the VIV model. This approach does not do that, and only computes 
-			// the lift force for internal nodes. We do that here becasue the state matrix approach introduced in PR#291
-			// means we have N-1 states with 7 elements for internal nodes. If we did the MD-F approach, we would end up 
-			// with a N+1 x 7 state matrix, which would have unused states. In the future, if we get the end node 
-			// accelerations, we will need to change to the bigger state matrix in this code. 
+			// Note: This logic is slightly different than MD-F, but equivalent.
+			// MD-F runs the VIV model for all nodes (including end nodes), and
+			// then zeros the lift force for the end nodes. That means in MD-F
+			// the state vector has N+1 extra states when using the VIV model.
+			// That approach means in the future if we can get the end node
+			// accelerations, we can easily add those into the VIV model. This
+			// approach does not do that, and only computes the lift force for
+			// internal nodes. We do that here becasue the state matrix approach
+			// introduced in PR#291 means we have N-1 states with 7 elements for
+			// internal nodes. If we did the MD-F approach, we would end up with
+			// a N+1 x 7 state matrix, which would have unused states. In the
+			// future, if we get the end node accelerations, we will need to
+			// change to the bigger state matrix in this code.
 
 			// ----- The Synchronization Model ------
 			// Crossflow velocity
 			const real yd = rd[i].dot(q[i].cross(vp.normalized()));
-			const real ydd = rdd_old[i].dot(q[i].cross(vp.normalized())); // note: rdd_old initializes as 0's. End nodes don't ever get updated, thus stay at zero 
+			const real ydd = rdd_old[i].dot(
+			    q[i].cross(vp.normalized())); // note: rdd_old initializes as
+			                                  // 0's. End nodes don't ever get
+			                                  // updated, thus stay at zero
 
 			// Rolling RMS calculation
-			const real yd_rms = sqrt((((n_m-1)*yd_rms_old[i]*yd_rms_old[i])+(yd*yd))/n_m); // RMS approximation from Thorsen
-			const real ydd_rms = sqrt((((n_m-1)*ydd_rms_old[i]*ydd_rms_old[i])+(ydd*ydd))/n_m);
+			const real yd_rms =
+			    sqrt((((n_m - 1) * yd_rms_old[i] * yd_rms_old[i]) + (yd * yd)) /
+			         n_m); // RMS approximation from Thorsen
+			const real ydd_rms = sqrt(
+			    (((n_m - 1) * ydd_rms_old[i] * ydd_rms_old[i]) + (ydd * ydd)) /
+			    n_m);
 
-			if ((t >= t_old + dtm0) || (t == 0.0)) { // Update the stormed RMS vaues
-				// update back indexing one moordyn time step (regardless of time integration scheme). T_old is handled at end of getStateDeriv when rdd_old is updated.
-				yd_rms_old[i] = yd_rms; // for rms back indexing (one moordyn timestep back)
-				ydd_rms_old[i] = ydd_rms; // for rms back indexing (one moordyn timestep back)
+			if ((t >= t_old + dtm0) ||
+			    (t == 0.0)) { // Update the stormed RMS vaues
+				// update back indexing one moordyn time step (regardless of
+				// time integration scheme). T_old is handled at end of
+				// getStateDeriv when rdd_old is updated.
+				yd_rms_old[i] =
+				    yd_rms; // for rms back indexing (one moordyn timestep back)
+				ydd_rms_old[i] = ydd_rms; // for rms back indexing (one moordyn
+				                          // timestep back)
 			}
 
-			if ((yd_rms==0.0) || (ydd_rms == 0.0)) phi_yd = atan2(-ydd, yd); // To avoid divide by zero
-			else phi_yd = atan2(-ydd/ydd_rms, yd/yd_rms); 
-			
-			if (phi_yd < 0) phi_yd = 2*pi + phi_yd; // atan2 to 0-2Pi range
+			if ((yd_rms == 0.0) || (ydd_rms == 0.0))
+				phi_yd = atan2(-ydd, yd); // To avoid divide by zero
+			else
+				phi_yd = atan2(-ydd / ydd_rms, yd / yd_rms);
 
-			// Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b) is the same if b is 100 pi or 2pi
-			phi[i] = phi[i] - (2 * pi * floor(phi[i] / (2*pi))); 
-	
+			if (phi_yd < 0)
+				phi_yd = 2 * pi + phi_yd; // atan2 to 0-2Pi range
+
+			// Map integrated phase to 0-2Pi range. Is this necessary? sin (a-b)
+			// is the same if b is 100 pi or 2pi
+			phi[i] = phi[i] - (2 * pi * floor(phi[i] / (2 * pi)));
+
 			// non-dimensional frequency
-			const real f_hat = cF + dF *sin(phi_yd - phi[i]); // phi is integrated from state deriv phi_dot
+			const real f_hat =
+			    cF +
+			    dF * sin(phi_yd -
+			             phi[i]); // phi is integrated from state deriv phi_dot
 			// frequency of lift force (rad/s)
-			phi_dot[i] = 2*pi*f_hat*vp_mag / d;// to be added to state
+			phi_dot[i] = 2 * pi * f_hat * vp_mag / d; // to be added to state
 
 			// The Lift force
-			Lf[i] = 0.5 * env->rho_w * d * vp_mag * Cl * cos(phi[i]) * q[i].cross(vp) * submerged_length;
+			Lf[i] = 0.5 * env->rho_w * d * vp_mag * Cl * cos(phi[i]) *
+			        q[i].cross(vp) * submerged_length;
 
-			// Update state derivative for VIV. i-1 indexing because this is only called for internal nodes (i.e. node 1 maps to row 0 in the state deriv matrix). 
-			if (ElasticMod > 1) drdt.row(i-1).tail<2>()[0] = phi_dot[i]; // second to last element if visco model
-			else drdt.row(i-1).tail<1>()[0] = phi_dot[i]; // last element if not visco model
-		}	
+			// Update state derivative for VIV. i-1 indexing because this is
+			// only called for internal nodes (i.e. node 1 maps to row 0 in the
+			// state deriv matrix).
+			if (ElasticMod > 1)
+				drdt.row(i - 1).tail<2>()[0] =
+				    phi_dot[i]; // second to last element if visco model
+			else
+				drdt.row(i - 1).tail<1>()[0] =
+				    phi_dot[i]; // last element if not visco model
+		}
 
 		// tangential component of fluid acceleration
 		// <<<<<<< check sign since I've reversed q
@@ -1400,8 +1510,8 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			Fnet[i] = -T[i - 1] - Td[i - 1];
 		else
 			Fnet[i] = T[i] - T[i - 1] + Td[i] - Td[i - 1];
-		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] +
-			Bs[i] + Lf[i] + Pb[i];
+		Fnet[i] += W[i] + (Dp[i] + Dq[i] + Ap[i] + Aq[i]) + B[i] + Bs[i] +
+		           Lf[i] + Pb[i];
 	}
 
 	// loop through internal nodes and compute the accelerations
@@ -1412,18 +1522,25 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 		drdt.row(i - 1).head<3>() = rd[i];
 		drdt.row(i - 1).segment<3>(3) = M[i].inverse() * Fnet[i];
 
-		if (Cl > 0) rdd_old[i] = drdt.row(i - 1).segment<3>(3); // saving the acceleration for VIV RMS calculation. End nodes are left at zero, VIV disabled for end nodes
+		if (Cl > 0)
+			rdd_old[i] = drdt.row(i - 1).segment<3>(
+			    3); // saving the acceleration for VIV RMS calculation. End
+			        // nodes are left at zero, VIV disabled for end nodes
 	}
 
-	if ((t >= t_old + dtm0) || (t == 0.0)) { // update back indexing one moordyn time step (regardless of time integration scheme)
-		t_old = t; // for updating back indexing if statements 
+	if ((t >= t_old + dtm0) ||
+	    (t == 0.0)) { // update back indexing one moordyn time step (regardless
+		              // of time integration scheme)
+		t_old = t;    // for updating back indexing if statements
 	}
 
 	// if (t <0.5+dtm && t >0.5-dtm && not IC_gen) {
 	// 	cout << "rdd_old at t = " << t << endl;
-	// 	for (int i = 0; i < 4; i++) cout << "I = " << i << " rdd_old = " << rdd_old[i][0] << ", " << rdd_old[i][1] << ", " << rdd_old[i][2] <<endl;
+	// 	for (int i = 0; i < 4; i++) cout << "I = " << i << " rdd_old = " <<
+	// rdd_old[i][0] << ", " << rdd_old[i][1] << ", " << rdd_old[i][2] <<endl;
 	// 	cout << "..." << endl;
-	// 	for (int i = N-4; i < N+1; i++) cout << "I = " << i << " rdd_old = " << rdd_old[i][0] << ", " << rdd_old[i][1] << ", " << rdd_old[i][2] <<endl;
+	// 	for (int i = N-4; i < N+1; i++) cout << "I = " << i << " rdd_old = " <<
+	// rdd_old[i][0] << ", " << rdd_old[i][1] << ", " << rdd_old[i][2] <<endl;
 	// }
 };
 
@@ -1490,8 +1607,7 @@ Line::Output(real time)
 		if (channels.find("V") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
-					*outfile << Lf[i][J]
-					         << "\t ";
+					*outfile << Lf[i][J] << "\t ";
 			}
 		}
 		// output segment tensions?

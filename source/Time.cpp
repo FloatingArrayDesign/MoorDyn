@@ -72,8 +72,7 @@ SchemeBase<NSTATE, NDERIV>::Update(real t_local, unsigned int substep)
 
 	for (unsigned int i = 0; i < rods.size(); i++) {
 		rods[i]->setTime(this->t);
-		if ((rods[i]->type != Rod::PINNED) &&
-		    (rods[i]->type != Rod::CPLDPIN) &&
+		if ((rods[i]->type != Rod::PINNED) && (rods[i]->type != Rod::CPLDPIN) &&
 		    (rods[i]->type != Rod::FREE))
 			continue;
 		rods[i]->setState(AS_STATE(_r[substep])->get(rods[i]));
@@ -123,7 +122,8 @@ SchemeBase<NSTATE, NDERIV>::CalcStateDeriv(unsigned int substep)
 	for (unsigned int i = 0; i < bodies.size(); i++) {
 		if (!_calc_mask.bodies[i])
 			continue;
-		if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN))
+		if ((bodies[i]->type != Body::FREE) &&
+		    (bodies[i]->type != Body::CPLDPIN))
 			continue;
 		bodies[i]->getStateDeriv(AS_STATE(_rd[substep])->get(bodies[i]));
 	}
@@ -179,7 +179,6 @@ StationaryScheme::Step(real& dt)
 	auto r1 = r(1)->get();
 	auto drdt0 = rd(0)->get();
 
-
 	Update(0.0, 0);
 	CalcStateDeriv(0);
 	const real error_prev = _error;
@@ -188,8 +187,7 @@ StationaryScheme::Step(real& dt)
 		if (error_prev >= _error) {
 			// Let's try to boost the convergence
 			_booster *= STATIONARY_BOOSTING;
-		}
-		else if (error_prev < _error) {
+		} else if (error_prev < _error) {
 			// We clearly overshot, so let's relax the solution and reduce the
 			// boosting
 			_booster /= STATIONARY_BOOSTING;
@@ -228,7 +226,8 @@ StationaryScheme::Step(real& dt)
  * @param r The base quaternion on top of which the derivative is applied
  * @param rd The vec6 derivative
  */
-vec7 integrateVec6AsVec7(const moordyn::vec7& r, const moordyn::vec6& rd)
+vec7
+integrateVec6AsVec7(const moordyn::vec7& r, const moordyn::vec6& rd)
 {
 	XYZQuat r7 = XYZQuat::fromVec7(r), v7;
 	v7.pos = rd.head<3>();
@@ -236,25 +235,27 @@ vec7 integrateVec6AsVec7(const moordyn::vec7& r, const moordyn::vec6& rd)
 	return v7.toVec7();
 }
 
-#define MAKE_STATIONARY_VEC3(obj) {                                            \
-	auto drdt = rd(id)->get(obj);                                              \
-	for (unsigned int j = 0; j < drdt.rows(); j++) {                           \
-		auto acc = drdt.row(j).segment<3>(3);                                  \
-		_error += acc.norm();                                                  \
-		drdt.row(j).head<3>() = 0.5 * dt * acc;                                \
-		acc = vec3::Zero();                                                    \
-	}                                                                          \
-}
-    
-#define MAKE_STATIONARY_QUAT(obj) {                                            \
-	const moordyn::vec7 pos = r(i)->get(obj).row(0).head<7>();                 \
-	auto drdt = rd(id)->get(obj).row(0);                                       \
-	auto vel = drdt.head<7>();                                                 \
-	auto acc = drdt.tail<6>();                                                 \
-	_error += acc.head<3>().norm();                                            \
-	vel = integrateVec6AsVec7(pos, 0.5 * dt * acc);                            \
-	acc = vec6::Zero();                                                        \
-}
+#define MAKE_STATIONARY_VEC3(obj)                                              \
+	{                                                                          \
+		auto drdt = rd(id)->get(obj);                                          \
+		for (unsigned int j = 0; j < drdt.rows(); j++) {                       \
+			auto acc = drdt.row(j).segment<3>(3);                              \
+			_error += acc.norm();                                              \
+			drdt.row(j).head<3>() = 0.5 * dt * acc;                            \
+			acc = vec3::Zero();                                                \
+		}                                                                      \
+	}
+
+#define MAKE_STATIONARY_QUAT(obj)                                              \
+	{                                                                          \
+		const moordyn::vec7 pos = r(i)->get(obj).row(0).head<7>();             \
+		auto drdt = rd(id)->get(obj).row(0);                                   \
+		auto vel = drdt.head<7>();                                             \
+		auto acc = drdt.tail<6>();                                             \
+		_error += acc.head<3>().norm();                                        \
+		vel = integrateVec6AsVec7(pos, 0.5 * dt * acc);                        \
+		acc = vec6::Zero();                                                    \
+	}
 
 void
 StationaryScheme::MakeStationary(real& dt, unsigned int i, unsigned int id)
@@ -491,14 +492,14 @@ RK4Scheme::Step(real& dt)
 	r1 = r0 + 0.5 * dt * drdt1;
 	Update(0.5 * dt, 1);
 	CalcStateDeriv(2);
- 
+
 	// k4
 	t += 0.5 * dt;
 	r2 = r0 + dt * drdt2;
- 
+
 	Update(dt, 2);
 	CalcStateDeriv(3);
- 
+
 	// Apply
 	r0 += (dt / 6.0) * (drdt0 + drdt3) + (dt / 3.0) * (drdt1 + drdt2);
 
@@ -549,25 +550,19 @@ ABScheme<order, local>::Step(real& dt)
 			r0 += dt * drdt0;
 			break;
 		case 1:
-			r0 += 1.5 * drdt0 +
-			      0.5 * drdt1;
+			r0 += 1.5 * drdt0 + 0.5 * drdt1;
 			break;
 		case 2:
-			r0 += 23.0 / 12.0 * dt * drdt0 +
-			      4.0 / 3.0 * dt * drdt1 +
+			r0 += 23.0 / 12.0 * dt * drdt0 + 4.0 / 3.0 * dt * drdt1 +
 			      5.0 / 12.0 * dt * drdt2;
 			break;
 		case 3:
-			r0 += 55.0 / 24.0 * dt * drdt0 +
-			      59.0 / 24.0 * dt * drdt1 +
-			      37.0 / 24.0 * dt * drdt2 +
-			      3.0 / 8.0 * dt * drdt3;
+			r0 += 55.0 / 24.0 * dt * drdt0 + 59.0 / 24.0 * dt * drdt1 +
+			      37.0 / 24.0 * dt * drdt2 + 3.0 / 8.0 * dt * drdt3;
 			break;
 		default:
-			r0 += 1901.0 / 720.0 * dt * drdt0 +
-			      1387.0 / 360.0 * dt * drdt1 +
-			      109.0 / 360.0 * dt * drdt2 +
-			      637.0 / 24.0 * dt * drdt3 +
+			r0 += 1901.0 / 720.0 * dt * drdt0 + 1387.0 / 360.0 * dt * drdt1 +
+			      109.0 / 360.0 * dt * drdt2 + 637.0 / 24.0 * dt * drdt3 +
 			      251.0 / 720.0 * dt * drdt4;
 	}
 
@@ -581,10 +576,10 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 ImplicitSchemeBase<NSTATE, NDERIV>::ImplicitSchemeBase(moordyn::Log* log,
                                                        WavesRef waves,
                                                        unsigned int iters)
-	: SchemeBase<NSTATE, NDERIV>(log, waves)
-	, _iters(iters)
-	, _c0(0.9)
-	, _c1(0.0)
+  : SchemeBase<NSTATE, NDERIV>(log, waves)
+  , _iters(iters)
+  , _c0(0.9)
+  , _c1(0.0)
 {
 }
 
@@ -592,9 +587,9 @@ template<unsigned int NSTATE, unsigned int NDERIV>
 real
 ImplicitSchemeBase<NSTATE, NDERIV>::Relax(const unsigned int& iter)
 {
-	const real x = 4. * ((iter + 1.) / _iters - 0.5);  // [-1, 1]
-	const real y0 = 1. / _iters;                       // (0, 1]
-	const real y1 = 0.5 * (tanh(x) + 1.);              // (0, 1)
+	const real x = 4. * ((iter + 1.) / _iters - 0.5); // [-1, 1]
+	const real y0 = 1. / _iters;                      // (0, 1]
+	const real y1 = 0.5 * (tanh(x) + 1.);             // (0, 1)
 	return c0() * (1. - y0) + c1() * (1. - y1);
 }
 
@@ -650,8 +645,8 @@ ImplicitNewmarkScheme::ImplicitNewmarkScheme(moordyn::Log* log,
   , _beta(beta)
 {
 	stringstream s;
-	s << "gamma=" << gamma << ",beta=" << beta << " implicit Newmark ("
-	  << iters << " iterations)";
+	s << "gamma=" << gamma << ",beta=" << beta << " implicit Newmark (" << iters
+	  << " iterations)";
 	name = s.str();
 	c0(0.9);
 	c1(0.15);
@@ -693,35 +688,37 @@ ImplicitNewmarkScheme::Step(real& dt)
 	SchemeBase::Step(dt);
 }
 
-#define MAKE_NEWMARK_VEC3(obj) {                                               \
-	auto r0 = r(0)->get(obj);                                                  \
-	auto r1 = r(1)->get(obj);                                                  \
-	auto drdt0 = rd(0)->get(obj);                                              \
-	auto drdt1 = rd(1)->get(obj);                                              \
-	InstanceStateVar acc = (1.0 - _gamma) * drdt0.middleCols<3>(3) +           \
-	                       _gamma * drdt1.middleCols<3>(3);                    \
-	InstanceStateVar acc_beta = (0.5 - _beta) * drdt0.middleCols<3>(3) +       \
-	                            _beta * drdt1.middleCols<3>(3);                \
-	InstanceStateVar vel = drdt0.leftCols<3>() + dt * acc_beta;                \
-	r1.leftCols<3>() = r0.leftCols<3>() + vel * dt;                            \
-	r1.middleCols<3>(3) = r0.middleCols<3>(3) + acc * dt;                      \
-}
-    
-#define MAKE_NEWMARK_QUAT(obj) {                                               \
-	auto r0 = r(0)->get(obj).row(0);                                           \
-	auto r1 = r(1)->get(obj).row(0);                                           \
-	auto drdt0 = rd(0)->get(obj).row(0);                                       \
-	auto drdt1 = rd(1)->get(obj).row(0);                                       \
-	const vec6 acc = (1.0 - _gamma) * drdt0.tail<6>() +                        \
-	                 _gamma * drdt1.tail<6>();                                 \
-	const vec6 acc_beta = (1.0 - _beta) * drdt0.tail<6>() +                    \
-	                      _beta * drdt1.tail<6>();                             \
-	const vec6 vel =                                                           \
-		XYZQuat::fromVec7(drdt0.head<7>()).toVec6() + dt * acc_beta;           \
-	const vec7 pos = r0.head<7>();                                             \
-	r1.head<7>() = pos + integrateVec6AsVec7(pos, dt * vel);                   \
-	r1.tail<6>() = vec6(r0.tail<6>()) + acc * dt;                              \
-}
+#define MAKE_NEWMARK_VEC3(obj)                                                 \
+	{                                                                          \
+		auto r0 = r(0)->get(obj);                                              \
+		auto r1 = r(1)->get(obj);                                              \
+		auto drdt0 = rd(0)->get(obj);                                          \
+		auto drdt1 = rd(1)->get(obj);                                          \
+		InstanceStateVar acc = (1.0 - _gamma) * drdt0.middleCols<3>(3) +       \
+		                       _gamma * drdt1.middleCols<3>(3);                \
+		InstanceStateVar acc_beta = (0.5 - _beta) * drdt0.middleCols<3>(3) +   \
+		                            _beta * drdt1.middleCols<3>(3);            \
+		InstanceStateVar vel = drdt0.leftCols<3>() + dt * acc_beta;            \
+		r1.leftCols<3>() = r0.leftCols<3>() + vel * dt;                        \
+		r1.middleCols<3>(3) = r0.middleCols<3>(3) + acc * dt;                  \
+	}
+
+#define MAKE_NEWMARK_QUAT(obj)                                                 \
+	{                                                                          \
+		auto r0 = r(0)->get(obj).row(0);                                       \
+		auto r1 = r(1)->get(obj).row(0);                                       \
+		auto drdt0 = rd(0)->get(obj).row(0);                                   \
+		auto drdt1 = rd(1)->get(obj).row(0);                                   \
+		const vec6 acc =                                                       \
+		    (1.0 - _gamma) * drdt0.tail<6>() + _gamma * drdt1.tail<6>();       \
+		const vec6 acc_beta =                                                  \
+		    (1.0 - _beta) * drdt0.tail<6>() + _beta * drdt1.tail<6>();         \
+		const vec6 vel =                                                       \
+		    XYZQuat::fromVec7(drdt0.head<7>()).toVec6() + dt * acc_beta;       \
+		const vec7 pos = r0.head<7>();                                         \
+		r1.head<7>() = pos + integrateVec6AsVec7(pos, dt * vel);               \
+		r1.tail<6>() = vec6(r0.tail<6>()) + acc * dt;                          \
+	}
 
 void
 ImplicitNewmarkScheme::MakeNewmark(const real& dt)
@@ -754,8 +751,7 @@ ImplicitWilsonScheme::ImplicitWilsonScheme(moordyn::Log* log,
   , _theta(theta)
 {
 	stringstream s;
-	s << "theta=" << theta << " implicit Wilson ("
-	  << iters << " iterations)";
+	s << "theta=" << theta << " implicit Wilson (" << iters << " iterations)";
 	name = s.str();
 	c0(0.015);
 	c1(0.000);
@@ -794,35 +790,38 @@ ImplicitWilsonScheme::Step(real& dt)
 	SchemeBase::Step(dt);
 }
 
-#define MAKE_WILSON_VEC3(obj) {                                                \
-	auto r0 = r(0)->get(obj);                                                  \
-	auto r1 = r(1)->get(obj);                                                  \
-	auto drdt0 = rd(0)->get(obj);                                              \
-	auto drdt1 = rd(1)->get(obj);                                              \
-	InstanceStateVar acc = (1 - 0.5 * f) * drdt0.middleCols<3>(3) +            \
-	                       0.5 * f * drdt1.middleCols<3>(3);                   \
-	InstanceStateVar acc_tau = (1 - 1.0 / 3.0 * f) * drdt0.middleCols<3>(3) +  \
-	                           1.0 / 3.0 * f * drdt1.middleCols<3>(3);         \
-	InstanceStateVar vel = drdt0.leftCols<3>() + 0.5 * dt * acc_tau;           \
-	r1.leftCols<3>() = r0.leftCols<3>() + vel * tau;                           \
-	r1.middleCols<3>(3) = r0.middleCols<3>(3) + acc * tau;                     \
-}
-    
-#define MAKE_WILSON_QUAT(obj) {                                                \
-	auto r0 = r(0)->get(obj).row(0);                                           \
-	auto r1 = r(1)->get(obj).row(0);                                           \
-	auto drdt0 = rd(0)->get(obj).row(0);                                       \
-	auto drdt1 = rd(1)->get(obj).row(0);                                       \
-	const vec6 acc = (1 - 0.5 * f) * drdt0.tail<6>() +                         \
-	                 0.5 * f * drdt1.tail<6>();                                \
-	const vec6 acc_tau = (1 - 1.0 / 3.0 * f) * drdt0.tail<6>() +               \
-	                     1.0 / 3.0 * f * drdt1.tail<6>();                      \
-	const vec6 vel =                                                           \
-		XYZQuat::fromVec7(drdt0.head<7>()).toVec6() + 0.5 * dt * acc_tau;      \
-	const vec7 pos = r0.head<7>();                                             \
-	r1.head<7>() = pos + integrateVec6AsVec7(pos, tau * vel);                  \
-	r1.tail<6>() = vec6(r0.tail<6>()) + acc * tau;                             \
-}
+#define MAKE_WILSON_VEC3(obj)                                                  \
+	{                                                                          \
+		auto r0 = r(0)->get(obj);                                              \
+		auto r1 = r(1)->get(obj);                                              \
+		auto drdt0 = rd(0)->get(obj);                                          \
+		auto drdt1 = rd(1)->get(obj);                                          \
+		InstanceStateVar acc = (1 - 0.5 * f) * drdt0.middleCols<3>(3) +        \
+		                       0.5 * f * drdt1.middleCols<3>(3);               \
+		InstanceStateVar acc_tau =                                             \
+		    (1 - 1.0 / 3.0 * f) * drdt0.middleCols<3>(3) +                     \
+		    1.0 / 3.0 * f * drdt1.middleCols<3>(3);                            \
+		InstanceStateVar vel = drdt0.leftCols<3>() + 0.5 * dt * acc_tau;       \
+		r1.leftCols<3>() = r0.leftCols<3>() + vel * tau;                       \
+		r1.middleCols<3>(3) = r0.middleCols<3>(3) + acc * tau;                 \
+	}
+
+#define MAKE_WILSON_QUAT(obj)                                                  \
+	{                                                                          \
+		auto r0 = r(0)->get(obj).row(0);                                       \
+		auto r1 = r(1)->get(obj).row(0);                                       \
+		auto drdt0 = rd(0)->get(obj).row(0);                                   \
+		auto drdt1 = rd(1)->get(obj).row(0);                                   \
+		const vec6 acc =                                                       \
+		    (1 - 0.5 * f) * drdt0.tail<6>() + 0.5 * f * drdt1.tail<6>();       \
+		const vec6 acc_tau = (1 - 1.0 / 3.0 * f) * drdt0.tail<6>() +           \
+		                     1.0 / 3.0 * f * drdt1.tail<6>();                  \
+		const vec6 vel =                                                       \
+		    XYZQuat::fromVec7(drdt0.head<7>()).toVec6() + 0.5 * dt * acc_tau;  \
+		const vec7 pos = r0.head<7>();                                         \
+		r1.head<7>() = pos + integrateVec6AsVec7(pos, tau * vel);              \
+		r1.tail<6>() = vec6(r0.tail<6>()) + acc * tau;                         \
+	}
 
 void
 ImplicitWilsonScheme::MakeWilson(const real& tau, const real& dt)
@@ -900,8 +899,8 @@ create_time_scheme(const std::string& name,
 			out = new ImplicitNewmarkScheme(log, waves, iters, 0.5, 0.25);
 		} catch (std::invalid_argument) {
 			stringstream s;
-			s << "Invalid Average Constant Acceleration name format '"
-			  << name << "'";
+			s << "Invalid Average Constant Acceleration name format '" << name
+			  << "'";
 			throw moordyn::invalid_value_error(s.str().c_str());
 		}
 	} else if (str::startswith(str::lower(name), "wilson")) {
@@ -910,8 +909,7 @@ create_time_scheme(const std::string& name,
 			out = new ImplicitWilsonScheme(log, waves, iters, 1.37);
 		} catch (std::invalid_argument) {
 			stringstream s;
-			s << "Invalid Wilson name format '"
-			  << name << "'";
+			s << "Invalid Wilson name format '" << name << "'";
 			throw moordyn::invalid_value_error(s.str().c_str());
 		}
 	} else {
