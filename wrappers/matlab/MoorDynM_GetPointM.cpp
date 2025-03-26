@@ -43,7 +43,7 @@ MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynPoint, 1, 1)
 	const int err = MoorDyn_GetPointM(instance, m);
 	MOORDYNM_CHECK_ERROR(err);
 
-	outputs[0] = factory.createArray<double>(
-	    { 3, 3 }, &(m[0][0]), &(m[0][0]) + 3 * 3);
+	outputs[0] =
+	    factory.createArray<double>({ 3, 3 }, &(m[0][0]), &(m[0][0]) + 3 * 3);
 }
 MOORDYNM_MEX_FUNCTION_END

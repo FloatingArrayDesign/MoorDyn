@@ -48,6 +48,5 @@ MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 1, 1)
 	MOORDYNM_CHECK_ERROR(err);
 	outputs[0] = factory.createArray<uint64_t>(
 	    { 1, v.size() }, v.data(), v.data() + v.size());
-
 }
 MOORDYNM_MEX_FUNCTION_END

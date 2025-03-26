@@ -1255,15 +1255,15 @@ waves_getkin(PyObject*, PyObject* args)
 
 	MoorDynSeafloor seabed = NULL;
 	if (seafloor != Py_None) {
-		seabed = (MoorDynSeafloor)PyCapsule_GetPointer(
-			seafloor, seafloor_capsule_name);
+		seabed = (MoorDynSeafloor)PyCapsule_GetPointer(seafloor,
+		                                               seafloor_capsule_name);
 		if (!seabed)
 			return NULL;
 	}
 
 	double u[3], ud[3], zeta, pdyn;
-	const int err = MoorDyn_GetWavesKin(
-		instance, x, y, z, u, ud, &zeta, &pdyn, seabed);
+	const int err =
+	    MoorDyn_GetWavesKin(instance, x, y, z, u, ud, &zeta, &pdyn, seabed);
 	if (err != 0) {
 		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
 		return NULL;
@@ -2882,7 +2882,6 @@ line_get_node_m(PyObject*, PyObject* args)
 	return lst;
 }
 
-
 /** @brief Wrapper to MoorDyn_GetLineFairTen() function
  * @param args Python passed arguments
  * @return The tension magnitude
@@ -2991,10 +2990,7 @@ static PyMethodDef moordyn_methods[] = {
 	  METH_VARARGS,
 	  "deallocates the variables used by MoorDyn" },
 	{ "get_waves", get_waves, METH_VARARGS, "Get the waves manager instance" },
-	{ "get_seafloor",
-	   get_seafloor,
-	   METH_VARARGS,
-	   "Get the seafloor instance" },
+	{ "get_seafloor", get_seafloor, METH_VARARGS, "Get the seafloor instance" },
 	{ "ext_wave_init",
 	  ext_wave_init,
 	  METH_VARARGS,
@@ -3074,7 +3070,10 @@ static PyMethodDef moordyn_methods[] = {
 	{ "body_get_pos", body_get_pos, METH_VARARGS, "Get the body pos" },
 	{ "body_get_angle", body_get_angle, METH_VARARGS, "Get the body angle" },
 	{ "body_get_vel", body_get_vel, METH_VARARGS, "Get the body velocity" },
-	{ "body_get_angvel", body_get_angvel, METH_VARARGS, "Get the body ang vel" },
+	{ "body_get_angvel",
+	  body_get_angvel,
+	  METH_VARARGS,
+	  "Get the body ang vel" },
 	{ "body_get_force", body_get_force, METH_VARARGS, "Get the body force" },
 	{ "body_get_m", body_get_m, METH_VARARGS, "Get the body mass" },
 	{ "body_save_vtk",
@@ -3104,18 +3103,9 @@ static PyMethodDef moordyn_methods[] = {
 	  "Save a .vtp file of the rod" },
 	{ "point_get_id", point_get_id, METH_VARARGS, "Get the point id" },
 	{ "point_get_type", point_get_type, METH_VARARGS, "Get the point type" },
-	{ "point_get_pos",
-	  point_get_pos,
-	  METH_VARARGS,
-	  "Get the point position" },
-	{ "point_get_vel",
-	  point_get_vel,
-	  METH_VARARGS,
-	  "Get the point velocity" },
-	{ "point_get_force",
-	  point_get_force,
-	  METH_VARARGS,
-	  "Get the point force" },
+	{ "point_get_pos", point_get_pos, METH_VARARGS, "Get the point position" },
+	{ "point_get_vel", point_get_vel, METH_VARARGS, "Get the point velocity" },
+	{ "point_get_force", point_get_force, METH_VARARGS, "Get the point force" },
 	{ "point_get_m", point_get_m, METH_VARARGS, "Get the point mass matrix" },
 	{ "point_get_nattached",
 	  point_get_nattached,

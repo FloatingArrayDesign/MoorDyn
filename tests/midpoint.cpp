@@ -124,8 +124,8 @@ TEST_CASE("quasi_static_chain with midpoint10")
 	// Compute the static tension
 	int num_lines = 1;
 	float fh, fv, ah, av;
-	REQUIRE(MoorDyn_GetFASTtens(
-		system, &num_lines, &fh, &fv, &ah, &av) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av) ==
+	        MOORDYN_SUCCESS);
 	const double ffair0 = sqrt(fh * fh + fv * fv);
 	const double ffair_ref0 = 1.e3 * STATIC_FAIR_TENSION;
 	const double fanch0 = sqrt(ah * ah + av * av);
@@ -167,8 +167,8 @@ TEST_CASE("quasi_static_chain with midpoint10")
 		if (t_ref < 0.0)
 			continue;
 
-		REQUIRE(MoorDyn_GetFASTtens(
-			system, &num_lines, &fh, &fv, &ah, &av) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_GetFASTtens(system, &num_lines, &fh, &fv, &ah, &av) ==
+		        MOORDYN_SUCCESS);
 		const double ffair = sqrt(fh * fh + fv * fv) - ffair0;
 		const double ffair_ref = 1.e3 * ref_data[i_ref][3] - ffair_ref0;
 		const double fanch = sqrt(ah * ah + av * av) - fanch0;

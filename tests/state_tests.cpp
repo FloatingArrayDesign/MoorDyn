@@ -30,7 +30,9 @@ CreatePoint(md::Log* log, EnvCondRef env)
 }
 
 md::Line*
-CreateLine(md::Log* log, EnvCondRef env, unsigned int n,
+CreateLine(md::Log* log,
+           EnvCondRef env,
+           unsigned int n,
            shared_ptr<ofstream> outfile)
 {
 	md::Line* obj = new md::Line(log, 0);
@@ -50,19 +52,12 @@ CreateLine(md::Log* log, EnvCondRef env, unsigned int n,
 	props.nEApoints = 0;
 	props.nBApoints = 0;
 	props.nEIpoints = 0;
-	obj->setup(0,
-			   &props,
-			   1.e3,
-			   n,
-			   env,
-			   outfile,
-			   "",
-			   0);
+	obj->setup(0, &props, 1.e3, n, env, outfile, "", 0);
 	return obj;
 }
 
 #define SYS_STARTER                                                            \
-	md::Log *log = new md::Log(MOORDYN_DBG_LEVEL);                             \
+	md::Log* log = new md::Log(MOORDYN_DBG_LEVEL);                             \
 	EnvCondRef env = std::make_shared<EnvCond>();                              \
 	env->g = 9.81;                                                             \
 	env->WtrDpth = 0.;                                                         \
@@ -133,9 +128,9 @@ TEST_CASE("State initializing")
 	r.get(p2).row(0).tail<3>() = md::vec(4.0, 5.0, 6.0);
 	md::real norm = 0.0;
 	for (unsigned int i = 0; i < 19; i++) {
-		norm += md::vec6(i, 2*i, 4*i, 5*i, 6*i, 7*i).squaredNorm();
-		r.get(l).row(i).head<3>() = md::vec(i, 2*i, 4*i);
-		r.get(l).row(i).tail<3>() = md::vec(5*i, 6*i, 7*i);
+		norm += md::vec6(i, 2 * i, 4 * i, 5 * i, 6 * i, 7 * i).squaredNorm();
+		r.get(l).row(i).head<3>() = md::vec(i, 2 * i, 4 * i);
+		r.get(l).row(i).tail<3>() = md::vec(5 * i, 6 * i, 7 * i);
 	}
 	norm = sqrt(norm);
 
@@ -175,8 +170,8 @@ TEST_CASE("Operating states")
 	r.get(p2).row(0).head<3>() = md::vec(1.0, 2.0, 3.0);
 	r.get(p2).row(0).tail<3>() = md::vec(4.0, 5.0, 6.0);
 	for (unsigned int i = 0; i < 19; i++) {
-		r.get(l).row(i).head<3>() = md::vec(i, 2*i, 4*i);
-		r.get(l).row(i).tail<3>() = md::vec(5*i, 6*i, 7*i);
+		r.get(l).row(i).head<3>() = md::vec(i, 2 * i, 4 * i);
+		r.get(l).row(i).tail<3>() = md::vec(5 * i, 6 * i, 7 * i);
 	}
 
 	r2.get() = r.get() * 2.0;

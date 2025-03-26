@@ -42,103 +42,112 @@ extern "C"
 {
 #endif
 
-	/** @addtogroup new_c_api
-	 *  @{
-	 */
+/** @addtogroup new_c_api
+ *  @{
+ */
 
-	/// A mooring point instance
-	typedef struct __MoorDynPoint* MoorDynPoint;
+/// A mooring point instance
+typedef struct __MoorDynPoint* MoorDynPoint;
 
-	/** @brief Get the point identifier
-	 * @param point The Moordyn point
-	 * @param id The output id
-	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
-	 * MOORDYN_SUCCESS otherwise
-	 */
-	int DECLDIR MoorDyn_GetPointID(MoorDynPoint point, int* id);
+/** @brief Get the point identifier
+ * @param point The Moordyn point
+ * @param id The output id
+ * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+ * MOORDYN_SUCCESS otherwise
+ */
+int DECLDIR
+MoorDyn_GetPointID(MoorDynPoint point, int* id);
 
-	/** @brief Get the point type
-	 * @param point The Moordyn point
-	 * @param t The output type
-	 * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
-	 * MOORDYN_SUCCESS otherwise
-	 * @see Point::types
-	 */
-	int DECLDIR MoorDyn_GetPointType(MoorDynPoint point, int* t);
+/** @brief Get the point type
+ * @param point The Moordyn point
+ * @param t The output type
+ * @return MOORDYN_INVALID_VALUE if a NULL point is provided,
+ * MOORDYN_SUCCESS otherwise
+ * @see Point::types
+ */
+int DECLDIR
+MoorDyn_GetPointType(MoorDynPoint point, int* t);
 
-	/** @brief Get the position of a point
-	 * @param point The Moordyn point
-	 * @param pos The output position
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise
-	 * (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_GetPointPos(MoorDynPoint point, double pos[3]);
+/** @brief Get the position of a point
+ * @param point The Moordyn point
+ * @param pos The output position
+ * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+ * otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_GetPointPos(MoorDynPoint point, double pos[3]);
 
-	/** @brief Get the velocity of a point
-	 * @param point The Moordyn point
-	 * @param v The output velocity
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise
-	 * (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_GetPointVel(MoorDynPoint point, double v[3]);
+/** @brief Get the velocity of a point
+ * @param point The Moordyn point
+ * @param v The output velocity
+ * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+ * otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_GetPointVel(MoorDynPoint point, double v[3]);
 
-	/** @brief Get the force at a point
-	 * @param point The Moordyn point
-	 * @param f The output force
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise
-	 * (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_GetPointForce(MoorDynPoint point, double f[3]);
+/** @brief Get the force at a point
+ * @param point The Moordyn point
+ * @param f The output force
+ * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+ * otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_GetPointForce(MoorDynPoint point, double f[3]);
 
-	/** @brief Get the point mass matrix
-	 * @param point The Moordyn point
-	 * @param f The output force
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise
-	 * (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_GetPointM(MoorDynPoint point, double m[3][3]);
+/** @brief Get the point mass matrix
+ * @param point The Moordyn point
+ * @param f The output force
+ * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+ * otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_GetPointM(MoorDynPoint point, double m[3][3]);
 
-	/** @brief Get the number of connected lines
-	 * @param point The Moordyn point
-	 * @param n The output number of connected lines
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise
-	 * (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_GetPointNAttached(MoorDynPoint point, unsigned int* n);
+/** @brief Get the number of connected lines
+ * @param point The Moordyn point
+ * @param n The output number of connected lines
+ * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+ * otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_GetPointNAttached(MoorDynPoint point, unsigned int* n);
 
-	/** @brief Get the number of connected lines
-	 * @param point The Moordyn point
-	 * @param i The index of the attached line
-	 * @param l The output attached line
-	 * @param e The output endpoint, see moordyn::EndPoints
-	 * @return MOORDYN_SUCCESS If the data is correctly set, an error code
-	 * otherwise
-	 * (see @ref moordyn_errors)
-	 */
-	int DECLDIR MoorDyn_GetPointAttached(MoorDynPoint point,
-	                                     unsigned int i,
-	                                     MoorDynLine* l,
-	                                     int* e);
+/** @brief Get the number of connected lines
+ * @param point The Moordyn point
+ * @param i The index of the attached line
+ * @param l The output attached line
+ * @param e The output endpoint, see moordyn::EndPoints
+ * @return MOORDYN_SUCCESS If the data is correctly set, an error code
+ * otherwise
+ * (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_GetPointAttached(MoorDynPoint point,
+                         unsigned int i,
+                         MoorDynLine* l,
+                         int* e);
 
-	/** @brief Save the point to a VTK (.vtp) file
-	 * @param point The Moordyn point
-	 * @param filename The output maximum tension module
-	 * @return MOORDYN_SUCCESS if the file is correctly written, an error code
-	 * otherwise
-	 * @note If MoorDyn has been built without VTK support, this function will
-	 * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
-	 * anyway
-	 */
-	int DECLDIR MoorDyn_SavePointVTK(MoorDynPoint point, const char* filename);
+/** @brief Save the point to a VTK (.vtp) file
+ * @param point The Moordyn point
+ * @param filename The output maximum tension module
+ * @return MOORDYN_SUCCESS if the file is correctly written, an error code
+ * otherwise
+ * @note If MoorDyn has been built without VTK support, this function will
+ * return a MOORDYN_NON_IMPLEMENTED error, but it will be still available
+ * anyway
+ */
+int DECLDIR
+MoorDyn_SavePointVTK(MoorDynPoint point, const char* filename);
 
-	/**
-	 * @}
-	 */
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

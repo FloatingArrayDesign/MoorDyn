@@ -39,19 +39,24 @@ namespace state {
 void
 State::addInstance(moordyn::Instance* obj)
 {
-	if (std::find(_objs.begin(), _objs.end(), obj) != _objs.end()) { // check that this quieried object is not in the _objs list already
+	if (std::find(_objs.begin(), _objs.end(), obj) !=
+	    _objs.end()) { // check that this quieried object is not in the _objs
+		               // list already
 		throw moordyn::invalid_value_error("Repeated instance");
 	}
-	StateVar new_var(_objs.size() + 1); // make a new Statevar with space for the new instance 
+	StateVar new_var(_objs.size() +
+	                 1); // make a new Statevar with space for the new instance
 	for (size_t i = 0; i < _objs.size(); i++) {
 		new_var(i) = _var(i); // copy over _var values to the new array
 	}
-	InstanceStateVar obj_var(obj->stateN(), obj->stateDims()); // create a N x Dims array of states
-	obj_var.setZero(); // initialize the array to zeros
-	new_var(_objs.size()) = obj_var; // place the array at the end of the _var array
-	_var = new_var; // same as above
-	_objs.push_back(obj); // add the object to the end of the _objs list
-	_indexes = make_indexes(); // update indicies 
+	InstanceStateVar obj_var(
+	    obj->stateN(), obj->stateDims()); // create a N x Dims array of states
+	obj_var.setZero();                    // initialize the array to zeros
+	new_var(_objs.size()) =
+	    obj_var;               // place the array at the end of the _var array
+	_var = new_var;            // same as above
+	_objs.push_back(obj);      // add the object to the end of the _objs list
+	_indexes = make_indexes(); // update indicies
 }
 
 unsigned int

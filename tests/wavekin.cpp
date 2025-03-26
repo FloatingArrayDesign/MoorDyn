@@ -69,7 +69,8 @@ current(double PARAM_UNUSED t,
 void
 wave(double t, const double* r, double* u, double* du)
 {
-	const double pi = 3.1416, g = 9.80665, A = 1.5, L = 10.0, T = 15.0, H = 50.0;
+	const double pi = 3.1416, g = 9.80665, A = 1.5, L = 10.0, T = 15.0,
+	             H = 50.0;
 	memset(u, 0.0, 3 * sizeof(double));
 	memset(du, 0.0, 3 * sizeof(double));
 	const double k = 2.0 * L / pi, w = 2.0 * T / pi, zf = (1.0 + r[2] / H);

@@ -70,7 +70,9 @@ class Rod;
  *
  * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
  */
-class DECLDIR Body final : public Instance, public SuperCFL
+class DECLDIR Body final
+  : public Instance
+  , public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -176,7 +178,7 @@ class DECLDIR Body final : public Instance, public SuperCFL
 			case COUPLED:
 				return "COUPLED";
 			case CPLDPIN:
-				return "CPLDPIN";	
+				return "CPLDPIN";
 			case FREE:
 				return "FREE";
 			case FIXED:
@@ -337,7 +339,10 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	/** @brief Get the body angular velocity
 	 * @return The body angular velocity
 	 */
-	inline const vec getAngularVelocity() const { return v6(Eigen::seqN(3, 3)); }
+	inline const vec getAngularVelocity() const
+	{
+		return v6(Eigen::seqN(3, 3));
+	}
 
 	/** @brief Get the forces and moments exerted over the body
 	 * @return The net force
@@ -387,7 +392,6 @@ class DECLDIR Body final : public Instance, public SuperCFL
 	 * @{
 	 */
 	void setState(const InstanceStateVarView r);
-
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *

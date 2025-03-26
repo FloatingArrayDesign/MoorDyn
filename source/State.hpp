@@ -57,7 +57,7 @@ class DECLDIR State final : public moordyn::io::IO
 	 * @param log The logger
 	 */
 	State(moordyn::Log* log)
-		: moordyn::io::IO(log)
+	  : moordyn::io::IO(log)
 	{
 	}
 
@@ -65,7 +65,7 @@ class DECLDIR State final : public moordyn::io::IO
 	 * @param rhs State to copy
 	 */
 	State(const State& rhs)
-		: moordyn::io::IO(rhs._log)
+	  : moordyn::io::IO(rhs._log)
 	{
 		copy(rhs);
 	}
@@ -122,7 +122,7 @@ class DECLDIR State final : public moordyn::io::IO
 	}
 
 	inline const std::vector<Eigen::Index> indexer(
-		std::vector<moordyn::Instance*> obj)
+	    std::vector<moordyn::Instance*> obj)
 	{
 		std::vector<Eigen::Index> slcs;
 		slcs.reserve(obj.size());
@@ -182,7 +182,8 @@ class DECLDIR State final : public moordyn::io::IO
 	 * This method builds the moordyn::State::indexes map
 	 * @return the Total number of dofs
 	 */
-	inline std::vector<int> make_indexes() {
+	inline std::vector<int> make_indexes()
+	{
 		std::vector<int> indexes;
 		for (size_t i = 0; i < _objs.size(); i++) {
 			size_t key = _objs[i]->id();
@@ -208,7 +209,8 @@ class DECLDIR State final : public moordyn::io::IO
 
 } // ::moordyn
 
-inline moordyn::StateVar operator*(moordyn::StateVarView v, moordyn::real f)
+inline moordyn::StateVar
+operator*(moordyn::StateVarView v, moordyn::real f)
 {
 	moordyn::StateVar out;
 	out.resize(v.rows());
@@ -219,12 +221,14 @@ inline moordyn::StateVar operator*(moordyn::StateVarView v, moordyn::real f)
 	return out;
 }
 
-inline moordyn::StateVar operator*(moordyn::real f, moordyn::StateVarView v)
+inline moordyn::StateVar
+operator*(moordyn::real f, moordyn::StateVarView v)
 {
 	return v * f;
 }
 
-inline moordyn::StateVar operator*(moordyn::StateVar v, moordyn::real f)
+inline moordyn::StateVar
+operator*(moordyn::StateVar v, moordyn::real f)
 {
 	moordyn::StateVar out;
 	out.resize(v.rows());
@@ -235,7 +239,8 @@ inline moordyn::StateVar operator*(moordyn::StateVar v, moordyn::real f)
 	return out;
 }
 
-inline moordyn::StateVar operator*(moordyn::real f, moordyn::StateVar v)
+inline moordyn::StateVar
+operator*(moordyn::real f, moordyn::StateVar v)
 {
 	return v.topLeftCorner(v.rows(), v.cols()) * f;
 }

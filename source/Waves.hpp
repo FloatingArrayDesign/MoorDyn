@@ -130,7 +130,7 @@ struct SeafloorProvider
 class AbstractCurrentKin
 {
   public:
-	virtual ~AbstractCurrentKin(){};
+	virtual ~AbstractCurrentKin() {};
 	/** @brief Get the velocity and acceleration at a specific position and time
 	 *
 	 * @param pos The location
@@ -155,7 +155,7 @@ class AbstractCurrentKin
 class AbstractWaveKin
 {
   public:
-	virtual ~AbstractWaveKin(){};
+	virtual ~AbstractWaveKin() {};
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific position and time
 	 * @param pos The location

@@ -311,7 +311,7 @@ IO::LoadFile(const std::string filepath) const
 	f.read((char*)data, size);
 	f.close();
 
-	return {length, data};
+	return { length, data };
 }
 
 uint64_t

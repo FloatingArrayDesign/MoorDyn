@@ -112,14 +112,14 @@ init()
 	std::fill(u, u + 3, 0.0);
 	REQUIRE(MoorDyn_Init(system, r, u) == MOORDYN_SUCCESS);
 
-	return {system, line, point};
+	return { system, line, point };
 }
 
 TEST_CASE("Stationary")
 {
 	const double tol = 0.2;
-	const double top_ten_ref[3] = {11.40, 0.0, 45.71};
-	const double bottom_ten_ref[3] = {-11.40, 0.0, 24.04};
+	const double top_ten_ref[3] = { 11.40, 0.0, 45.71 };
+	const double bottom_ten_ref[3] = { -11.40, 0.0, 24.04 };
 	auto [system, line, point] = init();
 	unsigned int n_segments;
 	REQUIRE(MoorDyn_GetLineN(line, &n_segments) == MOORDYN_SUCCESS);
@@ -173,10 +173,11 @@ case123(const unsigned int case_id)
 
 		const double t_ref = t - t_ramp;
 		if (t_ref >= ref_data[ref_data_index][0]) {
-			REQUIRE(MoorDyn_GetLineNodeForce(
-				line, n_segments, ten) == MOORDYN_SUCCESS);
-			const double ten_kn = 1.0e-3 * sqrt(
-				ten[0] * ten[0] + ten[1] * ten[1] + ten[2] * ten[2]);
+			REQUIRE(MoorDyn_GetLineNodeForce(line, n_segments, ten) ==
+			        MOORDYN_SUCCESS);
+			const double ten_kn =
+			    1.0e-3 *
+			    sqrt(ten[0] * ten[0] + ten[1] * ten[1] + ten[2] * ten[2]);
 			REQUIRE(std::abs(ten_kn - ref_data[ref_data_index][1]) < tol);
 			ref_data_index++;
 			if (ref_data_index >= ref_data.size())
@@ -215,8 +216,14 @@ TEST_CASE("Case 3")
  * @param a Output acceleration
  */
 void
-wave(double A, double T, double phi, double d, double t,
-     const double* r, double* u, double* a)
+wave(double A,
+     double T,
+     double phi,
+     double d,
+     double t,
+     const double* r,
+     double* u,
+     double* a)
 {
 	const double omega = 2.0 * M_PI / T;
 	const double k = omega * omega / 9.81;
@@ -259,9 +266,9 @@ case456(const unsigned int case_id, double phi)
 	auto [system, line, point] = init();
 	unsigned int nwp;
 	REQUIRE(MoorDyn_ExternalWaveKinInit(system, &nwp) == MOORDYN_SUCCESS);
-	double *rwp = (double*)malloc(3 * nwp * sizeof(double));
-	double *uwp = (double*)malloc(3 * nwp * sizeof(double));
-	double *awp = (double*)malloc(3 * nwp * sizeof(double));
+	double* rwp = (double*)malloc(3 * nwp * sizeof(double));
+	double* uwp = (double*)malloc(3 * nwp * sizeof(double));
+	double* awp = (double*)malloc(3 * nwp * sizeof(double));
 	REQUIRE((rwp && uwp && awp));
 
 	unsigned int n_segments;
@@ -276,22 +283,29 @@ case456(const unsigned int case_id, double phi)
 	while (t < 30.0 + t_ramp) {
 		double ten[3];
 
-		REQUIRE(MoorDyn_ExternalWaveKinGetCoordinates(
-			system, rwp) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_ExternalWaveKinGetCoordinates(system, rwp) ==
+		        MOORDYN_SUCCESS);
 		for (unsigned int i = 0; i < nwp; i++) {
-			wave(A, T, phi, (case_id - 4) * 0.25 * M_PI, t + 0.5 * dt,
-			     rwp + 3 * i, uwp + 3 * i, awp + 3 * i);
+			wave(A,
+			     T,
+			     phi,
+			     (case_id - 4) * 0.25 * M_PI,
+			     t + 0.5 * dt,
+			     rwp + 3 * i,
+			     uwp + 3 * i,
+			     awp + 3 * i);
 		}
-		REQUIRE(MoorDyn_ExternalWaveKinSet(
-			system, uwp, awp, t + 0.5 * dt) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_ExternalWaveKinSet(system, uwp, awp, t + 0.5 * dt) ==
+		        MOORDYN_SUCCESS);
 		REQUIRE(MoorDyn_Step(system, r, u, ten, &t, &dt) == MOORDYN_SUCCESS);
 
 		const double t_ref = t - t_ramp;
 		if (t_ref >= ref_data[ref_data_index][0]) {
-			REQUIRE(MoorDyn_GetLineNodeForce(
-				line, n_segments, ten) == MOORDYN_SUCCESS);
-			const double ten_kn = 1.0e-3 * sqrt(
-				ten[0] * ten[0] + ten[1] * ten[1] + ten[2] * ten[2]);
+			REQUIRE(MoorDyn_GetLineNodeForce(line, n_segments, ten) ==
+			        MOORDYN_SUCCESS);
+			const double ten_kn =
+			    1.0e-3 *
+			    sqrt(ten[0] * ten[0] + ten[1] * ten[1] + ten[2] * ten[2]);
 			REQUIRE(std::abs(ten_kn - ref_data[ref_data_index][1]) < tol);
 			ref_data_index++;
 			if (ref_data_index >= ref_data.size())

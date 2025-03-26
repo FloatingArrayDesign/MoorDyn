@@ -63,7 +63,9 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class DECLDIR Rod final : public Instance, public SuperCFL
+class DECLDIR Rod final
+  : public Instance
+  , public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -192,7 +194,8 @@ class DECLDIR Rod final : public Instance, public SuperCFL
 
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	std::vector<moordyn::real> VOF; // TODO: This doesn't need to be a vector, can be a double reused for each node
+	std::vector<moordyn::real> VOF; // TODO: This doesn't need to be a vector,
+	                                // can be a double reused for each node
 	/// instantaneous axial submerged length [m]
 	real h0;
 
@@ -559,10 +562,7 @@ class DECLDIR Rod final : public Instance, public SuperCFL
 	 * @param rBody The body position
 	 * @param vBody The body velocity
 	 */
-	void getNetForceAndMass(vec6& Fnet_out,
-	                        mat6& M_out,
-	                        vec rBody,
-	                        vec6 vBody);
+	void getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody, vec6 vBody);
 
 	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
@@ -650,8 +650,6 @@ class DECLDIR Rod final : public Instance, public SuperCFL
 		}
 		return F;
 	}
-
-
 };
 
 } // ::moordyn
