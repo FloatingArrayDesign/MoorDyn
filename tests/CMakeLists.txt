@@ -35,7 +35,6 @@ set(CPP_TESTS
     seafloor
     wavekin
     wavekin_7
-    viv
 )
 
 set(CATCH2_TESTS 
@@ -46,6 +45,7 @@ set(CATCH2_TESTS
     beam
     conveying_fluid
     polyester
+    viv
     quasi_static_chain
     lowe_and_langley_2006
     local_euler

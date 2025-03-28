@@ -41,6 +41,7 @@
 #include <iomanip>
 #include <cmath>
 #include <vector>
+#include <catch2/catch_test_macros.hpp>
 
 // NOTE: this is largely built on the pendulum test framework
 
@@ -54,50 +55,33 @@ compare(double v1, double v2, double tol)
 	return fabs(v1 - v2) <= tol;
 }
 
-#define CHECK_VALUE(name, v1, v2, tol, t)                                      \
-	if (!compare(v1, v2, tol)) {                                               \
-		cerr << setprecision(8) << "Checking " << name                         \
-		     << " failed at t = " << t << " s. " << v1 << " was expected"      \
-		     << " but " << v2 << " was computed" << endl;                      \
-		MoorDyn_Close(system);                                                 \
-		return false;                                                          \
+void
+check_value(const char* name, double v1, double v2, double tol, double t)
+{
+	if (!compare(v1, v2, tol)) {
+		std::cerr << std::setprecision(8) << "Checking " << name
+		          << " failed at t = " << t << " s. " << v1 << " was expected"
+		          << " but " << v2 << " was computed" << std::endl;
+		throw std::runtime_error("Missmatching values");
 	}
+}
 
 using namespace std;
 
-/** @brief VIV frequency simulation and check
- * @return true if the test worked, false otherwise
- */
-bool
-VIV()
+TEST_CASE("VIV frequency simulation and check")
 {
 	MoorDyn system = MoorDyn_Create("Mooring/viv/viv.txt");
-	if (!system) {
-		cerr << "Failure Creating the Mooring system" << endl;
-		return false;
-	}
+	REQUIRE(system);
 
 	unsigned int n_dof;
-	if (MoorDyn_NCoupledDOF(system, &n_dof) != MOORDYN_SUCCESS) {
-		MoorDyn_Close(system);
-		return false;
-	}
-	if (n_dof != 0) {
-		cerr << "0 DOFs were expected, but " << n_dof << "were reported"
-		     << endl;
-		MoorDyn_Close(system);
-		return false;
-	}
+	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
+	REQUIRE(n_dof == 0);
 
-	int err;
-	err = MoorDyn_Init(system, NULL, NULL);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure during the mooring initialization: " << err << endl;
-		return false;
-	}
+	REQUIRE(MoorDyn_Init(system, NULL, NULL) == MOORDYN_SUCCESS);
 
 	// get the moordyn line object
 	const MoorDynLine line1 = MoorDyn_GetLine(system, 1);
+	REQUIRE(line1);
 
 	const double T =
 	    1 / (2 * 1.04); // Target VIV period, fairten frequency is 2x target CF
@@ -113,18 +97,10 @@ VIV()
 	    0.0; // last peak tracker. For checking if there is a change in the peak
 
 	while (t < 15) { // run for 15 seconds
+		REQUIRE(MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt) ==
+		        MOORDYN_SUCCESS);
 
-		err = MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure during the mooring step: " << err << endl;
-			return false;
-		}
-
-		err = MoorDyn_GetLineFairTen(line1, &ten);
-		if (err != MOORDYN_SUCCESS) {
-			cerr << "Failure getting the fairlead tension: " << err << endl;
-			return false;
-		}
+		REQUIRE(MoorDyn_GetLineFairTen(line1, &ten) == MOORDYN_SUCCESS);
 
 		if (t > 10) { // only check period after 10 seconds. Before then, there
 			          // isn't complete lock in
@@ -141,42 +117,20 @@ VIV()
 		}
 	}
 
-	if (peak_times.size() == 0)
-		cerr << "No peaks detected in fairten signal"
-		     << endl; // if no peaks something is wrong, like viv model was
-		              // broken or disabled
+	REQUIRE(peak_times.size() != 0);
 
 	// Check period is correct
 	for (unsigned int i = 2; i < peak_times.size(); i++) {
-		cout << "Target Period: " << T
-		     << " s. Calculated period: " << peak_times[i] - peak_times[i - 2]
-		     << " s" << endl;
+		INFO("Target Period: " << T << " s. Calculated period: "
+		                       << peak_times[i] - peak_times[i - 2] << " s");
 		// check that peak_times[i]-peak_times[i-2] is within TOL of T
-		CHECK_VALUE("Period",
-		            T,
-		            peak_times[i] - peak_times[i - 2],
-		            TOL,
-		            peak_times[i]); // note that peak_times[i]-peak_times[i-1]
-		                            // would be a half period
+		// note that peak_times[i]-peak_times[i-1] would be a half period
+		REQUIRE_NOTHROW(check_value("Period",
+		                            T,
+		                            peak_times[i] - peak_times[i - 2],
+		                            TOL,
+		                            peak_times[i]));
 	}
 
-	err = MoorDyn_Close(system);
-	if (err != MOORDYN_SUCCESS) {
-		cerr << "Failure closing Moordyn: " << err << endl;
-		return false;
-	}
-
-	return true;
-}
-
-/** @brief Runs all the test
- * @return 0 if the tests have ran just fine. The index of the failing test
- * otherwise
- */
-int
-main(int, char**)
-{
-	if (!VIV())
-		return 1;
-	return 0;
+	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
 }
