@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
 #include <utility>
@@ -67,7 +67,9 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
  */
-class Point final : public io::IO, public SuperCFL
+class DECLDIR Point final
+  : public Instance
+  , public SuperCFL
 {
   public:
 	/** @brief Constructor
@@ -243,10 +245,21 @@ class Point final : public io::IO, public SuperCFL
 	inline std::vector<attachment> getLines() const { return attached; }
 
 	/** @brief Initialize the FREE point state
+	 * @param r The output state variable
 	 * @return The position (first) and the velocity (second)
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
 	std::pair<vec, vec> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		r.row(0).head<3>() = pos;
+		r.row(0).tail<3>() = vel;
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Get the point position
 	 * @return The position [x,y,z]
@@ -348,20 +361,37 @@ class Point final : public io::IO, public SuperCFL
 
 	/** @brief Set the state variables
 	 *
-	 * sets Point states and ends of attached lines ONLY if this Point
-	 * is free, i.e. type = FREE (otherwise shouldn't be called)
+	 * sets Point position and velocity and ends of attached lines ONLY if this
+	 * Point is free, i.e. type = FREE (otherwise shouldn't be called)
 	 * @param pos Position
 	 * @param vel Velocity
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
+	 * @{
 	 */
 	void setState(vec pos, vec vel);
 
+	/** @brief Set the point state
+	 *
+	 * sets Pointstate and ends of attached lines ONLY if this Point
+	 * is free, i.e. type = FREE (otherwise shouldn't be called)
+	 * @param r The point state instance
+	 * @throws moordyn::invalid_value_error If it is not a FREE point
+	 * @note this calls Point::SetState(pos, vel)
+	 */
+	inline void setState(const InstanceStateVarView r)
+	{
+		setState(r.row(0).head<3>(),
+		         r.row(0).tail<3>()); // TODO: when working on line failures,
+		                              // make this setState call match rods,
+		                              // bodies, and lines structure
+	}
+
 	/** @brief Calculate the forces and state derivatives of the point
-	 * @return The states derivatives, i.e. the velocity (first) and the
-	 * acceleration (second)
+	 * @param drdt The states derivatives, i.e. the velocity and the
+	 * acceleration
 	 * @throws moordyn::invalid_value_error If it is not a FREE point
 	 */
-	std::pair<vec, vec> getStateDeriv();
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
@@ -381,6 +411,18 @@ class Point final : public io::IO, public SuperCFL
 	 * @return MOORDYN_SUCCESS upon success, an error code otherwise
 	 */
 	moordyn::error_id doRHS();
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return 1
+	 */
+	inline const size_t stateN() const { return 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 3 components for positions and 3 components for velocities, i.e.
+	 * 6 components
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 6; }
 
 	/** @brief Produce the packed data to be saved
 	 *
@@ -432,7 +474,6 @@ class Point final : public io::IO, public SuperCFL
 	{
 		return -M * (w.cross(w.cross(this->r - r)));
 	}
-
 };
 
 } // ::moordyn

@@ -39,11 +39,13 @@ set(CPP_TESTS
 
 set(CATCH2_TESTS 
     math_tests
+    state_tests
     testDecomposeString
     bodies
     beam
     conveying_fluid
     polyester
+    viv
     quasi_static_chain
     lowe_and_langley_2006
     local_euler
@@ -137,4 +139,31 @@ if(${MATLAB_WRAPPER})
     matlab_add_unit_test(NAME matlab_bindings
                          UNITTEST_FILE ${CMAKE_CURRENT_BINARY_DIR}/matlab_bindings.m
                          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+if(${RUST_WRAPPER})
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml
+                   ${CMAKE_CURRENT_BINARY_DIR}/Cargo.toml
+                   COPYONLY)
+    set(RUST_TESTS 
+        rust_minimal
+    )
+    foreach(TEST ${RUST_TESTS})
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEST}.rs
+                       ${CMAKE_CURRENT_BINARY_DIR}/${TEST}.rs
+                       COPYONLY)
+    endforeach()
+
+    add_custom_target(
+        rust_make_tests ALL
+        ${CMAKE_COMMAND} -E env RUSTFLAGS="-L${CMAKE_BINARY_DIR}/source/" cargo build --release
+    )
+    add_dependencies(rust_make_tests rust_wrapper)
+
+    foreach(TEST ${RUST_TESTS})
+        add_test(NAME ${TEST}
+                 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/target/release/${TEST})
+        set_tests_properties(${TEST}
+            PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/source/:$ENV{LD_LIBRARY_PATH}")
+    endforeach()
 endif()

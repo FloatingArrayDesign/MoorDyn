@@ -35,7 +35,7 @@ def get_average_tension(line, anchor, fairlead):
     return tension / (n + 1)
 
 
-class PoliesterTests(TestCase):
+class PolyesterTests(TestCase):
     def setUp(self):
         pass
 

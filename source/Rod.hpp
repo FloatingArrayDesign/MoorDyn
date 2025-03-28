@@ -35,7 +35,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
 #include <vector>
@@ -63,7 +63,9 @@ class Line;
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
  */
-class Rod final : public io::IO, public SuperCFL
+class DECLDIR Rod final
+  : public Instance
+  , public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -192,7 +194,8 @@ class Rod final : public io::IO, public SuperCFL
 
 	// wave things
 	/// VOF scalar for each segment (1 = fully submerged, 0 = out of water)
-	std::vector<moordyn::real> VOF; // TODO: This doesn't need to be a vector, can be a double reused for each node
+	std::vector<moordyn::real> VOF; // TODO: This doesn't need to be a vector,
+	                                // can be a double reused for each node
 	/// instantaneous axial submerged length [m]
 	real h0;
 
@@ -336,6 +339,7 @@ class Rod final : public io::IO, public SuperCFL
 	inline void openoutput();
 
 	/** @brief Initialize the rod state
+	 * @param r The output state variable
 	 * @return The position and orientation angles (first) and the linear and
 	 * angular velocity (second)
 	 * @note moordyn::Rod::r6 and moordyn::Rod::v6 must already be set
@@ -345,6 +349,16 @@ class Rod final : public io::IO, public SuperCFL
 	 * velocites shall be considered
 	 */
 	std::pair<XYZQuat, vec6> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		r.row(0).head<7>() = pos.toVec7();
+		r.row(0).tail<6>() = vel;
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Number of segments
 	 *
@@ -460,14 +474,13 @@ class Rod final : public io::IO, public SuperCFL
 	 * [rate of change of u/v/w coordinates of unit vector pointing toward end
 	 * B, then u/v/w coordinates of unit vector pointing toward end B]
 	 *
-	 * @param pos The position and direction (position is ignored in pinned
-	 * rods)
-	 * @param vel The linear and angular velocity (linear one is ignored in
-	 * pinned rods)
+	 * @param r The rod states
 	 * @throws invalid_value_error If the rod is not of type FREE, CPLDPIN or
 	 * PINNED
+	 * @{
 	 */
-	void setState(XYZQuat pos, vec6 vel);
+
+	void setState(const InstanceStateVarView r);
 
 	/** @brief Called at the beginning of each coupling step to update the
 	 * boundary conditions (rod kinematics) for the proceeding time steps
@@ -519,13 +532,13 @@ class Rod final : public io::IO, public SuperCFL
 	void setDependentStates();
 
 	/** @brief calculate the forces and state derivatives of the rod
-	 * @return The linear and angular velocity (first), and the linear and
-	 * angular accelerations (second)
+	 * @param drdt The velocity quaternion and the linear and angular
+	 * accelerations
 	 * @throws nan_error If nan values are detected in any node position
 	 * @note The returned linear velocity and accelerations for pinned rods
 	 * should be ignored
 	 */
-	std::pair<XYZQuat, vec6> getStateDeriv();
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	/** @brief Get the net force on rod (and possibly moment at end A if it's
 	 * not pinned)
@@ -549,10 +562,7 @@ class Rod final : public io::IO, public SuperCFL
 	 * @param rBody The body position
 	 * @param vBody The body velocity
 	 */
-	void getNetForceAndMass(vec6& Fnet_out,
-	                        mat6& M_out,
-	                        vec rBody,
-	                        vec6 vBody);
+	void getNetForceAndMass(vec6& Fnet_out, mat6& M_out, vec rBody, vec6 vBody);
 
 	/** @brief Calculate the force and mass contributions of the point on the
 	 * parent body
@@ -570,6 +580,18 @@ class Rod final : public io::IO, public SuperCFL
 	void doRHS();
 
 	void Output(real);
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return 1
+	 */
+	inline const size_t stateN() const { return 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 7 components for position quaternion and 6 components for
+	 * linear and angular velocities, i.e. 13 components
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 13; }
 
 	/** @brief Produce the packed data to be saved
 	 *
@@ -628,8 +650,6 @@ class Rod final : public io::IO, public SuperCFL
 		}
 		return F;
 	}
-
-
 };
 
 } // ::moordyn

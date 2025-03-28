@@ -72,13 +72,19 @@ round(T val)
 using namespace std;
 
 namespace Eigen {
-// Eigen does not provide 6 components objects out of the box
+// Eigen does not provide 6 or 7 components objects out of the box
 typedef Matrix<float, 6, 1> Vector6f;
 typedef Matrix<float, 6, 6> Matrix6f;
 typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 6, 6> Matrix6d;
 typedef Matrix<int, 6, 1> Vector6i;
 typedef Matrix<int, 6, 6> Matrix6i;
+typedef Matrix<float, 7, 1> Vector7f;
+typedef Matrix<float, 7, 7> Matrix7f;
+typedef Matrix<double, 7, 1> Vector7d;
+typedef Matrix<double, 7, 7> Matrix7d;
+typedef Matrix<int, 7, 1> Vector7i;
+typedef Matrix<int, 7, 7> Matrix7i;
 // It is also convenient for us to define a generic Eigen dynamic matrix class
 #ifdef MOORDYN_SINGLEPRECISSION
 typedef MatrixXf MatrixXr;
@@ -97,13 +103,16 @@ typedef Eigen::Vector2f vec2;
 typedef Eigen::Vector3f vec3;
 typedef Eigen::Vector4f vec4;
 typedef Eigen::Vector6f vec6;
+typedef Eigen::Vector7f vec7;
 typedef vec3 vec;
 typedef Eigen::Matrix2f mat2;
 typedef Eigen::Matrix3f mat3;
 typedef Eigen::Matrix4f mat4;
 typedef Eigen::Matrix6f mat6;
+typedef Eigen::Matrix7f mat7;
 typedef mat3 mat;
 typedef Eigen::Quaternionf quaternion;
+typedef Eigen::Matrix<real, Eigen::Dynamic, 1> list;
 #else
 /// Real numbers wrapper. It is either double or float
 typedef double real;
@@ -115,6 +124,8 @@ typedef Eigen::Vector3d vec3;
 typedef Eigen::Vector4d vec4;
 /// 6-D vector of real numbers
 typedef Eigen::Vector6d vec6;
+/// 7-D vector of real numbers
+typedef Eigen::Vector7d vec7;
 /// vec3 renaming
 typedef vec3 vec;
 /// 2x2 matrix of real numbers
@@ -125,10 +136,14 @@ typedef Eigen::Matrix3d mat3;
 typedef Eigen::Matrix4d mat4;
 /// 6x6 matrix of real numbers
 typedef Eigen::Matrix6d mat6;
+/// 7x7 matrix of real numbers
+typedef Eigen::Matrix7d mat7;
 /// mat3 renaming
 typedef mat3 mat;
 /// Quaternion of real numbers
 typedef Eigen::Quaterniond quaternion;
+/// A resizable list of reals
+typedef Eigen::Matrix<real, Eigen::Dynamic, 1> list;
 #endif
 /// 2-D vector of integers
 typedef Eigen::Vector2i ivec2;
@@ -138,11 +153,22 @@ typedef Eigen::Vector3i ivec3;
 typedef Eigen::Vector4i ivec4;
 /// 6-D vector of integers
 typedef Eigen::Vector6i ivec6;
+/// 7-D vector of integers
+typedef Eigen::Vector7i ivec7;
 /// Renaming of ivec3
 typedef ivec3 ivec;
 
 /// Complex numbers
 typedef std::complex<real> complex;
+
+/// State variables for a particular instance
+typedef Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic> InstanceStateVar;
+/// View of the State variables for a particular instance
+typedef Eigen::Block<InstanceStateVar, Eigen::Dynamic> InstanceStateVarView;
+/// State variable
+typedef Eigen::Matrix<InstanceStateVar, Eigen::Dynamic, 1> StateVar;
+/// View of the State variable
+typedef Eigen::VectorBlock<StateVar, Eigen::Dynamic> StateVarView;
 
 /** @brief This function compares two real numbers and determines if they are
  * "almost" equal
@@ -302,9 +328,13 @@ struct XYZQuat
 		out.tail<3>() = Quat2Euler(this->quat);
 		return out;
 	}
-	Eigen::Vector<real, 7> toVec7() const
+	static XYZQuat fromVec7(const vec7& vec)
 	{
-		Eigen::Vector<real, 7> out;
+		return XYZQuat{ vec.head<3>(), quaternion(vec.tail<4>()) };
+	}
+	vec7 toVec7() const
+	{
+		vec7 out;
 		out.head<3>() = pos;
 		out.tail<4>() = quat.coeffs();
 		return out;
@@ -312,6 +342,7 @@ struct XYZQuat
 
 	XYZQuat operator+(const XYZQuat& visitor) const;
 	XYZQuat operator-(const XYZQuat& visitor) const;
+	XYZQuat& operator*=(const real& visitor);
 	XYZQuat operator*(const real& visitor) const;
 };
 
@@ -564,8 +595,10 @@ MAKE_EXCEPTION(nan_error)
 MAKE_EXCEPTION(mem_error)
 /// Exception thrown when invalid values are found
 MAKE_EXCEPTION(invalid_value_error)
-/// Exception thrown when invalid values are found
+/// Exception thrown when something is not implemented yet
 MAKE_EXCEPTION(non_implemented_error)
+/// Exception thrown when an invalid type is asked
+MAKE_EXCEPTION(invalid_type_error)
 /// Exception thrown for other uhandled errors
 MAKE_EXCEPTION(unhandled_error)
 
@@ -701,8 +734,11 @@ inline vector<string>
 split(const string& s)
 {
 	vector<string> sout = split(s, ' ');
-	if (sout.size() == 1) return split(sout[0], '	');
-	else return sout;
+	if (sout.size() == 1)
+		return split(sout[0],
+		             '	'); // if space didnt split it, try again with tab
+	else
+		return sout;
 }
 
 /**
@@ -1037,6 +1073,9 @@ typedef struct _FailProps
 
 } // ::moordyn
 
+moordyn::quaternion
+operator*(const moordyn::real& k, const moordyn::quaternion& v);
+
 const int nCoef = 30; // maximum number of entries to allow in nonlinear
                       // coefficient lookup tables
 
@@ -1087,21 +1126,29 @@ typedef struct _LineProps // (matching Line Dictionary inputs)
 	string type;
 	double d;
 	double w; // linear weight in air
+	int ElasticMod;
 	double EA;
+	double EA_D;
+	double alphaMBL;
+	double vbeta;
 	double EI;
-	double c; // internal damping
+	double BA; // internal damping
+	double BA_D;
 	double cI;
 	double Can;
 	double Cat;
 	double Cdn;
 	double Cdt;
+	double Cl;     // VIV lift coefficient. If 0, VIV turned off.
+	double dF;     // +- range around cF for VIV synchronization model
+	double cF;     // center non-dim frequency for VIV synch model
 	int nEApoints; // number of values in stress-strain lookup table (0 means
 	               // using constant E)
 	double
 	    stiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
 	double stiffYs[nCoef]; // y array for stress-strain lookup table
-	int nCpoints; // number of values in stress-strainrate lookup table (0 means
-	              // using constant c)
+	int nBApoints; // number of values in stress-strainrate lookup table (0
+	               // means using constant c)
 	double dampXs[nCoef]; // x array for stress-strainrate lookup table (up to
 	                      // nCoef)
 	double dampYs[nCoef]; // y array for stress-strainrate lookup table

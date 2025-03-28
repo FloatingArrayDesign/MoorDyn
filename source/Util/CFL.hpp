@@ -53,22 +53,26 @@ namespace moordyn {
  * Thus can be used for entitites which does not impose any kind of limitation
  * on the timestep
  */
-class CFL
+class DECLDIR CFL
 {
   public:
 	/** @brief Constructor
 	 */
-	CFL() : _l((std::numeric_limits<real>::max)()) {};
+	CFL()
+	  : _l((std::numeric_limits<real>::max)()) {};
 
 	/** @brief Destructor
 	 */
-	virtual ~CFL() {};
+	virtual ~CFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
 	 * @return The timestep
 	 */
-	virtual inline real cfl2dt(const real cfl) const { return (std::numeric_limits<real>::max)(); }
+	virtual inline real cfl2dt(const real cfl) const
+	{
+		return (std::numeric_limits<real>::max)();
+	}
 
 	/** @brief Get the CFL factor from a timestep
 	 * @param dt Timestep
@@ -81,14 +85,20 @@ class CFL
 	 * @param v velocity
 	 * @return The timestep
 	 */
-	virtual inline real cfl2dt(const real cfl, const real v) const { return cfl * length() / v; }
+	virtual inline real cfl2dt(const real cfl, const real v) const
+	{
+		return cfl * length() / v;
+	}
 
 	/** @brief Get the CFL factor from a timestep and velocity
 	 * @param dt Timestep
 	 * @param v velocity
 	 * @return CFL factor
 	 */
-	virtual inline real dt2cfl(const real dt, const real v) const { return dt * v / length(); }
+	virtual inline real dt2cfl(const real dt, const real v) const
+	{
+		return dt * v / length();
+	}
 
   protected:
 	/** @brief Set the characteristic length of the system
@@ -109,7 +119,7 @@ class CFL
 /** @class NatFreqCFL CFL.hpp
  * @brief CFL for objects based on a natural frequency
  */
-class NatFreqCFL : public CFL
+class DECLDIR NatFreqCFL : public CFL
 {
   public:
 	/** @brief Constructor
@@ -118,7 +128,7 @@ class NatFreqCFL : public CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~NatFreqCFL() {};
+	virtual ~NatFreqCFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
@@ -137,14 +147,20 @@ class NatFreqCFL : public CFL
 	 * @param v velocity
 	 * @return The timestep
 	 */
-	inline real cfl2dt(const real cfl, const real v) const { return CFL::cfl2dt(cfl, v); }
+	inline real cfl2dt(const real cfl, const real v) const
+	{
+		return CFL::cfl2dt(cfl, v);
+	}
 
 	/** @brief Get the CFL factor from a timestep and velocity
 	 * @param dt Timestep
 	 * @param v velocity
 	 * @return CFL factor
 	 */
-	inline real dt2cfl(const real dt, const real v) const { return CFL::dt2cfl(dt, v); }
+	inline real dt2cfl(const real dt, const real v) const
+	{
+		return CFL::dt2cfl(dt, v);
+	}
 
   protected:
 	/** @brief Set the stiffness of the system
@@ -191,7 +207,7 @@ class NatFreqCFL : public CFL
  * Some objects has not an actual CFL definition, but they instead compute it
  * from the entities attached to it.
  */
-class SuperCFL : public CFL
+class DECLDIR SuperCFL : public CFL
 {
   public:
 	/** @brief Constructor
@@ -200,13 +216,14 @@ class SuperCFL : public CFL
 
 	/** @brief Destructor
 	 */
-	virtual ~SuperCFL() {};
+	virtual ~SuperCFL() = default;
 
 	/** @brief Get the timestep from a CFL factor
 	 * @param cfl CFL factor
 	 * @return The timestUtilep
 	 */
-	inline real cfl2dt(const real cfl) const {
+	inline real cfl2dt(const real cfl) const
+	{
 		auto dt = CFL::cfl2dt(cfl);
 		for (auto obj : _children)
 			dt = (std::min)(dt, obj->cfl2dt(cfl));
@@ -217,7 +234,8 @@ class SuperCFL : public CFL
 	 * @param dt Timestep
 	 * @return CFL factor
 	 */
-	inline real dt2cfl(const real dt) const {
+	inline real dt2cfl(const real dt) const
+	{
 		auto cfl = CFL::dt2cfl(dt);
 		for (auto obj : _children)
 			cfl = (std::max)(cfl, obj->dt2cfl(dt));
@@ -229,7 +247,8 @@ class SuperCFL : public CFL
 	 * @param v velocity
 	 * @return The timestep
 	 */
-	inline real cfl2dt(const real cfl, const real v) const{
+	inline real cfl2dt(const real cfl, const real v) const
+	{
 		auto dt = CFL::cfl2dt(cfl, v);
 		for (auto obj : _children)
 			dt = (std::min)(dt, obj->cfl2dt(cfl, v));
@@ -241,7 +260,8 @@ class SuperCFL : public CFL
 	 * @param v velocity
 	 * @return CFL factor
 	 */
-	inline real dt2cfl(const real dt, const real v) const {
+	inline real dt2cfl(const real dt, const real v) const
+	{
 		auto cfl = CFL::dt2cfl(dt, v);
 		for (auto obj : _children)
 			cfl = (std::max)(cfl, obj->dt2cfl(dt, v));
@@ -257,7 +277,8 @@ class SuperCFL : public CFL
 	/** @brief Remove a child
 	 * @param c child
 	 */
-	inline void RemoveChild(CFL* c) {
+	inline void RemoveChild(CFL* c)
+	{
 		_children.erase(std::remove(_children.begin(), _children.end(), c),
 		                _children.end());
 	}

@@ -78,8 +78,11 @@ split(const string& str, const char sep)
 	string token;
 	vector<string> words;
 	while (std::getline(spliter, token, sep)) {
-		if (token.size())
-			words.push_back(token);
+		if (token.find("#") == string::npos) {
+			if (token.size()) // # is a comment in input files
+				words.push_back(token);
+		} else
+			break;
 	}
 	return words;
 }
@@ -186,6 +189,13 @@ XYZQuat::operator-(const XYZQuat& visitor) const
 	result.pos = this->pos - visitor.pos;
 	result.quat = this->quat.coeffs() - visitor.quat.coeffs();
 	return result;
+}
+XYZQuat&
+XYZQuat::operator*=(const real& visitor)
+{
+	this->pos *= visitor;
+	this->quat.coeffs() *= visitor;
+	return *this;
 }
 XYZQuat
 XYZQuat::operator*(const real& visitor) const
@@ -359,6 +369,12 @@ GetCurvature(moordyn::real length, const vec& q1, const vec& q2)
 }
 
 } // ::moordyn
+
+moordyn::quaternion
+operator*(const moordyn::real& k, const moordyn::quaternion& v)
+{
+	return moordyn::quaternion(k * v.coeffs());
+}
 
 /*
 

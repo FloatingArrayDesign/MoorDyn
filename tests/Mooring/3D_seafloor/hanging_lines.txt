@@ -54,4 +54,5 @@ Mooring/3D_seafloor/seafloor_profile_3d.txt    SeafloorFile    3D seafloor file 
 0.00001   dtIC         - Time lapse between convergence tests (s)
 3             WaveKin              the wave elevations are provided in a grid (-)
 1.0           dtWave               the time step for the waves (s)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

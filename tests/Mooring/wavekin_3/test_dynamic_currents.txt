@@ -29,4 +29,5 @@ Line     LineType NodeA     NodeB  UnstrLen  NumSegs     Flags/Outputs
 30.0      TmaxIC       - threshold for IC convergence
 1.0       dtIC         - Time lapse between convergence tests (s)
 2         Currents     - Consider currents reading the profile from "current_profile_dynamic.txt"
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

@@ -76,6 +76,7 @@ Specific to each Line:
 - *Cat*: real axial added mass coefficient
 - *Cdn*: real normal drag coefficient w/r/t frontal area
 - *Cdt*: real axial drag coefficient w/r/t surface area
+- *Cl*: real VIV cross-flow lift coefficient
 - *BAin*: real axial-internal damping
 - *A*: real cross sectional area
 - *nEApoints*: number of values in stress-strain lookup table

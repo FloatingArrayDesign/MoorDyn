@@ -281,3 +281,14 @@ GetNodePos(int LineNum, int NodeNum, double pos[3])
 	auto line = MoorDyn_GetLine(md_singleton, LineNum);
 	return MoorDyn_GetLineNodePos(line, NodeNum, pos);
 }
+
+void DECLDIR
+AllOutput(double t, double dt)
+{
+	if (!md_singleton)
+		return;
+	MoorDyn_Log(md_singleton,
+	            MOORDYN_MSG_LEVEL,
+	            "In version 2, AllOutput is automatically called by "
+	            "MoorDynInit and MoorDynStep");
+}

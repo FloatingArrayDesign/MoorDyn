@@ -106,9 +106,7 @@ struct Trajectory
  */
 template<typename T>
 bool
-followTrajectory(MoorDyn& system,
-                 const Trajectory<T>& trajectory,
-                 double& t)
+followTrajectory(MoorDyn& system, const Trajectory<T>& trajectory, double& t)
 {
 
 	int err;
@@ -164,19 +162,19 @@ TEST_CASE("Rotating body")
 
 	double t = 0, dt = 0.1;
 	// do one outer time step just to make sure everything is settled
-	REQUIRE(MoorDyn_Step(
-		system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt) ==
+	        MOORDYN_SUCCESS);
 	double start_t = t;
 
 	// goes from (2, 0, 0) to (0, 0, 2) in 2 seconds
-	auto trajectory = Trajectory<
-	    moordyn::
-	        vec3>::fromLambda(start_t, start_t + 2.0, dt, [&](double time) {
-		const double elapsed_time = time - start_t;
-		const double angle = 0.5 * (M_PI / 2.0) * elapsed_time;
-		x = body_center + (radius * moordyn::vec3{ cos(angle), 0, sin(angle) });
-		return x;
-	});
+	auto trajectory = Trajectory<moordyn::vec3>::fromLambda(
+	    start_t, start_t + 2.0, dt, [&](double time) {
+		    const double elapsed_time = time - start_t;
+		    const double angle = 0.5 * (M_PI / 2.0) * elapsed_time;
+		    x = body_center +
+		        (radius * moordyn::vec3{ cos(angle), 0, sin(angle) });
+		    return x;
+	    });
 	REQUIRE(followTrajectory(system, trajectory, t));
 
 	start_t = t;
@@ -184,8 +182,8 @@ TEST_CASE("Rotating body")
 	dx = moordyn::vec3(0, 0, 0.0);
 	// give 0.5 seconds to settle at the top
 	while (t < start_t + 0.5) {
-		REQUIRE(MoorDyn_Step(
-			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt) ==
+		        MOORDYN_SUCCESS);
 	}
 
 	moordyn::vec3 point_pos;
@@ -199,14 +197,14 @@ TEST_CASE("Rotating body")
 	start_t = t;
 
 	// goes from (0, 0, 2) to (0, 2, 0) in 2 seconds
-	auto trajectory2 = Trajectory<
-	    moordyn::
-	        vec3>::fromLambda(start_t, start_t + 2.0, dt, [&](double time) {
-		const double elapsed_time = time - start_t;
-		const double angle = 0.5 * (M_PI / 2.0) * elapsed_time;
-		x = body_center + (radius * moordyn::vec3{ 0, sin(angle), cos(angle) });
-		return x;
-	});
+	auto trajectory2 = Trajectory<moordyn::vec3>::fromLambda(
+	    start_t, start_t + 2.0, dt, [&](double time) {
+		    const double elapsed_time = time - start_t;
+		    const double angle = 0.5 * (M_PI / 2.0) * elapsed_time;
+		    x = body_center +
+		        (radius * moordyn::vec3{ 0, sin(angle), cos(angle) });
+		    return x;
+	    });
 	REQUIRE(followTrajectory(system, trajectory2, t));
 
 	start_t = t;
@@ -214,8 +212,8 @@ TEST_CASE("Rotating body")
 	dx = moordyn::vec3(0, 0.0, 0.0);
 	// give 0.5 seconds to settle at the top
 	while (t < start_t + 0.5) {
-		REQUIRE(MoorDyn_Step(
-			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt) ==
+		        MOORDYN_SUCCESS);
 	}
 
 	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
@@ -229,14 +227,14 @@ TEST_CASE("Rotating body")
 	start_t = t;
 
 	// goes from (0, 2, 0) to (2, 0, 0) in 2 seconds
-	auto trajectory3 = Trajectory<
-	    moordyn::
-	        vec3>::fromLambda(start_t, start_t + 2.0, dt, [&](double time) {
-		const double elapsed_time = time - start_t;
-		const double angle = 0.5 * (M_PI / 2.0) * elapsed_time;
-		x = body_center + (radius * moordyn::vec3{ sin(angle), cos(angle), 0 });
-		return x;
-	});
+	auto trajectory3 = Trajectory<moordyn::vec3>::fromLambda(
+	    start_t, start_t + 2.0, dt, [&](double time) {
+		    const double elapsed_time = time - start_t;
+		    const double angle = 0.5 * (M_PI / 2.0) * elapsed_time;
+		    x = body_center +
+		        (radius * moordyn::vec3{ sin(angle), cos(angle), 0 });
+		    return x;
+	    });
 	REQUIRE(followTrajectory(system, trajectory3, t));
 
 	start_t = t;
@@ -244,8 +242,8 @@ TEST_CASE("Rotating body")
 	dx = moordyn::vec3(0, 0.0, 0.0);
 	// give 0.1 seconds to settle at the top
 	while (t < start_t + 0.5) {
-		REQUIRE(MoorDyn_Step(
-			system, x.data(), dx.data(), f, &t, &dt) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_Step(system, x.data(), dx.data(), f, &t, &dt) ==
+		        MOORDYN_SUCCESS);
 	}
 
 	REQUIRE(MoorDyn_GetPointPos(point, point_pos.data()) == MOORDYN_SUCCESS);
@@ -259,8 +257,7 @@ TEST_CASE("Rotating body")
 	auto body = MoorDyn_GetBody(system, 1);
 	REQUIRE(body);
 	moordyn::vec6 r, rd;
-	REQUIRE(MoorDyn_GetBodyState(
-		body, r.data(), rd.data()) == MOORDYN_SUCCESS);
+	REQUIRE(MoorDyn_GetBodyState(body, r.data(), rd.data()) == MOORDYN_SUCCESS);
 	// We want axis-angle representation, and it's easier to compute that from
 	// quaternion so we convert back to quaternion
 	auto xyz_quat = moordyn::XYZQuat::fromVec6(r);
@@ -269,9 +266,8 @@ TEST_CASE("Rotating body")
 	double angle = moordyn::rad2deg * 2 * acos(q.w());
 	double denom = (sqrt(1 - q.w() * q.w()));
 	moordyn::vec3 axis{ q.x() / denom, q.y() / denom, q.z() / denom };
-	REQUIRE((abs(axis.x()) > 0.85 &&
-	         abs(axis.y()) < 0.2 &&
-	         abs(axis.z()) < 0.2));
+	REQUIRE(
+	    (abs(axis.x()) > 0.85 && abs(axis.y()) < 0.2 && abs(axis.z()) < 0.2));
 	// normalize angle between +180 and -180
 	while (angle > 180.) {
 		angle -= 360;
@@ -308,7 +304,7 @@ TEST_CASE("Pinned body")
 
 	unsigned int n_dof;
 	REQUIRE(MoorDyn_NCoupledDOF(system, &n_dof) == MOORDYN_SUCCESS);
-	REQUIRE(n_dof ==6);
+	REQUIRE(n_dof == 6);
 
 	moordyn::vec6 x{ 0, 0, -5, 0, 0, 0 };
 	moordyn::vec6 xd{ 0, 0, 0, 0, 0, 0 };
@@ -328,11 +324,11 @@ TEST_CASE("Pinned body")
 
 		x[1] = 0.5 * accel * pow(t, 2);
 		xd[1] = accel * t;
-		REQUIRE(MoorDyn_Step(
-			system, x.data(), xd.data(), f, &t, &dt) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_Step(system, x.data(), xd.data(), f, &t, &dt) ==
+		        MOORDYN_SUCCESS);
 
-		REQUIRE(MoorDyn_GetBodyState(
-			body, r.data(), rd.data()) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_GetBodyState(body, r.data(), rd.data()) ==
+		        MOORDYN_SUCCESS);
 		roll.push_back(r[3]);
 
 		if (i >= 30) { // after the simulation has run for a few time steps
@@ -378,8 +374,8 @@ TEST_CASE("Body drag")
 	double max_t = 5;
 	while (t < max_t) {
 		// do one outer time step just to make sure everything is settled
-		REQUIRE(MoorDyn_Step(
-			system, nullptr, nullptr, f, &t, &dt) == MOORDYN_SUCCESS);
+		REQUIRE(MoorDyn_Step(system, nullptr, nullptr, f, &t, &dt) ==
+		        MOORDYN_SUCCESS);
 	}
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);
@@ -394,12 +390,12 @@ TEST_CASE("Excentric body")
 	const double omega = 0.2;
 	const moordyn::vec r0 = moordyn::vec(0, 0, 20.0);
 	auto bodies = system.GetBodies();
-	for (auto body : bodies)
-	{
+	for (auto body : bodies) {
 		const auto [pos, vel] = body->getState();
-		const moordyn::vec6 new_vel = moordyn::vec6(
-		    0.0, 0.0, radius * omega, omega, 0.0, 0.0);
-		body->setState(pos, new_vel);
+		const moordyn::vec6 new_vel =
+		    moordyn::vec6(0.0, 0.0, radius * omega, omega, 0.0, 0.0);
+		body->r7 = pos;
+		body->v6 = new_vel;
 	}
 
 	REQUIRE(system.Init(nullptr, nullptr) == MOORDYN_SUCCESS);
@@ -413,8 +409,7 @@ TEST_CASE("Excentric body")
 	REQUIRE(system.Step(NULL, NULL, f, t, small_dt) == MOORDYN_SUCCESS);
 	while ((t_max - t) > (0.1 * dt)) {
 		REQUIRE(system.Step(NULL, NULL, f, t, dt) == MOORDYN_SUCCESS);
-		for (auto body : bodies)
-		{
+		for (auto body : bodies) {
 			const auto [pos, vel] = body->getState();
 			const moordyn::vec3 global_pos = pos.pos;
 			const moordyn::vec q = (global_pos - r0) / radius;

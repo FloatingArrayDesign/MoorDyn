@@ -40,7 +40,7 @@
 #pragma once
 
 #include "Misc.hpp"
-#include "IO.hpp"
+#include "Instance.hpp"
 #include "Util/CFL.hpp"
 #include <vector>
 #include <utility>
@@ -69,11 +69,10 @@ class Rod;
  * In the configuration file the options are:
  *
  * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
- *
- * moordyn::Body extends the io::IO class, allowing it to perform input/output
- * in a consistent manner.
  */
-class Body final : public io::IO, public SuperCFL
+class DECLDIR Body final
+  : public Instance
+  , public SuperCFL
 {
   public:
 	/** @brief Costructor
@@ -126,8 +125,6 @@ class Body final : public io::IO, public SuperCFL
 	// vec6 r6;
 	/// body 6dof velocity[x/y/z]
 	vec6 v6;
-	/// body quaternion position derivative
-	XYZQuat dPos;
 	/// body 6dof acceleration[x/y/z]
 	vec6 a6;
 
@@ -181,7 +178,7 @@ class Body final : public io::IO, public SuperCFL
 			case COUPLED:
 				return "COUPLED";
 			case CPLDPIN:
-				return "CPLDPIN";	
+				return "CPLDPIN";
 			case FREE:
 				return "FREE";
 			case FIXED:
@@ -260,14 +257,26 @@ class Body final : public io::IO, public SuperCFL
 	 */
 	inline vec6 getUnfreeVel() const { return rd_ves; }
 
-	/** @brief Initialize the FREE point state
+	/** @brief Initialize a free instance
+	 * @param r The output state variable
 	 * @return The 6-dof position (first) and the 6-dof velocity (second)
-	 * @throw moordyn::invalid_value_error If the body is not of type
-	 * moordyn::Body::FREE
+	 * @throw moordyn::invalid_value_error If the instance does not have free
+	 * states. e.g. a coupled body controlled from outside
 	 * @throws moordyn::output_file_error If an outfile has been provided, but
 	 * it cannot be written
+	 * @{
 	 */
 	std::pair<XYZQuat, vec6> initialize();
+
+	inline void initialize(InstanceStateVarView r)
+	{
+		const auto [pos, vel] = initialize();
+		r.row(0).head<7>() = pos.toVec7();
+		r.row(0).tail<6>() = vel;
+	}
+	/**
+	 * @}
+	 */
 
 	/** @brief Initialize the free body
 	 *
@@ -330,7 +339,10 @@ class Body final : public io::IO, public SuperCFL
 	/** @brief Get the body angular velocity
 	 * @return The body angular velocity
 	 */
-	inline const vec getAngularVelocity() const { return v6(Eigen::seqN(3, 3)); }
+	inline const vec getAngularVelocity() const
+	{
+		return v6(Eigen::seqN(3, 3));
+	}
 
 	/** @brief Get the forces and moments exerted over the body
 	 * @return The net force
@@ -376,20 +388,20 @@ class Body final : public io::IO, public SuperCFL
 	void updateFairlead(real time);
 
 	/** @brief Set the states to the body to the position r and velocity rd
-	 * @param r The position
-	 * @param rd The velocity
+	 * @param r The body state
+	 * @{
 	 */
-	void DECLDIR setState(XYZQuat r, vec6 rd);
+	void setState(const InstanceStateVarView r);
 
 	/** @brief calculate the forces and state derivatives of the body
 	 *
 	 * This function is only meant for free bodies
-	 * @return The states derivatives, i.e. the velocity (first) and the
-	 * acceleration (second)
+	 * @param drdt The states derivatives, i.e. the velocity and the
+	 * acceleration
 	 * @throw moordyn::invalid_value_error If the body is of type
 	 * moordyn::Body::FREE
 	 */
-	std::pair<XYZQuat, vec6> getStateDeriv();
+	void getStateDeriv(InstanceStateVarView drdt);
 
 	/** @brief calculates the forces on the body
 	 * @throw moordyn::invalid_value_error If the body is of type
@@ -398,6 +410,18 @@ class Body final : public io::IO, public SuperCFL
 	void doRHS();
 
 	void Output(real time);
+
+	/** @brief Get the number of state variables required by this instance
+	 * @return 1
+	 */
+	inline const size_t stateN() const { return 1; }
+
+	/** @brief Get the dimension of the state variable
+	 * @return 7 components for position quaternion and 6 components for
+	 * linear and angular velocities, i.e. 13 components
+	 * @warning This function shall be called after ::setup()
+	 */
+	inline const size_t stateDims() const { return 13; }
 
 	/** @brief Produce the packed data to be saved
 	 *

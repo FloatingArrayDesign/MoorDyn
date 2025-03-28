@@ -54,7 +54,7 @@ namespace moordyn {
 //   ... --- seg n-2 --- [node n-1] --- seg n-1 ---  [point (node N)]
 
 Rod::Rod(moordyn::Log* log, size_t rodId)
-  : io::IO(log)
+  : Instance(log)
   , seafloor(nullptr)
   , rodId(rodId)
 {
@@ -154,9 +154,10 @@ Rod::setup(int number_in,
 		v6 = vec6::Zero();
 	} else if ((type == PINNED) || (type == CPLDPIN)) {
 		// for a pinned rod, just set the orientation (position will be set
-		// later by parent object) 
-		r7.pos = vec3::Zero(); 
-		r7.quat = quaternion::FromTwoVectors(q0, endCoords.tail<3>()); // TODO: Check this is right
+		// later by parent object)
+		r7.pos = vec3::Zero();
+		r7.quat = quaternion::FromTwoVectors(
+		    q0, endCoords.tail<3>()); // TODO: Check this is right
 		v6(Eigen::seqN(3, 3)) = vec::Zero();
 	}
 	// otherwise (for a fixed rod) the positions will be set by the parent body
@@ -342,11 +343,12 @@ Rod::initialize()
 real
 Rod::GetRodOutput(OutChanProps outChan)
 {
-	
-	vec6 Fout;
-	if ((outChan.QType == FX)||(outChan.QType == FY)||(outChan.QType == FZ)||(outChan.QType == MX)||(outChan.QType == MY)||(outChan.QType == MZ))
-		Fout = getFnet();
 
+	vec6 Fout;
+	if ((outChan.QType == FX) || (outChan.QType == FY) ||
+	    (outChan.QType == FZ) || (outChan.QType == MX) ||
+	    (outChan.QType == MY) || (outChan.QType == MZ))
+		Fout = getFnet();
 
 	if (outChan.NodeID == -1) {
 		if (outChan.QType == PosX)
@@ -426,8 +428,13 @@ Rod::GetRodOutput(OutChanProps outChan)
 }
 
 void
-Rod::setState(XYZQuat pos, vec6 vel)
+Rod::setState(const InstanceStateVarView r)
 {
+
+	// unpack the state
+	const XYZQuat pos = XYZQuat::fromVec7(r.row(0).head<7>());
+	const vec6 vel = r.row(0).tail<6>();
+
 	// copy over state values for potential use during derivative calculations
 	if (type == FREE) {
 		// end A coordinates & Rod direction unit vector
@@ -520,7 +527,8 @@ Rod::setKinematics(vec6 r_in, vec6 rd_in)
 		// since this rod has no states and all DOFs have been set, pass its
 		// kinematics to dependent Lines
 		setDependentStates();
-	} else if ((type == PINNED) || (type == CPLDPIN))// rod end A pinned to a body
+	} else if ((type == PINNED) ||
+	           (type == CPLDPIN)) // rod end A pinned to a body
 	{
 		// set Rod *end A only* kinematics based on BCs (linear model for now)
 		r7.pos = r_in(Eigen::seqN(0, 3));
@@ -601,8 +609,8 @@ Rod::setDependentStates()
 		attached.line->setEndOrientation(q, attached.end_point, ENDPOINT_B);
 }
 
-std::pair<XYZQuat, vec6>
-Rod::getStateDeriv()
+void
+Rod::getStateDeriv(InstanceStateVarView drdt)
 {
 	// attempting error handling <<<<<<<<
 	for (unsigned int i = 0; i <= N; i++) {
@@ -667,8 +675,11 @@ Rod::getStateDeriv()
 	} else {
 		// Pinned rod
 
-		// account for moment in response to end A acceleration due to inertial coupling (off-diagonal sub-matrix terms)
-		const vec Fnet_out3 = Fnet_out(Eigen::seqN(3, 3)) - (M_out6.bottomLeftCorner<3,3>() * acc6(Eigen::seqN(0, 3)));
+		// account for moment in response to end A acceleration due to inertial
+		// coupling (off-diagonal sub-matrix terms)
+		const vec Fnet_out3 =
+		    Fnet_out(Eigen::seqN(3, 3)) -
+		    (M_out6.bottomLeftCorner<3, 3>() * acc6(Eigen::seqN(0, 3)));
 
 		// For small systems it is usually faster to compute the inverse
 		// of the matrix. See
@@ -683,31 +694,38 @@ Rod::getStateDeriv()
 		    0.5 * (quaternion(0.0, v6[3], v6[4], v6[5]) * r7.quat).coeffs();
 	}
 
-	return std::make_pair(vel7, acc6);
+	drdt.row(0).head<7>() = vel7.toVec7();
+	drdt.row(0).tail<6>() = acc6;
 }
 
 const vec6
 Rod::getFnet() const
 {
 	// return F6net;
-	// // >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved global
+	// // >>>>>>>>>>>>> do I want to leverage getNetForceAndMass or a saved
+	// global
 	// // to save comp time and code?  >>>>>>>> this function likely not used
 	// // >>>>>>>>>>>
 
-	// // Fnet_out is assumed to point to a size-3 array if the rod is pinned and
+	// // Fnet_out is assumed to point to a size-3 array if the rod is pinned
+	// and
 	// // size-6 array if the rod is fixed
 
 	vec6 F6_iner = vec6::Zero();
 	vec6 Fnet_out = vec6::Zero();
 
 	// this assumes doRHS() has already been called
-	if (type == COUPLED) { // if coupled rigidly
-		F6_iner = - M6net * acc6; // Inertial terms
+	if (type == COUPLED) {       // if coupled rigidly
+		F6_iner = -M6net * acc6; // Inertial terms
 		Fnet_out = F6net + F6_iner;
 	} else if (type == CPLDPIN) { // if coupled pinned
-		F6_iner(Eigen::seqN(0,3)) = (- M6net.topLeftCorner<3,3>() * acc6(Eigen::seqN(0,3))) - (M6net.topRightCorner<3,3>() * acc6(Eigen::seqN(3,3))); // Inertial term
-		Fnet_out(Eigen::seqN(0,3)) = F6net(Eigen::seqN(0,3)) + F6_iner(Eigen::seqN(0,3));
-		Fnet_out(Eigen::seqN(3,3)) = vec3::Zero();
+		F6_iner(Eigen::seqN(0, 3)) =
+		    (-M6net.topLeftCorner<3, 3>() * acc6(Eigen::seqN(0, 3))) -
+		    (M6net.topRightCorner<3, 3>() *
+		     acc6(Eigen::seqN(3, 3))); // Inertial term
+		Fnet_out(Eigen::seqN(0, 3)) =
+		    F6net(Eigen::seqN(0, 3)) + F6_iner(Eigen::seqN(0, 3));
+		Fnet_out(Eigen::seqN(3, 3)) = vec3::Zero();
 	} else {
 		// LOGERR << "Invalid rod type: " << TypeName(type) << endl;
 		// throw moordyn::invalid_value_error("Invalid rod type");
@@ -715,7 +733,8 @@ Rod::getFnet() const
 		Fnet_out = F6net;
 	}
 
-	// // now go through each node's contributions, put them in body ref frame, and
+	// // now go through each node's contributions, put them in body ref frame,
+	// and
 	// // sum them
 	// for (unsigned int i = 0; i <= N; i++) {
 	// 	// position of a given node relative to the body reference point (global
@@ -919,15 +938,25 @@ Rod::doRHS()
 	// now
 	real zeta_i = zeta[N];
 
-	// get approximate location of waterline crossing along Rod axis (note: negative h0 indicates end A is above end B, and measures -distance from end A to waterline crossing)
-	if ((r[0][2] < zeta_i) && (r[N][2] < zeta_i))        // fully submerged case  
-		h0 = UnstrLen;                                       
-	else if ((r[0][2] < zeta_i) && (r[N][2] > zeta_i))    // check if it's crossing the water plane (should also add some limits to avoid near-horizontals at some point)
-		h0 = (zeta_i - r[0][2])/q[2];                       // distance along rod centerline from end A to the waterplane
-	else if ((r[N][2] < zeta_i) && (r[0][2] > zeta_i))   // check if it's crossing the water plane but upside down
-		h0 = -(zeta_i - r[0][2])/q[2];                       // negative distance along rod centerline from end A to the waterplane
-	else 
-		h0 = 0.0;                                         // fully unsubmerged case (ever applicable?)
+	// get approximate location of waterline crossing along Rod axis (note:
+	// negative h0 indicates end A is above end B, and measures -distance from
+	// end A to waterline crossing)
+	if ((r[0][2] < zeta_i) && (r[N][2] < zeta_i)) // fully submerged case
+		h0 = UnstrLen;
+	else if ((r[0][2] < zeta_i) &&
+	         (r[N][2] > zeta_i)) // check if it's crossing the water plane
+	                             // (should also add some limits to avoid
+	                             // near-horizontals at some point)
+		h0 = (zeta_i - r[0][2]) /
+		     q[2]; // distance along rod centerline from end A to the waterplane
+	else if ((r[N][2] < zeta_i) &&
+	         (r[0][2] >
+	          zeta_i)) // check if it's crossing the water plane but upside down
+		h0 = -(zeta_i - r[0][2]) /
+		     q[2]; // negative distance along rod centerline from end A to the
+		           // waterplane
+	else
+		h0 = 0.0; // fully unsubmerged case (ever applicable?)
 
 	Mext = vec::Zero();
 
@@ -958,15 +987,14 @@ Rod::doRHS()
 
 		// get scalar for submerged portion
 
-		if (h0 < 0.0) { // Upside down case
+		if (h0 < 0.0) {          // Upside down case
 			if (Lsum + dL >= h0) // if fully submerged
 				VOF0 = 1.0;
 			else if (Lsum > h0) // if partially below waterline
 				VOF0 = (h0 - Lsum) / dL;
 			else // must be out of water
 				VOF0 = 0.0;
-		}
-		else {
+		} else {
 			if (Lsum + dL <= h0) // if fully submerged
 				VOF0 = 1.0;
 			else if (Lsum < h0) // if partially below waterline
@@ -1314,11 +1342,11 @@ Rod::doRHS()
 		//     0.25 * mass * r * r + (1.0 / 3.0) * mass * UnstrLen * UnstrLen;
 		//     // From Hydrodyn theory paper per segment I_r
 		real I_r_correction =
- 		    mass * ((r * r) / 4 - (UnstrLen * UnstrLen) / (6 * N * N));
+		    mass * ((r * r) / 4 - (UnstrLen * UnstrLen) / (6 * N * N));
 
- 		Imat_l(0, 0) = I_r_correction;
- 		Imat_l(1, 1) = I_r_correction;
- 		Imat_l(2, 2) = I_l;
+		Imat_l(0, 0) = I_r_correction;
+		Imat_l(1, 1) = I_r_correction;
+		Imat_l(2, 2) = I_l;
 	}
 
 	// get rotation matrix to put things in global rather than rod-axis
@@ -1512,8 +1540,8 @@ Rod::getVTK() const
 {
 	auto points = vtkSmartPointer<vtkPoints>::New();
 	auto cells = vtkSmartPointer<vtkCellArray>::New();
-	auto vtk_rd = io::vtk_farray("rd", 3, r.size());
-	auto vtk_Fnet = io::vtk_farray("Fnet", 3, r.size());
+	auto vtk_rd = io::vtk_farray("rd", 3, (unsigned int)r.size());
+	auto vtk_Fnet = io::vtk_farray("Fnet", 3, (unsigned int)r.size());
 	if (N) {
 		auto line = vtkSmartPointer<vtkPolyLine>::New();
 		line->GetPointIds()->SetNumberOfIds(r.size());

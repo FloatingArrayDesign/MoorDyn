@@ -24,4 +24,5 @@ RK4           tScheme       The time integration Scheme (-)
 1E-3          TmaxIC        max time for ic gen (s)
 1.0           CdScaleIC     factor by which to scale drag coefficients during dynamic relaxation (-)
 0.01          threshIC      threshold for IC convergence (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

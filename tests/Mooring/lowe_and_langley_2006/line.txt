@@ -28,4 +28,5 @@ midpoint5     tScheme       Time integration scheme
 5e-3          threshIC      Initial Condition generation convergence threshold
 0             ICgenDynamic  IC generator (0 = stationary, 1 = legacy upscale dynamics)
 1             WaveKin       The wave kinematics are provided through the API (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

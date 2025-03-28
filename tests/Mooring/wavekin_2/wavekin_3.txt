@@ -28,4 +28,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 3             WaveKin              the wave elevations are provided in a grid (-)
 0.15          dtWave               the time step for the waves (s)
 1             Currents             the water currents are provided in a grid (-)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

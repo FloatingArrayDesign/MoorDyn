@@ -24,4 +24,5 @@ RK4           tScheme       The time integration Scheme (-)
 10000.0       TmaxIC        max time for ic gen (s)
 1e-4          threshIC      threshold for IC convergence (-)
 0             ICgenDynamic  IC generator (0 = stationary, 1 = legacy upscale dynamics)
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

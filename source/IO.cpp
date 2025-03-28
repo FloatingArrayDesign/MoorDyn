@@ -196,7 +196,7 @@ IO::IO(moordyn::Log* log)
   : LogUser(log)
   , _is_big_endian(false)
   , _min_major_version(2)
-  , _min_minor_version(2)
+  , _min_minor_version(4)
 {
 	_is_big_endian = is_big_endian();
 	if (_min_major_version <= MOORDYN_MAJOR_VERSION) {
@@ -205,8 +205,6 @@ IO::IO(moordyn::Log* log)
 			_min_minor_version = MOORDYN_MINOR_VERSION;
 	}
 }
-
-IO::~IO() {}
 
 void
 IO::Save(const std::string filepath)
@@ -313,7 +311,7 @@ IO::LoadFile(const std::string filepath) const
 	f.read((char*)data, size);
 	f.close();
 
-	return {length, data};
+	return { length, data };
 }
 
 uint64_t

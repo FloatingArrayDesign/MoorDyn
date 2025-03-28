@@ -45,7 +45,10 @@
 
 namespace moordyn {
 
-class TimeScheme;
+namespace time {
+class Scheme;
+}
+
 class Seafloor;
 typedef std::shared_ptr<Seafloor> SeafloorRef;
 
@@ -127,7 +130,7 @@ struct SeafloorProvider
 class AbstractCurrentKin
 {
   public:
-	virtual ~AbstractCurrentKin(){};
+	virtual ~AbstractCurrentKin() {};
 	/** @brief Get the velocity and acceleration at a specific position and time
 	 *
 	 * @param pos The location
@@ -152,7 +155,7 @@ class AbstractCurrentKin
 class AbstractWaveKin
 {
   public:
-	virtual ~AbstractWaveKin(){};
+	virtual ~AbstractWaveKin() {};
 	/** @brief Get the velocity, acceleration, wave height and dynamic pressure
 	 * at a specific position and time
 	 * @param pos The location
@@ -629,7 +632,7 @@ class Waves : public LogUser
 	real rho_w;
 
 	/// The time integration scheme
-	moordyn::TimeScheme* _t_integrator;
+	moordyn::time::Scheme* _t_integrator;
 
 	// ------------ from Line object... -----------
 	// new additions for handling waves in-object and precalculating them	(not
@@ -672,7 +675,7 @@ class Waves : public LogUser
 	 */
 	void setup(EnvCondRef env,
 	           SeafloorRef seafloor,
-	           TimeScheme* t,
+	           time::Scheme* t,
 	           const char* folder = "Mooring/");
 };
 

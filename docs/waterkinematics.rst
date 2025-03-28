@@ -346,6 +346,10 @@ and z = -10 are calculated by interpolating between the neighboring values.
 
 For example, the current at point ``(10, -6, -5.5)`` would be ``(0.65, 0.0, 0.0)``
 
+.. note::
+    When using steady currents, CdScaleIC for the initialization should be set to a smaller value (1-2) to 
+    avoid initial transients in the simulation. Unlike waves, currents are included in dynamic relaxation. 
+
 .. code-block::
 
     --------------------- MoorDyn steady currents File ----------------------------------

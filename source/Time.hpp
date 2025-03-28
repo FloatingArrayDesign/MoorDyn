@@ -41,22 +41,25 @@
 #include "Point.hpp"
 #include "Rod.hpp"
 #include "Body.hpp"
+#include "Waves.hpp"
 #include <vector>
 #include <string>
 
 namespace moordyn {
 
-/** @class TimeScheme Time.hpp
+namespace time {
+
+/** @class Scheme Time.hpp
  * @brief Time scheme abstraction
  *
  * This class is helping mooring::MoorDyn to can consider every single time
  * scheme in the very same way
  */
-class TimeScheme : public io::IO
+class Scheme : public io::IO
 {
   public:
 	/// @brief Destructor
-	virtual ~TimeScheme() {}
+	virtual ~Scheme() {}
 
 	/** @brief Set the ground body
 	 * @param obj The ground body
@@ -207,7 +210,7 @@ class TimeScheme : public io::IO
 
 	/** @brief Set the simulation time
 	 * @param time The time
-	 * @note This method is also calling to TimeScheme::Next()
+	 * @note This method is also calling to Scheme::Next()
 	 */
 	inline void SetTime(const real& time)
 	{
@@ -227,7 +230,7 @@ class TimeScheme : public io::IO
 
 	/** @brief Prepare everything for the next outer time step
 	 *
-	 * Always call this method before start calling TimeScheme::Step()
+	 * Always call this method before start calling Scheme::Step()
 	 */
 	inline void Next()
 	{
@@ -248,7 +251,7 @@ class TimeScheme : public io::IO
 	 *
 	 * This function is the one that must be specialized on each time scheme,
 	 * but remember to call it at the end of the inherited function to increment
-	 * TimeScheme::t_local
+	 * Scheme::t_local
 	 * @param dt Time step
 	 */
 	virtual void Step(real& dt) { t_local += dt; };
@@ -257,33 +260,31 @@ class TimeScheme : public io::IO
 	 * @param i The index of the state variable to take
 	 * @return The state variable
 	 */
-	inline virtual MoorDynState GetState(unsigned int i=0)
-	{
-		return MoorDynState();
-	}
+	virtual moordyn::state::State GetState(unsigned int i = 0) = 0;
 
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
 	 * @param i The index of the state variable to take
 	 */
-	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
-	{};
+	inline virtual void SetState(const moordyn::state::State& state,
+	                             unsigned int i = 0) {};
 
 	/** @brief Save the system state on a file
 	 * @param filepath The output file path
 	 * @param i The index of the state variable to serialize
 	 * @see ::SerializeState()
 	 */
-	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	inline virtual void SaveState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 	}
 
 	/** @brief Load the system state from a file
 	 * @param filepath The output file path
 	 * @param i The index of the state variable to overwrite
-	 * @see ::DeserializeState()
 	 */
-	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	inline virtual void LoadState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 	}
 
@@ -291,7 +292,7 @@ class TimeScheme : public io::IO
 	/** @brief Constructor
 	 * @param log Logging handler
 	 */
-	TimeScheme(moordyn::Log* log)
+	Scheme(moordyn::Log* log)
 	  : io::IO(log)
 	  , name("None")
 	  , t(0.0)
@@ -325,21 +326,32 @@ class TimeScheme : public io::IO
 	real cfl;
 };
 
-// Forward declare waves
-class Waves;
-typedef std::shared_ptr<Waves> WavesRef;
+/** Definition to explicitely let the compiler know the type inside the
+ * std::array.
+ *
+ * This is required to avoid problems with the templates
+ */
+#define AS_STATE(R) ((moordyn::state::State*)R)
 
-/** @class TimeSchemeBase Time.hpp
+/** @class SchemeBase Time.hpp
  * @brief A generic abstract integration scheme
  *
  * This class can be later overloaded to implement a plethora of time schemes
  */
 template<unsigned int NSTATE, unsigned int NDERIV>
-class TimeSchemeBase : public TimeScheme
+class SchemeBase : public Scheme
 {
   public:
 	/// @brief Destructor
-	virtual ~TimeSchemeBase() {}
+	virtual ~SchemeBase()
+	{
+		for (unsigned int substep = 0; substep < NSTATE; substep++) {
+			delete _r[substep];
+		}
+		for (unsigned int substep = 0; substep < NDERIV; substep++) {
+			delete _rd[substep];
+		}
+	}
 
 	/** @brief Add a line
 	 * @param obj The line
@@ -348,27 +360,50 @@ class TimeSchemeBase : public TimeScheme
 	virtual void AddLine(Line* obj)
 	{
 		try {
-			TimeScheme::AddLine(obj);
+			Scheme::AddLine(obj);
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and states derivatives
-		unsigned int n = obj->getN() - 1;
-		LineState state;
-		state.pos.assign(n, vec::Zero());
-		state.vel.assign(n, vec::Zero());
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].lines.push_back(state);
-		}
-		DLineStateDt dstate;
-		dstate.vel.assign(n, vec::Zero());
-		dstate.acc.assign(n, vec::Zero());
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			rd[i].lines.push_back(dstate);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.lines.push_back(true);
 	}
+
+	// virtual void AddLine(Line* obj)
+	// {
+	// 	try {
+	// 		TimeScheme::AddLine(obj);
+	// 	} catch (...) {
+	// 		throw;
+	// 	}
+	// 	// Build up the states and states derivatives
+	// 	unsigned int n = obj->getN() - 1;
+	// 	LineState state;
+	// 	LineState mstate; // misc state stuff
+	// 	state.pos.assign(n, vec::Zero());
+	// 	state.vel.assign(n, vec::Zero());
+	// 	mstate.pos.assign(n+2, vec::Zero());
+	// 	mstate.vel.assign(n+2, vec::Zero());
+	// 	for (unsigned int i = 0; i < r.size(); i++) {
+	// 		r[i].lines.push_back(state);
+	// 		r[i].misc.push_back(mstate);
+	// 	}
+	// 	DLineStateDt dstate;
+	// 	DLineStateDt mdstate; // misc state stuff
+	// 	dstate.vel.assign(n, vec::Zero());
+	// 	dstate.acc.assign(n, vec::Zero());
+	// 	mdstate.vel.assign(n+2, vec::Zero());
+	// 	mdstate.acc.assign(n+2, vec::Zero());
+	// 	for (unsigned int i = 0; i < rd.size(); i++) {
+	// 		rd[i].lines.push_back(dstate);
+	// 		rd[i].misc.push_back(mdstate);
+	// 	}
+	// 	// Add the mask value
+	// 	_calc_mask.lines.push_back(true);
+	// }
 
 	/** @brief Remove a line
 	 * @param obj The line
@@ -380,17 +415,37 @@ class TimeSchemeBase : public TimeScheme
 	{
 		unsigned int i;
 		try {
-			i = TimeScheme::RemoveLine(obj);
+			i = Scheme::RemoveLine(obj);
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < r.size(); i++)
-			r[i].lines.erase(r[i].lines.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd[i].lines.erase(rd[i].lines.begin() + i);
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.lines.erase(_calc_mask.lines.begin() + i);
 		return i;
 	}
+
+	// virtual unsigned int RemoveLine(Line* obj)
+	// {
+	// 	unsigned int i;
+	// 	try {
+	// 		i = TimeScheme::RemoveLine(obj);
+	// 	} catch (...) {
+	// 		throw;
+	// 	}
+	// 	for (unsigned int i = 0; i < r.size(); i++) {
+	// 		r[i].lines.erase(r[i].lines.begin() + i);
+	// 		r[i].misc.erase(r[i].misc.begin() + i);
+	// 	}
+	// 	for (unsigned int i = 0; i < rd.size(); i++) {
+	// 		rd[i].lines.erase(rd[i].lines.begin() + i);
+	// 		rd[i].misc.erase(rd[i].misc.begin() + i);
+	// 	}
+	// 	_calc_mask.lines.erase(_calc_mask.lines.begin() + i);
+	// 	return i;
+	// }
 
 	/** @brief Add a point
 	 * @param obj The point
@@ -399,23 +454,14 @@ class TimeSchemeBase : public TimeScheme
 	virtual void AddPoint(Point* obj)
 	{
 		try {
-			TimeScheme::AddPoint(obj);
+			Scheme::AddPoint(obj);
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and states derivatives
-		PointState state;
-		state.pos = vec::Zero();
-		state.vel = vec::Zero();
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].points.push_back(state);
-		}
-		DPointStateDt dstate;
-		dstate.vel = vec::Zero();
-		dstate.acc = vec::Zero();
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			rd[i].points.push_back(dstate);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.points.push_back(true);
 	}
@@ -430,14 +476,14 @@ class TimeSchemeBase : public TimeScheme
 	{
 		unsigned int i;
 		try {
-			i = TimeScheme::RemovePoint(obj);
+			i = Scheme::RemovePoint(obj);
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < r.size(); i++)
-			r[i].points.erase(r[i].points.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd[i].points.erase(rd[i].points.begin() + i);
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.points.erase(_calc_mask.points.begin() + i);
 		return i;
 	}
@@ -449,23 +495,14 @@ class TimeSchemeBase : public TimeScheme
 	virtual void AddRod(Rod* obj)
 	{
 		try {
-			TimeScheme::AddRod(obj);
+			Scheme::AddRod(obj);
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and states derivatives
-		RodState state;
-		state.pos = XYZQuat::Zero();
-		state.vel = vec6::Zero();
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].rods.push_back(state);
-		}
-		DRodStateDt dstate;
-		dstate.vel = XYZQuat::Zero();
-		dstate.acc = vec6::Zero();
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			rd[i].rods.push_back(dstate);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.rods.push_back(true);
 	}
@@ -480,14 +517,14 @@ class TimeSchemeBase : public TimeScheme
 	{
 		unsigned int i;
 		try {
-			i = TimeScheme::RemoveRod(obj);
+			i = Scheme::RemoveRod(obj);
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < r.size(); i++)
-			r[i].rods.erase(r[i].rods.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd[i].rods.erase(rd[i].rods.begin() + i);
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.rods.erase(_calc_mask.rods.begin() + i);
 		return i;
 	}
@@ -499,23 +536,14 @@ class TimeSchemeBase : public TimeScheme
 	virtual void AddBody(Body* obj)
 	{
 		try {
-			TimeScheme::AddBody(obj);
+			Scheme::AddBody(obj);
 		} catch (...) {
 			throw;
 		}
-		// Build up the states and states derivatives
-		BodyState state;
-		state.pos = XYZQuat::Zero();
-		state.vel = vec6::Zero();
-		for (unsigned int i = 0; i < r.size(); i++) {
-			r[i].bodies.push_back(state);
-		}
-		DBodyStateDt dstate;
-		dstate.vel = XYZQuat::Zero();
-		dstate.acc = vec6::Zero();
-		for (unsigned int i = 0; i < rd.size(); i++) {
-			rd[i].bodies.push_back(dstate);
-		}
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->addInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->addInstance(obj);
 		// Add the mask value
 		_calc_mask.bodies.push_back(true);
 	}
@@ -530,20 +558,20 @@ class TimeSchemeBase : public TimeScheme
 	{
 		unsigned int i;
 		try {
-			i = TimeScheme::RemoveBody(obj);
+			i = Scheme::RemoveBody(obj);
 		} catch (...) {
 			throw;
 		}
-		for (unsigned int i = 0; i < r.size(); i++)
-			r[i].bodies.erase(r[i].bodies.begin() + i);
-		for (unsigned int i = 0; i < rd.size(); i++)
-			rd[i].bodies.erase(rd[i].bodies.begin() + i);
+		for (unsigned int i = 0; i < NSTATE; i++)
+			AS_STATE(_r[i])->removeInstance(obj);
+		for (unsigned int i = 0; i < NDERIV; i++)
+			AS_STATE(_rd[i])->removeInstance(obj);
 		_calc_mask.bodies.erase(_calc_mask.bodies.begin() + i);
 		return i;
 	}
 
 	/** @brief Create an initial state for all the entities
-	 * @note Just the first state is written. None of the following states, nor
+	 * @note Just the first state is written. None of the following states nor
 	 * the derivatives are initialized in any way.
 	 * @note It is assumed that the coupled entities were already initialized
 	 */
@@ -554,29 +582,35 @@ class TimeSchemeBase : public TimeScheme
 		// types (mutate) without needing to micromanage them in the time
 		// scheme
 		for (unsigned int i = 0; i < bodies.size(); i++) {
-			if ((bodies[i]->type != Body::FREE) && (bodies[i]->type != Body::CPLDPIN)) // Only fully coupled bodies are intialized in MD2.cpp
+			// Only fully coupled bodies are intialized in MD2.cpp
+			if ((bodies[i]->type != Body::FREE) &&
+			    (bodies[i]->type != Body::CPLDPIN))
 				continue;
-			std::tie(r[0].bodies[i].pos, r[0].bodies[i].vel) =
-			    bodies[i]->initialize();
+			bodies[i]->initialize(AS_STATE(_r[0])->get(bodies[i]));
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(bodies[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if ((rods[i]->type != Rod::FREE) && (rods[i]->type != Rod::PINNED))
 				continue;
-			std::tie(r[0].rods[i].pos, r[0].rods[i].vel) =
-			    rods[i]->initialize();
+			rods[i]->initialize(AS_STATE(_r[0])->get(rods[i]));
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(rods[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (points[i]->type != Point::FREE)
 				continue;
-			std::tie(r[0].points[i].pos, r[0].points[i].vel) =
-			    points[i]->initialize();
+			points[i]->initialize(AS_STATE(_r[0])->get(points[i]));
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(points[i]).setZero();
 		}
 
 		for (unsigned int i = 0; i < lines.size(); i++) {
-			std::tie(r[0].lines[i].pos, r[0].lines[i].vel) =
-			    lines[i]->initialize();
+			lines[i]->initialize(AS_STATE(_r[0])->get(lines[i]));
+			for (unsigned int j = 0; j < NDERIV; j++)
+				AS_STATE(_rd[j])->get(lines[i]).setZero();
 		}
 	}
 
@@ -584,101 +618,65 @@ class TimeSchemeBase : public TimeScheme
 	 *
 	 * This function is the one that must be specialized on each time scheme,
 	 * but remember to call it at the end of the inherited function to increment
-	 * TimeScheme::t_local
+	 * Scheme::t_local
 	 * @param dt Time step
 	 */
-	virtual void Step(real& dt) { TimeScheme::Step(dt); };
+	virtual void Step(real& dt) { Scheme::Step(dt); };
 
-	/** @brief Get the state variable
+	/** @brief Get the state
 	 * @param i The index of the state variable to take
 	 * @return The state variable
+	 * @throws moordyn::invalid_value_error if the @p i index is greater or
+	 * equal than the number of states
+	 * @{
 	 */
-	inline MoorDynState GetState(unsigned int i=0)
+	inline state::State* r(unsigned int i = 0)
 	{
-		return r[i];
+		if (i >= NSTATE) {
+			LOGERR << "State " << i << " cannot be got on a '" << name
+			       << "' scheme that has " << NSTATE << "states" << endl;
+			throw moordyn::invalid_value_error("Invalid state");
+		}
+		return _r[i];
 	}
+
+	inline state::State GetState(unsigned int i = 0) { return *r(i); }
+	/**
+	 * @}
+	 */
 
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
 	 * @param i The index of the state variable to take
+	 * @throws moordyn::invalid_value_error if the @p i index is greater or
+	 * equal than the number of states
 	 */
-	inline virtual void SetState(const MoorDynState& state, unsigned int i=0)
+	inline virtual void SetState(const state::State& state, unsigned int i = 0)
 	{
-		r[i] = state;
-	}
-
-	/** @brief Pack the system state
-	 * @param i The index of the state variable to serialize
-	 * @return The serialized state variable, including positions and
-	 * velocities
-	 */
-	inline virtual std::vector<uint64_t> SerializeState(unsigned int i=0)
-	{
-		std::vector<uint64_t> data, subdata;
-		for (unsigned int j = 0; j < bodies.size(); j++) {
-			subdata = io::IO::Serialize(r[i].bodies[j].pos);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-			subdata = io::IO::Serialize(r[i].bodies[j].vel);
-			data.insert(data.end(), subdata.begin(), subdata.end());
+		if (i >= NSTATE) {
+			LOGERR << "State " << i << " cannot be setted on a '" << name
+			       << "' scheme that has " << NSTATE << " states" << endl;
+			throw moordyn::invalid_value_error("Invalid state");
 		}
-		for (unsigned int j = 0; j < rods.size(); j++) {
-			subdata = io::IO::Serialize(r[i].rods[j].pos);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-			subdata = io::IO::Serialize(r[i].rods[j].vel);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-		}
-		for (unsigned int j = 0; j < points.size(); j++) {
-			subdata = io::IO::Serialize(r[i].points[j].pos);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-			subdata = io::IO::Serialize(r[i].points[j].vel);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-		}
-		for (unsigned int j = 0; j < lines.size(); j++) {
-			subdata = io::IO::Serialize(r[i].lines[j].pos);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-			subdata = io::IO::Serialize(r[i].lines[j].vel);
-			data.insert(data.end(), subdata.begin(), subdata.end());
-		}
-		return data;
-	}
-
-	/** @brief Unpack and set the system state
-	 * @param data The packed system state
-	 * @param i The index of the state variable to overwrite
-	 * @return A pointer to the end of the file, for debugging purposes
-	 */
-	inline virtual uint64_t* DeserializeState(const uint64_t* data,
-	                                          unsigned int i=0)
-	{
-		uint64_t* ptr = (uint64_t*)data;
-		for (unsigned int j = 0; j < bodies.size(); j++) {
-			ptr = io::IO::Deserialize(ptr, r[i].bodies[j].pos);
-			ptr = io::IO::Deserialize(ptr, r[i].bodies[j].vel);
-		}
-		for (unsigned int j = 0; j < rods.size(); j++) {
-			ptr = io::IO::Deserialize(ptr, r[i].rods[j].pos);
-			ptr = io::IO::Deserialize(ptr, r[i].rods[j].vel);
-		}
-		for (unsigned int j = 0; j < points.size(); j++) {
-			ptr = io::IO::Deserialize(ptr, r[i].points[j].pos);
-			ptr = io::IO::Deserialize(ptr, r[i].points[j].vel);
-		}
-		for (unsigned int j = 0; j < lines.size(); j++) {
-			ptr = io::IO::Deserialize(ptr, r[i].lines[j].pos);
-			ptr = io::IO::Deserialize(ptr, r[i].lines[j].vel);
-		}
-		return ptr;
+		*_r[i] = state;
 	}
 
 	/** @brief Save the system state on a file
 	 * @param filepath The output file path
 	 * @param i The index of the state variable to serialize
-	 * @see ::SerializeState()
+	 * @throws moordyn::invalid_value_error if the @p i index is greater or
+	 * equal than the number of states
 	 */
-	inline virtual void SaveState(const std::string filepath, unsigned int i=0)
+	inline virtual void SaveState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 		auto f = MakeFile(filepath);
-		std::vector<uint64_t> data = SerializeState(i);
+		if (i >= NSTATE) {
+			LOGERR << "State " << i << " cannot be saved on a '" << name
+			       << "' scheme that has " << NSTATE << "states" << endl;
+			throw moordyn::invalid_value_error("Invalid state");
+		}
+		std::vector<uint64_t> data = AS_STATE(_r[i])->Serialize();
 		const uint64_t size = data.size();
 		f.write((char*)&size, sizeof(uint64_t));
 		for (auto v : data) {
@@ -690,21 +688,48 @@ class TimeSchemeBase : public TimeScheme
 	/** @brief Load the system state from a file
 	 * @param filepath The output file path
 	 * @param i The index of the state variable to overwrite
-	 * @see ::DeserializeState()
+	 * @throws moordyn::invalid_value_error if the @p i index is greater or
+	 * equal than the number of states
+	 * @throws moordyn::mem_error if the expected size of the serialized data
+	 * is not met
 	 */
-	inline virtual void LoadState(const std::string filepath, unsigned int i=0)
+	inline virtual void LoadState(const std::string filepath,
+	                              unsigned int i = 0)
 	{
 		auto [length, data] = LoadFile(filepath);
-		const uint64_t* end = DeserializeState(data, i);
+		if (i >= NSTATE) {
+			LOGERR << "State " << i << " cannot be loaded on a '" << name
+			       << "' scheme that has " << NSTATE << "states" << endl;
+			throw moordyn::invalid_value_error("Invalid state");
+		}
+		const uint64_t* end = AS_STATE(_r[i])->Deserialize(data);
 		if (data + length != end) {
 			const uint64_t l = end - data;
-			LOGERR << l * sizeof(uint64_t) << " bytes (vs. " << length
+			LOGERR << l * sizeof(uint64_t) << " bytes (vs. "
+			       << length * sizeof(uint64_t)
 			       << " bytes expected) unpacked from '" << filepath << "'"
 			       << endl;
-			throw moordyn::mem_error("Allocation error");
+			throw moordyn::mem_error("Mismatching data size");
 		}
 
 		free(data);
+	}
+
+	/** @brief Get the state derivative
+	 * @param i The index of the state derivative to take
+	 * @return The state derivative
+	 * @throws moordyn::invalid_value_error if the @p i index is greater or
+	 * equal than the number of state derivatives
+	 */
+	inline state::State* rd(unsigned int i = 0)
+	{
+		if (i >= NDERIV) {
+			LOGERR << "State derivative " << i << " cannot be got on a '"
+			       << name << "' scheme that has " << NDERIV
+			       << "state derivatives" << endl;
+			throw moordyn::invalid_value_error("Invalid state derivative");
+		}
+		return _rd[i];
 	}
 
 	/** @brief Produce the packed data to be saved
@@ -725,56 +750,12 @@ class TimeSchemeBase : public TimeScheme
 		// number of lines, rods and so on. That information is already
 		// collected from the definition file
 		for (unsigned int substep = 0; substep < NSTATE; substep++) {
-			for (unsigned int i = 0; i < bodies.size(); i++) {
-				subdata = io::IO::Serialize(r[substep].bodies[i].pos);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(r[substep].bodies[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
-			for (unsigned int i = 0; i < rods.size(); i++) {
-				subdata = io::IO::Serialize(r[substep].rods[i].pos);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(r[substep].rods[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
-			for (unsigned int i = 0; i < points.size(); i++) {
-				subdata = io::IO::Serialize(r[substep].points[i].pos);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(r[substep].points[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
-			for (unsigned int i = 0; i < lines.size(); i++) {
-				subdata = io::IO::Serialize(r[substep].lines[i].pos);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(r[substep].lines[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
+			subdata = _r[substep]->Serialize();
+			data.insert(data.end(), subdata.begin(), subdata.end());
 		}
 		for (unsigned int substep = 0; substep < NDERIV; substep++) {
-			for (unsigned int i = 0; i < bodies.size(); i++) {
-				subdata = io::IO::Serialize(rd[substep].bodies[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(rd[substep].bodies[i].acc);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
-			for (unsigned int i = 0; i < rods.size(); i++) {
-				subdata = io::IO::Serialize(rd[substep].rods[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(rd[substep].rods[i].acc);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
-			for (unsigned int i = 0; i < points.size(); i++) {
-				subdata = io::IO::Serialize(rd[substep].points[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(rd[substep].points[i].acc);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
-			for (unsigned int i = 0; i < lines.size(); i++) {
-				subdata = io::IO::Serialize(rd[substep].lines[i].vel);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-				subdata = io::IO::Serialize(rd[substep].lines[i].acc);
-				data.insert(data.end(), subdata.begin(), subdata.end());
-			}
+			subdata = _rd[substep]->Serialize();
+			data.insert(data.end(), subdata.begin(), subdata.end());
 		}
 
 		return data;
@@ -797,40 +778,10 @@ class TimeSchemeBase : public TimeScheme
 		// Along the same line, we did not save information about the number of
 		// lines, rods and so on
 		for (unsigned int substep = 0; substep < NSTATE; substep++) {
-			for (unsigned int i = 0; i < bodies.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, r[substep].bodies[i].pos);
-				ptr = io::IO::Deserialize(ptr, r[substep].bodies[i].vel);
-			}
-			for (unsigned int i = 0; i < rods.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, r[substep].rods[i].pos);
-				ptr = io::IO::Deserialize(ptr, r[substep].rods[i].vel);
-			}
-			for (unsigned int i = 0; i < points.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, r[substep].points[i].pos);
-				ptr = io::IO::Deserialize(ptr, r[substep].points[i].vel);
-			}
-			for (unsigned int i = 0; i < lines.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, r[substep].lines[i].pos);
-				ptr = io::IO::Deserialize(ptr, r[substep].lines[i].vel);
-			}
+			ptr = _r[substep]->Deserialize(ptr);
 		}
 		for (unsigned int substep = 0; substep < NDERIV; substep++) {
-			for (unsigned int i = 0; i < bodies.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, rd[substep].bodies[i].vel);
-				ptr = io::IO::Deserialize(ptr, rd[substep].bodies[i].acc);
-			}
-			for (unsigned int i = 0; i < rods.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, rd[substep].rods[i].vel);
-				ptr = io::IO::Deserialize(ptr, rd[substep].rods[i].acc);
-			}
-			for (unsigned int i = 0; i < points.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, rd[substep].points[i].vel);
-				ptr = io::IO::Deserialize(ptr, rd[substep].points[i].acc);
-			}
-			for (unsigned int i = 0; i < lines.size(); i++) {
-				ptr = io::IO::Deserialize(ptr, rd[substep].lines[i].vel);
-				ptr = io::IO::Deserialize(ptr, rd[substep].lines[i].acc);
-			}
+			ptr = _rd[substep]->Deserialize(ptr);
 		}
 
 		return ptr;
@@ -842,42 +793,54 @@ class TimeSchemeBase : public TimeScheme
 	 * @param waves The simulation waves object, needed so that we can tell it
 	 * about substeps
 	 */
-	TimeSchemeBase(moordyn::Log* log, moordyn::WavesRef waves)
-	  : TimeScheme(log)
+	SchemeBase(moordyn::Log* log, moordyn::WavesRef waves)
+	  : Scheme(log)
 	  , waves(waves)
 	{
+		// Register some basic variables that we know are always present
+		// The position, and its associated derivative, have several different
+		// types depending on the instance (e.g. moordyn::vec for lines and
+		// points, moordyn::XYZQuat for rods and bodies), so better using lists
+		// that we can resize on demand
+		for (unsigned int substep = 0; substep < NSTATE; substep++) {
+			_r[substep] = new moordyn::state::State(log);
+		}
+		for (unsigned int substep = 0; substep < NDERIV; substep++) {
+			_rd[substep] = new moordyn::state::State(log);
+		}
 	}
 
 	/** @brief Update all the entities to set the state
-	 * @param substep The index within moordyn::TimeSchemeBase::r that will be
+	 * @param substep The index within moordyn::SchemeBase::r that will be
 	 * applied to set the states
 	 * @param t_local The local time, within the inner time step (from 0 to dt)
 	 * @note This is only affecting to the free entities
-	 * @see TimeScheme::Next()
-	 * @see TimeScheme::Step()
+	 * @see Scheme::Next()
+	 * @see Scheme::Step()
 	 */
 	void Update(real t_local, unsigned int substep = 0);
 
 	/** @brief Compute the time derivatives and store them
-	 * @param substep The index within moordyn::TimeSchemeBase::rd where the
+	 * @param substep The index within moordyn::SchemeBase::rd where the
 	 * info will be saved
 	 */
 	void CalcStateDeriv(unsigned int substep = 0);
 
 	/// The list of states
-	std::array<MoorDynState, NSTATE> r;
+	std::array<moordyn::state::State*, NSTATE> _r;
 
 	/// The list of state derivatives
-	std::array<DMoorDynStateDt, NDERIV> rd;
+	std::array<moordyn::state::State*, NDERIV> _rd;
 
 	/// The waves instance
 	std::shared_ptr<Waves> waves;
 
 	/** @brief A mask to determine which entities shall be computed.
-	 * 
+	 *
 	 * Useful for local time steps
 	 */
-	typedef struct _mask {
+	typedef struct _mask
+	{
 		/// The lines mask
 		std::vector<bool> lines;
 		/// The points mask
@@ -888,7 +851,7 @@ class TimeSchemeBase : public TimeScheme
 		std::vector<bool> bodies;
 	} mask;
 
-	/// The TimeSchemeBase::CalcStateDeriv() mask
+	/// The SchemeBase::CalcStateDeriv() mask
 	mask _calc_mask;
 };
 
@@ -898,7 +861,7 @@ class TimeSchemeBase : public TimeScheme
  * The stationary solution is featured by the lack of velocity on the system,
  * i.e. the system positions are integrating directly from the accelerations
  */
-class StationaryScheme : public TimeSchemeBase<2, 1>
+class StationaryScheme final : public SchemeBase<2, 1>
 {
   public:
 	/** @brief Constructor
@@ -931,14 +894,29 @@ class StationaryScheme : public TimeSchemeBase<2, 1>
 	 * no matter if the state is a scalar, a vector or a quaternion, it is
 	 * considered as a single entry
 	 */
-	inline unsigned int NStates() const {
-		unsigned int n = bodies.size() + rods.size() + points.size();
-		for (unsigned int i = 0; i < lines.size(); i++)
-			n += r[0].lines[i].pos.size();
+	inline size_t NStates() const
+	{
+		size_t n =
+		    bodies.size() + rods.size() +
+		    points.size(); // one row (state) per object here. <objects>.size()
+		                   // gives the length of the list, i.e. the number of
+		                   // that kind of object
+		for (size_t i = 0; i < lines.size(); i++)
+			n += lines[i]->stateN();
 		return n;
 	}
 
   private:
+	/** @brief Make the state derivative stationary
+	 *
+	 * Making the derivative stationary means replacing the velocity by half
+	 * the acceleration by the time step
+	 * @param dt The time step
+	 * @param i The index of the state
+	 * @param id The index of the state derivative
+	 */
+	void MakeStationary(real& dt, unsigned int i = 0, unsigned int id = 0);
+
 	/** The last computed acceleration module
 	 * @see DMoorDynStateDt::MakeStationary()
 	 * @see StationaryScheme::Error()
@@ -955,7 +933,7 @@ class StationaryScheme : public TimeSchemeBase<2, 1>
  * This time scheme is strongly discourage, and use only for testing/debugging
  * purposes
  */
-class EulerScheme : public TimeSchemeBase<1, 1>
+class EulerScheme final : public SchemeBase<1, 1>
 {
   public:
 	/** @brief Constructor
@@ -975,17 +953,17 @@ class EulerScheme : public TimeSchemeBase<1, 1>
 	virtual void Step(real& dt);
 };
 
-/** @class LocalTimeSchemeBase Time.hpp
+/** @class LocalSchemeBase Time.hpp
  * @brief A generic abstract integration scheme
  *
  * This class can be later overloaded to implement a plethora of time schemes
  */
 template<unsigned int NSTATE, unsigned int NDERIV>
-class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
+class LocalSchemeBase : public SchemeBase<NSTATE, NDERIV>
 {
   public:
 	/// @brief Destructor
-	virtual ~LocalTimeSchemeBase() {}
+	virtual ~LocalSchemeBase() {}
 
 	/** @brief Create an initial state for all the entities
 	 * @note Just the first state is written. None of the following states, nor
@@ -994,7 +972,7 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 	 */
 	inline void Init()
 	{
-		TimeSchemeBase<NSTATE, NDERIV>::Init();
+		SchemeBase<NSTATE, NDERIV>::Init();
 		ComputeDt();
 	}
 
@@ -1002,9 +980,9 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 	 * @param state The stationary solution
 	 * @param i The index of the state variable to take
 	 */
-	inline void SetState(const MoorDynState& state, unsigned int i=0)
+	inline virtual void SetState(const state::State& state, unsigned int i = 0)
 	{
-		TimeSchemeBase<NSTATE, NDERIV>::SetState(state, i);
+		SchemeBase<NSTATE, NDERIV>::SetState(state, i);
 		ComputeDt();
 	}
 
@@ -1014,8 +992,8 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 	 * @param waves The simulation waves object, needed so that we can tell it
 	 * about substeps
 	 */
-	LocalTimeSchemeBase(moordyn::Log* log, moordyn::WavesRef waves)
-	  : TimeSchemeBase<NSTATE, NDERIV>(log, waves)
+	LocalSchemeBase(moordyn::Log* log, moordyn::WavesRef waves)
+	  : SchemeBase<NSTATE, NDERIV>(log, waves)
 	{
 	}
 
@@ -1034,7 +1012,8 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 
 	/** @brief The timestep of each instance
 	 */
-	typedef struct _sdeltat {
+	typedef struct _sdeltat
+	{
 		/// The lines mask
 		std::vector<real> lines;
 		/// The points mask
@@ -1055,15 +1034,15 @@ class LocalTimeSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 /** @class LocalEulerScheme Time.hpp
  * @brief A modification of the 1st order Euler's time scheme, which is
  * considering different time steps for each instance.
- * 
+ *
  * The local time step of each entity is computed according to the maximum CFL
  * factor of all entities. Such local time step is indeed an integer times the
  * time step provided to LocalEulerScheme::Step().
- * 
+ *
  * Thus, the derivatives recomputation is delayed until those time steps are
  * fulfilled
  */
-class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
+class LocalEulerScheme final : public LocalSchemeBase<1, 1>
 {
   public:
 	/** @brief Constructor
@@ -1088,7 +1067,7 @@ class LocalEulerScheme : public LocalTimeSchemeBase<1, 1>
  * performance, since it is only requiring a single derivative per time step,
  * while rendering similar results to other 2nd order schemes
  */
-class HeunScheme : public TimeSchemeBase<1, 2>
+class HeunScheme final : public SchemeBase<1, 2>
 {
   public:
 	/** @brief Constructor
@@ -1113,7 +1092,7 @@ class HeunScheme : public TimeSchemeBase<1, 2>
  *
  * This was the traditionally applied time scheme in MoorDyn v1
  */
-class RK2Scheme : public TimeSchemeBase<2, 2>
+class RK2Scheme final : public SchemeBase<2, 2>
 {
   public:
 	/** @brief Constructor
@@ -1141,7 +1120,7 @@ class RK2Scheme : public TimeSchemeBase<2, 2>
  * other hand, it might be possible to increase the time step size, compensating
  * such a drawback
  */
-class RK4Scheme : public TimeSchemeBase<5, 4>
+class RK4Scheme final : public SchemeBase<5, 4>
 {
   public:
 	/** @brief Constructor
@@ -1172,7 +1151,7 @@ class RK4Scheme : public TimeSchemeBase<5, 4>
  * Euler's and Heun's ones
  */
 template<unsigned int order, bool local>
-class ABScheme : public LocalTimeSchemeBase<1, 5>
+class ABScheme final : public LocalSchemeBase<1, 5>
 {
   public:
 	/** @brief Constructor
@@ -1199,7 +1178,7 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
 	 */
 	virtual std::vector<uint64_t> Serialize(void)
 	{
-		std::vector<uint64_t> data = TimeSchemeBase::Serialize();
+		std::vector<uint64_t> data = SchemeBase::Serialize();
 		// We append the number of available steps
 		data.push_back(io::IO::Serialize((uint64_t)n_steps));
 
@@ -1215,7 +1194,7 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
 	 */
 	virtual uint64_t* Deserialize(const uint64_t* data)
 	{
-		uint64_t* ptr = TimeSchemeBase::Deserialize(data);
+		uint64_t* ptr = SchemeBase::Deserialize(data);
 		uint64_t n;
 		ptr = io::IO::Deserialize(ptr, n);
 		n_steps = n;
@@ -1236,30 +1215,28 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
 		for (unsigned int i = 0; i < lines.size(); i++) {
 			if (!_calc_mask.lines[i])
 				continue;
-			rd[dst].lines[i].vel = rd[org].lines[i].vel;
-			rd[dst].lines[i].acc = rd[org].lines[i].acc;
+			AS_STATE(rd(dst))->get(lines[i]) = AS_STATE(rd(org))->get(lines[i]);
 		}
 
 		for (unsigned int i = 0; i < points.size(); i++) {
 			if (!_calc_mask.points[i] && (points[i]->type == Point::FREE))
 				continue;
-			rd[dst].points[i].vel = rd[org].points[i].vel;
-			rd[dst].points[i].acc = rd[org].points[i].acc;
+			AS_STATE(rd(dst))->get(points[i]) =
+			    AS_STATE(rd(org))->get(points[i]);
 		}
 
 		for (unsigned int i = 0; i < rods.size(); i++) {
 			if (!_calc_mask.rods[i] && ((rods[i]->type != Rod::FREE) ||
 			                            (rods[i]->type != Rod::PINNED)))
 				continue;
-			rd[dst].rods[i].vel = rd[org].rods[i].vel;
-			rd[dst].rods[i].acc = rd[org].rods[i].acc;
+			AS_STATE(rd(dst))->get(rods[i]) = AS_STATE(rd(org))->get(rods[i]);
 		}
 
 		for (unsigned int i = 0; i < bodies.size(); i++) {
 			if (!_calc_mask.bodies[i] && (bodies[i]->type == Body::FREE))
 				continue;
-			rd[dst].bodies[i].vel = rd[org].bodies[i].vel;
-			rd[dst].bodies[i].acc = rd[org].bodies[i].acc;
+			AS_STATE(rd(dst))->get(bodies[i]) =
+			    AS_STATE(rd(org))->get(bodies[i]);
 		}
 	}
 
@@ -1267,7 +1244,7 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
 	 */
 	inline void shift()
 	{
-		for (unsigned int i = 0; i < rd.size() - 1; i++)
+		for (unsigned int i = 0; i < _rd.size() - 1; i++)
 			shift(i);
 	}
 };
@@ -1278,7 +1255,7 @@ class ABScheme : public LocalTimeSchemeBase<1, 5>
  * This class can be later overloaded to implement a plethora of time schemes
  */
 template<unsigned int NSTATE, unsigned int NDERIV>
-class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
+class ImplicitSchemeBase : public SchemeBase<NSTATE, NDERIV>
 {
   public:
 	/** @brief Constructor
@@ -1338,171 +1315,6 @@ class ImplicitSchemeBase : public TimeSchemeBase<NSTATE, NDERIV>
 	real _c1;
 };
 
-/** @class AndersonSchemeBase Time.hpp
- * @brief A generic abstract implicit scheme accelerated with Anderson scheme
- *
- * This class can be later overloaded to implement a plethora of time schemes
- */
-template<unsigned int NSTATE, unsigned int NDERIV>
-class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
-{
-  public:
-	/** @brief Constructor
-	 * @param log Logging handler
-	 * @param waves Waves instance
-	 * @param iters The number of inner iterations to find the derivative
-	 * @param m The number of points to compute Anderson's acceleration
-	 * @param tol Minimum residue to consider that the solution has converged
-	 * @param tol_rel Relative residue reduction to consider that the solution
-	 * has converged
-	 */
-	AndersonSchemeBase(moordyn::Log* log,
-	                   WavesRef waves,
-	                   unsigned int iters = 10,
-	                   unsigned int m = 4,
-	                   real tol = 1.e-2,
-	                   real tol_rel = 1.e-2,
-	                   real regularization = 1.e-10);
-
-	/// @brief Destructor
-	virtual ~AndersonSchemeBase() {}
-
-	/** @brief Get the residual tolerance
-	 *
-	 * When the maximum residue falls below this value the inner iteration
-	 * is stopped
-	 * @return The tolerance
-	 */
-	inline real tol() const { return _tol; }
-
-	/** @brief Set the residual tolerance
-	 *
-	 * When the maximum residue falls below this value the inner iteration
-	 * is stopped
-	 * @param t The tolerance
-	 */
-	inline void tol(const real t) { _tol = t; }
-
-  protected:
-	/** @brief Get the number of subiterations
-	 * @return The number of iterations
-	 */
-	inline unsigned int iters() const { return _iters; }
-
-	/** @brief Produce a new estimation
-	 * @param iter The current iteration
-	 * @param org The input point, x
-	 * @param dst The input eval, f(x), as well as the output
-	 * @param dt The time step to integrate the acceleration as the velocity
-	 */
-	void qr(unsigned int iter, unsigned int org, unsigned int dst, float dt);
-
-	/** @brief Check if the iterator has converged
-	 * @return true if the maximum residue has fallen below the tolerance,
-	 * false otherwise
-	 */
-	inline bool converged() const
-	{
-		const real g = _g.col(1).cwiseAbs().mean();
-		return (g < _tol) || (g / _g0 < _tol_rel);
-	}
-
-	/** @brief Get the stats of the residues
-	 * @param ago Either 0 to get the latests residue or 1 to get the previous
-	 * one.
-	 * @return The average and maximum residue
-	 */
-	inline const std::tuple<real, real> residue(unsigned int ago=0) const
-	{
-		return { _g.col(1 - ago).cwiseAbs().mean(),
-		         _g.col(1 - ago).cwiseAbs().maxCoeff() };
-	}
-
-  private:
-	/// The number of iterations
-	unsigned int _iters;
-
-	/// The number of points to compute Anderson's acceleration
-	unsigned int _m;
-
-	/// Minimum residue to consider that the solution has converged
-	real _tol;
-
-	/// Relative residue reduction to consider that the solution has converged
-	real _tol_rel;
-
-	/// Regularization factor
-	real _regularization;
-
-	/// Number of dofs
-	real _n;
-
-	/// Initial residue
-	real _g0;
-
-	/// The evaluation points list
-	Eigen::Matrix<real, Eigen::Dynamic, 2> _x;
-
-	/// The residues list
-	Eigen::Matrix<real, Eigen::Dynamic, 2> _g;
-
-	/// The evaluation points variation matrix
-	Eigen::MatrixXr _X;
-
-	/// The residues variation matrix
-	Eigen::MatrixXr _G;
-
-	/** @brief Compute the number of acceleration DOFs
-	 * @return The number of acceleration DOFs
-	 */
-	inline unsigned int ndof() const {
-		unsigned int n = 3 * this->points.size() + 6 * (this->bodies.size() + this->rods.size());
-		for (unsigned int i = 0; i < this->lines.size(); i++)
-			n += 3 * this->rd[0].lines[i].acc.size();
-		return n;
-	}
-
-	/** @brief Fill the last column of the X matrix
-	 * @param org The point, x
-	 * @param dst The eval, f(x)
-	 * @note This function is assuming that the matrix is already resized
-	 */
-	inline void fill(unsigned int org, unsigned int dst)
-	{
-		unsigned int i, j, n = 0;
-		for (i = 0; i < this->lines.size(); i++) {
-			for (j = 0; j < this->rd[org].lines[i].acc.size(); j++) {
-				const vec x = this->rd[org].lines[i].acc[j];
-				const vec fx = this->rd[dst].lines[i].acc[j];
-				_x(Eigen::seqN(n, 3), 1) = x;
-				_g(Eigen::seqN(n, 3), 1) = fx - x;
-				n += 3;
-			}
-		}
-		for (i = 0; i < this->points.size(); i++) {
-			const vec x = this->rd[org].points[i].acc;
-			const vec fx = this->rd[dst].points[i].acc;
-			_x(Eigen::seqN(n, 3), 1) = x;
-			_g(Eigen::seqN(n, 3), 1) = fx - x;
-			n += 3;
-		}
-		for (i = 0; i < this->rods.size(); i++) {
-			const vec6 x = this->rd[org].rods[i].acc;
-			const vec6 fx = this->rd[dst].rods[i].acc;
-			_x(Eigen::seqN(n, 6), 1) = x;
-			_g(Eigen::seqN(n, 6), 1) = fx - x;
-			n += 6;
-		}
-		for (i = 0; i < this->bodies.size(); i++) {
-			const vec6 x = this->rd[org].bodies[i].acc;
-			const vec6 fx = this->rd[dst].bodies[i].acc;
-			_x(Eigen::seqN(n, 6), 1) = x;
-			_g(Eigen::seqN(n, 6), 1) = fx - x;
-			n += 6;
-		}
-	}
-};
-
 /** @class ImplicitEulerScheme Time.hpp
  * @brief Implicit 1st order Euler time scheme
  *
@@ -1510,7 +1322,7 @@ class AndersonSchemeBase : public ImplicitSchemeBase<NSTATE, NDERIV>
  * evaluated somewhere inside the time step. Obviously, since that point depends
  * on the derivative itself, a fixed point problem shall be solved
  */
-class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
+class ImplicitEulerScheme final : public ImplicitSchemeBase<2, 2>
 {
   public:
 	/** @brief Constructor
@@ -1540,43 +1352,6 @@ class ImplicitEulerScheme : public ImplicitSchemeBase<2, 2>
 	real _dt_factor;
 };
 
-/** @class AndersonEulerScheme Time.hpp
- * @brief Implicit 1st order Euler time scheme
- *
- * The implicit Euler method is an implicit method where the derivative is
- * evaluated somewhere inside the time step. Obviously, since that point depends
- * on the derivative itself, a fixed point problem shall be solved
- */
-class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
-{
-  public:
-	/** @brief Constructor
-	 * @param log Logging handler
-	 * @param waves Waves instance
-	 * @param iters The number of inner iterations to find the derivative
-	 * @param dt_factor The inner evaluation point factor. 0.5 for the midpoint
-	 * method, 1.0 for the backward Euler method
-	 */
-	AndersonEulerScheme(moordyn::Log* log,
-	                    WavesRef waves,
-	                    unsigned int iters = 10,
-	                    real dt_factor = 0.5);
-
-	/// @brief Destructor
-	virtual ~AndersonEulerScheme() {}
-
-	/** @brief Run a time step
-	 *
-	 * This function is the one that must be specialized on each time scheme
-	 * @param dt Time step
-	 */
-	virtual void Step(real& dt);
-
-  private:
-	/// The evaluation point
-	real _dt_factor;
-};
-
 /** @class ImplicitNewmarkScheme Time.hpp
  * @brief Implicit Newmark Scheme
  *
@@ -1585,7 +1360,7 @@ class AndersonEulerScheme : public AndersonSchemeBase<2, 2>
  * and solids, specifically on its Average Constant Acceleration incarnation
  * @see https://en.wikipedia.org/wiki/Newmark-beta_method
  */
-class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
+class ImplicitNewmarkScheme final : public ImplicitSchemeBase<2, 3>
 {
   public:
 	/** @brief Constructor
@@ -1596,10 +1371,10 @@ class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 	 * @param beta The beta factor
 	 */
 	ImplicitNewmarkScheme(moordyn::Log* log,
-	                    WavesRef waves,
-	                    unsigned int iters = 10,
-	                    real gamma = 0.5,
-	                    real beta = 0.25);
+	                      WavesRef waves,
+	                      unsigned int iters = 10,
+	                      real gamma = 0.5,
+	                      real beta = 0.25);
 
 	/// @brief Destructor
 	~ImplicitNewmarkScheme() {}
@@ -1612,6 +1387,25 @@ class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
 	virtual void Step(real& dt);
 
   private:
+	/** @brief Make the gamma,beta-Newmark step
+	 *
+	 * The resulting state rate of change will have the following velocity
+	 *
+	 * \f[ u(t_{n+1}) = u(t_{n}) + \Delta t (
+	 *         (1/2 - \beta) \dot{u(t_{n})} +
+	 *         \beta \dot{u(t_{n+1})}) \f]
+	 *
+	 * and the following acceleration
+	 *
+	 * \f[ \dot{u(t_{n+1})} = (1 - \gamma) \dot{u(t_{n})} +
+	 *                        \gamma \dot{u(t_{n+1})}) \f]
+	 *
+	 * ::r(0) and ::rd(0) are the input state and derivative, while ::r(1) is
+	 * the output state.
+	 * @param dt Time step.
+	 */
+	void MakeNewmark(const real& dt);
+
 	/// Alpha factor
 	real _gamma;
 	/// Beta factor
@@ -1628,9 +1422,10 @@ class ImplicitNewmarkScheme : public ImplicitSchemeBase<2, 3>
  * With the computed acceleration a Taylor series expansion is practised to
  * integrate.
  *
- * @see https://www.academia.edu/download/59040594/wilson197220190426-49259-kipdfs.pdf
+ * @see
+ * https://www.academia.edu/download/59040594/wilson197220190426-49259-kipdfs.pdf
  */
-class ImplicitWilsonScheme : public ImplicitSchemeBase<2, 3>
+class ImplicitWilsonScheme final : public ImplicitSchemeBase<2, 3>
 {
   public:
 	/** @brief Constructor
@@ -1656,6 +1451,27 @@ class ImplicitWilsonScheme : public ImplicitSchemeBase<2, 3>
 	virtual void Step(real& dt);
 
   private:
+	/** @brief Make the Wilson step
+	 *
+	 * \f[ \dot{u(t_{n+1})} =
+	 *         (1 - \frac{\tau}{2 \theta \Delta t}) \dot{u(t_{n})} +
+	 *         \frac{\tau}{2 \theta \Delta t} \dot{u(t_{n+1})}) \f]
+	 *
+	 * and the following velocity
+	 *
+	 * \f[ u(t_{n+1}) = u(t_{n}) + \frac{\tau}{2} (
+	 *         (1 - \frac{\tau}{3 \theta \Delta t}) \dot{u(t_{n})} +
+	 *         \frac{\tau}{3 \theta \Delta t} \dot{u(t_{n+1})}) \f]
+	 *
+	 * Note that \f$ \tau \f$ can be smaller than \f$ \theta \Delta t \f$.
+	 *
+	 * ::r(0) and ::rd(0) are the input state and derivative, while ::r(1) is
+	 * the output state.
+	 * @param tau Time advancing, \f$ \tau \f$.
+	 * @param dt Enlarged time step, \f$ \theta \Delta t \f$.
+	 */
+	void MakeWilson(const real& tau, const real& dt);
+
 	/// Theta factor
 	real _theta;
 };
@@ -1671,7 +1487,9 @@ class ImplicitWilsonScheme : public ImplicitSchemeBase<2, 3>
  * @throw moordyn::mem_error If the time scheme memory cannot be allocated
  * @note Remember to delete the returned time scheme at some point
  */
-TimeScheme*
+Scheme*
 create_time_scheme(const std::string& name, moordyn::Log* log, WavesRef waves);
+
+} // ::time
 
 } // ::moordyn

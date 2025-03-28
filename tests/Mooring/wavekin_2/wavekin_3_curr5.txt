@@ -29,4 +29,5 @@ ID   LineType   AttachA  AttachB  UnstrLen  NumSegs  LineOutputs
 0.15           dtWave               the time step for the waves (s)
 5             Currents             the water currents are provided in a grid (-)
 0             UnifyCurrentGrid     keep the current grid and wave grid separate
+1       disableOutTime
 ------------------------- need this line -------------------------------------- 

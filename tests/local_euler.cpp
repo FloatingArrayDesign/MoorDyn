@@ -7,7 +7,8 @@
 #define DUPLICATED_TOL 1e-4
 #define HANGING_TOL 1e-1
 
-double compare_lines(MoorDynLine line1, MoorDynLine line2)
+double
+compare_lines(MoorDynLine line1, MoorDynLine line2)
 {
 	unsigned int n1, n2;
 	REQUIRE(MoorDyn_GetLineN(line1, &n1) == MOORDYN_SUCCESS);
@@ -110,18 +111,20 @@ TEST_CASE("Complex system performance test")
 	auto in_init = std::chrono::steady_clock::now();
 	REQUIRE(MoorDyn_Init(system, x, dx) == MOORDYN_SUCCESS);
 	auto out_init = std::chrono::steady_clock::now();
-	auto dt_init = std::chrono::duration_cast<
-		std::chrono::duration<double, std::ratio<1>>>(
-			out_init - in_init).count();
+	auto dt_init =
+	    std::chrono::duration_cast<
+	        std::chrono::duration<double, std::ratio<1>>>(out_init - in_init)
+	        .count();
 
 	double f[6];
 	double t = 0.0, dt = 50.0;
 	auto in_step = std::chrono::steady_clock::now();
 	REQUIRE(MoorDyn_Step(system, x, dx, f, &t, &dt) == MOORDYN_SUCCESS);
 	auto out_step = std::chrono::steady_clock::now();
-	auto dt_step = std::chrono::duration_cast<
-		std::chrono::duration<double, std::ratio<1>>>(
-			out_step - in_step).count();
+	auto dt_step =
+	    std::chrono::duration_cast<
+	        std::chrono::duration<double, std::ratio<1>>>(out_step - in_step)
+	        .count();
 	REQUIRE(dt_step < dt_init);
 
 	REQUIRE(MoorDyn_Close(system) == MOORDYN_SUCCESS);

@@ -48,17 +48,18 @@ def moorpy_export(moorpy_system, filename,
         out.write(b'MoorDyn')
         out.write(struct.pack('<B', version_major))
         out.write(struct.pack('<B', version_minor))
-        # Serialize the data
         data = b''
+        ninstances = 0
         for body in moorpy_system.bodyList:
-            # MoorDyn is expecting a position vector:
-            data += struct.pack('<ddd', *body.r6[:3])
-            # A quaternion orientation:
+            ninstances += 1
             r = R.from_matrix(body.R)
+            data += struct.pack('<Q', 1)
+            data += struct.pack('<Q', 13)
+            data += struct.pack('<ddd', *body.r6[:3])
             data += struct.pack('<dddd', *r.as_quat())
-            # And a 6DOF velocity vector
             data += struct.pack('<d', 0.0) * 6
         for rod in moorpy_system.rodList:
+            ninstances += 1
             if isinstance(rod, moorpy.Line):
                 x, y, z, _ = rod.getLineCoords(-1)
                 rA = np.asarray([x[0], y[0], z[0]])
@@ -67,9 +68,6 @@ def moorpy_export(moorpy_system, filename,
             else:
                 rA = rB = rod.r
                 L = 0
-            # MoorDyn is expecting a position vector:
-            data += struct.pack('<ddd', *rA)
-            # A quaternion orientation:
             if L > 0.0:
                 k = (rB - rA) / L
                 Rmat = np.array(rotationMatrix(
@@ -79,27 +77,29 @@ def moorpy_export(moorpy_system, filename,
                 r = R.from_matrix(Rmat)
             else:
                 r = R.from_matrix(np.eye(3))
+            data += struct.pack('<Q', 1)
+            data += struct.pack('<Q', 13)
+            data += struct.pack('<ddd', *rA)
             data += struct.pack('<dddd', *r.as_quat())
-            # And a 6DOF velocity vector
             data += struct.pack('<d', 0.0) * 6
         for point in moorpy_system.pointList:
-            # MoorDyn is expecting a position vector:
+            ninstances += 1
+            data += struct.pack('<Q', 1)
+            data += struct.pack('<Q', 6)
             data += struct.pack('<ddd', *point.r)
-            # And a velocity vector
             data += struct.pack('<d', 0.0) * 3
         for line in moorpy_system.lineList:
             x, y, z, _ = line.getLineCoords(-1)
-            # MoorDyn is expecting first the number of points
             n = len(x)
+            ninstances += 1
             data += struct.pack('<Q', n - 2)
-            # And then the coordinates
+            data += struct.pack('<Q', 6)
             for i in range(1, n - 1):
                 data += struct.pack('<ddd', x[i], y[i], z[i])
-            # And the same for the velocity
-            data += struct.pack('<Q', n - 2)
-            data += struct.pack('<d', 0.0) * 3 * (n - 2)
+                data += struct.pack('<d', 0.0) * 3
         # Save it
-        out.write(struct.pack('<Q', len(data) // 8))
+        out.write(struct.pack('<Q', len(data) // 8 + 1))
+        out.write(struct.pack('<Q', ninstances))
         out.write(data)
 
 
@@ -127,6 +127,7 @@ def moorpy_ic(infile,
     success (bool): True/False whether converged to within tolerance.
     """
     import moorpy
+    print("WARNING: MoorPy does not support all features of MoorDyn, some states may not initialize")
     outfile = outfile or infile + ".ic"
     system = moorpy.System(file=infile)
     system.initialize()
