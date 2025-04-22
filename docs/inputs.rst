@@ -637,7 +637,7 @@ The list of possible options is:
  - writeLog (0 C, -1 F): If >0 a log file is written recording information. The
    bigger the number the more verbose. Please, be mindful that big values would
    critically reduce the performance!
- - dtM (3.402823e+38) – desired mooring model maximum time step (s). In
+ - dtM (3.402823e+38 C, coupling timestep size F) – desired mooring model maximum time step (s). In
    MoorDyn-F if this is left blank it defaults to the
    :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.
  - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor. CFL is the ratio 
@@ -683,7 +683,7 @@ The list of possible options is:
    The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
    but it can take longer to reach equilibrium.
  - disableOutput (0): Disables some console and file outputs to improve runtime. 
- - disableOutTime (0): Disables the printing of the current timestep to the console, useful for the MATLAB wrapper
+ - disableOutTime (0): Disables the printing of the current timestep to the console, useful for running with MATLAB
 
 A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
 no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
@@ -719,12 +719,12 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - StatDynFricScale: Same as MC in MoorDyn-F.
  - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
  - disableOutput: MoorDyn-F output verbosity is controlled by OpenFAST
- - disableOutTime: MoorDyn-F output verbosity is controlled by OpenFAST
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 
- - WaterKin (Null): Path to the water kinematics file. Allows the inputs of wave and current 
-   coefficients formatted as described in the :ref:`water kinematics file <MDF_wtrkin>`.
+ - WaterKin (Null): Path to the water kinematics file or the SEASTATE Keyword. The formatting of the 
+   water kinematics file can be found :ref:`here <MDF_wtrkin>`. Details on the different MoorDyn-F 
+   water kinematics options can be found in the :ref:`MoorDyn-F water kinematics section <waterkinematics-F>`.
  - MU_KT (0.0): Transverse line coefficient of friction.
  - MU_KA (0.0): Axial line coefficient of friction.
  - MC (1.0): Same as StatDynFricScale in MoorDyn-C.
@@ -965,28 +965,33 @@ Water Kinematics file (MoorDyn-F)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. _MDF_wtrkin:
 
-The file provided to MoorDyn-F for water Kinematics should have the following format, which 
+This file is used if simulating water kinematics in MoorDyn-F with a user defined grid (Old Method and Hybrid Method).
+More details on the different MoorDyn-F water kinematics methods can be found in the :ref:`MoorDyn-F water kinematics section <waterkinematics-F>`.
+
+The file provided to MoorDyn-F for water kinematics should have the following format, which 
 specifies the inputted waves and current. MoorDyn-F can handle a maximum of 100 lines of current
-data. Details on this format can be found in the :ref:`water kinematics section <waterkinematics>`.
+data.
 
 .. code-block:: none
 
  MoorDyn Waves and Currents input file
  ...any notes here...
- --------------------------- WAVES -------------------------------------
- 3                    WaveKinMod  - type of wave input {0 no waves; 3 set up grid of wave data based on time series} 
- "waveelev.dat"       WaveKinFile - file containing wave elevation time series at 0,0,0
- 0.5                  dtWave      - time step to use in setting up wave kinematics grid (s)
- 0                    WaveDir     - wave heading (deg)
- 2                                - X wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
- -24, 150, 100                    - X wave grid point data
- 2                                - Y wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
- -100, 100, 5                     - Y wave grid point data
- 2                                - Z wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
- -600, 0, 60                      - Z wave grid point data
- --------------------------- CURRENT -------------------------------------
- 1                    CurrentMod  - type of current input {0 no current; 1 steady current profile described below} 
- z-depth     x-current      y-current
+  --------------------------- WAVES -------------------------------------
+  2                    WaveKinMod  - type of wave input {0 no waves; 1 use the old method; 2 use the hybrid method}
+  ""                   WaveKinFile - file containing wave elevation time series at 0,0,0 # Ignored if WaveKinMod = 2
+  0                    dtWave      - time step to use in setting up wave kinematics grid (s) # Ignored if WaveKinMod = 2
+  0                    WaveDir     - wave heading (deg) # Ignored if WaveKinMod = 2
+  2                                - X wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num) 
+  -800, 10, 101                    - X wave grid point data
+  2                                - Y wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
+  -5, 5, 3                         - Y wave grid point data
+  2                                - Z wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
+  -600, 0, 61                      - Z wave grid point data
+  --------------------------- CURRENT -------------------------------------
+  2                    CurrentMod  - type of current input {0 no current; 1 steady current profile described below; 2 hybrid method}
+  2                                - Z wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num) # Ignored if CurrentMod = 1
+  -600, 0, 50                      - Z wave grid point data # Ignored if CurrentMod = 1
+ z-depth     x-current      y-current # Table ignored if CurrentMod = 2
  (m)           (m/s)         (m/s)
  0.0             0.9          0.0
  150             0.5          0.0
@@ -995,7 +1000,7 @@ data. Details on this format can be found in the :ref:`water kinematics section 
  5000            0.15	        0.0
  --------------------- need this line ------------------
 
-MoorDyn with FAST.Farm - Inputs
+MoorDyn-F with FAST.Farm - Inputs
 -------------------------------
 
 MoorDyn is available at an array level in FAST.Farm using the MoorDyn-F v2 input file format.
