@@ -1,0 +1,19 @@
+MoorDyn driver input file 
+another comment line
+---------------------- ENVIRONMENTAL CONDITIONS ------------------------------- 
+9.80665            Gravity          - Gravity (m/s^2) 
+1025.0             rhoW             - Water density (kg/m^3) 
+10.0              WtrDpth          - Water depth (m) 
+---------------------- MOORDYN ------------------------------------------------ 
+"../body.txt"          MDInputFile      - Primary MoorDyn input file name (quoted string) 
+"body"              OutRootName      - The name which prefixes all MoorDyn generated files (quoted string) 
+0.5                 TMax             - Number of time steps in the simulations (-) 
+0.5                 dtC              - TimeInterval for the simulation (sec) 
+0                   InputsMode       - MoorDyn coupled object inputs (0: all inputs are zero for every timestep (no coupled objects), 1: time-series inputs (coupled objects)) (switch) 
+"PtfmMotions.dat"   InputsFile       - Filename for the MoorDyn inputs file for when InputsMod = 1 (quoted string) 
+0                   NumTurbines      - Number of wind turbines (-) [>=1 to use FAST.Farm mode. 0 to use OpenFAST mode.] 
+---------------------- Initial Positions -------------------------------------- 
+ref_X    ref_Y    surge_init   sway_init  heave_init  roll_init  pitch_init   yaw_init 
+(m)      (m)        (m)          (m)        (m)       (rad)       (rad)        (rad)         [followed by MAX(1,NumTurbines) rows of data] 
+0         0          0            0          0          0           0            0 
+END of driver input file 
