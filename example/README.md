@@ -1,13 +1,11 @@
-This subdirectory is a demonstration of the MoorDyn-F driver. While beyond the scope of what is discussed in the presentation, it is a useful tool if you are looking to work with the MoorDyn-F code directly without going through OpenFAST. This driver is set up to run the body.txt file from the MoorDyn directory.
+This example directory contains instructions for common uses of MoorDyn, including OpenFAST, WEC-Sim, and running standalone. 
 
-If you are in the CoCalc environment, you can run the driver with the following commands in the terminal:
+Before working with these examples, please look at the [MoorDyn documentation](https://moordyn.readthedocs.io/en/latest/drivers.html#python) for an explaination of the code and the different versions (MoorDyn-C and MoorDyn-F). After that, start out with working through the jupyter notebook (`MoorDyn_standalone_demo.ipynb`). This will walk through basic examples for running MoorDyn and visualzing outputs. Visualization is done with MoorPy, however Paraview can also be used as well as the tool [PyDatView](https://github.com/ebranlard/pyDatView). 
 
-```
-1. anaconda2023
-2. conda activate openfast_env
-3. moordyn_driver md_driver.dvr
-```
+Further examples are the following:
 
-If you are not in the CoCalc environment, you need to locate the MoorDyn driver from the OpenFAST release files, or compile it yourself. More information in this can be found in the [OpenFAST documentation](https://openfast.readthedocs.io/en/main/). Once locating the driver and moving it to this directory, run step 3 above in the terminal. 
-
-More information on the MoorDyn-F driver can be found in the MoorDyn docs [MoorDyn-F driver section](https://moordyn.readthedocs.io/en/latest/inputs.html#moordyn-f-driver-input-file).
+- `MHK_RM1_Floating`: This directory shows how to run MoorDyn-F with OpenFAST.
+- `MoorDynF_example`: This directory shows how to use the MoorDyn-F driver from OpenFAST.
+- `simpledemo.py`: This is the simplement example of how to run MoorDyn-C with a python script.
+- `Running MoorDyn-F (OpenFAST).pdf`: This is a step-by-step list of iunstructions for running MoorDyn-F with OpenFAST.
+- `Running WECSim with MoorDyn.pdf`: This is a step-by-step list of instructions for running MoorDyn-C with WECSim. 

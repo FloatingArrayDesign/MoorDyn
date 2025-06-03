@@ -1,6 +1,10 @@
 import moordyn
 import numpy as np
 
+'''
+This is a very simple example of how to use the MoorDyn Python interface. Users need to provide a moordyn input file before running.
+'''
+
 # Create the MoorDyn system from the input file
 system = moordyn.Create("<file name>")
 
