@@ -1,0 +1,5 @@
+This subdirectory is a demonstration of running OpenFAST with MoorDyn-F. These files are very similar to the MHK_RM1_Floating OpenFAST regression test in https://github.com/OpenFAST/r-test/tree/main/glue-codes/openfast/MHK_RM1_Floating. A few small changes were made, limiting the simulation to run for only one second and changing the output channel list for MoorDyn. The main MoorDyn output file was also disabled, as those outputs can be found in the OpenFAST output file. The changes were made to `MHK_RM1_Floating_MoorDyn.dat` and `MHK_RM1_Floating.fst`. Becasue this example is a modification of the OpenFAST r-test repository (https://github.com/OpenFAST/r-test/tree/main), that license is also included here. 
+
+To run, you need to locate the OpenFAST executable from the OpenFAST release files, or compile it yourself. More information on this can be found in the [OpenFAST documentation](https://openfast.readthedocs.io/en/main/). Once locating the executable and moving it to this directory, run the following command. 
+
+`openfast MHK_RM1_Floating.fst`

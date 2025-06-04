@@ -1,0 +1,5 @@
+This subdirectory is a demonstration of the MoorDyn-F driver. It is a useful tool if you are looking to work with the MoorDyn-F code directly without going through OpenFAST. This driver is set up to run the body.txt file from the exmple directory (the same as used in the jupyter notebook).
+
+To run, you need to locate the MoorDyn driver from the OpenFAST release files, or compile it yourself. More information in this can be found in the [OpenFAST documentation](https://openfast.readthedocs.io/en/main/). Once locating the driver and moving it to this directory, run `moordyn_driver md_driver.dvr` in the terminal.
+
+More information on the MoorDyn-F driver can be found in the MoorDyn docs [MoorDyn-F driver section](https://moordyn.readthedocs.io/en/latest/inputs.html#moordyn-f-driver-input-file).
