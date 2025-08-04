@@ -33,6 +33,7 @@
 #include "Line.hpp"
 #include "Waves.hpp"
 #include <tuple>
+#include <iomanip>
 
 #ifdef USE_VTK
 #include <vtkCellArray.h>
@@ -267,6 +268,54 @@ Rod::openoutput()
 				         << i << "Fz \t ";
 			}
 		}
+		// Output Weight
+		if (channels.find("W") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "Wx \t Node" << i << "Wy \t Node"
+				         << i << "Wz \t ";
+		}
+		// output Buoyancy
+		if (channels.find("B") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "Box \t Node" << i << "Boy \t Node"
+				         << i << "Boz \t ";
+		}
+		// output Dynamic Pressure
+		if (channels.find("X") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "Dpx \t Node" << i << "Dpy \t Node"
+				         << i << "Dpz \t ";
+		}
+		// output Tangential drag
+		if (channels.find("Y") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "Dqx \t Node" << i << "Dqy \t Node"
+				         << i << "Dqz \t ";
+		}
+		// output transverse inertia force
+		if (channels.find("A") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "ApX \t Node" << i << "ApY \t Node"
+				         << i << "ApZ \t ";
+		}
+		// output axial fluid inertia force
+		if (channels.find("a") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "AqX \t Node" << i << "AqY \t Node"
+				         << i << "AqZ \t ";
+		}
+		// output dynamic pressure
+		if (channels.find("Pd") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "Pdx \t Node" << i << "Pdy \t Node"
+				         << i << "Pdz \t ";
+		}
+		// output bottom contact force
+		if (channels.find("b") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << "Node" << i << "Bx \t Node" << i << "By \t Node"
+				         << i << "Bz \t ";
+		};
 
 		*outfile << "\n";
 
@@ -289,6 +338,46 @@ Rod::openoutput()
 			}
 			// output net node force?
 			if (channels.find("f") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// Output Weight
+			if (channels.find("W") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output Buoyancy
+			if (channels.find("B") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output Dynamic Pressure
+			if (channels.find("Y") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(Pa) \t";
+			}
+			// output Tangential drag
+			if (channels.find("X") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output transverse inertia force
+			if (channels.find("A") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output axial fluid inertia force
+			if (channels.find("a") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output dynamic pressure
+			if (channels.find("P") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(Pa) \t";
+			}
+			// output bottom contact force
+			if (channels.find("b") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
@@ -422,6 +511,51 @@ Rod::GetRodOutput(OutChanProps outChan)
 			return Fnet[outChan.NodeID][1];
 		else if (outChan.QType == FZ)
 			return Fnet[outChan.NodeID][2];
+		else if (outChan.QType == WZ)
+			return W[outChan.NodeID][2];
+		else if (outChan.QType == BoX)
+			return Bo[outChan.NodeID][0];
+		else if (outChan.QType == BoY)
+			return Bo[outChan.NodeID][1];
+		else if (outChan.QType == BoZ)
+			return Bo[outChan.NodeID][2];
+		else if (outChan.QType == DpX)
+			return Dp[outChan.NodeID][0];
+		else if (outChan.QType == DpY)
+			return Dp[outChan.NodeID][1];
+		else if (outChan.QType == DpZ)
+			return Dp[outChan.NodeID][2];
+		else if (outChan.QType == DqX)
+			return Dq[outChan.NodeID][0];
+		else if (outChan.QType == DqY)
+			return Dq[outChan.NodeID][1];
+		else if (outChan.QType == DqZ)
+			return Dq[outChan.NodeID][2];
+		else if (outChan.QType == ApX)
+			return Ap[outChan.NodeID][0];
+		else if (outChan.QType == ApY)
+			return Ap[outChan.NodeID][1];
+		else if (outChan.QType == ApZ)
+			return Ap[outChan.NodeID][2];
+		else if (outChan.QType == AqX)
+			return Aq[outChan.NodeID][0];
+		else if (outChan.QType == AqY)
+			return Aq[outChan.NodeID][1];
+		else if (outChan.QType == AqZ)
+			return Aq[outChan.NodeID][2];
+		else if (outChan.QType == PdX)
+			return Pd[outChan.NodeID][0];
+		else if (outChan.QType == PdY)
+			return Pd[outChan.NodeID][1];
+		else if (outChan.QType == PdZ)
+			return Pd[outChan.NodeID][2];
+		else if (outChan.QType == BX)
+			return B[outChan.NodeID][0];
+		else if (outChan.QType == BY)
+			return B[outChan.NodeID][1];
+		else if (outChan.QType == BZ)
+			return B[outChan.NodeID][2];
+
 	}
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
@@ -988,12 +1122,12 @@ Rod::doRHS()
 		// get scalar for submerged portion
 
 		if (h0 < 0.0) {          // Upside down case
-			if (Lsum + dL >= h0) // if fully submerged
+			if (Lsum >= -h0) // if fully submerged
 				VOF0 = 1.0;
-			else if (Lsum > h0) // if partially below waterline
-				VOF0 = (h0 - Lsum) / dL;
+			else if (Lsum + dL > -h0) // if partially below waterline
+				VOF0 = (Lsum + dL + h0) / dL; // partially submerged
 			else // must be out of water
-				VOF0 = 0.0;
+				VOF0 = 0.0; // fully out of water
 		} else {
 			if (Lsum + dL <= h0) // if fully submerged
 				VOF0 = 1.0;
@@ -1432,8 +1566,48 @@ Rod::Output(real time)
 					*outfile << Fnet[i][J] << "\t ";
 			}
 		}
+		// individual forces
+		if (channels.find("W") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << W[i][J] << "\t ";
 
-		*outfile << "\n";
+		if (channels.find("B") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << Bo[i][J] << "\t ";
+
+		if (channels.find("Y") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << Dp[i][J] << "\t ";
+
+		if (channels.find("X") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << Dq[i][J] << "\t ";
+
+		if (channels.find("A") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << Ap[i][J] << "\t ";
+
+		if (channels.find("a") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << Aq[i][J] << "\t ";
+
+		if (channels.find("P") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << Pd[i][J] << "\t ";
+
+		if (channels.find("b") != string::npos)
+			for (unsigned int i = 0; i <= N; i++)
+				for (unsigned int J = 0; J < 3; J++)
+					*outfile << B[i][J] << "\t ";
+					
+		*outfile << "\n"; // end of row
 	}
 	return;
 }

@@ -69,12 +69,27 @@ namespace moordyn {
 
 /// The list of units for the output
 const char* UnitList[] = {
-	"(s)       ", "(m)       ", "(m)       ", "(m)       ", "(deg)     ",
-	"(deg)     ", "(deg)     ", "(m/s)     ", "(m/s)     ", "(m/s)     ",
-	"(deg/s)   ", "(deg/s)   ", "(deg/s)   ", "(m/s2)    ", "(m/s2)    ",
-	"(m/s2)    ", "(deg/s2)  ", "(deg/s2)  ", "(deg/s2)  ", "(N)       ",
-	"(N)       ", "(N)       ", "(N)       ", "(Nm)      ", "(Nm)      ",
-	"(Nm)      ", "(frac)    "
+	"s",                    //  0: Time
+	"m", "m", "m",          //  1: PosX   2: PosY   3: PosZ
+	"deg", "deg", "deg",    //  4: RX     5: RY     6: RZ
+	"m/s", "m/s", "m/s",    //  7: VelX   8: VelY   9: VelZ
+	"deg/s", "deg/s", "deg/s",    // 10: RVelX  11: RVelY  12: RVelZ
+	"m/s^2", "m/s^2", "m/s^2",     // 13: AccX   14: AccY   15: AccZ
+	"deg/s^2", "deg/s^2", "deg/s^2", // 16: RAccX  17: RAccY  18: RAccZ
+	"N",                             // 19: Ten
+	"N", "N", "N",                   // 20: FX     21: FY     22: FZ
+	"N*m", "N*m", "N*m",             // 23: MX     24: MY     25: MZ
+	"(frac)",                        // 26: Sub
+	"N", "N",                        // 27: TenA   28: TenB
+	"N",                             // 29: WZ
+	"N", "N", "N",                   // 30: BoX    31: BoY    32: BoZ
+	"N", "N", "N",                   // 33: DpX    34: DpY    35: DpZ
+	"N*m", "N*m", "N*m",             // 36: DqX    37: DqY    38: DqZ
+	"N", "N", "N",                   // 39: ApX    40: ApY    41: ApZ
+	"N", "N", "N",                   // 42: AqX    43: AqY    44: AqZ
+	"Pa", "Pa", "Pa",                // 45: PdX    46: PdY    47: PdZ
+	"N", "N", "N",                   // 48: BX     49: BY     50: BZ
+	"N", "N", "N"                    // 51: BoX    52: BoY    53: BoZ
 };
 
 std::atomic<size_t> __systems_counter(0);
