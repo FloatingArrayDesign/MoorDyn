@@ -280,13 +280,13 @@ Rod::openoutput()
 				*outfile << "Node" << i << "Box \t Node" << i << "Boy \t Node"
 				         << i << "Boz \t ";
 		}
-		// output Dynamic Pressure
+		// output transverse drag
 		if (channels.find("X") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
 				*outfile << "Node" << i << "Dpx \t Node" << i << "Dpy \t Node"
 				         << i << "Dpz \t ";
 		}
-		// output Tangential drag
+		// output tangential drag
 		if (channels.find("Y") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
 				*outfile << "Node" << i << "Dqx \t Node" << i << "Dqy \t Node"
@@ -305,7 +305,7 @@ Rod::openoutput()
 				         << i << "AqZ \t ";
 		}
 		// output dynamic pressure
-		if (channels.find("Pd") != string::npos) {
+		if (channels.find("P") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
 				*outfile << "Node" << i << "Pdx \t Node" << i << "Pdy \t Node"
 				         << i << "Pdz \t ";
@@ -331,12 +331,12 @@ Rod::openoutput()
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(m) \t";
 			}
-			// output velocities?
+			// output velocities
 			if (channels.find("v") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(m/s) \t";
 			}
-			// output net node force?
+			// output net node force
 			if (channels.find("f") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
@@ -351,13 +351,13 @@ Rod::openoutput()
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
-			// output Dynamic Pressure
-			if (channels.find("Y") != string::npos) {
-				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(Pa) \t";
-			}
-			// output Tangential drag
+			// output transverse drag
 			if (channels.find("X") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << "(N) \t";
+			}
+			// output tangential drag
+			if (channels.find("Y") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
