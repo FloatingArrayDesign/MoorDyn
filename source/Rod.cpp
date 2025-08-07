@@ -298,7 +298,7 @@ Rod::openoutput()
 				*outfile << "Node" << i << "ApX \t Node" << i << "ApY \t Node"
 				         << i << "ApZ \t ";
 		}
-		// output axial fluid inertia force
+		// output tangential fluid inertia force
 		if (channels.find("a") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
 				*outfile << "Node" << i << "AqX \t Node" << i << "AqY \t Node"
@@ -361,12 +361,12 @@ Rod::openoutput()
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
-			// output transverse inertia force
+			// output transverse fluid inertia force
 			if (channels.find("A") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
 			}
-			// output axial fluid inertia force
+			// output tangential fluid inertia force
 			if (channels.find("a") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << "(N) \t";
@@ -511,51 +511,6 @@ Rod::GetRodOutput(OutChanProps outChan)
 			return Fnet[outChan.NodeID][1];
 		else if (outChan.QType == FZ)
 			return Fnet[outChan.NodeID][2];
-		else if (outChan.QType == WZ)
-			return W[outChan.NodeID][2];
-		else if (outChan.QType == BoX)
-			return Bo[outChan.NodeID][0];
-		else if (outChan.QType == BoY)
-			return Bo[outChan.NodeID][1];
-		else if (outChan.QType == BoZ)
-			return Bo[outChan.NodeID][2];
-		else if (outChan.QType == DpX)
-			return Dp[outChan.NodeID][0];
-		else if (outChan.QType == DpY)
-			return Dp[outChan.NodeID][1];
-		else if (outChan.QType == DpZ)
-			return Dp[outChan.NodeID][2];
-		else if (outChan.QType == DqX)
-			return Dq[outChan.NodeID][0];
-		else if (outChan.QType == DqY)
-			return Dq[outChan.NodeID][1];
-		else if (outChan.QType == DqZ)
-			return Dq[outChan.NodeID][2];
-		else if (outChan.QType == ApX)
-			return Ap[outChan.NodeID][0];
-		else if (outChan.QType == ApY)
-			return Ap[outChan.NodeID][1];
-		else if (outChan.QType == ApZ)
-			return Ap[outChan.NodeID][2];
-		else if (outChan.QType == AqX)
-			return Aq[outChan.NodeID][0];
-		else if (outChan.QType == AqY)
-			return Aq[outChan.NodeID][1];
-		else if (outChan.QType == AqZ)
-			return Aq[outChan.NodeID][2];
-		else if (outChan.QType == PdX)
-			return Pd[outChan.NodeID][0];
-		else if (outChan.QType == PdY)
-			return Pd[outChan.NodeID][1];
-		else if (outChan.QType == PdZ)
-			return Pd[outChan.NodeID][2];
-		else if (outChan.QType == BX)
-			return B[outChan.NodeID][0];
-		else if (outChan.QType == BY)
-			return B[outChan.NodeID][1];
-		else if (outChan.QType == BZ)
-			return B[outChan.NodeID][2];
-
 	}
 	LOGWRN << "Unrecognized output channel " << outChan.QType << endl;
 	return 0.0;
@@ -1571,37 +1526,37 @@ Rod::Output(real time)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
 					*outfile << W[i][J] << "\t ";
-
+		// output buoyancy forces
 		if (channels.find("B") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
 					*outfile << Bo[i][J] << "\t ";
-
+		// output tangential drag forces
 		if (channels.find("Y") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Dp[i][J] << "\t ";
-
+					*outfile << Dq[i][J] << "\t ";
+		// output transverse drag forces
 		if (channels.find("X") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Dq[i][J] << "\t ";
-
+					*outfile << Dp[i][J] << "\t ";
+		// output transverse fluid inertia forces
 		if (channels.find("A") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
 					*outfile << Ap[i][J] << "\t ";
-
+		// output tangential fluid inertia forces
 		if (channels.find("a") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
 					*outfile << Aq[i][J] << "\t ";
-
+		// output dynamic pressure forces
 		if (channels.find("P") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)
 					*outfile << Pd[i][J] << "\t ";
-
+		// output seabed bottom contact forces
 		if (channels.find("b") != string::npos)
 			for (unsigned int i = 0; i <= N; i++)
 				for (unsigned int J = 0; J < 3; J++)

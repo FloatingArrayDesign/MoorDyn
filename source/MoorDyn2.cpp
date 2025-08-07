@@ -80,16 +80,6 @@ const char* UnitList[] = {
 	"N", "N", "N",                   // 20: FX     21: FY     22: FZ
 	"N*m", "N*m", "N*m",             // 23: MX     24: MY     25: MZ
 	"(frac)",                        // 26: Sub
-	"N", "N",                        // 27: TenA   28: TenB
-	"N",                             // 29: WZ
-	"N", "N", "N",                   // 30: BoX    31: BoY    32: BoZ
-	"N", "N", "N",                   // 33: DpX    34: DpY    35: DpZ
-	"N*m", "N*m", "N*m",             // 36: DqX    37: DqY    38: DqZ
-	"N", "N", "N",                   // 39: ApX    40: ApY    41: ApZ
-	"N", "N", "N",                   // 42: AqX    43: AqY    44: AqZ
-	"Pa", "Pa", "Pa",                // 45: PdX    46: PdY    47: PdZ
-	"N", "N", "N",                   // 48: BX     49: BY     50: BZ
-	"N", "N", "N"                    // 51: BoX    52: BoY    53: BoZ
 };
 
 std::atomic<size_t> __systems_counter(0);

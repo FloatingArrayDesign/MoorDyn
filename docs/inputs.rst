@@ -435,8 +435,8 @@ outputs are wanted. Eight output properties are currently possible:
  - P – dynamic pressure at each node
  - X – transverse drag force at each node
  - Y – tangential drag force at each node
- - A – transverse inertia force at each node
- - a – axial fluid inertia force at each node
+ - A – transverse fluid inertia force at each node
+ - a – tangential fluid inertia force at each node
  - b – bottom contact force
 For example, outputting node positions and segment tensions could be achieved by writing “pt” for 
 this last column.  These outputs will go to a dedicated output file for each rod.  For sending 

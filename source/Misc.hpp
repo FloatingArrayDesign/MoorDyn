@@ -1241,28 +1241,6 @@ enum QTypeEnum : int
 	Sub = 26,
 	TenA = 27,
 	TenB = 28,
-	WZ = 31,
-	DpX = 32, 
-	DpY = 33,
-	DpZ = 34,
-	DqX = 35, 
-	DqY = 36,
-	DqZ = 37,
-	ApX = 38, 
-	ApY = 39,
-	ApZ = 40,
-	AqX = 41, 
-	AqY = 42,
-	AqZ = 43,
-	PdX = 44,
-	PdY = 45,
-	PdZ = 46,
-	BX = 47, 
-	BY = 48,
-	BZ = 49,
-	BoX = 50, 
-	BoY = 51,
-	BoZ = 52
 };
 
 // The following are some definitions for use with the output options in
