@@ -35,6 +35,7 @@
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
 #include <atomic>
+#include <iomanip>
 
 #ifdef LINUX
 #include <cmath>
@@ -49,6 +50,10 @@
 #endif
 
 using namespace std;
+
+// Formating constants for rod files outputs (iomanip)
+constexpr int WIDTH = 20; // Width for output
+constexpr int PRECISION = 7; // Precision for output
 
 /**
  * @brief A helper function for getting the size of a vector as an unsigned int
@@ -626,18 +631,19 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	// --- channel titles ---
-	outfileMain << "Time"
-	            << "\t ";
+	outfileMain << setw(10) << right
+				 << "Time";
 	for (auto channel : outChans)
-		outfileMain << channel.Name << "\t ";
+		outfileMain << setw(WIDTH) << right << channel.Name;
 	outfileMain << endl;
 
 	if (env->WriteUnits > 0) {
 		// --- units ---
-		outfileMain << "(s)"
-		            << "\t ";
+		outfileMain << setw(10) << right
+					<< "(s)";
 		for (auto channel : outChans)
-			outfileMain << channel.Units << "\t ";
+			outfileMain << setw(WIDTH) << right
+					    << channel.Units;
 		outfileMain << "\n";
 	}
 
@@ -2418,12 +2424,15 @@ moordyn::MoorDyn::WriteOutputs(double t, double dt)
 		LOGERR << "Error: Unable to write to main output file " << endl;
 		return MOORDYN_INVALID_OUTPUT_FILE;
 	}
-	outfileMain << t << "\t "; // output time
+	outfileMain << setw(10) << right << fixed << setprecision(4)
+				<< t; // output time
 	for (auto channel : outChans) {
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			outfileMain << GetOutput(channel) << "\t ";
+			outfileMain << setw(WIDTH) << right << fixed << scientific 
+						<< setprecision(PRECISION)
+						<< GetOutput(channel);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {

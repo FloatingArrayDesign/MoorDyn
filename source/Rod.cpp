@@ -47,6 +47,10 @@
 
 using namespace std;
 
+// Formating constants for rod files outputs (iomanip)
+constexpr int WIDTH = 20; // Width for output
+constexpr int PRECISION = 7; // Precision for output
+
 namespace moordyn {
 
 // here is the new numbering scheme (N segments per line)
@@ -244,78 +248,91 @@ Rod::openoutput()
 		// 1st line with the fields
 
 		// output time
-		*outfile << "Time"
-		         << "\t ";
+		*outfile << setw(10) << right
+				 << "Time";
 
 		// output positions
 		if (channels.find("p") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "px \t Node" << i << "py \t Node"
-				         << i << "pz \t ";
+				 *outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "px")
+                          << setw(WIDTH) << right << ("Node" + to_string((int)i) + "py")
+                          << setw(WIDTH) << right << ("Node" + to_string((int)i) + "pz");
 			}
 		}
 		// output velocities
 		if (channels.find("v") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "vx \t Node" << i << "vy \t Node"
-				         << i << "vz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vz");
 			}
 		}
 		// output net node force
 		if (channels.find("f") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "Fx \t Node" << i << "Fy \t Node"
-				         << i << "Fz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Fx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Fy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Fz");
 			}
 		}
 		// Output Weight
 		if (channels.find("W") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "Wx \t Node" << i << "Wy \t Node"
-				         << i << "Wz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Wx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Wy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Wz");
 		}
 		// output Buoyancy
 		if (channels.find("B") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "Box \t Node" << i << "Boy \t Node"
-				         << i << "Boz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Box")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Boy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Boz");
 		}
 		// output transverse drag
 		if (channels.find("X") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "Dpx \t Node" << i << "Dpy \t Node"
-				         << i << "Dpz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dpx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dpy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dpz");
 		}
 		// output tangential drag
 		if (channels.find("Y") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "Dqx \t Node" << i << "Dqy \t Node"
-				         << i << "Dqz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dqx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dqy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dqz");
 		}
 		// output transverse inertia force
 		if (channels.find("A") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "ApX \t Node" << i << "ApY \t Node"
-				         << i << "ApZ \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "ApX")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "ApY")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "ApZ");
+				        
 		}
 		// output tangential fluid inertia force
 		if (channels.find("a") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "AqX \t Node" << i << "AqY \t Node"
-				         << i << "AqZ \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "AqX")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "AqY")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "AqZ");
 		}
 		// output dynamic pressure
 		if (channels.find("P") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "Pdx \t Node" << i << "Pdy \t Node"
-				         << i << "Pdz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Pdx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Pdy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Pdz");
+				         
 		}
 		// output bottom contact force
 		if (channels.find("b") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
-				*outfile << "Node" << i << "Bx \t Node" << i << "By \t Node"
-				         << i << "Bz \t ";
-		};
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Bx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "By")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Bz");
+		}
 
 		*outfile << "\n";
 
@@ -323,63 +340,63 @@ Rod::openoutput()
 			// 2nd line with the units
 
 			// output time
-			*outfile << "(s)"
-			         << "\t ";
+			*outfile << setw(10) << right
+			 << "(s)";
 
 			// output positions
 			if (channels.find("p") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(m) \t";
+					*outfile << setw(WIDTH) << right << "(m)";
 			}
 			// output velocities
 			if (channels.find("v") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(m/s) \t";
+					*outfile << setw(WIDTH) << right << "(m/s)";
 			}
 			// output net node force
 			if (channels.find("f") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// Output Weight
 			if (channels.find("W") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// output Buoyancy
 			if (channels.find("B") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// output transverse drag
 			if (channels.find("X") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// output tangential drag
 			if (channels.find("Y") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// output transverse fluid inertia force
 			if (channels.find("A") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// output tangential fluid inertia force
 			if (channels.find("a") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 			// output dynamic pressure
 			if (channels.find("P") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(Pa) \t";
+					*outfile << setw(WIDTH) << right << "(Pa)";
 			}
 			// output bottom contact force
 			if (channels.find("b") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right << "(N)";
 			}
 
 			*outfile << "\n";
@@ -1484,6 +1501,15 @@ Rod::Output(real time)
 	// Flags changed to just be one character (case sensitive) per output flag.
 	// To match FASTv8 version.
 
+// Helper to format and write a single value
+auto write_val = [&](real val) {
+    *outfile << std::setw(WIDTH)
+             << std::right
+             << std::scientific
+             << std::setprecision(PRECISION)
+             << val;
+    };
+
 	if (outfile) // if not a null pointer (indicating no output)
 	{
 		if (openedoutfile == 0) {
@@ -1497,76 +1523,56 @@ Rod::Output(real time)
 			return;
 		}
 		// output time
-		*outfile << time << "\t ";
+		*outfile << setw(10) << right << fixed << setprecision(4)
+				 << time;
+	// Loops through the nodes and writes the values
+	auto write_vec_array = [&](const std::vector<vec>& arr) {
+		for (unsigned int i = 0; i <= N; i++)
+			for (unsigned int J = 0; J < 3; J++){
+				write_val(arr[i][J]);}
+	};
 
-		// output positions?
-		if (channels.find("p") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) // loop through nodes
-			{
-				for (int J = 0; J < 3; J++)
-					*outfile << r[i][J] << "\t ";
-			}
-		}
-		// output velocities?
-		if (channels.find("v") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) {
-				for (int J = 0; J < 3; J++)
-					*outfile << rd[i][J] << "\t ";
-			}
-		}
-		// output net node forces?
-		if (channels.find("f") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) {
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Fnet[i][J] << "\t ";
-			}
-		}
-		// individual forces
-		if (channels.find("W") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << W[i][J] << "\t ";
-		// output buoyancy forces
-		if (channels.find("B") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Bo[i][J] << "\t ";
-		// output tangential drag forces
-		if (channels.find("Y") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Dq[i][J] << "\t ";
-		// output transverse drag forces
-		if (channels.find("X") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Dp[i][J] << "\t ";
-		// output transverse fluid inertia forces
-		if (channels.find("A") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Ap[i][J] << "\t ";
-		// output tangential fluid inertia forces
-		if (channels.find("a") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Aq[i][J] << "\t ";
-		// output dynamic pressure forces
-		if (channels.find("P") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << Pd[i][J] << "\t ";
-		// output seabed bottom contact forces
-		if (channels.find("b") != string::npos)
-			for (unsigned int i = 0; i <= N; i++)
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << B[i][J] << "\t ";
-					
-		*outfile << "\n"; // end of row
+	// ---------------------
+	// Output data per channel
+	// ---------------------
+	if (channels.find("p") != string::npos) {
+		write_vec_array(r);  // position
 	}
-	return;
-}
+	if (channels.find("v") != string::npos) {
+		write_vec_array(rd); // velocity
+	}
+	if (channels.find("f") != string::npos) {
+		write_vec_array(Fnet); // net node forces
+	}
+	if (channels.find("W") != string::npos) {
+		write_vec_array(W); // weight
+	}
+	if (channels.find("B") != string::npos) {
+		write_vec_array(Bo); // buoyancy
+	}
+	if (channels.find("Y") != string::npos) {
+		write_vec_array(Dq); // tangential drag
+	}
+	if (channels.find("X") != string::npos) {
+		write_vec_array(Dp); // transverse drag
+	}
+	if (channels.find("A") != string::npos) {
+		write_vec_array(Ap); // transverse fluid inertia
+	}
+	if (channels.find("a") != string::npos) {
+		write_vec_array(Aq); // tangential fluid inertia
+	}
+	if (channels.find("P") != string::npos) {
+		write_vec_array(Pd); // dynamic pressure
+	}
+	if (channels.find("b") != string::npos) {
+		write_vec_array(B); // seabed contact (bottom contact forces)
+	}
 
+	*outfile << "\n";
+    }
+
+}
 std::vector<uint64_t>
 Rod::Serialize(void)
 {
