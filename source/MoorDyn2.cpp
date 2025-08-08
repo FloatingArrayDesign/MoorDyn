@@ -84,7 +84,7 @@ const char* UnitList[] = {
 	"N",                             // 19: Ten
 	"N", "N", "N",                   // 20: FX     21: FY     22: FZ
 	"N*m", "N*m", "N*m",             // 23: MX     24: MY     25: MZ
-	"(frac)",                        // 26: Sub
+	"(frac)"                         // 26: Sub
 };
 
 std::atomic<size_t> __systems_counter(0);

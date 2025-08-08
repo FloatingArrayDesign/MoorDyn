@@ -1240,7 +1240,7 @@ enum QTypeEnum : int
 	MZ = 25,
 	Sub = 26,
 	TenA = 27,
-	TenB = 28,
+	TenB = 28
 };
 
 // The following are some definitions for use with the output options in
