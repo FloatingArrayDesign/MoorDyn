@@ -35,6 +35,7 @@
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
 #include <atomic>
+#include <iomanip>
 
 #ifdef LINUX
 #include <cmath>
@@ -49,6 +50,10 @@
 #endif
 
 using namespace std;
+
+// Formating constants for rod files outputs (iomanip)
+constexpr int WIDTH = 20; // Width for output
+constexpr int PRECISION = 7; // Precision for output
 
 /**
  * @brief A helper function for getting the size of a vector as an unsigned int
@@ -69,12 +74,17 @@ namespace moordyn {
 
 /// The list of units for the output
 const char* UnitList[] = {
-	"(s)       ", "(m)       ", "(m)       ", "(m)       ", "(deg)     ",
-	"(deg)     ", "(deg)     ", "(m/s)     ", "(m/s)     ", "(m/s)     ",
-	"(deg/s)   ", "(deg/s)   ", "(deg/s)   ", "(m/s2)    ", "(m/s2)    ",
-	"(m/s2)    ", "(deg/s2)  ", "(deg/s2)  ", "(deg/s2)  ", "(N)       ",
-	"(N)       ", "(N)       ", "(N)       ", "(Nm)      ", "(Nm)      ",
-	"(Nm)      ", "(frac)    "
+	"s",                    //  0: Time
+	"m", "m", "m",          //  1: PosX   2: PosY   3: PosZ
+	"deg", "deg", "deg",    //  4: RX     5: RY     6: RZ
+	"m/s", "m/s", "m/s",    //  7: VelX   8: VelY   9: VelZ
+	"deg/s", "deg/s", "deg/s",    // 10: RVelX  11: RVelY  12: RVelZ
+	"m/s^2", "m/s^2", "m/s^2",     // 13: AccX   14: AccY   15: AccZ
+	"deg/s^2", "deg/s^2", "deg/s^2", // 16: RAccX  17: RAccY  18: RAccZ
+	"N",                             // 19: Ten
+	"N", "N", "N",                   // 20: FX     21: FY     22: FZ
+	"N*m", "N*m", "N*m",             // 23: MX     24: MY     25: MZ
+	"(frac)"                         // 26: Sub
 };
 
 std::atomic<size_t> __systems_counter(0);
@@ -621,18 +631,19 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 
 	// --- channel titles ---
-	outfileMain << "Time"
-	            << "\t ";
+	outfileMain << setw(10) << right
+				 << "Time";
 	for (auto channel : outChans)
-		outfileMain << channel.Name << "\t ";
+		outfileMain << setw(WIDTH) << right << channel.Name;
 	outfileMain << endl;
 
 	if (env->WriteUnits > 0) {
 		// --- units ---
-		outfileMain << "(s)"
-		            << "\t ";
+		outfileMain << setw(10) << right
+					<< "(s)";
 		for (auto channel : outChans)
-			outfileMain << channel.Units << "\t ";
+			outfileMain << setw(WIDTH) << right
+					    << channel.Units;
 		outfileMain << "\n";
 	}
 
@@ -2413,12 +2424,15 @@ moordyn::MoorDyn::WriteOutputs(double t, double dt)
 		LOGERR << "Error: Unable to write to main output file " << endl;
 		return MOORDYN_INVALID_OUTPUT_FILE;
 	}
-	outfileMain << t << "\t "; // output time
+	outfileMain << setw(10) << right << fixed << setprecision(4)
+				<< t; // output time
 	for (auto channel : outChans) {
 		moordyn::error_id err = MOORDYN_SUCCESS;
 		string err_msg;
 		try {
-			outfileMain << GetOutput(channel) << "\t ";
+			outfileMain << setw(WIDTH) << right << fixed << scientific 
+						<< setprecision(PRECISION)
+						<< GetOutput(channel);
 		}
 		MOORDYN_CATCHER(err, err_msg);
 		if (err != MOORDYN_SUCCESS) {

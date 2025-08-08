@@ -429,7 +429,15 @@ outputs are wanted. Eight output properties are currently possible:
  - c – internal damping force at each segment
  - s – strain of each segment
  - d – rate of strain of each segment
-
+ - f – net node force 
+ - W – weight at each node
+ - B – buoyancy force at each node
+ - P – dynamic pressure at each node
+ - X – transverse drag force at each node
+ - Y – tangential drag force at each node
+ - A – transverse fluid inertia force at each node
+ - a – tangential fluid inertia force at each node
+ - b – bottom contact force
 For example, outputting node positions and segment tensions could be achieved by writing “pt” for 
 this last column.  These outputs will go to a dedicated output file for each rod.  For sending 
 values to the global output file, use the Outputs section instead.
