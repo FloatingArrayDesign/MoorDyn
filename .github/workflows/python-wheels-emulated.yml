@@ -75,7 +75,7 @@ jobs:
         rm -rf docs extern source tests
       
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v5
