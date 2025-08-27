@@ -80,6 +80,8 @@ MoorDyn-C can be compiled as a dynamically linked library with C bindings or a m
 sophisticated API functions and wrappers, making it accessible from a wide range of 
 programming languages.
 
+Further examples of MoorDyn-C drivers with input files can be found in the `examples folder <https://github.com/FloatingArrayDesign/MoorDyn/tree/dev/example>`_.
+
 Python
 ^^^^^^
 .. _python_wrapper:
@@ -811,3 +813,15 @@ After developing a coupling with MoorDyn, the DualSPHysics team has forked it in
 a seperate version called MoorDyn+, specifically dedicated to the coupling with
 DualSPHysics.
 
+OpenFOAM
+^^^^^^^^
+
+MoorDyn-C has been coupled with OpenFOAM through the `foamMooring <https://gitlab.com/hfchen20/foamMooring>`_ project.
+
+Bladed
+^^^^^^
+
+MoorDyn V1 has been coupled with DNV's Bladed software. See the following links for details:
+
+- `MoorDyn-Bladed Coupling Documentation <https://mysoftware.dnv.com/download/public/renewables/bladed/documentation/4_16/workflow/coSimulation/Bladed-MoorDynLink/Overview.html>`_
+- `MoorDyn-Bladed Coupling Theory <https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A011/1195013>`_

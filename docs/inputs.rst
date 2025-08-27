@@ -247,10 +247,10 @@ two fixed points located far from where your system is located.
 Most of the sections are set up to contain a table of input information. These
 tables begin with two preset lines that contain the column names and the
 corresponding units. These lines are followed by any number of lines containing
-the entries in that section's table of inputs. # is the general comment chacater. If you are adding notes 
+the entries in that section's table of inputs. # is the general comment character. If you are adding notes 
 to self after any of the lines, # will prevent MoorDyn from reading them. 
 
-Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs becasue they are for tests).
+Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs because they are for tests).
 
 Examples for MoorDyn-F can be found in the `OpenFAST tests <https://github.com/OpenFAST/r-test/tree/main/modules/moordyn>`_. 
 
@@ -301,9 +301,9 @@ The columns in order are as follows:
    for end nodes (and thus end half-segments), so if simulating VIV users should ensure to include a higher number of segments. 
    Also note that VIV has only been tested with explicit time schemes (specifically rk2 and rk4). There may be unexpected behavior 
    if used with an implicit time scheme. 
- - dF - OPTIONAL - the cF +- range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+ - dF - OPTIONAL - the cF +- range of non-dimensional frequencies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
- - cF - OPTIONAL - the center of the range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+ - cF - OPTIONAL - the center of the range of non-dimensional frequencies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.18 to align with the the theory found :ref:`here <version2>`
 
 Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
@@ -320,10 +320,10 @@ tabulated file with 3 header lines and then a strain column and a tension column
   ...       ...
 
 Note: MoorDyn has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
-:ref:`theory section <theory>`, allows a user to specify a bar-seperated constant dynamic and static stiffness. The second method allows the user 
+:ref:`theory section <theory>`, allows a user to specify a bar-separated constant dynamic and static stiffness. The second method allows the user 
 to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
 `EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Both of these methods allow users to provide static 
-and dynamic damping coefficients as values seperated by |. While the static damping can be described as a fraction of cricial, the dyanamic damping 
+and dynamic damping coefficients as values separated by |. While the static damping can be described as a fraction of critical, the dynamic damping 
 needs to be input as a value. Example inputs are below: 
 
 .. code-block:: none
@@ -822,7 +822,7 @@ Footnotes:
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
   same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
   fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
-- The output list is not case sensistive, however all MoorDyn-F outputs will be printed to the output
+- The output list is not case sensitive, however all MoorDyn-F outputs will be printed to the output
   file in all caps. When searching OpenFAST output channels, users will need to search for MoorDyn
   channels in all caps. Example: the channel fairten1 would appear in the output file as FAIRTEN1.
 
@@ -886,11 +886,11 @@ follows the order of the state vector: Body degrees of freedom, rod degrees of f
 degrees of freedom. For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational 
 values will be ignored by by the MoorDyn-F driver (they can be set to zero).
 
-When using the MoorDyn driver in OpenFAST mode, the inital positions represents the offsets to the 
+When using the MoorDyn driver in OpenFAST mode, the initial positions represents the offsets to the 
 global frame. When using OpenFAST mode with the positions set to 0's, then MoorDyn objects will be 
 simulated based on the positions defined in the MoorDyn input file. If a non-zero value is provided,
-it will be incorporated into the inital positions of coupled objects. For example, if the following 
-inital positions are given:
+it will be incorporated into the initial positions of coupled objects. For example, if the following 
+initial positions are given:
 
 .. code-block:: none
   

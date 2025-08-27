@@ -52,7 +52,7 @@ Note that the damping ratio is with respect to the critical damping of each segm
 a mooring line, not with respect to the line as a whole or the floating platform as a 
 whole. It is just a way of letting MoorDyn calculate the damping coefficient automatically 
 from the perspective of damping non-physical segment resonances. If the model is set up 
-right, this damping can have a negligible contribution to the overall damping provided by 
+correctly, this damping can have a negligible contribution to the overall damping provided by 
 the moorings on the floating platform.  However, if the damping contribution of the mooring 
 lines on the floating platform is supposed to be significant, it is best to (1) set the BA 
 value directly to ensure that the expected damping is provided and then (2) adjust the number 

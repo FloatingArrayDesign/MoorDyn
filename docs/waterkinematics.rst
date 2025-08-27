@@ -500,20 +500,20 @@ Water Kinematics (MoorDyn-F)
 
 MoorDyn-F has three options for simulating wave and current loads on the MoorDyn system: the Old Method, 
 the Hybrid Method, and the SeaState Method. Both the hybrid method and the SeaState method use a coupling 
-with the `OpenFAST SeaState module <https://openfast.readthedocs.io/en/main/source/user/seastate/index.html>_` 
+with the `OpenFAST SeaState module <https://openfast.readthedocs.io/en/main/source/user/seastate/index.html>`_ 
 to calculate the wave kinematics. The Old Method is a legacy method that is not coupled to SeaState. The three
 methods can be described as:
 
-- **Old Method**: MoorDyn takes wave elevation time series and current speeds with depths as inputs generates it's 
+- **Old Method**: MoorDyn takes wave elevation time series and current speeds with depths as inputs and generates its 
   own water kinematics using the equivalent of WaveGrid = 3 and Currents = 1 in MoorDyn-C.
 - **Hybrid Method**: SeaState sets up wave elevation frequencies and current speeds and then MoorDyn interpolates 
   this information to user provided wave grid and current depth discretization. This allows users to set the 
-  WaterKinematics for the whole OpenFAST or FAST.Farm system while still maintaining a courser grid for the MoorDyn
+  WaterKinematics for the whole OpenFAST or FAST.Farm system while still maintaining a coarser grid for the MoorDyn
   water kinematics, enabling computational efficiency. This method is compatible with FAST.Farm.
 - **SeaState Method**: SeaState does all the work, MoorDyn just accesses the SeaState grid data at any given 
   timestep and location. This requires the SeaState grid to encompass the whole MoorDyn system for the most
-  accurate results. If a point is quried outside the SeaState gird, it will recive the water kinematics of 
-  the nearest grid point. This method is not compataible with FAST.Farm.
+  accurate results. If a point is queried outside the SeaState grid, it will receive the water kinematics of 
+  the nearest grid point. This method is not compatible with FAST.Farm.
 
 The table below summarizes these three options.
 
