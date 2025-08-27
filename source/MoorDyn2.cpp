@@ -1026,6 +1026,25 @@ moordyn::MoorDyn::ReadInFile()
 		}
 	}
 
+	if ((i = findStartOfSection(in_txt, { "RODS", "ROD LIST", "ROD PROPERTIES" })) != -1) {
+		LOGDBG << "   Reading rod list:" << endl;
+
+		// parse until the next header or the end of the file
+		while ((in_txt[i].find("---") == string::npos) &&
+		       (i < (int)in_txt.size())) {
+			Rod* obj = readRod(in_txt[i], i);
+			
+			if (obj) {
+				RodList.push_back(obj);
+			} else {
+				delete obj;
+				return MOORDYN_INVALID_INPUT;
+			}
+
+			i++;
+		}
+	}
+
 	if ((i = findStartOfSection(in_txt,
 	                            { "POINTS",
 	                              "POINT LIST",
@@ -1132,6 +1151,15 @@ moordyn::MoorDyn::ReadInFile()
 				       << endl;
 			}
 
+			// Check point ID is sequential starting from 1
+			if (number != PointList.size() + 1) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "Point ID must be sequential starting from 1" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+
 			LOGDBG << "\t'" << number << "'"
 			       << " - of type " << Point::TypeName(type) << " with id "
 			       << PointList.size() << endl;
@@ -1150,20 +1178,6 @@ moordyn::MoorDyn::ReadInFile()
 				BodyList[bodyID - 1]->addPoint(obj, r0);
 			}
 			LOGDBG << endl;
-
-			i++;
-		}
-	}
-
-	if ((i = findStartOfSection(
-	         in_txt, { "RODS", "ROD LIST", "ROD PROPERTIES" })) != -1) {
-		LOGDBG << "   Reading rod list:" << endl;
-
-		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) &&
-		       (i < (int)in_txt.size())) {
-			Rod* obj = readRod(in_txt[i], i);
-			RodList.push_back(obj);
 
 			i++;
 		}
@@ -1225,6 +1239,15 @@ moordyn::MoorDyn::ReadInFile()
 				}
 			} else
 				outfiles.push_back(NULL);
+
+			// Check line ID is sequential starting from 1
+			if (number != LineList.size() + 1) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "Line ID must be sequential starting from 1" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
 
 			LOGDBG << "\t'" << number << "'"
 			       << " - of class " << type << " (" << TypeNum << ")"
@@ -2134,6 +2157,15 @@ moordyn::MoorDyn::readBody(string inputText, int lineNum)
 		return nullptr;
 	}
 
+	// Check body ID is sequential starting from 1
+	if (number != BodyList.size() + 1) {
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1
+				<< ":" << endl
+				<< "'" << inputText << "'" << endl
+				<< "Body ID must be sequential starting from 1" << endl;
+		return nullptr;
+	}
+
 	// id = size + 1 because of ground body, which has an Id of zero
 	Body* obj = new Body(_log, BodyList.size() + 1);
 	LOGDBG << "\t'" << number << "'"
@@ -2259,6 +2291,15 @@ moordyn::MoorDyn::readRod(string inputText, int lineNum)
 	       << " - of class " << RodType << " (" << TypeNum << ")"
 	       << " and type " << Rod::TypeName(type) << " with id "
 	       << RodList.size() << endl;
+
+	// Check rod ID is sequential starting from 1
+	if (number != RodList.size() + 1) {
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1
+				<< ":" << endl
+				<< "'" << inputText << "'" << endl
+				<< "Rod ID must be sequential starting from 1" << endl;
+		return nullptr;
+	}
 
 	Rod* obj = new Rod(_log, RodList.size());
 	obj->setup(number,
