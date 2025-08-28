@@ -7,8 +7,8 @@ main object types: Lines, Points, Rods, and Bodies. MoorDyn v1 only contained Li
 Lines are the fundamental discretized lumped-mass modeling component. Points and Rods provide a 
 means of connecting lines with additional 3- and 6-DOF properties (respectively), and Bodies 
 provide a way to create more complex 6-DOF rigid-body assemblies. These objects have predefined 
-ways or interacting. Kinematics are passed from the top down in and are used to calculate the 
-forces which are passed up back to the outside program or to output channels. This hierarchy is 
+ways of interacting. Kinematics are passed from the top down and are used to calculate the 
+forces which are passed back up to the outside program or to output channels. This hierarchy is 
 shown below:
 
 .. figure:: structure_moordyn.png

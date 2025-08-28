@@ -52,7 +52,7 @@ Note that the damping ratio is with respect to the critical damping of each segm
 a mooring line, not with respect to the line as a whole or the floating platform as a 
 whole. It is just a way of letting MoorDyn calculate the damping coefficient automatically 
 from the perspective of damping non-physical segment resonances. If the model is set up 
-right, this damping can have a negligible contribution to the overall damping provided by 
+correctly, this damping can have a negligible contribution to the overall damping provided by 
 the moorings on the floating platform.  However, if the damping contribution of the mooring 
 lines on the floating platform is supposed to be significant, it is best to (1) set the BA 
 value directly to ensure that the expected damping is provided and then (2) adjust the number 
@@ -68,6 +68,26 @@ the natural period,
 However, in contrast to the damping, which can be selected line by line, the
 time step is a constant of the whole system, and thus should be selected
 considering the minimum natural period of all lines.
+
+Catenary Solve Unsuccessful
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One of the most common issues encountered when using MoorDyn is the failure of the 
+catenary solver to converge. The catenary solver is the first step in solving the 
+initial conditions of the system. This approach tries to use the properties and geometry 
+of the mooring lines to solve for a catenary shape. 
+
+If this routine fails, you will see a "Catenary solve unsuccessful" message in the
+the console and the log file. This means that MoorDyn will initialize the lines
+as linear between the two defined end locations. After this, the ICgen process begins,
+which runs a simulation with no external forcing, allowing the lines to 'fall' into
+place. If the lines initialize as linear, then the initialization process will just take
+longer, requiring a larger `TmaxIC` value. Explanations about the different initial 
+condition generating methods can be found in the :ref:`initialization section <initialization>`.
+
+The "Catenary Solve Unsuccessful" message does not impact the performance of MoorDyn or 
+the results it produces, provided the initialization process converges before the simulation 
+begins.
 
 Python errors
 ^^^^^^^^^^^^^

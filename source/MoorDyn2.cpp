@@ -1026,6 +1026,25 @@ moordyn::MoorDyn::ReadInFile()
 		}
 	}
 
+	if ((i = findStartOfSection(in_txt, { "RODS", "ROD LIST", "ROD PROPERTIES" })) != -1) {
+		LOGDBG << "   Reading rod list:" << endl;
+
+		// parse until the next header or the end of the file
+		while ((in_txt[i].find("---") == string::npos) &&
+		       (i < (int)in_txt.size())) {
+			Rod* obj = readRod(in_txt[i], i);
+			
+			if (obj) {
+				RodList.push_back(obj);
+			} else {
+				delete obj;
+				return MOORDYN_INVALID_INPUT;
+			}
+
+			i++;
+		}
+	}
+
 	if ((i = findStartOfSection(in_txt,
 	                            { "POINTS",
 	                              "POINT LIST",
@@ -1132,6 +1151,15 @@ moordyn::MoorDyn::ReadInFile()
 				       << endl;
 			}
 
+			// Check point ID is sequential starting from 1
+			if (number != PointList.size() + 1) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "Point ID must be sequential starting from 1" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+
 			LOGDBG << "\t'" << number << "'"
 			       << " - of type " << Point::TypeName(type) << " with id "
 			       << PointList.size() << endl;
@@ -1150,20 +1178,6 @@ moordyn::MoorDyn::ReadInFile()
 				BodyList[bodyID - 1]->addPoint(obj, r0);
 			}
 			LOGDBG << endl;
-
-			i++;
-		}
-	}
-
-	if ((i = findStartOfSection(
-	         in_txt, { "RODS", "ROD LIST", "ROD PROPERTIES" })) != -1) {
-		LOGDBG << "   Reading rod list:" << endl;
-
-		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) &&
-		       (i < (int)in_txt.size())) {
-			Rod* obj = readRod(in_txt[i], i);
-			RodList.push_back(obj);
 
 			i++;
 		}
@@ -1225,6 +1239,15 @@ moordyn::MoorDyn::ReadInFile()
 				}
 			} else
 				outfiles.push_back(NULL);
+
+			// Check line ID is sequential starting from 1
+			if (number != LineList.size() + 1) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "Line ID must be sequential starting from 1" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
 
 			LOGDBG << "\t'" << number << "'"
 			       << " - of class " << type << " (" << TypeNum << ")"
@@ -1423,9 +1446,6 @@ moordyn::MoorDyn::ReadInFile()
 
 				// figure out what type of output it is and process
 				// accordingly
-				// TODO: add checks of first char of num1,2, let1,2,3 not
-				// being NULL to below and handle errors (e.g. invalid line
-				// number)
 
 				// fairlead tension case (changed to just be for single
 				// line, not all connected lines)
@@ -1434,6 +1454,15 @@ moordyn::MoorDyn::ReadInFile()
 					dummy.QType = Ten;
 					dummy.Units = moordyn::UnitList[Ten];
 					dummy.ObjID = atoi(num1.c_str());
+					// Check if the line ID is valid
+					if (dummy.ObjID <=0 || dummy.ObjID > LineList.size()) {
+						LOGERR << "Error in " << _filepath << " at line " << i + 1
+						       << ":" << endl
+						       << "'" << in_txt[i] << "'" << endl
+						       << "Invalid Line ID specifier: " << dummy.ObjID
+						       << endl;
+						return MOORDYN_INVALID_INPUT;
+					}
 					dummy.NodeID = LineList[dummy.ObjID - 1]->getN();
 				}
 				// achor tension case (changed to just be for single line,
@@ -1443,6 +1472,15 @@ moordyn::MoorDyn::ReadInFile()
 					dummy.QType = Ten;
 					dummy.Units = moordyn::UnitList[Ten];
 					dummy.ObjID = atoi(num1.c_str());
+					// Check if the line ID is valid
+					if (dummy.ObjID <=0 || dummy.ObjID > LineList.size()) {
+						LOGERR << "Error in " << _filepath << " at line " << i + 1
+						       << ":" << endl
+						       << "'" << in_txt[i] << "'" << endl
+						       << "Invalid Line ID specifier: " << dummy.ObjID
+						       << endl;
+						return MOORDYN_INVALID_INPUT;
+					}
 					dummy.NodeID = 0;
 				}
 				// more general case
@@ -1454,6 +1492,17 @@ moordyn::MoorDyn::ReadInFile()
 					// get object type and node number if applicable
 					// Line case:  L?N?xxxx
 					if (str::isOneOf(let1, { "L", "LINE" })) {
+
+						// Check if the line ID is valid
+						if (dummy.ObjID <=0 || dummy.ObjID > LineList.size()) {
+							LOGERR << "Error in " << _filepath << " at line " << i + 1
+								<< ":" << endl
+								<< "'" << in_txt[i] << "'" << endl
+								<< "Invalid Line ID specifier: " << dummy.ObjID
+								<< endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
 						dummy.OType = 1;
 						if (let3.empty()) {
 							if (let2.substr(0, 2) == "NA") {
@@ -1476,14 +1525,48 @@ moordyn::MoorDyn::ReadInFile()
 							}
 						} else
 							dummy.NodeID = atoi(num2.c_str());
+
+							// Check if NodeID is valid if provided by user (note -1 is returned by atoi(num2.c_str()) if null string). Static cast required because getN returns unsigned int
+							if ( dummy.NodeID < 0 || dummy.NodeID > static_cast<int>(LineList[dummy.ObjID - 1]->getN()) ) {
+								LOGERR << "Error in " << _filepath << " at line " << i + 1
+									<< ":" << endl
+									<< "'" << in_txt[i] << "'" << endl
+									<< "Invalid Line Node ID specifier: " << dummy.NodeID
+									<< endl;
+								return MOORDYN_INVALID_INPUT;
+							}
 					}
 					// Point case:   P?xxx or Point?xxx
 					else if (str::isOneOf(let1, { "P", "POINT" })) {
+
+						// Check for valid pointID
+						if (dummy.ObjID <= 0 || dummy.ObjID > PointList.size()) {
+							LOGERR << "Error in " << _filepath << " at line " << i + 1
+								<< ":" << endl
+								<< "'" << in_txt[i] << "'" << endl
+								<< "Invalid Point ID specifier: " << dummy.ObjID 
+								<< endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
 						dummy.OType = 2;
 						dummy.NodeID = -1;
 					}
 					// Rod case:   R?xxx or Rod?xxx
 					else if (str::isOneOf(let1, { "R", "ROD" })) {
+
+						// Check for valid rodID
+						cout << "dummy.ObjID: " << dummy.ObjID << endl;
+						cout << "RodList.size(): " << RodList.size() << endl;
+						if (dummy.ObjID <= 0 || dummy.ObjID > RodList.size()) {
+							LOGERR << "Error in " << _filepath << " at line " << i + 1
+								<< ":" << endl
+								<< "'" << in_txt[i] << "'" << endl
+								<< "Invalid Rod ID specifier: " << dummy.ObjID
+								<< endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
 						dummy.OType = 3;
 						if (let3.empty()) {
 							if (let2.substr(0, 2) == "NA") {
@@ -1496,6 +1579,17 @@ moordyn::MoorDyn::ReadInFile()
 								dummy.NodeID = -1;
 						} else if (!num2.empty())
 							dummy.NodeID = atoi(num2.c_str());
+							
+							// Check if NodeID is valid if provided by user (note -1 is returned by atoi(num2.c_str()) if null string). Static cast required because getN returns unsigned int
+							if ( dummy.NodeID < -1 || dummy.NodeID > static_cast<int>(RodList[dummy.ObjID - 1]->getN()) ) {
+								LOGERR << "Error in " << _filepath << " at line " << i + 1
+									<< ":" << endl
+									<< "'" << in_txt[i] << "'" << endl
+									<< "Invalid Rod Node ID specifier: " << dummy.NodeID
+									<< endl;
+								return MOORDYN_INVALID_INPUT;
+							}
+
 						else {
 							LOGWRN << "Warning in " << _filepath << ":" << i + 1
 							       << "..." << endl
@@ -1507,6 +1601,17 @@ moordyn::MoorDyn::ReadInFile()
 					}
 					// Body case:   B?xxx or Body?xxx
 					else if (str::isOneOf(let1, { "B", "BODY" })) {
+
+						// Check for valid bodyID
+						if (dummy.ObjID <= 0 || dummy.ObjID > BodyList.size()) {
+							LOGERR << "Error in " << _filepath << " at line " << i + 1
+								<< ":" << endl
+								<< "'" << in_txt[i] << "'" << endl
+								<< "Invalid Body ID specifier: " << dummy.ObjID
+								<< endl;
+							return MOORDYN_INVALID_INPUT;
+						}
+
 						dummy.OType = 4;
 						dummy.NodeID = -1;
 					}
@@ -2052,6 +2157,15 @@ moordyn::MoorDyn::readBody(string inputText, int lineNum)
 		return nullptr;
 	}
 
+	// Check body ID is sequential starting from 1
+	if (number != BodyList.size() + 1) {
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1
+				<< ":" << endl
+				<< "'" << inputText << "'" << endl
+				<< "Body ID must be sequential starting from 1" << endl;
+		return nullptr;
+	}
+
 	// id = size + 1 because of ground body, which has an Id of zero
 	Body* obj = new Body(_log, BodyList.size() + 1);
 	LOGDBG << "\t'" << number << "'"
@@ -2177,6 +2291,15 @@ moordyn::MoorDyn::readRod(string inputText, int lineNum)
 	       << " - of class " << RodType << " (" << TypeNum << ")"
 	       << " and type " << Rod::TypeName(type) << " with id "
 	       << RodList.size() << endl;
+
+	// Check rod ID is sequential starting from 1
+	if (number != RodList.size() + 1) {
+		LOGERR << "Error in " << _filepath << " at line " << lineNum + 1
+				<< ":" << endl
+				<< "'" << inputText << "'" << endl
+				<< "Rod ID must be sequential starting from 1" << endl;
+		return nullptr;
+	}
 
 	Rod* obj = new Rod(_log, RodList.size());
 	obj->setup(number,

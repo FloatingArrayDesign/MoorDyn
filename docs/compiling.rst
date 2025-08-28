@@ -5,8 +5,8 @@ Compiling
 
 MoorDyn is available in two forms, C and F, with two different versions, v1 and v2. V1 is
 the original MoorDyn code, containing just point and line objects. V2 is the upgraded
-version of MoorDyn v1. You can read more on the :ref:`home page <index>`. It includes that
-capability to simulate rigid bodies, non-linear tension, wave kinematics, bending 
+version of MoorDyn v1. You can read more on the :ref:`home page <index>`. It includes the
+capability to simulate rigid bodies, nonlinear tension, wave kinematics, bending 
 stiffness, and more. Further details can be found in the :ref:`theory section <theory>`
 and :ref:`structure section <structure>`. 
 
@@ -70,7 +70,7 @@ This can be done by executing the following command:
 Linux
 ^^^^^
 
-Some GNU/Linux distributions have already packages deployed for their package
+Some GNU/Linux distributions already have packages deployed for their package
 managers, which would make your life way easier.
 Otherwise, a self-extracting package is also provided.
 
@@ -96,7 +96,7 @@ However, it is strongly recommended to compile it yourself with
 To use the self-extracting package head your browser to the
 `releases page <https://github.com/FloatingArrayDesign/MoorDyn/releases>`_,
 select/expand the latest release, download the file named
-"Moordyn-X.Y.Z-Linux.sh" (with X.Y.Z the specific version you chosen) and
+"Moordyn-X.Y.Z-Linux.sh" (with X.Y.Z being the specific version you choose) and
 execute it.
 
 NOTE: The self-extracting file you have downloaded cannot be executed until you

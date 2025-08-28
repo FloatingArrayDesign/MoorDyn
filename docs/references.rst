@@ -97,15 +97,30 @@ Non-linear line stiffness:
  `Lozon, Ericka, Matthew Hall, Paul McEvoy, Seojin Kim, and Bradley Ling, “Design and Analysis of a Floating-Wind Shallow-Water Mooring System 
  Featuring Polymer Springs.” American Society of Mechanical Engineers Digital Collection, 2022. <https://doi.org/10.1115/IOWTC2022-98149>`_
 
+Bladed-MoorDyn Coupling:
+
+  `Alexandre, Armando, Francesc Fabregas Flavia, Jingyi Yu, Ali Bakhshandehrostami, and Steven Parkinson. "Coupling Bladed With External Finite-Element Mooring Libraries." 
+  American Society of Mechanical Engineers Digital Collection, 2023. <https://doi.org/10.1115/IOWTC2023-119346>`_
+
 Viscoelastic approach for non-linear rope behavior:
 
   `Hall, Matthew, Brian Duong, and Ericka Lozon, “Streamlined Loads Analysis of Floating Wind Turbines With Fiber Rope Mooring Lines.” In ASME 2023 
   5th International Offshore Wind Technical Conference, V001T01A029. Exeter, UK: American Society of Mechanical Engineers, 2023. <https://doi.org/10.1115/IOWTC2023-119524>`_
 
 Updated MoorDyn-OpenFOAM Coupling:
+  
   `Haifei Chen, Tanausú Almeida Medina, and Jose Luis Cercos-Pita, "CFD simulation of multiple moored floating structures using OpenFOAM: An open-access mooring restraints 
   library." Ocean Engineering, vol. 303, Jul. 2024. <https://doi.org/10.1016/j.oceaneng.2024.117697>`_
 
+Reef3D-MoorDyn Coupling:
+
+  `Soydan, Ahmet, Widar Weizhi Wang, and Hans Bihs. "An Improved Direct Forcing Immersed Boundary Method With Integrated Mooring Algorithm for Floating Offshore Wind 
+  Turbines." American Society of Mechanical Engineers Digital Collection, 2024. <https://doi.org/10.1115/1.4067117>`_
+
+Modeling of Bi-stable Nonlinear Energy Sinks in MoorDyn (most recent description of MoorDyn theory):
+
+  `Anargyros Michaloliakos, Wei-Ying Wong, Ryan Davies, Malakonda Reddy Lekkala, Matthew Hall, Lei Zuo, Alexander F. Vakakis, "Stabilizing dynamic subsea power cables using 
+  Bi-stable nonlinear energy sinks", Ocean Engineering, vol. 334, August 2025. <https://doi.org/10.1016/j.oceaneng.2025.121613>`_
 
 The Fortran version of MoorDyn is available as a module inside of OpenFAST:
   
