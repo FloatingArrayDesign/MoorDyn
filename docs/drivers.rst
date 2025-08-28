@@ -8,6 +8,10 @@ MoorDyn-F contains a driver script that has a :ref:`separate input file <MDF_dri
 and MoorDyn-F compiles in OpenFAST as moordyn_driver. The MoorDyn-F driver follows all 
 the same principles as the examples below. See :ref:`compiling <compiling>` and 
 :ref:`inputs <inputs>` sections for instructions on how to use the MoorDyn-F driver. 
+Additionally, MoorDyn-F has a c-bindings interface, which allows it (along with the rest 
+of OpenFAST) to be coupled with other languages. The MoorDyn-F C interface is set up using 
+the MoorDyn V1 approach (single 6 DOF coupling), thus it requires a single coupled body to 
+be used in the MoorDyn input file.
 
 Currently MoorDyn-C v2 can be used in Python, C/C++, Fortran, and Matlab. You can
 read more on how to install MoorDyn for each different language in
@@ -129,11 +133,9 @@ control:
         for node_id in range(n_segs+1):
             print("  node {}:".format(node_id))
             pos = moordyn.GetLineNodePos(line, node_id)
-            printf("  pos = {}".format(pos))
+            print("  pos = {}".format(pos))
             ten = moordyn.GetLineNodeTen(line, node_id)
-            printf("  ten = {}".format(ten))
-        }
-    }
+            print("  ten = {}".format(ten))
 
     # Alright, time to finish!
     moordyn.Close(system)

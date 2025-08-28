@@ -69,6 +69,26 @@ However, in contrast to the damping, which can be selected line by line, the
 time step is a constant of the whole system, and thus should be selected
 considering the minimum natural period of all lines.
 
+Catenary Solve Unsuccessful
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One of the most common issues encountered when using MoorDyn is the failure of the 
+catenary solver to converge. The catenary solver is the first step in solving the 
+initial conditions of the system. This approach tries to use the properties and geometry 
+of the mooring lines to solve for a catenary shape. 
+
+If this routine fails, you will see a "Catenary solve unsuccessful" message in the
+the console and the log file. This means that MoorDyn will initialize the lines
+as linear between the two defined end locations. After this, the ICgen process begins,
+which runs a simulation with no external forcing, allowing the lines to 'fall' into
+place. If the lines initialize as linear, then the initialization process will just take
+longer, requiring a larger `TmaxIC` value. Explanations about the different initial 
+condition generating methods can be found in the :ref:`initialization section <initialization>`.
+
+The "Catenary Solve Unsuccessful" message does not impact the performance of MoorDyn or 
+the results it produces, provided the initialization process converges before the simulation 
+begins.
+
 Python errors
 ^^^^^^^^^^^^^
 
