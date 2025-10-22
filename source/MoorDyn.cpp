@@ -66,6 +66,9 @@ int OwnConsoleWindow = 0;
 
 #endif
 
+// Default is false, meaning the console will open
+bool disableConsole = false; 
+
 /**
  * @}
  */
@@ -85,63 +88,65 @@ MoorDyn md_singleton = NULL;
 int DECLDIR
 MoorDynInit(const double x[], const double xd[], const char* infilename)
 {
+	if (!disableConsoleWindow) {
 #ifdef WIN32
-	// ------------ create console window for messages if none already available
-	// ----------------- adapted from Andrew S. Tucker, "Adding Console I/O to a
-	// Win32 GUI App" in Windows Developer Journal, December 1997. source code
-	// at http://dslweb.nwnexus.com/~ast/dload/guicon.htm
+		// ------------ create console window for messages if none already available
+		// ----------------- adapted from Andrew S. Tucker, "Adding Console I/O to a
+		// Win32 GUI App" in Windows Developer Journal, December 1997. source code
+		// at http://dslweb.nwnexus.com/~ast/dload/guicon.htm
 
-	FILE* fp;
-	// get pointer to environment variable "PROMPT" (NULL if not in console)
-	PromptPtr = getenv("PROMPT");
+		FILE* fp;
+		// get pointer to environment variable "PROMPT" (NULL if not in console)
+		PromptPtr = getenv("PROMPT");
 
-	// TODO: simplify this to just keep the output parts I need
+		// TODO: simplify this to just keep the output parts I need
 
-	HWND consoleWnd = GetConsoleWindow();
-	if (!consoleWnd) {
-		// if not in console, create our own
-		OwnConsoleWindow = 1;
+		HWND consoleWnd = GetConsoleWindow();
+		if (!consoleWnd) {
+			// if not in console, create our own
+			OwnConsoleWindow = 1;
 
-		// allocate a console for this app
-		if (AllocConsole()) {
-			// set the screen buffer to be big enough to let us scroll text
-			static const WORD MAX_CONSOLE_LINES = 500;
-			CONSOLE_SCREEN_BUFFER_INFO coninfo;
-			GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),
-			                           &coninfo);
-			coninfo.dwSize.Y = MAX_CONSOLE_LINES;
-			SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),
-			                           coninfo.dwSize);
+			// allocate a console for this app
+			if (AllocConsole()) {
+				// set the screen buffer to be big enough to let us scroll text
+				static const WORD MAX_CONSOLE_LINES = 500;
+				CONSOLE_SCREEN_BUFFER_INFO coninfo;
+				GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),
+										&coninfo);
+				coninfo.dwSize.Y = MAX_CONSOLE_LINES;
+				SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),
+										coninfo.dwSize);
 
-			// redirect unbuffered STDOUT to the console
-			// lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
-			lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
-			hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-			fp = _fdopen(hConHandle, "w");
-			*stdout = *fp;
-			setvbuf(stdout, NULL, _IONBF, 0);
+				// redirect unbuffered STDOUT to the console
+				// lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+				lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
+				hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+				fp = _fdopen(hConHandle, "w");
+				*stdout = *fp;
+				setvbuf(stdout, NULL, _IONBF, 0);
 
-			// redirect unbuffered STDERR to the console
-			lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
-			hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-			fp = _fdopen(hConHandle, "w");
-			*stderr = *fp;
-			setvbuf(stderr, NULL, _IONBF, 0);
+				// redirect unbuffered STDERR to the console
+				lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
+				hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+				fp = _fdopen(hConHandle, "w");
+				*stderr = *fp;
+				setvbuf(stderr, NULL, _IONBF, 0);
 
-			// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
-			// point to console as well
-			std::ios::sync_with_stdio();
+				// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
+				// point to console as well
+				std::ios::sync_with_stdio();
 
-			std::cout << "(MoorDyn-initiated console window)" << std::endl;
-		} else {
-			// This is not a likely scenario, but we've run into some situations
-			// where you can neither get the console nor allocate a console.
-			// So just fall back to using whatever cout and cerr were before.
-			std::cout << "AllocConsole failed" << std::endl;
-			OwnConsoleWindow = 0;
+				std::cout << "(MoorDyn-initiated console window)" << std::endl;
+			} else {
+				// This is not a likely scenario, but we've run into some situations
+				// where you can neither get the console nor allocate a console.
+				// So just fall back to using whatever cout and cerr were before.
+				std::cout << "AllocConsole failed" << std::endl;
+				OwnConsoleWindow = 0;
+			}
 		}
-	}
 #endif
+	}
 
 	MoorDyn instance = MoorDyn_Create(infilename);
 	if (!instance)
@@ -291,4 +296,10 @@ AllOutput(double t, double dt)
 	            MOORDYN_MSG_LEVEL,
 	            "In version 2, AllOutput is automatically called by "
 	            "MoorDynInit and MoorDynStep");
+}
+
+void DECLDIR
+SetDisableConsole(bool disable)
+{
+	disableConsole = disable;
 }

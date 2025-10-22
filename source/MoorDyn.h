@@ -152,6 +152,14 @@ GetNodePos(int LineNum, int NodeNum, double pos[3]);
 void DECLDIR
 AllOutput(double, double);
 
+/** @brief Set the variable to disable the console window.
+ *
+ * Use this function to control display of the console window popup.
+ * @param disable Set disable to true to disable the console window.
+ */
+void DECLDIR
+SetDisableConsole(bool disable);
+
 /**
  * @}
  */
