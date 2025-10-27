@@ -197,6 +197,7 @@ MoorDynClose(void)
 		std::cin.get();
 		FreeConsole();
 	}
+	OwnConsoleWindow = 0;
 #endif
 
 	return 0;
