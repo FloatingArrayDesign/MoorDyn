@@ -31,7 +31,7 @@ jobs:
           python-version: '3.12' 
 
       - name: Download the wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: dist/
           pattern: python-wheels-${{runner.os}}_${{inputs.arch}}*
