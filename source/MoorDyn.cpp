@@ -67,7 +67,7 @@ int OwnConsoleWindow = 0;
 #endif
 
 // Default is false, meaning the console will open
-bool disableConsole = false; 
+int disableConsole = 0; 
 
 /**
  * @}
@@ -88,7 +88,7 @@ MoorDyn md_singleton = NULL;
 int DECLDIR
 MoorDynInit(const double x[], const double xd[], const char* infilename)
 {
-	if (!disableConsole) {
+	if (disableConsole == 0) {
 #ifdef WIN32
 		// ------------ create console window for messages if none already available
 		// ----------------- adapted from Andrew S. Tucker, "Adding Console I/O to a
@@ -300,7 +300,7 @@ AllOutput(double t, double dt)
 }
 
 void DECLDIR
-SetDisableConsole(bool disable)
+SetDisableConsole(int disable)
 {
 	disableConsole = disable;
 }

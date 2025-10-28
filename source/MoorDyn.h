@@ -155,10 +155,10 @@ AllOutput(double, double);
 /** @brief Set the variable to disable the console window.
  *
  * Use this function to control display of the console window popup.
- * @param disable Set disable to true to disable the console window.
+ * @param disable Set disable to 1 to disable the console window.
  */
 void DECLDIR
-SetDisableConsole(bool disable);
+SetDisableConsole(int disable);
 
 /**
  * @}
