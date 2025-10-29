@@ -88,7 +88,7 @@ MoorDyn md_singleton = NULL;
 int DECLDIR
 MoorDynInit(const double x[], const double xd[], const char* infilename)
 {
-	if (disableConsole == 0) {
+	if (!disableConsole) {
 #ifdef WIN32
 		// ------------ create console window for messages if none already available
 		// ----------------- adapted from Andrew S. Tucker, "Adding Console I/O to a
