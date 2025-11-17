@@ -92,28 +92,28 @@ jobs:
         shell: bash
 
       - name: download pre-built VTK static library (ManyLinux)
-        uses: suisei-cn/actions-download-file@v1.6.0
+        uses: suisei-cn/actions-download-file@v1.6.1
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-manylinux2014_${{inputs.arch}}.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (MUSLLinux)
-        uses: suisei-cn/actions-download-file@v1.6.0
+        uses: suisei-cn/actions-download-file@v1.6.1
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-musllinux_1_2_${{inputs.arch}}.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Linux'
 
       - name: download pre-built VTK static library (Windows)
-        uses: suisei-cn/actions-download-file@v1.6.0
+        uses: suisei-cn/actions-download-file@v1.6.1
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-Windows-x86_64.tar.gz
           target: ${{github.workspace}}/
         if: runner.os == 'Windows'
 
       - name: download pre-built VTK static library (MacOS)
-        uses: suisei-cn/actions-download-file@v1.6.0
+        uses: suisei-cn/actions-download-file@v1.6.1
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/vtk-macOS-${{inputs.arch}}.tar.gz
           target: ${{github.workspace}}/
