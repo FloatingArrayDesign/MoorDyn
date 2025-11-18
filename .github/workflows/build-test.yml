@@ -71,7 +71,7 @@ jobs:
     needs: [create_release]
     strategy:
         matrix:
-            os: [ubuntu-22.04, windows-latest]
+            os: [ubuntu-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v5
@@ -101,6 +101,12 @@ jobs:
         scoop install nsis
         Add-Content $env:GITHUB_PATH "C:\Users\runneradmin\scoop\shims\"
       if: runner.os == 'Windows'
+
+    - name: Install Rust-bindgen (Linux)
+      run: |
+        sudo apt-get -qq update
+        sudo apt-get -qq -y install bindgen
+      if: runner.os == 'Linux'
 
     - name: Install VTK (Linux)
       run: |
