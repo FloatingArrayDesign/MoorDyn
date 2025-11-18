@@ -71,7 +71,7 @@ jobs:
     needs: [create_release]
     strategy:
         matrix:
-            os: [ubuntu-22.04, windows-2022]
+            os: [ubuntu-22.04, windows-latest]
 
     steps:
     - uses: actions/checkout@v5
@@ -91,6 +91,16 @@ jobs:
       with:
         compiler: gcc
       if: runner.os == 'Linux'
+
+    - name: Setup NSIS (Windows)
+      run: |
+        iwr -useb get.scoop.sh -outfile 'install.ps1'
+        .\install.ps1 -RunAsAdmin
+        scoop update
+        scoop bucket add extras
+        scoop install nsis
+        Add-Content $env:GITHUB_PATH "C:\Users\runneradmin\scoop\shims\"
+      if: runner.os == 'Windows'
 
     - name: Install VTK (Linux)
       run: |
