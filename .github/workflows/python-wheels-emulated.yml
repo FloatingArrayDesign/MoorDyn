@@ -7,7 +7,7 @@ on:
         description: 'Host OS'
         required: false
         type: string
-        default: '["ubuntu-22.04"]'
+        default: '["ubuntu-latest"]'
       arch:
         description: 'Architecture target'
         required: true
