@@ -74,8 +74,10 @@ TEST_CASE("getH gives the cross product matrix")
 
 	vec testVec;
 	testVec << 1, 2, 3;
+	std::cout << "testVec=" << std::endl << testVec << std::endl;
 
 	vec v{ 0.3, 0.2, 0.1 };
+	std::cout << "v=" << std::endl << v << std::endl;
 	// getH() should create a matrix that replicates the behavior of the cross
 	// product such that getH(v) * a == -v.cross(a)
 	REQUIRE_THAT(getH(v) * testVec, IsClose(v.cross(-testVec)));

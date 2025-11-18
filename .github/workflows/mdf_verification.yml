@@ -23,6 +23,12 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
+    - name: Install deps
+      run: |
+        sudo apt-get -qq update
+        sudo apt-get -qq -y install libblas-dev liblapack-dev
+      if: runner.os == 'Linux'
+
     - name: Setup Python
       uses: actions/setup-python@v6
       id: setup-python
