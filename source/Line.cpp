@@ -152,7 +152,7 @@ Line::setup(int number_in,
 	d = props->d;
 	A = pi / 4. * d * d;
 	rho = props->w / A;
-	ElasticMod = props->ElasticMod;
+	ElasticMod = (elastic_model)props->ElasticMod;
 	EA = props->EA;
 	EA_D = props->EA_D;
 	alphaMBL = props->alphaMBL;
@@ -242,7 +242,7 @@ Line::setup(int number_in,
 	                      // segments) (1 = fully submerged, 0 = out of water)
 
 	// viscoelastic things
-	if (ElasticMod > 1) {
+	if (ElasticMod != ELASTIC_CONSTANT) {
 		dl_1.assign(
 		    N,
 		    0.0); // segment stretch attributed to static stiffness portion [m]
@@ -615,7 +615,7 @@ Line::initialize()
 	// the segment. This is required here to initalize the state as non-zero,
 	// which avoids an initial transient where the segment goes from unstretched
 	// to stretched in one time step.
-	if (ElasticMod > 1) {
+	if (ElasticMod != ELASTIC_CONSTANT) {
 		for (unsigned int i = 0; i < N; i++) {
 			lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 			dl_1[i] = lstr[i] - l[i]; // delta l of the segment
@@ -790,24 +790,24 @@ Line::setState(const InstanceStateVarView state)
 
 	// Error check for number of columns (if VIV and Visco need row.size() = 8,
 	// if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)
-	if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) ||
-	    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) ||
-	    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
+	if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod != ELASTIC_CONSTANT) ||
+	    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod != ELASTIC_CONSTANT))) ||
+	    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == ELASTIC_CONSTANT)) {
 		LOGERR << "Invalid state.row size for Line " << number << endl;
 		throw moordyn::mem_error("Invalid state.row size");
 	}
 
 	// Error check for number of rows (if visco need N rows, if normal need N-1
 	// rows)
-	if ((state.rows() != N && ElasticMod > 1) ||
-	    (state.rows() != N - 1 && ElasticMod == 1)) {
+	if ((state.rows() != N && ElasticMod != ELASTIC_CONSTANT) ||
+	    (state.rows() != N - 1 && ElasticMod == ELASTIC_CONSTANT)) {
 		LOGERR << "Invalid number of rows in state matrix for Line " << number
 		       << endl;
 		throw moordyn::mem_error("Invalid number of rows in state matrix");
 	}
 
 	// If using the viscoelastic model, interate N rows, else iterate N-1 rows.
-	for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N - 1); i++) {
+	for (unsigned int i = 0; i < (ElasticMod != ELASTIC_CONSTANT ? N : N - 1); i++) {
 		// node number is i+1
 		// segment number is i
 		if (i < N - 1) { // only assign the internal nodes
@@ -815,7 +815,7 @@ Line::setState(const InstanceStateVarView state)
 			rd[i + 1] = state.row(i).segment<3>(3);
 		}
 
-		if (ElasticMod > 1)
+		if (ElasticMod != ELASTIC_CONSTANT)
 			dl_1[i] =
 			    state.row(i)
 			        .tail<1>()[0]; // [0] needed becasue tail<1> returns a one
@@ -826,7 +826,7 @@ Line::setState(const InstanceStateVarView state)
 		    !(IC_gen)) { // not needed in IC_gen. Initializes as distribution on
 			             // 0-2pi. State is initialized by init function in this
 			             // code, which sets phi to range 0-2pi
-			if (ElasticMod > 1)
+			if (ElasticMod != ELASTIC_CONSTANT)
 				phi[i + 1] =
 				    state.row(i)
 				        .tail<2>()[0]; // if both VIV and viscoelastic second to
@@ -1010,7 +1010,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 		// V[i] = A * l[i]; // volume attributed to segment
 
 		// Calculate segment stiffness
-		if (ElasticMod == 1) {
+		if (ElasticMod == ELASTIC_CONSTANT) {
 			// line tension
 			if (nEApoints > 0)
 				EA = getNonlinearEA(lstr[i], l[i]);
@@ -1028,18 +1028,17 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 				BA = getNonlinearBA(ldstr[i], l[i]);
 			Td[i] = BA * ldstr[i] / l[i] * qs[i];
 
-		} else if (
-		    ElasticMod >
-		    1) { // viscoelastic model from
-			     // https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018
+		} else {
+			// viscoelastic model from
+			// https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018
 			// note that dl_1[i] is the same as Line%dl_1 in MD-F. This is the
 			// deltaL of the first static spring k1.
 
-			if (ElasticMod == 2) {
+			if (ElasticMod == ELASTIC_VISCO_CTE) {
 				// constant dynamic stiffness
 				EA_2 = EA_D;
 
-			} else if (ElasticMod == 3) {
+			} else if (ElasticMod == ELASTIC_VISCO_MEAN) {
 				if (dl_1[i] >= 0.0) // spring k1 is in tension
 					// Mean load dependent dynamic stiffness: from combining
 					// eqn. 2 and eqn. 10 from original MD viscoelastic paper,
@@ -1468,7 +1467,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			// Update state derivative for VIV. i-1 indexing because this is
 			// only called for internal nodes (i.e. node 1 maps to row 0 in the
 			// state deriv matrix).
-			if (ElasticMod > 1)
+			if (ElasticMod != ELASTIC_CONSTANT)
 				drdt.row(i - 1).tail<2>()[0] =
 				    phi_dot[i]; // second to last element if visco model
 			else

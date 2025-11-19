@@ -85,6 +85,18 @@ class DECLDIR Line final
 	~Line();
 
   private:
+	/// @brief Elasticity models
+	typedef enum
+	{
+		/// Constant EA
+		ELASTIC_CONSTANT = 1,
+		/// viscoelastic model with constant dynamic stiffness
+		ELASTIC_VISCO_CTE = 2,
+		/// mean load dependent dynamic stiffness
+		ELASTIC_VISCO_MEAN = 3,
+	} elastic_model;
+
+
 	/** @brief Get the non-linear stiffness. This is interpolated from a
 	 * curve provided in the input file.
 	 * @param l_stretched The actual length of the segment
@@ -142,9 +154,8 @@ class DECLDIR Line final
 	moordyn::real d;
 	/// line density (kg/m^3)
 	moordyn::real rho;
-	/// Elasticity model flag (1: constant EA, 2: viscoelastic model with
-	/// constant dynamic stiffness, 3: mean load depenedent dynamic stiffness)
-	unsigned int ElasticMod;
+	/// Elasticity model flag. See ::elastic_model
+	elastic_model ElasticMod;
 	/// line normal/static elasticity modulus * crosssectional area [N]
 	moordyn::real EA;
 	/// constant line dynamic stiffness modulus * area for viscoelastic stuff
@@ -158,8 +169,8 @@ class DECLDIR Line final
 	moordyn::real vbeta;
 	/// stiffness of spring 2 in viscoelastic model (dynamic stiffness). This is
 	/// the spring in series with the parallel spring-dashpot. if ElasticMod =
-	/// 2, EA_2 = EA_D. If ElasticMod = 3, EA_2 is load dependent dynamic
-	/// stiffness.
+	/// ELASTIC_VISCO_CTE, EA_2 = EA_D. If ElasticMod = ELASTIC_VISCO_MEAN, EA_2
+	/// is load dependent dynamic stiffness.
 	moordyn::real EA_2;
 	/// segment stretch attributed to static stiffness portion [m] (deltaL_1)
 	std::vector<moordyn::real> dl_1;
@@ -435,17 +446,17 @@ class DECLDIR Line final
 		// Line::setState but flipped) ------ Error check for number of columns
 		// (if VIV and Visco need row.size() = 8, if VIV xor Visco need
 		// row.size() = 7, if not VIV need row.size() = 6)
-		if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) ||
-		    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) ||
-		    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
+		if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod != ELASTIC_CONSTANT) ||
+		    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod != ELASTIC_CONSTANT))) ||
+		    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == ELASTIC_CONSTANT)) {
 			LOGERR << "Invalid state.row size for Line " << number << endl;
 			throw moordyn::mem_error("Invalid state.row size");
 		}
 
 		// Error check for number of rows (if visco need N rows, if normal need
 		// N-1 rows)
-		if ((state.rows() != N && ElasticMod > 1) ||
-		    (state.rows() != N - 1 && ElasticMod == 1)) {
+		if ((state.rows() != N && ElasticMod != ELASTIC_CONSTANT) ||
+		    (state.rows() != N - 1 && ElasticMod == ELASTIC_CONSTANT)) {
 			LOGERR << "Invalid number of rows in state matrix for Line "
 			       << number << endl;
 			throw moordyn::mem_error("Invalid number of rows in state matrix");
@@ -453,20 +464,20 @@ class DECLDIR Line final
 
 		// If using the viscoelastic model, iterate N rows, else iterate N-1
 		// rows.
-		for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N - 1); i++) {
+		for (unsigned int i = 0; i < (ElasticMod != ELASTIC_CONSTANT ? N : N - 1); i++) {
 			// node number is i+1
 			// segment number is i
 			state.row(i).head<3>() = r[i + 1];
 			state.row(i).segment<3>(3) = rd[i + 1];
 
-			if (ElasticMod > 1)
+			if (ElasticMod != ELASTIC_CONSTANT)
 				state.row(i).tail<1>()[0] =
 				    dl_1[i]; // [0] needed becasue tail<1> returns a one element
 				             // vector. Viscoelastic state is always the last
 				             // element in the row
 
 			if (Cl > 0) {
-				if (ElasticMod > 1)
+				if (ElasticMod != ELASTIC_CONSTANT)
 					state.row(i).tail<2>()[0] =
 					    phi[i + 1]; // if both VIV and viscoelastic second to
 					                // last element in the row
@@ -561,7 +572,7 @@ class DECLDIR Line final
 	 */
 	inline void setConstantEA(moordyn::real EA_in)
 	{
-		if (ElasticMod > 1) {
+		if (ElasticMod != ELASTIC_CONSTANT) {
 			LOGERR << "Cannot set constant EA for viscoelastic model" << endl;
 			throw moordyn::invalid_value_error(
 			    "Cannot set constant EA for viscoelastic model");
@@ -1014,7 +1025,7 @@ class DECLDIR Line final
 	 */
 	inline const size_t stateN() const
 	{
-		if (ElasticMod > 1)
+		if (ElasticMod != ELASTIC_CONSTANT)
 			return getN(); // N rows for viscoelastic case
 		else
 			return getN() - 1; // N-1 rows for other cases
@@ -1032,10 +1043,10 @@ class DECLDIR Line final
 	 */
 	inline const size_t stateDims() const
 	{
-		if (Cl > 0 && ElasticMod > 1)
+		if (Cl > 0 && ElasticMod != ELASTIC_CONSTANT)
 			return 8; // 3 for position, 3 for velocity, 1 for VIV phase, 1 for
 			          // viscoelasticity
-		else if ((Cl > 0) ^ (ElasticMod > 1))
+		else if ((Cl > 0) ^ (ElasticMod != ELASTIC_CONSTANT))
 			return 7; // 3 for position, 3 for velocity, 1 for VIV phase or
 			          // viscoelasticity
 		else
