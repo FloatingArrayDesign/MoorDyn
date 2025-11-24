@@ -24,7 +24,7 @@ jobs:
       release_id: ${{ steps.create_release.outputs.id }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       if: github.event_name == 'push'
 
     - name: moordyn_tag_name
@@ -74,7 +74,7 @@ jobs:
             os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: moordyn_version
       id: moordyn_version

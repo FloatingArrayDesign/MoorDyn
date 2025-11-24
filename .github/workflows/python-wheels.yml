@@ -15,7 +15,7 @@ jobs:
         os: [ubuntu-22.04]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v6
@@ -141,7 +141,7 @@ jobs:
             os: [ubuntu-22.04]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download artifacts
         uses: actions/download-artifact@v6

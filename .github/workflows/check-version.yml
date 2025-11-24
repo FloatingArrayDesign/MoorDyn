@@ -9,7 +9,7 @@ jobs:
     name: Check that the version is valid
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: moordyn_version
       id: moordyn_version
