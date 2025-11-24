@@ -146,7 +146,7 @@ jobs:
         with:
             output-dir: dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         id: build_wheels
         with:
           name: python-wheels-${{runner.os}}_${{inputs.arch}}
