@@ -36,7 +36,7 @@ jobs:
             python -m pip install -U pip setuptools
             python setup.py sdist
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         id: build_wheels
         with:
           name: python-wheels-sdist
