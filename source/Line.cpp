@@ -142,7 +142,7 @@ Line::setWorkingCurve(real Tmax)
 		else if (syropeWCForm == SYROPE_QUADRATIC_WC)
 			stiffys_[I] = Tmax * xi * (k2 * xi + (1.0 - k2));
 		else if (syropeWCForm == SYROPE_EXP_WC)
-			stiffys_[I] = Tmax * (1.0 - exp(-k2 * xi)) / (1.0 - exp(-k2));
+			stiffys_[I] = Tmax * (1.0 - exp(k2 * xi)) / (1.0 - exp(k2));
 		else {
 			LOGERR << "Line " << lineId << ": Invalid Syrope working curve formula "
 			       << syropeWCForm << "." << endl;
