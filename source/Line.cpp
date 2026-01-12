@@ -669,7 +669,7 @@ Line::initialize()
 	// the segment. This is required here to initalize the state as non-zero,
 	// which avoids an initial transient where the segment goes from unstretched
 	// to stretched in one time step.
-	if (ElasticMod != ELASTIC_CONSTANT) {
+	if (ElasticMod != ELASTIC_CONSTANT && ElasticMod != ELASTIC_SYROPE) {
 		for (unsigned int i = 0; i < N; i++) {
 			lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 			dl_1[i] = lstr[i] - l[i]; // delta l of the segment
@@ -681,7 +681,7 @@ Line::initialize()
 		for (unsigned int i = 0; i < N; i++) {
 			lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 			setWorkingCurve(Tmax[i]);
-			dl_1[i] = interp(stiffzs_, stiffxs_, Tmean[i]) * l[i]; // stretch instead of strain
+			dl_1[i] = interp(stiffys_, stiffzs_, Tmean[i]) * l[i]; // stretch instead of strain
 		}
 	}
 
@@ -1192,7 +1192,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			}
 
 			if (Tmean[i] > Tmax[i]) {
-				Tmean[i] = Tmax[i];
+				Tmax[i] = Tmean[i];
 				setWorkingCurve(Tmax[i]);
 			}
 		}
