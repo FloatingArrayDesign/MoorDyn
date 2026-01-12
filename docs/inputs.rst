@@ -333,6 +333,65 @@ needs to be input as a value. Example inputs are below:
   Polyester  ...      ...    EA_s|EA_d            BA_s|BA_d <-- Constant dynamic stiffness method with static and dynamic damping
   Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm   BA_s|BA_d <-- Load dependent dynamic stiffness method with static and dynamic damping
 
+MoorDyn also supports the **Syrope** material model for polyester ropes. In this formulation, the
+tension–strain response is **nonlinear** and **load-path dependent**, meaning the unloading and
+reloading curves differ (hysteresis). See additional details in the :ref:`theory section <theory>`
+and the references therein.
+
+To enable the Syrope model for a given line type, specify the **EA** field using three
+bar-separated entries, analogous to the *load-dependent dynamic stiffness* method described above.
+To indicate Syrope, the **first entry must start with** ``SYROPE:``, followed by the name (or path)
+of a tabulated file defining the **original working curve**. The second and third entries are
+``EA_Dc`` and ``EA_D_Lm`` (as in the load-dependent dynamic stiffness method). Static and dynamic
+damping may be provided in **BA** as ``BA_s|BA_d`` (same convention as above).
+
+Example:
+
+.. code-block:: none
+
+  TypeName   Diam    Mass/m     EA                               BA
+  (name)     (m)     (kg/m)     (N)                              (N-s)
+  poly       ...     ...        SYROPE:owc.txt|EA_Dc|EA_D_Lm     BA_s|BA_d
+
+The file ``owc.txt`` follows the same format as the tabulated non-linear stiffness files described
+above (three header lines, then columns for strain and tension).
+
+In addition to the line-type inputs above, users must also provide (i) the working-curve
+parameterization and (ii) Syrope initial conditions for each Syrope line.
+
+The working-curve parameters are provided in a dedicated table. The columns are:
+
+- LineType – a string matching a Line Dictionary entry that uses the Syrope model
+- WCType – the working-curve type (options: ``LINEAR``, ``QUADRATIC``, ``EXP``)
+- k1 – the primary coefficient of the working curve (sets the strain offset where mean tension is zero)
+- k2 – the secondary coefficient of the working curve (sets the curve shape)
+
+Example:
+
+.. code-block:: none
+
+  -------------------------- SYROPE WORKING CURVES ------------------------------
+  LineType   WCType      k1        k2
+  (-)        (-)         (-)       (-)
+  poly       LINEAR      k1        k2
+
+Initial conditions are specified per line. The **Line** ID must match a line defined in the
+*Lines* section and must reference a line type that uses the Syrope model.
+
+- Tmax – the highest mean tension experienced by the line prior to the current time (N)
+- Tmean – the current mean tension at initialization (N)
+
+In general, ``Tmax0 >= Tmean0``.
+
+Example:
+
+.. code-block:: none
+
+  -------------------------- SYROPE IC ------------------------------------------
+  Line      Tmax        Tmean
+  (-)       (N)         (N)
+  1         Tmax0       Tmean0
+
 Rod Types
 ^^^^^^^^^
 
