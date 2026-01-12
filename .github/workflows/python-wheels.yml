@@ -2,7 +2,7 @@ name: Python-Wheels
 
 on:
   push:
-    branches: [ $default-branch, master ]
+    branches: [ $default-branch, master, test-wheels ]
 
 permissions: write-all
 
@@ -150,3 +150,4 @@ jobs:
           password: ${{ secrets.MOORDYN_PYPI_API }}
           repository-url: https://upload.pypi.org/legacy/
           skip-existing: true
+        if:  github.ref == 'refs/heads/master'
