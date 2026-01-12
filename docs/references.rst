@@ -107,6 +107,10 @@ Viscoelastic approach for non-linear rope behavior:
   `Hall, Matthew, Brian Duong, and Ericka Lozon, “Streamlined Loads Analysis of Floating Wind Turbines With Fiber Rope Mooring Lines.” In ASME 2023 
   5th International Offshore Wind Technical Conference, V001T01A029. Exeter, UK: American Society of Mechanical Engineers, 2023. <https://doi.org/10.1115/IOWTC2023-119524>`_
 
+Syrope model for polyester ropes:
+
+  `Falkenberg, Erik, Åhjem, Vidar, and Limin Yang. "Best Practice for Analysis of Polyester Rope Mooring Systems." Paper presented at the Offshore Technology Conference, Houston, Texas, USA, May 2017. <https://doi.org/10.4043/27761-MS>`_
+
 Updated MoorDyn-OpenFOAM Coupling:
   
   `Haifei Chen, Tanausú Almeida Medina, and Jose Luis Cercos-Pita, "CFD simulation of multiple moored floating structures using OpenFOAM: An open-access mooring restraints 
