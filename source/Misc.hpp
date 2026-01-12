@@ -1178,6 +1178,9 @@ typedef struct _LineProps // (matching Line Dictionary inputs)
 	double
 	    bstiffXs[nCoef]; // x array for stress-strain lookup table (up to nCoef)
 	double bstiffYs[nCoef]; // y array for stress-strain lookup table
+	int SyropeWCForm; // Syrope working curve formula (1=linear, 2=quadratic, 3=exponential)
+	double k1;       // first coefficient for the Syrope working curve formula
+	double k2;       // second coefficient for the Syrope working curve formula
 } LineProps;
 
 typedef struct _RodProps // (matching Rod Dictionary inputs)

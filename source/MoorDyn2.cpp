@@ -996,6 +996,58 @@ moordyn::MoorDyn::ReadInFile()
 		}
 	}
 
+	// If Syrope working curve is defined, read it
+	if ((i = findStartOfSection(in_txt, { "SYROPE WORKING CURVES"})) != -1) {
+		LOGDBG << "   Reading Syrope working curve formulas:" << endl;
+
+		// parse until the next header or the end of the file
+		while ((in_txt[i].find("---") == string::npos) &&
+		       (i < (int)in_txt.size())) {
+			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+			// Expecting 4 entries: LineType (string), WCType (string), k1 (float), and k2 (float)
+			if (entries.size() != 4) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "4 fields are required, but just " << entries.size()
+						<< " are provided" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+
+			string line_prop_type = entries[0];
+			string wc_formula = entries[1];
+			double k1 = atof(entries[2].c_str());
+			double k2 = atof(entries[3].c_str());
+
+			// Loop all line properties to find the matching one
+			bool line_type_found = false;
+			for (auto& line_prop : LinePropList) {
+				if (line_prop->type == line_prop_type) {
+					line_type_found = true;
+					
+					if (wc_formula == "LINEAR") line_prop->SyropeWCForm = 1;
+					else if (wc_formula == "QUADRATIC") line_prop->SyropeWCForm = 2;
+					else if (wc_formula == "EXP") line_prop->SyropeWCForm = 3;
+					else {
+						LOGERR << "Error in " << _filepath << " at line " << i + 1
+						       << ":" << endl
+						       << "'" << in_txt[i] << "'" << endl
+						       << "Invalid working curve formula: " << wc_formula << endl;
+						return MOORDYN_INVALID_INPUT;
+					}
+					line_prop->k1 = k1;
+					line_prop->k2 = k2;
+				}
+			}
+
+			LOGDBG << "     Line Type: " << line_prop_type
+				   << ", WC Type: " << wc_formula
+				   << ", k1: " << k1
+				   << ", k2: " << k2 << endl;
+			i++;
+		}
+	}
+
 	if ((i = findStartOfSection(in_txt, { "ROD DICTIONARY", "ROD TYPES" })) !=
 	    -1) {
 		LOGDBG << "   Reading rod types:" << endl;
@@ -1327,6 +1379,44 @@ moordyn::MoorDyn::ReadInFile()
 				}
 			}
 			LOGDBG << endl;
+
+			i++;
+		}
+	}
+
+	if ((i = findStartOfSection(in_txt, { "SYROPE IC"})) != -1) {
+		LOGDBG << "   Reading Syrope line initial conditions:" << endl;
+
+		// parse until the next header or the end of the file
+		while ((in_txt[i].find("---") == string::npos) &&
+		       (i < (int)in_txt.size())) {
+			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
+			if (entries.size() < 3) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "3 fields are required, but just " << entries.size()
+						<< " are provided" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+
+			int line_id = atoi(entries[0].c_str());
+			real Tmax0 = atof(entries[1].c_str());
+			real Tmean0 = atof(entries[2].c_str());
+			
+			if (line_id < 1 || line_id > (int)LineList.size()) {
+				LOGERR << "Error in " << _filepath << " at line " << i + 1
+						<< ":" << endl
+						<< "'" << in_txt[i] << "'" << endl
+						<< "There is no line with ID " << line_id << "!" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+
+			auto* line = LineList[line_id - 1];
+			if (line->getElasticModel() == 4) {
+				line->setInitialTmax(Tmax0);
+				line->setInitialTmean(Tmean0);
+			}
 
 			i++;
 		}
@@ -1922,29 +2012,61 @@ moordyn::MoorDyn::readLineProps(string inputText, int lineNum)
 	moordyn::error_id err;
 	vector<string> EA_stuff = moordyn::str::split(entries[3], '|');
 	const int EA_N = EA_stuff.size();
-	if (EA_N == 1) {
-		obj->ElasticMod = 1; // normal case
-	} else if (EA_N == 2) {
-		obj->ElasticMod = 2; // viscoelastic model, constant dynamic stiffness
-		obj->EA_D = atof(EA_stuff[1].c_str());
-	} else if (EA_N == 3) {
-		obj->ElasticMod =
-		    3; // viscoelastic model load dependent dynamic stiffness
+
+	// Check if Syrope model is being used
+	const std::string& ea0 = EA_stuff.empty() ? std::string() : EA_stuff[0];
+	const bool is_syrope = (!ea0.empty() && ea0.rfind("SYROPE:", 0) == 0);
+
+	if (is_syrope) {
+		obj->ElasticMod = 4; // Syrope model
+		LOGDBG << "Line type '" << obj->type
+		       << "' is using the Syrope model for axial tension-strain behavior."
+		       << endl;
+		
+		if (EA_N != 3) {
+			LOGERR
+				<< "A line type EA entry with Syrope model must have 3 (bar-separated) values."
+				<< endl;
+			return nullptr;
+		}
+
+		const std::string owc = ea0.substr(7);
 		obj->alphaMBL = atof(EA_stuff[1].c_str());
 		obj->vbeta = atof(EA_stuff[2].c_str());
-	} else {
-		LOGERR
-		    << "A line type EA entry can have at most 3 (bar-separated) values."
-		    << endl;
-		return nullptr;
-	}
-	err = read_curve(EA_stuff[0].c_str(),
+
+		err = read_curve(owc.c_str(),
 	                 &(obj->EA),
 	                 &(obj->nEApoints),
 	                 obj->stiffXs,
 	                 obj->stiffYs);
-	if (err)
-		return nullptr;
+		if (err)
+			return nullptr;
+	}
+	else { // Not Syrope, other models
+		if (EA_N == 1) {
+			obj->ElasticMod = 1; // normal case
+		} else if (EA_N == 2) {
+			obj->ElasticMod = 2; // viscoelastic model, constant dynamic stiffness
+			obj->EA_D = atof(EA_stuff[1].c_str());
+		} else if (EA_N == 3) {
+			obj->ElasticMod =
+				3; // viscoelastic model load dependent dynamic stiffness
+			obj->alphaMBL = atof(EA_stuff[1].c_str());
+			obj->vbeta = atof(EA_stuff[2].c_str());
+		} else {
+			LOGERR
+				<< "A line type EA entry can have at most 3 (bar-separated) values."
+				<< endl;
+			return nullptr;
+		}
+		err = read_curve(EA_stuff[0].c_str(),
+						&(obj->EA),
+						&(obj->nEApoints),
+						obj->stiffXs,
+						obj->stiffYs);
+		if (err)
+			return nullptr;
+	}
 
 	vector<string> BA_stuff = moordyn::str::split(entries[4], '|');
 	unsigned int BA_N = BA_stuff.size();
