@@ -90,7 +90,20 @@ class DECLDIR Line final
 		ELASTIC_VISCO_CTE = 2,
 		/// mean load dependent dynamic stiffness
 		ELASTIC_VISCO_MEAN = 3,
+		/// Syrope model
+		ELASTIC_SYROPE = 4,
 	} elastic_model;
+
+	/// @brief Syrope working curve formulas
+	typedef enum
+	{
+		/// linear working curve
+		SYROPE_LINEAR_WC = 1,
+		/// quadratic working curve
+		SYROPE_QUADRATIC_WC = 2,
+		/// exponential working curve
+		SYROPE_EXP_WC = 3,
+	} syrope_wc_formula;
 
 
 	/** @brief Get the non-linear stiffness. This is interpolated from a
@@ -130,6 +143,12 @@ class DECLDIR Line final
 	{
 		return seafloor ? seafloor->getAverageDepth() : -env->WtrDpth;
 	}
+
+	/** @brief Set up the active working curve with given Tmax
+	 * @param Tmax preceding highest mean tension
+	 */
+	inline void setWorkingCurve(real Tmax);
+
 	// ENVIRONMENTAL STUFF
 	/// Global struct that holds environmental settings
 	EnvCondRef env;
@@ -218,6 +237,8 @@ class DECLDIR Line final
 	std::vector<moordyn::real> stiffXs;
 	/// y array for stress-strain lookup table
 	std::vector<moordyn::real> stiffYs;
+	/// z array for stress-strain original working curves (used only in Syrope model)
+	std::vector<moordyn::real> stiffZs;
 	/// number of values in bent stiffness lookup table (0 for constant EI)
 	unsigned int nEIpoints;
 	/// x array for bent stiffness lookup table
@@ -230,6 +251,13 @@ class DECLDIR Line final
 	std::vector<moordyn::real> dampXs;
 	/// y array for stress-strainrate lookup table
 	std::vector<moordyn::real> dampYs;
+
+	/// auxiliary x array for Syrope working curve
+	std::vector<moordyn::real> stiffxs_;
+	/// auxiliary y array for Syrope working curve
+	std::vector<moordyn::real> stiffys_;
+	/// auxiliary z array for Syrope working curve
+	std::vector<moordyn::real> stiffzs_;
 
 	// Externally provided data
 	/** true if pressure bending forces shall be considered, false otherwise
@@ -264,6 +292,20 @@ class DECLDIR Line final
 	std::vector<mat> M;
 	// line segment volumes
 	std::vector<moordyn::real> V;
+
+	// Syrope variables
+	/// Working curve formula. See ::syrope_wc_formula
+	syrope_wc_formula syropeWCForm;
+	/// first coefficient for the Syrope working curve formula
+	moordyn::real k1;
+	/// second coefficient for the Syrope working curve formula
+	moordyn::real k2;
+	/// preceding highest mean tensions
+	std::vector<moordyn::real> Tmax;
+	/// mean tensions
+	std::vector<moordyn::real> Tmean;
+	/// number of interpolation points for Syrope working curve
+	const unsigned int nEApointsWC = 30;
 
 	// forces
 	/// segment tensions
@@ -486,6 +528,27 @@ class DECLDIR Line final
 	/**
 	 * @}
 	 */
+
+	/** @brief Set the initial Tmax values
+	 * @param Tmax0 Initial Tmax value
+	 */
+	inline void setInitialTmax(moordyn::real Tmax0)
+	{
+		Tmax.assign(N, Tmax0);
+	}
+
+	/** @brief Set the initial mean tension values
+	 * @param Tmean0 Initial Tmean value
+	 */
+	inline void setInitialTmean(moordyn::real Tmean0)
+	{
+		Tmean.assign(N, Tmean0);
+	}
+
+	/** @brief Get the elastic model used by the line
+	 * @return The elastic model. See ::elastic_model
+	 */
+	inline elastic_model getElasticModel() const { return ElasticMod; }
 
 	/** @brief Number of segments
 	 *
