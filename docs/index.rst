@@ -87,9 +87,13 @@ for the use of the MoorDyn-F driver can be found :ref:`here <MDF_driver_in>`.
 
 MoorDyn-C is designed for coupling with a wide number of codes. Some
 couplings already exist and can be found :ref:`here <coupling>` (e.g. WEC-Sim 
-and DualSPHysics). For Coupling with other codes or more manual driving of 
+and DualSPHysics). For coupling with other codes or more manual driving of 
 MoorDyn from your own script, several APIs, wrappers, and example driver 
-scripts are available :ref:`here <drivers>`.
+scripts are available :ref:`here <drivers>`. 
+
+Additionally, an example directory contains instructions for common couplings
+and basic input file set ups. A recording of the presentation that walks through
+the directory is also available `here <https://www.youtube.com/watch?v=FqW7Xpl_VNk>`_.
 
 Table of Contents:
 ------------------

@@ -7,6 +7,7 @@ MoorDyn is a lumped-mass model for simulating the dynamics of mooring systems co
 license.
 
 Read the docs here: [moordyn.readthedocs.io](https://moordyn.readthedocs.io/en/latest/)
+Example uses and instructions here: [Examples](https://github.com/FloatingArrayDesign/MoorDyn/tree/dev/example)
 
 It accounts for internal axial stiffness and damping forces, weight and buoyancy forces, hydrodynamic forces from Morison's equation (assuming calm water so far), and vertical spring-damper forces from contact with the seabed. MoorDyn's input file format is based on that of [MAP](https://www.nrel.gov/wind/nwtc/map-plus-plus.html). The model supports arbitrary line interconnections, clump weights and floats, different line properties, and six degree of freedom rods and bodies.
 
@@ -21,7 +22,7 @@ MoorDyn-C. The dev branch contains new features currently in development. The v1
 
 [National Renewable Energy Laboratory (NREL)](https://www.nrel.gov/):
 
-  - [Matt Hall](http://matt-hall.ca/moordyn.html)
+  - Matt Hall
   - Ryan Davies
   - Andy Platt
   - Stein Housner

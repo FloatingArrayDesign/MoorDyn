@@ -15,10 +15,10 @@ jobs:
         os: [ubuntu-22.04]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x' 
 
@@ -36,7 +36,7 @@ jobs:
             python -m pip install -U pip setuptools
             python setup.py sdist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         id: build_wheels
         with:
           name: python-wheels-sdist
@@ -46,7 +46,7 @@ jobs:
     name: Build Linux_x86_64
     uses: FloatingArrayDesign/MoorDyn/.github/workflows/python-wheels-emulated.yml@master
     with:
-      os: '["ubuntu-22.04"]'
+      os: '["ubuntu-latest"]'
       arch: "x86_64"
     secrets: inherit
 
@@ -141,10 +141,10 @@ jobs:
             os: [ubuntu-22.04]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: dist/
           pattern: python-wheels-*

@@ -35,6 +35,7 @@
 #include "Util/Interp.hpp"
 #include <tuple>
 // #include <random>
+#include <iomanip>
 
 #ifdef USE_VTK
 #include "Util/VTK_Util.hpp"
@@ -45,6 +46,10 @@
 #include <vtkCellData.h>
 #include <vtkXMLPolyDataWriter.h>
 #endif
+
+// Formating constants for line files outputs (iomanip)
+constexpr int WIDTH = 20; // Width for output
+constexpr int PRECISION = 7; // Precision for output
 
 using namespace std;
 
@@ -147,7 +152,7 @@ Line::setup(int number_in,
 	d = props->d;
 	A = pi / 4. * d * d;
 	rho = props->w / A;
-	ElasticMod = props->ElasticMod;
+	ElasticMod = (elastic_model)props->ElasticMod;
 	EA = props->EA;
 	EA_D = props->EA_D;
 	alphaMBL = props->alphaMBL;
@@ -237,7 +242,7 @@ Line::setup(int number_in,
 	                      // segments) (1 = fully submerged, 0 = out of water)
 
 	// viscoelastic things
-	if (ElasticMod > 1) {
+	if (ElasticMod != ELASTIC_CONSTANT) {
 		dl_1.assign(
 		    N,
 		    0.0); // segment stretch attributed to static stiffness portion [m]
@@ -302,80 +307,87 @@ Line::initialize()
 		// 1st line with the fields
 
 		// output time
-		*outfile << "Time"
-		         << "\t ";
+		*outfile << setw(10) << right
+				 << "Time";
 
 		// output positions
 		if (channels.find("p") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "px \t Node" << i << "py \t Node"
-				         << i << "pz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "px")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "py")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "pz");
 			}
 		}
 		// output curvatures
 		if (channels.find("K") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "Ku \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Ku");
 			}
 		}
 		// output velocities
 		if (channels.find("v") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "vx \t Node" << i << "vy \t Node"
-				         << i << "vz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vx")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vy")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vz");
 			}
 		}
 		// output wave velocities
 		if (channels.find("U") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "Ux \t Node" << i << "Uy \t Node"
-				         << i << "Uz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Ux")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Uy")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Uz");
 			}
 		}
 		// output hydro force
 		if (channels.find("D") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "Dx \t Node" << i << "Dy \t Node"
-				         << i << "Dz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dx")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dy")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Dz");
 			}
 		}
 		// output VIV lift force
 		if (channels.find("V") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "Vx \t Node" << i << "Vy \t Node"
-				         << i << "Vz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Vx")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Vy")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Vz");
 			}
 		}
 		// output segment tensions
 		if (channels.find("t") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "Te \t ";
+				*outfile << setw(WIDTH) << right << ("Seg" + to_string((int)i) + "Te");
 			}
 		}
 		// output internal damping force
 		if (channels.find("c") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "cx \t Seg" << i << "cy \t Seg" << i
-				         << "cz \t ";
+				*outfile << setw(WIDTH) << right << ("Seg" + to_string((int)i) + "cx")
+                         << setw(WIDTH) << right << ("Seg" + to_string((int)i) + "cy")
+                         << setw(WIDTH) << right << ("Seg" + to_string((int)i) + "cz");
 			}
 		}
 		// output segment strains
 		if (channels.find("s") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "St \t ";
+				*outfile << setw(WIDTH) << right << ("Seg" + to_string((int)i) + "St");
 			}
 		}
 		// output segment strain rates
 		if (channels.find("d") != string::npos) {
 			for (unsigned int i = 1; i <= N; i++) {
-				*outfile << "Seg" << i << "dSt \t ";
+				*outfile << setw(WIDTH) << right << ("Seg" + to_string((int)i) + "dSt");
 			}
 		}
 		// output seabed contact forces
 		if (channels.find("b") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << "Node" << i << "bx \t Node" << i << "by \t Node"
-				         << i << "bz \t ";
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "bx")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "by")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "bz");
 			}
 		}
 
@@ -385,64 +397,75 @@ Line::initialize()
 			// 2nd line with the units
 
 			// output time
-			*outfile << "(s)"
-			         << "\t ";
+			*outfile << setw(10) << right
+					 << "(s)";
 
 			// output positions
 			if (channels.find("p") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(m) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(m)";
 			}
 			// output curvatures?
 			if (channels.find("K") != string::npos) {
 				for (unsigned int i = 0; i <= N; i++) {
-					*outfile << "(1/m) \t ";
+					*outfile << setw(WIDTH) << right
+							 << "(1/m)";
 				}
 			}
 			// output velocities?
 			if (channels.find("v") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(m/s) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(m/s)";
 			}
 			// output wave velocities?
 			if (channels.find("U") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(m/s) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(m/s)";
 			}
 			// output hydro force
 			if (channels.find("D") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(N)";
 			}
 			// output VIV force
 			if (channels.find("V") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(N)";
 			}
 			// output segment tensions?
 			if (channels.find("t") != string::npos) {
 				for (unsigned int i = 0; i < N; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(N)";
 			}
 			// output internal damping force?
 			if (channels.find("c") != string::npos) {
 				for (unsigned int i = 0; i < 3 * N; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(N)";
 			}
 			// output segment strains?
 			if (channels.find("s") != string::npos) {
 				for (unsigned int i = 0; i < N; i++)
-					*outfile << "(-) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(-)";
 			}
 			// output segment strain rates?
 			if (channels.find("d") != string::npos) {
 				for (unsigned int i = 0; i < N; i++)
-					*outfile << "(-/s) \t";
+					*outfile << setw(WIDTH) << right
+			 				 << "(-/s)";
 			}
 			// output seabed contact force?
 			if (channels.find("b") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
-					*outfile << "(N) \t";
+					*outfile << setw(WIDTH) << right
+							 << "(N)";
 			}
 
 			*outfile << "\n";
@@ -592,7 +615,7 @@ Line::initialize()
 	// the segment. This is required here to initalize the state as non-zero,
 	// which avoids an initial transient where the segment goes from unstretched
 	// to stretched in one time step.
-	if (ElasticMod > 1) {
+	if (ElasticMod != ELASTIC_CONSTANT) {
 		for (unsigned int i = 0; i < N; i++) {
 			lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 			dl_1[i] = lstr[i] - l[i]; // delta l of the segment
@@ -767,24 +790,24 @@ Line::setState(const InstanceStateVarView state)
 
 	// Error check for number of columns (if VIV and Visco need row.size() = 8,
 	// if VIV xor Visco need row.size() = 7, if not VIV need row.size() = 6)
-	if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod > 1) ||
-	    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod > 1))) ||
-	    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == 1)) {
+	if ((state.row(0).size() != 8 && Cl > 0 && ElasticMod != ELASTIC_CONSTANT) ||
+	    (state.row(0).size() != 7 && ((Cl > 0) ^ (ElasticMod != ELASTIC_CONSTANT))) ||
+	    (state.row(0).size() != 6 && Cl == 0 && ElasticMod == ELASTIC_CONSTANT)) {
 		LOGERR << "Invalid state.row size for Line " << number << endl;
 		throw moordyn::mem_error("Invalid state.row size");
 	}
 
 	// Error check for number of rows (if visco need N rows, if normal need N-1
 	// rows)
-	if ((state.rows() != N && ElasticMod > 1) ||
-	    (state.rows() != N - 1 && ElasticMod == 1)) {
+	if ((state.rows() != N && ElasticMod != ELASTIC_CONSTANT) ||
+	    (state.rows() != N - 1 && ElasticMod == ELASTIC_CONSTANT)) {
 		LOGERR << "Invalid number of rows in state matrix for Line " << number
 		       << endl;
 		throw moordyn::mem_error("Invalid number of rows in state matrix");
 	}
 
 	// If using the viscoelastic model, interate N rows, else iterate N-1 rows.
-	for (unsigned int i = 0; i < (ElasticMod > 1 ? N : N - 1); i++) {
+	for (unsigned int i = 0; i < (ElasticMod != ELASTIC_CONSTANT ? N : N - 1); i++) {
 		// node number is i+1
 		// segment number is i
 		if (i < N - 1) { // only assign the internal nodes
@@ -792,7 +815,7 @@ Line::setState(const InstanceStateVarView state)
 			rd[i + 1] = state.row(i).segment<3>(3);
 		}
 
-		if (ElasticMod > 1)
+		if (ElasticMod != ELASTIC_CONSTANT)
 			dl_1[i] =
 			    state.row(i)
 			        .tail<1>()[0]; // [0] needed becasue tail<1> returns a one
@@ -803,7 +826,7 @@ Line::setState(const InstanceStateVarView state)
 		    !(IC_gen)) { // not needed in IC_gen. Initializes as distribution on
 			             // 0-2pi. State is initialized by init function in this
 			             // code, which sets phi to range 0-2pi
-			if (ElasticMod > 1)
+			if (ElasticMod != ELASTIC_CONSTANT)
 				phi[i + 1] =
 				    state.row(i)
 				        .tail<2>()[0]; // if both VIV and viscoelastic second to
@@ -987,7 +1010,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 		// V[i] = A * l[i]; // volume attributed to segment
 
 		// Calculate segment stiffness
-		if (ElasticMod == 1) {
+		if (ElasticMod == ELASTIC_CONSTANT) {
 			// line tension
 			if (nEApoints > 0)
 				EA = getNonlinearEA(lstr[i], l[i]);
@@ -1005,18 +1028,17 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 				BA = getNonlinearBA(ldstr[i], l[i]);
 			Td[i] = BA * ldstr[i] / l[i] * qs[i];
 
-		} else if (
-		    ElasticMod >
-		    1) { // viscoelastic model from
-			     // https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018
+		} else {
+			// viscoelastic model from
+			// https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018
 			// note that dl_1[i] is the same as Line%dl_1 in MD-F. This is the
 			// deltaL of the first static spring k1.
 
-			if (ElasticMod == 2) {
+			if (ElasticMod == ELASTIC_VISCO_CTE) {
 				// constant dynamic stiffness
 				EA_2 = EA_D;
 
-			} else if (ElasticMod == 3) {
+			} else if (ElasticMod == ELASTIC_VISCO_MEAN) {
 				if (dl_1[i] >= 0.0) // spring k1 is in tension
 					// Mean load dependent dynamic stiffness: from combining
 					// eqn. 2 and eqn. 10 from original MD viscoelastic paper,
@@ -1445,7 +1467,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			// Update state derivative for VIV. i-1 indexing because this is
 			// only called for internal nodes (i.e. node 1 maps to row 0 in the
 			// state deriv matrix).
-			if (ElasticMod > 1)
+			if (ElasticMod != ELASTIC_CONSTANT)
 				drdt.row(i - 1).tail<2>()[0] =
 				    phi_dot[i]; // second to last element if visco model
 			else
@@ -1554,66 +1576,73 @@ Line::Output(real time)
 	// Flags changed to just be one character (case sensitive) per output flag.
 	// To match FASTv8 version.
 
+// Helper to format and write a single value
+auto write_val = [&](real val) {
+    *outfile << std::setw(WIDTH)
+             << std::right
+             << std::scientific
+             << std::setprecision(PRECISION)
+             << val;
+    };
+
 	if (outfile) // if not a null pointer (indicating no output)
 	{
 		if (!outfile->is_open()) {
 			LOGWRN << "Unable to write to output file " << endl;
 			return;
 		}
+	// Loops through the nodes
+	auto write_vec_array = [&](const std::vector<vec>& arr) {
+		for (unsigned int i = 0; i <= N; i++)
+			for (unsigned int J = 0; J < 3; J++){
+				write_val(arr[i][J]);}
+			
+	};
+	// Loops through the nodes for scalars
+	auto write_scalar_array = [&](const std::vector<real>& arr) {
+		for (unsigned int i = 0; i <= N; i++)
+			write_val(arr[i]);
+	};
 		// output time
-		*outfile << time << "\t ";
+		*outfile << setw(10) << right << fixed << setprecision(4)
+				 << time;
 
 		// output positions?
 		// if (find(channels.begin(), channels.end(), "position") !=
 		// channels.end())
 		if (channels.find("p") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) // loop through nodes
-			{
-				for (unsigned int J = 0; J < 3; J++)
-					*outfile << r[i][J] << "\t ";
-			}
+			write_vec_array(r);  // position
 		}
+
 		// output curvatures?
 		if (channels.find("K") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) {
-				*outfile << Kurv[i] << "\t ";
-			}
+			write_scalar_array(Kurv); 
 		}
 		// output velocities?
 		if (channels.find("v") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) {
-				for (int J = 0; J < 3; J++)
-					*outfile << rd[i][J] << "\t ";
-			}
+			write_vec_array(rd); 
 		}
 		// output wave velocities?
 		if (channels.find("U") != string::npos) {
 			auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
-			for (unsigned int i = 0; i <= N; i++) {
-				for (int J = 0; J < 3; J++)
-					*outfile << U[i][J] << "\t ";
-			}
+			write_vec_array(U); 
 		}
 		// output hydro drag force?
 		if (channels.find("D") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++) {
 				for (int J = 0; J < 3; J++)
-					*outfile << Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]
-					         << "\t ";
+					write_val(Dp[i][J] + Dq[i][J] + Ap[i][J] + Aq[i][J]);
 			}
 		}
 
 		// output VIV force (only CF for now)
 		if (channels.find("V") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) {
-				for (int J = 0; J < 3; J++)
-					*outfile << Lf[i][J] << "\t ";
-			}
+			write_vec_array(Lf);
 		}
 		// output segment tensions?
 		if (channels.find("t") != string::npos) {
 			for (unsigned int i = 0; i < N; i++) {
-				*outfile << T[i].norm() << "\t ";
+				write_val(T[i].norm());
 				// >>> preparation below for switching to outputs at nodes
 				// <<< note that tension of end nodes will need weight and
 				// buoyancy adjustment
@@ -1627,29 +1656,23 @@ Line::Output(real time)
 		}
 		// output internal damping force?
 		if (channels.find("c") != string::npos) {
-			for (unsigned int i = 0; i < N; i++) {
-				for (int J = 0; J < 3; J++)
-					*outfile << Td[i][J] << "\t ";
-			}
+			write_vec_array(Td); // internal damping force
 		}
 		// output segment strains?
 		if (channels.find("s") != string::npos) {
 			for (unsigned int i = 0; i < N; i++) {
-				*outfile << lstr[i] / l[i] - 1.0 << "\t ";
+				write_val(lstr[i] / l[i] - 1.0);
 			}
 		}
 		// output segment strain rates?
 		if (channels.find("d") != string::npos) {
 			for (unsigned int i = 0; i < N; i++) {
-				*outfile << ldstr[i] / l[i] << "\t ";
+				write_val(ldstr[i] / l[i]);
 			}
 		}
 		// output seabed contact forces?
 		if (channels.find("b") != string::npos) {
-			for (unsigned int i = 0; i <= N; i++) {
-				for (int J = 0; J < 3; J++)
-					*outfile << B[i][J] << "\t ";
-			}
+			write_vec_array(B);
 		}
 
 		*outfile << "\n";

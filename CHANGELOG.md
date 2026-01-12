@@ -1,3 +1,21 @@
+# [2.5.0](https://github.com/core-marine-dev/MoorDyn/compare/v2.4.0...v2.5.0) (2025-11-25)
+
+
+### Bug Fixes
+
+* **ci:** Disable Pypy 3.11 (because of MacOS) ([d87820d](https://github.com/core-marine-dev/MoorDyn/commit/d87820d7d6f821cbbb96a705118ee8d36933671c))
+* **ci:** Remove MacOS-arm64 and downgrade Windows to 2022 ([7186f95](https://github.com/core-marine-dev/MoorDyn/commit/7186f95f014e1c9a1b9d552f15041d2d1ea30cce))
+* **core:** Explicit names for the elastic models ([85a3479](https://github.com/core-marine-dev/MoorDyn/commit/85a3479631f94c9f15373e9f0c032408e22a97b8))
+* **core:** Fix the minimum input version, so it does not enforce to be the last one ([8048636](https://github.com/core-marine-dev/MoorDyn/commit/8048636e3e7f970c63508ee3429ead5675e67a64))
+
+
+### Features
+
+* **ci:** Upgrade all (ubuntu, windows and macos) to their latest images ([34fa76d](https://github.com/core-marine-dev/MoorDyn/commit/34fa76df65a1dfa2ae98e3cf1f85beacaa01ee18))
+* **core:** Added a function to optionally disable the CMD windows on MoorDyn v1 ([66db3e8](https://github.com/core-marine-dev/MoorDyn/commit/66db3e8077abe58df881aa41216316b34e487f45))
+
+
+
 ## [2.4.0](https://github.com/FloatingArrayDesign/MoorDyn/compare/v2.3.8...v2.4.0) (2025-03-26)
 
 ### ⚠ BREAKING CHANGES

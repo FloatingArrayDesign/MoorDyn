@@ -25,37 +25,37 @@ template<typename DerivedA>
 struct IsCloseMatcher : Catch::Matchers::MatcherGenericBase
 {
 	IsCloseMatcher(
-	    const Eigen::Ref<const DerivedA> a,
+	    const DerivedA& a,
 	    const typename DerivedA::RealScalar rtol =
 	        Eigen::NumTraits<typename DerivedA::RealScalar>::dummy_precision(),
 	    const typename DerivedA::RealScalar atol =
 	        Eigen::NumTraits<typename DerivedA::RealScalar>::epsilon())
-	  : a(a)
-	  , rtol(rtol)
-	  , atol(atol)
+	  : _a(a)
+	  , _rtol(rtol)
+	  , _atol(atol)
 	{
 	}
 
 	template<typename DerivedB>
-	bool match(const Eigen::DenseBase<DerivedB>& b) const
+	bool match(const DerivedB& b) const
 	{
-		return ((a.derived() - b.derived()).array().abs() <=
-		        (atol + rtol * b.derived().array().abs()))
+		return ((_a.derived() - b.derived()).array().abs() <=
+		        (_atol + _rtol * b.derived().array().abs()))
 		    .all();
 	}
 
 	std::string describe() const override
 	{
 		std::stringstream ss;
-		ss << "Is close to: " << Catch::StringMaker<DerivedA>::convert(a)
-		   << "\nrtol = " << rtol << ", atol = " << atol;
+		ss << "Is close to: " << Catch::StringMaker<DerivedA>::convert(_a)
+		   << "\nrtol = " << _rtol << ", atol = " << _atol;
 		return ss.str();
 	}
 
   private:
-	const Eigen::Ref<const DerivedA> a;
-	const typename DerivedA::RealScalar rtol;
-	const typename DerivedA::RealScalar atol;
+	const DerivedA _a;
+	const typename DerivedA::RealScalar _rtol;
+	const typename DerivedA::RealScalar _atol;
 };
 
 template<typename T>
@@ -72,13 +72,12 @@ using namespace md;
 TEST_CASE("getH gives the cross product matrix")
 {
 
-	vec testVec;
-	testVec << 1, 2, 3;
-
+	vec testVec{ 1.0, 2.0, 3.0 };
 	vec v{ 0.3, 0.2, 0.1 };
 	// getH() should create a matrix that replicates the behavior of the cross
 	// product such that getH(v) * a == -v.cross(a)
-	REQUIRE_THAT(getH(v) * testVec, IsClose(v.cross(-testVec)));
+	vec ref = v.cross(-testVec);
+	REQUIRE_THAT(getH(v) * testVec, IsClose(ref));
 }
 
 TEST_CASE("translateMass linear acceleration")

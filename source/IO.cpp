@@ -199,11 +199,6 @@ IO::IO(moordyn::Log* log)
   , _min_minor_version(4)
 {
 	_is_big_endian = is_big_endian();
-	if (_min_major_version <= MOORDYN_MAJOR_VERSION) {
-		_min_major_version = MOORDYN_MAJOR_VERSION;
-		if (_min_minor_version <= MOORDYN_MINOR_VERSION)
-			_min_minor_version = MOORDYN_MINOR_VERSION;
-	}
 }
 
 void
@@ -283,11 +278,17 @@ IO::LoadFile(const std::string filepath) const
 	uint8_t major, minor;
 	f.read((char*)&major, sizeof(uint8_t));
 	f.read((char*)&minor, sizeof(uint8_t));
+	std::cout << major << std::endl;
+	std::cout << minor << std::endl;
+	std::cout << _min_major_version << std::endl;
+	std::cout << _min_minor_version << std::endl;
+	std::cout << "number=" << 7 << std::endl;
 	if ((major < _min_major_version) ||
 	    ((major == _min_major_version) && (minor < _min_minor_version))) {
 		LOGERR << "The file '" << filepath << "' was written by MoorDyn "
-		       << major << "." << minor << ", but >= " << _min_major_version
-		       << "." << _min_minor_version << " is required" << endl;
+		       << (int)major << "." << (int)minor << ", but >= "
+		       << (int)_min_major_version << "." << (int)_min_minor_version
+		       << " is required" << endl;
 		throw moordyn::input_file_error("Invalid file");
 	}
 	// Check that the amount of information is correct

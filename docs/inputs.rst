@@ -247,10 +247,10 @@ two fixed points located far from where your system is located.
 Most of the sections are set up to contain a table of input information. These
 tables begin with two preset lines that contain the column names and the
 corresponding units. These lines are followed by any number of lines containing
-the entries in that section's table of inputs. # is the general comment chacater. If you are adding notes 
+the entries in that section's table of inputs. # is the general comment character. If you are adding notes 
 to self after any of the lines, # will prevent MoorDyn from reading them. 
 
-Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs becasue they are for tests).
+Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs because they are for tests).
 
 Examples for MoorDyn-F can be found in the `OpenFAST tests <https://github.com/OpenFAST/r-test/tree/main/modules/moordyn>`_. 
 
@@ -301,9 +301,9 @@ The columns in order are as follows:
    for end nodes (and thus end half-segments), so if simulating VIV users should ensure to include a higher number of segments. 
    Also note that VIV has only been tested with explicit time schemes (specifically rk2 and rk4). There may be unexpected behavior 
    if used with an implicit time scheme. 
- - dF - OPTIONAL - the cF +- range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+ - dF - OPTIONAL - the cF +- range of non-dimensional frequencies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
- - cF - OPTIONAL - the center of the range of non-dimensional frequnecies for the CF VIV synchronization model. If it is not
+ - cF - OPTIONAL - the center of the range of non-dimensional frequencies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.18 to align with the the theory found :ref:`here <version2>`
 
 Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
@@ -320,10 +320,10 @@ tabulated file with 3 header lines and then a strain column and a tension column
   ...       ...
 
 Note: MoorDyn has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
-:ref:`theory section <theory>`, allows a user to specify a bar-seperated constant dynamic and static stiffness. The second method allows the user 
+:ref:`theory section <theory>`, allows a user to specify a bar-separated constant dynamic and static stiffness. The second method allows the user 
 to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
 `EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Both of these methods allow users to provide static 
-and dynamic damping coefficients as values seperated by |. While the static damping can be described as a fraction of cricial, the dyanamic damping 
+and dynamic damping coefficients as values separated by |. While the static damping can be described as a fraction of critical, the dynamic damping 
 needs to be input as a value. Example inputs are below: 
 
 .. code-block:: none
@@ -429,7 +429,15 @@ outputs are wanted. Eight output properties are currently possible:
  - c – internal damping force at each segment
  - s – strain of each segment
  - d – rate of strain of each segment
-
+ - f – net node force 
+ - W – weight at each node
+ - B – buoyancy force at each node
+ - P – dynamic pressure at each node
+ - X – transverse drag force at each node
+ - Y – tangential drag force at each node
+ - A – transverse fluid inertia force at each node
+ - a – tangential fluid inertia force at each node
+ - b – bottom contact force
 For example, outputting node positions and segment tensions could be achieved by writing “pt” for 
 this last column.  These outputs will go to a dedicated output file for each rod.  For sending 
 values to the global output file, use the Outputs section instead.
@@ -637,7 +645,7 @@ The list of possible options is:
  - writeLog (0 C, -1 F): If >0 a log file is written recording information. The
    bigger the number the more verbose. Please, be mindful that big values would
    critically reduce the performance!
- - dtM (3.402823e+38) – desired mooring model maximum time step (s). In
+ - dtM (3.402823e+38 C, coupling timestep size F) – desired mooring model maximum time step (s). In
    MoorDyn-F if this is left blank it defaults to the
    :ref:`driver file <MDF_driver_in>` dtC value or the OpenFAST time step.
  - CFL (0.5) – Desired mooring model maximum Courant-Friedich-Lewy factor. CFL is the ratio 
@@ -683,7 +691,7 @@ The list of possible options is:
    The new stationary solver in MoorDyn-C is more stable and more precise than the dynamic solver, 
    but it can take longer to reach equilibrium.
  - disableOutput (0): Disables some console and file outputs to improve runtime. 
- - disableOutTime (0): Disables the printing of the current timestep to the console, useful for the MATLAB wrapper
+ - disableOutTime (0): Disables the printing of the current timestep to the console, useful for running with MATLAB
 
 A note about time steps in MoorDyn-C: The internal time step is first taken from the dtM option. If
 no CFL factor is provided, then the user provided time step is used to calculate CFL and MoorDyn-C 
@@ -719,12 +727,12 @@ The following MoorDyn-C options are not supported by MoorDyn-F:
  - StatDynFricScale: Same as MC in MoorDyn-F.
  - ICgenDynamic: MoorDyn-F does not have a stationary solver for initial conditions
  - disableOutput: MoorDyn-F output verbosity is controlled by OpenFAST
- - disableOutTime: MoorDyn-F output verbosity is controlled by OpenFAST
 
 The following options from MoorDyn-F are not supported by MoorDyn-C: 
 
- - WaterKin (Null): Path to the water kinematics file. Allows the inputs of wave and current 
-   coefficients formatted as described in the :ref:`water kinematics file <MDF_wtrkin>`.
+ - WaterKin (Null): Path to the water kinematics file or the SEASTATE Keyword. The formatting of the 
+   water kinematics file can be found :ref:`here <MDF_wtrkin>`. Details on the different MoorDyn-F 
+   water kinematics options can be found in the :ref:`MoorDyn-F water kinematics section <waterkinematics-F>`.
  - MU_KT (0.0): Transverse line coefficient of friction.
  - MU_KA (0.0): Axial line coefficient of friction.
  - MC (1.0): Same as StatDynFricScale in MoorDyn-C.
@@ -814,7 +822,7 @@ Footnotes:
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
   same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
   fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
-- The output list is not case sensistive, however all MoorDyn-F outputs will be printed to the output
+- The output list is not case sensitive, however all MoorDyn-F outputs will be printed to the output
   file in all caps. When searching OpenFAST output channels, users will need to search for MoorDyn
   channels in all caps. Example: the channel fairten1 would appear in the output file as FAIRTEN1.
 
@@ -878,11 +886,11 @@ follows the order of the state vector: Body degrees of freedom, rod degrees of f
 degrees of freedom. For coupled pinned bodies and rods the full 6DOF need to be provided, however the rotational 
 values will be ignored by by the MoorDyn-F driver (they can be set to zero).
 
-When using the MoorDyn driver in OpenFAST mode, the inital positions represents the offsets to the 
+When using the MoorDyn driver in OpenFAST mode, the initial positions represents the offsets to the 
 global frame. When using OpenFAST mode with the positions set to 0's, then MoorDyn objects will be 
 simulated based on the positions defined in the MoorDyn input file. If a non-zero value is provided,
-it will be incorporated into the inital positions of coupled objects. For example, if the following 
-inital positions are given:
+it will be incorporated into the initial positions of coupled objects. For example, if the following 
+initial positions are given:
 
 .. code-block:: none
   
@@ -965,37 +973,42 @@ Water Kinematics file (MoorDyn-F)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. _MDF_wtrkin:
 
-The file provided to MoorDyn-F for water Kinematics should have the following format, which 
+This file is used if simulating water kinematics in MoorDyn-F with a user defined grid (Old Method and Hybrid Method).
+More details on the different MoorDyn-F water kinematics methods can be found in the :ref:`MoorDyn-F water kinematics section <waterkinematics-F>`.
+
+The file provided to MoorDyn-F for water kinematics should have the following format, which 
 specifies the inputted waves and current. MoorDyn-F can handle a maximum of 100 lines of current
-data. Details on this format can be found in the :ref:`water kinematics section <waterkinematics>`.
+data.
 
 .. code-block:: none
 
  MoorDyn Waves and Currents input file
  ...any notes here...
- --------------------------- WAVES -------------------------------------
- 3                    WaveKinMod  - type of wave input {0 no waves; 3 set up grid of wave data based on time series} 
- "waveelev.dat"       WaveKinFile - file containing wave elevation time series at 0,0,0
- 0.5                  dtWave      - time step to use in setting up wave kinematics grid (s)
- 0                    WaveDir     - wave heading (deg)
- 2                                - X wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
- -24, 150, 100                    - X wave grid point data
- 2                                - Y wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
- -100, 100, 5                     - Y wave grid point data
- 2                                - Z wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
- -600, 0, 60                      - Z wave grid point data
- --------------------------- CURRENT -------------------------------------
- 1                    CurrentMod  - type of current input {0 no current; 1 steady current profile described below} 
- z-depth     x-current      y-current
+  --------------------------- WAVES -------------------------------------
+  2                    WaveKinMod  - type of wave input {0 no waves; 1 use the old method; 2 use the hybrid method}
+  ""                   WaveKinFile - file containing wave elevation time series at 0,0,0 # Ignored if WaveKinMod = 2
+  0                    dtWave      - time step to use in setting up wave kinematics grid (s) # Ignored if WaveKinMod = 2
+  0                    WaveDir     - wave heading (deg) # Ignored if WaveKinMod = 2
+  2                                - X wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num) 
+  -800, 10, 101                    - X wave grid point data
+  2                                - Y wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
+  -5, 5, 3                         - Y wave grid point data
+  2                                - Z wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num)
+  -600, 0, 61                      - Z wave grid point data
+  --------------------------- CURRENT -------------------------------------
+  2                    CurrentMod  - type of current input {0 no current; 1 steady current profile described below; 2 hybrid method}
+  2                                - Z wave input type (0: not used; 1: list values in ascending order; 2: uniform specified by -xlim, xlim, num) # Ignored if CurrentMod = 1
+  -600, 0, 50                      - Z wave grid point data # Ignored if CurrentMod = 1
+ z-depth     x-current      y-current # Table ignored if CurrentMod = 2
  (m)           (m/s)         (m/s)
  0.0             0.9          0.0
  150             0.5          0.0
  1000            0.25         0.0
- 1500		         0.2	        0.0
- 5000            0.15	        0.0
+ 1500            0.2          0.0
+ 5000            0.15         0.0
  --------------------- need this line ------------------
 
-MoorDyn with FAST.Farm - Inputs
+MoorDyn-F with FAST.Farm - Inputs
 -------------------------------
 
 MoorDyn is available at an array level in FAST.Farm using the MoorDyn-F v2 input file format.

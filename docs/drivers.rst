@@ -8,6 +8,10 @@ MoorDyn-F contains a driver script that has a :ref:`separate input file <MDF_dri
 and MoorDyn-F compiles in OpenFAST as moordyn_driver. The MoorDyn-F driver follows all 
 the same principles as the examples below. See :ref:`compiling <compiling>` and 
 :ref:`inputs <inputs>` sections for instructions on how to use the MoorDyn-F driver. 
+Additionally, MoorDyn-F has a c-bindings interface, which allows it (along with the rest 
+of OpenFAST) to be coupled with other languages. The MoorDyn-F C interface is set up using 
+the MoorDyn V1 approach (single 6 DOF coupling), thus it requires a single coupled body to 
+be used in the MoorDyn input file.
 
 Currently MoorDyn-C v2 can be used in Python, C/C++, Fortran, and Matlab. You can
 read more on how to install MoorDyn for each different language in
@@ -80,6 +84,8 @@ MoorDyn-C can be compiled as a dynamically linked library with C bindings or a m
 sophisticated API functions and wrappers, making it accessible from a wide range of 
 programming languages.
 
+Further examples of MoorDyn-C drivers with input files can be found in the `examples folder <https://github.com/FloatingArrayDesign/MoorDyn/tree/dev/example>`_.
+
 Python
 ^^^^^^
 .. _python_wrapper:
@@ -127,11 +133,9 @@ control:
         for node_id in range(n_segs+1):
             print("  node {}:".format(node_id))
             pos = moordyn.GetLineNodePos(line, node_id)
-            printf("  pos = {}".format(pos))
+            print("  pos = {}".format(pos))
             ten = moordyn.GetLineNodeTen(line, node_id)
-            printf("  ten = {}".format(ten))
-        }
-    }
+            print("  ten = {}".format(ten))
 
     # Alright, time to finish!
     moordyn.Close(system)
@@ -811,3 +815,15 @@ After developing a coupling with MoorDyn, the DualSPHysics team has forked it in
 a seperate version called MoorDyn+, specifically dedicated to the coupling with
 DualSPHysics.
 
+OpenFOAM
+^^^^^^^^
+
+MoorDyn-C has been coupled with OpenFOAM through the `foamMooring <https://gitlab.com/hfchen20/foamMooring>`_ project.
+
+Bladed
+^^^^^^
+
+MoorDyn V1 has been coupled with DNV's Bladed software. See the following links for details:
+
+- `MoorDyn-Bladed Coupling Documentation <https://mysoftware.dnv.com/download/public/renewables/bladed/documentation/4_16/workflow/coSimulation/Bladed-MoorDynLink/Overview.html>`_
+- `MoorDyn-Bladed Coupling Theory <https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A011/1195013>`_
