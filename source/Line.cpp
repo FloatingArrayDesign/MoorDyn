@@ -123,33 +123,42 @@ Line::setWorkingCurve(real Tmax)
 {
 	// Check if Tmax is within the valid range
 	if (Tmax < stiffYs.front() || Tmax > stiffYs.back()) {
-		LOGERR << "Line " << lineId << ": Tmax value " << Tmax << " is outside the working curve range [" << stiffYs.front() << ", " << stiffYs.back() << "]." << endl;
+		LOGERR << "Line " << lineId << ": Tmax value " << Tmax
+		       << " is outside the working curve range [" << stiffYs.front()
+		       << ", " << stiffYs.back() << "]." << endl;
 		throw moordyn::invalid_value_error("Invalid Tmax for working curve");
 	}
 	// maximum and minimum strains for the working curve
 	real eps_max = interp(stiffYs, stiffXs, Tmax);
 	real eps_min = stiffXs.front() + k1 * (eps_max - stiffXs.front());
 
-	// For linear working curve, if k1 >= 1.0 (usually much larger than unity), it is taken as the slope (or dimensional stiffness)
-	if (syropeWCForm == SYROPE_LINEAR_WC && k1 >= 1.0) eps_min = eps_max - Tmax / k1;
+	// For linear working curve, if k1 >= 1.0 (usually much larger than unity),
+	// it is taken as the slope (or dimensional stiffness)
+	if (syropeWCForm == SYROPE_LINEAR_WC && k1 >= 1.0)
+		eps_min = eps_max - Tmax / k1;
 
 	for (unsigned int I = 0; I < nEApointsWC; I++) {
 		// Normalize the strain points between eps_min and eps_max
-		stiffxs_[I] = eps_min + (eps_max - eps_min) * I / (nEApointsWC - 1); // total strain
+		stiffxs_[I] = eps_min + (eps_max - eps_min) * I /
+		                            (nEApointsWC - 1); // total strain
 		real xi = (stiffxs_[I] - eps_min) / (eps_max - eps_min);
 
-		if (syropeWCForm == SYROPE_LINEAR_WC) stiffys_[I] = Tmax * xi;
+		if (syropeWCForm == SYROPE_LINEAR_WC)
+			stiffys_[I] = Tmax * xi;
 		else if (syropeWCForm == SYROPE_QUADRATIC_WC)
 			stiffys_[I] = Tmax * xi * (k2 * xi + (1.0 - k2));
 		else if (syropeWCForm == SYROPE_EXP_WC)
 			stiffys_[I] = Tmax * (1.0 - exp(k2 * xi)) / (1.0 - exp(k2));
 		else {
-			LOGERR << "Line " << lineId << ": Invalid Syrope working curve formula "
-			       << syropeWCForm << "." << endl;
-			throw moordyn::invalid_value_error("Invalid Syrope working curve formula");
+			LOGERR << "Line " << lineId
+			       << ": Invalid Syrope working curve formula " << syropeWCForm
+			       << "." << endl;
+			throw moordyn::invalid_value_error(
+			    "Invalid Syrope working curve formula");
 		}
 
-		stiffzs_[I] = stiffxs_[I] - 1.0 / vbeta * log(1.0 + vbeta / alphaMBL * stiffys_[I]);
+		stiffzs_[I] = stiffxs_[I] -
+		              1.0 / vbeta * log(1.0 + vbeta / alphaMBL * stiffys_[I]);
 	}
 }
 
@@ -210,14 +219,21 @@ Line::setup(int number_in,
 	// Compute the slow strain
 	if (ElasticMod == ELASTIC_SYROPE) {
 		for (unsigned int I = 0; I < nEApoints; I++) {
-			stiffZs.push_back(props->stiffXs[I] - 1.0 / vbeta * log(1.0 + vbeta / alphaMBL * props->stiffYs[I]));
+			stiffZs.push_back(
+			    props->stiffXs[I] -
+			    1.0 / vbeta * log(1.0 + vbeta / alphaMBL * props->stiffYs[I]));
 		}
 
 		// Check if stiffZs is strictly increasing
 		for (unsigned int I = 1; I < nEApoints; I++) {
 			if (stiffZs[I] <= stiffZs[I - 1]) {
-				LOGERR << "Line " << number << ": The slow strain values for the Syrope model are not strictly increasing. Please check the stress-strain data provided." << endl;
-				throw moordyn::invalid_value_error("Invalid slow strain data for Syrope model");
+				LOGERR << "Line " << number
+				       << ": The slow strain values for the Syrope model are "
+				          "not strictly increasing. Please check the "
+				          "stress-strain data provided."
+				       << endl;
+				throw moordyn::invalid_value_error(
+				    "Invalid slow strain data for Syrope model");
 			}
 		}
 
@@ -229,7 +245,6 @@ Line::setup(int number_in,
 		stiffys_.assign(nEApointsWC, 0.0);
 		stiffzs_.assign(nEApointsWC, 0.0);
 	}
-
 
 	// Use the last entry on the lookup table. see Line::initialize()
 	const real EA = nEApoints ? stiffYs.back() / stiffXs.back() : props->EA;
@@ -676,12 +691,14 @@ Line::initialize()
 		}
 	}
 
-	// If using the Syrope model, initalize the deltaL_1 to slow stretch based on the mean tension and the active working curve
+	// If using the Syrope model, initalize the deltaL_1 to slow stretch based
+	// on the mean tension and the active working curve
 	if (ElasticMod == ELASTIC_SYROPE) {
 		for (unsigned int i = 0; i < N; i++) {
 			lstr[i] = unitvector(qs[i], r[i], r[i + 1]);
 			setWorkingCurve(Tmax[i]);
-			dl_1[i] = interp(stiffys_, stiffzs_, Tmean[i]) * l[i]; // stretch instead of strain
+			dl_1[i] = interp(stiffys_, stiffzs_, Tmean[i]) *
+			          l[i]; // stretch instead of strain
 		}
 	}
 
@@ -1091,7 +1108,7 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 				BA = getNonlinearBA(ldstr[i], l[i]);
 			Td[i] = BA * ldstr[i] / l[i] * qs[i];
 
-		} else if (ElasticMod == ELASTIC_VISCO_CTE || 
+		} else if (ElasticMod == ELASTIC_VISCO_CTE ||
 		           ElasticMod == ELASTIC_VISCO_MEAN) {
 			// viscoelastic model from
 			// https://asmedigitalcollection.asme.org/OMAE/proceedings/IOWTC2023/87578/V001T01A029/1195018
@@ -1167,26 +1184,34 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 			// update state derivative for static stiffness stretch. The visco
 			// state is always the last element in the row.
 			drdt.row(i).tail<1>()[0] = ld_1[i];
-		}
-		else if (ElasticMod == ELASTIC_SYROPE) {
+		} else if (ElasticMod == ELASTIC_SYROPE) {
 			const real dl = lstr[i] - l[i];
 
 			if (moordyn::EqualRealNos(Tmean[i], Tmax[i])) {
 				// on the original working curve
 				Tmean[i] = interp(stiffZs, stiffYs, dl_1[i] / l[i]);
-				if (dl >= 0.0) T[i] = Tmean[i] * qs[i];
-				else T[i] = vec::Zero();
+				if (dl >= 0.0)
+					T[i] = Tmean[i] * qs[i];
+				else
+					T[i] = vec::Zero();
 
-				ld_1[i] = ((dl - interp(stiffYs, stiffXs, Tmean[i]) * l[i]) * (alphaMBL + vbeta * Tmean[i]) + BA_D * ldstr[i]) / (BA + BA_D);
+				ld_1[i] = ((dl - interp(stiffYs, stiffXs, Tmean[i]) * l[i]) *
+				               (alphaMBL + vbeta * Tmean[i]) +
+				           BA_D * ldstr[i]) /
+				          (BA + BA_D);
 				drdt.row(i).tail<1>()[0] = ld_1[i];
 				Td[i] = ld_1[i] / l[i] * BA * qs[i];
-			}
-			else { // on the working curve
+			} else { // on the working curve
 				Tmean[i] = interp(stiffzs_, stiffys_, dl_1[i] / l[i]);
-				if (dl >= 0.0) T[i] = Tmean[i] * qs[i];
-				else T[i] = vec::Zero();
+				if (dl >= 0.0)
+					T[i] = Tmean[i] * qs[i];
+				else
+					T[i] = vec::Zero();
 
-				ld_1[i] = ((dl - interp(stiffys_, stiffxs_, Tmean[i]) * l[i]) * (alphaMBL + vbeta * Tmean[i]) + BA_D * ldstr[i]) / (BA + BA_D);
+				ld_1[i] = ((dl - interp(stiffys_, stiffxs_, Tmean[i]) * l[i]) *
+				               (alphaMBL + vbeta * Tmean[i]) +
+				           BA_D * ldstr[i]) /
+				          (BA + BA_D);
 				drdt.row(i).tail<1>()[0] = ld_1[i];
 				Td[i] = ld_1[i] / l[i] * BA * qs[i];
 			}
