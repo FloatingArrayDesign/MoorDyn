@@ -105,7 +105,6 @@ class DECLDIR Line final
 		SYROPE_EXP_WC = 3,
 	} syrope_wc_formula;
 
-
 	/** @brief Get the non-linear stiffness. This is interpolated from a
 	 * curve provided in the input file.
 	 * @param l_stretched The actual length of the segment
@@ -237,7 +236,8 @@ class DECLDIR Line final
 	std::vector<moordyn::real> stiffXs;
 	/// y array for stress-strain lookup table
 	std::vector<moordyn::real> stiffYs;
-	/// z array for stress-strain original working curves (used only in Syrope model)
+	/// z array for stress-strain original working curves (used only in Syrope
+	/// model)
 	std::vector<moordyn::real> stiffZs;
 	/// number of values in bent stiffness lookup table (0 for constant EI)
 	unsigned int nEIpoints;
@@ -532,10 +532,7 @@ class DECLDIR Line final
 	/** @brief Set the initial Tmax values
 	 * @param Tmax0 Initial Tmax value
 	 */
-	inline void setInitialTmax(moordyn::real Tmax0)
-	{
-		Tmax.assign(N, Tmax0);
-	}
+	inline void setInitialTmax(moordyn::real Tmax0) { Tmax.assign(N, Tmax0); }
 
 	/** @brief Set the initial mean tension values
 	 * @param Tmean0 Initial Tmean value
