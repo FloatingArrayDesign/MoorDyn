@@ -15,6 +15,7 @@ set(MOORDYN_SRCS
     kiss_fft.cpp
     kiss_fftr.cpp
     Seafloor.cpp
+    leanvtk/leanvtk.cpp
     Waves/WaveSpectrum.cpp
     Waves/SpectrumKin.cpp
     Waves/WaveOptions.cpp
@@ -55,27 +56,7 @@ set(MOORDYN_HEADERS
 
 set(MOORDYN_PUBLIC_DEPS "")
 set(MOORDYN_PRIVATE_DEPS "")
-if(USE_VTK)
-    if(MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
-        list(APPEND MOORDYN_PRIVATE_DEPS VTK::CommonCore
-                                         VTK::IOCore
-                                         VTK::IOXML
-                                         VTK::IOGeometry
-                                         VTK::FiltersGeneral)
-        get_target_property(MOORDYN_PRIVATE_INCLUDE_DIRS
-                            VTK::CommonCore
-                            INTERFACE_INCLUDE_DIRECTORIES)
-    else()
-        list(APPEND MOORDYN_PUBLIC_DEPS VTK::CommonCore
-                                        VTK::IOCore
-                                        VTK::IOXML
-                                        VTK::IOGeometry
-                                        VTK::FiltersGeneral)
-        set(MOORDYN_PRIVATE_INCLUDE_DIRS "")
-    endif()
-    list(APPEND MOORDYN_HEADERS Util/VTK_Util.hpp)
-    list(APPEND MOORDYN_SRCS Util/VTK_Util.cpp)
-endif()
+set(MOORDYN_PRIVATE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/leanvtk")
 if(EXTERNAL_EIGEN)
     list(APPEND MOORDYN_PUBLIC_DEPS Eigen3::Eigen)
 endif()
@@ -101,7 +82,8 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.15")
     target_precompile_headers(moordyn PRIVATE Misc.hpp)
   endif()
 endif()
-target_compile_definitions(moordyn PUBLIC MoorDyn_EXPORTS)
+# We add LeanVTK_EXPORTS to avoid it getting rid of DECLDIR
+target_compile_definitions(moordyn PUBLIC MoorDyn_EXPORTS LeanVTK_EXPORTS)
 target_link_libraries(moordyn PUBLIC ${MOORDYN_PUBLIC_DEPS}
                               PRIVATE ${MOORDYN_PRIVATE_DEPS})
 target_include_directories(moordyn PRIVATE ${MOORDYN_PRIVATE_INCLUDE_DIRS})

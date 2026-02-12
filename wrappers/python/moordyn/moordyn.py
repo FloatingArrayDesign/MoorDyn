@@ -699,7 +699,7 @@ def Load(instance, filepath):
 
 
 def SaveVTK(instance, filename):
-    """ Save the rod to a VTK (.vtp) file
+    """ Save the rod to a VTK (.vtu) file
 
     Parameters:
     instance (cmoordyn.MoorDyn): The MoorDyn instance
@@ -908,7 +908,7 @@ def GetBodyM(instance):
 
 
 def SaveBodyVTK(instance, filename):
-    """ Save the body to a VTK (.vtp) file
+    """ Save the body to a VTK (.vtu) file
 
     Parameters:
     instance (cmoordyn.MoorDynBody): The body instance
@@ -1044,7 +1044,7 @@ def GetRodNodeVel(instance, i):
 
 
 def SaveRodVTK(instance, filename):
-    """ Save the rod to a VTK (.vtp) file
+    """ Save the rod to a VTK (.vtu) file
 
     Parameters:
     instance (cmoordyn.MoorDynRod): The rod instance
@@ -1167,7 +1167,7 @@ def GetPointAttached(instance, i):
 
 
 def SavePointVTK(instance, filename):
-    """ Save the point to a VTK (.vtp) file
+    """ Save the point to a VTK (.vtu) file
 
     Parameters:
     instance (cmoordyn.MoorDynPoint): The point instance
@@ -1530,7 +1530,7 @@ def GetLineMaxTen(instance):
 
 
 def SaveLineVTK(instance, filename):
-    """ Save the line to a VTK (.vtp) file
+    """ Save the line to a VTK (.vtu) file
 
     Parameters:
     instance (cmoordyn.MoorDynLine): The line instance

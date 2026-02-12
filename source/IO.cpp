@@ -625,48 +625,6 @@ IO::Deserialize(const uint64_t* in, std::vector<mat6>& out)
 	return remaining;
 }
 
-#ifdef USE_VTK
-vtkSmartPointer<vtkFloatArray>
-vtk_farray(const char* name, unsigned int dim, unsigned int len)
-{
-	vtkSmartPointer<vtkFloatArray> a = vtkSmartPointer<vtkFloatArray>::New();
-	a->SetName(name);
-	a->SetNumberOfComponents(dim);
-	a->SetNumberOfTuples(len);
-	return a;
-}
-
-vtkSmartPointer<vtkCharArray>
-vtk_carray(const char* name, unsigned int dim, unsigned int len)
-{
-	vtkSmartPointer<vtkCharArray> a = vtkSmartPointer<vtkCharArray>::New();
-	a->SetName(name);
-	a->SetNumberOfComponents(dim);
-	a->SetNumberOfTuples(len);
-	return a;
-}
-
-int
-vtk_error(unsigned long err_code)
-{
-	switch (err_code) {
-		case vtkErrorCode::NoError:
-			return MOORDYN_SUCCESS;
-		case vtkErrorCode::FileNotFoundError:
-		case vtkErrorCode::CannotOpenFileError:
-		case vtkErrorCode::NoFileNameError:
-			return MOORDYN_INVALID_OUTPUT_FILE;
-		case vtkErrorCode::UnrecognizedFileTypeError:
-		case vtkErrorCode::FileFormatError:
-			return MOORDYN_INVALID_VALUE;
-		case vtkErrorCode::OutOfDiskSpaceError:
-			return MOORDYN_MEM_ERROR;
-		default:
-			return MOORDYN_UNHANDLED_ERROR;
-	}
-}
-#endif
-
 } // ::io
 
 } // ::moordyn

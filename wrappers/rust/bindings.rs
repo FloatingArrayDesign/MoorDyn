@@ -103,7 +103,7 @@ extern "C" {
     pub fn MoorDyn_GetLineMaxTen(l: MoorDynLine, t: *mut f64) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    #[doc = " @brief Save the line to a VTK (.vtp) file\n @param l The Moordyn line\n @param filename The output maximum tension module\n @return MOORDYN_SUCCESS if the file is correctly written, an error code\n otherwise\n @note If MoorDyn has been built without VTK support, this function will\n return a MOORDYN_NON_IMPLEMENTED error, but it will be still available\n anyway"]
+    #[doc = " @brief Save the line to a VTK (.vtu) file\n @param l The Moordyn line\n @param filename The output maximum tension module\n @return MOORDYN_SUCCESS if the file is correctly written, an error code\n otherwise\n @note If MoorDyn has been built without VTK support, this function will\n return a MOORDYN_NON_IMPLEMENTED error, but it will be still available\n anyway"]
     pub fn MoorDyn_SaveLineVTK(
         l: MoorDynLine,
         filename: *const ::std::os::raw::c_char,

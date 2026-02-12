@@ -125,7 +125,7 @@ MoorDyn_GetRodNodePos(MoorDynRod l, unsigned int i, double pos[3]);
 int DECLDIR
 MoorDyn_GetRodNodeVel(MoorDynRod l, unsigned int i, double vel[3]);
 
-/** @brief Save the line to a VTK (.vtp) file
+/** @brief Save the line to a VTK (.vtu) file
  * @param l The Moordyn rod
  * @param filename The output maximum tension module
  * @return MOORDYN_SUCCESS if the file is correctly written, an error code

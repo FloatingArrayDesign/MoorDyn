@@ -29,8 +29,7 @@
  */
 
 /** @file vtk.cpp
- * Tests on the VTK output files. This test is only compiled and executed if
- * USE_VTK=ON on the CMake configuration
+ * Tests on the VTK output files
  */
 
 #include "MoorDyn2.h"
@@ -88,7 +87,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_body_" << body_i << ".00000.vtp";
+		         << "vtk_body_" << body_i << ".00000.vtu";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -117,7 +116,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_rod_" << rod_i << ".00000.vtp";
+		         << "vtk_rod_" << rod_i << ".00000.vtu";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -147,7 +146,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_point_" << point_i << ".00000.vtp";
+		         << "vtk_point_" << point_i << ".00000.vtu";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -177,7 +176,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_line_" << line_i << ".00000.vtp";
+		         << "vtk_line_" << line_i << ".00000.vtu";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -227,22 +226,6 @@ write_vtk_system()
 	if (err != MOORDYN_SUCCESS) {
 		std::cerr << "Failure during the mooring initialization: " << err
 		          << std::endl;
-		MoorDyn_Close(system);
-		return false;
-	}
-
-	// In this second example we are replacing the representation of the body
-	auto body = MoorDyn_GetBody(system, 1);
-	if (!body) {
-		std::cerr << "Failure getting the body" << std::endl;
-		MoorDyn_Close(system);
-		return false;
-	}
-	err = MoorDyn_UseBodyVTK(body, "Mooring/ship.stl");
-	if (err != MOORDYN_SUCCESS) {
-		std::cerr << "Failure loading the body model '"
-		          << "Mooring/ship.stl"
-		          << "':" << err << std::endl;
 		MoorDyn_Close(system);
 		return false;
 	}
