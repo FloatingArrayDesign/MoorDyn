@@ -1680,27 +1680,6 @@ body_save_vtk(PyObject*, PyObject* args)
 	return PyLong_FromLong(MoorDyn_SaveBodyVTK(instance, filepath));
 }
 
-/** @brief Wrapper to MoorDyn_UseBodyVTK() function
- * @param args Python passed arguments
- * @return 0 in case of success, an error code otherwise
- */
-static PyObject*
-body_use_vtk(PyObject*, PyObject* args)
-{
-	PyObject* capsule;
-	char* filepath = NULL;
-
-	if (!PyArg_ParseTuple(args, "Os", &capsule, &filepath))
-		return NULL;
-
-	MoorDynBody instance =
-	    (MoorDynBody)PyCapsule_GetPointer(capsule, body_capsule_name);
-	if (!instance)
-		return NULL;
-
-	return PyLong_FromLong(MoorDyn_UseBodyVTK(instance, filepath));
-}
-
 //                                 Rod.h
 // =============================================================================
 
@@ -3079,11 +3058,7 @@ static PyMethodDef moordyn_methods[] = {
 	{ "body_save_vtk",
 	  body_save_vtk,
 	  METH_VARARGS,
-	  "Save a .vtp file of the body" },
-	{ "body_use_vtk",
-	  body_use_vtk,
-	  METH_VARARGS,
-	  "Load a representation model for the body" },
+	  "Save a .vtu file of the body" },
 	{ "rod_get_id", rod_get_id, METH_VARARGS, "Get the rod id" },
 	{ "rod_get_type", rod_get_type, METH_VARARGS, "Get the rod type" },
 	{ "rod_get_force", rod_get_force, METH_VARARGS, "Get the rod force" },
@@ -3100,7 +3075,7 @@ static PyMethodDef moordyn_methods[] = {
 	{ "rod_save_vtk",
 	  rod_save_vtk,
 	  METH_VARARGS,
-	  "Save a .vtp file of the rod" },
+	  "Save a .vtu file of the rod" },
 	{ "point_get_id", point_get_id, METH_VARARGS, "Get the point id" },
 	{ "point_get_type", point_get_type, METH_VARARGS, "Get the point type" },
 	{ "point_get_pos", point_get_pos, METH_VARARGS, "Get the point position" },
@@ -3118,7 +3093,7 @@ static PyMethodDef moordyn_methods[] = {
 	{ "point_save_vtk",
 	  point_save_vtk,
 	  METH_VARARGS,
-	  "Save a .vtp file of the point" },
+	  "Save a .vtu file of the point" },
 	{ "line_get_id", line_get_id, METH_VARARGS, "Get the line id" },
 	{ "line_get_n",
 	  line_get_n,
@@ -3215,7 +3190,7 @@ static PyMethodDef moordyn_methods[] = {
 	{ "line_save_vtk",
 	  line_save_vtk,
 	  METH_VARARGS,
-	  "Save a .vtp file of the line" },
+	  "Save a .vtu file of the line" },
 	{ NULL, NULL, 0, NULL }
 };
 

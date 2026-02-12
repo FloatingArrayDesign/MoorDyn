@@ -459,7 +459,7 @@ MoorDyn_GetLineFairTen(MoorDynLine l, double* t);
 int DECLDIR
 MoorDyn_GetLineMaxTen(MoorDynLine l, double* t);
 
-/** @brief Save the line to a VTK (.vtp) file
+/** @brief Save the line to a VTK (.vtu) file
  * @param l The Moordyn line
  * @param filename The output maximum tension module
  * @return MOORDYN_SUCCESS if the file is correctly written, an error code

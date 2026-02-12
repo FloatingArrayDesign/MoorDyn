@@ -33,8 +33,10 @@ set(CPP_TESTS
     wavekin_4
     tripod
     seafloor
+    vtk
     wavekin
     wavekin_7
+    # wave_surface
 )
 
 set(CATCH2_TESTS 
@@ -58,18 +60,6 @@ set(CATCH2_TESTS
 function(make_executable test_name, extension)
     set(TEST_PRIVATE_DEPS "moordyn;")
     add_executable(${test_name} ${test_name}.${extension})
-    if(USE_VTK AND MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
-        list(APPEND TEST_PRIVATE_DEPS VTK::CommonCore
-                                         VTK::IOCore
-                                         VTK::IOXML
-                                         VTK::IOGeometry
-                                         VTK::FiltersGeneral)
-        get_target_property(TEST_PRIVATE_INCLUDE_DIRS
-                            VTK::CommonCore
-                            INTERFACE_INCLUDE_DIRECTORIES)
-        target_include_directories(${test_name}
-                                   PRIVATE ${TEST_PRIVATE_INCLUDE_DIRS})
-    endif()
     target_link_libraries(${test_name} PRIVATE ${TEST_PRIVATE_DEPS})
     add_dependencies(${test_name} Test_MooringConfigFiles)
 endfunction()
@@ -87,12 +77,6 @@ function(make_catch2_executable test_name)
     make_cpp_executable(${test_name})
     target_link_libraries(${test_name} PRIVATE Catch2::Catch2WithMain)
 endfunction()
-
-if(USE_VTK)
-    set(CPP_TESTS "${CPP_TESTS};vtk")
-
-    make_cpp_executable(wave_surface)
-endif()
 
 foreach(TEST ${C_TESTS})
     make_c_executable(${TEST})

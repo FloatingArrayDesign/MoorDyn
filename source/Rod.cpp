@@ -35,16 +35,6 @@
 #include <tuple>
 #include <iomanip>
 
-#ifdef USE_VTK
-#include <vtkCellArray.h>
-#include <vtkPoints.h>
-#include <vtkPolyLine.h>
-#include <vtkPointData.h>
-#include <vtkVertex.h>
-#include <vtkCellData.h>
-#include <vtkXMLPolyDataWriter.h>
-#endif
-
 using namespace std;
 
 // Formating constants for rod files outputs (iomanip)
@@ -63,6 +53,7 @@ Rod::Rod(moordyn::Log* log, size_t rodId)
   , seafloor(nullptr)
   , rodId(rodId)
 {
+	vtk.set_binary();
 }
 
 Rod::~Rod() {}
@@ -1669,66 +1660,51 @@ Rod::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
-#ifdef USE_VTK
-vtkSmartPointer<vtkPolyData>
-Rod::getVTK() const
-{
-	auto points = vtkSmartPointer<vtkPoints>::New();
-	auto cells = vtkSmartPointer<vtkCellArray>::New();
-	auto vtk_rd = io::vtk_farray("rd", 3, (unsigned int)r.size());
-	auto vtk_Fnet = io::vtk_farray("Fnet", 3, (unsigned int)r.size());
-	if (N) {
-		auto line = vtkSmartPointer<vtkPolyLine>::New();
-		line->GetPointIds()->SetNumberOfIds(r.size());
-		for (unsigned int i = 0; i < r.size(); i++) {
-			points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
-			line->GetPointIds()->SetId(i, i);
-			vtk_rd->SetTuple3(i, rd[i][0], rd[i][1], rd[i][2]);
-			vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
-		}
-		cells->InsertNextCell(line);
-	} else {
-		auto vertex = vtkSmartPointer<vtkVertex>::New();
-		vertex->GetPointIds()->SetId(0, 0);
-		points->InsertNextPoint(r[0][0], r[0][1], r[0][2]);
-		vtk_rd->SetTuple3(0, rd[0][0], rd[0][1], rd[0][2]);
-		vtk_Fnet->SetTuple3(0, Fnet[0][0], Fnet[0][1], Fnet[0][2]);
-		cells->InsertNextCell(vertex);
-	}
-
-	auto out = vtkSmartPointer<vtkPolyData>::New();
-	out->SetPoints(points);
-	if (N) {
-		out->SetLines(cells);
-	} else {
-		out->SetVerts(cells);
-	}
-
-	out->GetPointData()->AddArray(vtk_rd);
-	out->GetPointData()->AddArray(vtk_Fnet);
-	out->GetPointData()->SetActiveVectors("Fnet");
-
-	return out;
-}
-
 void
-Rod::saveVTK(const char* filename) const
+Rod::saveVTK(const char* filename)
 {
-	auto obj = this->getVTK();
-	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-	writer->SetFileName(filename);
-	writer->SetInputData(obj);
-	writer->SetDataModeToBinary();
-	writer->Update();
-	writer->Write();
-	auto err = io::vtk_error(writer->GetErrorCode());
-	if (err != MOORDYN_SUCCESS) {
-		LOGERR << "VTK reported an error while writing the VTP file '"
-		       << filename << "'" << endl;
-		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
+	vtk.clear();
+
+	vtk.add_vector_field("rd", flatten(this->rd), 3);
+	vtk.add_vector_field("Fnet", flatten(this->Fnet), 3);
+
+	// There are 2 different cases:
+	//  - A proper rod
+	//  - A point connection that transport bending moments
+	if (this->N) {
+		std::vector<size_t> connectivity(2 * this->N);
+		std::vector<double> points(3 * (this->N + 1));
+		for (size_t i = 0; i < this->N; i++) {
+			connectivity[2 * i] = i;
+			connectivity[2 * i + 1] = i + 1;
+			points[3 * i] = r[i].x();
+			points[3 * i + 1] = r[i].y();
+			points[3 * i + 2] = r[i].z();
+		}
+		points[3 * this->N] = r[this->N].x();
+		points[3 * this->N + 1] = r[this->N].y();
+		points[3 * this->N + 2] = r[this->N].z();
+
+		if (!vtk.write_surface_mesh(filename, 3, 2, points, connectivity)) {
+			throw moordyn::output_file_error((
+				std::string("Failure saving the Rod VTU file '") +
+				filename +
+				"'").c_str());
+		}
+	} else {
+		std::vector<double> points(3);
+		points[0] = r[0].x();
+		points[1] = r[0].y();
+		points[2] = r[0].z();
+
+		if (!vtk.write_point_cloud(filename, 3, points)) {
+			throw moordyn::output_file_error((
+				std::string("Failure saving the Rod (point) VTU file '") +
+				filename +
+				"'").c_str());
+		}
 	}
 }
-#endif
 
 } // ::moordyn
 
@@ -1832,7 +1808,6 @@ MoorDyn_GetRodNodeVel(MoorDynRod rod, unsigned int i, double vel[3])
 int DECLDIR
 MoorDyn_SaveRodVTK(MoorDynRod l, const char* filename)
 {
-#ifdef USE_VTK
 	CHECK_ROD(l);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
@@ -1841,10 +1816,4 @@ MoorDyn_SaveRodVTK(MoorDynRod l, const char* filename)
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
-#else
-	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
-	     << " (" << XSTR(__FILE__) << ":" << __LINE__
-	     << ") cannot save the file '" << filename << "'" << endl;
-	return MOORDYN_NON_IMPLEMENTED;
-#endif
 }
