@@ -877,25 +877,25 @@ MoorDyn::saveVTK(const char* filename) const
 	}
 	// Time to write the subentities
 	prefix = prefix + "/" + stem + "_";
-	std::vector<leanvtk::VTUWriter> vtus;
+	std::vector<leanvtk::VTKWriter*> vtks;
 	for (auto body : BodyList) {
-		body->saveVTK((prefix + std::to_string(vtus.size()) + ".vtu").c_str());
-		vtus.push_back(body->getVTK());
+		body->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)body->getVTK());
 	}
 	for (auto point : PointList) {
-		point->saveVTK((prefix + std::to_string(vtus.size()) + ".vtu").c_str());
-		vtus.push_back(point->getVTK());
+		point->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)point->getVTK());
 	}
 	for (auto rod : RodList) {
-		rod->saveVTK((prefix + std::to_string(vtus.size()) + ".vtu").c_str());
-		vtus.push_back(rod->getVTK());
+		rod->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)rod->getVTK());
 	}
 	for (auto line : LineList) {
-		line->saveVTK((prefix + std::to_string(vtus.size()) + ".vtu").c_str());
-		vtus.push_back(line->getVTK());
+		line->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)line->getVTK());
 	}
 
-	if (!write_vtm(filepath.u8string(), vtus)) {
+	if (!write_vtm(filepath.u8string(), vtks)) {
 		throw moordyn::output_file_error((
 			std::string("Failure saving the system VTM file '") +
 			filepath.u8string() +

@@ -223,14 +223,125 @@ private:
   int n_components_;
 };
 
-class DECLDIR VTUWriter {
+class DECLDIR VTKWriter {
 public:
-  VTUWriter()
+  VTKWriter(const char* type_name)
       : binary_(false)
       , path_("")
+      , cell_type_("Cell")
+      , type_name_(type_name)
   {}
 
-  ~VTUWriter();
+  virtual ~VTKWriter();
+
+  /**
+   * Add a general field to the mesh
+   * const string& name             name of the field to store vtk mesh 
+   * const vector<double>& data     list of field values. There must be dimension 
+   *                                values for each point in the mesh to be written.
+   *                                Format of the vector is 
+   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension}, 
+   *                                  ...  
+   *                                  f_{n,1}, f_{n,2},..., f_{n, dimension}]
+   *                                if there are n points in the mesh
+   * const int dimension            ambient dimension (2D or 3D)
+   */
+  template <typename T>
+  inline void add_field(const std::string &name, 
+                        const std::vector<T> &data,
+                        const int &dimension)
+  {
+    if (dimension == 1)
+      add_scalar_field<T>(name, data);
+    else
+      add_vector_field<T>(name, data, dimension);
+  }
+
+  /**
+   * Add a general cell/element field to the mesh
+   * const string& name             name of the field to store vtk mesh
+   * const vector<double>& data     list of field values. There must be dimension
+   *                                values for each cell in the mesh to be written.
+   *                                Format of the vector is
+   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension},
+   *                                  ...
+   *                                  f_{m,1}, f_{m,2},..., f_{m, dimension}]
+   *                                if there are m cells in the mesh
+   * const int dimension            ambient dimension (2D or 3D)
+   */
+  template <typename T>
+  void add_cell_field(const std::string &name,
+                 const std::vector<T> &data,
+                 const int &dimension)
+  {
+    if (dimension == 1)
+      add_cell_scalar_field<T>(name, data);
+    else
+      add_cell_vector_field<T>(name, data, dimension);
+  }
+
+  /**
+   * Add a scalar field to the mesh
+   * const string& name             name of the field to store vtk mesh
+   * const vector<double>& data     list of field values. There must be one
+   *                                value for each point in the mesh to be written.
+   *                                Format of the vector is
+   *                                  [f_1, f_2,..., f_n]
+   *                                if there are n points in the mesh
+   */
+  template <typename T>
+  void add_scalar_field(const std::string &name,
+                        const std::vector<T> &data);
+
+  /**
+   * Add a scalar field to cells/elements of the mesh
+   * const string& name             name of the field to store vtk mesh
+   * const vector<double>& data     list of field values. There must be one
+   *                                value for each cell in the mesh to be written.
+   *                                Format of the vector is
+   *                                  [f_1, f_2,..., f_m]
+   *                                if there are m cells in the mesh
+   */
+  template <typename T>
+  void add_cell_scalar_field(const std::string &name,
+                        const std::vector<T> &data);
+
+  /**
+   * Add a vector field to the mesh
+   * const string& name             name of the field to store vtk mesh 
+   * const vector<double>& data     list of field values. There must be dimension 
+   *                                values for each point in the mesh to be written.
+   *                                Format of the vector is 
+   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension}, 
+   *                                  ...  
+   *                                  f_{n,1}, f_{n,2},..., f_{n, dimension}]
+   *                                if there are n points in the mesh
+   * const int dimension            ambient dimension (2D or 3D)
+   */
+  template <typename T>
+  void add_vector_field(const std::string &name,
+                        const std::vector<T> &data, 
+                        const int &dimension);
+
+  /**
+   * Add a vector field to cells/elements of the mesh
+   * const string& name             name of the field to store vtk mesh
+   * const vector<double>& data     list of field values. There must be dimension
+   *                                values for each cell in the mesh to be written.
+   *                                Format of the vector is
+   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension},
+   *                                  ...
+   *                                  f_{m,1}, f_{m,2},..., f_{m, dimension}]
+   *                                if there are m bool binary = falsecells in the mesh
+   * const int dimension            ambient dimension (2D or 3D)
+   */
+  template <typename T>
+  void add_cell_vector_field(const std::string &name,
+                        const std::vector<T> &data,
+                        const int &dimension);
+
+  // Remove all fields and initialized data from the writer.
+  void clear();
 
   /**
    * Write surface mesh to a file
@@ -377,116 +488,7 @@ public:
    */
   bool write_point_cloud(std::ostream &os,
                          const size_t dim,
-                         const std::vector<double> &points); 
-
-  /**
-   * Add a general field to the mesh
-   * const string& name             name of the field to store vtk mesh 
-   * const vector<double>& data     list of field values. There must be dimension 
-   *                                values for each point in the mesh to be written.
-   *                                Format of the vector is 
-   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension}, 
-   *                                  ...  
-   *                                  f_{n,1}, f_{n,2},..., f_{n, dimension}]
-   *                                if there are n points in the mesh
-   * const int dimension            ambient dimension (2D or 3D)
-   */
-  template <typename T>
-  inline void add_field(const std::string &name, 
-                        const std::vector<T> &data,
-                        const int &dimension)
-  {
-    if (dimension == 1)
-      add_scalar_field<T>(name, data);
-    else
-      add_vector_field<T>(name, data, dimension);
-  }
-
-  /**
-   * Add a general cell/element field to the mesh
-   * const string& name             name of the field to store vtk mesh
-   * const vector<double>& data     list of field values. There must be dimension
-   *                                values for each cell in the mesh to be written.
-   *                                Format of the vector is
-   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension},
-   *                                  ...
-   *                                  f_{m,1}, f_{m,2},..., f_{m, dimension}]
-   *                                if there are m cells in the mesh
-   * const int dimension            ambient dimension (2D or 3D)
-   */
-  template <typename T>
-  void add_cell_field(const std::string &name,
-                 const std::vector<T> &data,
-                 const int &dimension)
-  {
-    if (dimension == 1)
-      add_cell_scalar_field<T>(name, data);
-    else
-      add_cell_vector_field<T>(name, data, dimension);
-  }
-
-  /**
-   * Add a scalar field to the mesh
-   * const string& name             name of the field to store vtk mesh
-   * const vector<double>& data     list of field values. There must be one
-   *                                value for each point in the mesh to be written.
-   *                                Format of the vector is
-   *                                  [f_1, f_2,..., f_n]
-   *                                if there are n points in the mesh
-   */
-  template <typename T>
-  void add_scalar_field(const std::string &name,
-                        const std::vector<T> &data);
-
-  /**
-   * Add a scalar field to cells/elements of the mesh
-   * const string& name             name of the field to store vtk mesh
-   * const vector<double>& data     list of field values. There must be one
-   *                                value for each cell in the mesh to be written.
-   *                                Format of the vector is
-   *                                  [f_1, f_2,..., f_m]
-   *                                if there are m cells in the mesh
-   */
-  template <typename T>
-  void add_cell_scalar_field(const std::string &name,
-                        const std::vector<T> &data);
-
-  /**
-   * Add a vector field to the mesh
-   * const string& name             name of the field to store vtk mesh 
-   * const vector<double>& data     list of field values. There must be dimension 
-   *                                values for each point in the mesh to be written.
-   *                                Format of the vector is 
-   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension}, 
-   *                                  ...  
-   *                                  f_{n,1}, f_{n,2},..., f_{n, dimension}]
-   *                                if there are n points in the mesh
-   * const int dimension            ambient dimension (2D or 3D)
-   */
-  template <typename T>
-  void add_vector_field(const std::string &name,
-                        const std::vector<T> &data, 
-                        const int &dimension);
-
-  /**
-   * Add a vector field to cells/elements of the mesh
-   * const string& name             name of the field to store vtk mesh
-   * const vector<double>& data     list of field values. There must be dimension
-   *                                values for each cell in the mesh to be written.
-   *                                Format of the vector is
-   *                                  [f_{1,1}, f_{1,2},..., f_{1, dimension},
-   *                                  ...
-   *                                  f_{m,1}, f_{m,2},..., f_{m, dimension}]
-   *                                if there are m bool binary = falsecells in the mesh
-   * const int dimension            ambient dimension (2D or 3D)
-   */
-  template <typename T>
-  void add_cell_vector_field(const std::string &name,
-                        const std::vector<T> &data,
-                        const int &dimension);
-
-  // Remove all fields and initialized data from the writer.
-  void clear();
+                         const std::vector<double> &points);
 
   /// Set the format to binary
   inline void set_binary() { binary_ = true; }
@@ -502,7 +504,7 @@ public:
 
   /// Get the last saved file path (empty string if there is no such a path)
   inline std::string filepath() { return path_; }
-private:
+protected:
   std::vector<VTKDataNodeBase*> point_data_;
   std::vector<VTKDataNodeBase*> cell_data_;
   std::string current_scalar_point_data_;
@@ -512,22 +514,30 @@ private:
   bool binary_;
   /// Last saved file path. Not available when using std::ostream to save
   std::string path_;
+  /// Header's piece cells decriptor
+  std::string cell_type_;
 
   void write_point_data(std::ostream &os);
 
   void write_cell_data(std::ostream &os);
 
-  void write_header(const size_t n_vertices, const size_t n_elements,
+  void write_header(const size_t n_vertices,
+                    const size_t n_elements,
                     std::ostream &os);
 
   void write_footer(std::ostream &os);
-  
-  bool write_mesh(std::ostream &os,
-                  const size_t dim,
-                  const size_t cell_size,
-                  const std::vector<double> &points,
-                  const std::vector<size_t> &tets, 
-                  bool is_volume_mesh=true);
+
+  void write_points(std::ostream &os,
+                    const size_t num_points,
+                    const std::vector<double> &points,
+                    bool is_volume_mesh = true);
+
+  virtual bool write_mesh(std::ostream &os,
+                          const size_t dim,
+                          const size_t cell_size,
+                          const std::vector<double> &points,
+                          const std::vector<size_t> &tets, 
+                          bool is_volume_mesh=true);
 
   bool write_mesh(const std::string &path,
                   const size_t dim, const size_t cell_size,
@@ -535,15 +545,13 @@ private:
                   const std::vector<size_t> &tets, 
                   bool is_volume_mesh=true);
 
-  void write_points(std::ostream &os,
-                    const size_t num_points,
-                    const std::vector<double> &points,
-                    bool is_volume_mesh = true);
-
-  void write_cells(std::ostream &os,
-                   const size_t n_vertices,
-                   const std::vector<size_t> &tets,
-                   bool is_volume_mesh = true);
+  virtual void write_cells(std::ostream &os,
+                           const size_t n_vertices,
+                           const std::vector<size_t> &tets,
+                           bool is_volume_mesh = true) = 0;
+private:
+  /// The type name used when writing the header
+  std::string type_name_;
 
   template <typename T>
   inline static VTKDataNode<T>* make_data_node(const std::string &name,
@@ -560,19 +568,52 @@ private:
   }
 };
 
-/** @brief Write a multiblock .vtm file on top of the already written VTUs
- * @param path The output file path
- * @param vtus The list of VTU files
- */
-bool DECLDIR write_vtm(const std::string &path,
-                       std::vector<VTUWriter> vtus);
+class DECLDIR VTUWriter final : public VTKWriter {
+public:
+  VTUWriter()
+      : VTKWriter("UnstructuredGrid")
+  {}
+
+protected:
+  void write_cells(std::ostream &os,
+                   const size_t n_vertices,
+                   const std::vector<size_t> &tets,
+                   bool is_volume_mesh = true);
+};
+
+class DECLDIR VTPWriter final : public VTKWriter {
+public:
+  VTPWriter()
+      : VTKWriter("PolyData")
+  {}
+
+protected:
+  bool write_mesh(std::ostream &os,
+                  const size_t dim,
+                  const size_t cell_size,
+                  const std::vector<double> &points,
+                  const std::vector<size_t> &tets, 
+                  bool is_volume_mesh=true);
+
+  void write_cells(std::ostream &os,
+                   const size_t n_vertices,
+                   const std::vector<size_t> &tets,
+                   bool is_volume_mesh = true);
+};
 
 /** @brief Write a multiblock .vtm file on top of the already written VTUs
  * @param path The output file path
  * @param vtus The list of VTU files
  */
+bool DECLDIR write_vtm(const std::string &path,
+                       std::vector<VTKWriter*> vtks);
+
+/** @brief Write a multiblock .vtm file on top of the already written VTUs
+ * @param path The output file path
+ * @param vtks The list of VTU files
+ */
 bool DECLDIR write_vtm(std::ostream &os,
-                       std::vector<VTUWriter> vtus);
+                       std::vector<VTKWriter*> vtks);
 
 } // namespace leanvtk
 

@@ -608,7 +608,7 @@ class DECLDIR Rod final
 	 */
 	uint64_t* Deserialize(const uint64_t* data);
 
-	/** @brief Save the rod on a VTK (.vtu) file
+	/** @brief Save the rod on a VTK (.vtp) file
 	 * @param filename The output file name
 	 * @throws output_file_error If the file cannot be saved
 	 */
@@ -617,13 +617,13 @@ class DECLDIR Rod final
 	/** @brief Get the VTK writer
 	 *
 	 * This function is useful for writing multiblock .vtm files
-	 * @return The VTK .vtu writer
+	 * @return The VTK .vtp writer
 	 */
-	const leanvtk::VTUWriter& getVTK() const { return vtk; }
+	const leanvtk::VTPWriter* getVTK() const { return &vtk; }
 
   private:
 	/// VTK .vtu file writer
-	leanvtk::VTUWriter vtk;
+	leanvtk::VTPWriter vtk;
 
 	/** @brief Calculate the centripetal force on a body
 	 * @param r The body position
