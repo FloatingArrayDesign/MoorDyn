@@ -541,6 +541,27 @@ vector_extend(std::vector<T>& v, std::vector<T> const& v_prime)
 	v.insert(v.end(), v_prime.begin(), v_prime.end());
 }
 
+/** @brief Flatten a list of vectors or matrices
+ *
+ * This function produced a flattened version ready for saving on VTK arrays
+ * @param v The list of vectors or matrices
+ * @return The flattened list of values
+ */
+template<typename T, int NROWS, int NCOLS>
+std::vector<T> flatten(std::vector<Eigen::Matrix<T, NROWS, NCOLS>> const& v)
+{
+	const int stride = NROWS * NCOLS;
+	std::vector<T> out(v.size() * stride);
+	for (unsigned int i = 0; i < v.size(); i++) {
+		for (unsigned int j = 0; j < NROWS; j++) {
+			for (unsigned int k = 0; k < NCOLS; k++) {
+				out[i * stride + j * NCOLS + k] = v[i](j, k);
+			}
+		}
+	}
+	return out;
+}
+
 /** @brief End point qualifiers
  *
  * Used for both lines and rods

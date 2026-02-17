@@ -37,16 +37,6 @@
 // #include <random>
 #include <iomanip>
 
-#ifdef USE_VTK
-#include "Util/VTK_Util.hpp"
-#include <vtkCellArray.h>
-#include <vtkPoints.h>
-#include <vtkPolyLine.h>
-#include <vtkPointData.h>
-#include <vtkCellData.h>
-#include <vtkXMLPolyDataWriter.h>
-#endif
-
 // Formating constants for line files outputs (iomanip)
 constexpr int WIDTH = 20; // Width for output
 constexpr int PRECISION = 7; // Precision for output
@@ -61,6 +51,7 @@ Line::Line(moordyn::Log* log, size_t lineId)
   , lineId(lineId)
   , isPb(false)
 {
+	vtk.set_binary();
 }
 
 Line::~Line() {}
@@ -1762,100 +1753,51 @@ Line::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
-#ifdef USE_VTK
-vtkSmartPointer<vtkPolyData>
-Line::getVTK() const
-{
-	auto points = vtkSmartPointer<vtkPoints>::New();
-	auto line = vtkSmartPointer<vtkPolyLine>::New();
-
-	auto num_points = this->N + 1;
-	auto num_cells = this->N;
-
-	// Node fields, i.e. r.size() number of tuples
-	auto vtk_rd = vector_to_vtk_array("rd", this->rd);
-	auto vtk_Kurv = vector_to_vtk_array("Kurv", this->Kurv);
-	auto vtk_Fnet = vector_to_vtk_array("Fnet", this->Fnet);
-	auto vtk_M = io::vtk_farray("M", 9, num_points);
-	auto vtk_D = io::vtk_farray("Drag", 3, num_points);
-	auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
-	auto vtk_U = vector_to_vtk_array("U", U);
-
-	// Segment fields, i.e. r.size()-1 number of tuples
-	auto vtk_lstr = vector_to_vtk_array("lstr", this->lstr);
-	auto vtk_ldstr = vector_to_vtk_array("ldstr", this->ldstr);
-	auto vtk_V = vector_to_vtk_array("V", this->V);
-	auto vtk_T = vector_to_vtk_array("T", this->T);
-	auto vtk_F = vector_to_vtk_array("F", this->F);
-
-	line->GetPointIds()->SetNumberOfIds(num_points);
-
-	auto cells = vtkSmartPointer<vtkCellArray>::New();
-	cells->AllocateExact(num_cells, num_cells * 2);
-
-	for (unsigned int i = 0; i < num_points; i++) {
-		points->InsertNextPoint(r[i][0], r[i][1], r[i][2]);
-		line->GetPointIds()->SetId(i, i);
-		auto drag = Dq[i] + Dp[i];
-		vtk_D->SetTuple3(i, drag[0], drag[1], drag[2]);
-		vtk_M->SetTuple9(i,
-		                 M[i](0, 0),
-		                 M[i](0, 1),
-		                 M[i](0, 2),
-		                 M[i](1, 0),
-		                 M[i](1, 1),
-		                 M[i](1, 2),
-		                 M[i](2, 0),
-		                 M[i](2, 1),
-		                 M[i](2, 2));
-		vtk_Fnet->SetTuple3(i, Fnet[i][0], Fnet[i][1], Fnet[i][2]);
-		if (i == r.size() - 1)
-			continue;
-
-		std::array<vtkIdType, 2> cell_points{ i, i + 1 };
-		cells->InsertNextCell(cell_points.size(), cell_points.data());
-	}
-
-	auto out = vtkSmartPointer<vtkPolyData>::New();
-	out->SetPoints(points);
-	out->SetLines(cells);
-
-	out->GetCellData()->AddArray(vtk_lstr);
-	out->GetCellData()->AddArray(vtk_ldstr);
-	out->GetCellData()->AddArray(vtk_V);
-	out->GetCellData()->AddArray(vtk_T);
-	out->GetCellData()->AddArray(vtk_F);
-	out->GetCellData()->SetActiveScalars("ldstr");
-
-	out->GetPointData()->AddArray(vtk_rd);
-	out->GetPointData()->AddArray(vtk_Kurv);
-	out->GetPointData()->AddArray(vtk_M);
-	out->GetPointData()->AddArray(vtk_Fnet);
-	out->GetPointData()->AddArray(vtk_D);
-	out->GetPointData()->AddArray(vtk_U);
-	out->GetPointData()->SetActiveVectors("Fnet");
-
-	return out;
-}
-
 void
-Line::saveVTK(const char* filename) const
+Line::saveVTK(const char* filename)
 {
-	auto obj = this->getVTK();
-	auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-	writer->SetFileName(filename);
-	writer->SetInputData(obj);
-	writer->SetDataModeToBinary();
-	writer->Update();
-	writer->Write();
-	auto err = io::vtk_error(writer->GetErrorCode());
-	if (err != MOORDYN_SUCCESS) {
-		LOGERR << "VTK reported an error while writing the VTP file '"
-		       << filename << "'" << endl;
-		MOORDYN_THROW(err, "vtkXMLPolyDataWriter reported an error");
+	vtk.clear();
+
+	std::vector<size_t> connectivity(2 * this->N);
+	std::vector<double> points(3 * (this->N + 1));
+	for (size_t i = 0; i < this->N; i++) {
+		connectivity[2 * i] = i;
+		connectivity[2 * i + 1] = i + 1;
+		points[3 * i] = r[i].x();
+		points[3 * i + 1] = r[i].y();
+		points[3 * i + 2] = r[i].z();
+	}
+	points[3 * this->N] = r[this->N].x();
+	points[3 * this->N + 1] = r[this->N].y();
+	points[3 * this->N + 2] = r[this->N].z();
+
+	std::vector<vec> drag(Dq.size());
+	for (size_t i = 0; i < Dq.size(); i++) {
+		drag[i] = Dq[i] + Dp[i];
+	}
+	auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
+
+	vtk.add_scalar_field("Kurv", this->Kurv);
+	flatten(this->rd);
+	vtk.add_vector_field("rd", flatten(this->rd), 3);
+	vtk.add_vector_field("M", flatten(this->M), 9);
+	vtk.add_vector_field("Drag", flatten(drag), 3);
+	vtk.add_vector_field("U", flatten(U), 3);
+	vtk.add_vector_field("Fnet", flatten(this->Fnet), 3);
+
+	vtk.add_cell_scalar_field("V", this->V);
+	vtk.add_cell_scalar_field("F", this->F);
+	vtk.add_cell_scalar_field("lstr", this->lstr);
+	vtk.add_cell_scalar_field("ldstr", this->ldstr);
+	vtk.add_cell_vector_field("T", flatten(this->T), 3);
+
+	if (!vtk.write_surface_mesh(filename, 3, 2, points, connectivity)) {
+		throw moordyn::output_file_error((
+			std::string("Failure saving the Line VTU file '") +
+			filename +
+			"'").c_str());
 	}
 }
-#endif
 
 } // ::moordyn
 
@@ -2160,7 +2102,6 @@ MoorDyn_GetLineMaxTen(MoorDynLine l, double* t)
 int DECLDIR
 MoorDyn_SaveLineVTK(MoorDynLine l, const char* filename)
 {
-#ifdef USE_VTK
 	CHECK_LINE(l);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
@@ -2169,10 +2110,4 @@ MoorDyn_SaveLineVTK(MoorDynLine l, const char* filename)
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
-#else
-	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
-	     << " (" << XSTR(__FILE__) << ":" << __LINE__
-	     << ") cannot save the file '" << filename << "'" << endl;
-	return MOORDYN_NON_IMPLEMENTED;
-#endif
 }

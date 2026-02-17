@@ -78,7 +78,7 @@ definitions = [('MoorDyn_EXPORTS', '1'),
                ('MOORDYN_MAJOR_VERSION', '${MOORDYN_MAJOR_VERSION}'),
                ('MOORDYN_MINOR_VERSION', '${MOORDYN_MINOR_VERSION}'),
                ('MOORDYN_PATCH_VERSION', '${MOORDYN_PATCH_VERSION}')]
-include_dirs = ['install/include/moordyn']
+include_dirs = [MOORDYN_PATH, 'install/include/moordyn']
 library_dirs = ['install/lib/', 'install/lib64/']
 libraries = ['moordyn']
 

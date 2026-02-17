@@ -37,7 +37,7 @@ module moordyn
              MoorDyn_GetWavesKin, &
              MoorDyn_GetBodyState, MoorDyn_GetBodyPos, MoorDyn_GetBodyAngle, &
              MoorDyn_GetBodyVel, MoorDyn_GetBodyAngVel, MoorDyn_GetBodyForce, &
-             MoorDyn_GetBodyM, MoorDyn_SaveBodyVTK, MoorDyn_UseBodyVTK, &
+             MoorDyn_GetBodyM, MoorDyn_SaveBodyVTK, &
              MoorDyn_GetRodForce, MoorDyn_GetRodM, MoorDyn_GetRodNodePos, &
              MoorDyn_GetRodNodeVel, MoorDyn_SaveRodVTK, &
              MoorDyn_GetPointPos, MoorDyn_GetPointVel, &
@@ -64,7 +64,7 @@ module moordyn
             MD_GetDepthAt, MD_GetAverageDepth, MD_GetMinDepth, &
             MD_GetBodyID, MD_GetBodyType, MD_GetBodyState, MD_GetBodyPos, &
             MD_GetBodyAngle, MD_GetBodyVel, MD_GetBodyAngVel, &
-            MD_GetBodyForce, MD_GetBodyM, MD_SaveBodyVTK, MD_UseBodyVTK, &
+            MD_GetBodyForce, MD_GetBodyM, MD_SaveBodyVTK, &
             MD_GetRodID, MD_GetRodType, MD_GetRodForce, MD_GetRodM, &
             MD_GetRodN, MD_GetRodNumberNodes, MD_GetRodNodePos, &
             MD_GetRodNodeVel, MD_SaveRodVTK, &
@@ -459,13 +459,6 @@ module moordyn
       character(kind=c_char), intent(in) :: f(*)
       integer(c_int) :: rc
     end function MoorDyn_SaveBodyVTK
-
-    function MoorDyn_UseBodyVTK(instance, f) bind(c, name='MoorDyn_UseBodyVTK') result(rc)
-      import :: c_ptr, c_char, c_int
-      type(c_ptr), value, intent(in) :: instance
-      character(kind=c_char), intent(in) :: f(*)
-      integer(c_int) :: rc
-    end function MoorDyn_UseBodyVTK
 
     !                                Rod.h
     ! ==========================================================================
@@ -1019,13 +1012,6 @@ contains
     character(*), intent(in) :: f
     MD_SaveBodyVTK = MoorDyn_SaveBodyVTK(instance, trim(f) // c_null_char)
   end function MD_SaveBodyVTK
-
-  integer function MD_UseBodyVTK(instance, f)
-    use iso_c_binding
-    type(c_ptr), intent(in) :: instance
-    character(*), intent(in) :: f
-    MD_UseBodyVTK = MoorDyn_UseBodyVTK(instance, trim(f) // c_null_char)
-  end function MD_UseBodyVTK
 
   !                                Rod.h
   ! ============================================================================

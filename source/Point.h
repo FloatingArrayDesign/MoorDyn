@@ -133,7 +133,7 @@ MoorDyn_GetPointAttached(MoorDynPoint point,
                          MoorDynLine* l,
                          int* e);
 
-/** @brief Save the point to a VTK (.vtp) file
+/** @brief Save the point to a VTK (.vtu) file
  * @param point The Moordyn point
  * @param filename The output maximum tension module
  * @return MOORDYN_SUCCESS if the file is correctly written, an error code

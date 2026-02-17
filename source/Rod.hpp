@@ -38,13 +38,9 @@
 #include "Instance.hpp"
 #include "Seafloor.hpp"
 #include "Util/CFL.hpp"
+#include "leanvtk/leanvtk.hpp"
 #include <vector>
 #include <utility>
-
-#ifdef USE_VTK
-#include <vtkSmartPointer.h>
-#include <vtkPolyData.h>
-#endif
 
 using namespace std;
 
@@ -612,28 +608,23 @@ class DECLDIR Rod final
 	 */
 	uint64_t* Deserialize(const uint64_t* data);
 
-#ifdef USE_VTK
-	/** @brief Produce a VTK object
-	 * @return The new VTK object
-	 */
-	vtkSmartPointer<vtkPolyData> getVTK() const;
-
 	/** @brief Save the rod on a VTK (.vtp) file
 	 * @param filename The output file name
-	 * @throws output_file_error If VTK reports
-	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError
-	 * or vtkErrorCode::NoFileNameError
-	 * @throws invalid_value_error If VTK reports
-	 * vtkErrorCode::UnrecognizedFileTypeError or vtkErrorCode::FileFormatError
-	 * @throws mem_error If VTK reports
-	 * vtkErrorCode::OutOfDiskSpaceError
-	 * @throws unhandled_error If VTK reports
-	 * any other error
+	 * @throws output_file_error If the file cannot be saved
 	 */
-	void saveVTK(const char* filename) const;
-#endif
+	void saveVTK(const char* filename);
+
+	/** @brief Get the VTK writer
+	 *
+	 * This function is useful for writing multiblock .vtm files
+	 * @return The VTK .vtp writer
+	 */
+	const leanvtk::VTPWriter* getVTK() const { return &vtk; }
 
   private:
+	/// VTK .vtu file writer
+	leanvtk::VTPWriter vtk;
+
 	/** @brief Calculate the centripetal force on a body
 	 * @param r The body position
 	 * @param w The body angular velocity

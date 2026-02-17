@@ -5,20 +5,10 @@
 #include <iostream>
 #include "Misc.hpp"
 
-#ifdef USE_VTK
-
 #include <sstream>
 #include <filesystem>
 #include <string_view>
 #include <unordered_map>
-
-#include <vtkCellArray.h>
-#include <vtkPoints.h>
-#include <vtkPolyLine.h>
-#include <vtkPointData.h>
-#include <vtkCellData.h>
-#include <vtkXMLDataSetWriter.h>
-#include <vtkRectilinearGrid.h>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -72,8 +62,6 @@ struct SeriesWriter
 		}
 	}
 };
-
-#endif
 
 template<typename T>
 std::vector<size_t>

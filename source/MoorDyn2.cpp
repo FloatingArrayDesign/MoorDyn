@@ -34,8 +34,10 @@
 #include "Misc.hpp"
 #include "MoorDyn2.hpp"
 #include "Rod.hpp"
+#include "leanvtk/leanvtk.hpp"
 #include <atomic>
 #include <iomanip>
+#include <filesystem>
 
 #ifdef LINUX
 #include <cmath>
@@ -43,10 +45,6 @@
 
 // contributed by Yi-Hsiang Yu at NREL
 #define isnan(x) std::isnan(x)
-#endif
-
-#ifdef USE_VTK
-#include <vtkXMLMultiBlockDataWriter.h>
 #endif
 
 using namespace std;
@@ -854,46 +852,56 @@ MoorDyn::Deserialize(const uint64_t* data)
 	return ptr;
 }
 
-#ifdef USE_VTK
-vtkSmartPointer<vtkMultiBlockDataSet>
-MoorDyn::getVTK() const
-{
-	auto out = vtkSmartPointer<vtkMultiBlockDataSet>::New();
-	out->SetNumberOfBlocks(static_cast<unsigned int>(
-	    RodList.size() + PointList.size() + LineList.size()));
-	unsigned int n = 0;
-	for (unsigned int i = 0; i < BodyList.size(); i++)
-		out->SetBlock(n + i, BodyList[i]->getVTK());
-	n += ui_size(BodyList);
-	for (unsigned int i = 0; i < PointList.size(); i++)
-		out->SetBlock(n + i, PointList[i]->getVTK());
-	n += ui_size(PointList);
-	for (unsigned int i = 0; i < RodList.size(); i++)
-		out->SetBlock(n + i, RodList[i]->getVTK());
-	n += ui_size(RodList);
-	for (unsigned int i = 0; i < LineList.size(); i++)
-		out->SetBlock(n + i, LineList[i]->getVTK());
-	return out;
-}
-
 void
 MoorDyn::saveVTK(const char* filename) const
 {
-	auto obj = this->getVTK();
-	auto writer = vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
-	writer->SetFileName(filename);
-	writer->SetInputData(obj);
-	writer->SetDataModeToBinary();
-	writer->Update();
-	writer->Write();
-	auto err = io::vtk_error(writer->GetErrorCode());
-	if (err != MOORDYN_SUCCESS) {
-		LOGERR << "VTK reported an error while writing the VTM file '"
-		       << filename << "'" << endl;
-		MOORDYN_THROW(err, "vtkXMLMultiBlockDataWriter reported an error");
+	// First, check that the filename has an extension, or append it otherwise
+	filesystem::path filepath(filename);
+	std::string extension = filepath.extension().u8string();
+	if (extension.empty()) {
+		LOGWRN << "Extension will be added to the output file: '"
+		       << filename << ".vtm'" << endl;
+		filepath = filesystem::path(std::string(filename) + ".vtm").u8string();
+	}
+	// Now create a folder for the subentities
+	std::string prefix = filepath.parent_path().u8string();
+	std::string stem = filepath.stem().u8string();
+	if (prefix.empty())
+		prefix = stem;
+	else
+		prefix = prefix + "/" + stem;
+	try {
+		filesystem::create_directory(prefix);
+	} catch (std::filesystem::filesystem_error& e) {
+		// We are ok, let's the writters complain just in case
+	}
+	// Time to write the subentities
+	prefix = prefix + "/" + stem + "_";
+	std::vector<leanvtk::VTKWriter*> vtks;
+	for (auto body : BodyList) {
+		body->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)body->getVTK());
+	}
+	for (auto point : PointList) {
+		point->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)point->getVTK());
+	}
+	for (auto rod : RodList) {
+		rod->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)rod->getVTK());
+	}
+	for (auto line : LineList) {
+		line->saveVTK((prefix + std::to_string(vtks.size()) + ".vtp").c_str());
+		vtks.push_back((leanvtk::VTKWriter*)line->getVTK());
+	}
+
+	if (!write_vtm(filepath.u8string(), vtks)) {
+		throw moordyn::output_file_error((
+			std::string("Failure saving the system VTM file '") +
+			filepath.u8string() +
+			"'").c_str());
 	}
 }
-#endif
 
 moordyn::error_id
 moordyn::MoorDyn::ReadInFile()
@@ -3079,7 +3087,6 @@ MoorDyn_Load(MoorDyn system, const char* filepath)
 int DECLDIR
 MoorDyn_SaveVTK(MoorDyn system, const char* filename)
 {
-#ifdef USE_VTK
 	CHECK_SYSTEM(system);
 	moordyn::error_id err = MOORDYN_SUCCESS;
 	string err_msg;
@@ -3088,10 +3095,4 @@ MoorDyn_SaveVTK(MoorDyn system, const char* filename)
 	}
 	MOORDYN_CATCHER(err, err_msg);
 	return err;
-#else
-	cerr << "MoorDyn has been built without VTK support, so " << __FUNC_NAME__
-	     << " (" << XSTR(__FILE__) << ":" << __LINE__
-	     << ") cannot save the file '" << filename << "'" << endl;
-	return MOORDYN_NON_IMPLEMENTED;
-#endif
 }

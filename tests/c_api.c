@@ -302,11 +302,6 @@ main(int narg, char** arg)
 		printf("MoorDyn_SaveBodyVTK() test failed...");
 		return 255;
 	}
-	ret_code = MoorDyn_UseBodyVTK(NULL, "nofile");
-	if (ret_code != MOORDYN_INVALID_VALUE && ret_code != MOORDYN_NON_IMPLEMENTED) {
-		printf("MoorDyn_UseBodyVTK() test failed...");
-		return 255;
-	}
 
 	// Line.h
 	ret_code = MoorDyn_GetLineID(NULL, &n);

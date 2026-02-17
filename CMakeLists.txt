@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 set(MOORDYN_MAJOR_VERSION 2)
-set(MOORDYN_MINOR_VERSION 5)
+set(MOORDYN_MINOR_VERSION 6)
 set(MOORDYN_PATCH_VERSION 0)
 set(MOORDYN_VERSION ${MOORDYN_MAJOR_VERSION}.${MOORDYN_MINOR_VERSION})
 project(Moordyn VERSION ${MOORDYN_VERSION})
@@ -24,10 +24,6 @@ set(BUILD_BENCHMARKS OFF CACHE BOOL
     "Build the benchmarks. Makes use of Google's Benchmark library and requires an internet connection to download.")
 set(EXTERNAL_EIGEN OFF CACHE BOOL
     "Use the Eigen3 installed in the system")
-set(USE_VTK OFF CACHE BOOL
-    "Link with VTK to produce output binary files")
-set(MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY OFF CACHE BOOL
-    "Specifically tells MoorDyn to ignore the VTK dependency on the exported package. This can be useful if VTK was linked statically")
 set(FORTRAN_WRAPPER OFF CACHE BOOL
     "Build the Fortran module")
 set(MATLAB_WRAPPER OFF CACHE BOOL
@@ -44,7 +40,6 @@ set(MOORDYN_SSE "OFF" CACHE STRING "Use enhanced instructions set")
 set_property(CACHE MOORDYN_SSE PROPERTY STRINGS OFF SSE SSE2 SSE4 AVX AVX2 AVX512)
 set(MOORDYN_FASTMATH OFF CACHE BOOL "Enhances performance at the cost of accuracy")
 
-mark_as_advanced(MOORDYN_PACKAGE_IGNORE_VTK_DEPENDENCY)
 mark_as_advanced(PYTHON_WRAPPER_USERINSTALL)
 mark_as_advanced(MOORDYN_SINGLEPRECISSION)
 mark_as_advanced(MOORDYN_SSE)
@@ -61,13 +56,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # Look for the dependencies
-if(${USE_VTK})
-    find_package(VTK
-                 COMPONENTS CommonCore IOCore IOXML IOGeometry FiltersGeneral
-                 REQUIRED)
-    add_definitions(-DUSE_VTK)
-endif()
-
 if(${FORTRAN_WRAPPER})
     enable_language(Fortran)
 endif()

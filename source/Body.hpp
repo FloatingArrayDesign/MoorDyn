@@ -42,13 +42,9 @@
 #include "Misc.hpp"
 #include "Instance.hpp"
 #include "Util/CFL.hpp"
+#include "leanvtk/leanvtk.hpp"
 #include <vector>
 #include <utility>
-
-#ifdef USE_VTK
-#include <vtkSmartPointer.h>
-#include <vtkPolyData.h>
-#endif
 
 using namespace std;
 
@@ -442,47 +438,25 @@ class DECLDIR Body final
 	 */
 	uint64_t* Deserialize(const uint64_t* data);
 
-#ifdef USE_VTK
-	/** @brief Produce a VTK object
-	 * @return The new VTK object
-	 */
-	vtkSmartPointer<vtkPolyData> getVTK() const;
-
-	/** @brief Use the provided VTK object as the representation
-	 *
-	 * Afterwards moordyn::Body::getVTK() will apply the appropriate
-	 * transformations
-	 * @param vtk_obj The VTK object
-	 */
-	inline void setVTK(vtkSmartPointer<vtkPolyData> vtk_obj)
-	{
-		vtk_body = vtk_obj;
-	}
-
 	/** @brief Save the body on a VTK (.vtp) file
 	 * @param filename The output file name
-	 * @throws output_file_error If VTK reports
-	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError
-	 * or vtkErrorCode::NoFileNameError
-	 * @throws invalid_value_error If VTK reports
-	 * vtkErrorCode::UnrecognizedFileTypeError or vtkErrorCode::FileFormatError
-	 * @throws mem_error If VTK reports
-	 * vtkErrorCode::OutOfDiskSpaceError
-	 * @throws unhandled_error If VTK reports
-	 * any other error
+	 * @throws output_file_error If the file cannot be saved
 	 */
-	void saveVTK(const char* filename) const;
-#endif
+	void saveVTK(const char* filename);
 
-  private:
-#ifdef USE_VTK
-	/// The 3D object that represents the body
-	vtkSmartPointer<vtkPolyData> vtk_body;
+	/** @brief Get the VTK writer
+	 *
+	 * This function is useful for writing multiblock .vtm files
+	 * @return The VTK .vtu writer
+	 */
+	const leanvtk::VTPWriter* getVTK() const { return &vtk; }
+private:
+	/// VTK .vtu file writer
+	leanvtk::VTPWriter vtk;
 
 	/** @brief Helper function to setup an initial body representation
 	 */
 	void defaultVTK();
-#endif
 };
 
 } // ::moordyn

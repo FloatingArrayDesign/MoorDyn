@@ -48,11 +48,6 @@
 #include "Seafloor.hpp"
 #include <limits>
 
-#ifdef USE_VTK
-#include <vtkSmartPointer.h>
-#include <vtkMultiBlockDataSet.h>
-#endif
-
 namespace moordyn {
 
 /** @class MoorDyn
@@ -292,14 +287,6 @@ class MoorDyn final : public io::IO
 	 */
 	uint64_t* Deserialize(const uint64_t* data);
 
-#ifdef USE_VTK
-	/** @brief Produce a VTK object of the whole system
-	 * @return The new VTK object
-	 * @see moordyn::Line::getVTK()
-	 * @see moordyn::Rod::getVTK()
-	 */
-	vtkSmartPointer<vtkMultiBlockDataSet> getVTK() const;
-
 	/** @brief Save the whole system on a VTK (.vtm) file
 	 *
 	 * Many times, it is more convenient for the user to save each instance in
@@ -308,20 +295,14 @@ class MoorDyn final : public io::IO
 	 * save the whole system in a multiblock VTK file
 	 *
 	 * @param filename The output file name
-	 * @throws output_file_error If VTK reports
-	 * vtkErrorCode::FileNotFoundError, vtkErrorCode::CannotOpenFileError
-	 * or vtkErrorCode::NoFileNameError
-	 * @throws invalid_value_error If VTK reports
-	 * vtkErrorCode::UnrecognizedFileTypeError or vtkErrorCode::FileFormatError
-	 * @throws mem_error If VTK reports
-	 * vtkErrorCode::OutOfDiskSpaceError
-	 * @throws unhandled_error If VTK reports
-	 * any other error
+	 * @throws output_file_error If the VTM file, or any of the subentities VTU
+	 * files, cannot be saved
+	 * @see moordyn::Body::saveVTK()
 	 * @see moordyn::Line::saveVTK()
+	 * @see moordyn::Point::saveVTK()
 	 * @see moordyn::Rod::saveVTK()
 	 */
 	void saveVTK(const char* filename) const;
-#endif
 
 	/** @brief Get the model time step
 	 * @return The model time step
