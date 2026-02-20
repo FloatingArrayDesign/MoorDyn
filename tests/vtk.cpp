@@ -87,7 +87,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_body_" << body_i << ".00000.vtu";
+		         << "vtk_body_" << body_i << ".00000.vtp";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -116,7 +116,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_rod_" << rod_i << ".00000.vtu";
+		         << "vtk_rod_" << rod_i << ".00000.vtp";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -146,7 +146,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_point_" << point_i << ".00000.vtu";
+		         << "vtk_point_" << point_i << ".00000.vtp";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
@@ -176,7 +176,7 @@ write_vtk_by_instances()
 		}
 		std::stringstream filepath;
 		filepath << fs::temp_directory_path().string() << "/"
-		         << "vtk_line_" << line_i << ".00000.vtu";
+		         << "vtk_line_" << line_i << ".00000.vtp";
 		std::cout << "***     Saving on '" << filepath.str().c_str() << "'..."
 		          << std::endl;
 
