@@ -50,7 +50,7 @@ program main
       stop 1
     end if
     do j = 1, 3
-      x(3 * i + j) = r(j)
+      x(3 * (i_point - 1) + (j - 1)) = r(j - 1)
     end do
   end do
 
