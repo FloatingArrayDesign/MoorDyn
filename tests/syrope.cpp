@@ -376,7 +376,7 @@ load_seg_te_column(const std::string& path)
 }
 
 // -----------------------------
-// JONSWAP PSD (as in your original code)
+// JONSWAP PSD
 // -----------------------------
 double
 jonswap_psd(double Hs,
