@@ -79,7 +79,7 @@ jobs:
         with:
             output-dir: dist
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         id: build_wheels
         with:
           name: python-wheels-${{runner.os}}_${{inputs.arch}}
