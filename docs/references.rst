@@ -109,7 +109,7 @@ Viscoelastic approach for non-linear rope behavior:
 
 Syrope model for polyester ropes:
 
-  `Falkenberg, Erik, Åhjem, Vidar, and Limin Yang. "Best Practice for Analysis of Polyester Rope Mooring Systems." Paper presented at the Offshore Technology Conference, Houston, Texas, USA, May 2017. <https://doi.org/10.4043/27761-MS>`_
+  `Wei, Zhilong; Bingham, Harry B.; Shao, Yanlin (2026). ESOMOOR D5.1: Extended MoorDyn solver and validation report. Technical University of Denmark. <https://doi.org/10.11583/DTU.31408806>`_
 
 Updated MoorDyn-OpenFOAM Coupling:
   
