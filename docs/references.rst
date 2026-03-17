@@ -109,7 +109,7 @@ Viscoelastic approach for non-linear rope behavior:
 
 Syrope model for polyester ropes:
 
-  `Wei, Zhilong; Bingham, Harry B.; Shao, Yanlin (2026). ESOMOOR D5.1: Extended MoorDyn solver and validation report. Technical University of Denmark. <https://doi.org/10.11583/DTU.31408806>`_
+  `Wei, Zhilong, Harry B. Bingham, and Yanlin Shao. 2026. “ESOMOOR D5.1: Extended Moordyn Solver and Validation Report”. Technical University of Denmark. <https://doi.org/10.11583/DTU.31408806>`_
 
 Updated MoorDyn-OpenFOAM Coupling:
   
