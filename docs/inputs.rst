@@ -333,17 +333,17 @@ needs to be input as a value. Example inputs are below:
   Polyester  ...      ...    EA_s|EA_d            BA_s|BA_d <-- Constant dynamic stiffness method with static and dynamic damping
   Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm   BA_s|BA_d <-- Load dependent dynamic stiffness method with static and dynamic damping
 
-MoorDyn also supports the **Syrope** material model for polyester ropes. In this formulation, the
-tension–strain response is **nonlinear** and **load-path dependent**, meaning the unloading and
+MoorDyn also supports the Syrope material model for polyester ropes. In this formulation, the
+tension–strain response is nonlinear and load-path dependent, meaning the unloading and
 reloading curves differ (hysteresis). See additional details in the :ref:`theory section <theory>`
 and the references therein.
 
-To enable the Syrope model for a given line type, specify the **EA** field using three
-bar-separated entries, analogous to the *load-dependent dynamic stiffness* method described above.
-To indicate Syrope, the **first entry must start with** ``SYROPE:``, followed by the name (or path)
-of a tabulated file defining the **original working curve**. The second and third entries are
+To enable the Syrope model for a given line type, specify the EA field using three
+bar-separated entries, analogous to the load-dependent dynamic stiffness method described above.
+To indicate Syrope, the first entry must start with ``SYROPE:``, followed by the name (or path)
+of a tabulated file defining the original working curve. The second and third entries are
 ``EA_Dc`` and ``EA_D_Lm`` (as in the load-dependent dynamic stiffness method). Static and dynamic
-damping may be provided in **BA** as ``BA_s|BA_d`` (same convention as above).
+damping may be provided in BA as ``BA_s|BA_d`` (same convention as above).
 
 Example:
 
@@ -375,7 +375,7 @@ Example:
   (-)        (-)         (-)       (-)
   poly       LINEAR      k1        k2
 
-Initial conditions are specified per line. The **Line** ID must match a line defined in the
+Initial conditions are specified per line. The Line ID must match a line defined in the
 *Lines* section and must reference a line type that uses the Syrope model.
 
 - Tmax – the highest mean tension experienced by the line prior to the current time (N)
