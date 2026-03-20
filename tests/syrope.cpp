@@ -5,6 +5,7 @@
  * whereas here we use Catch2 to check the L2-error only.
  */
 
+#define _USE_MATH_DEFINES
 #include "MoorDyn2.h"
 
 #include <catch2/catch_test_macros.hpp>
