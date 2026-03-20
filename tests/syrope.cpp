@@ -208,7 +208,7 @@ find_mean_tension(double strain,
 			    "find_mean_tension: unknown WorkingCurveForm");
 	}
 
-	if (std::abs(tension_wc - Tmax) <= 1e-12 * std::max(1.0, Tmax)) {
+	if (std::abs(tension_wc - Tmax) <= 1e-12 * (std::max)(1.0, Tmax)) {
 		return interpolate_clamped(strain, owc_strains, owc_tensions);
 	}
 
@@ -565,7 +565,7 @@ run_case(const WcCase& c,
 double
 relative_l2(const Eigen::VectorXd& ref, const Eigen::VectorXd& val)
 {
-	const Eigen::Index n = std::min(ref.size(), val.size());
+	const Eigen::Index n = (std::min)(ref.size(), val.size());
 	REQUIRE(n >= 2);
 	const double denom = ref.head(n).squaredNorm();
 	REQUIRE(denom > 0.0);
@@ -601,13 +601,13 @@ TEST_CASE("Syrope tests", "[syrope][working-curve]")
 		{
 			const auto sim = run_case(c, superimpose_fast);
 			const Eigen::Index n =
-			    std::min(sim.tension_output.size(), sim.strain.size());
+			    (std::min)(sim.tension_output.size(), sim.strain.size());
 			REQUIRE(n >= 2);
 
 			Eigen::VectorXd tmax_mean(n);
 			tmax_mean[0] = kTmax0;
 			for (Eigen::Index i = 1; i < n; ++i) {
-				tmax_mean[i] = std::max(tmax_mean[i - 1], sim.tension_output[i]);
+				tmax_mean[i] = (std::max)(tmax_mean[i - 1], sim.tension_output[i]);
 			}
 
 			Eigen::VectorXd tension_analytical(n);
