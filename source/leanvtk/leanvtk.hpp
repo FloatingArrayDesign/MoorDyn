@@ -141,6 +141,8 @@ public:
       , binary_(false)
   {}
 
+  virtual ~VTKDataNodeBase() = default;
+
   virtual void write(std::ostream &os) const
   {
   };
