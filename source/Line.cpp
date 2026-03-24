@@ -1567,33 +1567,37 @@ Line::Output(real time)
 	// Flags changed to just be one character (case sensitive) per output flag.
 	// To match FASTv8 version.
 
-// Helper to format and write a single value
-auto write_val = [&](real val) {
-    *outfile << std::setw(WIDTH)
-             << std::right
-             << std::scientific
-             << std::setprecision(PRECISION)
-             << val;
-    };
-
 	if (outfile) // if not a null pointer (indicating no output)
 	{
 		if (!outfile->is_open()) {
 			LOGWRN << "Unable to write to output file " << endl;
 			return;
 		}
-	// Loops through the nodes
-	auto write_vec_array = [&](const std::vector<vec>& arr) {
-		for (unsigned int i = 0; i <= N; i++)
-			for (unsigned int J = 0; J < 3; J++){
-				write_val(arr[i][J]);}
-			
-	};
-	// Loops through the nodes for scalars
-	auto write_scalar_array = [&](const std::vector<real>& arr) {
-		for (unsigned int i = 0; i <= N; i++)
-			write_val(arr[i]);
-	};
+
+		// Helper to format and write values
+		auto write_val = [&](real val) {
+			*outfile << std::setw(WIDTH)
+			         << std::right
+			         << std::scientific
+			         << std::setprecision(PRECISION)
+			         << val;
+		};
+		auto write_vec_array = [&](const std::vector<vec>& arr,
+		                           const unsigned int n)
+		{
+			for (unsigned int i = 0; i < n; i++) {
+				for (unsigned int J = 0; J < 3; J++) {
+					write_val(arr[i][J]);
+				}
+			}
+		};
+		auto write_scalar_array = [&](const std::vector<real>& arr,
+		                           const unsigned int n)
+		{
+			for (unsigned int i = 0; i < n; i++) {
+				write_val(arr[i]);
+			}
+		};
 		// output time
 		*outfile << setw(10) << right << fixed << setprecision(4)
 				 << time;
@@ -1602,21 +1606,21 @@ auto write_val = [&](real val) {
 		// if (find(channels.begin(), channels.end(), "position") !=
 		// channels.end())
 		if (channels.find("p") != string::npos) {
-			write_vec_array(r);  // position
+			write_vec_array(r, N + 1);
 		}
 
 		// output curvatures?
 		if (channels.find("K") != string::npos) {
-			write_scalar_array(Kurv); 
+			write_scalar_array(Kurv, N + 1);
 		}
 		// output velocities?
 		if (channels.find("v") != string::npos) {
-			write_vec_array(rd); 
+			write_vec_array(rd, N + 1);
 		}
 		// output wave velocities?
 		if (channels.find("U") != string::npos) {
 			auto [_z, U, _ud, _pdyn] = waves->getWaveKinLine(lineId);
-			write_vec_array(U); 
+			write_vec_array(U, N + 1);
 		}
 		// output hydro drag force?
 		if (channels.find("D") != string::npos) {
@@ -1628,7 +1632,7 @@ auto write_val = [&](real val) {
 
 		// output VIV force (only CF for now)
 		if (channels.find("V") != string::npos) {
-			write_vec_array(Lf);
+			write_vec_array(Lf, N + 1);
 		}
 		// output segment tensions?
 		if (channels.find("t") != string::npos) {
@@ -1647,7 +1651,7 @@ auto write_val = [&](real val) {
 		}
 		// output internal damping force?
 		if (channels.find("c") != string::npos) {
-			write_vec_array(Td); // internal damping force
+			write_vec_array(Td, N); // internal damping force
 		}
 		// output segment strains?
 		if (channels.find("s") != string::npos) {
@@ -1663,7 +1667,7 @@ auto write_val = [&](real val) {
 		}
 		// output seabed contact forces?
 		if (channels.find("b") != string::npos) {
-			write_vec_array(B);
+			write_vec_array(B, N + 1);
 		}
 
 		*outfile << "\n";
