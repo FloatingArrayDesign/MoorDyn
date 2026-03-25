@@ -1,8 +1,9 @@
 /*
- * This file is based on the C++ driver to verify the Syrope implementation in MoorDyn-C,
- * which is available at https://github.com/zhilongwei/moordyn-syrope-tests.git.
- * A Python script is used there to check the L2-error and plot the results,
- * whereas here we use Catch2 to check the L2-error only.
+ * This file is based on the C++ driver to verify the Syrope implementation in
+ * MoorDyn-C, which is available at
+ * https://github.com/zhilongwei/moordyn-syrope-tests.git. A Python script is
+ * used there to check the L2-error and plot the results, whereas here we use
+ * Catch2 to check the L2-error only.
  */
 
 #define _USE_MATH_DEFINES
@@ -96,8 +97,8 @@ struct MoorDynRAII
 
 double
 interpolate_clamped(double x,
-	                const Eigen::VectorXd& xdata,
-	                const Eigen::VectorXd& ydata)
+                    const Eigen::VectorXd& xdata,
+                    const Eigen::VectorXd& ydata)
 {
 	if (xdata.size() != ydata.size()) {
 		throw std::invalid_argument("interpolate_clamped: size mismatch");
@@ -143,11 +144,11 @@ interpolate_clamped(double x,
 
 double
 find_mean_tension(double strain,
-	              double Tmean,
-	              double Tmax,
-	              const Eigen::VectorXd& owc_strains,
-	              const Eigen::VectorXd& owc_tensions,
-	              WorkingCurveForm wc_form)
+                  double Tmean,
+                  double Tmax,
+                  const Eigen::VectorXd& owc_strains,
+                  const Eigen::VectorXd& owc_tensions,
+                  WorkingCurveForm wc_form)
 {
 	(void)Tmean;
 
@@ -340,7 +341,8 @@ load_seg_te_column(const std::string& path)
 			if (!(row >> v)) {
 				throw std::runtime_error(
 				    "Row has fewer numeric columns than expected at line " +
-				    std::to_string(lineno) + " in " + path + ": '" + line + "'");
+				    std::to_string(lineno) + " in " + path + ": '" + line +
+				    "'");
 			}
 		}
 		vals.push_back(v);
@@ -355,11 +357,11 @@ load_seg_te_column(const std::string& path)
 
 double
 jonswap_psd(double Hs,
-	       double Tp,
-	       double gamma,
-	       double omega,
-	       double sigma_a = 0.07,
-	       double sigma_b = 0.09)
+            double Tp,
+            double gamma,
+            double omega,
+            double sigma_a = 0.07,
+            double sigma_b = 0.09)
 {
 	if (!(omega > 0.0) || !(Tp > 0.0) || !(gamma > 0.0) || !(Hs >= 0.0)) {
 		return 0.0;
@@ -396,13 +398,13 @@ slow_strain(double t, double seg_dur, double eps0)
 
 Eigen::VectorXd
 surface_elevation_from_jonswap(double Hs,
-	                          double Tp,
-	                          double gamma,
-	                          const Eigen::VectorXd& times,
-	                          unsigned int n_omega_edges,
-	                          double omega_min,
-	                          double omega_max,
-	                          std::mt19937& rng)
+                               double Tp,
+                               double gamma,
+                               const Eigen::VectorXd& times,
+                               unsigned int n_omega_edges,
+                               double omega_min,
+                               double omega_max,
+                               std::mt19937& rng)
 {
 	if (n_omega_edges < 2) {
 		throw std::runtime_error("n_omega_edges must be >= 2");
@@ -452,8 +454,7 @@ line1_output_from_input(const std::string& input_path)
 }
 
 SimulationResult
-run_case(const WcCase& c,
-	     bool superimpose_fast)
+run_case(const WcCase& c, bool superimpose_fast)
 {
 	MoorDynRAII md(c.input_file);
 
@@ -520,10 +521,9 @@ run_case(const WcCase& c,
 		strain_slow[i] = slow_strain(times[i], seg_dur, c.eps_0);
 	}
 
-	const Eigen::VectorXd strain = superimpose_fast
-	                                 ? (strain_slow + scale_WF * eta_WF +
-	                                    scale_LF * eta_LF)
-	                                 : strain_slow;
+	const Eigen::VectorXd strain =
+	    superimpose_fast ? (strain_slow + scale_WF * eta_WF + scale_LF * eta_LF)
+	                     : strain_slow;
 	const Eigen::VectorXd x =
 	    x0 * (Eigen::VectorXd::Ones(strain.size()) + strain);
 
@@ -532,7 +532,8 @@ run_case(const WcCase& c,
 	dr[1] = 0.0;
 	dr[2] = 0.0;
 
-	check_md(MoorDyn_Init(md.sys, r, dr), "MoorDyn_Init failed for: " + c.input_file);
+	check_md(MoorDyn_Init(md.sys, r, dr),
+	         "MoorDyn_Init failed for: " + c.input_file);
 
 	double t = 0.0;
 	double f[3] = { 0.0, 0.0, 0.0 };
@@ -553,13 +554,15 @@ run_case(const WcCase& c,
 		t = t_in;
 	}
 
-	check_md(MoorDyn_Close(md.sys), "MoorDyn_Close failed for: " + c.input_file);
+	check_md(MoorDyn_Close(md.sys),
+	         "MoorDyn_Close failed for: " + c.input_file);
 	md.sys = nullptr;
 
 	SimulationResult out;
 	out.times = times;
 	out.strain = strain;
-	out.tension_output = load_seg_te_column(line1_output_from_input(c.input_file));
+	out.tension_output =
+	    load_seg_te_column(line1_output_from_input(c.input_file));
 	return out;
 }
 
@@ -613,7 +616,8 @@ TEST_CASE("Syrope tests", "[syrope][working-curve]")
 			Eigen::VectorXd tmax_mean(n);
 			tmax_mean[0] = kTmax0;
 			for (Eigen::Index i = 1; i < n; ++i) {
-				tmax_mean[i] = (std::max)(tmax_mean[i - 1], sim.tension_output[i]);
+				tmax_mean[i] =
+				    (std::max)(tmax_mean[i - 1], sim.tension_output[i]);
 			}
 
 			Eigen::VectorXd tension_analytical(n);
@@ -626,7 +630,8 @@ TEST_CASE("Syrope tests", "[syrope][working-curve]")
 				                                          c.form);
 			}
 
-			const double l2 = relative_l2(tension_analytical, sim.tension_output);
+			const double l2 =
+			    relative_l2(tension_analytical, sim.tension_output);
 			INFO("Relative L2 error = " << l2);
 			REQUIRE(l2 < kL2Tol);
 		}
