@@ -285,7 +285,7 @@ The columns in order are as follows:
  - Diam –  the volume-equivalent diameter of the line – the diameter of a cylinder having the same 
    displacement per unit length (m)
  - MassDen –  the mass per unit length of the line (kg/m)
- - EA – the line stiffness, product of elasticity modulus and cross-sectional area (N)
+ - EA – the line stiffness, product of elasticity modulus and cross-sectional area (N), or nonlinear parameters (see descriptions below)
  - BA/-zeta –  the line internal damping (measured in N-s) or, if a negative value is entered, the 
    desired damping ratio (in fraction of critical) for the line type (and MoorDyn will set the BA 
    of each line accordingly)
@@ -305,19 +305,6 @@ The columns in order are as follows:
    provided and VIV is enabled (Cl > 0) then it is default to 0.08 to align with the the theory found :ref:`here <version2>`
  - cF - OPTIONAL - the center of the range of non-dimensional frequencies for the CF VIV synchronization model. If it is not
    provided and VIV is enabled (Cl > 0) then it is default to 0.18 to align with the the theory found :ref:`here <version2>`
-
-Note: Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
-must be located in the same folder as the main MoorDyn input file for MoorDyn-C or for MoorDyn-F 
-in the same folder as the executable calling MoorDyn-F, unless a path is specified. Such file is a 
-tabulated file with 3 header lines and then a strain column and a tension column separated by a blank space:
-
-.. code-block:: none
-
-  ----Polyester----
-  Strain    Tension
-  (-)       (N)
-  0.0       0.0
-  ...       ...
 
 Note: MoorDyn has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
 :ref:`theory section <theory>`, allows a user to specify a bar-separated constant dynamic and static stiffness. The second method allows the user 
@@ -1066,6 +1053,22 @@ data.
  1500            0.2          0.0
  5000            0.15         0.0
  --------------------- need this line ------------------
+
+Nonlinear Stiffness (EA) Inputs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Non-linear values for the stiffness (EA) are an option in MoorDyn. For this, a file name can be provided instead of a number. This file 
+must be located in the same folder as the main MoorDyn input file for MoorDyn-C or for MoorDyn-F 
+in the same folder as the executable calling MoorDyn-F, unless a path is specified. Such file is a 
+tabulated file with 3 header lines and then a strain column and a tension column separated by a blank space:
+
+.. code-block:: none
+
+  ----Polyester----
+  Strain    Tension
+  (-)       (N)
+  0.0       0.0
+  ...       ...
+
 
 MoorDyn-F with FAST.Farm - Inputs
 -------------------------------
