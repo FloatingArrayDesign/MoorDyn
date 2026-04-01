@@ -1200,6 +1200,9 @@ moordyn::MoorDyn::ReadInFile()
 			return MOORDYN_INVALID_INPUT;
 		}
 
+		vector<int> line_indices_with_normal_inputs; // Non-syrope lines without Tmax0 and Tmean0 inputs
+		vector<int> line_indices_with_syrope_inputs; // Non-syrope lines with Tmax0 and Tmean0 inputs
+
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) &&
 		       (i < (int)in_txt.size())) {
@@ -1208,7 +1211,7 @@ moordyn::MoorDyn::ReadInFile()
 				LOGERR << "Error in " << _filepath << " at line " << i + 1
 				       << ":" << endl
 				       << "'" << in_txt[i] << "'" << endl
-				       << "7 fields are required, but only " << entries.size()
+				       << "at least 7 fields are required, but only " << entries.size()
 				       << " are provided" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
@@ -1218,7 +1221,9 @@ moordyn::MoorDyn::ReadInFile()
 			double UnstrLen = atof(entries[4].c_str());
 			int NumSegs = atoi(entries[5].c_str());
 			string outchannels = entries[6];
-
+			double Tmax0;
+			double Tmean0;
+			
 			int TypeNum = -1;
 			for (unsigned int J = 0; J < LinePropList.size(); J++) {
 				if (LinePropList[J]->type == type)
@@ -1230,6 +1235,38 @@ moordyn::MoorDyn::ReadInFile()
 				       << "'" << in_txt[i] << "'" << endl
 				       << "Unrecognized line type " << type << endl;
 				return MOORDYN_INVALID_INPUT;
+			}
+
+			// Check for optional Tmax and Tmean inputs for Syrope line
+			// which must be provided for Syrope lines and should not be provided for non-Syrope lines
+			if (LinePropList[TypeNum]->ElasticMod == 4)
+			{
+				if (entries.size() < 9) {
+					LOGERR << "Error in " << _filepath << " at line " << i + 1
+					       << ":" << endl
+					       << "'" << in_txt[i] << "'" << endl
+					       << "Tmax0 and Tmean0 inputs are required for Syrope line" << endl;
+					return MOORDYN_INVALID_INPUT;
+				}
+				Tmax0 = atof(entries[7].c_str());
+				Tmean0 = atof(entries[8].c_str());
+				if (Tmax0 < 0 || Tmean0 < 0) {
+					LOGERR << "Error in " << _filepath << " at line " << i + 1
+					       << ":" << endl
+					       << "'" << in_txt[i] << "'" << endl
+					       << "Tmax0 and Tmean0 must be non-negative values" << endl;
+					return MOORDYN_INVALID_INPUT;
+				}
+			}
+			else
+			{
+				if (entries.size() == 7)
+					line_indices_with_normal_inputs.push_back(number);
+				if (entries.size() > 8 && entries[7] == "-" && entries[8] == "-")
+					line_indices_with_syrope_inputs.push_back(number);
+				
+				Tmax0 = 0.0; // Not used for non-Syrope lines
+				Tmean0 = 0.0; // Not used for non-Syrope lines
 			}
 
 			// Make the output file (if queried)
@@ -1328,45 +1365,45 @@ moordyn::MoorDyn::ReadInFile()
 			}
 			LOGDBG << endl;
 
+			if (LinePropList[TypeNum]->ElasticMod == 4)
+			{
+				obj->setInitialTmax(Tmax0);
+				obj->setInitialTmean(Tmean0);
+			}
+
 			i++;
 		}
-	}
 
-	if ((i = findStartOfSection(in_txt, { "SYROPE IC" })) != -1) {
-		LOGDBG << "   Reading Syrope line initial conditions:" << endl;
-
-		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) &&
-		       (i < (int)in_txt.size())) {
-			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			if (entries.size() < 3) {
-				LOGERR << "Error in " << _filepath << " at line " << i + 1
-				       << ":" << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "3 fields are required, but just " << entries.size()
-				       << " are provided" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			int line_id = atoi(entries[0].c_str());
-			real Tmax0 = atof(entries[1].c_str());
-			real Tmean0 = atof(entries[2].c_str());
-
-			if (line_id < 1 || line_id > (int)LineList.size()) {
-				LOGERR << "Error in " << _filepath << " at line " << i + 1
-				       << ":" << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "There is no line with ID " << line_id << "!" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			auto* line = LineList[line_id - 1];
+		bool has_syrope_line = false;
+		for (auto line : LineList) {
 			if (line->getElasticModel() == 4) {
-				line->setInitialTmax(Tmax0);
-				line->setInitialTmean(Tmean0);
+				has_syrope_line = true;
+				break;
 			}
-
-			i++;
+		}
+		if (has_syrope_line)
+		{
+			// Check that all non-Syrope have the Tmax0 and Tmean0 inputs marked as "-"
+			for (auto line : LineList) {
+				if (line->getElasticModel() != 4)
+				{
+					int cnt = count(line_indices_with_syrope_inputs.begin(), line_indices_with_syrope_inputs.end(), line->number);
+					if (cnt == 0)
+					{
+						LOGWRN << "Line " << line->number << " should define Tmax0 and Tmean0 inputs as '-' for a non-Syrope line." << endl;
+					}
+				}
+			}
+		}
+		else // If there are no Syrope lines, check that no lines have the Tmax0 and Tmean0 inputs
+		{
+			for (auto line: LineList) {
+				int cnt = count(line_indices_with_normal_inputs.begin(), line_indices_with_normal_inputs.end(), line->number);
+				if (cnt == 0)
+				{
+					LOGWRN << "Line " << line->number << " does not need to define Tmax0 and Tmean0 inputs as a non-Syrope line." << endl;
+				}
+			}
 		}
 	}
 
