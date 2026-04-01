@@ -996,63 +996,6 @@ moordyn::MoorDyn::ReadInFile()
 		}
 	}
 
-	// If Syrope working curve is defined, read it
-	if ((i = findStartOfSection(in_txt, { "SYROPE WORKING CURVES" })) != -1) {
-		LOGDBG << "   Reading Syrope working curve formulas:" << endl;
-
-		// parse until the next header or the end of the file
-		while ((in_txt[i].find("---") == string::npos) &&
-		       (i < (int)in_txt.size())) {
-			vector<string> entries = moordyn::str::split(in_txt[i], ' ');
-			// Expecting 4 entries: LineType (string), WCType (string), k1
-			// (float), and k2 (float)
-			if (entries.size() != 4) {
-				LOGERR << "Error in " << _filepath << " at line " << i + 1
-				       << ":" << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "4 fields are required, but just " << entries.size()
-				       << " are provided" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
-
-			string line_prop_type = entries[0];
-			string wc_formula = entries[1];
-			double k1 = atof(entries[2].c_str());
-			double k2 = atof(entries[3].c_str());
-
-			// Loop all line properties to find the matching one
-			bool line_type_found = false;
-			for (auto& line_prop : LinePropList) {
-				if (line_prop->type == line_prop_type) {
-					line_type_found = true;
-
-					if (wc_formula == "LINEAR")
-						line_prop->SyropeWCForm = 1;
-					else if (wc_formula == "QUADRATIC")
-						line_prop->SyropeWCForm = 2;
-					else if (wc_formula == "EXP")
-						line_prop->SyropeWCForm = 3;
-					else {
-						LOGERR
-						    << "Error in " << _filepath << " at line " << i + 1
-						    << ":" << endl
-						    << "'" << in_txt[i] << "'" << endl
-						    << "Invalid working curve formula: " << wc_formula
-						    << endl;
-						return MOORDYN_INVALID_INPUT;
-					}
-					line_prop->k1 = k1;
-					line_prop->k2 = k2;
-				}
-			}
-
-			LOGDBG << "     Line Type: " << line_prop_type
-			       << ", WC Type: " << wc_formula << ", k1: " << k1
-			       << ", k2: " << k2 << endl;
-			i++;
-		}
-	}
-
 	if ((i = findStartOfSection(in_txt, { "ROD DICTIONARY", "ROD TYPES" })) !=
 	    -1) {
 		LOGDBG << "   Reading rod types:" << endl;
@@ -2036,11 +1979,31 @@ moordyn::MoorDyn::readLineProps(string inputText, int lineNum)
 			return nullptr;
 		}
 
-		const std::string owc = ea0.substr(7);
+		const std::string syrope_config = ea0.substr(7);
 		obj->alphaMBL = atof(EA_stuff[1].c_str());
 		obj->vbeta = atof(EA_stuff[2].c_str());
 
-		err = read_curve(owc.c_str(),
+		// Read Syrope settings
+		std::string owc_path;
+		std::string wc_formula;
+		err = read_syrope_working_curves(
+		    syrope_config.c_str(), owc_path, wc_formula, obj->k1, obj->k2);
+		if (err)
+			return nullptr;
+
+		if (wc_formula == "linear")
+			obj->SyropeWCForm = 1;
+		else if (wc_formula == "quadratic")
+			obj->SyropeWCForm = 2;
+		else if (wc_formula == "exp")
+			obj->SyropeWCForm = 3;
+		else {
+			LOGERR << "Unrecognized Syrope working curve formula: "
+			       << wc_formula << endl;
+			return nullptr;
+		}
+
+		err = read_curve(owc_path.c_str(),
 		                 &(obj->EA),
 		                 &(obj->nEApoints),
 		                 obj->stiffXs,
@@ -2665,6 +2628,132 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	// kinematics and set positions of attached line ends
 	obj->setState(pos, vel);
 }
+
+moordyn::error_id
+moordyn::MoorDyn::read_syrope_working_curves(const char* entry,
+                                             string& owc_path,
+                                             string& wc_formula,
+                                             double& k1,
+                                             double& k2)
+{
+	string fpath = _basepath + entry;
+	LOGMSG << "Loading SYROPE working curves from '" << fpath << "'..."
+	       << std::endl;
+	ifstream f(fpath);
+	if (!f.is_open()) {
+		LOGERR << "Cannot read the file '" << fpath << "'" << std::endl;
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
+
+	vector<string> flines;
+	int i = 0;
+	while (f.good()) {
+		string fline;
+		getline(f, fline);
+		moordyn::str::rtrim(fline);
+		flines.push_back(fline);
+		i++;
+	}
+	f.close();
+
+	if (i < 4) {
+		LOGERR << "Error: Not enough data in SYROPE working curves file"
+		       << endl;
+		return MOORDYN_INVALID_INPUT;
+	}
+
+	bool has_owc = false;
+	bool has_wc_formula = false;
+	bool has_k1 = false;
+	bool has_k2 = false;
+	for (auto fline : flines) {
+		vector<string> entries = moordyn::str::split(fline, ' ');
+		if (entries.size() < 2) {
+			LOGWRN << "Ignoring option line " << i
+			       << " due to unspecified value or option type when reading "
+			          "SYROPE working curves file"
+			       << endl;
+			continue;
+		}
+
+		LOGDBG << "\t" << entries[1] << ": " << entries[0] << std::endl;
+		const string value = entries[0];
+		const string name = str::lower(entries[1]);
+
+		if (name == "owc") {
+			owc_path = value;
+			has_owc = true;
+		} else if (name == "wctype") {
+			const string value_lower = str::lower(value);
+			if (value_lower != "linear" && value_lower != "quadratic" &&
+			    value_lower != "exp") {
+				LOGERR << "Unrecognized wc_formula value '" << value
+				       << "'. Should be 'linear' or 'quadratic' or 'exp'"
+				       << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+			wc_formula = value_lower;
+			has_wc_formula = true;
+		} else if (name == "k1") {
+			try {
+				k1 = std::stod(value);
+			} catch (const std::invalid_argument&) {
+				LOGERR << "Invalid k1 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			} catch (const std::out_of_range&) {
+				LOGERR << "Out-of-range k1 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+			has_k1 = true;
+		} else if (name == "k2") {
+			try {
+				k2 = std::stod(value);
+			} catch (const std::invalid_argument&) {
+				LOGERR << "Invalid k2 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			} catch (const std::out_of_range&) {
+				LOGERR << "Out-of-range k2 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+			has_k2 = true;
+		} else
+			LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
+	}
+
+	if (!has_owc || !has_wc_formula || !has_k1 || !has_k2) {
+		LOGERR << "Error: Missing required parameter(s) in SYROPE working "
+		          "curves settings"
+		       << endl;
+		return MOORDYN_INVALID_INPUT;
+	}
+
+	// Check k1 and k2 are physically reasonable
+	if (wc_formula == "linear") {
+		if (k1 < 0.0) {
+			LOGERR << "Error: LINEAR working curve requires k1 >= 0" << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+	} else if (wc_formula == "quadratic") {
+		if ((k1 < 0.0) || (k1 >= 1.0) || (k2 <= 0.0) || (k2 > 1.0)) {
+			LOGERR << "Error: QUADRATIC working curve requires 0 <= k1 < 1 and "
+			          "0 < k2 <= 1"
+			       << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+	} else if (wc_formula == "exp") {
+		if ((k1 < 0.0) || (k1 >= 1.0) || (k2 <= 0.0)) {
+			LOGERR << "Error: EXP working curve requires 0 <= k1 < 1 and k2 > 0"
+			       << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+	} else {
+		LOGERR << "Error: Invalid working curve formula '" << wc_formula
+		       << "'. Expected 'linear', 'quadratic', or 'exp'" << endl;
+		return MOORDYN_INVALID_INPUT;
+	}
+
+	return MOORDYN_SUCCESS;
+};
 
 moordyn::error_id
 moordyn::MoorDyn::WriteOutputs(double t, double dt)
