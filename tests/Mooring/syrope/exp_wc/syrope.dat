@@ -1,0 +1,4 @@
+../owc.dat  OWC     Original working curve lookup table path, relative to the main input file
+EXP         WCType  Working curve formula: LINEAR, QUADRATIC, or EXP
+0.20        k1      First parameter defining the working curve shape
+1.50        k2      Second parameter defining the working curve shape

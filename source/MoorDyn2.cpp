@@ -1200,6 +1200,9 @@ moordyn::MoorDyn::ReadInFile()
 			return MOORDYN_INVALID_INPUT;
 		}
 
+		vector<int> line_indices_with_normal_inputs; // Non-syrope lines without Tmax0 and Tmean0 inputs
+		vector<int> line_indices_with_syrope_inputs; // Non-syrope lines with Tmax0 and Tmean0 inputs
+
 		// parse until the next header or the end of the file
 		while ((in_txt[i].find("---") == string::npos) &&
 		       (i < (int)in_txt.size())) {
@@ -1208,7 +1211,7 @@ moordyn::MoorDyn::ReadInFile()
 				LOGERR << "Error in " << _filepath << " at line " << i + 1
 				       << ":" << endl
 				       << "'" << in_txt[i] << "'" << endl
-				       << "7 fields are required, but only " << entries.size()
+				       << "at least 7 fields are required, but only " << entries.size()
 				       << " are provided" << endl;
 				return MOORDYN_INVALID_INPUT;
 			}
@@ -1218,7 +1221,9 @@ moordyn::MoorDyn::ReadInFile()
 			double UnstrLen = atof(entries[4].c_str());
 			int NumSegs = atoi(entries[5].c_str());
 			string outchannels = entries[6];
-
+			double Tmax0;
+			double Tmean0;
+			
 			int TypeNum = -1;
 			for (unsigned int J = 0; J < LinePropList.size(); J++) {
 				if (LinePropList[J]->type == type)
@@ -1230,6 +1235,38 @@ moordyn::MoorDyn::ReadInFile()
 				       << "'" << in_txt[i] << "'" << endl
 				       << "Unrecognized line type " << type << endl;
 				return MOORDYN_INVALID_INPUT;
+			}
+
+			// Check for optional Tmax and Tmean inputs for Syrope line
+			// which must be provided for Syrope lines and should not be provided for non-Syrope lines
+			if (LinePropList[TypeNum]->ElasticMod == 4)
+			{
+				if (entries.size() < 9) {
+					LOGERR << "Error in " << _filepath << " at line " << i + 1
+					       << ":" << endl
+					       << "'" << in_txt[i] << "'" << endl
+					       << "Tmax0 and Tmean0 inputs are required for Syrope line" << endl;
+					return MOORDYN_INVALID_INPUT;
+				}
+				Tmax0 = atof(entries[7].c_str());
+				Tmean0 = atof(entries[8].c_str());
+				if (Tmax0 < 0 || Tmean0 < 0) {
+					LOGERR << "Error in " << _filepath << " at line " << i + 1
+					       << ":" << endl
+					       << "'" << in_txt[i] << "'" << endl
+					       << "Tmax0 and Tmean0 must be non-negative values" << endl;
+					return MOORDYN_INVALID_INPUT;
+				}
+			}
+			else
+			{
+				if (entries.size() == 7)
+					line_indices_with_normal_inputs.push_back(number);
+				if (entries.size() > 8 && entries[7] == "-" && entries[8] == "-")
+					line_indices_with_syrope_inputs.push_back(number);
+				
+				Tmax0 = 0.0; // Not used for non-Syrope lines
+				Tmean0 = 0.0; // Not used for non-Syrope lines
 			}
 
 			// Make the output file (if queried)
@@ -1328,7 +1365,45 @@ moordyn::MoorDyn::ReadInFile()
 			}
 			LOGDBG << endl;
 
+			if (LinePropList[TypeNum]->ElasticMod == 4)
+			{
+				obj->setInitialTmax(Tmax0);
+				obj->setInitialTmean(Tmean0);
+			}
+
 			i++;
+		}
+
+		bool has_syrope_line = false;
+		for (auto line : LineList) {
+			if (line->getElasticModel() == 4) {
+				has_syrope_line = true;
+				break;
+			}
+		}
+		if (has_syrope_line)
+		{
+			// Check that all non-Syrope have the Tmax0 and Tmean0 inputs marked as "-"
+			for (auto line : LineList) {
+				if (line->getElasticModel() != 4)
+				{
+					int cnt = count(line_indices_with_syrope_inputs.begin(), line_indices_with_syrope_inputs.end(), line->number);
+					if (cnt == 0)
+					{
+						LOGWRN << "Line " << line->number << " should define Tmax0 and Tmean0 inputs as '-' for a non-Syrope line." << endl;
+					}
+				}
+			}
+		}
+		else // If there are no Syrope lines, check that no lines have the Tmax0 and Tmean0 inputs
+		{
+			for (auto line: LineList) {
+				int cnt = count(line_indices_with_normal_inputs.begin(), line_indices_with_normal_inputs.end(), line->number);
+				if (cnt == 0)
+				{
+					LOGWRN << "Line " << line->number << " does not need to define Tmax0 and Tmean0 inputs as a non-Syrope line." << endl;
+				}
+			}
 		}
 	}
 
@@ -1922,29 +1997,82 @@ moordyn::MoorDyn::readLineProps(string inputText, int lineNum)
 	moordyn::error_id err;
 	vector<string> EA_stuff = moordyn::str::split(entries[3], '|');
 	const int EA_N = EA_stuff.size();
-	if (EA_N == 1) {
-		obj->ElasticMod = 1; // normal case
-	} else if (EA_N == 2) {
-		obj->ElasticMod = 2; // viscoelastic model, constant dynamic stiffness
-		obj->EA_D = atof(EA_stuff[1].c_str());
-	} else if (EA_N == 3) {
-		obj->ElasticMod =
-		    3; // viscoelastic model load dependent dynamic stiffness
+
+	// Check if Syrope model is being used
+	const std::string& ea0 = EA_stuff.empty() ? std::string() : EA_stuff[0];
+	const bool is_syrope = (!ea0.empty() && ea0.rfind("SYROPE:", 0) == 0);
+
+	if (is_syrope) {
+		obj->ElasticMod = 4; // Syrope model
+		LOGDBG
+		    << "Line type '" << obj->type
+		    << "' is using the Syrope model for axial tension-strain behavior."
+		    << endl;
+
+		if (EA_N != 3) {
+			LOGERR << "A line type EA entry with Syrope model must have 3 "
+			          "(bar-separated) values."
+			       << endl;
+			return nullptr;
+		}
+
+		const std::string syrope_config = ea0.substr(7);
 		obj->alphaMBL = atof(EA_stuff[1].c_str());
 		obj->vbeta = atof(EA_stuff[2].c_str());
-	} else {
-		LOGERR
-		    << "A line type EA entry can have at most 3 (bar-separated) values."
-		    << endl;
-		return nullptr;
+
+		// Read Syrope settings
+		std::string owc_path;
+		std::string wc_formula;
+		err = read_syrope_working_curves(
+		    syrope_config.c_str(), owc_path, wc_formula, obj->k1, obj->k2);
+		if (err)
+			return nullptr;
+
+		if (wc_formula == "linear")
+			obj->SyropeWCForm = 1;
+		else if (wc_formula == "quadratic")
+			obj->SyropeWCForm = 2;
+		else if (wc_formula == "exp")
+			obj->SyropeWCForm = 3;
+		else {
+			LOGERR << "Unrecognized Syrope working curve formula: "
+			       << wc_formula << endl;
+			return nullptr;
+		}
+
+		err = read_curve(owc_path.c_str(),
+		                 &(obj->EA),
+		                 &(obj->nEApoints),
+		                 obj->stiffXs,
+		                 obj->stiffYs);
+		if (err)
+			return nullptr;
+	} else { // Not Syrope, other models
+		if (EA_N == 1) {
+			obj->ElasticMod = 1; // normal case
+		} else if (EA_N == 2) {
+			obj->ElasticMod =
+			    2; // viscoelastic model, constant dynamic stiffness
+			obj->EA_D = atof(EA_stuff[1].c_str());
+		} else if (EA_N == 3) {
+			obj->ElasticMod =
+			    3; // viscoelastic model load dependent dynamic stiffness
+			obj->alphaMBL = atof(EA_stuff[1].c_str());
+			obj->vbeta = atof(EA_stuff[2].c_str());
+		} else {
+			LOGERR << "A line type EA entry can have at most 3 (bar-separated) "
+			          "values."
+			       << endl;
+			return nullptr;
+		}
+		err = read_curve(EA_stuff[0].c_str(),
+		                 &(obj->EA),
+		                 &(obj->nEApoints),
+		                 obj->stiffXs,
+		                 obj->stiffYs);
+		if (err)
+			return nullptr;
 	}
-	err = read_curve(EA_stuff[0].c_str(),
-	                 &(obj->EA),
-	                 &(obj->nEApoints),
-	                 obj->stiffXs,
-	                 obj->stiffYs);
-	if (err)
-		return nullptr;
 
 	vector<string> BA_stuff = moordyn::str::split(entries[4], '|');
 	unsigned int BA_N = BA_stuff.size();
@@ -2537,6 +2665,132 @@ moordyn::MoorDyn::detachLines(FailProps* failure)
 	// kinematics and set positions of attached line ends
 	obj->setState(pos, vel);
 }
+
+moordyn::error_id
+moordyn::MoorDyn::read_syrope_working_curves(const char* entry,
+                                             string& owc_path,
+                                             string& wc_formula,
+                                             double& k1,
+                                             double& k2)
+{
+	string fpath = _basepath + entry;
+	LOGMSG << "Loading SYROPE working curves from '" << fpath << "'..."
+	       << std::endl;
+	ifstream f(fpath);
+	if (!f.is_open()) {
+		LOGERR << "Cannot read the file '" << fpath << "'" << std::endl;
+		return MOORDYN_INVALID_INPUT_FILE;
+	}
+
+	vector<string> flines;
+	int i = 0;
+	while (f.good()) {
+		string fline;
+		getline(f, fline);
+		moordyn::str::rtrim(fline);
+		flines.push_back(fline);
+		i++;
+	}
+	f.close();
+
+	if (i < 4) {
+		LOGERR << "Error: Not enough data in SYROPE working curves file"
+		       << endl;
+		return MOORDYN_INVALID_INPUT;
+	}
+
+	bool has_owc = false;
+	bool has_wc_formula = false;
+	bool has_k1 = false;
+	bool has_k2 = false;
+	for (auto fline : flines) {
+		vector<string> entries = moordyn::str::split(fline, ' ');
+		if (entries.size() < 2) {
+			LOGWRN << "Ignoring option line " << i
+			       << " due to unspecified value or option type when reading "
+			          "SYROPE working curves file"
+			       << endl;
+			continue;
+		}
+
+		LOGDBG << "\t" << entries[1] << ": " << entries[0] << std::endl;
+		const string value = entries[0];
+		const string name = str::lower(entries[1]);
+
+		if (name == "owc") {
+			owc_path = value;
+			has_owc = true;
+		} else if (name == "wctype") {
+			const string value_lower = str::lower(value);
+			if (value_lower != "linear" && value_lower != "quadratic" &&
+			    value_lower != "exp") {
+				LOGERR << "Unrecognized wc_formula value '" << value
+				       << "'. Should be 'linear' or 'quadratic' or 'exp'"
+				       << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+			wc_formula = value_lower;
+			has_wc_formula = true;
+		} else if (name == "k1") {
+			try {
+				k1 = std::stod(value);
+			} catch (const std::invalid_argument&) {
+				LOGERR << "Invalid k1 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			} catch (const std::out_of_range&) {
+				LOGERR << "Out-of-range k1 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+			has_k1 = true;
+		} else if (name == "k2") {
+			try {
+				k2 = std::stod(value);
+			} catch (const std::invalid_argument&) {
+				LOGERR << "Invalid k2 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			} catch (const std::out_of_range&) {
+				LOGERR << "Out-of-range k2 value '" << value << "'" << endl;
+				return MOORDYN_INVALID_INPUT;
+			}
+			has_k2 = true;
+		} else
+			LOGWRN << "Warning: Unrecognized option '" << name << "'" << endl;
+	}
+
+	if (!has_owc || !has_wc_formula || !has_k1 || !has_k2) {
+		LOGERR << "Error: Missing required parameter(s) in SYROPE working "
+		          "curves settings"
+		       << endl;
+		return MOORDYN_INVALID_INPUT;
+	}
+
+	// Check k1 and k2 are physically reasonable
+	if (wc_formula == "linear") {
+		if (k1 < 0.0) {
+			LOGERR << "Error: LINEAR working curve requires k1 >= 0" << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+	} else if (wc_formula == "quadratic") {
+		if ((k1 < 0.0) || (k1 >= 1.0) || (k2 <= 0.0) || (k2 > 1.0)) {
+			LOGERR << "Error: QUADRATIC working curve requires 0 <= k1 < 1 and "
+			          "0 < k2 <= 1"
+			       << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+	} else if (wc_formula == "exp") {
+		if ((k1 < 0.0) || (k1 >= 1.0) || (k2 <= 0.0)) {
+			LOGERR << "Error: EXP working curve requires 0 <= k1 < 1 and k2 > 0"
+			       << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+	} else {
+		LOGERR << "Error: Invalid working curve formula '" << wc_formula
+		       << "'. Expected 'linear', 'quadratic', or 'exp'" << endl;
+		return MOORDYN_INVALID_INPUT;
+	}
+
+	return MOORDYN_SUCCESS;
+};
 
 moordyn::error_id
 moordyn::MoorDyn::WriteOutputs(double t, double dt)
