@@ -266,6 +266,7 @@ There is not a limit on the number of lines you can write here.
  --------------------- MoorDyn Input File ------------------------------------
  MoorDyn v2 sample input file
 
+.. _line-types-v2:
 Line Types
 ^^^^^^^^^^
 
@@ -309,8 +310,10 @@ The columns in order are as follows:
 Note: MoorDyn has the ability to model the viscoelastic properties of synthetic lines in two ways. The first method, from work linked in the 
 :ref:`theory section <theory>`, allows a user to specify a bar-separated constant dynamic and static stiffness. The second method allows the user 
 to provide a constant static stiffness and two terms to determine the dynamic stiffness as a linear function of mean load. The equation is:
-`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. Both of these methods allow users to provide static 
-and dynamic damping coefficients as values separated by |. While the static damping can be described as a fraction of critical, the dynamic damping 
+`EA_d = EA_Dc + EA_D_Lm * mean_load` where `EA_D_Lm` is the slope of the load-stiffness curve. This method can be used standalone, 
+and is also part of the Syrope model described in :ref:`Syrope Model for Polyester Lines <syrope-model-polyester-lines>`. 
+Both of these methods allow users to provide static and dynamic damping coefficients as values separated by |. 
+While the static damping can be described as a fraction of critical, the dynamic damping 
 needs to be input as a value. Example inputs are below: 
 
 .. code-block:: none
@@ -319,65 +322,6 @@ needs to be input as a value. Example inputs are below:
   (name)     (m)     (kg/m)     (N)                 (N-s)
   Polyester  ...      ...    EA_s|EA_d            BA_s|BA_d <-- Constant dynamic stiffness method with static and dynamic damping
   Polyester  ...      ...    EA_s|EA_Dc|EA_D_Lm   BA_s|BA_d <-- Load dependent dynamic stiffness method with static and dynamic damping
-
-MoorDyn also supports the Syrope material model for polyester ropes. In this formulation, the
-tension–strain response is nonlinear and load-path dependent, meaning the unloading and
-reloading curves differ (hysteresis). See additional details in the :ref:`theory section <theory>`
-and the references therein.
-
-To enable the Syrope model for a given line type, specify the EA field using three
-bar-separated entries, analogous to the load-dependent dynamic stiffness method described above.
-To indicate Syrope, the first entry must start with ``SYROPE:``, followed by the name (or path)
-of a tabulated file defining the original working curve. The second and third entries are
-``EA_Dc`` and ``EA_D_Lm`` (as in the load-dependent dynamic stiffness method). Static and dynamic
-damping may be provided in BA as ``BA_s|BA_d`` (same convention as above).
-
-Example:
-
-.. code-block:: none
-
-  TypeName   Diam    Mass/m     EA                               BA
-  (name)     (m)     (kg/m)     (N)                              (N-s)
-  poly       ...     ...        SYROPE:owc.txt|EA_Dc|EA_D_Lm     BA_s|BA_d
-
-The file ``owc.txt`` follows the same format as the tabulated non-linear stiffness files described
-above (three header lines, then columns for strain and tension).
-
-In addition to the line-type inputs above, users must also provide (i) the working-curve
-parameterization and (ii) Syrope initial conditions for each Syrope line.
-
-The working-curve parameters are provided in a dedicated table. The columns are:
-
-- LineType – a string matching a Line Dictionary entry that uses the Syrope model
-- WCType – the working-curve type (options: ``LINEAR``, ``QUADRATIC``, ``EXP``)
-- k1 – the primary coefficient of the working curve (sets the strain offset where mean tension is zero)
-- k2 – the secondary coefficient of the working curve (sets the curve shape)
-
-Example:
-
-.. code-block:: none
-
-  -------------------------- SYROPE WORKING CURVES ------------------------------
-  LineType   WCType      k1        k2
-  (-)        (-)         (-)       (-)
-  poly       LINEAR      k1        k2
-
-Initial conditions are specified per line. The Line ID must match a line defined in the
-*Lines* section and must reference a line type that uses the Syrope model.
-
-- Tmax – the highest mean tension experienced by the line prior to the current time (N)
-- Tmean – the current mean tension at initialization (N)
-
-In general, ``Tmax0 >= Tmean0``.
-
-Example:
-
-.. code-block:: none
-
-  -------------------------- SYROPE IC ------------------------------------------
-  Line      Tmax        Tmean
-  (-)       (N)         (N)
-  1         Tmax0       Tmean0
 
 Rod Types
 ^^^^^^^^^
@@ -544,8 +488,10 @@ The columns are as follows:
  - NumSegs - how many segments the line is discretized into (it will have NumSegs+1 nodes total, 
    including its two end nodes)
  - LineOutputs - any data to be output in a dedicated output file for that line. 
+ - Tmax0 - OPTIONAL - the preceding highest mean tension for Syrope lines at initialization (see :ref:`Syrope Model for Polyester Lines <syrope-model-polyester-lines>`)
+ - Tmean0 - OPTIONAL - the mean tension for Syrope lines at initialization (see :ref:`Syrope Model for Polyester Lines <syrope-model-polyester-lines>`)
    
-This last entry expects a string of one or more characters without spaces, each character 
+This `LineOutputs` entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
 outputs are wanted. Ten output properties are currently possible:
 
@@ -1069,6 +1015,63 @@ tabulated file with 3 header lines and then a strain column and a tension column
   0.0       0.0
   ...       ...
 
+.. _syrope-model-polyester-lines:
+Syrope Model for Polyester Lines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MoorDyn supports the Syrope material model for polyester ropes. In this formulation, the
+tension–strain response is nonlinear and load-path dependent, meaning the unloading and
+reloading curves differ. See additional details in the :ref:`theory section <theory>`
+and the references therein.
+
+To enable the Syrope model for a given line type, specify the EA field using three
+bar-separated entries, analogous to the load-dependent dynamic stiffness method described in :ref:`Line Types <line-types-v2>`.
+To indicate Syrope, the first entry must start with ``SYROPE:``, followed by the name (or path)
+of a Syrope config file defining the working curves. The second and third entries are
+``EA_Dc`` and ``EA_D_Lm`` (as in the load-dependent dynamic stiffness method in :ref:`Line Types <line-types-v2>`). Static and dynamic
+damping may be provided in BA as ``BA_s|BA_d`` (same convention as above).
+
+Example:
+
+.. code-block:: none
+
+  TypeName   Diam    Mass/m     EA                                 BA
+  (name)     (m)     (kg/m)     (N)                               (N-s)
+  poly       ...     ...        SYROPE:syrope.dat|EA_Dc|EA_D_Lm   BA_s|BA_d
+
+The file ``syrope.dat`` defines 
+
+- OWC: a tabulated nonlinear original working curve
+- WCType: the working-curve type (options: ``LINEAR``, ``QUADRATIC``, ``EXP``)
+- k1: the first coefficient for the working curve formula (sets the strain offset where mean tension is zero)
+- k2: the second coefficient for the working curve formula (sets the curve shape)
+
+One example of such file is shown below.
+
+.. code-block:: none
+
+  ../owc.dat  OWC     Original working curve lookup table path, relative to the MoorDyn input file
+  LINEAR      WCType  Working curve formula: LINEAR, QUADRATIC, or EXP
+  0.25        k1      First parameter defining the working curve shape
+  1.00        k2      Second parameter defining the working curve shape
+
+The ``owc.dat`` file follows the same format as the tabulated non-linear stiffness files described
+above (three header lines, then columns for strain and tension).
+
+Initial conditions are specified per line as optional columns in the ``LINES`` section.
+
+- Tmax0 – the initial highest mean tension experienced by the line prior to the current time (N)
+- Tmean0 – the initial mean tension (N)
+
+One example of the ``LINES`` section with initial conditions for Syrope lines is shown below.
+
+.. code-block:: none
+
+  ID   LineType  AttachA  AttachB  UnstrLen  NumSegs  LineOutputs   Tmax0    Tmean0
+  (#)   (name)    (ID)     (ID)      (m)       (-)      (-)          (N)       (N)
+  1    chain       2         1       30.000    20        -            -         -
+  2     poly       3         2      681.240    80        -          3.53e6    1.18e6
+
+In general, ``Tmax0 >= Tmean0``.
 
 MoorDyn-F with FAST.Farm - Inputs
 -------------------------------
