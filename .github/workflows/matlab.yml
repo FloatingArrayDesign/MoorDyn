@@ -42,7 +42,7 @@ jobs:
         run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Set up MATLAB
-        uses: matlab-actions/setup-matlab@v2
+        uses: matlab-actions/setup-matlab@v3
 
       - name: Compile and run
         uses: matlab-actions/run-command@v2
