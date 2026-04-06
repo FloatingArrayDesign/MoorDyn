@@ -45,7 +45,7 @@ jobs:
         uses: matlab-actions/setup-matlab@v2
 
       - name: Compile and run
-        uses: matlab-actions/run-command@v2
+        uses: matlab-actions/run-command@v3
         with:
           command: |
               mex('-setup', '-v', 'C');
