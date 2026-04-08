@@ -491,10 +491,11 @@ The columns are as follows:
    
 This `LineOutputs` entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
-outputs are wanted. Ten output properties are currently possible:
+outputs are wanted. Eleven output properties are currently possible:
 
  - p – node positions
  - v – node velocities
+ - a – node accelerations
  - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
  - t – tension force at each segment 
@@ -661,6 +662,8 @@ The list of possible options is:
    grid, 3 = kinematics in a regular grid, 7 = Wave Component Summing. Details on these flags can
    be found :ref:`here <waterkinematics>`.
  - dtWave (0.25): The time step to evaluate the waves, only for wave grid (WaveKin = 3) (s)
+ - waveKin_rampT (0.0): Ramp time for water kinematics (s). The wave kinematics are linearly ramped 
+   from zero at t=0 to their full values at t=waveKin_rampT. A value of 0 disables the ramp.
  - Currents (0): The currents model to use. 0 = none, 1 = steady in a regular grid, 2 = dynamic in 
    a regular grid, 3 = WIP, 4 = WIP, 5 = 4D Current Grid. Details on these flags can
    be found :ref:`here <waterkinematics>`.
