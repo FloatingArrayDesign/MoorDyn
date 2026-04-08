@@ -142,6 +142,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
 	env->kb = 3.0e6;
 	env->cb = 3.0e5;
 	env->waterKinOptions = waves::WaterKinOptions();
+	env->waveKin_rampT = 0.0; // no ramp by default
 	env->WriteUnits = 1; // by default, write units line
 	env->writeLog = 0;   // by default, don't write out a log file
 	env->FrictionCoefficient = 0.0;
@@ -1630,8 +1631,6 @@ moordyn::MoorDyn::ReadInFile()
 						    << "..." << endl
 						    << "'" << in_txt[i] << "'" << endl
 						    << "invalid output specifier: " << let1
-						    << ".  Type must be oneof L/Line, P/Point, R/Rod, "
-						       "or B/Body"
 						    << endl;
 						dummy.OType = -1;
 						continue;
@@ -2398,6 +2397,8 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 			LOGWRN << "Unknown WaveKin option value " << WaveKinTemp << endl;
 	} else if (name == "dtwave")
 		env->waterKinOptions.dtWave = stof(value);
+	else if (name == "wavekin_rampt")
+		env->waveKin_rampT = atof(value.c_str());
 	else if (name == "currents") {
 		auto current_mode = (waves::currents_settings)stoi(value);
 		env->waterKinOptions.currentMode = current_mode;

@@ -1130,6 +1130,9 @@ struct EnvCond
 	/// a ratio of static to dynamic friction ( = mu_static/mu_dynamic)
 	double StatDynFricScale;
 
+	/// ramp time for water kinematics (s). 0 = no ramp
+	double waveKin_rampT;
+
 	/// a global switch for whether to show the units line in the output files
 	/// (1, default), or skip it (0)
 	int WriteUnits;

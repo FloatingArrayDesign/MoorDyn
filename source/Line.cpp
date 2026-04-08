@@ -262,6 +262,9 @@ Line::setup(int number_in,
 	outfile = outfile_pointer.get(); // make outfile point to the right place
 	channels = channels_in;          // copy string of output channels to object
 
+	// set flag to store node accelerations if needed for VIV or acceleration output
+	store_rdd = (Cl > 0) || (channels.find("a") != string::npos);
+
 	LOGDBG << "   Set up Line " << number << ". " << endl;
 };
 
@@ -321,6 +324,14 @@ Line::initialize()
 				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vx")
                          << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vy")
                          << setw(WIDTH) << right << ("Node" + to_string((int)i) + "vz");
+			}
+		}
+		// output node accelerations
+		if (channels.find("a") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++) {
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "ax")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "ay")
+                         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "az");
 			}
 		}
 		// output wave velocities
@@ -409,6 +420,12 @@ Line::initialize()
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << setw(WIDTH) << right
 							 << "(m/s)";
+			}
+			// output node accelerations?
+			if (channels.find("a") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << setw(WIDTH) << right
+							 << "(m/s^2)";
 			}
 			// output wave velocities?
 			if (channels.find("U") != string::npos) {
@@ -1535,9 +1552,9 @@ Line::getStateDeriv(InstanceStateVarView drdt)
 		drdt.row(i - 1).head<3>() = rd[i];
 		drdt.row(i - 1).segment<3>(3) = M[i].inverse() * Fnet[i];
 
-		if (Cl > 0)
+		if (store_rdd)
 			rdd_old[i] = drdt.row(i - 1).segment<3>(
-			    3); // saving the acceleration for VIV RMS calculation. End
+			    3); // store node acceleration for VIV and/or output. End
 			        // nodes are left at zero, VIV disabled for end nodes
 	}
 
@@ -1616,6 +1633,10 @@ Line::Output(real time)
 		// output velocities?
 		if (channels.find("v") != string::npos) {
 			write_vec_array(rd, N + 1);
+		}
+		// output node accelerations?
+		if (channels.find("a") != string::npos) {
+			write_vec_array(rdd_old, N + 1);
 		}
 		// output wave velocities?
 		if (channels.find("U") != string::npos) {

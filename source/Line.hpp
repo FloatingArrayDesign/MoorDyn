@@ -324,6 +324,8 @@ class DECLDIR Line final
 	std::vector<moordyn::real> ydd_rms_old;
 	/// node old accelerations
 	std::vector<vec> rdd_old;
+	/// flag to store node accelerations (for VIV or output)
+	bool store_rdd;
 
 	// end conditions
 	/** @brief Types of end points
