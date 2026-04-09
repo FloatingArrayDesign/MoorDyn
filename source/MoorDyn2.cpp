@@ -1363,21 +1363,31 @@ moordyn::MoorDyn::ReadInFile()
 			}
 
 			int line_id = atoi(entries[0].c_str());
+			vector<string> lineNums = moordyn::str::split(entries[0], ',');
 			real Tmax0 = atof(entries[1].c_str());
 			real Tmean0 = atof(entries[2].c_str());
 
-			if (line_id < 1 || line_id > (int)LineList.size()) {
-				LOGERR << "Error in " << _filepath << " at line " << i + 1
-				       << ":" << endl
-				       << "'" << in_txt[i] << "'" << endl
-				       << "There is no line with ID " << line_id << "!" << endl;
-				return MOORDYN_INVALID_INPUT;
-			}
+			for (unsigned int il = 0; il < lineNums.size(); il++) {
+				const unsigned int line_id = atoi(lineNums[il].c_str());
+				if (!line_id || line_id > LineList.size()) {
+					LOGERR << "Error in " << _filepath << " at line " << i + 1
+					       << ":" << endl
+					       << "'" << in_txt[i] << "'" << endl
+					       << "There are not " << line_id << " lines" << endl;
+					return MOORDYN_INVALID_INPUT;
+				}
 
-			auto* line = LineList[line_id - 1];
-			if (line->getElasticModel() == 4) {
-				line->setInitialTmax(Tmax0);
-				line->setInitialTmean(Tmean0);
+				auto* line = LineList[line_id - 1];
+				if (line->getElasticModel() == 4) {
+					line->setInitialTmax(Tmax0);
+					line->setInitialTmean(Tmean0);
+				}
+				else
+				{
+					LOGWRN << "Warning in " << _filepath << " at line " << i + 1
+					       << ":" << endl
+					       << "Line " << line_id << " does not have Syrope model, but is included in SYROPE IC section" << endl;
+				}
 			}
 
 			i++;
