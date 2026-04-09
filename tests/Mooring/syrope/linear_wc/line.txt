@@ -9,9 +9,13 @@ Node      Type      X          Y         Z        M        V         CdA   CA
 1         Fixed    0.0         0       -5.0       0        0          0     0
 2         Coupled  1.0148657   0       -5.0       0        0          0     0
 -------------------------- LINES -------------------------------------------------
-Line     LineType NodeA     NodeB  UnstrLen   NumSegs     Flags/Outputs    Tmax0    Tmean0
-(-)      (-)       (-)       (-)    (m)         (-)          (-)            (N)       (N)
-1        poly       2         1     1.0          1           tsc         1.3886e6   4.3394e5
+Line     LineType NodeA     NodeB  UnstrLen   NumSegs     Flags/Outputs
+(-)      (-)       (-)       (-)    (m)         (-)          (-)
+1        poly       2         1     1.0          1           tsc
+-------------------------- SYROPE IC -------------------------------------------------------
+Line(s)   Tmax0    Tmean0
+(-)        (N)      (N)
+1       1.3886e6  4.339e5
 -------------------------- SOLVER OPTIONS---------------------------------------------------
 2        writeLog     - Write a log file
 0        g            - gravitational acceleration
