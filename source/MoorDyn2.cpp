@@ -1333,6 +1333,20 @@ moordyn::MoorDyn::ReadInFile()
 	}
 
 	if ((i = findStartOfSection(in_txt, { "SYROPE IC" })) != -1) {
+		bool hasSyrope = false;
+		for (auto lineProp : LinePropList) {
+			if (lineProp->ElasticMod == 4) {
+				hasSyrope = true;
+				break;
+			}
+		}
+		if (!hasSyrope) {
+			LOGWRN << "Warning in " << _filepath << " at line " << i + 1
+			       << ":" << endl
+			       << "No line type with Syrope model is defined, but SYROPE IC section is present" << endl;
+			return MOORDYN_INVALID_INPUT;
+		}
+
 		LOGDBG << "   Reading Syrope line initial conditions:" << endl;
 
 		// parse until the next header or the end of the file
