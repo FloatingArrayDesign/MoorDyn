@@ -1057,19 +1057,20 @@ One example of such file is shown below.
 The ``owc.dat`` file follows the same format as the tabulated non-linear stiffness files described
 above (three header lines, then columns for strain and tension).
 
-Initial conditions are specified per line as optional columns in the ``LINES`` section.
+Initial conditions are specified for the Syrope lines in a separate ``SYROPE IC`` section placed after the ``LINES`` section.
 
+- Line(s) - the Syrope line number(s). This may be a single line number or a comma-separated list of line numbers. If non-Syrope lines are included, they are ignored and a warning is raised.
 - Tmax0 – the initial highest mean tension experienced by the line prior to the current time (N)
 - Tmean0 – the initial mean tension (N)
 
-One example of the ``LINES`` section with initial conditions for Syrope lines is shown below.
+One example of the ``SYROPE IC`` section is shown below.
 
 .. code-block:: none
 
-  ID   LineType  AttachA  AttachB  UnstrLen  NumSegs  LineOutputs   Tmax0    Tmean0
-  (#)   (name)    (ID)     (ID)      (m)       (-)      (-)          (N)       (N)
-  1    chain       2         1       30.000    20        -            -         -
-  2     poly       3         2      681.240    80        -          3.53e6    1.18e6
+  ---------------------- SYROPE IC --------------------------------------
+  Line(s)   Tmax0    Tmean0
+  (-)        (N)       (N)
+  7,8,9    3.53e6    1.18e6
 
 In general, ``Tmax0 >= Tmean0``.
 
