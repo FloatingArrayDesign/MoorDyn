@@ -527,6 +527,20 @@ def GetFASTtens(instance, n_lines):
     return data[0], data[1], data[2], data[3]
 
 
+def BreakLine(instance, point, line):
+    """Break a line on a specific point
+    This method is dettaching a line from the point, and in exchange is
+    creating a point duplicate of type FREE
+
+    Parameters:
+    instance (cmoordyn.MoorDyn): The MoorDyn instance
+    point (cmoordyn.MoorDynPoint): The point instance
+    line (cmoordyn.MoorDynLine): The line instance
+    """
+    import cmoordyn
+    cmoordyn.break_line(instance, point, line)
+
+
 def GetDt(instance):
     """Get the current model time step
 
