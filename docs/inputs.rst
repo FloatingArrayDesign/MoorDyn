@@ -487,9 +487,7 @@ The columns are as follows:
  - UnstrLen - the unstretched length of the line
  - NumSegs - how many segments the line is discretized into (it will have NumSegs+1 nodes total, 
    including its two end nodes)
- - LineOutputs - any data to be output in a dedicated output file for that line. 
- - Tmax0 - OPTIONAL - the preceding highest mean tension for Syrope lines at initialization (see :ref:`Syrope Model for Polyester Lines <syrope-model-polyester-lines>`)
- - Tmean0 - OPTIONAL - the mean tension for Syrope lines at initialization (see :ref:`Syrope Model for Polyester Lines <syrope-model-polyester-lines>`)
+ - LineOutputs - any data to be output in a dedicated output file for that line.
    
 This `LineOutputs` entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
