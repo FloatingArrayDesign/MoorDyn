@@ -795,6 +795,41 @@ moordyn::MoorDyn::Step(const double* x,
 		return MOORDYN_SUCCESS;
 }
 
+void
+MoorDyn::BreakLine(moordyn::Point* point, moordyn::Line* line)
+{
+	// Detach the line from the point
+	moordyn::EndPoints end_point;
+	auto pt_attachments = point->getLines();
+	for (auto attachment : pt_attachments) {
+		if (attachment.line == line) {
+			end_point = attachment.end_point;
+		}
+	}
+	point->removeLine(line);
+	// Create the new point
+	moordyn::Point *pt = new Point(point, PointList.size());
+	PointList.push_back(pt);
+	waves->addPoint(pt);
+	_t_integrator->AddPoint(pt);
+	// Set the state of the point
+	auto state = _t_integrator->r(0);
+	pt->initialize(state->get(pt));
+	for (unsigned int i = 1; i < _t_integrator->GetNState(); i++) {
+		_t_integrator->r(i)->get(pt) = state->get(pt);
+	}
+	for (unsigned int i = 0; i < _t_integrator->GetNDeriv(); i++) {
+		_t_integrator->rd(i)->get(pt).row(0)(Eigen::seqN(0, 3)) =
+			state->get(pt).row(0)(Eigen::seqN(3, 3));
+		// NOTE: Although when cloning free points we can actually get the
+		// acceleration, I (Jose Luis Cercos-Pita) do not think is worthy, so
+		// I am simply setting no acceleration
+		_t_integrator->rd(i)->get(pt).row(0)(Eigen::seqN(3, 3)) = vec::Zero();
+	}
+	// Attach the line to the point
+	pt->addLine(line, end_point);
+}
+
 std::vector<uint64_t>
 MoorDyn::Serialize(void)
 {
@@ -1155,8 +1190,7 @@ moordyn::MoorDyn::ReadInFile()
 				env->WtrDpth = -r0[2];
 				LOGWRN << "\t Water depth set to point " << PointList.size() + 1
 				       << " z position because point was specified below the "
-				          "seabed"
-				       << endl;
+				          "seabed" << endl;
 			}
 
 			// Check point ID is sequential starting from 1
@@ -2893,6 +2927,28 @@ MoorDyn_GetFASTtens(MoorDyn system,
 		lines[l]->getFASTtens(
 		    FairHTen + l, FairVTen + l, AnchHTen + l, AnchVTen + l);
 
+	return MOORDYN_SUCCESS;
+}
+
+int DECLDIR
+MoorDyn_BreakLine(MoorDyn system,
+                  MoorDynPoint point,
+                  MoorDynLine line)
+{
+	CHECK_SYSTEM(system);
+
+	moordyn::error_id err = MOORDYN_SUCCESS;
+	string err_msg;
+	try {
+		((moordyn::MoorDyn*)system)->BreakLine((moordyn::Point*)point,
+		                                       (moordyn::Line*)line);
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS) {
+		cerr << "Error (" << err << ") at " << __FUNC_NAME__ << "():" << endl
+		     << err_msg << endl;
+		return err;
+	}
 	return MOORDYN_SUCCESS;
 }
 

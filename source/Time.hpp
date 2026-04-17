@@ -256,11 +256,26 @@ class Scheme : public io::IO
 	 */
 	virtual void Step(real& dt) { t_local += dt; };
 
+	/** @brief Get the number of state variables
+	 * @return The number of state variables
+	 */
+	virtual const unsigned int GetNState() const = 0;
+
+	/** @brief Get the number of state derivative variables
+	 * @return The number of state derivative variables
+	 */
+	virtual const unsigned int GetNDeriv() const = 0;
+
 	/** @brief Get the state variable
 	 * @param i The index of the state variable to take
 	 * @return The state variable
+	 * @{
 	 */
 	virtual moordyn::state::State GetState(unsigned int i = 0) = 0;
+	virtual moordyn::state::State* r(unsigned int i = 0) = 0;
+	/**
+	 * @}
+	 */
 
 	/** @brief Resume the simulation from the stationary solution
 	 * @param state The stationary solution
@@ -287,6 +302,17 @@ class Scheme : public io::IO
 	                              unsigned int i = 0)
 	{
 	}
+
+	/** @brief Get the state derivative variable
+	 * @param i The index of the state derivative variable to take
+	 * @return The state derivative variable
+	 * @{
+	 */
+	virtual moordyn::state::State GetDeriv(unsigned int i = 0) = 0;
+	virtual moordyn::state::State* rd(unsigned int i = 0) = 0;
+	/**
+	 * @}
+	 */
 
   protected:
 	/** @brief Constructor
@@ -623,6 +649,16 @@ class SchemeBase : public Scheme
 	 */
 	virtual void Step(real& dt) { Scheme::Step(dt); };
 
+	/** @brief Get the number of state variables
+	 * @return The number of state variables
+	 */
+	inline const unsigned int GetNState() const { return NSTATE; }
+
+	/** @brief Get the number of state derivative variables
+	 * @return The number of state derivative variables
+	 */
+	inline const unsigned int GetNDeriv() const { return NDERIV; }
+
 	/** @brief Get the state
 	 * @param i The index of the state variable to take
 	 * @return The state variable
@@ -720,6 +756,7 @@ class SchemeBase : public Scheme
 	 * @return The state derivative
 	 * @throws moordyn::invalid_value_error if the @p i index is greater or
 	 * equal than the number of state derivatives
+	 * @{
 	 */
 	inline state::State* rd(unsigned int i = 0)
 	{
@@ -731,6 +768,11 @@ class SchemeBase : public Scheme
 		}
 		return _rd[i];
 	}
+
+	inline state::State GetDeriv(unsigned int i = 0) { return *rd(i); }
+	/**
+	 * @}
+	 */
 
 	/** @brief Produce the packed data to be saved
 	 *

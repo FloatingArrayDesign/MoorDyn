@@ -55,6 +55,7 @@ set(CATCH2_TESTS
     midpoint
     aca
     wilson
+    line_break
 )
 
 function(make_executable test_name, extension)
