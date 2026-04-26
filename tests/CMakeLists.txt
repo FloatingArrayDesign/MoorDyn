@@ -43,6 +43,7 @@ set(CATCH2_TESTS
     math_tests
     state_tests
     testDecomposeString
+    syrope
     bodies
     beam
     conveying_fluid

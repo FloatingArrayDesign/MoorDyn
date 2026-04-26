@@ -786,6 +786,50 @@ class MoorDyn final : public io::IO
 		return MOORDYN_SUCCESS;
 	}
 
+	/**
+	 * @brief Read SYROPE working-curve settings from a text file
+	 *
+	 * This helper reads the path to the original working-curve lookup table,
+	 * the working curve formula, and the `k1` and `k2` coefficients that
+	 * define the working curve
+	 *
+	 * @param entry Path to the SYROPE working-curve definition file
+	 * @param owc_path Output path to the original working-curve lookup table
+	 * @param wc_formula Output working curve formula
+	 * @param k1 Output first coefficient of the working curve formula
+	 * @param k2 Output second coefficient of the working curve formula
+	 * @return MOORDYN_SUCCESS if the file is read successfully, or an error
+	 * code otherwise
+	 *
+	 * @note The input file is expected to use the format:
+	 *       `value key description...`
+	 *
+	 *       Example:
+	 *       `../owc.dat OWC    Original working curve lookup table path`
+	 *       `LINEAR     WCType Working curve formula: LINEAR, QUADRATIC, or
+	 * EXP` `0.25       k1     First parameter defining the working curve shape`
+	 *       `1.00       k2     Second parameter defining the working curve
+	 * shape`
+	 *
+	 * @note Supported working-curve formulas are `LINEAR`, `QUADRATIC`, and
+	 * `EXP`. For `LINEAR`, if `0 <= k1 < 1`, `k1` represents the ratio of
+	 * strain at zero mean tension relative to the strain at `Tmax`. If `k1 >>
+	 * 1`, it represents the static stiffness, that is, the slope of the working
+	 * curve. `k2` is not used for the linear working curve, but it must still
+	 * be provided.
+	 *
+	 *       For `QUADRATIC`, `0 <= k1 < 1` and `0 < k2 < 1` are required.
+	 *       If `k2 = 1`, the curve reduces to the linear form.
+	 *
+	 *       For `EXP`, `0 <= k1 < 1` and `k2 > 0` are required.
+	 */
+
+	moordyn::error_id read_syrope_working_curves(const char* entry,
+	                                             string& owc_path,
+	                                             string& wc_formula,
+	                                             double& k1,
+	                                             double& k2);
+
 	/** @brief Get the value of a specific output channel
 	 *
 	 * This function might throw moordyn::invalid_value_error exceptions
