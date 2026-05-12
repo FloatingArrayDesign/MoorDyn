@@ -38,8 +38,32 @@ namespace moordyn {
 
 Point::Point(moordyn::Log* log, size_t id)
   : Instance(log)
+  , waves(nullptr)
   , seafloor(nullptr)
   , pointId(id)
+{
+	vtk.set_binary();
+}
+
+Point::Point(Point* visitor, size_t id)
+  : Instance(visitor->GetLogger())
+  , env(visitor->env)
+  , waves(visitor->waves)
+  , seafloor(visitor->seafloor)
+  , pointM(visitor->pointM)
+  , pointV(visitor->pointV)
+  , pointF(visitor->pointF)
+  , pointCdA(visitor->pointCdA)
+  , pointCa(visitor->pointCa)
+  , r(visitor->r)
+  , rd(visitor->rd)
+  , Fnet(visitor->Fnet)
+  , t(visitor->t)
+  , M(visitor->M)
+  , acc(visitor->acc)
+  , pointId(id)
+  , number(id + 1)
+  , type(types::FREE)
 {
 	vtk.set_binary();
 }
@@ -150,7 +174,9 @@ Point::initialize()
 		    seafloor ? seafloor->getDepthAt(r[0], r[1]) : -env->WtrDpth;
 		if (waterDepth > r[2]) {
 			LOGERR << "Error: water depth is shallower than Point " << number
-			       << "." << endl;
+			       << "." << endl
+			       << "\tseabed z = " << waterDepth << endl
+			       << "\tpoint = " << r << endl;
 			throw moordyn::invalid_value_error("Invalid water depth");
 		}
 	}

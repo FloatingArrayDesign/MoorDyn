@@ -268,6 +268,17 @@ class MoorDyn final : public io::IO
 		waves->setWaveKinematics(U, Ud);
 	}
 
+	/** @brief Break a line on a specific point
+	 *
+	 * This method is dettaching a line from the point, and in exchange is
+	 * creating a point duplicate of type moordyn::Point::types::FREE
+	 * @param point The discconection point
+	 * @param line The line that is dettaching from the point
+	 * @throw moordyn::invalid_value_error If the line is not attached to the
+	 * point.
+	 */
+	void BreakLine(moordyn::Point* point, moordyn::Line* line);
+
 	/** @brief Produce the packed data to be saved
 	 *
 	 * The produced data can be used afterwards to restore the saved information
