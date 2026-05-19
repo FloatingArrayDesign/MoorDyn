@@ -317,6 +317,13 @@ Rod::openoutput()
 				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Pdz");
 				         
 		}
+		// output water velocities
+		if (channels.find("U") != string::npos) {
+			for (unsigned int i = 0; i <= N; i++)
+				*outfile << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Ux")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Uy")
+				         << setw(WIDTH) << right << ("Node" + to_string((int)i) + "Uz");
+		}
 		// output bottom contact force
 		if (channels.find("b") != string::npos) {
 			for (unsigned int i = 0; i <= N; i++)
@@ -383,6 +390,11 @@ Rod::openoutput()
 			if (channels.find("P") != string::npos) {
 				for (unsigned int i = 0; i <= 3 * N + 2; i++)
 					*outfile << setw(WIDTH) << right << "(Pa)";
+			}
+			// output wave velocities
+			if (channels.find("U") != string::npos) {
+				for (unsigned int i = 0; i <= 3 * N + 2; i++)
+					*outfile << setw(WIDTH) << right << "(m/s)";
 			}
 			// output bottom contact force
 			if (channels.find("b") != string::npos) {
@@ -1555,6 +1567,10 @@ auto write_val = [&](real val) {
 	}
 	if (channels.find("P") != string::npos) {
 		write_vec_array(Pd); // dynamic pressure
+	}
+	if (channels.find("U") != string::npos) {
+		auto [_z, U, _ud, _pdyn] = waves->getWaveKinRod(rodId);
+		write_vec_array(U); // wave fluid velocities
 	}
 	if (channels.find("b") != string::npos) {
 		write_vec_array(B); // seabed contact (bottom contact forces)

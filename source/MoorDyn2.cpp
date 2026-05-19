@@ -97,6 +97,7 @@ moordyn::MoorDyn::MoorDyn(const char* infilename, int log_level)
   , ICTmax(120.0)
   , ICthresh(0.001)
   , WaveKinTemp(waves::WAVES_NONE)
+  , CurrentModeTemp(waves::CURRENTS_NONE)
   , dtM0((std::numeric_limits<real>::max)())
   , cfl(0.5)
   , dtOut(0.0)
@@ -568,6 +569,12 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	// ------------------ do IC gen --------------------
 	if (!skip_ic) {
 
+		// If wave ramping is active, currents are disabled during IC gen and
+		// applied only at runtime (alongside the wave grid). Otherwise,
+		// currents are active during IC gen.
+		if (env->waveKin_rampT == 0.0)
+			env->waterKinOptions.currentMode = CurrentModeTemp;
+
 		for (unsigned int l = 0; l < LineList.size(); l++) {
 			LineList[l]->IC_gen = true; // turn on IC_gen flag
 		}
@@ -603,9 +610,10 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 	}
 	_t_integrator->SetTime(0.0);
 
-	// store passed WaveKin value to enable waves in simulation if applicable
-	// (they're not enabled during IC gen)
+	// store passed WaveKin and Currents values to enable waves/currents in
+	// simulation if applicable (they're not enabled during IC gen)
 	env->waterKinOptions.waveMode = WaveKinTemp;
+	env->waterKinOptions.currentMode = CurrentModeTemp;
 	try {
 		// TODO - figure out how i want to do this better
 		// because this is horrible. the solution is probably to move EnvCond
@@ -2567,7 +2575,7 @@ moordyn::MoorDyn::readOptionsLine(vector<string>& in_txt, int i)
 		env->waveKin_rampT = atof(value.c_str());
 	else if (name == "currents") {
 		auto current_mode = (waves::currents_settings)stoi(value);
-		env->waterKinOptions.currentMode = current_mode;
+		CurrentModeTemp = current_mode;
 		if ((current_mode < waves::CURRENTS_NONE) ||
 		    (current_mode > waves::CURRENTS_4D))
 			LOGWRN << "Unknown Currents option value " << current_mode << endl;
