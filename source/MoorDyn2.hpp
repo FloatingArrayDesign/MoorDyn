@@ -554,6 +554,9 @@ class MoorDyn final : public io::IO
 	// temporary wave kinematics flag used to store input value while keeping
 	// env.WaveKin=0 for IC gen
 	moordyn::waves::waves_settings WaveKinTemp;
+	// temporary currents flag used to store input value; currents may be
+	// disabled during IC gen when wave ramping is active
+	moordyn::waves::currents_settings CurrentModeTemp;
 	/// (s) desired mooring line model maximum time step
 	real dtM0;
 	/// desired mooring line model maximum CFL factor
