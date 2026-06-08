@@ -522,7 +522,12 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		}
 		// call this just to set WaterKin (may also set up output file in
 		// future)
-		PointList[l]->initialize();
+		try {
+			PointList[l]->initialize();
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
 		ix += 3;
 	}
 
