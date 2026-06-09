@@ -522,12 +522,7 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		}
 		// call this just to set WaterKin (may also set up output file in
 		// future)
-		try {
-			PointList[l]->initialize();
-		}
-		MOORDYN_CATCHER(err, err_msg);
-		if (err != MOORDYN_SUCCESS)
-			return err;
+		PointList[l]->initialize();
 		ix += 3;
 	}
 
@@ -1193,9 +1188,10 @@ moordyn::MoorDyn::ReadInFile()
 			// Note - this is not in MD-F
 			if (r0[2] < -env->WtrDpth) {
 				env->WtrDpth = -r0[2];
-				LOGWRN << "\t Water depth set to point " << PointList.size() + 1
-				       << " z position because point was specified below the "
-				          "seabed" << endl;
+				LOGWRN << "\t Water depth set to point "
+				       << PointList.size() + 1
+				       << " z position because point was specified below the"
+				       << " seabed" << endl;
 			}
 
 			// Check point ID is sequential starting from 1

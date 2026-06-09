@@ -173,11 +173,10 @@ Point::initialize()
 		const real waterDepth =
 		    seafloor ? seafloor->getDepthAt(r[0], r[1]) : -env->WtrDpth;
 		if (waterDepth > r[2]) {
-			LOGERR << "Error: water depth is shallower than Point " << number
+			LOGWRN << "Error: water depth is shallower than Point " << number
 			       << "." << endl
 			       << "\tseabed z = " << waterDepth << endl
 			       << "\tpoint = " << r << endl;
-			throw moordyn::invalid_value_error("Invalid water depth");
 		}
 	}
 
