@@ -39,7 +39,7 @@ using matlab::mex::ArgumentList;
 
 MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 2, 0)
 {
-	const CharArray name_matlab = inputs[0];
+	const CharArray name_matlab = inputs[1];
 	std::string name(name_matlab.toAscii());
 	const int err = MoorDyn_SetTimeScheme(instance, name.c_str());
 	MOORDYNM_CHECK_ERROR(err);
