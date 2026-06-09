@@ -39,7 +39,7 @@ using matlab::mex::ArgumentList;
 
 MOORDYNM_MEX_FUNCTION_BEGIN(MoorDynBody, 2, 0)
 {
-	const CharArray filename_matlab = inputs[0];
+	const CharArray filename_matlab = inputs[1];
 	std::string filename(filename_matlab.toAscii());
 	const int err = MoorDyn_SaveBodyVTK(instance, filename.c_str());
 	MOORDYNM_CHECK_ERROR(err);
