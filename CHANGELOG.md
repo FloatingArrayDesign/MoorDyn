@@ -1,3 +1,37 @@
+## [2.7.0] - 2026-06-09
+
+### 🚀 Features
+
+- *(core)* Implementation of the Syrope model for polyester ropes
+- *(core)* [**breaking**] Line breaking utilities (#379)
+
+### 🐛 Bug Fixes
+
+- *(core)* Memory leak on lean-vtk
+- *(core)* Segmentation Fault when trying to print Td output
+- *(core)* Return an error code when points below the seabed are detected
+- *(core)* Demote points below seabed from error to warning
+- *(core)* MATLAB wrappers trying to use the instance as a parameter (fixes #384)
+
+### 💼 Other
+
+- *(deps)* Bump actions/upload-artifact from 6 to 7
+- *(deps)* Bump actions/download-artifact from 7 to 8
+- *(deps)* Bump docker/setup-qemu-action from 3 to 4
+- *(deps)* Bump pypa/cibuildwheel from 3.3.1 to 3.4.0
+- *(deps)* Bump pypa/cibuildwheel from 3.4.0 to 3.4.1
+- *(deps)* Bump matlab-actions/run-command from 2 to 3
+- *(deps)* Bump matlab-actions/setup-matlab from 2 to 3
+## [2.6.1] - 2026-02-20
+
+### 🐛 Bug Fixes
+
+- *(core)* Save with VTP extension
+- *(core)* Wrong Fortran indexes
+
+### ⚙️ Miscellaneous Tasks
+
+- *(doc)* Moved to git-cliff to produce the CHANGELOG file
 ## [2.6.0] - 2026-02-17
 
 ### 🚀 Features
