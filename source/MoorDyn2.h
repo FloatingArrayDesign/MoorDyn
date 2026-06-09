@@ -435,6 +435,21 @@ MoorDyn_GetFASTtens(MoorDyn system,
                     float AnchHTen[],
                     float AnchVTen[]);
 
+/** @brief Break a line on a specific point
+ *
+ * This method is dettaching a line from the point, and in exchange is
+ * creating a point duplicate of type moordyn::Point::types::FREE
+ * @param system The Moordyn system
+ * @param point The discconection point
+ * @param line The line that is dettaching from the point
+ * @throw MOORDYN_SUCESS If the line is correctly dettached, an error code
+ * otherwise (see @ref moordyn_errors)
+ */
+int DECLDIR
+MoorDyn_BreakLine(MoorDyn system,
+                  MoorDynPoint point,
+                  MoorDynLine line);
+
 /** @brief Get the current model time step
  * @param system The Moordyn system
  * @param dt The output time step

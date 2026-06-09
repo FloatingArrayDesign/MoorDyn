@@ -82,15 +82,15 @@ Overview of MoorDyn v2 (bodies, rods, and line failures):
   `Hall, Matthew, “MoorDyn V2: New Capabilities in Mooring System Components and Load Cases.” In Proceedings of the ASME 2020 39th International 
   Conference on Ocean, Offshore and Arctic Engineering. virtual conference, 2020. <https://www.nrel.gov/docs/fy20osti/76555.pdf>`_
 
-Seabed friction and bathymetry approach used in v2:
-
-  `Housner, Stein, Ericka Lozon, Bruce Martin, Dorian Brefort, and Matthew Hall, “Seabed Bathymetry and Friction Modeling in MoorDyn.” Journal of 
-  Physics: Conference Series 2362, no. 1, Nov 2022: 012018. <https://doi.org/10.1088/1742-6596/2362/1/012018>`_
-
 Implementation of bending stiffness modeling for power cables:
 
   `Hall, Matthew, Senu Sirnivas, and Yi-Hsiang Yu, “Implementation and Verification of Cable Bending Stiffness in MoorDyn.” In ASME 2021 3rd International Offshore Wind 
   Technical Conference, V001T01A011. Virtual, Online: American Society of Mechanical Engineers, 2021. <https://doi.org/10.1115/IOWTC2021-3565>`_
+
+Seabed friction and bathymetry approach used in v2:
+
+  `Housner, Stein, Ericka Lozon, Bruce Martin, Dorian Brefort, and Matthew Hall, “Seabed Bathymetry and Friction Modeling in MoorDyn.” Journal of 
+  Physics: Conference Series 2362, no. 1, Nov 2022: 012018. <https://doi.org/10.1088/1742-6596/2362/1/012018>`_
 
 Non-linear line stiffness:
 
@@ -121,6 +121,10 @@ Modeling of Bi-stable Nonlinear Energy Sinks in MoorDyn (most recent description
 
   `Anargyros Michaloliakos, Wei-Ying Wong, Ryan Davies, Malakonda Reddy Lekkala, Matthew Hall, Lei Zuo, Alexander F. Vakakis, "Stabilizing dynamic subsea power cables using 
   Bi-stable nonlinear energy sinks", Ocean Engineering, vol. 334, August 2025. <https://doi.org/10.1016/j.oceaneng.2025.121613>`_
+
+Syrope model for polyester ropes:
+
+  `Wei, Zhilong, Harry B. Bingham, and Yanlin Shao. 2026. “ESOMOOR D5.1: Extended Moordyn Solver and Validation Report”. Technical University of Denmark. <https://doi.org/10.11583/DTU.31408806>`_
 
 The Fortran version of MoorDyn is available as a module inside of OpenFAST:
   

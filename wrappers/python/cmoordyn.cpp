@@ -862,6 +862,41 @@ get_fast_tens(PyObject*, PyObject* args)
 	return lst;
 }
 
+/** @brief Wrapper to MoorDyn_BreakLine() function
+ * @param args Python passed arguments
+ * @return None
+ */
+static PyObject*
+break_line(PyObject*, PyObject* args)
+{
+	PyObject *capsule, *pt_capcule, *ln_capsule;
+	int num_lines;
+
+	if (!PyArg_ParseTuple(args, "OOO", &capsule, &pt_capcule, &ln_capsule))
+		return NULL;
+
+	MoorDyn system =
+	    (MoorDyn)PyCapsule_GetPointer(capsule, moordyn_capsule_name);
+	if (!system)
+		return NULL;
+	MoorDynPoint point =
+	    (MoorDynPoint)PyCapsule_GetPointer(pt_capcule, point_capsule_name);
+	if (!point)
+		return NULL;
+	MoorDynLine line =
+	    (MoorDynLine)PyCapsule_GetPointer(ln_capsule, line_capsule_name);
+	if (!line)
+		return NULL;
+
+	const int err = MoorDyn_BreakLine(system, point, line);
+	if (err != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "MoorDyn reported an error");
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 /** @brief Wrapper to MoorDyn_GetDt() function
  * @param args Python passed arguments
  * @return The time step
@@ -3008,6 +3043,10 @@ static PyMethodDef moordyn_methods[] = {
 	  get_fast_tens,
 	  METH_VARARGS,
 	  "Get vertical and horizontal forces in the mooring lines" },
+	{ "break_line",
+	  break_line,
+	  METH_VARARGS,
+	  "Break a line on a certain point" },
 	{ "get_dt", get_dt, METH_VARARGS, "Get the inner time step" },
 	{ "set_dt", set_dt, METH_VARARGS, "Set the inner time step" },
 	{ "get_cfl", get_cfl, METH_VARARGS, "Get the CFL factor" },

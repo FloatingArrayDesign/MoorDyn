@@ -278,11 +278,6 @@ IO::LoadFile(const std::string filepath) const
 	uint8_t major, minor;
 	f.read((char*)&major, sizeof(uint8_t));
 	f.read((char*)&minor, sizeof(uint8_t));
-	std::cout << major << std::endl;
-	std::cout << minor << std::endl;
-	std::cout << _min_major_version << std::endl;
-	std::cout << _min_minor_version << std::endl;
-	std::cout << "number=" << 7 << std::endl;
 	if ((major < _min_major_version) ||
 	    ((major == _min_major_version) && (minor < _min_minor_version))) {
 		LOGERR << "The file '" << filepath << "' was written by MoorDyn "
