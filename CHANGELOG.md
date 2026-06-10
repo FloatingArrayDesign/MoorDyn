@@ -1,3 +1,9 @@
+## [2.7.1] - 2026-06-10
+
+### 🐛 Bug Fixes
+
+- *(core)* Demote anchors below seabed from error to warning
+- *(core)* Catch the exceptions when initializing the time integrator, instead of crashing
 ## [2.7.0] - 2026-06-09
 
 ### 🚀 Features
