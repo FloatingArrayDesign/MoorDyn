@@ -546,9 +546,8 @@ Line::initialize()
 	// so now we can proceed with figuring out the positions of the nodes along
 	// the line.
 	if (getWaterDepth(r[0][0], r[0][1]) > r[0][2]) {
-		LOGERR << "Water depth is shallower than Line " << number << " anchor"
+		LOGWRN << "Water depth is shallower than Line " << number << " anchor"
 		       << endl;
-		throw moordyn::invalid_value_error("Invalid water depth");
 	}
 
 	// TODO - determine if F should be for each segment or for each node,
