@@ -203,7 +203,12 @@ moordyn::MoorDyn::icLegacy()
 	const unsigned int convergence_iters = 9; // 10 iterations, indexed 0-9
 	ICdt = ICdt / (convergence_iters + 1);
 
-	_t_integrator->Init();
+	try {
+		_t_integrator->Init();
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS)
+		return err;
 	if (ICfile != "") {
 		try {
 			_t_integrator->LoadState(_basepath + ICfile);
@@ -371,7 +376,12 @@ moordyn::MoorDyn::icStationary()
 	for (auto obj : LineList)
 		t_integrator.AddLine(obj);
 	t_integrator.SetCFL((std::min)(cfl, 1.0));
-	t_integrator.Init();
+	try {
+		t_integrator.Init();
+	}
+	MOORDYN_CATCHER(err, err_msg);
+	if (err != MOORDYN_SUCCESS)
+		return err;
 	if (ICfile != "") {
 		try {
 			t_integrator.LoadState(_basepath + ICfile);
@@ -574,7 +584,13 @@ moordyn::MoorDyn::Init(const double* x, const double* xd, bool skip_ic)
 		}
 
 	} else {
-		_t_integrator->Init();
+		try {
+			_t_integrator->Init();
+		}
+		MOORDYN_CATCHER(err, err_msg);
+		if (err != MOORDYN_SUCCESS)
+			return err;
+
 		if (ICfile != "") {
 			try {
 				_t_integrator->LoadState(_basepath + ICfile);
