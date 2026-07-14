@@ -508,7 +508,7 @@ outputs are wanted. Eleven output properties are currently possible:
  - a – node accelerations
  - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
- - t – tension force at each segment 
+ - t – internal tension force at each segment
  - c – internal damping force at each segment
  - V - the cross-flow VIV lift force at each node
  - K - the curvature at each node
@@ -814,8 +814,8 @@ Reference Points:
 
 Footnotes:
 
-- The tension on the Line n fairlead can be output with the FAIRTEN[n] flag (see examples above)
-- The tension on the Line n anchor can be output with the ANCHTEN[n] flag (see examples above)
+- The total force on the Line n fairlead can be output with the FAIRTEN[n] flag (see examples above)
+- The total force on the Line n anchor can be output with the ANCHTEN[n] flag (see examples above)
 - Object indicates output is for whole object, Node indicates output is for node of object
 - Coupled/fixed bodies and points will output acceleration 0 because no forces are calculated
 - When looking at the rotational outputs of coupled pinned rods that are hanging near vertical, 
@@ -823,8 +823,13 @@ Footnotes:
   rotations. Hanging pinned rods are inverted (end A over end B) in MoorDyn and the output range 
   for roll/pitch of rods is +/- 180 degrees. 
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
-  same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
-  fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
+  same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the total
+  fairlead force of line 1 would be FAIRTEN1 or LINE1TENB.
+- Lines can also output the per-node tensions. These are the internal tensions in the line segment. This 
+  differs from the global outputs from Line[n]TenB / FairTen[n], which is the net force on the end node of
+  the line. The net force includes the tension, AND the per-node weight, buoyancy, seabed-contact, and 
+  hydrodynamic forces. In general, this difference is small as tension dominates the top node's net force
+  but slight differences may be observed when comparing the two. 
 - The output list is not case sensitive, however all MoorDyn-F outputs will be printed to the output
   file in all caps. When searching OpenFAST output channels, users will need to search for MoorDyn
   channels in all caps. Example: the channel fairten1 would appear in the output file as FAIRTEN1.
