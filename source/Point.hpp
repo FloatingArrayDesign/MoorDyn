@@ -74,6 +74,15 @@ class DECLDIR Point final
 	 */
 	Point(moordyn::Log* log, size_t id);
 
+	/** @brief Point duplicator
+	 *
+	 * The duplicated point will have the same dynamics of the original point.
+	 * It will be a ::types::FREE kind of point though
+	 * @param visitor Point to duplicate
+	 * @param id Unique identifier of this instance
+	 */
+	Point(Point* visitor, size_t id);
+
 	/** @brief Destructor
 	 */
 	~Point();

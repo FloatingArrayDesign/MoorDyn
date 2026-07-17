@@ -37,11 +37,14 @@
 using namespace matlab::data;
 using matlab::mex::ArgumentList;
 
-MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 2, 0)
+MOORDYNM_MEX_FUNCTION_BEGIN(MoorDyn, 3, 0)
 {
-	const CharArray filename_matlab = inputs[1];
-	std::string filename(filename_matlab.toAscii());
-	const int err = MoorDyn_Load(instance, filename.c_str());
+	const uint64_t _point_id = inputs[1][0];
+	MoorDynPoint point = (MoorDynPoint)decode_ptr(_point_id);
+	const uint64_t _line_id = inputs[2][0];
+	MoorDynLine line = (MoorDynLine)decode_ptr(_line_id);
+
+	const int err = MoorDyn_BreakLine(instance, point, line);
 	MOORDYNM_CHECK_ERROR(err);
 }
 MOORDYNM_MEX_FUNCTION_END

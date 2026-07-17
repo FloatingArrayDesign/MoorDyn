@@ -47,7 +47,7 @@ jobs:
         rm -rf docs extern source tests
       
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v6
@@ -75,7 +75,7 @@ jobs:
         if: runner.os == 'Linux'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.4.0
+        uses: pypa/cibuildwheel@v4.1.0
         with:
             output-dir: dist
 

@@ -56,7 +56,7 @@ module moordyn
             MD_ExternalWaveKinSet, MD_GetNumberBodies, MD_GetBody, &
             MD_GetNumberRods, MD_GetRod, MD_GetNumberPoints, MD_GetPoint, &
             MD_GetNumberLines, MD_GetLine, MD_GetFASTtens, &
-            MD_GetDt, MD_SetDt, MD_GetCFL, MD_SetCFL, &
+            MD_BreakLine, MD_GetDt, MD_SetDt, MD_GetCFL, MD_SetCFL, &
             MD_GetTimeScheme, MD_SetTimeScheme, &
             MD_SaveState, MD_LoadState, MD_Serialize, MD_Deserialize, &
             MD_Save, MD_Load, MD_SaveVTK, &
@@ -255,6 +255,13 @@ module moordyn
       type(c_ptr), value, intent(in) :: avt
       integer(c_int) :: rc
     end function MoorDyn_GetFASTtens
+
+    integer(c_int) function MD_BreakLine(instance, point, line) bind(c, name='MoorDyn_BreakLine')
+      import :: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: instance
+      type(c_ptr), value, intent(in) :: point
+      type(c_ptr), value, intent(in) :: line
+    end function MD_BreakLine
 
     function MoorDyn_GetDt(instance, dt) bind(c, name='MoorDyn_GetDt') result(rc)
       import :: c_ptr, c_double, c_int
