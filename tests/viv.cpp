@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @file pendulum.cpp
- * Simple case of a pendulum motion
+/** @file viv.cpp
+ * Simple case of a VIV simulation
  */
 
 // Visual studio still uses this
@@ -48,6 +48,11 @@
 #define TOL                                                                    \
 	1.0e-2 // absolute tolerance. In setting this up, max error was 0.008069,
 	       // but this can vary slightly with every simulation
+
+#define MIN_PEAK_AMP                                                            \
+	0.5 // minimum delta T (N) from the last peak before it gets counted as
+	    // a peak. Tension oscillation is ~3.6 N pk-pk while numerical noise is
+	    // <0.1 N, so this rejects duplicate detections around peaks.
 
 bool
 compare(double v1, double v2, double tol)
@@ -96,13 +101,13 @@ TEST_CASE("VIV frequency simulation and check")
 	double d_peak =
 	    0.0; // last peak tracker. For checking if there is a change in the peak
 
-	while (t < 15) { // run for 15 seconds
+	while (t < 18) { // run for 18 seconds
 		REQUIRE(MoorDyn_Step(system, NULL, NULL, NULL, &t, &dt) ==
 		        MOORDYN_SUCCESS);
 
 		REQUIRE(MoorDyn_GetLineFairTen(line1, &ten) == MOORDYN_SUCCESS);
 
-		if (t > 10) { // only check period after 10 seconds. Before then, there
+		if (t > 12) { // only check period after 12 seconds. Before then, there
 			          // isn't complete lock in
 			// check for peaks in tension. These are used to determine the
 			// period
@@ -110,10 +115,16 @@ TEST_CASE("VIV frequency simulation and check")
 			if (d > d_peak)
 				d_peak = d;
 			else {
-				ten_peaks.push_back(ten);
-				peak_times.push_back(t);
+				if (d_peak >= MIN_PEAK_AMP) {
+					ten_peaks.push_back(ten);
+					peak_times.push_back(t);
+				}
 				d_peak = 0.0;
 			}
+		}
+		else {
+			// Save the current tension for comparison on the next timesteps 
+			ten_peaks.push_back(ten);
 		}
 	}
 
