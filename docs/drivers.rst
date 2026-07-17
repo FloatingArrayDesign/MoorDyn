@@ -806,7 +806,10 @@ WEC-Sim
 
 WEC-Sim is coupled with MoorDyn-C v2 as of Spring 2024 with `WEC-Sim PR #1212 <https://github.com/WEC-Sim/WEC-Sim/pull/1212>`_. 
 The original coupling was with MoorDyn v1 and the the publication can be found in the 
-:ref:`theory section <theory>`. The WEC-Sim source code can be found `here <https://github.com/WEC-Sim/WEC-Sim>`_.
+:ref:`theory section <theory>`. The WEC-Sim source code can be found `here <https://github.com/WEC-Sim/WEC-Sim>`_. Note that the current 
+library-based coupling does not handle MoorDyn errors, causing WEC-Sim/MATLAB to crash if MoorDyn fails. This is a known issue and will be 
+fixed in the future. For debugging your simulations, you can test your MoorDyn model standalone using the example driver on the 
+`examples page <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/example>`_.
 
 DualSPHysics
 ^^^^^^^^^^^^

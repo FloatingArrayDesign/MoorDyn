@@ -495,7 +495,7 @@ outputs are wanted. Eleven output properties are currently possible:
 
  - p – node positions
  - v – node velocities
- - a – node accelerations
+ - a – node accelerations (0 at end nodes, acceleration is never computed for end nodes)
  - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
  - t – internal tension force at each segment

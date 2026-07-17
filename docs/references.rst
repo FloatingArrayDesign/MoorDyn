@@ -64,6 +64,7 @@ Coupling with WEC-Sim or any Simulink code for wave energy converter simulation:
 
 Version 2
 ^^^^^^^^^
+.. _version2:
 
 Version 2 builds upon the capabilities of Version 1. The theory behind the new features is described in the following references. 
 
@@ -117,7 +118,7 @@ Reef3D-MoorDyn Coupling:
   `Soydan, Ahmet, Widar Weizhi Wang, and Hans Bihs. "An Improved Direct Forcing Immersed Boundary Method With Integrated Mooring Algorithm for Floating Offshore Wind 
   Turbines." American Society of Mechanical Engineers Digital Collection, 2024. <https://doi.org/10.1115/1.4067117>`_
 
-Modeling of Bi-stable Nonlinear Energy Sinks in MoorDyn (most recent description of MoorDyn theory):
+Modeling of Bi-stable Nonlinear Energy Sinks in MoorDyn (recent MoorDyn theory included in section 2.1):
 
   `Anargyros Michaloliakos, Wei-Ying Wong, Ryan Davies, Malakonda Reddy Lekkala, Matthew Hall, Lei Zuo, Alexander F. Vakakis, "Stabilizing dynamic subsea power cables using 
   Bi-stable nonlinear energy sinks", Ocean Engineering, vol. 334, August 2025. <https://doi.org/10.1016/j.oceaneng.2025.121613>`_
@@ -125,6 +126,11 @@ Modeling of Bi-stable Nonlinear Energy Sinks in MoorDyn (most recent description
 Syrope model for polyester ropes:
 
   `Wei, Zhilong, Harry B. Bingham, and Yanlin Shao. 2026. “ESOMOOR D5.1: Extended Moordyn Solver and Validation Report”. Technical University of Denmark. <https://doi.org/10.11583/DTU.31408806>`_
+
+Cross-flow VIV theory, implementation, and validation:
+
+ `Ryan Davies, Malakonda Reddy Lekkala, Anargyros Michaloliakos, Wei-Ying Wong, Matthew Hall, Alexander Vakakis, Lei Zuo, "Time-domain vortex induced vibration modeling of 
+ reference dynamic power cable for the Gulf of Maine", Journal of Fluids and Structures, vol. 146, September 2026. <https://doi.org/10.1016/j.jfluidstructs.2026.104651>`_
 
 The Fortran version of MoorDyn is available as a module inside of OpenFAST:
   
