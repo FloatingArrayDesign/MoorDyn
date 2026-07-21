@@ -58,6 +58,14 @@ class Line;
  *
  * Each end point of the rod can be fixed or pinned to another object, let free
  * or control it externally
+ *
+ * In the configuration file the types options are:
+ *
+ * `TypeName, Diam, Mass/m, Cd, Ca, CdEnd, CaEnd`
+ *
+ * and the list options are:
+ *
+ * `ID, RodType, Attachment, Xa, Ya, Za, Xb, Yb, Zb, NumSegs, RodOutputs`
  */
 class DECLDIR Rod final
   : public Instance

@@ -63,8 +63,7 @@ class Rod;
  * which can be extended through the usage of coupled ones.
  *
  * In the configuration file the options are:
- *
- * Name/ID, X0, Y0, Z0, Xcg, Ycg, Zcg, M, V, IX, IY, IZ, CdA-x,y,z Ca-x,y,z
+ * `Name/ID, Attachment, X0, Y0, Z0, R0, P0, Y0, Mass, (Xcg|Ycg|Zcg), (IX|IY|IZ), Volume, CdA(x|y|z|r|p|yw), Ca(x|y|z)`
  */
 class DECLDIR Body final
   : public Instance
