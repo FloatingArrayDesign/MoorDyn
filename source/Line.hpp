@@ -64,6 +64,14 @@ typedef std::shared_ptr<Waves> WavesRef;
  *
  * The integration time step (moordyn::MoorDyn.dtM0) should be smaller than
  * this natural period to avoid numerical instabilities
+ *
+ * In the configuration file the types options are:
+ *
+ * `TypeName, Diam, Mass/m, EA, BA/-zeta, EI, Cd, Ca, CdAx, CaAx, Cl, dF, cF`
+ *
+ * and the list options are:
+ *
+ * `ID, LineType, AttachA, AttachB, UnstrLen, NumSegs, LineOutputs`
  */
 class DECLDIR Line final
   : public Instance
