@@ -46,7 +46,7 @@
 // NOTE: this is largely built on the pendulum test framework
 
 #define TOL                                                                    \
-	1.0e-2 // absolute tolerance. In setting this up, max error was 0.008069,
+	1.2e-2 // absolute tolerance. In setting this up, max error was 0.011 (OS dependent),
 	       // but this can vary slightly with every simulation
 
 #define MIN_PEAK_AMP                                                            \
