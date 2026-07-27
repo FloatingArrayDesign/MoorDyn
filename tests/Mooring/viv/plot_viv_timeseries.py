@@ -93,14 +93,25 @@ def compute_fft_spectrum(
     if segment_time.size < 4:
         raise ValueError("Not enough samples after the FFT start time")
 
+    # Set up time grid and interpolate, then center.
     dt = float(np.median(np.diff(segment_time)))
     uniform_time = np.arange(segment_time[0], segment_time[-1] + 0.5 * dt, dt)
     uniform_values = np.interp(uniform_time, segment_time, segment_values)
     centered_values = uniform_values - uniform_values.mean()
-    window = np.hanning(centered_values.size)
-    windowed_values = centered_values * window
+
+    # Taper the tails and apply Hanning window
+    tail_length = centered_values.size // 10  # Or something else
+    window_mask = np.zeros(centered_values.size, dtype=bool)
+    window_mask[:tail_length] = True
+    window_mask[-tail_length:] = True
+    windowed_values = np.copy(centered_values)
+    windowed_values[window_mask] *= np.hanning(2 * tail_length)
+
+    # FFT and normalize
     spectrum = np.fft.rfft(windowed_values)
     frequencies = np.fft.rfftfreq(windowed_values.size, d=dt)
+    window = np.ones(centered_values.size)
+    window[window_mask] = np.hanning(2 * tail_length)
     normalization = window.sum() / 2.0
     amplitudes = np.abs(spectrum) / normalization
     return frequencies, amplitudes
@@ -253,7 +264,7 @@ def main() -> int:
     parser.add_argument(
         "input",
         nargs="?",
-        default="build/tests/Mooring/viv/viv.out",
+        default="../../../build/tests/Mooring/viv/viv.out",
         help="Path to the viv.out file produced by the test run.",
     )
     parser.add_argument(
