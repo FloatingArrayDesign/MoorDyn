@@ -34,6 +34,7 @@
 #include "QSlines.hpp"
 #include "Util/Interp.hpp"
 #include <tuple>
+#include <cfenv>
 // #include <random>
 #include <iomanip>
 
@@ -662,6 +663,14 @@ Line::initialize()
 		COSPhi = (r[N][0] - r[0][0]) / XF;
 		SINPhi = (r[N][1] - r[0][1]) / XF;
 
+		// The Newton-Raphson iterations of the catenary solver may visit
+		// points out of the domain of the involved functions (e.g. weightless
+		// or buoyant lines), raising floating point exceptions. The solver
+		// detects those failures by itself, so the raised exceptions are
+		// discarded instead of reaching (and eventually trapping in) the
+		// calling program
+		std::fenv_t fenv;
+		std::feholdexcept(&fenv);
 		int success = Catenary(XF,
 		                       ZF,
 		                       UnstrLen,
@@ -678,6 +687,7 @@ Line::initialize()
 		                       Xl,
 		                       Zl,
 		                       Te);
+		std::fesetenv(&fenv);
 
 		if (success >= 0) {
 
