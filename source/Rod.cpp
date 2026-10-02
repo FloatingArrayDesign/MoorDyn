@@ -165,7 +165,8 @@ Rod::setup(int number_in,
 	const vec org = endCoords(Eigen::seqN(0, 3));
 	const vec dst = endCoords(Eigen::seqN(3, 3));
 	for (unsigned int i = 0; i <= N; i++) {
-		const real f = i / (real)N;
+		// N = 0 for zero-length rods, where i / N would be 0 / 0
+		const real f = N ? i / (real)N : 0.0;
 		r[i] = org + f * (dst - org);
 		rd[i] = vec::Zero();
 	}
