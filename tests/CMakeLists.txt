@@ -57,6 +57,7 @@ set(CATCH2_TESTS
     aca
     wilson
     line_break
+    fpe
 )
 
 function(make_executable test_name, extension)
