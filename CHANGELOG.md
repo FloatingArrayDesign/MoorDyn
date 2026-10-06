@@ -1,3 +1,40 @@
+## [2.7.2] - 2026-10-06
+
+### 🚀 Features
+
+- *(lines,waves)* Implement improvements from OpenFAST
+- *(io)* Added `!` and `%` as comment characters in input files (to match OpenFAST)
+- *(core)* Add water velocity outputs to rods, disable currents if water-kinematic ramping enabled
+
+### 🐛 Bug Fixes
+
+- *(tests)* Improve VIV test peak finding, add VIV test plotting script
+- *(tests)* Adjust VIV test sensitivity for windows
+- *(core)* Do not raise floating point exceptions with CFL sentinel values
+- *(core)* Do not divide by zero when setting up zero-length rods
+- *(core)* Discard floating point exceptions raised by the catenary IC solver
+
+### 💼 Other
+
+- *(deps)* Bump actions/checkout from 6 to 7
+- *(deps)* Bump pypa/cibuildwheel from 3.4.1 to 4.1.0
+- *(deps)* Bump actions/setup-python from 6 to 7
+- *(deps)* Bump pypa/cibuildwheel from 4.1.0 to 4.1.1
+- *(deps)* Bump pypa/cibuildwheel from 4.1.1 to 4.2.1
+
+### 📚 Documentation
+
+- Clarify difference between per-node tension outputs and FairTen outputs
+- Add VIV paper to references, clarify line acc output and WEC-Sim errors
+- Update core object docstrings to reflect input files
+
+### 🧪 Testing
+
+- Check that no floating point exceptions are raised
+
+### ⚙️ Miscellaneous Tasks
+
+- Increased the version to 2.7.2
 ## [2.7.1] - 2026-06-10
 
 ### 🐛 Bug Fixes
@@ -80,6 +117,9 @@
 
 ### 🚀 Features
 
+- *(body)* Add centripetal forces for rotating bodies
+- Cleaned up the hack-ish state to generalize it for visco stuff. Made # a comment character in input files. Readded diable VIV during ICgen
+- Viscoelastic model with constant and load dependent dynamic stiffness is now live!
 - *(rust)* First test using the Rust wrapper
 - *(core)* New flexible states
 - *(core)* Create a base class for the instances which provides a unique identifier
@@ -93,6 +133,27 @@
 
 ### 🐛 Bug Fixes
 
+- Read first the writelog option, and then anything else
+- The quaternions shall be renormalized to get the rotation matrix
+- Freeze when writeLog is not the first option
+- Centripetal force for parallel axes shall be null
+- Rebranding to include centripetal forces on getNetForceAndMass
+- Add a centripetal force to bodies with a excentric COG
+- EulerZYX -> EulerXYZ on moordyn::Euler2Quat()
+- Accelerations of Coupled/fixed bodies/rods when there are several isntances of them
+- Odd treatment was meant for indexes from 1 to 3, not 0 to 2, and the matrix indexes were transposed
+- EulerXYZ intrinsic angles instead of extrinsic
+- Drop the patch to move from extrinsic to intrinsic Euler angles
+- Make rod submergence calcs match what is in MDF (verified code)
+- Make rod submergence calcs match what is in MDF (verified code)
+- Some small fixes for viscoelastic stuff
+- Removing files
+- Removing one more file
+- Cleaned up some time scheme stuff (added in more spots where Misc states should be accounted for)
+- Some more stiffness fixes. Noteably before when reading a non-linear look up table it assumed stress strain. This is not correct and doesnt match theory paper or docs. CHanges to stress tension.
+- Dynamic current inflile reading fix
+- Some more notes explaining the synchronization model
+- Major clean up to the synchronization model
 - Added dummy AllOutput to old API
 - Old AllOutput back to voids, cleans it up a bit
 - Rename AllOutput -> WriteOutputs (To match MD-F)
@@ -143,12 +204,25 @@
 
 ### 💼 Other
 
+- MinGW needs the DECLDIR on Body::setState
 - *(deps)* Bump pypa/cibuildwheel from 2.22.0 to 2.23.0
 - *(deps)* Bump pypa/cibuildwheel from 2.23.0 to 2.23.1
 
 ### 📚 Documentation
 
+- Clarify that intrinsic angles are considered, and link to the external resources
+- Added # comment character instructions to docs
+- Minor change to update viscoelastic docs
+- Clarifying dtout
 - Updated docs for OpenFAST/openfast#2597
+
+### 🧪 Testing
+
+- Excentrical body test
+- Test the centripetal force on a simple case
+- Strip the VTK from the test and attach two points to the body to get a more stable orbit
+- Test the rotations
+- Typo on the config file description
 ## [2.3.8] - 2024-12-12
 
 ### 🚀 Features
@@ -178,14 +252,6 @@
 - *(python)* Autonomous MoorPy IC exporter
 - *(docs and tests)* Initialization notes with a practical application
 - *(python)* Absolute paths are not accepted any longer
-- Some small fixes for viscoelastic stuff
-- Removing files
-- Removing one more file
-- Cleaned up some time scheme stuff (added in more spots where Misc states should be accounted for)
-- Some more stiffness fixes. Noteably before when reading a non-linear look up table it assumed stress strain. This is not correct and doesnt match theory paper or docs. CHanges to stress tension.
-- Dynamic current inflile reading fix
-- Some more notes explaining the synchronization model
-- Major clean up to the synchronization model
 - *(python)* Added the missing time scheme manipulation API entries
 - *(python)* Missing GetXXXNumberNodes missing entries
 - *(fortran)* Added the time scheme manipulation entries
@@ -213,8 +279,6 @@
 - Updates and typo fixes
 - References file rename
 - Fixing broken links
-- Minor change to update viscoelastic docs
-- Clarifying dtout
 - Add disable output to the docs and options list
 
 ### 🧪 Testing
@@ -284,46 +348,6 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Disable memcheck on lowe_and_langley, which is way too slow
-## [2.3.3] - 2024-06-24
-
-### 🚀 Features
-
-- *(body)* Add centripetal forces for rotating bodies
-- Cleaned up the hack-ish state to generalize it for visco stuff. Made # a comment character in input files. Readded diable VIV during ICgen
-- Viscoelastic model with constant and load dependent dynamic stiffness is now live!
-
-### 🐛 Bug Fixes
-
-- Read first the writelog option, and then anything else
-- The quaternions shall be renormalized to get the rotation matrix
-- Freeze when writeLog is not the first option
-- Centripetal force for parallel axes shall be null
-- Rebranding to include centripetal forces on getNetForceAndMass
-- Add a centripetal force to bodies with a excentric COG
-- EulerZYX -> EulerXYZ on moordyn::Euler2Quat()
-- Accelerations of Coupled/fixed bodies/rods when there are several isntances of them
-- Odd treatment was meant for indexes from 1 to 3, not 0 to 2, and the matrix indexes were transposed
-- EulerXYZ intrinsic angles instead of extrinsic
-- Drop the patch to move from extrinsic to intrinsic Euler angles
-- Make rod submergence calcs match what is in MDF (verified code)
-- Make rod submergence calcs match what is in MDF (verified code)
-
-### 💼 Other
-
-- MinGW needs the DECLDIR on Body::setState
-
-### 📚 Documentation
-
-- Clarify that intrinsic angles are considered, and link to the external resources
-- Added # comment character instructions to docs
-
-### 🧪 Testing
-
-- Excentrical body test
-- Test the centripetal force on a simple case
-- Strip the VTK from the test and attach two points to the body to get a more stable orbit
-- Test the rotations
-- Typo on the config file description
 ## [2.3.2] - 2024-06-24
 
 ### 💼 Other
