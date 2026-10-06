@@ -78,8 +78,10 @@ split(const string& str, const char sep)
 	string token;
 	vector<string> words;
 	while (std::getline(spliter, token, sep)) {
-		if (token.find("#") == string::npos) {
-			if (token.size()) // # is a comment in input files
+		if (token.find("#") == string::npos && 
+		    token.find("!") == string::npos &&
+		    token.find("%") == string::npos) {
+			if (token.size()) // !, #, % are comment characters in input files
 				words.push_back(token);
 		} else
 			break;

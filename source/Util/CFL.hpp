@@ -87,6 +87,11 @@ class DECLDIR CFL
 	 */
 	virtual inline real cfl2dt(const real cfl, const real v) const
 	{
+		// Objects without a characteristic length keep the sentinel value,
+		// and a null velocity does not limit the timestep either. Return the
+		// sentinel instead of raising FE_OVERFLOW or FE_DIVBYZERO
+		if ((length() == (std::numeric_limits<real>::max)()) || (v <= 0.0))
+			return (std::numeric_limits<real>::max)();
 		return cfl * length() / v;
 	}
 
@@ -134,7 +139,14 @@ class DECLDIR NatFreqCFL : public CFL
 	 * @param cfl CFL factor
 	 * @return The timestUtilep
 	 */
-	inline real cfl2dt(const real cfl) const { return cfl * period(); }
+	inline real cfl2dt(const real cfl) const
+	{
+		// cfl = max() is used to not limit the timestep, see
+		// MoorDyn::Init(). Do not multiply it, which raises FE_OVERFLOW
+		if (cfl == (std::numeric_limits<real>::max)())
+			return cfl;
+		return cfl * period();
+	}
 
 	/** @brief Get the CFL factor from a timestep
 	 * @param dt Timestep

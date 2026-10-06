@@ -62,6 +62,10 @@ typedef std::shared_ptr<Waves> WavesRef;
  *          unconnected termination point of a Line, which could have a clump
  *          weight or float via the point's mass and volume parameters
  *  - Coupled: The point position and velocity is externally imposed
+ *
+ * In the configuration file the options are:
+ *
+ * `Name/ID, Attachment, X, Y, Z, Mass, Volume, CdA, Ca`
  */
 class DECLDIR Point final
   : public Instance

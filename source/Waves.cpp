@@ -822,10 +822,9 @@ Waves::updateWaves()
 			bodies.U[id][0] = waveKin.bodies.U[id][0] + curr_U;
 			bodies.Ud[id][0] = waveKin.bodies.Ud[id][0] + curr_Ud;
 		}
-		return;
 	}
 	// if there are both waves and currents, then we calculate and sum
-	if (waveKinematics && currentKinematics) {
+	else if (waveKinematics && currentKinematics) {
 		kinematicsForAllNodes(
 		    nodeKin, [&](vec pos, vec& U, vec& Ud, real& zeta, real& pdyn) {
 			    vec3 wave_U{}, wave_Ud{};
@@ -845,10 +844,9 @@ Waves::updateWaves()
 			    U = wave_U + curr_U;
 			    Ud = wave_Ud + curr_Ud;
 		    });
-		return;
 	}
 	// if there are just waves then we just do wave calculations
-	if (waveKinematics) {
+	else if (waveKinematics) {
 		kinematicsForAllNodes(
 		    nodeKin, [&](vec pos, vec& U, vec& Ud, real& zeta, real& pdyn) {
 			    waveKinematics->getWaveKin(pos,
@@ -859,17 +857,32 @@ Waves::updateWaves()
 			                               &Ud,
 			                               &pdyn);
 		    });
-		return;
 	}
 	// if there are just currents then we just do current calculations
-	if (currentKinematics) {
+	else if (currentKinematics) {
 		kinematicsForAllNodes(
 		    nodeKin, [&](vec pos, vec& U, vec& Ud, real& zeta, real& pdyn) {
 			    currentKinematics->getCurrentKin(
 			        pos, _t_integrator->GetTime(), floorProvider, &U, &Ud);
 		    });
-		return;
 	}
+
+	// Apply ramp time for water kinematics if enabled
+	if (env->waveKin_rampT > 0.0) {
+		const real t = _t_integrator->GetTime();
+		if (t < env->waveKin_rampT) {
+			const real ramp = t / env->waveKin_rampT;
+			kinematicsForAllNodes(
+			    nodeKin,
+			    [&](vec /*pos*/, vec& U, vec& Ud, real& zeta, real& pdyn) {
+				    U *= ramp;
+				    Ud *= ramp;
+				    zeta *= ramp;
+				    pdyn *= ramp;
+			    });
+		}
+	}
+	return;
 }
 
 } // ::moordyn

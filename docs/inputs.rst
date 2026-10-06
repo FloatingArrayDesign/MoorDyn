@@ -247,8 +247,8 @@ two fixed points located far from where your system is located.
 Most of the sections are set up to contain a table of input information. These
 tables begin with two preset lines that contain the column names and the
 corresponding units. These lines are followed by any number of lines containing
-the entries in that section's table of inputs. # is the general comment character. If you are adding notes 
-to self after any of the lines, # will prevent MoorDyn from reading them. 
+the entries in that section's table of inputs. !, #, and % are comment characters. If you are adding notes 
+to self after any of the lines, any of these characters will prevent MoorDyn from reading the rest of that line. 
 
 Examples of input files for MoorDyn-C can be found in the `test directory <https://github.com/FloatingArrayDesign/MoorDyn/tree/master/tests/Mooring>`_ (note that these do not include outputs because they are for tests).
 
@@ -491,13 +491,14 @@ The columns are as follows:
    
 This `LineOutputs` entry expects a string of one or more characters without spaces, each character 
 activating a given output property. A placeholder character such as “-” should be used if no 
-outputs are wanted. Ten output properties are currently possible:
+outputs are wanted. Eleven output properties are currently possible:
 
  - p – node positions
  - v – node velocities
+ - a – node accelerations (0 at end nodes, acceleration is never computed for end nodes)
  - U – wave/current velocities at each node
  - D – hydrodynamic drag force at each node
- - t – tension force at each segment 
+ - t – internal tension force at each segment
  - c – internal damping force at each segment
  - V - the cross-flow VIV lift force at each node
  - K - the curvature at each node
@@ -661,6 +662,8 @@ The list of possible options is:
    grid, 3 = kinematics in a regular grid, 7 = Wave Component Summing. Details on these flags can
    be found :ref:`here <waterkinematics>`.
  - dtWave (0.25): The time step to evaluate the waves, only for wave grid (WaveKin = 3) (s)
+ - waveKin_rampT (0.0): Ramp time for water kinematics (s). The wave kinematics are linearly ramped 
+   from zero at t=0 to their full values at t=waveKin_rampT. A value of 0 disables the ramp.
  - Currents (0): The currents model to use. 0 = none, 1 = steady in a regular grid, 2 = dynamic in 
    a regular grid, 3 = WIP, 4 = WIP, 5 = 4D Current Grid. Details on these flags can
    be found :ref:`here <waterkinematics>`.
@@ -801,8 +804,8 @@ Reference Points:
 
 Footnotes:
 
-- The tension on the Line n fairlead can be output with the FAIRTEN[n] flag (see examples above)
-- The tension on the Line n anchor can be output with the ANCHTEN[n] flag (see examples above)
+- The total force on the Line n fairlead can be output with the FAIRTEN[n] flag (see examples above)
+- The total force on the Line n anchor can be output with the ANCHTEN[n] flag (see examples above)
 - Object indicates output is for whole object, Node indicates output is for node of object
 - Coupled/fixed bodies and points will output acceleration 0 because no forces are calculated
 - When looking at the rotational outputs of coupled pinned rods that are hanging near vertical, 
@@ -810,8 +813,13 @@ Footnotes:
   rotations. Hanging pinned rods are inverted (end A over end B) in MoorDyn and the output range 
   for roll/pitch of rods is +/- 180 degrees. 
 - There are a couple additional outputs left over from OpenFAST conventions that don’t follow the 
-  same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the 
-  fairlead tension of line 1 would be FAIRTEN1 or LINE1TENB.
+  same format: FairTen and AnchTen. FairTen[n] is the same as Line[n]TenB. For example, the total
+  fairlead force of line 1 would be FAIRTEN1 or LINE1TENB.
+- Lines can also output the per-node tensions. These are the internal tensions in the line segment. This 
+  differs from the global outputs from Line[n]TenB / FairTen[n], which is the net force on the end node of
+  the line. The net force includes the tension, AND the per-node weight, buoyancy, seabed-contact, and 
+  hydrodynamic forces. In general, this difference is small as tension dominates the top node's net force
+  but slight differences may be observed when comparing the two. 
 - The output list is not case sensitive, however all MoorDyn-F outputs will be printed to the output
   file in all caps. When searching OpenFAST output channels, users will need to search for MoorDyn
   channels in all caps. Example: the channel fairten1 would appear in the output file as FAIRTEN1.
